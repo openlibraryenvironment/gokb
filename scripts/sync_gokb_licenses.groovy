@@ -7,7 +7,7 @@ import GOKbSyncBase
 while ( moredata ) {
   
   def resources = []
-  fetchFromSource (path: '/gokb/oai/licenses') { resp, body ->
+  fetchFromSource (path: "${sourceContext}/oai/licenses") { resp, body ->
 
     body?.'ListRecords'?.'record'.metadata.gokb.eachWithIndex { data, index ->
 
@@ -23,9 +23,14 @@ while ( moredata ) {
   }
   
   resources.each {
-    sendToTarget (path: '/gokb/integration/crossReferenceLicense', body: it) 
+    sendToTarget (path: "${targetContext}/integration/crossReferenceLicense", body: it)
   }
   
   // Save the config.
   saveConfig()
 }
+
+setLastRun ()
+saveConfig ()
+
+println("Total: ${total}, Errors: ${errors}")

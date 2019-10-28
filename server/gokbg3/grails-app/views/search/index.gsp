@@ -5,23 +5,41 @@
 <title>Search <g:if test="${qbetemplate?.title}"></g:if>${qbetemplate?.title}</title>
 </head>
 <body>
-	<h1 class="page-header">${qbetemplate.title ?:''} <g:if test="${refOid}">for <g:link controller="resource" action="show" id="${refOid}">${refName ?: refOid}</g:link></g:if></h1>
+	<g:if test="${qbetemplate}">
+		<h1 class="page-header">${qbetemplate?.title ?:''} <g:if test="${refOid}">for <g:link controller="resource" action="show" id="${refOid}">${refName ?: refOid}</g:link></g:if></h1>
+	</g:if>
+	<g:else>
+		<h1 class="page-header">Search</h1>
+	</g:else>
 	<div class="${displayobj != null ? 'col-md-5 ' : ''}" >
-		<div id="mainarea"
-			class="panel panel-default">
+		<div id="mainarea" class="panel panel-default">
 			
 			<g:if test="${qbetemplate==null}">
-				
-			</g:if>
-	
-			<g:else>
-                              <g:if test="${!params.inline}">
+
 				<div class="panel-heading">
 					<h3 class="panel-title">
-						Search
+						Please select a resource to search for
 					</h3>
 				</div>
-                              </g:if>
+				<div class="panel-body">
+					<g:each in="${session.menus?.search}" var="type,items" status="counter">
+						<g:if test="${ counter > 0 }" >
+							<div class="divider"></div>
+						</g:if>
+						<g:each in="${items}" var="item">
+							<li><g:link controller="${item.link.controller}" action="${item.link.action}" params="${item.link.params}"> ${item.text} </g:link></li>
+						</g:each>
+					</g:each>
+				</div>
+			</g:if>
+			<g:else>
+				<g:if test="${!params.inline}">
+					<div class="panel-heading">
+						<h3 class="panel-title">
+							Search
+						</h3>
+					</div>
+				</g:if>
 				<div class="panel-body">
 					<g:if test="${(qbetemplate.message != null)}">
 						<p style="text-align: center">
@@ -37,7 +55,7 @@
 				<!-- panel-body -->
 				<g:if test="${recset && !init}">
 					<g:render template="qberesult"
-						model="${[qbeConfig:qbetemplate.qbeConfig, rows:new_recset, offset:offset, jumpToPage:'jumpToPage', det:det, page:page_current, page_max:page_total]}" />
+						model="${[qbeConfig:qbetemplate.qbeConfig, rows:new_recset, offset:offset, jumpToPage:'jumpToPage', det:det, page:page_current, page_max:page_total, baseClass:qbetemplate.baseclass]}" />
 				</g:if>
 				<g:elseif test="${!init && !params.inline}">
 					<div class="panel-footer">

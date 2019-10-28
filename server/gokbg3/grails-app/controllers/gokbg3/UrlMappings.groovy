@@ -24,5 +24,6 @@ class UrlMappings {
         "404"(controller:'error', action:'notFound')
         "403"(controller:'error', action:'forbidden')
         "401"(controller:'error', action:'unauthorized')
+        "400"(controller:'error', action:'badRequest')
     }
 }

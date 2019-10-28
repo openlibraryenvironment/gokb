@@ -158,6 +158,10 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
       "componentType" : {
         "type": "keyword"
       },
+      "lastUpdatedDisplay" : {
+        "type": "date",
+        "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'\''T'\''HH:mm:ssZ||epoch_millis"
+      },
       "uuid" : {
         "type": "keyword"
       },

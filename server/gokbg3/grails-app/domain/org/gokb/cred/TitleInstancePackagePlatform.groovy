@@ -105,7 +105,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     startVolume (nullable:true, blank:true)
     startIssue (nullable:true, blank:true)
     endDate (validator: { val, obj ->
-      if(obj.startDate && val && obj.startDate > val) {
+      if(obj.startDate && val && (obj.hasChanged('endDate') || obj.hasChanged('startDate')) && obj.startDate > val) {
         return ['endDate.endPriorToStart']
       }
     })
@@ -123,7 +123,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     paymentType (nullable:true, blank:true)
     accessStartDate (nullable:true, blank:false)
     accessEndDate (validator: { val, obj ->
-      if(obj.accessStartDate && val && obj.accessStartDate > val) {
+      if(obj.accessStartDate && val && (obj.hasChanged('accessEndDate') || obj.hasChanged('accessStartDate')) && obj.accessStartDate > val) {
         return ['accessEndDate.endPriorToStart']
       }
     })
@@ -131,11 +131,12 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   def availableActions() {
-    [ [code:'method::retire', label:'Retire'],
+    [ [code:'setStatus::Retired', label:'Retire'],
       [code:'tipp::retire', label:'Retire (with Date)'],
-      [code:'method::deleteSoft', label:'Delete', perm:'delete'],
-      [code:'method::setExpected', label:'Mark Expected'],
-      [code:'method::setActive', label:'Set Current']
+      [code:'setStatus::Deleted', label:'Delete', perm:'delete'],
+      [code:'setStatus::Expected', label:'Mark Expected'],
+      [code:'setStatus::Current', label:'Set Current'],
+      [code:'tipp::move', label:'Move TIPP']
     ]
   }
 
@@ -151,6 +152,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   def afterUpdate() {
+    this.pkg.lastSeen = new Date().getTime()
   }
 
   /**
@@ -162,8 +164,9 @@ class TitleInstancePackagePlatform extends KBComponent {
 //     result.title = tipp_fields.title
 //     result.hostPlatform = tipp_fields.hostPlatform
 //     result.pkg = tipp_fields.pkg
-    
-    def result = new TitleInstancePackagePlatform().save(failOnError: true)
+    def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
+    def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) :null
+    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid, status: tipp_status, editStatus: tipp_editstatus).save(failOnError: true)
 
     if ( result ) {
       def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
@@ -199,21 +202,78 @@ class TitleInstancePackagePlatform extends KBComponent {
    * Please see https://github.com/openlibraryenvironment/gokb/wiki/tipp_dto
    */ 
   @Transient
-  public static boolean validateDTO(tipp_dto) {
-    def result = true;
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS")
-    result &= tipp_dto.package?.internalId != null
-    result &= tipp_dto.platform?.internalId != null
-    result &= tipp_dto.title?.internalId != null
+  public static def validateDTO(tipp_dto) {
+    def result = ['valid':true, 'errors':[]]
+    def sdfs = [
+        "yyyy-MM-dd' 'HH:mm:ss.SSS",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd"
+    ]
+
+    result.valid &= tipp_dto.package?.internalId != null
+    result.valid &= tipp_dto.platform?.internalId != null
+    result.valid &= tipp_dto.title?.internalId != null
+
     for(def coverage : tipp_dto.coverage){
-        result &= ['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth.toLowerCase())
-        result &= !(coverage.startDate && coverage.endDate && (sdf.parse(coverage.endDate) < sdf.parse(coverage.startDate)))
+        def startDate = null
+        def endDate = null
+
+        if (coverage.startDate) {
+          sdfs.each { df -> 
+
+            if (!startDate) {
+              try {
+                SimpleDateFormat sdfV = new SimpleDateFormat(df)
+
+                startDate = sdfV.parse(coverage.startDate)
+              }
+              catch (java.text.ParseException pe) {
+              }
+            }
+          }
+
+          if (!startDate) {
+            result.valid = false
+            result.errors.add("Unable to parse coverage start date ${coverage.startDate}!")
+          }
+        }
+
+        if (coverage.endDate) {
+          sdfs.each { df -> 
+
+            if (!endDate) {
+             try {
+                SimpleDateFormat sdfV = new SimpleDateFormat(df)
+
+                endDate = sdfV.parse(coverage.endDate)
+              }
+              catch (java.text.ParseException pe) {
+              }
+            }
+          }
+
+          if (!endDate) {
+            result.valid = false
+            result.errors.add("Unable to parse coverage end date ${coverage.endDate}!")
+          }
+        }
+
+        if ( !['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase()) ) {
+          result.valid = false
+          result.errors.add("Unrecognized value '${coverage.coverageDepth}' for coverage depth")
+        }
+
+        if (startDate && endDate && (endDate < startDate)) {
+          result.valid = false
+          result.errors.add("Coverage end date must not be prior to its start date!")
+        }
     }
 
-    if ( !result ) 
-      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${tipp_dto.package?.internalId} plat:${tipp_dto.platform?.internalId} ti:${tipp_dto.title?.internalId}");
+    if ( !result.valid )  {
+      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${tipp_dto.package?.internalId} plat:${tipp_dto.platform?.internalId} ti:${tipp_dto.title?.internalId} -- Errors: ${result.errors}");
+    }
 
-    result;
+    return result
   }
 
   /**
@@ -237,55 +297,68 @@ class TitleInstancePackagePlatform extends KBComponent {
                                            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?'+
                                            'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
                                           [pkg,plt,ti])
-      def tipp = null;
-      switch ( tipps.size() ) {
-        case 1:
-          log.debug("found");
+      def tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null;
 
-          if( trimmed_url && trimmed_url.size() > 0 ) {
-            if( !tipps[0].url || tipps[0].url == trimmed_url ){
+      if  ( !tipp ) {
+        switch ( tipps.size() ) {
+          case 1:
+            log.debug("found");
+
+            if( trimmed_url && trimmed_url.size() > 0 ) {
+              if( !tipps[0].url || tipps[0].url == trimmed_url ){
+                tipp = tipps[0]
+              }
+              else{
+                log.debug("matched tipp has a different url..")
+              }
+            }
+            else {
               tipp = tipps[0]
-            }
-            else{
-              log.debug("matched tipp has a different url..")
-            }
-          }
-          else {
-            tipp = tipps[0]
-          } 
-          break;
-        case 0:
-          log.debug("not found");
-          
-          break;
-        default:
-          if ( trimmed_url && trimmed_url.size() > 0 ) {
-            tipps = tipps.findAll { !it.url || it.url == trimmed_url };
-            log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
-          }
-        
-          def cur_tipps = tipps.findAll { it.status == status_current };
-          def ret_tipps = tipps.findAll { it.status == status_retired };
-          
-          if ( cur_tipps.size() > 0 ){
-            tipp = cur_tipps[0]
+            } 
+            break;
+          case 0:
+            log.debug("not found");
             
-            log.warn("found ${cur_tipps.size()} current TIPPs!")
-          }
-          else if ( ret_tipps.size() > 0 ) {
-            tipp = ret_tipps[0]
+            break;
+          default:
+            if ( trimmed_url && trimmed_url.size() > 0 ) {
+              tipps = tipps.findAll { !it.url || it.url == trimmed_url };
+              log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
+            }
+          
+            def cur_tipps = tipps.findAll { it.status == status_current };
+            def ret_tipps = tipps.findAll { it.status == status_retired };
             
-            log.warn("found ${ret_tipps.size()} retired TIPPs!")
-          }
-          else {
-            log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
-          }
-          break;
+            if ( cur_tipps.size() > 0 ){
+              tipp = cur_tipps[0]
+              
+              log.warn("found ${cur_tipps.size()} current TIPPs!")
+            }
+            else if ( ret_tipps.size() > 0 ) {
+              tipp = ret_tipps[0]
+              
+              log.warn("found ${ret_tipps.size()} retired TIPPs!")
+            }
+            else {
+              log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
+            }
+            break;
+        }
       }
 
       if ( !tipp ) {
         log.debug("Creating new TIPP..")
-        tipp = tiplAwareCreate(['pkg': pkg, 'title': ti, 'hostPlatform': plt, 'url': trimmed_url]).save(failOnError: true)
+        def tmap = [
+          'pkg': pkg,
+          'title': ti,
+          'hostPlatform': plt,
+          'url': trimmed_url,
+          'uuid': (tipp_dto.uuid ?: null),
+          'status': (tipp_dto.status ?: null),
+          'editStatus': (tipp_dto.editStatus ?: null)
+        ]
+
+        tipp = tiplAwareCreate(tmap)
         // Hibernate problem
 
         if (!tipp){
@@ -298,7 +371,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if ( tipp ) {
         def changed = false
-        if (plt.status != status_current) {
+        if ( tipp.status == status_current && plt.status != status_current ) {
           log.warn("TIPP platform is marked as ${plt.status?.value}!")
           ReviewRequest.raise(
             tipp,
@@ -307,11 +380,8 @@ class TitleInstancePackagePlatform extends KBComponent {
             user
           )
         }
-        if (tipp_dto.status && tipp_dto.status == "Retired") {
-          tipp.retire()
-        }
-        else if ( tipp.isRetired() ) {
-          tipp.status = status_current
+
+        if ( tipp.isRetired() && tipp_dto.status == "Current" ) {
 
           ReviewRequest.raise(
             tipp,
@@ -325,7 +395,9 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           changed = true
-        }else if( tipp.isDeleted() ) {
+        }
+        else if( tipp.isDeleted() && tipp_dto.status != "Deleted" ) {
+          
           ReviewRequest.raise(
             tipp,
             "Matched TIPP was marked as Deleted.",
@@ -369,13 +441,14 @@ class TitleInstancePackagePlatform extends KBComponent {
 
           def sdfs = [
               "yyyy-MM-dd' 'HH:mm:ss.SSS",
-              "yyyy-MM-dd'T'HH:mm:ss'Z'"
+              "yyyy-MM-dd'T'HH:mm:ss'Z'",
+              "yyyy-MM-dd"
           ]
 
           def parsedStart = null
           def parsedEnd = null
 
-          if ( c.startDate?.trim().size() > 0 ) {
+          if ( c.startDate && c.startDate.trim().length() > 0 ) {
 
             sdfs.each { s ->
               try {
@@ -388,7 +461,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             }
           }
 
-          if ( c.endDate?.trim().size() > 0 ) {
+          if ( c.endDate && c.endDate.trim().length() > 0 ) {
 
             sdfs.each { s ->
               try {
@@ -402,7 +475,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
-            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp.id, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
+            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
           }
 
           def cs_match = false

@@ -8,6 +8,10 @@
   cursor: default;
 }
 
+.security-table .fa {
+	font-size: 1.75em;
+}
+
 .security-table .icon-ok-sign {
   color: #51A351;
 }
@@ -41,4 +45,16 @@
 
 .group-status {
 	width: 1px;
+}
+
+.list > table > thead > tr > th {
+	padding: 8px 10px 8px 5px;
+}
+
+.list > table > tbody > tr > td {
+	padding: 8px 10px 8px 5px;
+}
+
+.s2ui_form > form > table > tbody > tr > td {
+	padding: 8px 10px 8px 5px;
 }

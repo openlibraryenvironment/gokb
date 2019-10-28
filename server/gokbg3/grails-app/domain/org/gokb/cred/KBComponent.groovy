@@ -60,6 +60,7 @@ where cp.owner = :c
         'componentHash',
         'componentDiscriminator',
         'normname',
+        'lastSeen',
         'shortcode',
         'systemComponent',
         'insertBenchmark',
@@ -431,7 +432,7 @@ where cp.owner = :c
   }
 
   static constraints = {
-    uuid    (nullable:true, blank:false, maxSize:2048)
+    uuid    (nullable:true, unique:true, blank:false, maxSize:2048)
     name    (nullable:true, blank:false, maxSize:2048)
     shortcode  (nullable:true, blank:false, maxSize:128)
     description  (nullable:true, blank:false)
@@ -1195,12 +1196,12 @@ where cp.owner = :c
           KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
         }
         else {
-          log.error("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
+          log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
         }
 
       }
       else {
-        log.error("Unable to add ${name} as an alternate name to ${id} - it's already name for ${existing_component.id}");
+        log.debug("Unable to add ${name} as an alternate name to ${id} - it's already name for ${existing_component.id}");
       }
     }
     else {
@@ -1356,16 +1357,15 @@ where cp.owner = :c
                   ac?.notes?.each { note ->
                     result[cat_code].comment_count++;
 
-                    def comment_user_is_curator = false
-                    if ( filter == 'curator' ) {
-                    }
+                    def comment_user_is_curator = note.criterion.user.curatoryGroups?.id.intersect(this.curatoryGroups?.id)
+                    def group_intersection = note.criterion.user.groupMemberships?.intersect(currentUser.groupMemberships)
 
                     // Control comment inclusion based on filter
                     if ( 
                            ( filter == null ) || ( filter=='all' ) || ( filter == '' ) ||                                // NO filter == everything
-                         ( ( filter == 'mylib' )    && (  note.criterion.user.org == currentUser.org ) ) ||              // User only wants comments from their own org
-                         ( ( filter == 'otherlib' ) && ( note.criterion.user.org != currentUser.org ) ) ||               // HEIs other than the users
-                         ( ( filter == 'vendor' )   && ( note.criterion.user.org?.mission?.value == 'Commercial' ) ) ||  // Filter to vendor comments
+                         ( ( filter == 'mylib' )    && ((  note.criterion.user.org == currentUser.org ) || group_intersection )) ||              // User only wants comments from their own org
+                         ( ( filter == 'otherlib' ) && ( note.criterion.user.org != currentUser.org ) && !group_intersection ) ||               // HEIs other than the users
+                         ( ( filter == 'vendor' )   && ( note.criterion.user.org?.mission?.value == 'Commercial' || note.criterion.user.groupMemberships?.collect { it.mission?.value == 'Commercial'} )) ||  // Filter to vendor comments
                          ( ( filter == 'curator' )  && comment_user_is_curator )                                         // User is a curator
                        ) { 
                       if (!note.isDeleted )
@@ -1413,13 +1413,17 @@ where cp.owner = :c
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component",[component:this]);
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component",[component:this]);
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component",[component:this]);
+    KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component",[component:this])
+
     this.delete(flush:true, failOnError:true)
     result;
   }
 
   @Transient
   def addCoreGOKbXmlFields(builder, attr) {
-    def cids = this.ids ?: []
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids')
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def cids = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[this,refdata_ids,status_active],[readOnly:true])
     String cName = this.class.name
     
     // Singel props.
@@ -1431,7 +1435,7 @@ where cp.owner = :c
     // Identifiers
     builder.'identifiers' {
       cids?.each { tid ->
-        builder.'identifier' ('namespace':tid?.namespace?.value, 'value':tid?.value)
+        builder.'identifier' ('namespace':tid[0], 'value':tid[1], 'type':tid[2])
       }
       if ( grailsApplication.config.serverUrl || grailsApplication.config.baseUrl ) {
         builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl ?: grailsApplication.config.baseUrl}/resource/show/${cName}:${id}")

@@ -17,6 +17,7 @@ import groovy.json.JsonSlurper
 
 import com.gargoylesoftware.htmlunit.*
 
+import java.time.Instant
 
 import org.apache.http.entity.mime.content.StringBody
 
@@ -36,10 +37,15 @@ abstract class GOKbSyncBase extends Script {
   def sourceResponseType = XML
   
   String targetBase = 'http://localhost:8080/'
+  String sourceContext = '/gokb'
+  String targetContext = '/gokb'
   def targetResponseType = JSON
   
   // More data defaults to true.
   def moredata = true
+  def total = 0
+  def errors = 0
+  def params = [:]
   
   /** None-config vals below **/
   private HTTPBuilder source
@@ -53,6 +59,9 @@ abstract class GOKbSyncBase extends Script {
       // Create the target.
       target = new HTTPBuilder(targetBase, targetResponseType)
       target.auth.basic config.uploadUser, config.uploadPass
+
+      target.getClient().getParams().setParameter("http.connection.timeout", 30000)
+      target.getClient().getParams().setParameter("http.socket.timeout", 1500000)
     }
     
     target
@@ -80,8 +89,28 @@ abstract class GOKbSyncBase extends Script {
         sourceBase = config.sourceBase
       }
 
+      if (config.sourceContext != null) {
+        sourceContext = config.sourceContext
+      }
+
+      println("Using source ${sourceBase} with context path '${sourceContext}'")
+
       if (config.targetBase) {
         targetBase = config.targetBase
+      }
+
+      if (config.targetContext != null) {
+        targetContext = config.targetContext
+      }
+
+      println("Using target ${targetBase} with context path '${targetContext}'")
+
+      if (!config.uploadUser || !config.uploadPass) {
+        println("The provided config file does not include user credentials!")
+        println("Please enter your credentials for ${targetBase}")
+
+        config.uploadUser = System.console().readLine ('Enter your username: ').toString()
+        config.uploadPass = System.console().readPassword ('Enter your password: ').toString()
       }
     }
     else {
@@ -105,7 +134,7 @@ abstract class GOKbSyncBase extends Script {
     cfg_file.delete()
     config.remove('deferred')
     
-    cfg_file << toJson(config)
+    cfg_file << prettyPrint(toJson(config))
   }
   
   protected cleanText(String text) {
@@ -129,12 +158,26 @@ abstract class GOKbSyncBase extends Script {
           if (parameters['body']) {
             body = parameters['body']
           }
+
+          println("${uri}")
       
           response.success = { resp, data ->
-            println "Success! ${resp.status} ${data.message}"
+            println "${data.result ?: 'SUCCESS'} - ${resp.status} ${data.message}"
             if (successClosure) {
               successClosure (resp, data)
             }
+
+            if (data.result && data.result == "ERROR") {
+              errors++
+
+              if (data.errors) {
+                data.errors.each { e ->
+                  println "       - ${e}"
+                }
+              }
+            }
+
+            total++
             
             returnData = [
               result : data,
@@ -147,7 +190,7 @@ abstract class GOKbSyncBase extends Script {
               result : "Failed on http request to source (see stack trace)",
               status : 'error'
             ]
-            println(err)
+            println("ERROR: ${err.getStatus()} - ${err.getContentType()} -- ${err.getData()}")
           }
         }
       }
@@ -169,11 +212,17 @@ abstract class GOKbSyncBase extends Script {
   protected Map fetchFromSource(Map parameters = [:], def successClosure = null) {
 
     def returnData
+
+    println("${this.args}")
     
     if (!parameters.containsKey('query')) {
       parameters['query'] = [verb: 'ListRecords', metadataPrefix: 'gokb']
     }
     if (config.resumptionToken) parameters['query']['resumptionToken'] = config.resumptionToken
+
+    if (config.lastRun && (!config.resumptionToken || config.resumptionToken.size() == 0) && this.args?.size() > 0 && this.args.contains('--update') ) {
+      parameters['query']['from'] = config.lastRun
+    }
     
     boolean success = false // flag to terminate loop.
     while (!success) {
@@ -277,7 +326,7 @@ abstract class GOKbSyncBase extends Script {
             addTo[f] = val;
           } 
           else if ( !val ) { 
-            println("skipping empty field ${f}")
+            // println("skipping empty field ${f}")
           }
           else if ( addTo[f] ) {
             println("skipping duplicate field ${f}")
@@ -301,8 +350,15 @@ abstract class GOKbSyncBase extends Script {
         data.identifiers?.identifier?.each {
           
           // Only include namespaces that are not 'originEditUrl'
-          if ( !['originEditUrl'].contains(cleanText(it.'@namespace'.text())) )
-            ids.add( [ type:it.'@namespace'.text(), value: cleanText(it.'@value'?.text()) ] )
+          if ( cleanText(it.'@namespace'.text()).toLowerCase() != 'originediturl' ) {
+            def final_val = cleanText(it.'@value'?.text())
+
+            if (it.'@namespace'.text() == 'zdb' && final_val?.trim() && !final_val.contains('-')) {
+              final_val = final_val.substring(0,final_val.length()-2) + "-" + final_val[-1..-1]
+            }
+
+            ids.add( [ type:it.'@namespace'.text(), value: final_val ] )
+          }
         }
         
         if (ids) {
@@ -356,6 +412,20 @@ abstract class GOKbSyncBase extends Script {
     }
     
     addTo
+  }
+
+  protected setLastRun() {
+
+    if (config.lastTimestamp) {
+      Instant lastTimestamp = Instant.parse(config.lastTimestamp)
+
+      if (config.lastRun && Instant.parse(config.lastRun) == lastTimestamp) {
+        config.lastRun = lastTimestamp.plusSeconds(1).toString()
+      }
+      else {
+        config.lastRun = config.lastTimestamp
+      }
+    }
   }
   
   private def cleanup() {

@@ -9,15 +9,23 @@ boolean includeTipps = true
 while ( moredata ) {
   
   def resources = []
-  fetchFromSource (path: '/gokb/oai/packages') { resp, body ->
+  def status = null
 
-    body?.'ListRecords'?.'record'.metadata.gokb.package.eachWithIndex { data, index ->
+  fetchFromSource (path: "${sourceContext}/oai/packages") { resp, body ->
+
+    body?.'ListRecords'?.'record'.eachWithIndex { rec, index ->
+
+      def data = rec.metadata.gokb.package
 
       println("Record ${index + 1}")
       def resourceFieldMap = [
         packageHeader : directAddFields (data, ['scope', 'listStatus', 'breakable' ,'consistent', 'fixed', 'paymentType',
-        'global', 'listVerifier', 'userListVerifier', 'nominalPlatform', 'nominalProvider', 'listVerifiedDate'], addCoreItems ( data ) )
+        'global', 'listVerifier', 'userListVerifier', 'nominalProvider', 'listVerifiedDate'], addCoreItems ( data ) )
       ]
+
+      resourceFieldMap.packageHeader['nominalPlatform'] = [name: data.nominalPlatform.name.text(),
+                                          primaryUrl: data.nominalPlatform.primaryUrl.text(),
+                                          uuid: data.nominalPlatform.'@uuid'.text()]
       
       // TIPPs
       resourceFieldMap.tipps = []
@@ -26,9 +34,9 @@ while ( moredata ) {
         data.TIPPs.TIPP.each { xmltipp ->
           
           // TIPP.
-          def newtipp = directAddFields (data, ['medium', 'url'], addCoreItems ( xmltipp ))
-          newtipp.accessStart = cleanText( xmltipp.access.'@start'.text() )
-          newtipp.accessEnd = cleanText( xmltipp.access.'@end'.text() )
+          def newtipp = directAddFields (xmltipp, ['medium', 'url'], addCoreItems ( xmltipp ))
+          newtipp.accessStartDate = cleanText( xmltipp.access.'@start'.text() )
+          newtipp.accessEndDate = cleanText( xmltipp.access.'@end'.text() )
           
           // Coverage
           newtipp.coverage = []
@@ -47,19 +55,32 @@ while ( moredata ) {
           
           // Title.
           newtipp.title = addCoreItems ( xmltipp.title )
+
+          String type = "${cleanText(xmltipp.title.type?.text())}"
+
+          if (!type || type == 'JournalInstance' || type == 'Serial') {
+            newtipp.title.type = 'Serial'
+          }
+          else if (type == 'DatabaseInstance') {
+            newtipp.title.type = 'Database'
+          }
+          else if (type == 'BookInstance'|| type == 'Monograph') {
+            newtipp.title.type = 'Book'
+          }
   
           newtipp.platform = directAddFields (xmltipp.platform, ['primaryUrl'], addCoreItems ( xmltipp.platform ))
   
           resourceFieldMap['tipps'].add(newtipp);
         }
       }
-      
+      config.lastTimestamp = rec.header.datestamp.text()
+
       resources.add(resourceFieldMap)
     }
   }
-  
+
   resources.each {
-    sendToTarget (path: '/gokb/integration/crossReferencePackage', body: it)
+    sendToTarget (path: "${targetContext}/integration/crossReferencePackage", body: it)
   }
   
   Thread.sleep(1000)
@@ -67,3 +88,8 @@ while ( moredata ) {
   // Save the config.
   saveConfig()
 }
+
+setLastRun ()
+saveConfig ()
+
+println("Total: ${total}, Errors: ${errors}")

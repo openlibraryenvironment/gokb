@@ -75,8 +75,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
   
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
     
         result.componentType=kbc.class.simpleName
@@ -111,8 +111,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
   
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
   
         result.componentType=kbc.class.simpleName
@@ -145,8 +145,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
 
         result.componentType=kbc.class.simpleName
@@ -163,6 +163,7 @@ class FTUpdateService {
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
+        result.contentType = kbc.contentType?.value
         result.description = kbc.description
         result.descriptionURL = kbc.descriptionURL
         result.sortname = kbc.name
@@ -174,7 +175,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
         result.updater='pkg'
-        result.titleCount = "${kbc.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'}"
+        result.titleCount = kbc.currentTippCount
 
         result.cpname = kbc.provider?.name
 
@@ -193,8 +194,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
 
         result.componentType=kbc.class.simpleName
@@ -238,6 +239,7 @@ class FTUpdateService {
             cst.endIssue = tcs.endIssue ?: ""
             cst.embargo = tcs.embargo ?: ""
             cst.coverageNote = tcs.coverageNote ?: ""
+            cst.coverageDepth = tcs.coverageDepth ?: ""
 
             result.coverage.add(cst)
           }
@@ -261,6 +263,7 @@ class FTUpdateService {
   
       updateES(esclient, org.gokb.cred.Org.class) { kbc ->
         def result = [:]
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
@@ -269,6 +272,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
 
         result.roles = []
         kbc.roles.each { role ->
@@ -278,8 +282,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
 
         result.componentType=kbc.class.simpleName
@@ -289,6 +293,7 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.Platform.class) { kbc ->
         def result = [:]
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
@@ -298,6 +303,7 @@ class FTUpdateService {
 
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
 
         result.altname = []
         kbc.variantNames.each { vn ->
@@ -308,8 +314,8 @@ class FTUpdateService {
         result.status = kbc.status?.value
         
         result.identifiers = []
-        kbc.ids.each { identifier ->
-          result.identifiers.add([namespace:identifier.namespace.value, value:identifier.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
         }
 
         result.componentType=kbc.class.simpleName

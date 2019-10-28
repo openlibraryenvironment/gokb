@@ -17,6 +17,10 @@ class Party {
 
   String displayName
 
+  // Timestamps
+  Date dateCreated
+  Date lastUpdated
+
   static hasMany = [
     memberships: UserOrganisationMembership
   ]

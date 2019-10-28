@@ -1,13 +1,27 @@
 node {
-
+  jdk = tool name: 'OracleJava8'
+  env.JAVA_HOME = "${jdk}"
 
   stage('Test') {
-    sh './gradlew --no-daemon --console plain clean test-app'
+    checkout scm
+    dir ('server/gokbg3') {
+      sh './gradlew --no-daemon --console plain test'
+    }
   }
 
   stage('Build') {
-    sh './gradlew --no-daemon --console plain clean war'
-    exports = findFiles glob: 'build/libs/*.jar'
+    dir ('server/gokbg3') {
+//      def props = readProperties file: 'gradle.properties'
+      sh './gradlew --no-daemon --console plain war'
+    }
   }
 
+  stage('Deploy') {
+     dir ('server/gokbg3') {
+        def props = readProperties file: 'gradle.properties'
+//        sh "echo ${props.appVersion}"
+        sh "cp build/libs/gokbg3-${props.appVersion}.war /opt/laser/apache-tomcat/default/webapps/gokb.${props.appVersion}#${BUILD_NUMBER}.${env.BRANCH_NAME}.war.bak"
+        sh "cp build/libs/gokbg3-${props.appVersion}.war /opt/laser/apache-tomcat/default/webapps/gokb.war"
+     }
+  }
 }

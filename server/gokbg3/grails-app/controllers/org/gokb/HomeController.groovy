@@ -2,7 +2,7 @@ package org.gokb
 
 import org.springframework.security.access.annotation.Secured
 import grails.util.GrailsNameUtils
-
+import grails.converters.JSON
 import org.gokb.cred.*
 import org.hibernate.transform.AliasToEntityMapResultTransformer
 
@@ -187,9 +187,25 @@ class HomeController {
   def profile() {
     def result = [:]
     User user = springSecurityService.currentUser
-    result.user = user
-    result.curator = [user]
-    result
+
+    withFormat {
+      html {
+        result.user = user
+        result.curator = [user]
+
+        result
+      }
+      json {
+        def cur_groups = []
+
+        user.curatoryGroups?.each { cg ->
+          cur_groups.add([name: cg.name, id: cg.id, uuid: cg.uuid])
+        }
+
+        result = ['id': user.id, 'username': user.username, 'displayName': user.displayName, 'email': user.email, 'curatoryGroups': cur_groups]
+        render result as JSON
+      }
+    }
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])

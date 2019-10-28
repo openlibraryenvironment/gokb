@@ -11,6 +11,7 @@ class UserOrganisation extends Party {
 
   
   User owner
+  RefdataValue mission
 
   static constraints = {
     owner (nullable:true, blank:false)

@@ -55,6 +55,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/register/**',             access: ['permitAll']],
   [pattern: '/packages/**',             access: ['permitAll']],
   [pattern: '/public/**',               access: ['permitAll']],
+  [pattern: '/component/identifierConflicts', access: ['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/public',                  access: ['permitAll']],
   [pattern: '/globalSearch/**',         access: ['ROLE_USER']],
   [pattern: '/home/**',                 access: ['ROLE_USER']],
@@ -150,7 +151,7 @@ globalSearchTemplates = [
          'qparam':'qp_onlyCurrent', 'default':'on', 'cat':'KBComponent.Status', 'type': 'java.lang.Object']
       ],
       qbeResults:[
-        [heading:'Type', property:'class.simpleName'],
+        [heading:'Type', property:'niceName'],
         [heading:'Name/Title', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Status', property:'status?.value',sort:'status'],
         [heading:'Edit Status', property:'editStatus?.value',sort:'editStatus'],
@@ -206,6 +207,15 @@ globalSearchTemplates = [
           qparam:'qp_global',
           placeholder:'Availability',
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'global'],
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'Package.ContentType',
+          prompt:'Content Type',
+          qparam:'qp_content',
+          placeholder:'Content Type',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'contentType'],
         ],
         [
           type:'lookup',
@@ -711,7 +721,9 @@ globalSearchTemplates = [
   'Users':[
     baseclass:'org.gokb.cred.User',
     title:'Users',
-    group:'Secondary',
+    group:'Admin',
+    defaultSort:'id',
+    defaultOrder:'asc',
     qbeConfig:[
       qbeForm:[
         [
@@ -725,7 +737,11 @@ globalSearchTemplates = [
       ],
       qbeResults:[
         [heading:'Username', property:'username', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
-        [heading:'Created', property:'dateCreated', sort:'dateCreated'],
+        [heading:'Enabled', property:'enabled'],
+        [heading:'Contributor', property:'contributorStatus'],
+        [heading:'Editor', property:'editorStatus'],
+        [heading:'API-User', property:'apiUserStatus'],
+        [heading:'Admin', property:'adminStatus']
         // [heading:'Username', property:'username', link:[controller:'search',action:'index',params:'x.params+[\'det\':x.counter]']]
       ]
     ]

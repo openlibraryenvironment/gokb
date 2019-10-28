@@ -39,10 +39,12 @@ class ErrorController {
     def resp = [code: 403, message:'Forbidden']
     withFormat {
       html {
+        log.debug("Rendering HTML 403")
         redirect (uri:'login/denied', params:[status:403])
       }
       json {
-        response.sendError(401)
+        log.debug("Rendering JSON 403")
+        response.sendError(403)
         render resp as JSON
       }
     }
@@ -52,11 +54,27 @@ class ErrorController {
     def resp = [code: 401, message:'Unauthorized']
     withFormat {
       html {
-        log.debug("Got html request..")
+        log.debug("Rendering HTML 401")
         forward controller: 'login', action: 'denied', params:(params)
       }
       json {
+        log.debug("Rendering JSON 401")
         response.sendError(401)
+        render resp as JSON
+      }
+    }
+  }
+
+  def badRequest() {
+    def resp = [code: 400, message:'Bad Request']
+    withFormat {
+      html {
+        log.debug("Rendering HTML 400")
+        forward controller: 'login', action: 'denied', params:(params)
+      }
+      json {
+        log.debug("Rendering JSON 400")
+        response.sendError(400)
         render resp as JSON
       }
     }

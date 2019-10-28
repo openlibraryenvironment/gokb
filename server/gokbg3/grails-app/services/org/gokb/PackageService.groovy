@@ -1,5 +1,8 @@
 package org.gokb
 
+import com.k_int.ConcurrencyManagerService.Job
+import grails.gorm.transactions.Transactional
+
 import org.gokb.cred.*
 import org.hibernate.Session
 
@@ -348,6 +351,65 @@ class PackageService {
 
     log.debug("Found ${results.size()} providers.")
     results
+  }
+
+  @Transactional
+  public def generatePackageTypes(Job j = null) {
+    log.debug("Generating missing package content types.")
+    def result = [book:0, db:0, journal:0, mixed:0, errors:0]
+    def pkg_list = Package.executeQuery("select id from Package where contentType is null")
+    def msg_list = []
+    def rdv_journal = RefdataCategory.lookup("TitleInstance.Medium", "Journal")
+    def rdv_book = RefdataCategory.lookup("TitleInstance.Medium", "Book")
+    def rdv_db = RefdataCategory.lookup("TitleInstance.Medium", "Database")
+    def ctr = 0
+
+    for (pkg in pkg_list) {
+
+      Package.withNewTransaction {
+
+        def pkg_obj = Package.get(pkg)
+        def has_db = pkg_obj.tipps.title.find { it.medium == rdv_db }
+        def has_journal = pkg_obj.tipps.title.find { it.medium == rdv_journal }
+        def has_book = pkg_obj.tipps.title.find { it.medium == rdv_book }
+
+        if ( has_db && !has_journal && !has_book ) {
+          pkg_obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Database')
+          result.db++
+        }
+        else if ( has_journal && !has_db && !has_book ) {
+          pkg_obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Journal')
+          result.journal++
+        }
+        else if ( has_book && !has_db && !has_journal ) {
+          pkg_obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Book')
+          result.book++
+        }
+        else if ( has_book && has_journal ) {
+          pkg_obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Mixed')
+          result.mixed++
+        }
+        else if (!has_book && !has_journal && !has_db) {
+          log.debug("No content to categorize for ${pkg_obj.name}")
+        }
+        else {
+          def msg = "Found illegal package composition for ${pkg_obj.name} (journals: ${has_journal}, db: ${has_db}, book: ${has_book})!"
+          log.warn(msg)
+          result.errors++
+          msg_list.add(msg)
+        }
+        ctr++
+        j.setProgress(ctr, pkg_list.size())
+      }
+    }
+
+    j.message("Finished creating ${ctr} new types (${result.errors} errors).".toString())
+
+    msg_list.each {
+      j.message(it.toString())
+    }
+
+    j.endTime = new Date()
   }
 
   @javax.annotation.PreDestroy

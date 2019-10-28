@@ -121,7 +121,7 @@
 
     <g:if test="${d.id}">
       <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
-      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids?.size() ?: '0'} </span></a></li>
+      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a></li>
       <li><a href="#publishers" data-toggle="tab">Publishers <span
           class="badge badge-warning">
             ${d.publisher?.size() ?: '0'}
@@ -142,7 +142,7 @@
           class="badge badge-warning">
             ${d.reviewRequests?.size() ?: '0'}
         </span></a></li>
-      <g:if test="${grailsApplication.config.gokb.decisionSupport}" >
+      <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}" >
         <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       </g:if>
       <g:if test="${grailsApplication.config.gokb.handleSubjects}" >
@@ -157,7 +157,7 @@
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Platforms </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Custom Fields </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Tasks </span></li>
-      <g:if test="${grailsApplication.config.gokb.decisionSupport}" >
+      <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}" >
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Decision Support </span></li>
       </g:if>
       <g:if test="${grailsApplication.config.gokb.handleSubjects}" >

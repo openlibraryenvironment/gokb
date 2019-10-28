@@ -1,11 +1,11 @@
 package org.gokb
 
-import org.gokb.cred.*
+import com.k_int.ConcurrencyManagerService.Job
+import grails.gorm.DetachedCriteria
 import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.delete.DeleteRequest
 import org.elasticsearch.client.Requests
-import com.k_int.ConcurrencyManagerService.Job
-import grails.gorm.DetachedCriteria
+import org.gokb.cred.*
 
 class CleanupService {
   def sessionFactory
@@ -142,6 +142,15 @@ class CleanupService {
     return result
   }
 
+  def esDelete(oid) {
+    DeleteRequest req = Requests.deleteRequest(grailsApplication.config.gokb?.es?.index ?: "gokbg3")
+          .type('component')
+          .id(oid)
+
+    def es_response = esclient.delete(req)
+    return es_response
+  }
+
   @Transactional
   def deleteOrphanedTipps(Job j = null) {
     log.debug("Expunging TIPPs with missing links")
@@ -257,9 +266,9 @@ class CleanupService {
   def ensureUuids(Job j = null)  {
     log.debug("GOKb missing uuid check..")
     def ctr = 0
-    def skipped = 0
+    def skipped = []
     KBComponent.withNewSession {
-      KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").eachWithIndex { kbc_id ->
+      KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").each { kbc_id ->
         try {
           KBComponent comp = KBComponent.get(kbc_id)
           log.debug("Repair component with no uuid.. ${comp.class.name} ${comp.id} ${comp.name}")
@@ -270,20 +279,27 @@ class CleanupService {
           comp.discard()
           ctr++
         }
+        catch(grails.validation.ValidationException ve){
+          log.error("ensureUuids :: Skip component id ${kbc_id} because of validation")
+          log.error("${ve.errors}")
+          skipped.add(kbc_id)
+          skipped++
+        }
         catch(Exception e){
-          log.debug("ensureUuids :: Skip component id ${kbc_id}")
-          log.debug("${e}")
-          result.skipped.add(kbc_id)
+          log.error("ensureUuids :: Skip component id ${kbc_id}")
+          log.error("${e}")
+          skipped.add(kbc_id)
           skipped++
         }
       }
     }
     log.debug("ensureUuids :: ${ctr} components updated with uuid");
 
-    if (skipped > 0) log.debug("${skipped} components skipped when updating with uuid");
+    j.message("Finished adding missing uuids (total: ${ctr}, skipped: ${skipped.size()})".toString())
+
+    if (skipped > 0) log.error("ensureUuids :: ${skipped.size()} components skipped when updating with uuid");
 
     j.endTime = new Date()
-    j.message("Finished adding missing uuids (total: ${ctr}, skipped: ${skipped})".toString())
   }
 
   @Transactional
@@ -638,5 +654,40 @@ class CleanupService {
     def session = sessionFactory.currentSession
     session.flush()
     session.clear()
+  }
+
+  def rejectWrongTitles(Job job) {
+    log.debug("GOKb mark wrong titles for deletion")
+    def ctr = 0
+    def tick=TitleInstance.withNewSession {
+      def deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
+      def tipps_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+
+      def res = TitleInstance.executeUpdate("update TitleInstance as title set title.status = :ds where title.id not in " +
+              "(select fromComponent.id from Combo where type = :tc)" +
+              " and title.id not in " +
+              "(select participant.id from ComponentHistoryEventParticipant)",[ds: deleted_status, tc: tipps_combo])
+
+      job.message("${res} titles set to status 'Deleted'")
+    }
+    job.endTime = new Date()
+  }
+
+  def rejectNoIdTitles(Job job) {
+    log.debug("GOKb mark titles without IDs & TIPPs for deletion")
+    def ctr = 0
+    def tick=TitleInstance.withNewSession {
+      def rejected_status = RefdataCategory.lookup('KBComponent.EditStatus', KBComponent.EDIT_STATUS_REJECTED)
+      def tipps_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+      def ids_combo = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+
+      def res = TitleInstance.executeUpdate("update TitleInstance as title set title.editStatus = :ds where title.id not in " +
+              "(select fromComponent.id from Combo where type = :tc)" +
+              " and title.id not in " +
+              "(select fromComponent.id from Combo where type = :ic)",[ds: rejected_status, tc: tipps_combo, ic:ids_combo])
+
+      job.message("${res} titles set to editStatus 'Rejected'")
+    }
+    job.endTime = new Date()
   }
 }

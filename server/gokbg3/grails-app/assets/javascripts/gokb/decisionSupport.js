@@ -43,14 +43,29 @@ function setAppliedCriterion(target, component_id, criterion_id, v ,c) {
               authorComment.addClass("border-" + c +" text-" + c);
           }
       });
-        var newNotes = $(".newNoteContainer");
-        if(newNotes) {
-            newNotes.each(function () {
-                var element = $(this);
-                element.removeClass(removeClasses + " border-neutral border-negative border-contentious border-positive");
-                element.addClass("border-" + c + " text-" + c);
-            });
+
+      var newNotes = $(".newNoteContainer");
+      if(newNotes) {
+          newNotes.each(function () {
+              var element = $(this);
+              element.removeClass(removeClasses + " border-neutral border-negative border-contentious border-positive");
+              element.addClass("border-" + c + " text-" + c);
+          });
+      }
+
+      if ( !data.changedFrom || data.changedFrom != v ) {
+        var selectedCount = target.parents(".DSVote").siblings(".otherVoters").find(".count-" + v);
+        var addedNew = 1 + + selectedCount.text();
+        
+        selectedCount.text(addedNew.toString());
+
+        if ( data.changedFrom ) {
+          var oldCount = target.parent().next().find('.count-' + data.changedFrom);
+          var removedNew = -1 + + oldCount.text();
+          
+          oldCount.text(removedNew.toString());
         }
+      }
     }
   });
 }

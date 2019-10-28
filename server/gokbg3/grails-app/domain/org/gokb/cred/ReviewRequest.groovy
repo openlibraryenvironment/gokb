@@ -81,6 +81,11 @@ class ReviewRequest implements Auditable {
         ).save(failOnError:true);
 
     // Just return the request.
+
+    if ( req && raisedBy ) {
+      new ReviewRequestAllocationLog(allocatedTo:raisedBy, rr:req).save(failOnError:true)
+    }
+
     req
   }
 
@@ -137,6 +142,11 @@ class ReviewRequest implements Auditable {
       result = JSON.parse(additionalInfo);
     }
     result;
+  }
+
+  def getAllocationLog() {
+    def result = ReviewRequestAllocationLog.executeQuery("from ReviewRequestAllocationLog where rr = ?",[this])
+    result
   }
 
   @Transient

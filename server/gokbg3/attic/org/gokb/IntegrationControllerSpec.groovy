@@ -10,7 +10,10 @@ import grails.transaction.*
 import spock.lang.*
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.Rollback;
-
+import grails.plugins.rest.client.RestBuilder
+import grails.plugins.rest.client.RestResponse
+import grails.converters.JSON
+import grails.core.GrailsApplication
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.web.context.WebApplicationContext
 import org.springframework.web.context.request.RequestContextHolder
@@ -21,10 +24,10 @@ import org.springframework.mock.web.MockMultipartHttpServletRequest
  * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
  */
 @Integration
+@Rollback
 class IntegrationControllerSpec extends Specification {
 
-    // Stop grails from rolling back the transaction at the end of each call
-    static transactional = false
+    GrailsApplication grailsApplication
 
     @Autowired
     WebApplicationContext ctx
@@ -40,32 +43,32 @@ class IntegrationControllerSpec extends Specification {
     }
 
     void "Test assertGroup"() {
-      IntegrationController c = new IntegrationController()
-      given "A JSON object containing a curatory group"
+
+      when: "Caller asks for this record to be cross referenced"
         def json_record = [
           "name" : "TestGroup1"
         ]
-      when: "Caller asks for this record to be cross referenced"
-        c.request.JSON = json_record
-        c.assertGroup()
-        println(c.response.json)
-        def response = c.response.json
+        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertGroup") {
+          auth 'admin', 'admin'
+          contentType = 'application/json'
+          content = json(json_record)
+        }
         // Give the background updates time to complete
         synchronized(this) {
           Thread.sleep(500)
         }
       then: "The item is created up as it does not already exist"
-        response.message != null
-        response.message.startsWith('Created')
+        resp.JSON.message != null
+        resp.JSON.message.startsWith('Created')
       expect: "Find item by name only returns one item"
-        def matching_groups = Platform.executeQuery('select cg from CuratoryGroup as cg where cg.name = :n',[n:json_record.name]);
+        def matching_groups = CuratoryGroup.executeQuery('select cg from CuratoryGroup as cg where cg.name = :n',[n:json_record.name]);
         matching_platforms.size() == 1
         matching_platforms[0].id = response.platformId
     }
 
     void "Test assertOrg :: Import new Org"() {
-      IntegrationController c = new IntegrationController()
-      given "A JSON object containing a organisation that is not yet in the database"
+
+      when: "Caller asks for this record to be cross referenced"
         def json_record = [
           "identifiers" : [
             [
@@ -75,18 +78,18 @@ class IntegrationControllerSpec extends Specification {
           ],
           "name" : "American Chemical Society"
         ]
-      when: "Caller asks for this record to be cross referenced"
-        c.request.JSON = json_record
-        c.assertOrg()
-        println(c.response.json)
-        def response = c.response.json
+        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertOrg") {
+          auth 'admin', 'admin'
+          contentType = 'application/json'
+          content = json(json_record)
+        }
         // Give the background updates time to complete
         synchronized(this) {
           Thread.sleep(500)
         }
       then: "The item is created up as it does not already exist"
-        response.message != null
-        response.message.startsWith('Added')
+        resp.JSON.message != null
+        resp.JSON.message.startsWith('Added')
       expect: "Find item by name only returns one item"
         def matching_groups = Platform.executeQuery('select o from Org as o where o.name = :n',[n:json_record.name]);
         matching_platforms.size() == 1
@@ -94,26 +97,25 @@ class IntegrationControllerSpec extends Specification {
     }
 
     void "Test crossReferencePlatform :: Import new Platform"() {
-      IntegrationController c = new IntegrationController()
 
-      given: "A JSON object containing a platform that is not yet in the database"
+      when: "Caller asks for this record to be cross referenced"
         def json_record = [
           "platformName" : "pubs.acs.org",
           "platformUrl" : "https://pubs.acs.org",
           "provider" : "American Chemical Society"
         ]
-      when: "Caller asks for this record to be cross referenced"
-        c.request.JSON = json_record
-        c.crossReferencePlatform()
-        println(c.response.json)
-        def response = c.response.json
+        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePlatform") {
+          auth 'admin', 'admin'
+          contentType = 'application/json'
+          content = json(json_record)
+        }
         // Give the background updates time to complete
         synchronized(this) {
           Thread.sleep(200)
         }
       then: "The item is created up as it does not already exist"
-        response.message != null
-        response.message.startsWith('Created')
+        resp.JSON.message != null
+        resp.JSON.message.startsWith('Created')
       expect: "Find item by name only returns one item"
         def matching_platforms = Platform.executeQuery('select p from Platform as p where p.name = :n',[n:json_record.platformName]);
         matching_platforms.size() == 1
@@ -122,25 +124,24 @@ class IntegrationControllerSpec extends Specification {
     }
 
     void "Test crossReferencePlatform :: Platform name matching"() {
-      IntegrationController c = new IntegrationController()
 
-      given: "A JSON object containing a platform that is already in the database"
+      when: "Caller asks for this record to be cross referenced"
         def json_record = [
           "platformName" : "pubs.acs.org",
           "platformUrl" : "https://pubs.acs.org"
         ]
-      when: "Caller asks for this record to be cross referenced"
-        c.request.JSON = json_record
-        c.crossReferencePlatform()
-        println(c.response.json)
-        def response = c.response.json
+        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePlatform") {
+          auth 'admin', 'admin'
+          contentType = 'application/json'
+          content = json(json_record)
+        }
         // Give the background updates time to complete
         synchronized(this) {
           Thread.sleep(200)
         }
       then: "The item is looked up"
-        response.message != null
-        response.message.startsWith('Created')
+        resp.JSON.message != null
+        resp.JSON.message.startsWith('Created')
       expect: "Find item by name only returns one item"
         def matching_platforms = Platform.executeQuery('select p from Platform as p where p.name = :n',[n:json_record.platformName]);
         matching_platforms.size() == 1
@@ -148,8 +149,8 @@ class IntegrationControllerSpec extends Specification {
     }
 
     void "Test crossReferenceTitle (JOURNAL) Case 1"() {
-      IntegrationController c = new IntegrationController()
-      given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
+
+      when: "Caller asks for this record to be cross referenced"
         def json_record = [
           "identifiers" : [
             [
@@ -178,18 +179,18 @@ class IntegrationControllerSpec extends Specification {
           ],
           "type" : "Serial"
         ]
-      when: "Caller asks for this record to be cross referenced"
-        c.request.JSON = json_record
-        c.crossReferenceTitle()
-        log.debug(c.response.json)
-        def response = c.response.json
+        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
+          auth 'admin', 'admin'
+          contentType = 'application/json'
+          content = json(json_record)
+        }
         // Give the background updates time to complete
         synchronized(this) {
-          Thread.sleep(4000)
+          Thread.sleep(2000)
         }
       then: "The item is created in the database because it does not exist"
-        response.message != null
-        response.message.startsWith('Created')
+        resp.JSON.message != null
+        resp.JSON.message.startsWith('Created')
       expect: "Find item by ID can now locate that item"
         def ids = [ ['ns':'issn', 'value':'0021-8561']  ]
         def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
@@ -198,9 +199,8 @@ class IntegrationControllerSpec extends Specification {
     }
 
     void "Test crossReferencePackage :: Import new Package"() {
-      IntegrationController controller = new IntegrationController()
 
-      given: "A json package file with packageHeader and one TIPP, which are not yet present in the database"
+      when: "Caller asks for this record to be cross referenced"
         def json_record = [
           "packageHeader" : [
             "breakable" : "No",
@@ -267,18 +267,18 @@ class IntegrationControllerSpec extends Specification {
             ]
           ]
         ]
-      when: "Caller asks for this record to be cross referenced"
-        c.request.JSON = json_record
-        c.crossReferencePackage()
-        log.debug(c.response.json)
-        def response = c.response.json
+        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
+          auth 'admin', 'admin'
+          contentType = 'application/json'
+          content = json(json_record)
+        }
         // Give the background updates time to complete
         synchronized(this) {
           Thread.sleep(4000)
         }
       then: "The item is created in the database because it does not exist"
-        response.message != null
-        response.message.startsWith('Created')
+        resp.JSON.message != null
+        resp.JSON.message.startsWith('Created')
       expect: "Find pkg by name, which is connected to the new TIPP"
         def matching_pkgs = Package.findAllByName("American Chemical Society: ACS Legacy Archives")
         matching_pkgs.size() == 1
@@ -288,8 +288,8 @@ class IntegrationControllerSpec extends Specification {
     }
 
     void "Test crossReferenceTitle (BOOK) Case 1"()
-      IntegrationController c = new IntegrationController()
-      given: "A Json record representing a instance record that is not yet in the database as an instance (Or work)"
+
+      when: "Caller asks for this record to be cross referenced"
         def json_record = [
           "identifiers" : [
             [
@@ -307,18 +307,18 @@ class IntegrationControllerSpec extends Specification {
           "firstAuthor" : "J. Smith",
           "dateFirstOnline" : "2019-01-01 00:00:00.000"
         ]
-      when: "Caller asks for this record to be cross referenced"
-        c.request.JSON = json_record
-        c.crossReferenceTitle()
-        log.debug(c.response.json)
-        def response = c.response.json
+        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
+          auth 'admin', 'admin'
+          contentType = 'application/json'
+          content = json(json_record)
+        }
         // Give the background updates time to complete
         synchronized(this) {
           Thread.sleep(4000)
         }
       then: "The item is created in the database because it does not exist"
-        response.message != null
-        response.message.startsWith('Created')
+        resp.JSON.message != null
+        resp.JSON.message.startsWith('Created')
       expect: "Find item by ID can now locate that item and the discriminator is set correctly"
         def ids = [ ['ns':'isbn', 'value':'987-13-12232-23-X']  ]
         def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)

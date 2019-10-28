@@ -44,6 +44,7 @@ class ApiController {
     [
       "id"      : "${u.id}",
       "email"     : "${u.email}",
+      "username"    : "${u.username}",
       "displayName"   : "${u.displayName ?: u.username}"
     ]
   }
@@ -391,7 +392,7 @@ class ApiController {
 
         SearchRequestBuilder es_request =  esclient.prepareSearch("suggest")
 
-        es_request.setIndices(grailsApplication.config.globalSearch.indices)
+        es_request.setIndices(grailsApplication.config.gokb.es.index)
         es_request.setTypes(grailsApplication.config.globalSearch.types)
         es_request.setQuery(suggestQuery)
 
@@ -521,16 +522,13 @@ class ApiController {
       def linkedFieldParams = [:]
       def unknown_fields = []
       def other_fields = ["controller","action","max","offset","from"]
+      def direct_fields = ["cpname", "provider", "id", "uuid"]
+      def linked_fields = ["hostPlatform", "nominalPlatform", "platform", "listStatus", "role"]
       def id_params = [:]
-      def orgRoleParam = ""
-      def providerParam = ""
-      def hostPlatformId = null
-      def nominalPlatformId = null
-      def genericPlatformId = null
-      def pkgListStatus = ""
       def pkgNameSort = false
       def acceptedStatus = []
       def component_type = null
+      def date_filters = [changedSince: null, changedBefore: null]
 
       params.each { k, v ->
         if ( k == 'componentType' && v instanceof String ) {
@@ -541,45 +539,24 @@ class ApiController {
             errors['componentType'] = "Requested component type ${v} does not exist"
           }
         }
+        else if (k in direct_fields && v instanceof String) {
+          singleParams[k] = v
+        }
+
+        else if (k in linked_fields && v instanceof String) {
+          linkedFieldParams[k] = v
+        }
 
         else if (params.componentType == 'Package' && k == 'sort' && v == 'name') {
           pkgNameSort = true
-        }
-
-        else if (k == 'role' && v instanceof String ) {
-          orgRoleParam = v
         }
 
         else if ( (k == 'publisher' || k == 'currentPublisher') && v instanceof String) {
           linkedFieldParams['publisher'] = v
         }
 
-        else if ( k == 'cpname' && v instanceof String) {
-          singleParams['cpname'] = v
-        }
-
-        else if ( k == 'provider' && v instanceof String) {
-          linkedFieldParams['provider'] = v
-        }
-
         else if ( (k == 'linkedPackage' || k == 'tippPackage') && v instanceof String) {
           linkedFieldParams['tippPackage'] = v
-        }
-
-        else if (k == 'hostPlatform' && v instanceof String) {
-          hostPlatformId = v
-        }
-
-        else if (k == 'nominalPlatform' && v instanceof String) {
-          nominalPlatformId = v
-        }
-
-        else if (k == 'platform' && v instanceof String) {
-          genericPlatformId = v
-        }
-
-        else if (k == 'listStatus' && v instanceof String) {
-          pkgListStatus = v
         }
 
         else if (k == 'status') {
@@ -604,6 +581,9 @@ class ApiController {
 
           exactQuery.must(labelQuery)
         }
+        else if ((k == 'changedSince' || k == 'changedBefore') && v instanceof String) {
+          date_filters[k] = v
+        }
 
         else if (!params.label && k == "name" && v instanceof String) {
           singleParams['name'] = v
@@ -622,14 +602,6 @@ class ApiController {
           }
         }
 
-        else if ( k == "id" && v instanceof String) {
-          singleParams['_id'] = v
-        }
-
-        else if ( k == "uuid" && v instanceof String ) {
-          singleParams['uuid'] = v
-        }
-
         else if (!other_fields.contains(k)){
           unknown_fields.add(k)
         }
@@ -639,7 +611,21 @@ class ApiController {
         errors['unknown_params'] = unknown_fields
       }
 
-      if ( pkgListStatus ) {
+      if ( date_filters.changedSince || date_filters.changedBefore ) {
+        QueryBuilder dateQuery = QueryBuilders.rangeQuery("lastUpdatedDisplay")
+
+        if (date_filters.changedSince) {
+          dateQuery.gte(date_filters.changedSince)
+        }
+        if (date_filters.changedBefore) {
+          dateQuery.lt(date_filters.changedBefore)
+        }
+        dateQuery.format("yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
+
+        exactQuery.must(dateQuery)
+      }
+
+      if ( linkedFieldParams.listStatus ) {
         if ( component_type && component_type == 'Package' ) {
           singleParams['listStatus'] = pkgListStatus
         }
@@ -675,7 +661,7 @@ class ApiController {
         exactQuery.must(linkedFieldQuery)
       }
 
-      if ( orgRoleParam ) {
+      if ( linkedFieldParams['role'] ) {
         if ( component_type && component_type == 'Org') {
           singleParams['roles'] = orgRoleParam
         }
@@ -684,7 +670,7 @@ class ApiController {
         }
       }
 
-      if ( hostPlatformId ) {
+      if ( linkedFieldParams.hostPlatform ) {
         if ( component_type && component_type == 'TitleInstancePackagePlatform' ) {
           QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
 
@@ -699,7 +685,7 @@ class ApiController {
         }
       }
 
-      if ( nominalPlatformId ) {
+      if ( linkedFieldParams.nominalPlatform ) {
         if ( component_type && component_type == 'Package' ) {
           QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
 
@@ -714,7 +700,7 @@ class ApiController {
         }
       }
 
-      if ( genericPlatformId ) {
+      if ( linkedFieldParams.platform ) {
         if ( component_type ) {
 
           if( component_type == 'TitleInstancePackagePlatform' ) {
@@ -774,7 +760,7 @@ class ApiController {
       if( !errors && (singleParams || params.label || id_params || component_type) ) {
         SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
 
-        es_request.setIndices(grailsApplication.config.globalSearch.indices)
+        es_request.setIndices(grailsApplication.config.gokb.es.index)
         es_request.setTypes(grailsApplication.config.globalSearch.types)
         es_request.setQuery(exactQuery)
 
@@ -968,7 +954,7 @@ class ApiController {
     if (params.oid || params.id) {
       def obj = genericOIDService.resolveOID(params.oid ?: params.id)
 
-      if ( obj?.isReadable() ) {
+      if ( obj?.isReadable() || (obj?.class?.simpleName == 'User' && obj?.equals(springSecurityService.currentUser)) ) {
 
         if(obj.class in KBComponent) {
 
@@ -978,7 +964,13 @@ class ApiController {
         }
         else if (obj.class.name == 'org.gokb.cred.User'){
 
-          result.resource = ['id': obj.id, 'username': obj.username, 'displayName': obj.displayName, 'curatoryGroups': obj.curatoryGroups]
+          def cur_groups = []
+
+          obj.curatoryGroups?.each { cg ->
+            cur_groups.add([name: cg.name, id: cg.id])
+          }
+
+          result.resource = ['id': obj.id, 'username': obj.username, 'displayName': obj.displayName, 'curatoryGroups': cur_groups]
         }
         else {
           result.resource = obj

@@ -50,10 +50,25 @@ class IntegrationController {
     def result = [result:'OK']
     def name = request.JSON.name
     def normname = CuratoryGroup.generateNormname(name)
-    def group = CuratoryGroup.findByNormname(normname) ?: new CuratoryGroup (name: name)
+    def group = CuratoryGroup.findByNormname(normname)
+
+    if ( !group ) {
+      group = new CuratoryGroup (name: name)
+
+      if ( group.validate() ) {
+        group.save(flush:true)
+      }
+      else {
+        result.message = "Could not reference group ${name}"
+        result.errors = group.errors
+        result.result = 'ERROR'
+
+        render result as JSON
+      }
+    }
 
     // Defaults first.
-    ensureCoreData(group, request.JSON)
+    // ensureCoreData(group, request.JSON)
 
     // Find by username but do not create missing entries.
     def owner = request.JSON.owner
@@ -73,7 +88,7 @@ class IntegrationController {
       }
     }
 
-    if( group.save(flush: true, failOnError:true) ) {
+    if( group ) {
       result.message = "Created/looked up group ${group}"
       result.groupId = group.id
     }
@@ -445,36 +460,38 @@ class IntegrationController {
   private static def createOrUpdateSource( data ) {
     log.debug("assertSource, data = ${data}");
     def result=[:]
+    def source_data = data;
     result.status = true;
 
     try {
       if ( data.name ) {
-        def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name)
 
-        ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'contextualNotes',data.contextualNotes)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
-        ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
+        Source.withNewSession {
+          def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name).save(flush:true, failOnError:true)
 
-        setAllRefdata ([
-          'software', 'service'
-        ], data, located_or_new_source)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'contextualNotes',data.contextualNotes)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
 
-        setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source.id, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
-        setRefdataIfPresent(data.defaultDataFormat, located_or_new_source.id, 'defaultDataFormat', 'Source.DataFormat')
+          setAllRefdata ([
+            'software', 'service'
+          ], source_data, located_or_new_source)
 
-        ensureCoreData(located_or_new_source, data)
+          ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
+          ClassUtils.setRefdataIfPresent(data.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
 
-        log.debug("Variant names processing: ${data.variantNames}")
+          log.debug("Variant names processing: ${data.variantNames}")
 
-        // variants
-        data.variantNames.each { vn ->
-          addVariantNameToComponent(located_or_new_source, vn)
+          // variants
+          data.variantNames.each { vn ->
+            addVariantNameToComponent(located_or_new_source, vn)
+          }
+
+          result['component'] = located_or_new_source
         }
-
-        result['component'] = located_or_new_source
       }
     }
     catch ( Exception e ) {
@@ -612,26 +629,44 @@ class IntegrationController {
     }
 
     // Core refdata.
-    if (!component.status) {
-      setAllRefdata ([
-        'status', 'editStatus',
-      ], data, component)
-    }
+    setAllRefdata ([
+      'status', 'editStatus',
+    ], data, component)
 
     // Identifiers
-    if (!component.hasProperty('work')) {
-      log.debug("Identifier processing ${data.identifiers}")
-      Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
-      data.identifiers.each { ci ->
-        String testKey = "${ci.type}|${ci.value}".toString()
+    log.debug("Identifier processing ${data.identifiers}")
+    Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
+    RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
+
+    data.identifiers.each { ci ->
+      String testKey = "${ci.type}|${ci.value}".toString()
+
+      if ( ci.type && ci.value && ci.type.toLowerCase() != "originediturl") {
+
         if (!ids.contains(testKey)) {
           def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
+
           log.debug("Checking identifiers of component ${component.id}")
-          def duplicate = Combo.executeQuery("Select c.id from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ?",[canonical_identifier.id,component.id])
+
+          def duplicate = Combo.executeQuery("from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ?",[canonical_identifier.id,component.id])
+
           if(duplicate.size() == 0){
             log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
-            component.ids.add(canonical_identifier)
-          }else{
+            def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush:true, failOnError:true)
+          }
+          else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
+
+            log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
+            ReviewRequest.raise(
+              component,
+              "Review ID status.",
+              "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
+              user
+            )
+          }
+          else {
             log.debug("Identifier combo is already present, probably via titleLookupService.")
           }
 
@@ -640,14 +675,13 @@ class IntegrationController {
         }
       }
     }
-    else {
-      log.debug("skipping identifier processing for title ..")
-    }
 
     // Flags
     log.debug("Tag Processing: ${data.tags}");
+
     data.tags?.each { t ->
       log.debug("Adding tag ${t.type},${t.value}")
+
       component.addToTags(
         RefdataCategory.lookupOrCreate(t.type, t.value)
       )
@@ -706,9 +740,6 @@ class IntegrationController {
       }
     }
 
-    // Save the component so we have something to set the names against.
-    component.save(failOnError: true, flush:true)
-
     if (data.additionalProperties) {
       Set<String> props = component.additionalProperties.collect { "${it.propertyDefn?.propertyName}|${it.apValue}".toString() }
       for (Map it : data.additionalProperties) {
@@ -740,16 +771,18 @@ class IntegrationController {
     if (data.variantNames) {
       Set<String> variants = component.variantNames.collect { "${it.variantName}".toString() }
       for (String name : data.variantNames) {
-        if (!variants.contains(name)) {
+        if (name?.trim().size() > 0 && !variants.contains(name)) {
           // Add the variant name.
-          def new_variant_name = new KBComponentVariantName(variantName: name, owner: component)
-          new_variant_name.save(failOnError: true)
+          log.debug("Adding variantName ${name} to ${component} ..")
+
+          def new_variant_name = component.ensureVariantName(name)
 
           // Add to collection.
           variants << name
         }
       }
     }
+    component.save(flush:true)
   }
 
 
@@ -791,7 +824,9 @@ class IntegrationController {
                   curated_pkg = true;
                 }
 
-                if ( is_curator || !curated_pkg ) {
+                if ( is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
+                  ensureCoreData(the_pkg, json.packageHeader)
+
                   if ( the_pkg.tipps?.size() > 0 ) {
                     existing_tipps = the_pkg.tipps*.id
                     log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
@@ -803,84 +838,90 @@ class IntegrationController {
                   // Validate and upsert titles and platforms
                   json.tipps.eachWithIndex { tipp, idx ->
 
-                    TitleInstance.withNewTransaction {
+                    def title_validation = TitleInstance.validateDTO(tipp.title);
+                    valid &= title_validation.valid
 
-                      def valid_ti = TitleInstance.validateDTO(tipp.title);
-                      valid &= valid_ti
+                    if ( title_validation && !title_validation.valid ) {
+                      log.warn("Not valid after title validation ${tipp.title}");
+                      errors.add(['code': 400, 'message': "Title information for ${tipp.title.name} is not valid!" + "${title_validation.errors}", baddata: tipp.title, errors:title_validation.errors])
+                    }
+                    else {
+                      def valid_ti = true
+                      
+                      try {
+                        def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
-                      if ( !valid_ti ) {
-                        log.warn("Not valid after title validation ${tipp.title}");
-                        errors.add(['code': 400, 'message': "Title ${tipp.title.name} is not valid!"])
-                      }
-                      else {
-                        try {
-                          def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
+                        if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
 
-                          if ( ti && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
-                            tipp.title.internalId = ti.id;
-                          }
-                        }
-                        catch (grails.validation.ValidationException ve) {
-                          log.error("ValidationException attempting to cross reference title",ve);
-                          valid_ti = null
-                          valid = false
-                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp])
-                        }
-
-                        if ( valid_ti && tipp.title.internalId == null ) {
-                          log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
-                          valid = false
-                          errors.add(['code': 400, 'message': "Title ${tipp.title.name} could not be located or created!"])
-                        }
-                      }
-
-                      def valid_plt = Platform.validateDTO(tipp.platform);
-                      valid &= valid_plt;
-
-                      if ( !valid_plt ) {
-                        log.warn("Not valid after platform validation ${tipp.platform}");
-                        errors.add(['code': 400, 'message': "Platform ${tipp.platform.name} is not valid!"])
-                      }
-
-                      if ( valid ) {
-
-                        def pl = null
-                        def pl_id
-                        if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
-                          pl = Platform.get(pl_id)
+                          ensureCoreData(ti, tipp.title)
+                          tipp.title.internalId = ti.id;
                         } else {
-                          // Not in cache.
-                          pl = Platform.upsertDTO(tipp.platform, user);
-
-                          if(pl){
-                            platform_cache[tipp.platform.name] = pl.id
-                          }else{
-                            log.error("Could not find/create ${tipp.platform}")
-                            errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
-                            valid = false
-                          }
-                        }
-
-                        if ( pl && ( tipp.platform.internalId == null ) ) {
-                          tipp.platform.internalId = pl.id;
-                        }
-                        else {
-                          log.warn("No platform arising from ${tipp.platform}");
+                          if (ti != null)
+                            ti.discard()
+                          valid_ti = false
+                          valid = false
+                          errors.add(['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'data': tipp])
                         }
                       }
-                      else {
-                        log.warn("Skip platform upsert ${tipp.platform} - Not valid after platform check");
-                      }
-          //
-          //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
-                      if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
-                        tipp.package = [ internalId: the_pkg.id ]
-                      }
-                      else {
-                        log.warn("No package");
-                        errors.add(['code': 400, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
+                      catch (grails.validation.ValidationException ve) {
+                        log.error("ValidationException attempting to cross reference title",ve);
+                        valid_ti = false
                         valid = false
+                        errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp, errors: ve.errors])
                       }
+
+                      if ( valid_ti && tipp.title.internalId == null ) {
+                        log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
+                        valid = false
+                        errors.add(['code': 400, 'message': "Title ${tipp.title.name} could not be located or created!"])
+                      }
+                    }
+
+                    def valid_plt = Platform.validateDTO(tipp.platform);
+                    valid &= valid_plt;
+
+                    if ( !valid_plt ) {
+                      log.warn("Not valid after platform validation ${tipp.platform}");
+                      errors.add(['code': 400, 'message': "Platform ${tipp.platform.name} is not valid!"])
+                    }
+
+                    if ( valid ) {
+
+                      def pl = null
+                      def pl_id
+                      if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
+                        pl = Platform.get(pl_id)
+                      } else {
+                        // Not in cache.
+                        pl = Platform.upsertDTO(tipp.platform, user);
+
+                        if(pl){
+                          platform_cache[tipp.platform.name] = pl.id
+
+                          ensureCoreData(pl, tipp.platform)
+                        }else{
+                          log.error("Could not find/create ${tipp.platform}")
+                          errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                          valid = false
+                        }
+                      }
+
+                      if ( pl && ( tipp.platform.internalId == null ) ) {
+                        tipp.platform.internalId = pl.id;
+                      }
+                      else {
+                        log.warn("No platform arising from ${tipp.platform}");
+                      }
+                    }
+        //
+        //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
+                    if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
+                      tipp.package = [ internalId: the_pkg.id ]
+                    }
+                    else {
+                      log.warn("No package");
+                      errors.add(['code': 400, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
+                      valid = false
                     }
 
                     if (idx % 50 == 0) {
@@ -894,7 +935,7 @@ class IntegrationController {
                   log.warn("Package update denied!")
                   job_result.result = 'ERROR'
                   job_result.message = "Insufficient permissions to edit matched Package ${the_pkg}. You have to belong to a connected CuratoryGroup to edit Packages."
-                  return job_id
+                  return job_result
                 }
 
         //        cleanUpGorm()
@@ -905,10 +946,11 @@ class IntegrationController {
                   log.debug("Validating tipps [${tippctr++}]");
                   json.tipps.eachWithIndex { tipp, idx ->
                     def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
-                    if ( !validation_result) {
-                      log.error("TIPP Validation failed on ${tipp}")
+
+                    if ( validation_result && !validation_result.valid ) {
+                      log.debug("TIPP Validation failed on ${tipp}")
                       valid = false
-                      errors.add(['code': 400, 'message': "TIPP Validation for title ${tipp.title.name} failed."])
+                      errors.add(['code': 400, message: "TIPP Validation for title ${tipp.title.name} failed: " + "${validation_result.errors}", baddata: tipp, errors: validation_result.errors])
                     }
                     
                     if (idx % 50 == 0) {
@@ -925,23 +967,60 @@ class IntegrationController {
                   tippctr=0
 
                   def tipps_to_delete = existing_tipps.clone()
+                  def num_removed_tipps = 0;
                   def status_current = RefdataCategory.lookup('KBComponent.Status','Current')
+                  def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+                  def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+                  def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
 
                   def tipp_upsert_start_time = System.currentTimeMillis()
+                  def tipp_fails = 0
                   // If valid, upsert tipps
                   json.tipps.eachWithIndex { tipp, idx ->
                     tippctr++
-                    TitleInstancePackagePlatform.withNewTransaction {
-                      log.debug("Upsert tipp [${tippctr}] ${tipp}")
+                    
+                    log.debug("Upsert tipp [${tippctr}] ${tipp}")
+                    def upserted_tipp = null
 
-                      def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
+                    try {
+                      upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
                       log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
                       upserted_tipp = upserted_tipp.merge(flush: true)
+                    }
+                    catch (grails.validation.ValidationException ve) {
+                      log.error("ValidationException attempting to cross reference TIPP",ve);
+                      valid = false
+                      tipp_fails++
+                      errors.add(['code': 400, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'data': tipp, errors: ve.errors])
 
-                      if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
-                        log.debug("Existing TIPP matched!")
-                        tipps_to_delete.remove(upserted_tipp.id)
-                      }
+                      if (upserted_tipp)
+                        upserted_tipp.discard()
+                    }
+                    catch (Exception ge) {
+                      log.error("Exception attempting to cross reference TIPP:", ge)
+                      valid = false
+                      tipp_fails++
+                      errors.add(['code': 500, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'data': tipp])
+
+                      if (upserted_tipp)
+                        upserted_tipp.discard()
+                    }
+
+                    if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
+                      log.debug("Existing TIPP matched!")
+                      tipps_to_delete.remove(upserted_tipp.id)
+                    }
+
+                    if ( upserted_tipp && upserted_tipp?.status != status_deleted && tipp.status == "Deleted" ) {
+                      upserted_tipp.deleteSoft()
+                      num_removed_tipps++;
+                    }
+                    else if ( upserted_tipp && upserted_tipp?.status != status_retired && tipp.status == "Retired" ) {
+                      upserted_tipp.retire()
+                      num_removed_tipps++;
+                    }
+                    else if ( upserted_tipp && upserted_tipp.status != status_current && tipp.status == "Current" ) {
+                      upserted_tipp.setActive()
                     }
 
                     if (idx % 50 == 0) {
@@ -949,54 +1028,56 @@ class IntegrationController {
                     }
                     job.setProgress(idx + json.tipps.size(), json.tipps.size() * 2)
                   }
-                  def num_deleted_tipps = 0;
 
-                  if ( existing_tipps.size() > 0 ) {
-
-
-                    tipps_to_delete.eachWithIndex { ttd, idx ->
-
-                      def to_retire = TitleInstancePackagePlatform.get(ttd)
-
-                      if ( to_retire?.isCurrent() ) {
-
-                        to_retire.retire()
-                        to_retire.save(failOnError: true)
-
-        //                 ReviewRequest.raise(
-        //                     to_retire,
-        //                     "TIPP retired.",
-        //                     "An update to this package did not contain this TIPP.",
-        //                     user
-        //                 )
-                        num_deleted_tipps++;
-                      }else{
-                        log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
-                      }
-
-                      if ( idx % 50 == 0 ) {
-                        cleanUpGorm()
-                      }
-                    }
-                    if( num_deleted_tipps > 0 ) {
-                      ReviewRequest.raise(
-                          the_pkg,
-                          "TIPPs retired.",
-                          "An update to package ${the_pkg.id} did not contain ${num_deleted_tipps} previously existing TIPPs.",
-                          user
-                      )
-                    }
+                  if (!valid) {
+                    job_result.result = 'ERROR'
+                    job_result.message = "Package was created, but ${tipp_fails} TIPPs could not be created!"
                   }
-                  log.debug("Found ${num_deleted_tipps} TIPPS to retire from the matched package!")
-                  job_result.result = 'OK'
-                  job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Retired: ${num_deleted_tipps})"
-                  job_result.pkgId = the_pkg.id
-                  job_result.uuid = the_pkg.uuid
-                  log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
+                  else {
+                    if ( existing_tipps.size() > 0 ) {
+
+
+                      tipps_to_delete.eachWithIndex { ttd, idx ->
+
+                        def to_retire = TitleInstancePackagePlatform.get(ttd)
+
+                        if ( to_retire?.isCurrent() ) {
+                          to_retire.retire()
+                          to_retire.save(failOnError: true)
+
+                          num_removed_tipps++;
+                        }else{
+                          log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
+                        }
+
+                        if ( idx % 50 == 0 ) {
+                          cleanUpGorm()
+                        }
+                      }
+                      if( num_removed_tipps > 0 ) {
+                        ReviewRequest.raise(
+                            the_pkg,
+                            "TIPPs retired.",
+                            "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
+                            user
+                        )
+                      }
+                    }
+                    log.debug("Found ${num_removed_tipps} TIPPS to delete/retire from the matched package!")
+                    job_result.result = 'OK'
+                    job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Newly Retired/Deleted: ${num_removed_tipps})"
+
+                    if(the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+                      the_pkg.lastUpdateComment = job_result.message
+                    }
+                    job_result.pkgId = the_pkg.id
+                    job_result.uuid = the_pkg.uuid
+                    log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
+                  }
                 }
                 else {
                   job_result.result = 'ERROR'
-                  job_result.message = "Package was created, but tipps have not been loaded because of validation errors!"
+                  job_result.message = "Package ${json.packageHeader.name} was created, but tipps have not been loaded because of validation errors!"
                   log.warn("Not loading tipps - failed validation")
                 }
               }else{
@@ -1005,11 +1086,18 @@ class IntegrationController {
               }
             }
             catch (Exception e) {
-              log.debug("Package Crossref failed with Exception",e)
+              log.error("Package Crossref failed with Exception",e)
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
+              errors.add([code:500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
             }
+            cleanUpGorm()
           }
+        }
+        else {
+          log.debug("Package validation failed!")
+          job_result.result = 'ERROR'
+          job_result.message = "Package validation failed!"
         }
 
         job.message(job_result.message.toString())
@@ -1038,6 +1126,7 @@ class IntegrationController {
       result.errors = []
       result.errors.add(['code': 400, 'message': "The provided package has no name."])
     }
+    cleanUpGorm()
 
     render result as JSON
   }
@@ -1046,67 +1135,76 @@ class IntegrationController {
   def crossReferencePlatform() {
     def result = [ 'result' : 'OK' ]
     def created = false
+    def platformJson = request.JSON
     User user = springSecurityService.currentUser
-    if ( ( request.JSON.platformUrl ) &&
-         ( request.JSON.platformUrl.trim().length() > 0 ) &&
-         ( request.JSON.platformName ) &&
-         ( request.JSON.platformName.trim().length() > 0 ) ) {
-      def p = Platform.findByPrimaryUrl(request.JSON.platformUrl)
 
-      if ( p == null ) {
-
-        // Attempt normname lookup.
-        p = Platform.findByNormname( Platform.generateNormname (request.JSON.platformName) )
-
-        if (!p) {
-          new Platform(primaryUrl:request.JSON.platformUrl, name:request.JSON.platformName, uuid: request.JSON.uuid?.trim()?.size() > 0 ? request.JSON.uuid : null).save(flush:true, failOnError:true)
-          created = true
-        }
+    log.debug("crossReferencePlatform - ${platformJson}")
+    if ( platformJson?.platformUrl?.trim() && (platformJson?.name?.trim() || platformJson?.platformName?.trim()) ) {
+      if ( !platformJson.name?.trim() && platformJson.platformName) {
+        platformJson.name = platformJson.platformName
       }
 
-      if (p) {
-        log.debug("created or looked up platform ${p}!")
+      try {
+        def p = Platform.upsertDTO(platformJson)
 
-        setAllRefdata ([
-          'software', 'service'
-        ], request.JSON, p)
-        setRefdataIfPresent(request.JSON.authentication, p.id, 'authentication', 'Platform.AuthMethod')
+        if (p) {
+          log.debug("created or looked up platform ${p}!")
 
-        if (request?.JSON?.provider) {
-          def prov = Org.findByNormname( Org.generateNormname (request.JSON.provider) )
-          if (prov) {
-            p.provider = prov
+          setAllRefdata ([
+            'software', 'service'
+          ], platformJson, p)
+          ClassUtils.setRefdataIfPresent(platformJson.authentication, p, 'authentication', 'Platform.AuthMethod')
+
+          if (platformJson.provider) {
+            def prov = Org.findByNormname( Org.generateNormname (platformJson.provider) )
+            if (prov) {
+              log.debug("Adding Provider ${prov} to platform ${p}!")
+              p.provider = prov
+            }
+            else {
+              log.debug("No provider found for ${platformJson.provider}!")
+            }
           }
-        }
 
-        // Add the core data.
-        ensureCoreData(p, request.JSON)
+          p.save(flush:true)
 
-  //      if ( changed ) {
-  //        p.save(flush:true, failOnError:true);
-  //      }
-        if (created) {
-          result.message = "Created platform ${p}"
+          // Add the core data.
+          ensureCoreData(p, platformJson)
+
+    //      if ( changed ) {
+    //        p.save(flush:true, failOnError:true);
+    //      }
+          result.message = "Created/Updated platform ${p}"
+
+          result.platformId = p.id;
         }
         else {
-          result.message = "Looked up platform ${p}"
+          log.debug("No platform matched for ${platformJson}")
+          result.message = "Could not crossreference platform ${platformJson}"
+          response.setStatus(500)
+          result.result = 'ERROR'
         }
-
-        result.platformId = p.id;
       }
-      else {
-        result.message = "Could not crossreference platform ${request.JSON}"
+      catch (Exception e) {
+        log.debug("Exception while looking up platform!", e)
+        result.message = "There was an error looking up platform ${platformJson}"
         response.setStatus(500)
-        result.result = 'ERROR'
+        result.result = "ERROR"
       }
+    }
+    else {
+      log.debug("Missing Platform info for ${platformJson}")
+      result.message = "Platform ${platformJson} is missing required information ('name' or 'platformUrl')!"
+      response.setStatus(400)
+      result.result = "ERROR"
     }
     render result as JSON
   }
 
-  private boolean setAllRefdata (propNames, data, target) {
+  private static boolean setAllRefdata (propNames, data, target, boolean createNew = false) {
     boolean changed = false
     propNames.each { String prop ->
-      changed |= setRefdataIfPresent(data[prop], target.id, prop)
+      changed |= ClassUtils.setRefdataIfPresent(data[prop], target, prop, createNew)
     }
     changed
   }
@@ -1178,6 +1276,8 @@ class IntegrationController {
     if(org.grails.web.json.JSONArray != rjson.getClass()){
 
       result = crossReferenceSingleTitle(rjson, user.id)
+
+      cleanUpGorm()
     }
     else {
       log.debug("Starting crossReferenceTitle Job")
@@ -1269,6 +1369,9 @@ class IntegrationController {
                 }
               }
 
+              // Add the core data.
+              ensureCoreData(title, titleObj)
+
               title_changed |= setAllRefdata ([
                     'OAStatus', 'medium',
                     'pureOA', 'continuingSeries',
@@ -1279,11 +1382,6 @@ class IntegrationController {
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
               }
-
-              title.save(flush:true, failOnError:true)
-
-              // Add the core data.
-              ensureCoreData(title, titleObj)
 
               if ( titleObj.historyEvents?.size() > 0 ) {
 
@@ -1308,7 +1406,13 @@ class IntegrationController {
                         fhe.uuid
                       );
 
-                      if ( p ) { inlist.add(p); } else { cont = false; }
+                      if ( p && !p.hasErrors() ) {
+                        ensureCoreData(p, fhe)
+                        inlist.add(p);
+                      }
+                      else {
+                        cont = false;
+                      }
                     }
 
                     jhe.to.each { fhe ->
@@ -1324,7 +1428,13 @@ class IntegrationController {
                         fhe.uuid
                       );
 
-                      if ( p && !inlist.contains(p) ) { outlist.add(p); } else { cont = false; }
+                      if ( p && !p.hasErrors() && !inlist.contains(p) ) {
+                        ensureCoreData(p, fhe)
+                        outlist.add(p);
+                      }
+                      else {
+                        cont = false;
+                      }
                     }
 
                     def first = true;
@@ -1352,7 +1462,10 @@ class IntegrationController {
 
                     log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
 
-                    def qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams);
+                    def qr = []
+                    if (qparams.size() > 0) {
+                      qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams)
+                    }
 
                     if ( qr.size() > 0 || inlist.size() == 0 || outlist.size() == 0 )
                       cont = false;
@@ -1467,7 +1580,7 @@ class IntegrationController {
     result
   }
 
-  private addPublisherHistory ( TitleInstance ti, publishers, sdf) {
+  private static addPublisherHistory ( TitleInstance ti, publishers, sdf) {
 
     def sdfs = ["yyyy-MM-dd' 'HH:mm:ss.SSS","yyyy-MM-dd"]
 
@@ -1617,7 +1730,7 @@ class IntegrationController {
     }
   }
 
-  private addMonographFields ( BookInstance bi, titleObj, sdf ) {
+  private static addMonographFields ( BookInstance bi, titleObj, sdf ) {
 
     def book_changed = false
 
@@ -1794,51 +1907,4 @@ class IntegrationController {
     session.flush()
     session.clear()
   }
-
-  private def boolean setRefdataIfPresent(value, objid, prop, cat = null) {
-    boolean result = false
-    def kbc = KBComponent.get(objid)
-
-    if (!cat) {
-      cat = classExaminationService.deriveCategoryForProperty(kbc.class.name, prop)
-    }
-
-    if ( ( value ) && ( cat ) &&
-         ( value.toString().trim().length() > 0 ) &&
-         ( ( kbc[prop] == null ) || ( kbc[prop].value != value.trim() ) ) ) {
-
-      def v = null
-      if (RefdataValue.isTypeCreatable()) {
-        v = RefdataCategory.lookupOrCreate(cat,value)
-      }
-      else {
-        v = RefdataCategory.lookup(cat, value)
-      }
-
-      if (v) {
-        kbc[prop] = v
-        result = true
-      }
-    }
-
-    result
-  }
-
-  private def boolean setStringIfDifferent(obj, prop, value) {
-    boolean result = false;
-
-    if ( ( obj != null ) && ( prop != null ) && ( value ) && ( value.toString().length() > 0 ) ) {
-
-      if ( obj[prop] == value ) {
-      }
-      else {
-        result = true
-        obj[prop] = value
-      }
-
-    }
-
-    result
-  }
-
 }

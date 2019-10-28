@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import java.text.SimpleDateFormat
+import java.time.Instant
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
@@ -66,14 +68,13 @@ class TitleInstance extends KBComponent {
       }
 
       if (!existing) {
-        addToVariantNames(
-            new KBComponentVariantName([
-              "variantType"	: (title_type),
-              "locale"		: (locale_rd),
-              "status"		: RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
-              "variantName"	: (title)
-            ])
-            )
+          new KBComponentVariantName([
+            "variantType"	: (title_type),
+            "owner"     : this,
+            "locale"		: (locale_rd),
+            "status"		: RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
+            "variantName"	: (title)
+          ])
           return true
       } else {
         log.debug ("Not adding variant title as it is the same as an existing variant.")
@@ -111,23 +112,23 @@ class TitleInstance extends KBComponent {
     OAStatus (nullable:true, blank:false)
     publishedFrom (nullable:true, blank:false)
     publishedTo  (validator: { val, obj ->
-      if(obj.publishedFrom && val && obj.publishedFrom > val) {
+      if( obj.publishedFrom && val && (obj.hasChanged('publishedTo') || obj.hasChanged('publishedFrom')) && obj.publishedFrom > val ) {
         return ['endDate.endPriorToStart']
       }
     })
     coverImage (nullable:true, blank:true)
     work (nullable:true, blank:false)
     name (validator: { val, obj ->
-      if (!val) {
+      if ( !val && obj.hasChanged('name') ) {
         return ['notNull']
       }
     })
   }
 
   def availableActions() {
-    [ [code:'method::deleteSoft', label:'Delete', perm:'delete'],
-      [code:'method::setActive', label:'Set Current', perm:'admin'],
-      [code:'method::setExpected', label:'Mark Expected'],
+    [ [code:'setStatus::Deleted', label:'Delete', perm:'delete'],
+      [code:'setStatus::Current', label:'Set Current', perm:'admin'],
+      [code:'setStatus::Expected', label:'Mark Expected'],
       [code:'title::transfer', label:'Title Transfer'],
       [code:'title::change', label:'Title Change'],
       [code:'title::merge', label:'Title Merge']
@@ -281,7 +282,6 @@ class TitleInstance extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     try {
       def tids = this.ids ?: []
@@ -374,6 +374,7 @@ class TitleInstance extends KBComponent {
                       "from" {
                         title(hti.name)
                         uuid(hti.uuid)
+                        status(hti.status.value)
                         internalId(hti.id)
                         "identifiers" {
                           hti.ids?.each { tid ->
@@ -391,6 +392,7 @@ class TitleInstance extends KBComponent {
                       "to" {
                         title(hti.name)
                         uuid(hti.uuid)
+                        status(hti.status.value)
                         internalId(hti.id)
                         "identifiers" {
                           hti.ids?.each { tid ->
@@ -412,6 +414,8 @@ class TitleInstance extends KBComponent {
             tipps?.each { tipp ->
               builder.'TIPP' (['id':tipp.id, 'uuid':tipp.uuid]) {
 
+                status(tipp.status.value)
+
                 def pkg = tipp.pkg
                 builder.'package' (['id':pkg?.id, 'uuid':pkg?.uuid]) {
                   builder.'name' (pkg?.name)
@@ -426,10 +430,10 @@ class TitleInstance extends KBComponent {
                 if(cov_statements?.size() > 0){
                   cov_statements.each { tcs ->
                     'coverage'(
-                      startDate:(tcs.startDate?sdf.format(tcs.startDate):null),
+                      startDate:(tcs.startDate ? "${tcs.startDate.toInstant().toString()}" : null),
                       startVolume:tcs.startVolume,
                       startIssue:tcs.startIssue,
-                      endDate:(tcs.endDate?sdf.format(tcs.endDate):null),
+                      endDate:(tcs.endDate ? "${tcs.endDate.toInstant().toString()}" : null),
                       endVolume:tcs.endVolume,
                       endIssue:tcs.endIssue,
                       coverageDepth:tcs.coverageDepth?.value?:tipp.coverageDepth?.value,
@@ -441,10 +445,10 @@ class TitleInstance extends KBComponent {
                 else{
 
                   builder.'coverage'(
-                    startDate:(tipp.startDate ? sdf.format(tipp.startDate):null),
+                    startDate:(tipp.startDate ? "${tipp.startDate.toInstant().toString()}" : null),
                     startVolume:tipp.startVolume,
                     startIssue:tipp.startIssue,
-                    endDate:(tipp.endDate ? sdf.format(tipp.endDate):null),
+                    endDate:(tipp.endDate ? "${tipp.endDate.toInstant().toString()}" : null),
                     endVolume:tipp.endVolume,
                     endIssue:tipp.endIssue,
                     coverageDepth:tipp.coverageDepth?.value,
@@ -569,15 +573,83 @@ class TitleInstance extends KBComponent {
    * }
    */
   @Transient
-  public static boolean validateDTO(titleDTO) {
-    def result = true;
-    result &= titleDTO != null
-    result &= titleDTO.name != null
-    result &= titleDTO.identifiers != null
+  public static def validateDTO(titleDTO) {
+    def result = ['valid':true, 'errors':[]]
+    def sdfs = [
+        "yyyy-MM-dd' 'HH:mm:ss.SSS",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd"
+    ]
+
+    if (titleDTO == null) {
+      result.valid = false
+      result.errors.add("No title information given!")
+      return result
+    }
+
+    if (titleDTO.name == null || !titleDTO.name.trim()) {
+      result.valid = false
+      result.errors.add("Missing title name!")
+      return result
+    }
+
+    if (titleDTO.identifiers == null ) {
+      result.valid = false
+      result.errors.add("Title has no identifiers!")
+      return result
+    }
+
+    def startDate = null
+    def endDate = null
+
+    if (titleDTO.publishedFrom) {
+      sdfs.each { df ->
+
+        if (!startDate) {
+          try {
+            SimpleDateFormat sdfV = new SimpleDateFormat(df)
+
+            startDate = sdfV.parse(titleDTO.publishedFrom)
+          }
+          catch (java.text.ParseException pe) {
+          }
+        }
+      }
+
+      if (!startDate) {
+        result.valid = false
+        result.errors.add("Unable to parse publishing start date ${titleDTO.publishedFrom}!")
+      }
+    }
+
+    if (titleDTO.publishedTo) {
+      sdfs.each { df ->
+
+        if (!endDate) {
+          try {
+            SimpleDateFormat sdfV = new SimpleDateFormat(df)
+
+            endDate = sdfV.parse(titleDTO.publishedTo)
+          }
+          catch (java.text.ParseException pe) {
+          }
+        }
+      }
+
+      if (!endDate) {
+        result.valid = false
+        result.errors.add("Unable to parse publishing end date ${titleDTO.publishedTo}!")
+      }
+    }
+
+    if (startDate && endDate && (endDate < startDate)) {
+      result.valid = false
+      result.errors.add("Publishing end date must not be prior to its start date!")
+    }
 
     titleDTO.identifiers.each { idobj ->
       if (idobj.type && idobj.value) {
-        def found_ns = IdentifierNamespace.findAllByValue(idobj.type.toLowerCase())
+        def found_ns = IdentifierNamespace.findByValue(idobj.type.toLowerCase())
         def final_val = idobj.value
 
         if (found_ns) {
@@ -593,13 +665,15 @@ class TitleInstance extends KBComponent {
           }
           catch (grails.validation.ValidationException ve) {
             log.warn("Validation for ${found_ns.value}:${final_val} failed!")
-            result = false
+            result.errors.add("Validation for identifier ${found_ns.value}:${final_val} failed!")
+            result.valid = false
           }
         }
       }
       else {
         log.warn("Missing information in id object ${idobj}")
-        result = false
+        result.errors.add("Missing information for identifier object ${idobj}!")
+        result.valid = false
       }
     }
 
@@ -681,6 +755,30 @@ class TitleInstance extends KBComponent {
             break;
         }
       }
+  }
+
+  @Override
+  @Transient
+  def ensureVariantName(String name) {
+
+    if (name.trim().size() != 0) {
+
+      // Variant names use different normalisation method.
+      def variant_normname = GOKbTextUtils.normaliseString(name)
+
+      // not already a name
+      // Make sure not already a variant name
+      if ( !KBComponentVariantName.findByOwnerAndNormVariantName(this, variant_normname) ) {
+        KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
+      }
+      else {
+        log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
+      }
+    }
+    else {
+      log.error("No viable variant name supplied!")
+    }
+
   }
 
 }

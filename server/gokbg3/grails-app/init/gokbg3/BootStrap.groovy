@@ -13,6 +13,8 @@ import org.gokb.GOKbTextUtils
 
 import javax.servlet.http.HttpServletRequest
 
+import grails.plugin.springsecurity.acl.*
+
 import org.gokb.DomainClassExtender
 import org.gokb.ESWrapperService
 import org.gokb.ComponentStatisticService
@@ -145,7 +147,7 @@ class BootStrap {
     }
 
 
-    if (  grailsApplication.config.decisionSupport ) {
+    if (  grailsApplication.config.gokb.decisionSupport ) {
       log.debug("Configuring default decision support parameters");
       DSConfig();
     }
@@ -191,6 +193,12 @@ class BootStrap {
       }
       log.debug("${id_ctr} identifiers updated");
 
+    log.info("Fix missing Combo status");
+
+      def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+      int num_c = Combo.executeUpdate("update Combo set status = ? where status is null", [status_active])
+      log.debug("${num_c} combos updated");
+
     log.info("GoKB defaultSortKeys()");
     defaultSortKeys ()
 
@@ -202,6 +210,7 @@ class BootStrap {
     def eissn_ns = IdentifierNamespace.findByValue('eissn') ?: new IdentifierNamespace(value:'eissn', family:'isxn').save(flush:true, failOnError:true);
     def issnl_ns = IdentifierNamespace.findByValue('issnl') ?: new IdentifierNamespace(value:'issnl', family:'isxn').save(flush:true, failOnError:true);
     def doi_ns = IdentifierNamespace.findByValue('doi') ?: new IdentifierNamespace(value:'doi').save(flush:true, failOnError:true);
+    def zdb_ns = IdentifierNamespace.findByValue('zdb') ?: new IdentifierNamespace(value:'zdb').save(flush:true, failOnError:true);
 
     // log.info("Default batch loader config");
     // defaultBulkLoaderConfig();
@@ -297,13 +306,32 @@ class BootStrap {
 
   def registerDomainClasses() {
 
-    def std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save(flush:true, failOnError:true)
+    log.debug("Register Domain Classes")
+
+    AclClass aclClass = AclClass.findByClassName('org.gokb.cred.KBDomainInfo') ?: new AclClass(className: 'org.gokb.cred.KBDomainInfo').save(flush:true)
+
+    AclSid sidAdmin = AclSid.findBySid('ROLE_ADMIN') ?: new AclSid(sid: 'ROLE_ADMIN', principal: false).save(flush:true)
+    AclSid sidSuperUser = AclSid.findBySid('ROLE_SUPERUSER') ?: new AclSid(sid: 'ROLE_SUPERUSER', principal: false).save(flush:true)
+    AclSid sidUser = AclSid.findBySid('ROLE_USER') ?: new AclSid(sid: 'ROLE_USER', principal: false).save(flush:true)
+    AclSid sidContributor = AclSid.findBySid('ROLE_CONTRIBUTOR') ?: new AclSid(sid: 'ROLE_CONTRIBUTOR', principal: false).save(flush:true)
+    AclSid sidEditor = AclSid.findBySid('ROLE_EDITOR') ?: new AclSid(sid: 'ROLE_EDITOR', principal: false).save(flush:true)
+    AclSid sidApi = AclSid.findBySid('ROLE_API') ?: new AclSid(sid: 'ROLE_API', principal: false).save(flush:true)
+
+    RefdataValue std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save(flush:true, failOnError:true)
     grailsApplication.domainClasses.each { dc ->
       // log.debug("Ensure ${dc.name} has entry in KBDomainInfo table");
-      def dcinfo = KBDomainInfo.findByDcName(dc.clazz.name)
+      KBDomainInfo dcinfo = KBDomainInfo.findByDcName(dc.clazz.name)
       if ( dcinfo == null ) {
         dcinfo = new KBDomainInfo(dcName:dc.clazz.name, displayName:dc.name, type:std_domain_type);
         dcinfo.save(flush:true);
+      }
+
+      if (dcinfo.dcName.startsWith('org.gokb.cred')) {
+        AclObjectIdentity oid
+
+        if (!AclObjectIdentity.findByObjectId(dcinfo.id)) {
+          oid = new AclObjectIdentity(objectId: dcinfo.id, aclClass: aclClass, owner: sidAdmin, entriesInheriting: false).save(flush:true)
+        }
       }
     }
   }
@@ -425,6 +453,11 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("Package.Global", "Global").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Package.Global", "Other").save(flush:true, failOnError:true)
 
+    RefdataCategory.lookupOrCreate("Package.ContentType", "Mixed").save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate("Package.ContentType", "Journal").save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate("Package.ContentType", "Book").save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate("Package.ContentType", "Database").save(flush:true, failOnError:true)
+
     RefdataCategory.lookupOrCreate("Platform.AuthMethod", "IP").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Platform.AuthMethod", "Shibboleth").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Platform.AuthMethod", "User Password").save(flush:true, failOnError:true)
@@ -483,6 +516,11 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Org.Mission','Commercial').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Org.Mission','Community Agency').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Org.Mission','Consortium').save(flush:true, failOnError:true)
+
+    RefdataCategory.lookupOrCreate('UserOrganisation.Mission','Academic').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('UserOrganisation.Mission','Commercial').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('UserOrganisation.Mission','Community Agency').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('UserOrganisation.Mission','Consortium').save(flush:true, failOnError:true)
 
     RefdataCategory.lookupOrCreate('Org.Role','Licensor').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Org.Role','Licensee').save(flush:true, failOnError:true)
@@ -813,6 +851,8 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipps').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Platform.HostedTipps').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Platform.HostedTitles').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipls').save(flush:true, failOnError:true)
 
     RefdataCategory.lookupOrCreate('MembershipRole','Administrator').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('MembershipRole','Member').save(flush:true, failOnError:true)
@@ -1159,6 +1199,10 @@ class BootStrap {
             .endObject()
             .startObject("componentType") 
               .field("type","keyword") 
+            .endObject()
+            .startObject("lastUpdatedDisplay")
+              .field("type", "date")
+              .field("format", "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis")
             .endObject()
             .startObject("uuid")
               .field("type","keyword")

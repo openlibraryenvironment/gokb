@@ -29,11 +29,16 @@ class WorkflowController {
     'title::reconcile':[actionType:'workflow', view:'titleReconcile' ],
     'title::merge':[actionType:'workflow', view:'titleMerge' ],
     'tipp::retire':[actionType:'workflow', view:'tippRetire' ],
+    'tipp::move':[actionType:'workflow', view:'tippMove' ],
     'exportPackage':[actionType:'process', method:'packageTSVExport'],
     'kbartExport':[actionType:'process', method:'packageKBartExport'],
     'method::retire':[actionType:'simple' ],
     'method::setActive':[actionType:'simple' ],
     'method::setExpected':[actionType:'simple'],
+    'setStatus::Retired':[actionType:'simple' ],
+    'setStatus::Current':[actionType:'simple' ],
+    'setStatus::Expected':[actionType:'simple'],
+    'setStatus::Deleted':[actionType:'simple'],
     'org::deprecateReplace':[actionType:'workflow', view:'deprecateOrg'],
     'org::deprecateDelete':[actionType:'workflow', view:'deprecateDeleteOrg'],
     'verifyTitleList':[actionType:'process', method:'verifyTitleList']
@@ -71,7 +76,6 @@ class WorkflowController {
 
             qresult.recset.each {
               def oid_to_action = "${it.class.name}:${it.id}"
-              log.debug("Action oid: ${oid_to_action}");
               result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
             }
           }
@@ -82,7 +86,6 @@ class WorkflowController {
         params.each { p ->
           if ( ( p.key.startsWith('bulk:') ) && ( p.value ) && ( p.value instanceof String ) ) {
             def oid_to_action = p.key.substring(5);
-            log.debug("Action oid: ${oid_to_action}");
             result.objects_to_action.add(genericOIDService.resolveOID2(oid_to_action))
           }
         }
@@ -139,6 +142,19 @@ class WorkflowController {
 
               result.objects_to_action.each {
                 log.debug("${it.status}")
+              }
+
+              break
+            
+            case "setStatus":
+              log.debug("SetStatus: ${method_config[1]}")
+              def status_to_set = RefdataCategory.lookup('KBComponent.Status', method_config[1])
+              // def ota_ids = result.objects_to_action.collect{ it.id }
+
+              if (status_to_set) {
+                def res = KBComponent.executeUpdate("update KBComponent as kbc set kbc.status = :st where kbc IN (:clist)",[st: status_to_set, clist: result.objects_to_action ])
+
+                log.debug("Updated status of ${res} components")
               }
 
               break
@@ -841,28 +857,19 @@ class WorkflowController {
 
         def new_title = TitleInstance.get(newtipp.title_id);
 
-        def parsed_start_date = null;
-        def parsed_end_date = null;
-        try {
-          parsed_start_date = ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null;
-          parsed_end_date = ( newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null;
-        }
-        catch ( Exception e ) {
-        }
-
         // def new_tipp = new TitleInstancePackagePlatform(
-        def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
-                                   pkg:new_package,
-                                   hostPlatform:new_platform,
-                                   title:new_title,
-                                   startDate: parsed_start_date,
+        def new_tipp = TitleInstancePackagePlatform.upsertDTO([
+                                   package:['internalId':new_package.id],
+                                   platform:['internalId':new_platform.id],
+                                   title:['internalId':current_tipp.title.id],
+                                   startDate: newtipp.startDate,
                                    startVolume:newtipp.startVolume,
                                    startIssue:newtipp.startIssue,
-                                   endDate: parsed_end_date,
+                                   endDate: newtipp.endDate,
                                    endVolume:newtipp.endVolume,
                                    endIssue:newtipp.endIssue,
-                                   url:newtipp.url,
-                                   ]).save()
+                                   url:newtipp.url
+                                ], user).save(flush:true, failOnError:true)
 
         if ( newtipp.review == 'on' ) {
           ReviewRequest.raise(new_tipp, 'New tipp - please review' , 'A Title change cause this new tipp to be created', request.user)
@@ -959,11 +966,13 @@ class WorkflowController {
 
         old_ti.ids.each { old_id ->
 
+          def old_combo = Combo.findByFromComponentAndToComponent(old_ti,old_id)
+
           def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ? and c.type.id = ?",[old_id.id,new_ti.id,id_combo_type.id]);
 
           if ( !dupes || dupes.size() == 0 ){
             log.debug("Adding Identifier ${old_id} to ${new_ti}")
-            Combo new_id = new Combo(toComponent:old_id, fromComponent:new_ti, type:id_combo_type).save(flush:true, failOnError:true);
+            Combo new_id = new Combo(toComponent:old_id, fromComponent:new_ti, type:id_combo_type, status:old_combo.status).save(flush:true, failOnError:true);
           }else{
             log.debug("Identifier ${old_id} is already connected to ${new_ti}..")
           }
@@ -1106,6 +1115,7 @@ class WorkflowController {
   def processTitleTransfer(activity_record, activity_data) {
     log.debug("processTitleTransfer ${params}\n\n ${activity_data}");
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+    def user = springSecurityService.currentUser
 
     def publisher = Org.get(activity_data.newPublisherId);
 
@@ -1155,28 +1165,19 @@ class WorkflowController {
         def new_package = Package.get(newtipp.package_id)
         def new_platform = Platform.get(newtipp.platform_id)
 
-        def parsed_start_date = null;
-        def parsed_end_date = null;
-        try {
-          parsed_start_date = ( newtipp.startDate?.length() > 0 ) ? sdf.parse(newtipp.startDate) : null;
-          parsed_end_date = ( newtipp.endDate?.length() > 0 ) ? sdf.parse(newtipp.endDate) : null;
-        }
-        catch ( Exception e ) {
-        }
-
         // def new_tipp = new TitleInstancePackagePlatform(
-        def new_tipp = TitleInstancePackagePlatform.tiplAwareCreate([
-                                   pkg:new_package,
-                                   hostPlatform:new_platform,
-                                   title:current_tipp.title,
-                                   startDate: parsed_start_date,
+        def new_tipp = TitleInstancePackagePlatform.upsertDTO([
+                                   package:['internalId':new_package.id],
+                                   platform:['internalId':new_platform.id],
+                                   title:['internalId':current_tipp.title.id],
+                                   startDate: newtipp.startDate,
                                    startVolume:newtipp.startVolume,
                                    startIssue:newtipp.startIssue,
-                                   endDate: parsed_end_date,
+                                   endDate: newtipp.endDate,
                                    endVolume:newtipp.endVolume,
                                    endIssue:newtipp.endIssue,
                                    url:newtipp.url
-                                ]).save(flush:true, failOnError:true)
+                                ], user).save(flush:true, failOnError:true)
 
         if ( newtipp.review == 'on' ) {
           log.debug("User requested a review request be generated for this new tipp");
@@ -1278,6 +1279,54 @@ class WorkflowController {
         tipp_obj.accessEndDate = new Date()
       }
 
+      tipp_obj.save(flush:true, failOnError:true)
+    }
+
+    redirect(url: params.ref)
+  }
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def processTippMove() {
+    log.debug("processTippMove ${params}")
+    def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+    def user = springSecurityService.currentUser
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
+    def new_package = genericOIDService.resolveOID2(params.newpackage)
+    def new_platform = genericOIDService.resolveOID2(params.newplatform)
+    def tipps_to_action = params.list('beforeTipps')
+    def new_title = genericOIDService.resolveOID2(params.newtitle)
+
+    params.list('beforeTipps').each { tipp_oid ->
+      log.debug("process ${tipp_oid}")
+
+      def tipp_obj = genericOIDService.resolveOID2(tipp_oid)
+      def coverage = []
+
+      tipp_obj.coverageStatements.each { cst ->
+        coverage.add(['startVolume': cst.startVolume ?: "",
+                      'startIssue':cst.startIssue ?: "",
+                      'endVolume': cst.endVolume ?: "",
+                      'endIssue': cst.endIssue ?: "",
+                      'embargo':cst.embargo ?: "",
+                      'coverageNote': cst.coverageNote ?: "",
+                      'startDate': cst.startDate ? sdf.format(cst.startDate) : "",
+                      'endDate': cst.endDate ? sdf.format(cst.endDate) : "",
+                      'coverageDepth': cst.coverageDepth?.value ?: ""
+        ])
+      }
+
+      def new_tipp = TitleInstancePackagePlatform.upsertDTO([
+                                  package:['internalId':(new_package ? new_package.id : tipp_obj.pkg.id)],
+                                  platform:['internalId':(new_platform ? new_platform.id : tipp_obj.hostPlatform.id)],
+                                  title:['internalId':(new_title ? new_title.id: tipp_obj.title.id)],
+                                  coverage: coverage,
+                                  url:tipp_obj.url
+                              ], user).save(flush:true, failOnError:true)
+
+      log.debug("Created new TIPP ${new_tipp}");
+
+      tipp_obj.status = deleted_status
       tipp_obj.save(flush:true, failOnError:true)
     }
 
@@ -1552,7 +1601,7 @@ class WorkflowController {
 
     log.debug("createTitleHistoryEvent")
 
-    def result=[:]
+    def result=[result:'OK']
 
     try {
       if ( ( params.afterTitles != null ) && ( params.beforeTitles != null ) ) {
@@ -1585,13 +1634,29 @@ class WorkflowController {
     }
     catch ( Exception e ) {
       log.error("problem creating title history event",e)
+      result.result = "ERROR"
+      flash.error = "History event could not be created!"
+      result.message = "There was an error creating the event."
     }
     finally{
       log.debug("Completed createTitleHistoryEvent")
     }
 
-    result.ref=request.getHeader('referer')
-    redirect(url: result.ref)
+    withFormat {
+      html {
+        result.ref=request.getHeader('referer')
+        redirect(url: result.ref)
+      }
+      json {
+        result.params = (params)
+
+        if (result.result != "ERROR") {
+          result.message = "History event was sucessfully created."
+        }
+
+        render result as JSON
+      }
+    }
   }
 
   @Transactional
@@ -1666,7 +1731,8 @@ class WorkflowController {
                       'first_editor\t'+
                       'parent_publication_title_id\t'+
                       'publication_type\t'+
-                      'access_type\n');
+                      'access_type\t'+
+                      'zdb_id\n');
 
           // scroll(ScrollMode.FORWARD_ONLY)
           def session = sessionFactory.getCurrentSession()
@@ -1689,8 +1755,8 @@ class WorkflowController {
                 tipp.coverageStatements.each { cst ->
                   writer.write(
                               sanitize( tipp.title.name ) + '\t' +
-                              sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
-                              sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('pISBN') ) : sanitize( tipp.title.getIdentifierValue('ISSN') ) )+ '\t' +
+                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('ISBN') ) : sanitize( tipp.title.getIdentifierValue('eISSN') ) )+ '\t' +
                               sanitize( cst.startDate ) + '\t' +
                               sanitize( cst.startVolume ) + '\t' +
                               sanitize( cst.startIssue ) + '\t' +
@@ -1712,15 +1778,16 @@ class WorkflowController {
                               (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
                               '\t' +  // parent_publication_title_id
                               sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
-                              sanitize( tipp.paymentType?.value ) +  // access_type
+                              sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
+                              sanitize( tipp.title.getIdentifierValue('ZDB') ) +
                               '\n');
                 }
               }
               else {
                   writer.write(
                               sanitize( tipp.title.name ) + '\t' +
-                              sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
-                              sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('pISBN') ) : sanitize( tipp.title.getIdentifierValue('ISSN') ) )+ '\t' +
+                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('ISBN') ) : sanitize( tipp.title.getIdentifierValue('eISSN') ) )+ '\t' +
                               sanitize( tipp.startDate ) + '\t' +
                               sanitize( tipp.startVolume ) + '\t' +
                               sanitize( tipp.startIssue ) + '\t' +
@@ -1742,7 +1809,8 @@ class WorkflowController {
                               (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
                               '\t' +  // parent_publication_title_id
                               sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
-                              sanitize( tipp.paymentType?.value ) +  // access_type
+                              sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
+                              sanitize( tipp.title.getIdentifierValue('ZDB') ) +
                               '\n');
               }
               tipp.discard();

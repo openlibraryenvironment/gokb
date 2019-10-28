@@ -82,7 +82,7 @@
           class="badge badge-warning">
             ${d.reviewRequests?.size() ?: '0'}
         </span></a></li>
-      <g:if test="${grailsApplication.config.gokb.decisionSupport}">
+      <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}">
         <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       </g:if>
 
@@ -97,7 +97,7 @@
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Availability </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Custom Fields </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Tasks </span></li>
-      <g:if test="${grailsApplication.config.gokb.decisionSupport}">
+      <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}">
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Decision Support </span></li>
       </g:if>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">People </span></li>

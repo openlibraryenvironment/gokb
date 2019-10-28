@@ -21,7 +21,7 @@
     <dd>
       <ul>
         <g:each in="${d.getGroupMemberships()}" var="oum">
-          <li>${oum.memberOf.displayName} – (${oum.role?.value ?: 'Not Set'})</li>
+          <li><g:link controller="resource" action="show" id="${oum.memberOf.class.name}:${oum.memberOf.id}">${oum.memberOf.displayName} – (${oum.role?.value ?: 'Not Set'})</g:link></li>
         </g:each>
       </ul>
     </dd>

@@ -25,6 +25,7 @@ class Package extends KBComponent {
   // Refdata
   RefdataValue scope
   RefdataValue listStatus
+  RefdataValue contentType
   RefdataValue breakable
   RefdataValue consistent
   RefdataValue fixed
@@ -95,13 +96,13 @@ class Package extends KBComponent {
     lastProject    (nullable:true, blank:false)
     descriptionURL (nullable:true, blank:true)
     name (validator: { val, obj ->
-      if (val) {
+      if (val && obj.hasChanged('name')) {
         def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-        def dupes = Package.findByNameIlike(val);
-        if ( dupes && dupes != obj && dupes.status != status_deleted) {
+        def dupes = Package.findByNameIlikeAndStatusNotEqual(val, status_deleted);
+        if ( dupes && dupes != obj ) {
           return ['notUnique']
         }
-      } else {
+      } else if (!val) {
         return ['notNull']
       }
     })
@@ -133,11 +134,10 @@ class Package extends KBComponent {
   @Transient
   public getTitles(def onlyCurrent = true, int max = 10, offset = 0) {
     def all_titles = null
+    log.debug("getTitles :: current ${onlyCurrent} - max ${max} - offset ${offset}")
 
     if (this.id) {
       if (onlyCurrent) {
-        def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted');
-        def refdata_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
         def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current');
 
         all_titles = TitleInstance.executeQuery('''select distinct title
@@ -168,6 +168,37 @@ class Package extends KBComponent {
     }
 
     return all_titles;
+  }
+
+  @Transient
+  public getCurrentTitleCount() {
+    def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current');
+
+    int result = TitleInstance.executeQuery('''select count(title.id)
+      from TitleInstance as title,
+        Combo as pkgCombo,
+        Combo as titleCombo,
+        TitleInstancePackagePlatform as tipp
+      where pkgCombo.toComponent=tipp
+        and pkgCombo.fromComponent=?
+        and titleCombo.toComponent=tipp
+        and titleCombo.fromComponent=title
+        and tipp.status = ?
+        and title.status = ?'''
+        ,[this,refdata_current,refdata_current])[0];
+
+    result
+  }
+
+  @Transient
+  public getCurrentTippCount() {
+    def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current');
+    def combo_tipps = RefdataCategory.lookup('Combo.Type','Package.Tipps')
+
+    int result = Combo.executeQuery("select count(c.id) from Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent.status = ?"
+      ,[this, combo_tipps, refdata_current])[0]
+
+    result
   }
 
   @Transient
@@ -298,14 +329,12 @@ select tipp.id,
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
     def tipps = getTipps()
-     
-    tipps.each { def tipp ->
-      
-      // Ensure they aren't the javassist type classes here, as we will get a NoSuchMethod exception
-      // thrown below if we don't.
-      tipp = KBComponent.deproxy(tipp)
-      
-      tipp.deleteSoft()
+
+    if ( tipps?.size() > 0 ) {
+      def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+      def tipp_ids = tipps?.collect { it.id }
+
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids])
     }
   }
   
@@ -314,25 +343,20 @@ select tipp.id,
     log.debug("package::retire");
     // Call the delete method on the superClass.
     log.debug("Updating package status to retired");
-    this.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
+    this.status = retired_status
     this.save();
 
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
     log.debug("Retiring tipps");
+
     def tipps = getTipps()
 
-    tipps.each { def t ->
-      log.debug("deroxy ${t} ${t.class.name}");
+    if ( tipps?.size() > 0) {
+      def tipp_ids = tipps?.collect { it.id }
       
-      // SO: There are 2 deproxy methods. One in the static context that takes in an argument and one,
-      // against an instance which attempts to deproxy this component. Calling deproxy(t) here will invoke the method
-      // against the current package. this.deproxy(t).
-      // So Package.deproxy(t) or t.deproxy() should work...
-      def tipp = Package.deproxy(t)
-      log.debug("Retiring tipp ${tipp.id}");
-      tipp.status = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired');
-      tipp.save()
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret where t.id IN (:ttd)",[ret: retired_status, ttd:tipp_ids])
     }
   }
 
@@ -412,6 +436,7 @@ select tipp.id,
         'fixed' ( fixed?.value )
         'paymentType' ( paymentType?.value )
         'global' ( global?.value )
+        'contentType' ( contentType?.value )
 
          if (nominalPlatform) {
           builder.'nominalPlatform' ([id: nominalPlatform.id, uuid:nominalPlatform.uuid]) {
@@ -447,7 +472,7 @@ select tipp.id,
                 builder.'status' (tipp[24])
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
-                    builder.'identifier'('namespace':tid[0], 'value':tid[1], 'datatype':tid[2])
+                    builder.'identifier'('namespace':tid[0], 'value':tid[1], 'type':tid[2])
                   }
                 }
               }
@@ -497,7 +522,8 @@ select tipp.id,
   @Transient
   private static getTitleIds  (Long title_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, datatype.value from Identifier as i, Combo as c left join i.namespace.datatype as datatype where c.fromComponent.id = ? and c.type = ? and c.toComponent = i",[title_id,refdata_ids],[readOnly:true]);
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?",[title_id,refdata_ids,status_active],[readOnly:true]);
     result
   }
 
@@ -616,8 +642,9 @@ select tipp.id,
     def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
 
     log.debug("Checking by normname ${pkg_normname} ..")
-    def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ? ",[pkg_normname, status_deleted])
+    def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ?",[pkg_normname, status_deleted])
     def full_matches = []
+    def created = false
     def result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null;
     boolean changed = false;
 
@@ -703,6 +730,8 @@ select tipp.id,
       log.debug("No existing package matched. Creating new package..")
 
       result = new Package(name:packageHeaderDTO.name, normname:pkg_normname)
+      
+      created = true
 
       if (packageHeaderDTO.uuid && packageHeaderDTO.uuid.trim().size() > 0) {
         result.uuid = packageHeaderDTO.uuid
@@ -710,23 +739,24 @@ select tipp.id,
 
       result.save(flush:true, failOnError:true)
     }
-    else if ( user && result.curatoryGroups && result.curatoryGroups?.size() > 0 ) {
+    else if ( user && !user.hasRole('ROLE_SUPERUSER') && result.curatoryGroups && result.curatoryGroups?.size() > 0 ) {
       def cur = user.curatoryGroups?.id.intersect(result.curatoryGroups?.id)
       
       if (!cur) {
+        log.debug("No curator!")
         return result
       }
     }
 
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result.id, 'listStatus')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result.id, 'status')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.editStatus, result.id, 'editStatus')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result.id, 'scope')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result.id, 'breakable')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.consistent, result.id, 'consistent')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result.id, 'fixed')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result.id, 'paymentType')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result.id, 'global')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result, 'listStatus')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result, 'status')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.editStatus, result, 'editStatus')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result, 'scope')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result, 'breakable')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.consistent, result, 'consistent')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result, 'fixed')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result, 'paymentType')
+    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result, 'global')
     changed |= ClassUtils.setStringIfDifferent(result, 'listVerifier', packageHeaderDTO.listVerifier?.toString())
     // User userListVerifier
     changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate');
@@ -768,39 +798,6 @@ select tipp.id,
       }
       else {
         log.warn("Could not extract platform information from JSON!")
-      }
-    }
-
-    packageHeaderDTO.identifiers?.each { it ->
-      if ( it.type && it.value && it.type != "originEditUrl") {
-        log.debug("Trying to add identifier ${it} to package ${result}");
-
-        Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(it.type, it.value)
-
-        if ( the_id ) {
-          def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-          def existing_identifier = Combo.executeQuery("Select c.id from Combo as c where c.fromComponent.id = ? and c.type.id = ? and c.toComponent.id = ?",[result.id,id_combo_type.id,the_id.id]);
-
-          if(existing_identifier.size() > 0){
-            log.debug("Identifier ${it} is already present for package!")
-          }
-          else{
-            Combo new_id = new Combo(toComponent:the_id, fromComponent:result, type:id_combo_type).save(flush:true, failOnError:true);
-            if( new_id ){
-              log.debug("Added new identifier combo succesfully!")
-              changed = true
-            }
-            else{
-              log.error("Unable to create new identifier combo!")
-            }
-          }
-        }
-        else {
-          log.error("Error processing identifier ${it}!")
-        }
-      }
-      else {
-        log.error("Non-valid identifier provided!")
       }
     }
 
@@ -857,12 +854,12 @@ select tipp.id,
       }
     }
 
-    packageHeaderDTO.variantNames?.each {
-      if ( it.trim().size() > 0 ) {
-        result.ensureVariantName(it)
-        changed=true
-      }
-    }
+    // packageHeaderDTO.variantNames?.each {
+    //   if ( it.trim().size() > 0 ) {
+    //     result.ensureVariantName(it)
+    //     changed=true
+    //   }
+    // }
 
     packageHeaderDTO.curatoryGroups?.each {
 
@@ -878,6 +875,11 @@ select tipp.id,
           result.curatoryGroups.add(cg)
           changed=true;
         }
+      }
+      else {
+        def new_cg = new CuratoryGroup(name:it).save(flush:true, failOnError:true)
+        result.curatoryGroups.add(new_cg)
+        changed = true
       }
     }
 

@@ -1,5 +1,11 @@
 ---
 grails:
+    config:
+        locations:
+            - ~/.grails/gokb-config.groovy
+            - ~/.grails/gokb-config.yml
+            - ~/.grails/gokb-config.properties
+
     profile: web
     codegen:
         defaultPackage: gokbg3
@@ -14,6 +20,9 @@ grails:
     mime:
         file:
             extensions: false
+        use:
+            accept:
+                header: true
         disable:
             accept:
                 header:
@@ -170,16 +179,27 @@ environments:
         grails:
             mail:
                 port: 3025
+            plugin:
+                springsecurity:
+                    rest:
+                        token:
+                            storage:
+                                jwt:
+                                    secret: HollaDieWaldfeeHoffentlichIstDasJetztWirklichLangGenug
+                        login:
+                            endpointUrl: /rest/login
         quartz:
             pluginEnabled: false
         cache:
             headers:
                 enabled: false
+        javamelody:
+            disabled: true
     production:
         dataSource:
             dbCreate: update
-            url: jdbc:postgresql://pghost:5432/gokbg3
-            username: knowint
+            url: jdbc:postgresql://localhost:5432/gokbg3
+            username: gokb
             password: knowint
             driverClassName: org.postgresql.Driver
             dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -207,8 +227,11 @@ environments:
 gokb:
     defaultCuratoryGroup: Local
     ftupdate_enabled: true
-    decisionSupport: false
+    decisionSupport: 
+        active: false
+        otherVoters: false
     costInfo: false
 
 quartz:
     autoStartup: true
+    waitForJobsToCompleteOnShutdown: false
