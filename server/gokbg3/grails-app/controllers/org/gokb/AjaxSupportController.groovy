@@ -1427,4 +1427,30 @@ class AjaxSupportController {
 
     render result as JSON
   }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def checkTitleOccurrence() {
+    def result = ['result': 'OK', 'params': params]
+    def ti = genericOIDService.resolveOID(params.id)
+    def target = genericOIDService.resolveOID(params.pkg)
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    if (ti && target) {
+      def tipps = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as tipp where tipp.status <> :sd and exists (from Combo as pc where pc.fromComponent = :pkg and pc.toComponent = tipp) and exists (from Combo as tic where tic.fromComponent = :title and tic.toComponent = tipp)",[sd: status_deleted, pkg: target, title: ti])
+
+      result.count = tipps.size()
+      result.tipps = []
+
+      tipps.each { t ->
+        result.tipps << [uuid: t.uuid, status: t.status.value]
+      }
+    } else {
+      result.result = 'ERROR'
+      result.message = "Failed component lookup!"
+    }
+
+    log.debug("checkTitleOccurrence: ${result}")
+
+    render result as JSON
+  }
 }

@@ -87,7 +87,7 @@
     <ul id="tabs" class="nav nav-tabs">
       <li role="presentation" class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
       <g:if test="${d.id}">
-        <li role="presentation"><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${d.currentTitleCount}/ ${d.currentTippCount} </span></a></li>
+        <li role="presentation"><a href="#titledetails" data-toggle="tab">TIPPs <span class="badge badge-warning"> ${d.currentTippCount} (${d.tipps?.size() ?: '0'}) </span></a></li>
         <li role="presentation"><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a></li>
         
         <li role="presentation"><a href="#altnames" data-toggle="tab">Alternate Names
@@ -139,47 +139,60 @@
 
       <div class="tab-pane" id="titledetails">
         <g:if test="${params.controller != 'create'}">
-          <dl>
-            <dt><g:annotatedLabel owner="${d}" property="tipps">Titles/TIPPs</g:annotatedLabel></dt>
-            <dd>
-              <g:link class="display-inline" controller="search" action="index"
-                params="[qbe:'g:3tipps', qp_pkg_id:d.id, inline:true, refOid: d.getLogEntityId(), hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id']]"
-                id="">Titles in this package</g:link>
-              <g:if test="${ editable && params.controller != 'create' }">
-                <div class="panel-body">
-                  <h4>
-                    <g:annotatedLabel owner="${d}" property="addTipp">Add new TIPP</g:annotatedLabel>
-                  </h4>
-                  <g:form controller="ajaxSupport" action="addToCollection"
-                    class="form-inline">
-                    <input type="hidden" name="__context" value="${d.class?.name}:${d.id}" />
-                    <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform" />
-                    <input type="hidden" name="__addToColl" value="tipps" />
-                    <input type="hidden" name="__showNew" value="true" />
-                    <dl class="dl-horizontal">
-                      <dt class="dt-label">Title</dt>
-                      <dd>
-                        <g:simpleReferenceTypedown class="form-control select-m" name="title" baseClass="org.gokb.cred.TitleInstance" />
-                      </dd>
-                      <dt class="dt-label">Platform</dt>
-                      <dd>
-                        <g:simpleReferenceTypedown class="form-control select-m" name="hostPlatform" baseClass="org.gokb.cred.Platform" filter1="Current" />
-                      </dd>
-                      <dt class="dt-label">URL</dt>
-                      <dd>
-                        <input type="text" class="form-control select-m" name="url" required />
-                      </dd>
-                      <dt></dt>
-                      <dd>
-                        <button type="submit"
-                          class="btn btn-default btn-primary">Add</button>
-                      </dd>
-                    </dl>
-                  </g:form>
-                </div>
-              </g:if>
-            </dd>
-          </dl>
+          <div class="col-md-4">
+            <h3>TIPP Overview</h3>
+            <table class="table table-bordered">
+              <tbody>
+                <tr>
+                  <th>Current TIPPs</th><td>${d.currentTippCount}</td>
+                </tr>
+                <tr>
+                  <th>Total TIPPs</th><td>${d.tipps?.size() ?: '0'}</td>
+                </tr>
+                <tr>
+                  <th>Unique Titles</th><td>${d.currentTitleCount}</td>
+                </tr>
+              </tbody>
+            </table>
+            <button class="btn btn-default" id="loadContentStats">Load Content Stats</button>
+            <p>
+            <div id="contentMatrix" style="display:none;"></div>
+            </p>
+            <h4><g:link controller="search" action="index"
+              params="[qbe:'g:3tipps', qp_pkg_id:d.id, refOid: d.getLogEntityId(), hide:['qp_pkg_id', 'qp_cp', 'qp_pkg', 'qp_pub_id']]"
+              id="">View Details</g:link></h4>
+          </div>
+          <div class="col-md-8">
+            <g:if test="${ editable && params.controller != 'create' }">
+              <h3 style="margin-left:160px;">Add new TIPP to Package</h3>
+              <g:form controller="ajaxSupport" action="addToCollection"
+                class="form-inline">
+                <input type="hidden" name="__context" value="${d.class?.name}:${d.id}" />
+                <input type="hidden" name="__newObjectClass" value="org.gokb.cred.TitleInstancePackagePlatform" />
+                <input type="hidden" name="__addToColl" value="tipps" />
+                <input type="hidden" name="__showNew" value="true" />
+                <dl class="dl-horizontal">
+                  <dt class="dt-label">Title</dt>
+                  <dd>
+                    <g:simpleReferenceTypedown id="tippTitleSelect" class="form-control select-m" name="title" baseClass="org.gokb.cred.TitleInstance" />
+                  </dd>
+                  <dt class="dt-label">Platform</dt>
+                  <dd>
+                    <g:simpleReferenceTypedown id="tippPlatformSelect" class="form-control select-m" name="hostPlatform" baseClass="org.gokb.cred.Platform" filter1="Current" />
+                  </dd>
+                  <dt class="dt-label">URL</dt>
+                  <dd>
+                    <input type="text" class="form-control select-m" name="url" required />
+                  </dd>
+                  <dt></dt>
+                  <dd>
+                    <button type="submit" id="addNewTipp"
+                      class="btn btn-default btn-primary">Add and view new TIPP</button>
+                  </dd>
+                </dl>
+              </g:form>
+            </g:if>
+          </div>
         </g:if>
       </div>
 
@@ -321,7 +334,7 @@
           var tipp_restrict = $("#rr-tipp-status").val();
 
           $.ajax({
-            url: "/gokb/packages/connectedRRs",
+            url: contextPath + "/packages/connectedRRs",
             data: {id: "${d.id}", restrict: tipp_restrict},
             beforeSend: function() {
               $('#rr-loaded').empty();
@@ -334,6 +347,56 @@
               $("#rr-loaded").html(result);
             }
           });
+        });
+        $("#loadContentStats").click(function(e) {
+          e.preventDefault();
+
+          if ($("#contentMatrix").is(":hidden")) {
+
+            $.ajax({
+              url: contextPath + "/packages/contentStats",
+              data: {id: "${d.uuid}"},
+              beforeSend: function() {
+                $('#contentMatrix').show();
+                $('#loadContentStats').text("Hide Content Stats");
+                $('#contentMatrix').after('<div id="cst-loading" style="height:50px;vertical-align:middle;text-align:center;"><span>Loading list <asset:image src="img/loading.gif" /></span></div>');
+              },
+              complete: function() {
+                $('#cst-loading').remove();
+              },
+              success: function(result) {
+                $("#contentMatrix").html(result);
+              }
+            });
+          }
+          else {
+            $("#loadContentStats").text("Load Content Stats");
+            $("#contentMatrix").hide();
+          }
+        });
+        $("#tippTitleSelect").on("change", function(e) {
+          console.log(e);
+          $("#tippTitleWarning").remove();
+          if (e.added) {
+            $.ajax({
+              url: contextPath + "/ajaxSupport/checkTitleOccurrence",
+              data: {id: e.added.id, pkg: "${d.logEntityId}"},
+              success: function(result) {
+                if (result.count == 1) {
+                  $("#tippTitleSelect").after("<div id='tippTitleWarning'><i style='color:#008cba' class='fas fa-exclamation-triangle'></i> <span>A </span> <a href='"+contextPath+"/resource/show/"+result.tipps[0].uuid+"'>"+result.tipps[0].status+" TIPP</a> already exists for this title!</div>");
+                }
+                else if (result.count > 1) {
+                  $("#tippTitleSelect").after("<div id='tippTitleWarning' ><i style='color:#008cba' class='fas fa-exclamation-triangle'></i><span>This Package already has multiple TIPPs for this title:</span></div>");
+                  for (i = 0; i < result.tipps.length; i++) {
+                    $("#tippTitleWarning").after("<span><a href='"+contextPath+"/resource/show/"+result.tipps[i].uuid+"'> TIPP ("+result.tipps[i].status+")</a></span>");
+                  }
+                }
+                else {
+                  console.log(result.count);
+                }
+              }
+            });
+          }
         });
         $("#rr-all").click(function(e) {
           e.preventDefault();

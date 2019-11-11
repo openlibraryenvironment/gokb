@@ -47,6 +47,38 @@ class PackagesController {
     result
   }
 
+  def contentStats() {
+    def result = [:]
+    if ( params.id ) {
+      def pkg = Package.findByUuid(params.id)
+      def combo_title_tipp = RefdataCategory.lookup("Combo.Type", "TitleInstance.Tipps")
+      def st = [
+        RefdataCategory.lookup("KBComponent.Status", "Current"),
+        RefdataCategory.lookup("KBComponent.Status", "Retired"),
+        RefdataCategory.lookup("KBComponent.Status", "Expected"),
+        RefdataCategory.lookup("KBComponent.Status", "Deleted")
+      ]
+
+      if ( !pkg ) {
+        pkg = genericOIDService.resolveOID(params.id)
+      }
+
+      if ( pkg ) {
+        for (tippstatus in st) {
+          for (titlestatus in st) {
+            def cc = TitleInstancePackagePlatform.executeQuery("select count(*) from TitleInstancePackagePlatform as tipp where tipp.status = :tippstatus and exists(from Combo where fromComponent = :pkg and toComponent = tipp) and exists (from Combo where toComponent = tipp and fromComponent.status = :titlestatus and type = :ct)",['tippstatus':tippstatus, 'titlestatus': titlestatus, ct: combo_title_tipp, pkg: pkg]);
+
+            result["${tippstatus.value[0].toLowerCase()}${titlestatus.value[0].toLowerCase()}"] = cc[0]
+          }
+        }
+      }
+    }
+    withFormat {
+      html { render template: 'pkgcontentmatrix', model: [d:result], contentType:'text/html' }
+      json { render result as JSON }
+    }
+  }
+
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def connectedRRs() {
     log.debug("connectedRRs::${params}")
