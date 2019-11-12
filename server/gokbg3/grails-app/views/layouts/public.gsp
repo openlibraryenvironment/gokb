@@ -42,7 +42,7 @@
            <span class="icon-bar"></span>
          </button>
          <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
-         <a class="navbar-brand" href="${grailsApplication.config.server.contextPath ?: '/gokb'}/" style="font-weight:bold;">
+         <a class="navbar-brand" href="${grailsApplication.config.server.contextPath ?: ''}/" style="font-weight:bold;">
           <g:message code="gokb.appname" default="GOKb" />
           <g:if test="${grailsApplication.config.gokb.instance?.description}">
             – ${grailsApplication.config.gokb.instance?.description}
