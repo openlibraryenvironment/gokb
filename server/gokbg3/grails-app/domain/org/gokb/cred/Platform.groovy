@@ -58,13 +58,14 @@ class Platform extends KBComponent {
     passwordAuthentication  (nullable:true, blank:false)
     name (validator: { val, obj ->
       if (obj.hasChanged('name')) {
-        if (val) {
+        if (val && val.trim()) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          def dupes = Platform.findByNameIlike(val);
-          if (dupes && dupes != obj && dupes.status != status_deleted ) {
+          def dupes = Platform.findByNameIlikeAndStatusNotEqual(val, status_deleted);
+          if (dupes && dupes != obj) {
             return ['notUnique']
           }
-        } else if (obj.hasChanged('name')) {
+        }
+        else {
           return ['notNull']
         }
       }

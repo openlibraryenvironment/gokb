@@ -74,6 +74,20 @@ class Org extends KBComponent {
   static constraints = {
     mission(nullable:true, blank:true)
     homepage(nullable:true, blank:true, url:true)
+    name (validator: { val, obj ->
+      if (obj.hasChanged('name')) {
+        if (val && val.trim()) {
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+          def dupes = Org.findByNameIlikeAndStatusNotEqual(val, status_deleted);
+          if (dupes && dupes != obj) {
+            return ['notUnique']
+          }
+        }
+        else {
+          return ['notNull']
+        }
+      }
+    })
   }
 
   //  @Transient

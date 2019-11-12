@@ -118,6 +118,7 @@
               <tr>
                 <th>Package name</th>
                 <th>Provider</th>
+                <th>Content Type</th>
                 <th>Title count</th>
                 <th>Last updated</th>
               </tr>
@@ -131,6 +132,7 @@
                       (Curated by <g:each in="${hit.source.curatoryGroups}" var="cg" status="i"><g:if test="${i>0}">; </g:if>${cg}</g:each>)
                   </td>
                   <td>${hit.source.cpname}</td>
+                  <td>${hit.source.contentType}</td>
                   <td>${hit.source.titleCount}</td>
                   <td>${hit.source.lastUpdatedDisplay}</td>
                 </tr>
