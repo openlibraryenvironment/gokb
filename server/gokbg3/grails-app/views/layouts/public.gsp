@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
-    <asset:script> var contextPath="${grailsApplication.config.server.contextPath ?: '/gokb'}"; </asset:script>
+    <asset:script> var contextPath="${grailsApplication.config.server.contextPath ?: '/'}"; </asset:script>
     <g:layoutHead />
 
     <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
