@@ -796,7 +796,7 @@ class IntegrationController {
     def rjson = request.JSON
     User request_user = springSecurityService.currentUser
 
-    if ( rjson.packageHeader.name ) {
+    if ( rjson?.packageHeader?.name ) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
         def json = rjson
         def job_result = [:]

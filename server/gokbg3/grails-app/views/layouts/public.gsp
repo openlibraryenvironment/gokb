@@ -9,6 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon">
+    <asset:script> var contextPath="${grailsApplication.config.server.contextPath ?: '/gokb'}"; </asset:script>
     <g:layoutHead />
 
     <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
@@ -41,7 +42,7 @@
            <span class="icon-bar"></span>
          </button>
          <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
-         <a class="navbar-brand" href="public" style="font-weight:bold;">
+         <a class="navbar-brand" href="${grailsApplication.config.server.contextPath ?: '/gokb'}/" style="font-weight:bold;">
           <g:message code="gokb.appname" default="GOKb" />
           <g:if test="${grailsApplication.config.gokb.instance?.description}">
             – ${grailsApplication.config.gokb.instance?.description}
