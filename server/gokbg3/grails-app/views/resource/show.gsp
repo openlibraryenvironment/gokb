@@ -64,7 +64,7 @@
       <g:elseif test="${displayobj != null}">
         <g:if test="${ (!displayobj.respondsTo("isEditable")) || displayobj.isEditable() }" >
           <g:if test="${ !((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" >
-            <div class="col-xs-3 pull-right well">
+            <div class="col-xs-3 pull-right well" style="min-width:320px;">
               <div class="alert alert-warning">
                 <h4>Warning</h4>
                 <p>You are not a curator of this component. You can still edit it, but please contact a curator before making major changes.</p>
