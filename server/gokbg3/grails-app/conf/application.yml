@@ -20,6 +20,9 @@ grails:
     mime:
         file:
             extensions: false
+        use:
+            accept:
+                header: true
         disable:
             accept:
                 header:

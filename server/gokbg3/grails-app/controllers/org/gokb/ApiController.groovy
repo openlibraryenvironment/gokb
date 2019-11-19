@@ -294,6 +294,7 @@ class ApiController {
           else {
             result.result = 'ERROR'
             result.code = 403
+            response.setStatus(403)
             result.message = "Insufficient permissions to view this resource."
 
             log.debug("No permission to view this resource!")
@@ -433,8 +434,10 @@ class ApiController {
 
     }finally {
       if (errors) {
-        response.status = 400
+        response.setStatus(400)
         result = [:]
+        result.result = "ERROR"
+        result.code = 400
         result.errors = errors
       }
     }
@@ -815,7 +818,9 @@ class ApiController {
     }finally {
       if (errors) {
         result = [:]
-        response.status = 400
+        response.setStatus(400)
+        result.result = "ERROR"
+        response.code = 400
         result.errors = errors
       }
     }
@@ -973,15 +978,21 @@ class ApiController {
       }
       else if (!obj) {
         result.error = "Object ID could not be resolved!"
+        response.setStatus(404)
+        result.code = 404
         result.result = 'ERROR'
       }
       else {
         result.error = "Access to object was denied!"
+        response.setStatus(403)
+        result.code = 403
         result.result = 'ERROR'
       }
     }
     else {
       result.result = 'ERROR'
+      response.setStatus(400)
+      result.code = 400
       result.error = 'No object id supplied!'
     }
 

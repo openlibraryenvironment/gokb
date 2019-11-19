@@ -270,15 +270,15 @@ class IntegrationController {
   def assertOrg() {
     log.debug("assertOrg, request.json = ${request.JSON}");
     def result=[result: 'OK']
-    result.status = true;
     def assert_errors = false;
+    def jsonOrg = request.JSON
 
     try {
-      def located_or_new_org = resolveOrgUsingPrivateIdentifiers(request.JSON.identifiers)
+      def located_or_new_org = resolveOrgUsingPrivateIdentifiers(jsonOrg.identifiers)
 
       if ( located_or_new_org == null ) {
-        if ( request.JSON.name ) {
-          String orgName = request.JSON.name
+        if ( jsonOrg.name ) {
+          String orgName = jsonOrg.name
           String orgNormName = Org.generateNormname (orgName)
 
           // No match. One more attempt to match on norm_name only.
@@ -301,9 +301,9 @@ class IntegrationController {
             }
             else if( candidate_orgs.size() == 0 ){
 
-              log.debug("Create new org name will be \"${request.JSON.name}\" (${request.JSON.name?.length()})");
+              log.debug("Create new org name will be \"${jsonOrg.name}\" (${jsonOrg.name?.length()})");
 
-              located_or_new_org = new Org(name:request.JSON.name, normname:orgNormName, uuid: request.JSON.uuid?.trim()?.size() > 0 ? request.JSON.uuid : null)
+              located_or_new_org = new Org(name:jsonOrg.name, normname:orgNormName, uuid: jsonOrg.uuid?.trim()?.size() > 0 ? jsonOrg.uuid : null)
 
               log.debug("Attempt to save - validate: ${located_or_new_org}");
 
@@ -343,26 +343,29 @@ class IntegrationController {
           log.error("Problem saving new org record",e);
           result.errors.add("${e}".toString());
         }
-        result.status = false;
+        result.result = 'ERROR'
+        result.setStatus(400)
+        result.message = "There was a problem saving the new Org!"
+        result.baddata = jsonOrg
         return
       }
 
       setAllRefdata ([
         'software', 'service'
-      ], request.JSON, located_or_new_org)
+      ], jsonOrg, located_or_new_org)
 
-      if ( request.JSON.mission ) {
-        log.debug("Mission ${request.JSON.mission}");
-        located_or_new_org.mission = RefdataCategory.lookup('Org.Mission',request.JSON.mission);
+      if ( jsonOrg.mission ) {
+        log.debug("Mission ${jsonOrg.mission}");
+        located_or_new_org.mission = RefdataCategory.lookup('Org.Mission',jsonOrg.mission);
       }
 
-      if ( request.JSON.homepage ) {
-        located_or_new_org.homepage = request.JSON.homepage
+      if ( jsonOrg.homepage ) {
+        located_or_new_org.homepage = jsonOrg.homepage
       }
 
       // Add parent.
-      if (request.JSON.parent) {
-        def parentDef = request.JSON.parent;
+      if (jsonOrg.parent) {
+        def parentDef = jsonOrg.parent;
         log.debug("Adding parent using ${parentDef.identifierType}:${parentDef.identifierValue}");
         def located_component = KBComponent.lookupByIO(parentDef.identifierType,parentDef.identifierValue)
         if (located_component) {
@@ -370,10 +373,10 @@ class IntegrationController {
         }
       }
 
-      log.debug("Combo processing: ${request.JSON.combos}")
+      log.debug("Combo processing: ${jsonOrg.combos}")
 
       // combos
-      request.JSON.combos.each { c ->
+      jsonOrg.combos.each { c ->
         log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
         def located_component = KBComponent.lookupByIO(c.linkTo.identifierType,c.linkTo.identifierValue)
 
@@ -391,8 +394,8 @@ class IntegrationController {
       }
 
       // roles
-      log.debug("Role Processing: ${request.JSON.roles}");
-      request.JSON.roles.each { r ->
+      log.debug("Role Processing: ${jsonOrg.roles}");
+      jsonOrg.roles.each { r ->
         log.debug("Adding role ${r}");
         def role = RefdataCategory.lookup("Org.Role", r)
 
@@ -402,7 +405,7 @@ class IntegrationController {
       }
 
       // Core data...
-      ensureCoreData(located_or_new_org, request.JSON)
+      ensureCoreData(located_or_new_org, jsonOrg)
 
       log.debug("Attempt to save - validate: ${located_or_new_org}");
 
@@ -418,16 +421,19 @@ class IntegrationController {
           log.error("Problem saving new org record",e);
           result.errors.add("${e}".toString());
         }
-        result.status = false;
-        return
+        result.setStatus(400)
+        result.baddata = jsonOrg
+        result.result = 'ERROR'
+        result.message = "There was a problem saving the Org!"
       }
 
     }
     catch ( Exception e ) {
       log.error("Unexpected error importing org",e)
-      result.message ="ERROR: ${e}";
       result.result = 'ERROR'
-      result.status = false
+      result.message = "Unexpected error importing the Org!"
+      result.baddata = jsonOrg
+      result.setStatus(500)
     }
     render result as JSON
   }
@@ -841,7 +847,7 @@ class IntegrationController {
 
                     if ( title_validation && !title_validation.valid ) {
                       log.warn("Not valid after title validation ${tipp.title}");
-                      errors.add(['code': 400, 'message': "Title information for ${tipp.title.name} is not valid!" + "${title_validation.errors}", baddata: tipp.title, errors:title_validation.errors])
+                      errors.add(['code': 400, 'message': "Title information for ${tipp.title.name} is not valid: " + "${title_validation.errors}", baddata: tipp.title, errors:title_validation.errors])
                     }
                     else {
                       def valid_ti = true
@@ -1087,6 +1093,7 @@ class IntegrationController {
               log.error("Package Crossref failed with Exception",e)
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
+              job_result.code = 500
               errors.add([code:500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
             }
             cleanUpGorm()
@@ -1120,8 +1127,8 @@ class IntegrationController {
     else {
       log.debug("Not ingesting package without name!")
       result.result = "ERROR"
-      result.errors = []
-      result.errors.add(['code': 400, 'message': "The provided package has no name."])
+      result.message = "The provided package has no name!"
+      result.setStatus(400)
     }
     cleanUpGorm()
 
@@ -1178,18 +1185,21 @@ class IntegrationController {
         else {
           log.debug("No platform matched for ${platformJson}")
           result.message = "Could not crossreference platform ${platformJson}"
+          response.setStatus(500)
           result.result = 'ERROR'
         }
       }
       catch (Exception e) {
         log.debug("Exception while looking up platform!", e)
         result.message = "There was an error looking up platform ${platformJson}"
+        response.setStatus(500)
         result.result = "ERROR"
       }
     }
     else {
       log.debug("Missing Platform info for ${platformJson}")
       result.message = "Platform ${platformJson} is missing required information ('name' or 'platformUrl')!"
+      response.setStatus(400)
       result.result = "ERROR"
     }
     render result as JSON
@@ -1311,7 +1321,7 @@ class IntegrationController {
         result = background_job.get()
       }
       else {
-        result.job_id = background_job.id
+        result = [job_id:background_job.id]
       }
     }
 

@@ -18,11 +18,12 @@ class UrlMappings {
         }
 
         "/"(controller:'public',action:'index')
-        "500"(view:'/error')
-        "500"(view:'/login/denied', exception: NotFoundException)
-        "500"(view:'/login/denied', exception: AccessDeniedException)
-        "404"(controller:'home', action:'index') {status = '404'}
-        "403"(view:'/login/denied')
-        "401"(view:'/login/denied')
+        "500"(controller:'error', action:'serverError')
+        "500"(controller:'error', action:'serverError', exception: NotFoundException)
+        "500"(controller:'error', action:'unauthorized', exception: AccessDeniedException)
+        "404"(controller:'error', action:'notFound')
+        "403"(controller:'error', action:'forbidden')
+        "401"(controller:'error', action:'unauthorized')
+        "400"(controller:'error', action:'badRequest')
     }
 }
