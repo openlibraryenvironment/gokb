@@ -11,6 +11,11 @@ class UrlMappings {
         // "/$controller/$action?/$id?(.$format)?"{
         "/oai/$id?" (controller: 'oai', action: 'index')
         "/resource/show/$type/$id" (controller: 'resource', action:'show')
+        put "/profile" (controller: 'profile', 'action':'update')
+        get "/profile" (controller: 'profile', 'action':'show')
+        get "/packages/$id" (controller:'packages', action:'show')
+        get "/packages/$id/tipps" (controller:'packages', action:'tipps')
+        get "/packages" (controller:'packages', action:'index')
         "/$controller/$action?/$id?"{
             constraints {
                 // apply constraints here

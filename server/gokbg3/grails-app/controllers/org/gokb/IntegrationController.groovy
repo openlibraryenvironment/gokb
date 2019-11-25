@@ -1625,7 +1625,7 @@ class IntegrationController {
           Date pub_add_sd = null
           Date pub_add_ed = null
 
-          if ( pub_to_add.startDate?.trim().size() > 0 ) {
+          if ( pub_to_add.startDate?.trim() ) {
 
             sdfs.each { s ->
               if (!pub_add_sd) {
@@ -1640,7 +1640,7 @@ class IntegrationController {
             }
           }
 
-          if ( pub_to_add.endDate?.trim().size() > 0 ) {
+          if ( pub_to_add.endDate?.trim() ) {
 
             sdfs.each { s ->
               if (!pub_add_ed) {

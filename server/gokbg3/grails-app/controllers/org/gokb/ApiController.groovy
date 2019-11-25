@@ -508,7 +508,7 @@ class ApiController {
   **/
 
   def find() {
-    def result = [:]
+    def result = ['result':'OK', 'params': params]
     def esclient = ESWrapperService.getClient()
     def search_action = null
     def errors = [:]
@@ -771,8 +771,14 @@ class ApiController {
         if (result.max) {
           es_request.setSize(result.max)
         }
+        else {
+          result.max = 10
+        }
         if (result.offset) {
           es_request.setFrom(result.offset)
+        }
+        else {
+          result.offset = 0
         }
 
         if (pkgNameSort) {
