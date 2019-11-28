@@ -35,11 +35,14 @@ grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/fwk/**',              filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/api/**',              filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/integration/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
-        [pattern: '/packages/deposit',    filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
+        [pattern: '/refdata/**',          filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
+        [pattern: '/packages/**',         filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
+        [pattern: '/books/**',            filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/admin/bulkLoadUsers', filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
-        [pattern: '/rest/**',             filters: 'JOINED_FILTERS,-anonymousAuthenticationFilter,-exceptionTranslationFilter'],
+        [pattern: '/rest/login',          filters: 'anonymousAuthenticationFilter,restTokenValidationFilter,restExceptionTranslationFilter,filterInvocationInterceptor'],
+        [pattern: '/rest/**',             filters: 'JOINED_FILTERS,-anonymousAuthenticationFilter,-exceptionTranslationFilter,-basicAuthenticationFilter,-securityContextPersistenceFilter,-authenticationProcessingFilter,-rememberMeAuthenticationFilter,-concurrentSessionFilter,'],
         [pattern: '/oauth/**',            filters: 'JOINED_FILTERS,-anonymousAuthenticationFilter,-exceptionTranslationFilter'],
-        [pattern: '/**',                  filters: 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter'],
+        [pattern: '/**',                  filters: 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-restTokenValidationFilter,-restExceptionTranslationFilter'],
 ]
 
 grails.plugin.springsecurity.controllerAnnotations.staticRules = [
@@ -53,7 +56,6 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/index',                   access: ['permitAll']],
   [pattern: '/index.gsp',               access: ['permitAll']],
   [pattern: '/register/**',             access: ['permitAll']],
-  [pattern: '/packages/**',             access: ['permitAll']],
   [pattern: '/public/**',               access: ['permitAll']],
   [pattern: '/component/identifierConflicts', access: ['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/public',                  access: ['permitAll']],
@@ -88,7 +90,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/aclEntry/**',             access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/oai',                     access: ['permitAll']],
   [pattern: '/oai/**',                  access: ['permitAll']],
-  [pattern: '/rest/**',                 access: ['permitAll']],
+  [pattern: '/rest/login',              access: ['permitAll']],
   [pattern: '/oauth/**',                access: ['permitAll']],
   [pattern: '/coreference/**',          access: ['permitAll']]
 ]

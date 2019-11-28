@@ -1,6 +1,7 @@
 package org.gokb
 
 import grails.converters.*
+import grails.gorm.transactions.*
 import org.springframework.security.acls.model.NotFoundException
 import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
@@ -9,8 +10,12 @@ import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
 import java.security.MessageDigest
 import grails.converters.JSON
-
 import grails.core.GrailsClass
+import groovyx.net.http.URIBuilder
+
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 
@@ -20,7 +25,7 @@ import org.hibernate.type.*
 import org.hibernate.Hibernate
 
 
-
+@Transactional(readOnly = true)
 class PackagesController {
 
   def genericOIDService
@@ -30,10 +35,9 @@ class PackagesController {
   def ESWrapperService
   def ESSearchService
   def sessionFactory
+  def messageService
 
   public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=? and c.toComponent=tipp  and c.type.value = ? order by tipp.id';
-
-
 
   def packageContent() {
     log.debug("packageContent::${params}")
@@ -78,150 +82,7 @@ class PackagesController {
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def index() {
-    def result = [:]
-
-    params.componentType = params.componentType ?: "Package" // Tells ESSearchService what to look for
-
-    result =  ESSearchService.find(params)
-
-    render result as JSON
-  }
-
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def show() {
-    def result = [:]
-
-    if (params.oid || params.id) {
-      def obj = Package.findByUuid(params.id) 
-      
-      if (!obj) {
-        obj = genericOIDService.resolveOID(params.oid ?: params.id)
-      }
-
-      if (!obj) {
-        obj = Package.get(params.id)
-      }
-
-      if ( obj?.isReadable() ) {
-        result = obj.getAllPropertiesWithLinks(false)
-        result.remove('lastProject')
-        result.remove('bucketHash')
-        result.remove('shortcode')
-        result.remove('normname')
-        result.remove('people')
-        result.remove('lastSeen')
-        result.remove('updateBenchmark')
-        result.remove('systemComponent')
-        result.remove('provenance')
-        result.remove('insertBenchmark')
-        result.remove('componentHash')
-        result.remove('prices')
-        result.remove('subjects')
-        result.remove('lastUpdateComment')
-        result.remove('reference')
-        result.remove('duplicateOf')
-
-        result.currentTipps = obj.currentTippCount
-        result.ids = obj.ids.collect { id -> ["oid":"org.gokb.cred.Identifier:${id.id}", "value": id.value, "namespace": id.namespace.value] }
-        result.curatoryGroups = obj.curatoryGroups.collect { cg -> ["oid": "org.gokb.cred.CuratoryGroup:${cg.id}", 'name': cg.name, 'uuid': cg.uuid] }
-        result.nominalPlatform = obj.nominalPlatform.collect { np -> ["oid": "org.gokb.cred.Platform:${np.id}", 'name': np.name, 'uuid': np.uuid] }
-        result.provider = obj.provider.collect { prv -> ["oid": "org.gokb.cred.Org:${prv.id}", 'name': prv.name, 'uuid': prv.uuid] }
-      }
-      else if (!obj) {
-        result.error = "Object ID could not be resolved!"
-        response.setStatus(404)
-        result.code = 404
-        result.result = 'ERROR'
-      }
-      else {
-        result.error = "Access to object was denied!"
-        response.setStatus(403)
-        result.code = 403
-        result.result = 'ERROR'
-      }
-    }
-    else {
-      result.result = 'ERROR'
-      response.setStatus(400)
-      result.code = 400
-      result.error = 'No object id supplied!'
-    }
-
-    render result as JSON
-  }
-
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def update() {
-    def result = ['result':'OK', 'params': params]
-    def reqBody = request.JSON
-
-    if (reqBody?.package) {
-      GrailsClass domain_class = grailsApplication.getArtefact('Domain','org.gokb.cred.Package')
-
-      if ( domain_class && (domain_class.getClazz().isTypeCreatable() || domain_class.getClazz().isTypeAdministerable()) ) {
-        PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(domain_class.fullName)
-
-        pent.getPersistentProperties().each { p -> // list of PersistentProperties
-          log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
-          if (reqBody.package[p.name]) {
-            if ( p instanceof Association ) {
-              if ( p instanceof ManyToOne || p instanceof OneToOne ) {
-                // Set ref property
-                log.debug("set assoc ${p.name} to lookup of OID ${params[p.name]}");
-                // if ( key == __new__ then we need to create a new instance )
-                new_obj[p.name] = resolveOID2(params[p.name])
-              }
-              else {
-                // Add to collection
-                log.debug("add to collection ${p.name} for OID ${params[p.name]}");
-                new_obj[p.name].add(resolveOID2(params[p.name]))
-              }
-            }
-            else {
-              log.debug("checking for type of property -> ${p.type}")
-              switch ( p.type ) {
-                case Long.class:
-                  log.debug("Set simple prop ${p.name} = ${params[p.name]} (as long=${Long.parseLong(params[p.name])})");
-                  new_obj[p.name] = Long.parseLong(params[p.name]);
-                  break;
-
-                case Date.class:
-                  def dateObj = params.date(p.name, 'yyyy-MM-dd')
-                  new_obj[p.name] = dateObj
-                  log.debug("Set simple prop ${p.name} = ${params[p.name]} (as date ${dateObj}))");
-                  break;
-                default:
-                  log.debug("Default for type ${p.type}")
-                  log.debug("Set simple prop ${p.name} = ${params[p.name]}");
-                  new_obj[p.name] = params[p.name]
-                  break;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def tipps() {
-    def result = [:]
-    log.debug("tipps :: ${params}")
-    def tippParams = params
-
-    tippParams.remove('componentType')
-    tippParams.componentType = "TIPP" // Tells ESSearchService what to look for
-    tippParams.linkedPackage = "${params.id}"
-    tippParams.remove('id')
-    tippParams.remove('uuid')
-
-    result =  ESSearchService.find(tippParams)
-
-    render result as JSON
-  }
-
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
   def preflight() {
    def result = [:]
     log.debug("preflight::${params}")
@@ -271,6 +132,7 @@ class PackagesController {
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
   def deposit() {
     def result = [:]
     log.debug("deposit::${params}")

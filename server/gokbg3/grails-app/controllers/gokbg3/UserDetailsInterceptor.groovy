@@ -5,13 +5,29 @@ import org.gokb.cred.*;
 class UserDetailsInterceptor {
 
   public UserDetailsInterceptor() {
-    matchAll().excludes(controller: 'auth')
-              .excludes(controller: 'login')
-              .excludes(controller: 'rest')
-              .excludes(controller: 'integration')
-              .excludes(controller: 'api')
-              .excludes(controller: 'oai')
-              .excludes(controller: 'ajaxSupport')
+    match(controller: 'admin')
+    match(controller: 'component')
+    match(controller: 'coreference')
+    match(controller: 'create')
+    match(controller: 'decisionSupport')
+    match(controller: 'file')
+    match(controller: 'folderUpload')
+    match(controller: 'fwk')
+    match(controller: 'globalSearch')
+    match(controller: 'group')
+    match(controller: 'home')
+    match(controller: 'ingest')
+    match(controller: 'masterList')
+    match(controller: 'packages')
+    match(controller: 'public')
+    match(controller: 'resource')
+    match(controller: 'savedItems')
+    match(controller: 'search')
+    match(controller: 'security')
+    match(controller: 'titleList')
+    match(controller: 'upload')
+    match(controller: 'user')
+    match(controller: 'workflow')
   }
 
 

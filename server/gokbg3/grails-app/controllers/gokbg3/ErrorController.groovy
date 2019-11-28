@@ -25,14 +25,10 @@ class ErrorController {
   def notFound() {
     def resp = [code: 404, message:'Not Found']
     withFormat {
-      html {
-        forward controller: 'home', action:'index', params:(params), status: 404
-      }
-      json {
-        response.sendError(404)
-        render resp as JSON
-      }
+      log.debug("Rendering HTML 404")
+      redirect (uri:'/notFound', params:[status:404])
     }
+    render resp as JSON
   }
   
   def forbidden() {
@@ -40,7 +36,7 @@ class ErrorController {
     withFormat {
       html {
         log.debug("Rendering HTML 403")
-        redirect (uri:'login/denied', params:[status:403])
+        redirect (uri:'/login/denied', params:[status:403])
       }
       json {
         log.debug("Rendering JSON 403")

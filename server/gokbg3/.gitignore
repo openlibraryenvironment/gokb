@@ -13,4 +13,5 @@ out/
 .settings
 .classpath
 .asscache
+.vscode
 bin

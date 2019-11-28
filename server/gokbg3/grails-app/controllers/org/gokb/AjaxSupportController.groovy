@@ -766,11 +766,11 @@ class AjaxSupportController {
         target_object.save(flush:true);
       }
       else {
-        errors = messageService.processValidationErrors(target_object.errors.allErrors, request.locale)
+        errors = messageService.processValidationErrors(target_object.errors, request.locale)
       }
     }
     else {
-      errors.add("Object ${target_object} is not editable.".toString())
+      errors['global'].add("Object ${target_object} is not editable.".toString())
       log.debug("Object ${target_object} is not editable.");
     }
 
@@ -783,14 +783,14 @@ class AjaxSupportController {
         }
         else {
           response.status = 400
-          outs << errors[0]
+          outs << errors[params.name][0]
         }
         outs.flush()
         outs.close()
       }
       json {
         if (errors) {
-          result.errors = errors
+          result.errors = errors[params.name]
           result.result = 'ERROR'
         }
 
@@ -908,9 +908,9 @@ class AjaxSupportController {
     def result = ['result': 'OK', 'params': params]
     def identifier_instance = null
     // Check identifier namespace present, and identifier value valid for that namespace
-    if ( ( params.identifierNamespace?.length() > 0 ) &&
-         ( params.identifierValue?.length() > 0 ) &&
-         ( params.__context?.length() > 0 ) ) {
+    if ( ( params.identifierNamespace?.trim() ) &&
+         ( params.identifierValue?.trim() ) &&
+         ( params.__context?.trim() ) ) {
       def ns = genericOIDService.resolveOID(params.identifierNamespace)
       def owner = genericOIDService.resolveOID(params.__context)
       if ( ( ns != null ) && ( owner != null ) && owner.isEditable() ) {
@@ -944,6 +944,7 @@ class AjaxSupportController {
       }
       json {
         if (flash.error) {
+          result.result = 'ERROR'
           result.error = flash.error
         }
         else {

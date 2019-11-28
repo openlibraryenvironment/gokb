@@ -1,4 +1,4 @@
-package org.gokb
+package org.gokb.rest
 
 import grails.converters.*
 import grails.gorm.transactions.*
@@ -14,6 +14,8 @@ import grails.converters.JSON
 @Transactional(readOnly = true)
 class ProfileController {
 
+  static namespace = 'rest'
+
   def genericOIDService
   def springSecurityService
   def concurrencyManagerService
@@ -22,7 +24,7 @@ class ProfileController {
 
   def show() {
     def result = [:]
-    User user = springSecurityService.currentUser
+    def user = springSecurityService.principal
 
     def cur_groups = []
 

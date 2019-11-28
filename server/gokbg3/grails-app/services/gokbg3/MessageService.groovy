@@ -1,19 +1,27 @@
 package gokbg3
 
+import org.springframework.validation.FieldError
+import org.springframework.validation.ObjectError
 import java.text.MessageFormat
 
 class MessageService {
 
   def messageSource
 
-  public List processValidationErrors(errors, locale) {
-    def result = []
+  public Map processValidationErrors(errors, locale) {
+    def result = [:]
 
-    errors.each { eo ->
-
-
+    errors.allErrors.each { eo ->
+      def field = 'object'
       def resolvedArgs = []
       def errorMessage = null
+
+      if ( eo instanceof FieldError ){
+        if (!result[eo.field]) {
+          result[eo.field] = []
+        }
+        field = eo.field
+      }
 
       eo.getArguments().each { ma ->
         log.debug("message arg type is: ${ma?.class?.name ?: 'null'}")
@@ -54,11 +62,11 @@ class MessageService {
       }
 
       if (errorMessage) {
-        result.add(errorMessage)
+        result[field].add(errorMessage)
       }else{
         log.debug("No message found for ${eo.codes}")
         log.debug("Default: ${MessageFormat.format(eo.defaultMessage, messageArgs)}")
-        result.add("${MessageFormat.format(eo.defaultMessage, messageArgs)}")
+        result[field].add("${MessageFormat.format(eo.defaultMessage, messageArgs)}")
       }
     }
     result

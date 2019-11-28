@@ -4,13 +4,29 @@ package gokbg3
 class PreferencesInterceptor {
 
   public PreferencesInterceptor() {
-      matchAll().excludes(controller:'api')
-                .excludes(controller: 'login')
-                .excludes(controller: 'rest')
-                .excludes(controller:'integration')
-                .excludes(controller: 'oai')
-                .excludes(controller: 'ajaxSupport')
-      // matchAll().excludes(controller: 'auth')
+    match(controller: 'admin')
+    match(controller: 'component')
+    match(controller: 'coreference')
+    match(controller: 'create')
+    match(controller: 'decisionSupport')
+    match(controller: 'file')
+    match(controller: 'folderUpload')
+    match(controller: 'fwk')
+    match(controller: 'globalSearch')
+    match(controller: 'group')
+    match(controller: 'home')
+    match(controller: 'ingest')
+    match(controller: 'masterList')
+    match(controller: 'packages')
+    match(controller: 'public')
+    match(controller: 'resource')
+    match(controller: 'savedItems')
+    match(controller: 'search')
+    match(controller: 'security')
+    match(controller: 'titleList')
+    match(controller: 'upload')
+    match(controller: 'user')
+    match(controller: 'workflow')
   }
 
   boolean before() {

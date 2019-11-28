@@ -262,7 +262,7 @@ class ESSearchService{
       def linkedFieldParams = [:]
       def unknown_fields = []
       def other_fields = ["controller","action","max","offset","from"]
-      def direct_fields = ["cpname", "provider", "id", "uuid"]
+      def direct_fields = ["cpname", "provider", "id", "uuid", "suggest"]
       def linked_fields = ["hostPlatform", "nominalPlatform", "platform", "listStatus", "role"]
       def id_params = [:]
       def pkgNameSort = false
@@ -511,9 +511,15 @@ class ESSearchService{
         if (params.max) {
           es_request.setSize(result.max)
         }
+        else {
+          result.max = 10
+        }
 
         if (params.offset || params.from) {
           es_request.setFrom(result.offset)
+        }
+        else {
+          result.offset = 0
         }
 
         if (pkgNameSort) {
