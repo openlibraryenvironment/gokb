@@ -38,6 +38,8 @@ class TitleInstance extends KBComponent {
       "${this.class.name}:${id}"
   }
 
+  public static final String restPath = "/titles"
+
   // This map is used to convey information about the title in general processing. The initial usecase is so that we can attach
   // information about how this specific title was located, for example, by class 1 identifier match, or some other method
   // title_status_properties.matched_by='Title In Title History' is used when the title was matched by a title string in the context of a title history

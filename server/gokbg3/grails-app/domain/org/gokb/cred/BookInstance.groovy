@@ -62,6 +62,8 @@ class BookInstance extends TitleInstance {
     return "Book";
   }
 
+  public static final String restPath = "/books"
+
   /**
    * Auditable plugin, on change
    *

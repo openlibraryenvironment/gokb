@@ -72,6 +72,8 @@ class Platform extends KBComponent {
     })
   }
 
+  public static final String restPath = "/platforms"
+
   @Transient
   static def oaiConfig = [
     id:'platforms',

@@ -29,6 +29,8 @@ class UserOrganisation extends Party {
     members:'memberOf'
   ]
 
+  public static final String restPath = "/userorgs"
+
   public String toString() {
     return displayName.toString()
   }

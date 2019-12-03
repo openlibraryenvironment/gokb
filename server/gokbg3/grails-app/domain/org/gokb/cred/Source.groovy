@@ -37,6 +37,8 @@ class Source extends KBComponent {
     ruleset(nullable:true, blank:true)
   }
 
+  public static final String restPath = "/sources"
+
   static def refdataFind(params) {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)

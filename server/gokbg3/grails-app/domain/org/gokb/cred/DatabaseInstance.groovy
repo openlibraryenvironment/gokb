@@ -23,6 +23,8 @@ class DatabaseInstance extends TitleInstance {
     return "Database";
   }
 
+  public static final String restPath = "/databases"
+
   /**
     * Auditable plugin, on change
     *

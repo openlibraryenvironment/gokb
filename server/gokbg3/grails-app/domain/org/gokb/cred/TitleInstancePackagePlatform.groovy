@@ -130,6 +130,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     url (nullable:true, blank:true)
   }
 
+  public static final String restPath = "/tipps"
+
   def availableActions() {
     [ [code:'setStatus::Retired', label:'Retire'],
       [code:'tipp::retire', label:'Retire (with Date)'],

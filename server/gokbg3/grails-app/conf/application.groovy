@@ -39,8 +39,8 @@ grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/packages/**',         filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/books/**',            filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/admin/bulkLoadUsers', filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
-        [pattern: '/rest/login',          filters: 'anonymousAuthenticationFilter,restTokenValidationFilter,restExceptionTranslationFilter,filterInvocationInterceptor'],
-        [pattern: '/rest/**',             filters: 'JOINED_FILTERS,-anonymousAuthenticationFilter,-exceptionTranslationFilter,-basicAuthenticationFilter,-securityContextPersistenceFilter,-authenticationProcessingFilter,-rememberMeAuthenticationFilter,-concurrentSessionFilter,'],
+        [pattern: '/rest/login',          filters: 'JOINED_FILTERS,-anonymousAuthenticationFilter,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
+        [pattern: '/rest/**',             filters: 'JOINED_FILTERS,-anonymousAuthenticationFilter,-exceptionTranslationFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
         [pattern: '/oauth/**',            filters: 'JOINED_FILTERS,-anonymousAuthenticationFilter,-exceptionTranslationFilter'],
         [pattern: '/**',                  filters: 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-restTokenValidationFilter,-restExceptionTranslationFilter'],
 ]
@@ -91,6 +91,9 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/oai',                     access: ['permitAll']],
   [pattern: '/oai/**',                  access: ['permitAll']],
   [pattern: '/rest/login',              access: ['permitAll']],
+  [pattern: '/rest/refdata',            access: ['permitAll']],
+  [pattern: '/rest/refdata/**',         access: ['permitAll']],
+  [pattern: '/rest/**',                 access: ['ROLE_USER']],
   [pattern: '/oauth/**',                access: ['permitAll']],
   [pattern: '/coreference/**',          access: ['permitAll']]
 ]

@@ -12,8 +12,21 @@ class UrlMappings {
         "/oai/$id?" (controller: 'oai', action: 'index')
         "/resource/show/$type/$id" (controller: 'resource', action:'show')
         group "/rest", {
-            get "/packages" (controller: 'package', namespace:'rest', action:'index')
+            get "/packages/$id/tipps" (controller: 'package', namespace: 'rest', action:'tipps')
             get "/packages/$id" (controller: 'package', namespace: 'rest', action:'show')
+            put "/packages/$id" (controller: 'package', namespace: 'rest', action:'update')
+            get "/packages" (controller: 'package', namespace:'rest', action:'index')
+            
+            get "/refdata/categories/$id" (controller: 'refdata', namespace: 'rest', action: 'showCategory')
+            get "/refdata/values/$id" (controller: 'refdata', namespace: 'rest', action:'showValue')
+            get "/refdata" (controller: 'refdata', namespace:'rest', action: 'index')
+
+            get "/profile" (controller: 'profile', namespace:'rest', action: 'show')
+            put "/profile" (controller: 'profile', namespace:'rest', action: 'update')
+
+            "/$controller/$action?/$id?" {
+                constraints {}
+            }
         }
         "/$controller/$action?/$id?"{
             constraints {

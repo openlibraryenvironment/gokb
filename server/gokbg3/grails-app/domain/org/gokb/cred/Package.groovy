@@ -111,6 +111,44 @@ class Package extends KBComponent {
     })
   }
 
+  public static final String restPath = "/packages"
+
+  public final static Map jsonMapping = [
+    'ignore': [
+      'lastProject',
+      'bucketHash',
+      'shortcode',
+      'normname',
+      'people',
+      'lastSeen',
+      'updateBenchmark',
+      'systemComponent',
+      'provenance',
+      'insertBenchmark',
+      'componentHash',
+      'prices',
+      'subjects',
+      'lastUpdateComment',
+      'reference',
+      'duplicateOf',
+      'componentDiscriminator'
+    ],
+    'combos_default': [
+      'ids',
+      'curatoryGroups',
+      'nominalPlatform',
+      'provider'
+    ],
+    'immutable': [
+      'id',
+      'uuid',
+      'lastUpdated',
+      'dateCreated',
+      'lastUpdatedBy',
+      'variantNames'
+    ]
+  ];
+
   static def refdataFind(params) {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)

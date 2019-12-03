@@ -24,7 +24,7 @@ class ProfileController {
 
   def show() {
     def result = [:]
-    def user = springSecurityService.principal
+    def user = User.get(springSecurityService.principal.id)
 
     def cur_groups = []
 

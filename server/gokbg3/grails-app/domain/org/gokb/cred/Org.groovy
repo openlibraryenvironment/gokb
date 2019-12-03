@@ -170,6 +170,8 @@ class Org extends KBComponent {
     }
   }
 
+  public static final String restPath = "/orgs"
+
   /**
    *  Render this package as GoKBXML
    */

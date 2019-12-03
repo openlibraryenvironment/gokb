@@ -23,6 +23,8 @@ class IdentifierNamespace {
     pattern (nullable:true, blank:false)
   }
 
+  public static final String restPath = "/namespaces"
+
   @Override
   public boolean equals(Object obj) {
     if (obj != null) {

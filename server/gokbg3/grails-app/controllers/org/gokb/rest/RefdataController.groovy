@@ -14,6 +14,36 @@ class RefdataController {
   def genericOIDService
   def springSecurityService
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def index() {
+    def result = [:]
+
+    result['_links'] = ['self':['href': grailsApplication.config.serverURL + "/refdata/"]]
+    result['_embedded'] = [
+      'categories': []
+    ]
+    
+    RefdataCategory.list().each { rc ->
+      def rdc = [:]
+      rdc['_links'] = ['self':['href': grailsApplication.config.serverURL + "/refdata/categories/${rc.id}" ]]
+      rdc['label'] = rc.label
+      rdc['id'] = rc.id
+      rdc['_embedded'] = [
+        'values' : []
+      ]
+
+      rc.values.each { rv ->
+        def rdv = [:]
+        rdv['_links'] = ['self':['href': grailsApplication.config.serverURL + "/refdata/values/${rv.id}" ],'owner':['href': grailsApplication.config.serverURL + "/refdata/categories/${rc.id}" ]]
+        rdv['value'] = rv.value
+        rdv['id'] = rv.id
+        rdc['_embedded']['values'] << rdv
+      }
+      result['_embedded']['categories'] << rdc
+    }
+    render result as JSON
+  }
+
   def showCategory() {
     def result = [:]
     def cat = null

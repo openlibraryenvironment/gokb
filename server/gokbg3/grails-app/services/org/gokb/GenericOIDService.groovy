@@ -71,4 +71,20 @@ class GenericOIDService {
     }
     result
   }
+
+  def oidToId(oid) {
+    def result = null
+
+    if (oid) {
+      if(oid.contains(':')){
+        def oid_components = oid.split(':')
+        result = Long.parseLong(oid_components[1])
+      }
+      else {
+        result = Long.parseLong(oid)
+      }
+    }
+
+    result
+  }
 }

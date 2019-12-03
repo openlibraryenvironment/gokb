@@ -30,6 +30,8 @@ class JournalInstance extends TitleInstance {
     return "Journal";
   }
 
+  public static final String restPath = "/journals"
+
   /**
    * Auditable plugin, on change
    *
