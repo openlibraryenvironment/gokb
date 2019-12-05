@@ -145,6 +145,9 @@ environments:
                                     secret: HollaDieWaldfeeHoffentlichIstDasJetztWirklichLangGenug
                         login:
                             endpointUrl: /rest/login
+                        logout:
+                            endpointUrl: /rest/logout
+
         gokb:
             es:
                 index: gokbg3dev
@@ -154,7 +157,7 @@ environments:
                 enabled: false
     test:
         dataSource:
-            dbCreate: create-drop
+            dbCreate: update
             url: jdbc:postgresql://pghost:5432/gokbg3test
             username: knowint
             password: knowint
