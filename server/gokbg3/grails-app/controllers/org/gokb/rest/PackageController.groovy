@@ -25,42 +25,6 @@ class PackageController {
   def messsageService
   def restMappingService
 
-  public final static Map jsonMap = [
-    'ignore': [
-      'lastProject',
-      'bucketHash',
-      'shortcode',
-      'normname',
-      'people',
-      'lastSeen',
-      'updateBenchmark',
-      'systemComponent',
-      'provenance',
-      'insertBenchmark',
-      'componentHash',
-      'prices',
-      'subjects',
-      'lastUpdateComment',
-      'reference',
-      'duplicateOf',
-      'componentDiscriminator'
-    ],
-    'combos': [
-      'ids',
-      'curatoryGroups',
-      'nominalPlatform',
-      'provider'
-    ],
-    'immutable': [
-      'id',
-      'uuid',
-      'lastUpdated',
-      'dateCreated',
-      'lastUpdatedBy',
-      'variantNames'
-    ]
-  ];
-
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     def result = [:]
@@ -178,19 +142,19 @@ class PackageController {
       }
 
       if (obj.isReadable()) {
-        result = restMappingService.createHalMapping(obj, embed_active)
+        result = restMappingService.mapObject(obj, embed_active)
 
-        result['_currentTipps'] = obj.currentTippCount
-        result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
+        // result['_currentTipps'] = obj.currentTippCount
+        // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
       }
       else if (!obj) {
-        result.error = "Object ID could not be resolved!"
+        result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
         result.result = 'ERROR'
       }
       else {
-        result.error = "Access to object was denied!"
+        result.message = "Access to object was denied!"
         response.setStatus(403)
         result.code = 403
         result.result = 'ERROR'
@@ -200,7 +164,7 @@ class PackageController {
       result.result = 'ERROR'
       response.setStatus(400)
       result.code = 400
-      result.error = 'No object id supplied!'
+      result.message = 'No object id supplied!'
     }
 
     render result as JSON
@@ -357,14 +321,15 @@ class PackageController {
       def ntip = [
         'links': [
           'self': ['href': base + "/tipps/" + genericOIDService.oidToId(tipp.id)],
-          'status': ['href': base + "/refdata/values/" + (RefdataCategory.lookup('KBComponent.Status',tipp.status).id), 'title': tipp.status],
           'pkg': ['href': base + "/packages/" + pkgId, 'title': tipp.tippPackageName ?: ''],
+          'hostPlatform': ['href': base + "/platforms/" + genericOIDService.oidToId(tipp.hostPlatform), 'title': tipp.hostPlatformName],
           'title': ['href': base + genericOIDService.resolveOID(tipp.tippTitle).restPath + "/${genericOIDService.oidToId(tipp.tippTitle)}", 'title': tipp.tippTitleName ?: '']
         ]
       ]
 
       ntip.id = genericOIDService.oidToId(tipp.id)
       ntip.lastUpdated = tipp.lastUpdatedDisplay
+      ntip.status = tipp.status
       ntip.uuid = tipp.uuid
       ntip.coverage = tipp.coverage
       ntip.url = tipp.url

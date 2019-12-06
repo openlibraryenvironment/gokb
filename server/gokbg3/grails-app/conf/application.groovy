@@ -54,6 +54,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/greenmail/**',            access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/',                        access: ['permitAll']],
   [pattern: '/index',                   access: ['permitAll']],
+  [pattern: '/notFound',                access: ['permitAll']],
   [pattern: '/index.gsp',               access: ['permitAll']],
   [pattern: '/register/**',             access: ['permitAll']],
   [pattern: '/public/**',               access: ['permitAll']],
