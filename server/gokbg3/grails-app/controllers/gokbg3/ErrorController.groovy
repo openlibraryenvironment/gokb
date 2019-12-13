@@ -11,16 +11,15 @@ class ErrorController {
 
   def serverError() {
     def resp = [code: 500, message:'Server Error']
-    response.sendError(500)
-/*     withFormat {
+    response.setStatus(500)
+    withFormat {
       html {
-        forward controller: 'home', action:'index', params:(params)
+        redirect (uri:'/error')
       }
       json {
-        response.setStatus(500)
         render resp as JSON
       }
-    } */
+    }
   }
 
   def notFound() {

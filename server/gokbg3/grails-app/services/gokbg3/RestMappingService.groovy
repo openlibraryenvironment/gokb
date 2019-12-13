@@ -17,9 +17,9 @@ class RestMappingService {
    * @param embed_active : The list of object associations to be embedded
    */
 
-  def mapObject(obj, def embed_active = []) {
+  def mapObjectToJson(obj, def embed_active = []) {
     def result = [:]
-    def base = grailsApplication.config.serverURL
+    def base = grailsApplication.config.serverURL + "/rest"
     def jsonMap = null
     def defaultIgnore = [      
       'lastProject',
@@ -52,7 +52,7 @@ class RestMappingService {
     result['links'] = [:]
 
     if (KBComponent.has(obj.deproxy(),"restPath")) {
-      result['links']['self'] = ['href': base + obj.restPath + "/${obj.id}"]
+      result['links']['self'] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
     }
 
     if ( embed_active.size() > 0 ) {
@@ -84,8 +84,15 @@ class RestMappingService {
               else {
 
                 if (KBComponent.has(associatedObj, "restPath")) {
-                  result['links'][p.name] = ['href': base + associatedObj.restPath + "/${associatedObj.id}"]
+                  result['links'][p.name] = ['href': base + associatedObj.restPath + "/${associatedObj.hasProperty('uuid') ? associatedObj.uuid : associatedObj.id}"]
                   result['links'][p.name]['title'] = selectPreferredLabel(associatedObj)
+
+                  if(associatedObj.hasProperty('uuid')) {
+                    result['links'][p.name]['uuid'] = associatedObj.uuid
+                  }
+                  else {
+                    result['links'][p.name]['id'] = associatedObj.id
+                  }
                 }
                 else {
                   log.warn("No restPath defined for class ${p.type.name}!")
@@ -99,7 +106,7 @@ class RestMappingService {
           }
           else {
             if(KBComponent.has(obj,"restPath")) {
-              result['links'][p.name] = ['href': base + obj.restPath + "/${obj.id}/" + p.name]
+              result['links'][p.name] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}/" + p.name]
             }
             if(embed_active.contains(p.name)) {
               result['embedded'][p.name] = []
@@ -137,7 +144,7 @@ class RestMappingService {
             def cval = obj[cp]
 
             if(KBComponent.has(cval.deproxy(),"restPath")) {
-              result['links'][cp] = ['href': base + cval.restPath + "/" + cval.id, 'title': cval.name]
+              result['links'][cp] = ['href': base + cval.restPath + "/" + cval.uuid, 'title': cval.name, 'uuid': cval.uuid]
             }
           }
         }

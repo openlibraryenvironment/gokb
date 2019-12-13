@@ -118,6 +118,16 @@ class Package extends KBComponent {
   final static Map jsonMapping = [
     'ignore': [
       'lastProject'
+    ],
+    'es': [
+      'platformUuid': "nominalPlatform.uuid",
+      'platformName': "nominalPlatform.name",
+      'nominalPlatform': false,
+      'cpname': "provider.name",
+      'provider':false,
+      'providerUuid': "provider.uuid",
+      'titleCount': false,
+      'paymentType': false
     ]
   ];
 

@@ -8,7 +8,7 @@ class MessageService {
 
   def messageSource
 
-  public Map processValidationErrors(errors, locale) {
+  public Map processValidationErrors(errors, def locale = null) {
     def result = [:]
 
     errors.allErrors.each { eo ->
