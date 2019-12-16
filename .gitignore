@@ -3,6 +3,7 @@
 *Db.script
 .settings
 eclipse
+.vscode
 stacktrace.log
 target
 /plugins
