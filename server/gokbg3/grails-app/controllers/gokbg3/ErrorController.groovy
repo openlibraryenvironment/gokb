@@ -22,6 +22,19 @@ class ErrorController {
     }
   }
 
+  def wrongMethod() {
+    def resp = [code: 405, message:'Method not allowed']
+    withFormat {
+      html {
+        redirect (view:'/error')
+      }
+      json {
+        response.setStatus(405)
+        render resp as JSON
+      }
+    }
+  }
+
   def notFound() {
     def resp = [code: 404, message:'Not Found']
     withFormat {
