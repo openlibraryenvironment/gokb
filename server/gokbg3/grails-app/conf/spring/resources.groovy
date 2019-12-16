@@ -1,7 +1,9 @@
 import com.k_int.UserPasswordEncoderListener
-import com.k_int.utils.DatabaseMessageSource;
+import com.k_int.utils.DatabaseMessageSource
+import grails.rest.render.hal.HalJsonRenderer
+import org.gokb.cred.BookInstance
+import org.gokb.cred.Package;
 import org.grails.spring.context.support.PluginAwareResourceBundleMessageSource;
-import grails.rest.render.hal.*
 
 
 beans = {
@@ -17,7 +19,7 @@ beans = {
     messageBundleMessageSource = ref("messageBundleMessageSource")
   }
 
-  halPackageRenderer(HalJsonRenderer, org.gokb.cred.Package)
-  halBookInstanceRenderer(HalJsonRenderer, org.gokb.cred.BookInstance)
+  halPackageRenderer(HalJsonRenderer, Package)
+  halBookInstanceRenderer(HalJsonRenderer, BookInstance)
 
 }
