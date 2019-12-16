@@ -3,6 +3,7 @@ package org.gokb.rest
 import grails.converters.*
 import grails.core.GrailsClass
 import grails.gorm.transactions.*
+import grails.plugin.springsecurity.annotation.Secured
 
 import groovyx.net.http.URIBuilder
 
@@ -12,7 +13,6 @@ import java.time.format.DateTimeFormatter
 import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
-import org.springframework.security.access.annotation.Secured;
 
 @Transactional(readOnly = true)
 class PackageController {
@@ -131,7 +131,7 @@ class PackageController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def save() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
@@ -142,12 +142,12 @@ class PackageController {
       Package pkg = Package.upsertDTO(reqBody, user)
 
       if (pkg.errors) {
-        errors = messsageService.processValidationErrors(pkg, request.locale)
+        errors = messsageService.processValidationErrors(pkg.errors, request.locale)
       }
     }
   }
 
-  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
   @Transactional
   def update() {
     def result = ['result':'OK', 'params': params]
