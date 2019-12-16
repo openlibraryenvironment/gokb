@@ -1099,6 +1099,10 @@ where cp.owner = :c
       }
 
       result = ['oid': "${newVal.class.name}:${newVal.id}", 'label': obj_label]
+
+      if ( newVal.class.name == 'org.gokb.cred.RefdataValue' ) {
+        result.category = newVal.owner.label
+      }
     }
     else {
       result = newVal
