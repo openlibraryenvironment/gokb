@@ -1,11 +1,14 @@
 package com.k_int
 
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.apache.lucene.search.join.ScoreMode
+import org.elasticsearch.action.search.*
+import org.elasticsearch.index.query.*
+import org.elasticsearch.search.sort.*
 import org.elasticsearch.client.*
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-
+import org.gokb.cred.*
 
 
 class ESSearchService{
@@ -20,6 +23,42 @@ class ESSearchService{
 
   def ESWrapperService
   def grailsApplication
+  def genericOIDService
+
+  def requestMapping = [
+    generic: [
+      "cpname", 
+      "provider", 
+      "id",
+      "uuid",
+      "suggest",
+      "label",
+      "name",
+      "altname",
+      "listStatus"
+    ],
+    simpleMap: [
+      "label": ["name","altname"],
+      "curatoryGroups": ["curatoryGroup","group"],
+      "roles": ["role"]
+    ],
+    "complex": [
+      "identifier",
+      "status",
+      "platform"
+    ],
+    "linked": [
+      "platform": ["nominalPlatform","hostPlatform","tippPlatform","platform"],
+      "provider": ["provider"],
+      "publisher": ["publisher", "currentPublisher"],
+      "tippPackage": ["linkedPackage","tippPackage","pkg"],
+      "tippTitle": ["linkedTitle","tippTitle","title"]
+    ],
+    "dates": [
+      "changedSince",
+      "changedBefore"
+    ]
+  ]
 
   def search(params){
     search(params,reversemap)
@@ -207,6 +246,461 @@ class ESSearchService{
     log.debug("Result of buildQuery is ${result}");
 
     result;
+  }
+
+  private void checkInt(result, errors, str, String field) {
+    def value = null
+    if (str && str instanceof String) {
+      try {
+        value = str as Integer
+        result[field] = value
+      } catch (Exception e) {
+        errors[field] = "Could not convert ${field} to Int."
+      }
+    }
+    else if (str && str instanceof Integer) {
+      result[field] = value
+    }
+  }
+
+  private void addDateQueries(query, errors, qpars) {
+    if ( qpars.changedSince || qpars.changedBefore ) {
+      QueryBuilder dateQuery = QueryBuilders.rangeQuery("lastUpdatedDisplay")
+
+      if (qpars.changedSince) {
+        dateQuery.gte(date_filters.changedSince)
+      }
+      if (qpars.changedBefore) {
+        dateQuery.lt(date_filters.changedBefore)
+      }
+      dateQuery.format("yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
+
+      query.must(dateQuery)
+    }
+  }
+
+  private void addStatusQuery(query, errors, qpars) {
+    if ( qpars.list('status').size() > 0 ) {
+
+      QueryBuilder statusQuery = QueryBuilders.boolQuery()
+
+      qpars.list('status').each {
+        statusQuery.should(QueryBuilders.termQuery('status', it))
+      }
+
+      statusQuery.minimumNumberShouldMatch(1)
+
+      query.must(statusQuery)
+    }
+    else {
+      query.must(QueryBuilders.termQuery('status', 'Current'))
+    }
+  }
+
+  private void processLinkedField(field, val) {
+    QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+    linkedFieldQuery.should(QueryBuilders.termQuery(field, val))
+    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), val))
+    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), val))
+    linkedFieldQuery.minimumNumberShouldMatch(1)
+
+    exactQuery.must(linkedFieldQuery)
+  }
+
+  private void addPlatformQuery(query, errors, val) {
+    QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalplatformUuid', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', val))
+    linkedFieldQuery.minimumNumberShouldMatch(1)
+
+    query.must(linkedFieldQuery)
+  }
+
+  /**
+   * find : Query the Elasticsearch index -- 
+   * @param max : Define result size
+   * @param offset : Define offset
+   * @param from : Define offset
+   * @param label : Search in name + variantNames
+   * @param name : Search in name
+   * @param altname : Search in variantNames
+   * @param id : Search by object ID ([classname]:[id])
+   * @param uuid : Search by component UUID
+   * @param identifier : Search for a linked external identifier ([identifier] or [namespace],[identifier])
+   * @param componentType : Filter by component Type (Package, Org, Platform, BookInstance, JournalInstance, TIPP)
+   * @param role : Filter by Org role (only in context of componentType=Org)
+   * @param linkedPackage : Filter by linked Package (only in context of componentType=TIPP)
+   * @param listStatus : Filter by title list status (only in context of componentType=Package)
+   * @param status : Filter by component status (Current, Expected, Retired, Deleted)
+   * @param linkedTitle : Filter by linked TitleInstance (only in context of componentType=TIPP)
+   * @param curatoryGroup : Filter by connected Curatory Group
+  **/
+
+  def find(params) {
+    def result = [result: 'OK']
+    def search_action = null
+    def errors = [:]
+    log.debug("find :: ${params}")
+
+    try {
+
+      Client esclient = ESWrapperService.getClient()
+
+      QueryBuilder exactQuery = QueryBuilders.boolQuery()
+
+      def singleParams = [:]
+      def linkedFieldParams = [:]
+      def unknown_fields = []
+      def other_fields = ["controller","action","max","offset","from","skipDomainMapping", "sort"]
+      def direct_fields = ["cpname", "provider", "id", "uuid", "suggest"]
+      def linked_fields = ["hostPlatform", "nominalPlatform", "platform", "listStatus", "role"]
+      def id_params = [:]
+      def pkgNameSort = false
+      def acceptedStatus = []
+      def component_type = null
+      def date_filters = [changedSince: null, changedBefore: null]
+
+      if (params.componentType){
+        component_type = deriveComponentType(v)
+
+        if (component_type == "TitleInstance") {
+          QueryBuilder typeQuery = QueryBuilders.boolQuery()
+
+          typeQuery.should(QueryBuilders.matchQuery('componentType', "JournalInstance"))
+          typeQuery.should(QueryBuilders.matchQuery('componentType', "DatabaseInstance"))
+          typeQuery.should(QueryBuilders.matchQuery('componentType', "BookInstance"))
+
+          typeQuery.minimumNumberShouldMatch(1)
+
+          exactQuery.must(typeQuery)
+        }
+        else if (component_type) {
+          singleParams['componentType'] = component_type
+        }
+      }
+
+      addStatusQuery(exactQuery. errors, params)
+      addDateQueries(exactQuery, errors, params)
+
+      
+
+      params.each { k, v ->
+        if ( k == 'componentType' && v instanceof String ) {
+
+          
+
+          if(!component_type) {
+            errors['componentType'] = "Requested component type ${v} does not exist"
+          }
+        }
+        else if (k in direct_fields && v instanceof String) {
+          singleParams[k] = v
+        }
+
+        else if (k in linked_fields && v instanceof String) {
+          linkedFieldParams[k] = v
+        }
+
+        else if ( (k == 'publisher' || k == 'currentPublisher') && v instanceof String) {
+          linkedFieldParams['publisher'] = v
+        }
+
+        else if ( (k == 'linkedPackage' || k == 'tippPackage' || k == 'pkg') && v instanceof String) {
+          linkedFieldParams['tippPackage'] = v
+        }
+
+        else if (k == 'status') {
+          acceptedStatus = params.list(k)
+        }
+
+        else if ( (k == 'linkedTitle' || k == 'tippTitle') && v instanceof String) {
+          linkedFieldParams['tippTitle'] = v
+        }
+
+        else if (k == 'curatoryGroup' && v instanceof String) {
+          singleParams['curatoryGroups'] = v
+        }
+
+        else if ((k == 'label' || k == "q") && v instanceof String) {
+
+          QueryBuilder labelQuery = QueryBuilders.boolQuery()
+
+          labelQuery.should(QueryBuilders.matchQuery('name', v))
+          labelQuery.should(QueryBuilders.matchQuery('altname', v))
+          labelQuery.minimumNumberShouldMatch(1)
+
+          exactQuery.must(labelQuery)
+        }
+        else if ((k == 'changedSince' || k == 'changedBefore') && v instanceof String) {
+          date_filters[k] = v
+        }
+
+        else if (!params.label && k == "name" && v instanceof String) {
+          singleParams['name'] = v
+        }
+
+        else if (!params.label && k == "altname" && v instanceof String) {
+          singleParams['altname'] = v
+        }
+
+        else if ( k == "identifier" && v instanceof String) {
+          if (v.contains(',')) {
+            id_params['identifiers.namespace'] = v.split(',')[0]
+            id_params['identifiers.value'] = v.split(',')[1]
+          }else{
+            id_params['identifiers.value'] = v
+          }
+        }
+
+        else if (!other_fields.contains(k)){
+          unknown_fields.add(k)
+        }
+      }
+
+      if(unknown_fields.size() > 0){
+        errors['unknown_params'] = unknown_fields
+      }
+
+      linkedFieldParams.each { k, v ->
+        QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+        linkedFieldQuery.should(QueryBuilders.termQuery(k, v))
+        linkedFieldQuery.should(QueryBuilders.termQuery("${k}Uuid".toString(), v))
+        linkedFieldQuery.should(QueryBuilders.termQuery("${k}Name".toString(), v))
+        linkedFieldQuery.minimumNumberShouldMatch(1)
+
+        exactQuery.must(linkedFieldQuery)
+      }
+
+      if (singleParams) {
+        singleParams.each { k,v ->
+          exactQuery.must(QueryBuilders.matchQuery(k,v))
+        }
+      }
+
+      if (id_params) {
+        exactQuery.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
+      }
+
+      if( !errors && (singleParams || params.label || id_params || component_type) ) {
+        SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
+
+        es_request.setIndices(grailsApplication.config.gokb.es.index)
+        es_request.setTypes(grailsApplication.config.globalSearch.types)
+        es_request.setQuery(exactQuery)
+
+        checkInt(result, errors, params.max, 'max')
+        checkInt(result, errors, params.from, 'offset')
+        checkInt(result, errors, params.offset, 'offset')
+
+        if (params.max) {
+          es_request.setSize(result.max)
+        }
+        else {
+          result.max = 10
+        }
+
+        if (params.offset || params.from) {
+          es_request.setFrom(result.offset)
+        }
+        else {
+          result.offset = 0
+        }
+
+        if (params.sort) {
+          FieldSortBuilder sortQry = new FieldSortBuilder(params.sort)
+          es_request.addSort(sortQry)
+        }
+
+        search_action = es_request.execute()
+      }
+      else if ( !singleParams && !component_type && !params.label && !id_params){
+        errors['params'] = "No valid parameters found"
+      }
+
+      def search = null
+
+      if (search_action) {
+        search = search_action.actionGet()
+
+
+        if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
+          search.hits.maxScore = 0;
+        }
+
+        result.count = search.hits.totalHits
+        result.records = []
+
+        search.hits.each { r ->
+          def response_record = [:]
+          
+          if (!params.skipDomainMapping) {
+            response_record = mapEsToDomain(r)
+          }
+          else {
+            response_record.id = r.id
+
+            if (response_record.score && response_record.score != Float.NaN) {
+              response_record.score = r.score
+            }
+
+            r.source.each { field, val ->
+              response_record."${field}" = val
+            }
+          }
+
+          result.records.add(response_record);
+        }
+      }
+
+    } finally {
+      if (errors) {
+        result = [:]
+        result.result = "ERROR"
+        result.errors = errors
+      }
+    }
+
+    result
+  }
+
+  private Map mapEsToDomain(record) {
+    def domainMapping = [:]
+    def base = grailsApplication.config.serverURL + "/rest"
+    def esMapping = [
+      'lastUpdatedDisplay': 'lastUpdated',
+      'sortname': false,
+      'updater': false,
+    ]
+
+    def obj = KBComponent.findByUuid(record.source.uuid)
+
+    if (obj) {
+
+      if (KBComponent.has(obj,'jsonMapping') && obj.jsonMapping.es) {
+        esMapping << obj.jsonMapping.es
+      }
+
+      domainMapping['links'] = ['self': ['href': base + obj.restPath + "/${obj.uuid}"]]
+      domainMapping['embedded'] = [:]
+      
+      log.debug("Mapping ${record}")
+
+      record.source.each { field, val ->
+        if (field == "curatoryGroups") {
+          mapCuratoryGroups(domainMapping, val)
+        }
+        else if (field == "altname") {
+          domainMapping['embedded']['variantNames'] = val
+        }
+        else if (field == "identifiers") {
+          domainMapping['embedded']['ids'] = val
+        }
+        else if (esMapping[field] == false) {
+          log.debug("Skipping field ${field}!")
+        }
+        else if (esMapping[field]) {
+          log.debug("Field ${esMapping[field]}")
+          def fieldPath = esMapping[field].split("\\.")
+          log.debug("FieldPath: ${fieldPath}")
+
+          if (fieldPath.size() == 2) {
+            def linkedObj = obj."${fieldPath[0]}"
+
+            if (linkedObj) {
+              domainMapping['links'][fieldPath[0]] = ['href': base + linkedObj.restPath + "/${linkedObj.uuid}"]
+            }
+          } else {
+            domainMapping[fieldPath[0]] = obj."${esMapping[field]}"
+          }
+        }
+        else {
+          log.debug("Transfering unmapped field ${field}:${val}")
+          domainMapping[field] = val
+        }
+      }
+    }
+
+    log.debug("${domainMapping}")
+    return domainMapping
+  }
+
+  private def mapCuratoryGroups(domainMapping, cgs) {
+    def base = grailsApplication.config.serverURL + "/rest"
+
+    domainMapping['embedded']['curatoryGroups'] = []
+    cgs.each { cg ->
+      def cg_obj = CuratoryGroup.findByName(cg)
+      domainMapping['embedded']['curatoryGroups'] << [
+        'links': [
+          'self': [
+            'href': base + "/groups/" + cg_obj.uuid
+          ]
+        ],
+        'name': cg_obj.name,
+        'id': cg_obj.id,
+        'uuid': cg_obj.uuid
+      ]
+    }
+  }
+
+  private def deriveComponentType(String typeString) {
+    def result = null
+    def defined_types = [
+      "Package",
+      "Org",
+      "JournalInstance",
+      "Journal",
+      "BookInstance",
+      "Book",
+      "DatabaseInstance",
+      "Database",
+      "Platform",
+      "TitleInstancePackagePlatform",
+      "TIPP",
+      "TitleInstance",
+      "Title"
+    ]
+    def final_type = typeString.capitalize()
+
+    if(final_type in defined_types) {
+
+      if(final_type== 'TIPP') {
+        final_type = 'TitleInstancePackagePlatform'
+      }
+      else if (final_type == 'Book') {
+        final_type = 'BookInstance'
+      }
+      else if (final_type == 'Journal') {
+        final_type = 'JournalInstance'
+      }
+      else if (final_type == 'Database') {
+        final_type = 'DatabaseInstance'
+      }
+      else if (final_type == 'Title') {
+        final_type = 'TitleInstance'
+      }
+
+      result = final_type
+    }
+    result
+  }
+
+  private def addIdQueries(params) {
+
+    QueryBuilder idQuery = QueryBuilders.boolQuery()
+
+    params.each { k,v ->
+      idQuery.must(QueryBuilders.termQuery(k, v))
+    }
+
+    return idQuery
   }
 
   @javax.annotation.PreDestroy

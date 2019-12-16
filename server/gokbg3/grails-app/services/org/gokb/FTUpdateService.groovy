@@ -180,11 +180,15 @@ class FTUpdateService {
         result.cpname = kbc.provider?.name
 
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
+        result.providerName = kbc.provider?.name ?: ""
         result.providerUuid = kbc.provider?.uuid ?: ""
 
         result.nominalPlatform = kbc.nominalPlatform ? kbc.nominalPlatform.getLogEntityId() : ""
-        result.platformName = kbc.nominalPlatform?.name
-        result.platformUuid = kbc.nominalPlatform?.uuid ?: ""
+        result.nominalPlatformName = kbc.nominalPlatform?.name ?: ""
+        result.nominalPlatformUuid = kbc.nominalPlatform?.uuid ?: ""
+
+        result.scope = kbc.scope ? kbc.scope.value : ""
+        result.listVerifiedDate = kbc.listVerifiedDate ? sdf.format(kbc.listVerifiedDate) : ""
         
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -246,15 +250,23 @@ class FTUpdateService {
         }
 
         result.tippPackage = kbc.pkg ? kbc.pkg.getLogEntityId() : ""
-        result.tippPackageUuid = kbc.pkg ? kbc.pkg?.uuid : ""
+        result.tippPackageName = kbc.pkg ? kbc.pkg.name : ""
+        result.tippPackageUuid = kbc.pkg ? kbc.pkg.uuid : ""
 
         result.tippTitle = kbc.title ? kbc.title.getLogEntityId() : ""
-        result.tippTitleUuid = kbc.title ? kbc.title?.uuid : ""
+        result.tippTitleName = kbc.title ? kbc.title.name : ""
+        result.tippTitleUuid = kbc.title ? kbc.title.uuid : ""
 
         result.hostPlatform = kbc.hostPlatform ? kbc.hostPlatform.getLogEntityId() : ""
-        result.hostPlatformUuid = kbc.hostPlatform ? kbc.hostPlatform?.uuid : ""
+        result.hostPlatformName = kbc.hostPlatform ? kbc.hostPlatform.name : ""
+        result.hostPlatformUuid = kbc.hostPlatform ? kbc.hostPlatform.uuid : ""
 
         result.status = kbc.status?.value
+
+        result.identifiers = []
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        }
 
         result.componentType=kbc.class.simpleName
 
