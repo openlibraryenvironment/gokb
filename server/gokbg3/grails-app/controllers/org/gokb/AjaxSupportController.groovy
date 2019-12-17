@@ -748,13 +748,13 @@ class AjaxSupportController {
     def user = springSecurityService.currentUser
     def target_object = resolveOID2(params.pk)
     def result = ['result': 'OK', 'params': params]
-    def errors = []
+    def errors = [:]
     if ( target_object && ( target_object.isEditable() || target_object == user ) ) {
       if ( params.type=='date' ) {
         target_object."${params.name}" = params.date('value',params.dateFormat ?: 'yyyy-MM-dd')
       }
       else if (params.name == 'uuid' || params.name == 'password') {
-        errors.add("This property is not editable.")
+        errors[params.name] = "This property is not editable."
       }
       else {
         def binding_properties = [:]
@@ -783,7 +783,7 @@ class AjaxSupportController {
         }
         else {
           response.status = 400
-          outs << errors[params.name][0]
+          outs << errors[params.name] ? errors[params.name][0] : errors['global'][0]
         }
         outs.flush()
         outs.close()
