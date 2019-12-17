@@ -13,7 +13,7 @@ class ErrorController {
     def resp = [code: 500, message:'Server Error']
     withFormat {
       html {
-        redirect (view:'/error')
+        redirect (uri:'/error')
       }
       json {
         response.setStatus(500)
