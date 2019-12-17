@@ -770,7 +770,7 @@ class AjaxSupportController {
       }
     }
     else {
-      errors['global'].add("Object ${target_object} is not editable.".toString())
+      errors['global'] = ["Object ${target_object} is not editable.".toString()]
       log.debug("Object ${target_object} is not editable.");
     }
 
