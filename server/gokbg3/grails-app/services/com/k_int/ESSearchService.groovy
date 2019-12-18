@@ -27,34 +27,35 @@ class ESSearchService{
 
   def requestMapping = [
     generic: [
-      "cpname", 
-      "provider", 
       "id",
       "uuid",
-      "suggest",
-      "label",
-      "name",
-      "altname",
       "listStatus"
     ],
     simpleMap: [
-      "label": ["name","altname"],
-      "curatoryGroups": ["curatoryGroup","group"],
-      "roles": ["role"]
+      "curatoryGroup": "curatoryGroups",
+      "role": "roles"
     ],
-    "complex": [
+    complex: [
       "identifier",
       "status",
-      "platform"
+      "platform",
+      "suggest",
+      "label",
+      "name",
+      "altname"
     ],
-    "linked": [
-      "platform": ["nominalPlatform","hostPlatform","tippPlatform","platform"],
-      "provider": ["provider"],
-      "publisher": ["publisher", "currentPublisher"],
-      "tippPackage": ["linkedPackage","tippPackage","pkg"],
-      "tippTitle": ["linkedTitle","tippTitle","title"]
+    linked: [
+      provider: "provider",
+      publisher: "publisher",
+      currentPublisher: "publisher",
+      linkedPackage: "tippPackage",
+      tippPackage: "tippPackage",
+      pkg: "tippPackage",
+      tippTitle: "tippTitle",
+      linkedTitle: "tippTitle",
+      title: "tippTitle"
     ],
-    "dates": [
+    dates: [
       "changedSince",
       "changedBefore"
     ]
@@ -297,6 +298,42 @@ class ESSearchService{
     }
   }
 
+  private void addIdentifierQuery(query,errors, qpars) {
+    def id_params = [:]
+
+    if (qpars.identifier) {
+      if (v.contains(',')) {
+        id_params['identifiers.namespace'] = v.split(',')[0]
+        id_params['identifiers.value'] = v.split(',')[1]
+      }else{
+        id_params['identifiers.value'] = v
+      }
+      query.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
+    }
+  }
+
+  private void processNameFields(query, errors, qpars) {
+    if (qpars.label) {
+
+      QueryBuilder labelQuery = QueryBuilders.boolQuery()
+
+      labelQuery.should(QueryBuilders.matchQuery('name', qpars.label))
+      labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label))
+      labelQuery.minimumNumberShouldMatch(1)
+
+      query.must(labelQuery)
+    }
+    else if (qpars.name) {
+      query.must(QueryBuilders.matchQuery('name',qpars.name))
+    }
+    else if (qpars.altname) {
+      query.must(QueryBuilders.matchQuery('altname',qpars.altname))
+    }
+    else if (qpars.suggest) {
+      query.must(QueryBuilders.matchQuery('suggest',qpars.suggest))
+    }
+  }
+
   private void processLinkedField(field, val) {
     QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
 
@@ -358,9 +395,6 @@ class ESSearchService{
       def linkedFieldParams = [:]
       def unknown_fields = []
       def other_fields = ["controller","action","max","offset","from","skipDomainMapping", "sort"]
-      def direct_fields = ["cpname", "provider", "id", "uuid", "suggest"]
-      def linked_fields = ["hostPlatform", "nominalPlatform", "platform", "listStatus", "role"]
-      def id_params = [:]
       def pkgNameSort = false
       def acceptedStatus = []
       def component_type = null
@@ -388,77 +422,40 @@ class ESSearchService{
       addStatusQuery(exactQuery. errors, params)
       addDateQueries(exactQuery, errors, params)
 
-      
+      requestMapping.linked.platform.each {
+        def platformQry = null
+
+        if (params[it] && !platformQry) {
+          addPlatformQuery(exactQuery, errors, params[it])
+        }
+      }
+
+      requestMapping.generic.each {
+        if (params[it]) {
+          exactQuery.must(QueryBuilders.matchQuery(it, params[it]))
+        }
+      }
 
       params.each { k, v ->
-        if ( k == 'componentType' && v instanceof String ) {
-
-          
-
-          if(!component_type) {
-            errors['componentType'] = "Requested component type ${v} does not exist"
-          }
+        if (k in requestMapping.generic) {
+          exactQuery.must(QueryBuilders.matchQuery(k, v))
         }
-        else if (k in direct_fields && v instanceof String) {
-          singleParams[k] = v
+        else if (requestMapping.simpleMap.containsKey(k)) {
+          exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v))
         }
-
-        else if (k in linked_fields && v instanceof String) {
-          linkedFieldParams[k] = v
+        else if (requestMapping.linked.containsKey(k)) {
+          processLinkedField(k, v)
         }
-
-        else if ( (k == 'publisher' || k == 'currentPublisher') && v instanceof String) {
-          linkedFieldParams['publisher'] = v
+        else if (k.contains('platform')) {
+          addPlatformQuery(query, errors, v)
         }
-
-        else if ( (k == 'linkedPackage' || k == 'tippPackage' || k == 'pkg') && v instanceof String) {
-          linkedFieldParams['tippPackage'] = v
+        else if (k in requestMapping.dates) {
         }
-
-        else if (k == 'status') {
-          acceptedStatus = params.list(k)
+        else if (k in requestMapping.complex) {
         }
-
-        else if ( (k == 'linkedTitle' || k == 'tippTitle') && v instanceof String) {
-          linkedFieldParams['tippTitle'] = v
+        else if (k in other_fields) {
         }
-
-        else if (k == 'curatoryGroup' && v instanceof String) {
-          singleParams['curatoryGroups'] = v
-        }
-
-        else if ((k == 'label' || k == "q") && v instanceof String) {
-
-          QueryBuilder labelQuery = QueryBuilders.boolQuery()
-
-          labelQuery.should(QueryBuilders.matchQuery('name', v))
-          labelQuery.should(QueryBuilders.matchQuery('altname', v))
-          labelQuery.minimumNumberShouldMatch(1)
-
-          exactQuery.must(labelQuery)
-        }
-        else if ((k == 'changedSince' || k == 'changedBefore') && v instanceof String) {
-          date_filters[k] = v
-        }
-
-        else if (!params.label && k == "name" && v instanceof String) {
-          singleParams['name'] = v
-        }
-
-        else if (!params.label && k == "altname" && v instanceof String) {
-          singleParams['altname'] = v
-        }
-
-        else if ( k == "identifier" && v instanceof String) {
-          if (v.contains(',')) {
-            id_params['identifiers.namespace'] = v.split(',')[0]
-            id_params['identifiers.value'] = v.split(',')[1]
-          }else{
-            id_params['identifiers.value'] = v
-          }
-        }
-
-        else if (!other_fields.contains(k)){
+        else  {
           unknown_fields.add(k)
         }
       }
@@ -467,28 +464,7 @@ class ESSearchService{
         errors['unknown_params'] = unknown_fields
       }
 
-      linkedFieldParams.each { k, v ->
-        QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-
-        linkedFieldQuery.should(QueryBuilders.termQuery(k, v))
-        linkedFieldQuery.should(QueryBuilders.termQuery("${k}Uuid".toString(), v))
-        linkedFieldQuery.should(QueryBuilders.termQuery("${k}Name".toString(), v))
-        linkedFieldQuery.minimumNumberShouldMatch(1)
-
-        exactQuery.must(linkedFieldQuery)
-      }
-
-      if (singleParams) {
-        singleParams.each { k,v ->
-          exactQuery.must(QueryBuilders.matchQuery(k,v))
-        }
-      }
-
-      if (id_params) {
-        exactQuery.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
-      }
-
-      if( !errors && (singleParams || params.label || id_params || component_type) ) {
+      if( !errors && exactQuery.hasClauses() ) {
         SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
 
         es_request.setIndices(grailsApplication.config.gokb.es.index)
@@ -520,7 +496,7 @@ class ESSearchService{
 
         search_action = es_request.execute()
       }
-      else if ( !singleParams && !component_type && !params.label && !id_params){
+      else if ( !exactQuery.hasClauses() ){
         errors['params'] = "No valid parameters found"
       }
 

@@ -53,104 +53,7 @@ class ESWrapperService {
   def getMapping() {
     def mapping = [
       component: [
-        dynamic_templates: [
-          [
-            provider: [
-              match: "provider*",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            cpname: [
-              match: "cpname",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            publisher: [
-              match: "publisher*",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            listStatus: [
-              match: "listStatus",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            package: [
-              match: "tippPackage*",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            title: [
-              match: "tippTitle*",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            hostPlatform: [
-              match: "hostPlatform*",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            roles: [
-              match: "roles",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            curGroups: [
-              match: "curatoryGroups",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            nominalPlatform: [
-              match: "nominalPlatform*",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            otherUuids: [
-              match: "*Uuid",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            scope: [
-              match: "scope",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-          [
-            contentType: [
-              match: "contentType",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-          ],
-            titleType: [
-              match: "titleType",
-              match_mapping_type: "string",
-              mapping: [type: "keyword"]
-            ]
-        ],
+        dynamic_templates: [],
         properties: [
           name: [
             type: "text",
@@ -191,6 +94,85 @@ class ESWrapperService {
         ]
       ]
     ]
+
+    def dynamic = [
+      provider: [
+        match: "provider*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      cpname: [
+        match: "cpname",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      publisher: [
+        match: "publisher*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      listStatus: [
+        match: "listStatus",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      package: [
+        match: "tippPackage*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      title: [
+        match: "tippTitle*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      hostPlatform: [
+        match: "hostPlatform*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      roles: [
+        match: "roles",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      curGroups: [
+        match: "curatoryGroups",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      nominalPlatform: [
+        match: "nominalPlatform*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      otherUuids: [
+        match: "*Uuid",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      scope: [
+        match: "scope",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      contentType: [
+        match: "contentType",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      titleType: [
+        match: "titleType",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ]
+    ]
+
+    dynamic.each { k, v ->
+      mapping.component.dynamic_templates << [k: v]
+    }
+
+    return mapping
   }
 
   private def ensureClient() {
