@@ -394,14 +394,14 @@ class ESSearchService{
       def singleParams = [:]
       def linkedFieldParams = [:]
       def unknown_fields = []
-      def other_fields = ["controller","action","max","offset","from","skipDomainMapping", "sort"]
+      def other_fields = ["controller","action","max","offset","from","skipDomainMapping", "sort", "componentType"]
       def pkgNameSort = false
       def acceptedStatus = []
       def component_type = null
       def date_filters = [changedSince: null, changedBefore: null]
 
       if (params.componentType){
-        component_type = deriveComponentType(v)
+        component_type = deriveComponentType(params.componentType)
 
         if (component_type == "TitleInstance") {
           QueryBuilder typeQuery = QueryBuilders.boolQuery()
@@ -415,11 +415,15 @@ class ESSearchService{
           exactQuery.must(typeQuery)
         }
         else if (component_type) {
-          singleParams['componentType'] = component_type
+          exactQuery.must(QueryBuilders.matchQuery('componentType',component_type))
         }
+        log.debug("Using component type ${component_type}")
+      }
+      else {
+        log.debug("Not filtering by component type..")
       }
 
-      addStatusQuery(exactQuery. errors, params)
+      addStatusQuery(exactQuery, errors, params)
       addDateQueries(exactQuery, errors, params)
 
       requestMapping.linked.platform.each {
