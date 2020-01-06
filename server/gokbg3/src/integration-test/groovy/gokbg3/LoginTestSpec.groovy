@@ -1,121 +1,72 @@
 package gokbg3
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import geb.spock.GebSpec
 import grails.testing.mixin.integration.Integration
-import grails.testing.spock.OnceBefore
-import io.micronaut.http.HttpRequest
-import io.micronaut.http.HttpResponse
-import io.micronaut.http.HttpStatus
-import io.micronaut.http.client.HttpClient
-import io.micronaut.http.client.exceptions.HttpClientResponseException
-import spock.lang.AutoCleanup
-import spock.lang.Shared
+import groovy.json.JsonParserType
+import groovy.json.JsonSlurper
+import org.apache.http.client.entity.EntityBuilder
+import org.apache.http.client.methods.CloseableHttpResponse
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.client.methods.HttpPost
+import org.apache.http.impl.client.CloseableHttpClient
+import org.apache.http.impl.client.HttpClients
 
 /**
  * See http://www.gebish.org/manual/current/ for more instructions
  */
 @Integration
 class LoginTestSpec extends GebSpec {
-  @Shared
-  @AutoCleanup
-  HttpClient client //= HttpClient.create(new URL("http://localhost:$serverPort/"))
-  HttpRequest request
-  HttpResponse response
-
-  @OnceBefore
-  void init() {
-  }
+  private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
   def setup() {
   }
 
   def cleanup() {
+    httpClient.close()
   }
 
-  def 'test wrong credentials'() {
+  void "test valid credentials login"() {
+    String accessToken
+    CloseableHttpResponse response
     when:
-    client = HttpClient.create(new URL("http://localhost:$serverPort/"))
-    request = HttpRequest.GET('/gokb/rest/profile').header('Accept', 'application/json')
-    response = client.toBlocking().exchange request
+    HttpPost post = new HttpPost("http://localhost:$serverPort/gokb/rest/login")
+    post.setEntity(EntityBuilder.create().setText('{"username":"admin","password":"admin"}').build())
+    post.addHeader('accept', 'application/json')
 
     then:
-    HttpClientResponseException e = thrown(Exception)
-    e.response.status == HttpStatus.UNAUTHORIZED
+    try {
+      response = httpClient.execute(post)
+      response.statusLine.statusCode == 200 // OK
+      JsonSlurper parser = new JsonSlurper().setType(JsonParserType.LAX)
+      BearerToken bearer = parser.parse(response.entity.content)
+      bearer != null
+      bearer.access_token != null
+      accessToken = bearer.access_token;
+    } catch (Exception ex) {
+      // to see the exception
+      ex.printStackTrace()
+    }
   }
 
-  def "test correct credentials"() {
+  void "test request unauthorized"() {
     when:
-    client = HttpClient.create(new URL("http://localhost:$serverPort/"))
-    UserCredentials credentials = new UserCredentials(username: 'admin', password: 'admin')
-    request = HttpRequest.POST('/gokb/rest/login', credentials)
-    response = client.toBlocking().exchange request, BearerToken
+    HttpGet request = new HttpGet("http://localhost:$serverPort/gokb/rest/profile");
+    // add request headers
+    request.addHeader('accept', 'application/json')
+    // fire the request
+    CloseableHttpResponse response = httpClient.execute(request)
 
     then:
-    response.status.code == 200
-    response.body != null
-    def refreshToken = response.body.value.refreshToken
-    def accessToken = response.body.value.accessToken
-
-    when:
-    client = HttpClient.create(new URL("http://localhost:$serverPort/"))
-    request = HttpRequest.GET('/gokb/rest/profile')
-    request.header('Accept', 'application/json')
-    // Strangely, this works even without the Authorization parameter
-    request.parameters.add('Authorization', 'Bearer ' + accessToken)
-    response = client.toBlocking().exchange request, UserProfile
-
-    then:
-    response.status.code == 200
-    response.body.value.userName == 'admin'
-    response.body.value.defaultPageSize == 10
-    response.body.value.enabled == true
+    response.statusLine.statusCode == 401 // unauthorized
   }
-}
-
-class UserCredentials {
-  String username
-  String password
 }
 
 class BearerToken {
-  @JsonProperty('access_token')
-  String accessToken
-
-  @JsonProperty('refresh_token')
-  String refreshToken
-
+  String access_token
+  String refresh_token
   List<String> roles
-
   String username
+  String token_type
+  int expires_in
 }
 
-class UserProfile {
-  @JsonProperty('id')
-  int id
-  @JsonProperty('username')
-  String userName
-  @JsonProperty('displayname')
-  String displayName
-  @JsonProperty('email')
-  String eMail
-  @JsonProperty('curatoryGroups')
-  Collection<Map<String, Object>> curatoryGroups
-  @JsonProperty('enabled')
-  boolean enabled
-  @JsonProperty('accountLocked')
-  boolean accountLocked
-  @JsonProperty('accountExpired')
-  boolean accountExpired
-  @JsonProperty('passwordExpired')
-  boolean passwordExpired
-  @JsonProperty('defaultPageSize')
-  int defaultPageSize
-}
-
-class CustomError {
-  Integer status
-  String error
-  String message
-  String path
-}
