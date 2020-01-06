@@ -11,12 +11,12 @@ class ErrorController {
 
   def serverError() {
     def resp = [code: 500, message:'Server Error']
+    response.setStatus(500)
     withFormat {
       html {
-        forward controller: 'home', action:'index', params:(params)
+        redirect (uri:'/error')
       }
       json {
-        response.sendError(500)
         render resp as JSON
       }
     }
@@ -25,10 +25,15 @@ class ErrorController {
   def notFound() {
     def resp = [code: 404, message:'Not Found']
     withFormat {
-      log.debug("Rendering HTML 404")
-      redirect (uri:'/notFound', params:[status:404])
+      html{
+        log.debug("Rendering HTML 404")
+        redirect (uri:'/notFound', params:[status:404])
+      }
+      json {
+        response.setStatus(404)
+        render resp as JSON
+      }
     }
-    render resp as JSON
   }
   
   def forbidden() {
@@ -40,7 +45,7 @@ class ErrorController {
       }
       json {
         log.debug("Rendering JSON 403")
-        response.sendError(403)
+        response.setStatus(403)
         render resp as JSON
       }
     }
@@ -55,7 +60,7 @@ class ErrorController {
       }
       json {
         log.debug("Rendering JSON 401")
-        response.sendError(401)
+        response.setStatus(401)
         render resp as JSON
       }
     }
@@ -70,7 +75,7 @@ class ErrorController {
       }
       json {
         log.debug("Rendering JSON 400")
-        response.sendError(400)
+        response.setStatus(400)
         render resp as JSON
       }
     }

@@ -111,41 +111,23 @@ class Package extends KBComponent {
     })
   }
 
-  public static final String restPath = "/packages"
+  public String getRestPath() {
+    return "/packages"
+  }
 
-  public final static Map jsonMapping = [
+  final static Map jsonMapping = [
     'ignore': [
-      'lastProject',
-      'bucketHash',
-      'shortcode',
-      'normname',
-      'people',
-      'lastSeen',
-      'updateBenchmark',
-      'systemComponent',
-      'provenance',
-      'insertBenchmark',
-      'componentHash',
-      'prices',
-      'subjects',
-      'lastUpdateComment',
-      'reference',
-      'duplicateOf',
-      'componentDiscriminator'
+      'lastProject'
     ],
-    'combos_default': [
-      'ids',
-      'curatoryGroups',
-      'nominalPlatform',
-      'provider'
-    ],
-    'immutable': [
-      'id',
-      'uuid',
-      'lastUpdated',
-      'dateCreated',
-      'lastUpdatedBy',
-      'variantNames'
+    'es': [
+      'platformUuid': "nominalPlatform.uuid",
+      'platformName': "nominalPlatform.name",
+      'nominalPlatform': false,
+      'cpname': "provider.name",
+      'provider':false,
+      'providerUuid': "provider.uuid",
+      'titleCount': false,
+      'paymentType': false
     ]
   ];
 

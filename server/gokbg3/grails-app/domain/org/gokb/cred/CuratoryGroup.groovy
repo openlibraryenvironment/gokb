@@ -47,12 +47,14 @@ class CuratoryGroup extends KBComponent {
     })
   }
 
+  public String getRestPath() {
+    return "/groups";
+  }
+
   @Override
   public String getNiceName() {
     return "Curatory Group";
   }
-
-  public static final String restPath = "/groups"
   
   static def refdataFind(params) {
     def result = [];

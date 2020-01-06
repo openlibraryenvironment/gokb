@@ -12,7 +12,7 @@ class UrlMappings {
         "/oai/$id?" (controller: 'oai', action: 'index')
         "/resource/show/$type/$id" (controller: 'resource', action:'show')
         group "/rest", {
-            get "/packages/$id/tipps" (controller: 'package', namespace: 'rest', action:'tipps')
+            get "/packages/$id/$action" (controller: 'package', namespace:'rest')
             get "/packages/$id" (controller: 'package', namespace: 'rest', action:'show')
             put "/packages/$id" (controller: 'package', namespace: 'rest', action:'update')
             get "/packages" (controller: 'package', namespace:'rest', action:'index')
@@ -23,10 +23,6 @@ class UrlMappings {
 
             get "/profile" (controller: 'profile', namespace:'rest', action: 'show')
             put "/profile" (controller: 'profile', namespace:'rest', action: 'update')
-
-            "/$controller/$action?/$id?" {
-                constraints {}
-            }
         }
         "/$controller/$action?/$id?"{
             constraints {
@@ -36,10 +32,10 @@ class UrlMappings {
 
         "/"(controller:'public',action:'index')
         "500"(controller:'error', action:'serverError')
-        "500"(controller:'error', action:'serverError', exception: NotFoundException)
+        "500"(controller:'error', action:'unauthorized', exception: NotFoundException)
         "500"(controller:'error', action:'unauthorized', exception: AccessDeniedException)
         "404"(controller:'error', action:'notFound')
-        "403"(controller:'error', action:'forbidden')
+        "403"(controller:'error', action:'forbidden', params: params)
         "401"(controller:'error', action:'unauthorized')
         "400"(controller:'error', action:'badRequest')
     }

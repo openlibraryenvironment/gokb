@@ -6,9 +6,10 @@ import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
 import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
-import java.text.SimpleDateFormat
 import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
+import java.time.format.*
+import java.time.LocalDateTime
 
 import groovy.util.logging.*
 
@@ -1332,8 +1333,6 @@ class IntegrationController {
 
     def result = [ 'result' : 'OK' ]
 
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
-
     log.debug("crossReferenceTitle(${titleObj.type},${titleObj.title},${titleObj.identifiers}},...)");
 
         TitleInstance.withNewSession {
@@ -1383,8 +1382,8 @@ class IntegrationController {
               ], titleObj, title)
 
               if (titleObj.type == 'Serial') {
-                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
-                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
+                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom')
+                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo')
               }
 
               if ( titleObj.historyEvents?.size() > 0 ) {
@@ -1479,7 +1478,7 @@ class IntegrationController {
                       def he = new ComponentHistoryEvent()
 
                       if ( jhe.date ) {
-                        he.eventDate = sdf.parse(jhe.date);
+                        ClassUtils.setDateIfPresent(jhe.date, he, 'eventDate');
                       }
 
                       he.save(flush:true, failOnError:true);
@@ -1516,7 +1515,7 @@ class IntegrationController {
               if( title.class.name == "org.gokb.cred.BookInstance" && (titleObj.type == 'Book' || titleObj.type == 'Monograph') ){
 
                 log.debug("Adding Monograph fields for ${title.class.name}: ${title}")
-                def mg_change = addMonographFields(title, titleObj, sdf)
+                def mg_change = addMonographFields(title, titleObj)
 
                 // TODO: Here we will have to add authors and editors, like addPerson() in TSVIngestionService
                 if(mg_change){
@@ -1524,7 +1523,7 @@ class IntegrationController {
                 }
               }
 
-              addPublisherHistory(title, titleObj.publisher_history, sdf)
+              addPublisherHistory(title, titleObj.publisher_history)
 
               if (!result.message) {
                 result.message = "Created/looked up title ${title.id}"
@@ -1584,9 +1583,9 @@ class IntegrationController {
     result
   }
 
-  private static addPublisherHistory ( TitleInstance ti, publishers, sdf) {
+  private static addPublisherHistory ( TitleInstance ti, publishers) {
 
-    def sdfs = ["yyyy-MM-dd' 'HH:mm:ss.SSS","yyyy-MM-dd"]
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("" + "[yyyy-MM-dd' 'HH:mm:ss.SSS]" + "[yyyy-MM-dd'T'HH:mm:ss'Z']" + "[yyyy-MM-dd]")
 
     if (publishers && ti) {
 
@@ -1626,32 +1625,22 @@ class IntegrationController {
           Date pub_add_ed = null
 
           if ( pub_to_add.startDate?.trim() ) {
+            try {
+              LocalDateTime startDate = LocalDateTime.parse(pub_to_add.startDate, formatter)
 
-            sdfs.each { s ->
-              if (!pub_add_sd) {
-                try {
-                  SimpleDateFormat sdfStart = new SimpleDateFormat(s)
-
-                  pub_add_sd = sdfStart.parse(pub_to_add.startDate)
-                }
-                catch (Exception e) {
-                }
-              }
+              pub_add_sd = startDate.toDate()
+            }
+            catch (Exception e) {
             }
           }
 
           if ( pub_to_add.endDate?.trim() ) {
+            try {
+              LocalDateTime endDate = LocalDateTime.parse(pub_to_add.endDate, formatter)
 
-            sdfs.each { s ->
-              if (!pub_add_ed) {
-                try {
-                  SimpleDateFormat sdfEnd = new SimpleDateFormat(s)
-
-                  pub_add_ed = sdfEnd.parse(pub_to_add.endDate)
-                }
-                catch (Exception e) {
-                }
-              }
+              pub_add_ed = endDate.toDate()
+            }
+            catch (Exception e) {
             }
           }
 
@@ -1661,9 +1650,9 @@ class IntegrationController {
             def idMatch = pc."${propName}".id == publisher.id
 
             if (idMatch) {
-              if (pub_add_sd && pc.startDate && sdf.format(pub_add_sd) != sdf.format(pc.startDate)) {
+              if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
               }
-              else if (pub_add_ed && pc.endDate && sdf.format(pub_add_ed) != sdf.format(pc.endDate)) {
+              else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
               }
               else {
                 found = true
@@ -1734,7 +1723,7 @@ class IntegrationController {
     }
   }
 
-  private static addMonographFields ( BookInstance bi, titleObj, sdf ) {
+  private static addMonographFields ( BookInstance bi, titleObj ) {
 
     def book_changed = false
 
@@ -1748,8 +1737,8 @@ class IntegrationController {
       }
     }
 
-    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstInPrint, bi, 'dateFirstInPrint', sdf)
-    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstOnline, bi, 'dateFirstOnline', sdf)
+    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstInPrint, bi, 'dateFirstInPrint')
+    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstOnline, bi, 'dateFirstOnline')
 
     if ( book_changed ) {
       bi.save(flush: true, failOnError:true)

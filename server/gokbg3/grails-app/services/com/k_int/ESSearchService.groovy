@@ -8,7 +8,7 @@ import org.elasticsearch.client.*
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-
+import org.gokb.cred.*
 
 
 class ESSearchService{
@@ -23,6 +23,7 @@ class ESSearchService{
 
   def ESWrapperService
   def grailsApplication
+  def genericOIDService
 
   def search(params){
     search(params,reversemap)
@@ -249,7 +250,7 @@ class ESSearchService{
 
   def find(params) {
     def result = [:]
-    def esclient = ESWrapperService.getClient()
+    Client esclient = ESWrapperService.getClient()
     def search_action = null
     def errors = [:]
     log.debug("find :: ${params}")
@@ -547,16 +548,7 @@ class ESSearchService{
         result.records = []
 
         search.hits.each { r ->
-          def response_record = [:]
-          response_record.id = r.id
-
-          if (response_record.score && response_record.score != Float.NaN) {
-            response_record.score = r.score
-          }
-
-          r.source.each { field, val ->
-            response_record."${field}" = val
-          }
+          def response_record = mapEsToDomain(r)
 
           result.records.add(response_record);
         }
@@ -571,6 +563,86 @@ class ESSearchService{
     }
 
     result
+  }
+
+  private Map mapEsToDomain(record) {
+    def domainMapping = [:]
+    def base = grailsApplication.config.serverURL + "/rest"
+    def esMapping = [
+      'lastUpdatedDisplay': 'lastUpdated',
+      'sortname': false,
+      'updater': false,
+    ]
+
+    def obj = KBComponent.findByUuid(record.source.uuid)
+
+    if (obj) {
+
+      if (KBComponent.has(obj,'jsonMapping') && obj.jsonMapping.es) {
+        esMapping << obj.jsonMapping.es
+      }
+
+      domainMapping['links'] = ['self': ['href': base + obj.restPath + "/${obj.uuid}"]]
+      domainMapping['embedded'] = [:]
+      
+      log.debug("Mapping ${record}")
+
+      record.source.each { field, val ->
+        if (field == "curatoryGroups") {
+          mapCuratoryGroups(domainMapping, val)
+        }
+        else if (field == "altname") {
+          domainMapping['embedded']['variantNames'] = val
+        }
+        else if (field == "identifiers") {
+          domainMapping['embedded']['ids'] = val
+        }
+        else if (esMapping[field] == false) {
+          log.debug("Skipping field ${field}!")
+        }
+        else if (esMapping[field]) {
+          log.debug("Field ${esMapping[field]}")
+          def fieldPath = esMapping[field].split("\\.")
+          log.debug("FieldPath: ${fieldPath}")
+
+          if (fieldPath.size() == 2) {
+            def linkedObj = obj."${fieldPath[0]}"
+
+            if (linkedObj) {
+              domainMapping['links'][fieldPath[0]] = ['href': base + linkedObj.restPath + "/${linkedObj.uuid}"]
+            }
+          } else {
+            domainMapping[fieldPath[0]] = obj."${esMapping[field]}"
+          }
+        }
+        else {
+          log.debug("Transfering unmapped field ${field}:${val}")
+          domainMapping[field] = val
+        }
+      }
+    }
+
+    log.debug("${domainMapping}")
+    return domainMapping
+  }
+
+  private def mapCuratoryGroups(domainMapping, cgs) {
+    def base = grailsApplication.config.serverURL + "/rest"
+
+    domainMapping['embedded']['curatoryGroups'] = []
+    cgs.each { cg ->
+      def cg_obj = CuratoryGroup.findByName(cg)
+      domainMapping['embedded']['curatoryGroups'] << [
+        'links': [
+          'self': [
+            'href': base + "/groups/" + cg_obj.uuid
+          ]
+        ],
+        'name': cg_obj.name,
+        'id': cg_obj.id,
+        'uuid': cg_obj.uuid
+      ]
+    }
   }
 
   private def deriveComponentType(String typeString) {

@@ -3,6 +3,7 @@ package org.gokb.rest
 import grails.converters.*
 import grails.core.GrailsClass
 import grails.gorm.transactions.*
+import grails.plugin.springsecurity.annotation.Secured
 
 import groovyx.net.http.URIBuilder
 
@@ -12,7 +13,6 @@ import java.time.format.DateTimeFormatter
 import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
-import org.springframework.security.access.annotation.Secured;
 
 @Transactional(readOnly = true)
 class PackageController {
@@ -25,47 +25,10 @@ class PackageController {
   def messsageService
   def restMappingService
 
-  public final static Map jsonMap = [
-    'ignore': [
-      'lastProject',
-      'bucketHash',
-      'shortcode',
-      'normname',
-      'people',
-      'lastSeen',
-      'updateBenchmark',
-      'systemComponent',
-      'provenance',
-      'insertBenchmark',
-      'componentHash',
-      'prices',
-      'subjects',
-      'lastUpdateComment',
-      'reference',
-      'duplicateOf',
-      'componentDiscriminator'
-    ],
-    'combos': [
-      'ids',
-      'curatoryGroups',
-      'nominalPlatform',
-      'provider'
-    ],
-    'immutable': [
-      'id',
-      'uuid',
-      'lastUpdated',
-      'dateCreated',
-      'lastUpdatedBy',
-      'variantNames'
-    ]
-  ];
-
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     def result = [:]
-    def base = grailsApplication.config.serverURL
-    def retainedFields = ['id', 'name', 'altname', 'curatoryGroups', 'uuid','listStatus','contentType','status','links','titleCount','identifiers']
+    def base = grailsApplication.config.serverURL + "/rest"
 
     params.componentType = params.componentType ?: "Package" // Tells ESSearchService what to look for
 
@@ -108,50 +71,11 @@ class PackageController {
       link.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
       result['links']['prev'] = ['href': link.toString()]
     }
-    result['links']['item'] = []
 
     es_result.records.each { pkg ->
-      def halPkg = [:]
-      def pkgId = genericOIDService.oidToId(pkg.id)
-      result['links']['item'] << ['href': base + "/packages/${pkgId}"]
-      halPkg['name'] = pkg.name
-      halPkg['id'] = pkgId
-      halPkg['uuid'] = pkg.uuid
-      halPkg['links'] = []
+      def halPkg = pkg
 
-      halPkg['links'] << ['self': ['href': (base + "/packages/${pkgId}"),]]
-      halPkg['links'] << ['tipps': ['href': (base + "/packages/${pkgId}/tipps")]]
-
-      if (pkg.provider) {
-        halPkg['links'] << ['provider': ['href': (base + "/orgs/${genericOIDService.oidToId(pkg.provider)}"),'title':pkg.cpname]]
-      }
-
-      if (pkg.nominalPlatform) {
-        halPkg['links'] << ['nominalPlatform': ['href': (base + "/platforms/${genericOIDService.oidToId(pkg.nominalPlatform)}"),'title': pkg.platformName]]
-      }
-
-      halPkg['embedded'] = [curatoryGroups:[], ids:[], variantNames:[]]
-      
-      pkg.ids.each { i ->
-        halPkg['embedded']['ids'] << ['value': i.value, 'namespace': i.type]
-      }
-
-      pkg.curatoryGroups.each { cg ->
-        def cg_obj = CuratoryGroup.findByName(cg)
-        halPkg['embedded']['curatoryGroups'] << [
-          'links': [
-            'self': [
-              'href': base + "/groups/" + cg_obj.id
-            ]
-          ],
-          'name': cg_obj.name,
-          'id': cg_obj.id
-        ]
-      }
-
-      pkg.altname.each {
-        halPkg['embedded']['variantNames'] << ['variantName': it, 'links': ['owner': ['href': base + "/packages/${pkgId}"]]]
-      }
+      halPkg['links'] << ['tipps': ['href': (base + "/packages/${halPkg.uuid}/tipps")]]
 
       result['embedded']['packages'] << halPkg
     }
@@ -159,6 +83,7 @@ class PackageController {
     render result as JSON
   }
 
+  @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def show() {
     def result = [:]
@@ -178,19 +103,19 @@ class PackageController {
       }
 
       if (obj.isReadable()) {
-        result = restMappingService.createHalMapping(obj, embed_active)
+        result = restMappingService.mapObjectToJson(obj, embed_active)
 
-        result['_currentTipps'] = obj.currentTippCount
-        result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
+        // result['_currentTipps'] = obj.currentTippCount
+        // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
       }
       else if (!obj) {
-        result.error = "Object ID could not be resolved!"
+        result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
         result.result = 'ERROR'
       }
       else {
-        result.error = "Access to object was denied!"
+        result.message = "Access to object was denied!"
         response.setStatus(403)
         result.code = 403
         result.result = 'ERROR'
@@ -200,13 +125,29 @@ class PackageController {
       result.result = 'ERROR'
       response.setStatus(400)
       result.code = 400
-      result.error = 'No object id supplied!'
+      result.message = 'No object id supplied!'
     }
 
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  def save() {
+    def result = ['result':'OK', 'params': params]
+    def reqBody = request.JSON
+    def errors = []
+    def user = User.get(springSecurityService.principal.id)
+    
+    if (reqBody) {
+      Package pkg = Package.upsertDTO(reqBody, user)
+
+      if (pkg.errors) {
+        errors = messsageService.processValidationErrors(pkg.errors, request.locale)
+      }
+    }
+  }
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
   @Transactional
   def update() {
     def result = ['result':'OK', 'params': params]
@@ -283,7 +224,7 @@ class PackageController {
         else {
           result.result = 'ERROR'
           response.setStatus(422)
-          errors.addAll(messsageService.processValidationErrors(pkg.errors))
+          errors.addAll(messsageService.processValidationErrors(pkg.errors, request.locale))
         }
       }
       else {
@@ -291,6 +232,11 @@ class PackageController {
         response.setStatus(403)
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(404)
+      result.message = "Package not found or empty request body!"
     }
 
     if(errors.size() > 0) {
@@ -304,72 +250,88 @@ class PackageController {
     def result = [:]
     log.debug("tipps :: ${params}")
     def tippParams = params
-    def base = grailsApplication.config.serverURL
-    def pkgOid = (params.id?.contains(':') ? params.id : "org.gokb.cred.Package:${params.id}")
-    def pkgId = genericOIDService.oidToId(params.id)
-
-    result['links'] = ['self':['href': base + "/packages/" + pkgId + "/tipps"]]
-
-    tippParams.remove('componentType')
-    tippParams.componentType = "TIPP" // Tells ESSearchService what to look for
-    tippParams.tippPackage = pkgOid
-    tippParams.remove('id')
-    tippParams.remove('uuid')
-
-    def es_result =  ESSearchService.find(tippParams)
-
-    result.count = es_result.max
-    result.total = es_result.count
-    result.offset = es_result.offset
-
-    if (es_result.count > es_result.offset+es_result.max) {
-      def link = new URIBuilder(base + "/packages/${pkgId}/tipps")
-      link.addQueryParams(params)
-      if(link.query.offset){
-        link.removeQueryParam('offset')
+    def base = grailsApplication.config.serverURL + "/rest"
+    def pkgId = Package.findByUuid(params.id)?.uuid ?: null
+    
+    if (!pkgId) {
+      try {
+        pkgId = Package.get(genericOIDService.oidToId(params.id))?.uuid ?: null
       }
-      link.removeQueryParam('tippPackage')
-      link.removeQueryParam('controller')
-      link.removeQueryParam('action')
-      link.removeQueryParam('componentType')
-      link.addQueryParam('offset', "${es_result.offset + es_result.max}")
-      result['links']['next'] = ['href': (link.toString())]
-    }
-    if (es_result.offset > 0) {
-      def link = new URIBuilder(base + "/packages/${pkgId}/tipps")
-      link.addQueryParams(params)
-      if(link.query.offset){
-        link.removeQueryParam('offset')
-      }
-      link.removeQueryParam('tippPackage')
-      link.removeQueryParam('controller')
-      link.removeQueryParam('action')
-      link.removeQueryParam('componentType')
-      link.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
-      result['links']['prev'] = ['href': link.toString()]
+      catch (Exception e) {
+      } 
     }
 
-    result['embedded'] = ['tipps':[]]
-    result['links']['items'] = []
+    if (pkgId) {
 
-    es_result.records.each { tipp ->
-      result['links']['items'] << ['href': base + "/tipps/" + genericOIDService.oidToId(tipp.id)]
-      def ntip = [
-        'links': [
-          'self': ['href': base + "/tipps/" + genericOIDService.oidToId(tipp.id)],
-          'status': ['href': base + "/refdata/values/" + (RefdataCategory.lookup('KBComponent.Status',tipp.status).id), 'title': tipp.status],
-          'pkg': ['href': base + "/packages/" + pkgId, 'title': tipp.tippPackageName ?: ''],
-          'title': ['href': base + genericOIDService.resolveOID(tipp.tippTitle).restPath + "/${genericOIDService.oidToId(tipp.tippTitle)}", 'title': tipp.tippTitleName ?: '']
+      result['links'] = ['self':['href': base + "/packages/" + pkgId + "/tipps"]]
+
+      tippParams.remove('componentType')
+      tippParams.componentType = "TIPP" // Tells ESSearchService what to look for
+      tippParams.tippPackage = pkgId
+      tippParams.remove('id')
+      tippParams.remove('uuid')
+
+      def es_result =  ESSearchService.find(tippParams)
+
+      result.count = es_result.max
+      result.total = es_result.count
+      result.offset = es_result.offset
+
+      if (es_result.count > (es_result.offset + es_result.max)) {
+        def link = new URIBuilder(base + "/packages/${pkgId}/tipps")
+        link.addQueryParams(params)
+        if(link.query.offset){
+          link.removeQueryParam('offset')
+        }
+        link.removeQueryParam('tippPackage')
+        link.removeQueryParam('controller')
+        link.removeQueryParam('action')
+        link.removeQueryParam('componentType')
+        link.addQueryParam('offset', "${es_result.offset + es_result.max}")
+        result['links']['next'] = ['href': (link.toString())]
+      }
+      if (es_result.offset > 0) {
+        def link = new URIBuilder(base + "/packages/${pkgId}/tipps")
+        link.addQueryParams(params)
+        if(link.query.offset){
+          link.removeQueryParam('offset')
+        }
+        link.removeQueryParam('tippPackage')
+        link.removeQueryParam('controller')
+        link.removeQueryParam('action')
+        link.removeQueryParam('componentType')
+        link.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
+        result['links']['prev'] = ['href': link.toString()]
+      }
+
+      result['embedded'] = ['tipps':[]]
+      result['links']['items'] = []
+
+      es_result.records.each { tipp ->
+        result['links']['items'] << ['href': base + "/tipps/" + tipp.uuid]
+        def ntip = [
+          'links': [
+            'self': ['href': base + "/tipps/" + tipp.uuid],
+            'pkg': ['href': base + "/packages/" + pkgId, 'title': tipp.tippPackageName ?: ''],
+            'hostPlatform': ['href': base + "/platforms/" + tipp.hostPlatformUuid, 'title': tipp.hostPlatformName],
+            'title': ['href': base + genericOIDService.resolveOID(tipp.tippTitle).restPath + "/${tipp.tippTitleUuid}", 'title': tipp.tippTitleName ?: '']
+          ]
         ]
-      ]
 
-      ntip.id = genericOIDService.oidToId(tipp.id)
-      ntip.lastUpdated = tipp.lastUpdatedDisplay
-      ntip.uuid = tipp.uuid
-      ntip.coverage = tipp.coverage
-      ntip.url = tipp.url
+        ntip.id = genericOIDService.oidToId(tipp.id)
+        ntip.lastUpdated = tipp.lastUpdatedDisplay
+        ntip.status = tipp.status
+        ntip.uuid = tipp.uuid
+        ntip.coverage = tipp.coverage
+        ntip.url = tipp.url
 
-      result['embedded']['tipps'] << ntip
+        result['embedded']['tipps'] << ntip
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      result.message = 'Package id could not be resolved!'
+      response.setStatus = 404
     }
 
     render result as JSON

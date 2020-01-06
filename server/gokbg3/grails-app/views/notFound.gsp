@@ -1,7 +1,6 @@
 <!doctype html>
 <html>
     <head>
-        <meta name="layout" content="sb-admin" />
         <title>Page Not Found</title>
     </head>
     <body>

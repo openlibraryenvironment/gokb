@@ -14,7 +14,7 @@ class RefdataController {
   def genericOIDService
   def springSecurityService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
 
@@ -44,6 +44,7 @@ class RefdataController {
     render result as JSON
   }
 
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def showCategory() {
     def result = [:]
     def cat = null
@@ -81,6 +82,7 @@ class RefdataController {
     render result as JSON
   }
 
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def showValue() {
     def result = [:]
     def val = null
