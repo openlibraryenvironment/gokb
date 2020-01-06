@@ -38,7 +38,7 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
     "dynamic_templates": [
       {
         "provider": {
-          "match": "provider",
+          "match": "provider*",
           "match_mapping_type": "string",
           "mapping": {
             "type": "keyword"
@@ -56,7 +56,7 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
       },
       {
         "publisher": {
-          "match": "publisher",
+          "match": "publisher*",
           "match_mapping_type": "string",
           "mapping": {
             "type": "keyword"
@@ -74,7 +74,7 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
       },
       {
         "package": {
-          "match": "tippPackage",
+          "match": "tippPackage*",
           "match_mapping_type": "string",
           "mapping": {
             "type": "keyword"
@@ -83,7 +83,7 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
       },
       {
         "title": {
-          "match": "tippTitle",
+          "match": "tippTitle*",
           "match_mapping_type": "string",
           "mapping": {
             "type": "keyword"
@@ -92,7 +92,7 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
       },
       {
         "hostPlatform": {
-          "match": "hostPlatform",
+          "match": "hostPlatform*",
           "match_mapping_type": "string",
           "mapping": {
             "type": "keyword"
@@ -119,7 +119,7 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
       },
       {
         "nominalPlatform": {
-          "match": "nominalPlatform",
+          "match": "nominalPlatform*",
           "match_mapping_type": "string",
           "mapping": {
             "type": "keyword"
@@ -134,12 +134,39 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
             "type": "keyword"
           }
         }
+      },
+      {
+        "scope": {
+          "match": "scope",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "contentType": {
+          "match": "contentType",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "titleType": {
+          "match": "titleType",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
       }
     ],
     "properties" : {
       "name" : {
         "type" : "text",
-	"copy_to" : "suggest",
+        "copy_to" : "suggest",
         "fields" : {
           "name" : { "type" : "text" },
           "altname" : { "type" : "text" }

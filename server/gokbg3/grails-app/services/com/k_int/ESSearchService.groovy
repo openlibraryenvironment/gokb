@@ -334,7 +334,7 @@ class ESSearchService{
     }
   }
 
-  private void processLinkedField(field, val) {
+  private void processLinkedField(query, field, val) {
     QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
 
     linkedFieldQuery.should(QueryBuilders.termQuery(field, val))
@@ -342,7 +342,7 @@ class ESSearchService{
     linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), val))
     linkedFieldQuery.minimumNumberShouldMatch(1)
 
-    exactQuery.must(linkedFieldQuery)
+    query.must(linkedFieldQuery)
   }
 
   private void addPlatformQuery(query, errors, val) {
@@ -350,13 +350,15 @@ class ESSearchService{
 
     linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', val))
     linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalplatformUuid', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformUuid', val))
     linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', val))
     linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', val))
     linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', val))
     linkedFieldQuery.minimumNumberShouldMatch(1)
 
     query.must(linkedFieldQuery)
+
+    log.debug("Processing platform value ${val} .. ")
   }
 
   /**
@@ -406,16 +408,16 @@ class ESSearchService{
         if (component_type == "TitleInstance") {
           QueryBuilder typeQuery = QueryBuilders.boolQuery()
 
-          typeQuery.should(QueryBuilders.matchQuery('componentType', "JournalInstance"))
-          typeQuery.should(QueryBuilders.matchQuery('componentType', "DatabaseInstance"))
-          typeQuery.should(QueryBuilders.matchQuery('componentType', "BookInstance"))
+          typeQuery.should(QueryBuilders.termQuery('componentType', "JournalInstance"))
+          typeQuery.should(QueryBuilders.termQuery('componentType', "DatabaseInstance"))
+          typeQuery.should(QueryBuilders.termQuery('componentType', "BookInstance"))
 
           typeQuery.minimumNumberShouldMatch(1)
 
           exactQuery.must(typeQuery)
         }
         else if (component_type) {
-          exactQuery.must(QueryBuilders.matchQuery('componentType',component_type))
+          exactQuery.must(QueryBuilders.termQuery('componentType',component_type))
         }
         log.debug("Using component type ${component_type}")
       }
@@ -448,10 +450,10 @@ class ESSearchService{
           exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v))
         }
         else if (requestMapping.linked.containsKey(k)) {
-          processLinkedField(k, v)
+          processLinkedField(exactQuery, k, v)
         }
         else if (k.contains('platform')) {
-          addPlatformQuery(query, errors, v)
+          addPlatformQuery(exactQuery, errors, v)
         }
         else if (k in requestMapping.dates) {
         }
