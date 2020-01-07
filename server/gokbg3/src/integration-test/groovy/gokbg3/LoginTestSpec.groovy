@@ -47,18 +47,6 @@ class LoginTestSpec extends GebSpec {
       ex.printStackTrace()
     }
   }
-
-  void "test request unauthorized"() {
-    when:
-    HttpGet request = new HttpGet("http://localhost:$serverPort/gokb/rest/profile");
-    // add request headers
-    request.addHeader('accept', 'application/json')
-    // fire the request
-    CloseableHttpResponse response = httpClient.execute(request)
-
-    then:
-    response.statusLine.statusCode == 401 // unauthorized
-  }
 }
 
 class BearerToken {
