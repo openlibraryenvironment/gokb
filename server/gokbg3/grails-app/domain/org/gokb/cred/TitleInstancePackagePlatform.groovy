@@ -37,6 +37,50 @@ class TitleInstancePackagePlatform extends KBComponent {
     "coverageDepth" : "Fulltext"
   ]
   
+  static jsonMapping = [
+    'ignore': [
+      'format',
+      'paymentType',
+      'startIssue',
+      'delayedOA',
+      'hybridOA',
+      'coverageNote',
+      'primary',
+      'delayedOAEmbargo',
+      'coverageDepth',
+      'startVolume',
+      'endDate',
+      'embargo',
+      'startDate',
+      'endIssue',
+      'endVolume',
+      'description',
+      'hybridOAUrl',
+      'name'
+    ],
+    'es': [
+      'hostPlatformUuid': "hostPlatform.uuid",
+      'hostPlatformName': "hostPlatform.name",
+      'hostPlatform': false,
+      'tippTitleUuid': "title.uuid",
+      'tippTitleName': "title.name",
+      'tippTitle': false,
+      'tippPackageUuid': "pkg.uuid",
+      'tippPackageName': "pkg.name",
+      'tippPackage': false,
+      'titleType': "title.niceName",
+      'coverage': "coverageStatements"
+    ],
+    'defaultLinks': [
+      'pkg',
+      'title',
+      'hostPlatform'
+    ],
+    'defaultEmbeds': [
+      'coverageStatements'
+    ]
+  ];
+
   static touchOnUpdate = [
     "pkg"
   ]

@@ -12,7 +12,7 @@ class RestMappingService {
   def genericOIDService
 
   /**
-   *  mapObject : Used to create a form which will add a new object to a named collection within the target object.
+   *  mapObjectToJson : Maps an domain class object to JSON based on its jsonMapping config.
    * @param obj : The object to be mapped
    * @param embed_active : The list of object associations to be embedded
    */
@@ -55,8 +55,12 @@ class RestMappingService {
       result['links']['self'] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
     }
 
-    if ( embed_active.size() > 0 ) {
+    if ( embed_active.size() > 0 || jsonMap?.defaultEmbeds ) {
       result['embedded'] = [:]
+    }
+
+    if ( embed_active.size() == 0 && jsonMap?.defaultEmbeds ) {
+      embed_active = jsonMap.defaultEmbeds
     }
 
     pent.getPersistentProperties().each { p ->
@@ -181,6 +185,6 @@ class RestMappingService {
   }
 
   public def getEmbeddedJson(obj) {
-    mapObject(obj)
+    mapObjectToJson(obj)
   }
 }

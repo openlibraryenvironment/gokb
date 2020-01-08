@@ -128,6 +128,15 @@ class Package extends KBComponent {
       'providerUuid': "provider.uuid",
       'titleCount': false,
       'paymentType': false
+    ],
+    'defaultLinks': [
+      'tipps',
+      'provider',
+      'nominalPlatform',
+      'curatoryGroups'
+    ],
+    'defaultEmbeds': [
+      'ids'
     ]
   ];
 
