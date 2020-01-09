@@ -102,7 +102,7 @@ class PackageController {
         obj = Package.get(params.id)
       }
 
-      if (obj.isReadable()) {
+      if (obj?.isReadable()) {
         result = restMappingService.mapObjectToJson(obj, embed_active)
 
         // result['_currentTipps'] = obj.currentTippCount
@@ -331,7 +331,7 @@ class PackageController {
     else {
       result.result = 'ERROR'
       result.message = 'Package id could not be resolved!'
-      response.setStatus = 404
+      response.setStatus(404)
     }
 
     render result as JSON

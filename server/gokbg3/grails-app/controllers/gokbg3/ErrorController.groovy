@@ -9,12 +9,24 @@ import org.springframework.security.acls.model.NotFoundException
 class ErrorController {
   def springSecurityService
 
+  def index() {
+    def resp = [code: 500, message:'Server Error']
+    withFormat {
+      html {
+        redirect (uri:'/error')
+      }
+      json {
+        render resp as JSON
+      }
+    }
+  }
+
   def serverError() {
     def resp = [code: 500, message:'Server Error']
     response.setStatus(500)
     withFormat {
       html {
-        redirect (uri:'/error')
+        forward (uri:'/error')
       }
       json {
         render resp as JSON
@@ -26,11 +38,9 @@ class ErrorController {
     def resp = [code: 404, message:'Not Found']
     withFormat {
       html{
-        log.debug("Rendering HTML 404")
-        redirect (uri:'/notFound', params:[status:404])
+        forward (uri:'/notFound', params:[status:404])
       }
       json {
-        response.setStatus(404)
         render resp as JSON
       }
     }
