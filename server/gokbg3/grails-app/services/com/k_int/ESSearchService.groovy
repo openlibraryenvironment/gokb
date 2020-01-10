@@ -1,13 +1,13 @@
 package com.k_int
 
 import org.apache.lucene.search.join.ScoreMode
+
 import org.elasticsearch.action.search.*
-import org.elasticsearch.index.query.*
-import org.elasticsearch.search.sort.*
 import org.elasticsearch.client.*
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.index.query.*
+import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.search.sort.*
+
 import org.gokb.cred.*
 
 
@@ -38,6 +38,7 @@ class ESSearchService{
     complex: [
       "identifier",
       "status",
+      "componentType",
       "platform",
       "suggest",
       "label",
@@ -58,6 +59,16 @@ class ESSearchService{
     dates: [
       "changedSince",
       "changedBefore"
+    ],
+    ignore: [
+      "controller",
+      "action",
+      "max",
+      "offset",
+      "from",
+      "skipDomainMapping",
+      "sort",
+      "order"
     ]
   ]
 
@@ -68,9 +79,9 @@ class ESSearchService{
   def search(params, field_map){
     log.debug("ESSearchService::search - ${params}")
 
-   def result = [:]
+    def result = [:]
 
-   Client esclient = ESWrapperService.getClient()
+    Client esclient = ESWrapperService.getClient()
   
     try {
       if ( (params.q && params.q.length() > 0) || params.rectype) {
@@ -363,22 +374,7 @@ class ESSearchService{
 
   /**
    * find : Query the Elasticsearch index -- 
-   * @param max : Define result size
-   * @param offset : Define offset
-   * @param from : Define offset
-   * @param label : Search in name + variantNames
-   * @param name : Search in name
-   * @param altname : Search in variantNames
-   * @param id : Search by object ID ([classname]:[id])
-   * @param uuid : Search by component UUID
-   * @param identifier : Search for a linked external identifier ([identifier] or [namespace],[identifier])
-   * @param componentType : Filter by component Type (Package, Org, Platform, BookInstance, JournalInstance, TIPP)
-   * @param role : Filter by Org role (only in context of componentType=Org)
-   * @param linkedPackage : Filter by linked Package (only in context of componentType=TIPP)
-   * @param listStatus : Filter by title list status (only in context of componentType=Package)
-   * @param status : Filter by component status (Current, Expected, Retired, Deleted)
-   * @param linkedTitle : Filter by linked TitleInstance (only in context of componentType=TIPP)
-   * @param curatoryGroup : Filter by connected Curatory Group
+   * @param params : Elasticsearch query params
   **/
 
   def find(params) {
@@ -396,7 +392,7 @@ class ESSearchService{
       def singleParams = [:]
       def linkedFieldParams = [:]
       def unknown_fields = []
-      def other_fields = ["controller","action","max","offset","from","skipDomainMapping", "sort", "componentType"]
+      def platformParam = null
       def pkgNameSort = false
       def acceptedStatus = []
       def component_type = null
@@ -428,20 +424,6 @@ class ESSearchService{
       addStatusQuery(exactQuery, errors, params)
       addDateQueries(exactQuery, errors, params)
 
-      requestMapping.linked.platform.each {
-        def platformQry = null
-
-        if (params[it] && !platformQry) {
-          addPlatformQuery(exactQuery, errors, params[it])
-        }
-      }
-
-      requestMapping.generic.each {
-        if (params[it]) {
-          exactQuery.must(QueryBuilders.matchQuery(it, params[it]))
-        }
-      }
-
       params.each { k, v ->
         if (k in requestMapping.generic) {
           exactQuery.must(QueryBuilders.matchQuery(k, v))
@@ -452,16 +434,25 @@ class ESSearchService{
         else if (requestMapping.linked.containsKey(k)) {
           processLinkedField(exactQuery, k, v)
         }
-        else if (k.contains('platform')) {
-          addPlatformQuery(exactQuery, errors, v)
+        else if (k.contains('platform') || k.contains('Platform')) {
+          if (!platformParam) {
+            platformParam = k
+            addPlatformQuery(exactQuery, errors, v)
+          }
+          else {
+            errors[k] = "Platform has already been defined by parameter '${platformParam}'!"
+          }
         }
         else if (k in requestMapping.dates) {
+          log.debug("Processing date param ${k}")
         }
         else if (k in requestMapping.complex) {
+          log.debug("Processing complex param ${k}")
         }
-        else if (k in other_fields) {
+        else if (k in requestMapping.ignore) {
+          log.debug("Processing unmapped param ${k}")
         }
-        else  {
+        else {
           unknown_fields.add(k)
         }
       }
@@ -496,11 +487,27 @@ class ESSearchService{
         }
 
         if (params.sort) {
+          if (requestMapping.textFields.contains())
           FieldSortBuilder sortQry = new FieldSortBuilder(params.sort)
+          SortOrder order = SortOrder.ASC
+
+          if (params.order) {
+            if (params.order.toUpperCase() in ['ASC','DESC']) {
+              order = SortOrder.valueOf(params.order?.toUpperCase())
+            }
+            else {
+              errors['order'] = "Unknown sort order value '${params.order}'!"
+            }
+          }
+
+          sortQry.order(order)
+          
           es_request.addSort(sortQry)
         }
 
-        search_action = es_request.execute()
+        if (!errors) {
+          search_action = es_request.execute()
+        }
       }
       else if ( !exactQuery.hasClauses() ){
         errors['params'] = "No valid parameters found"
@@ -540,7 +547,11 @@ class ESSearchService{
           result.records.add(response_record);
         }
       }
-
+    } catch (Exception se) {
+      log.debug("${se}")
+      result = [:]
+      result.result = "ERROR"
+      result.errors = ['unknown': "There has been an unknown error processing the search request!"]
     } finally {
       if (errors) {
         result = [:]
