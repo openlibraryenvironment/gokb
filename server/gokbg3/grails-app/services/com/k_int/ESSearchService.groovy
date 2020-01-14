@@ -487,22 +487,32 @@ class ESSearchService{
         }
 
         if (params.sort) {
-          if (requestMapping.textFields.contains())
-          FieldSortBuilder sortQry = new FieldSortBuilder(params.sort)
-          SortOrder order = SortOrder.ASC
+          def sortBy = params.sort
 
-          if (params.order) {
-            if (params.order.toUpperCase() in ['ASC','DESC']) {
-              order = SortOrder.valueOf(params.order?.toUpperCase())
-            }
-            else {
-              errors['order'] = "Unknown sort order value '${params.order}'!"
-            }
+          if (sortBy == "name") {
+            sortBy = "sortname"
           }
-
-          sortQry.order(order)
           
-          es_request.addSort(sortQry)
+          if (ESWrapperService.mapping.component.properties[sortBy]?.type == 'text') {
+            errors['sort'] = "Unable to sort by text field ${sortBy}!"
+          }
+          else {
+            FieldSortBuilder sortQry = new FieldSortBuilder(sortBy)
+            SortOrder order = SortOrder.ASC
+
+            if (params.order) {
+              if (params.order.toUpperCase() in ['ASC','DESC']) {
+                order = SortOrder.valueOf(params.order?.toUpperCase())
+              }
+              else {
+                errors['order'] = "Unknown sort order value '${params.order}'!"
+              }
+            }
+
+            sortQry.order(order)
+
+            es_request.addSort(sortQry)
+          }
         }
 
         if (!errors) {
@@ -580,7 +590,10 @@ class ESSearchService{
         esMapping << obj.jsonMapping.es
       }
 
-      domainMapping['links'] = ['self': ['href': base + obj.restPath + "/${obj.uuid}"]]
+      if (KBComponent.has(obj, 'restPath')) {
+        domainMapping['links'] = ['self': ['href': base + obj.restPath + "/${obj.uuid}"]]
+      }
+
       domainMapping['embedded'] = [:]
       
       log.debug("Mapping ${record}")
@@ -606,7 +619,7 @@ class ESSearchService{
           if (fieldPath.size() == 2) {
             def linkedObj = obj."${fieldPath[0]}"
 
-            if (linkedObj) {
+            if (linkedObj && KBComponent.has(linkedObj, "restPath")) {
               domainMapping['links'][fieldPath[0]] = ['href': base + linkedObj.restPath + "/${linkedObj.uuid}"]
             }
           } else {

@@ -332,8 +332,14 @@ class ApiController {
 
       if ( params.q?.length() > 0 ) {
         searchParams.suggest = params.q
-        searchParams.skipDomainMapping = true
         searchParams.remove("q")
+
+        if (!searchParams.mapRecords) {
+          searchParams.skipDomainMapping = true
+        }
+        else {
+          searchParams.remove("mapRecords")
+        }
 
         result = ESSearchService.find(searchParams)
       }
@@ -357,11 +363,17 @@ class ApiController {
 
   def find() {
     def result = [:]
+    def searchParams = params
 
-    params.skipDomainMapping = true
+    if (!searchParams.mapRecords) {
+      searchParams.skipDomainMapping = true
+    }
+    else {
+      searchParams.remove("mapRecords")
+    }
 
     try {
-      result = ESSearchService.find(params)
+      result = ESSearchService.find(searchParams)
     }finally {
       if (result.errors) {
         response.setStatus(400)
