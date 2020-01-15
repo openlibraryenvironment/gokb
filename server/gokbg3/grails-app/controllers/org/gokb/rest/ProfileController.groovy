@@ -1,16 +1,10 @@
 package org.gokb.rest
 
-import grails.converters.*
-import grails.gorm.transactions.*
+import grails.converters.JSON
+import grails.gorm.transactions.Transactional
 import org.gokb.cred.Role
 import org.gokb.cred.User
-
-import static org.springframework.http.HttpStatus.*
-import static org.springframework.http.HttpMethod.*
-import org.springframework.security.acls.model.NotFoundException
-import org.springframework.security.access.annotation.Secured;
-import java.security.MessageDigest
-import grails.converters.JSON
+import org.springframework.security.access.annotation.Secured
 
 @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
 @Transactional(readOnly = true)
