@@ -346,7 +346,7 @@ class AjaxSupportController {
               contextObj.save(flush: true)
             }
             else {
-              errors.addAll(messageService.processValidationErrors(new_obj.errors.allErrors, request.locale))
+              errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
             }
           }
           else if ( params.__addToColl ) {
@@ -358,7 +358,7 @@ class AjaxSupportController {
               log.debug("New Object Saved OK");
             }
             else {
-              errors.addAll(messageService.processValidationErrors(new_obj.errors.allErrors, request.locale))
+              errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
             }
 
             if ( contextObj.validate() ) {
@@ -366,7 +366,7 @@ class AjaxSupportController {
               log.debug("Context Object Saved OK");
             }
             else {
-              errors.addAll(messageService.processValidationErrors(contextObj.errors.allErrors, request.locale))
+              errors.addAll(messageService.processValidationErrors(contextObj.errors, request.locale))
             }
           }
           else {
@@ -377,7 +377,7 @@ class AjaxSupportController {
               log.debug("Saved OK (${new_obj.class.name} ${new_obj.id})");
             }
             else {
-              errors.addAll(messageService.processValidationErrors(new_obj.errors.allErrors, request.locale))
+              errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
             }
           }
 
@@ -396,7 +396,7 @@ class AjaxSupportController {
               new_obj.save(flush:true, failOnError:true)
             }
             else {
-              errors.addAll(messageService.processValidationErrors(new_obj.errors.allErrors, request.locale))
+              errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
             }
           }
         }
@@ -559,7 +559,7 @@ class AjaxSupportController {
           log.debug("Saved context object ${contextObj.class.name}")
         }
         else {
-          flash.error = messageService.processValidationErrors(contextObj.errors.allErrors(), request.locale)
+          flash.error = messageService.processValidationErrors(contextObj.errors, request.locale)
           result.result = 'ERROR'
           result.code = 400
         }
@@ -576,7 +576,7 @@ class AjaxSupportController {
             log.debug("parent removed: "+item_to_remove[params.__otherEnd]);
           }
           if (!item_to_remove.validate()) {
-            flash.error = messageService.processValidationErrors(item_to_remove.errors.allErrors(), request.locale)
+            flash.error = messageService.processValidationErrors(item_to_remove.errors, request.locale)
           }
           else {
             item_to_remove.save(flush:true)
@@ -748,13 +748,13 @@ class AjaxSupportController {
     def user = springSecurityService.currentUser
     def target_object = resolveOID2(params.pk)
     def result = ['result': 'OK', 'params': params]
-    def errors = []
+    def errors = [:]
     if ( target_object && ( target_object.isEditable() || target_object == user ) ) {
       if ( params.type=='date' ) {
         target_object."${params.name}" = params.date('value',params.dateFormat ?: 'yyyy-MM-dd')
       }
       else if (params.name == 'uuid' || params.name == 'password') {
-        errors.add("This property is not editable.")
+        errors[params.name] = "This property is not editable."
       }
       else {
         def binding_properties = [:]
@@ -770,7 +770,7 @@ class AjaxSupportController {
       }
     }
     else {
-      errors['global'].add("Object ${target_object} is not editable.".toString())
+      errors['global'] = ["Object ${target_object} is not editable.".toString()]
       log.debug("Object ${target_object} is not editable.");
     }
 
@@ -783,7 +783,7 @@ class AjaxSupportController {
         }
         else {
           response.status = 400
-          outs << errors[params.name][0]
+          outs << errors[params.name] ? errors[params.name][0] : errors['global'][0]
         }
         outs.flush()
         outs.close()
@@ -844,7 +844,7 @@ class AjaxSupportController {
       }
       else {
         log.error("Problem saving.. ${target.errors}");
-        result.errors = messageService.processValidationErrors(target.errors.allErrors, request.locale)
+        result.errors = messageService.processValidationErrors(target.errors, request.locale)
         result.result = "ERROR"
       }
     }

@@ -2,7 +2,7 @@ package org.gokb
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
-import org.springframework.security.access.annotation.Secured;
+import grails.plugin.springsecurity.annotation.Secured
 import org.gokb.cred.*
 import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
@@ -24,11 +24,11 @@ class IntegrationController {
   def sessionFactory
 
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def index() {
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def assertJsonldPlatform() {
     def result = [result:'OK']
     def name = request.JSON.'skos:prefLabel'
@@ -46,7 +46,7 @@ class IntegrationController {
     render result as JSON
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def assertGroup() {
     def result = [result:'OK']
     def name = request.JSON.name
@@ -101,7 +101,7 @@ class IntegrationController {
     render result as JSON
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def assertJsonldOrg() {
     // log.debug("assertOrg, request.json = ${request.JSON}");
     def result=[:]
@@ -192,7 +192,7 @@ class IntegrationController {
     render result as JSON
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def createJsonLDOrg(ldjsonorg) {
     log.debug("createJsonLDOrg");
     //             "@id": "http://www.lib.ncsu.edu/ld/onld/00000134" ,
@@ -242,7 +242,7 @@ class IntegrationController {
       log.error("Problem saving new org. ${new_org.errors}");
     }
   }
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def enrichJsonLDOrg(org, jsonld) {
     log.debug("Enrich existing..");
     request.JSON.'skos:altLabel'?.each { al ->
@@ -267,7 +267,7 @@ class IntegrationController {
    *      ]
    *
    */
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def assertOrg() {
     log.debug("assertOrg, request.json = ${request.JSON}");
     def result=[result: 'OK']
@@ -457,7 +457,7 @@ class IntegrationController {
    *         defaultDataFormat:''
    *      ]
    */
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def assertSource() {
     createOrUpdateSource ( request.JSON )
   }
@@ -506,7 +506,7 @@ class IntegrationController {
   }
 
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   @Transactional(readOnly=true)
   private resolveOrgUsingPrivateIdentifiers(idlist) {
     def located_or_new_org = null;
@@ -603,7 +603,7 @@ class IntegrationController {
 //    located_or_new_org
 //  }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def registerVariantName() {
     log.debug("registerVariantName ${params} ${request.JSON}")
 
@@ -796,7 +796,7 @@ class IntegrationController {
     component.ensureVariantName(variant_name)
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferencePackage() {
     def result = [ 'result' : 'OK' ]
     def async = params.async ? true : false
@@ -1136,7 +1136,7 @@ class IntegrationController {
     render result as JSON
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferencePlatform() {
     def result = [ 'result' : 'OK' ]
     def created = false
@@ -1214,7 +1214,7 @@ class IntegrationController {
     changed
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferenceLicense() {
     def result = [ 'result' : 'OK' ]
 
@@ -1271,7 +1271,7 @@ class IntegrationController {
    *    ]
    *  }
    */
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferenceTitle() {
     User user = springSecurityService.currentUser
     def rjson = request.JSON

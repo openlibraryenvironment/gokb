@@ -26,9 +26,23 @@ class ErrorController {
     response.setStatus(500)
     withFormat {
       html {
-        forward (uri:'/error')
+        redirect (uri:'/error')
       }
       json {
+        response.setStatus(500)
+        render resp as JSON
+      }
+    }
+  }
+
+  def wrongMethod() {
+    def resp = [code: 405, message:'Method not allowed']
+    withFormat {
+      html {
+        redirect (view:'/error')
+      }
+      json {
+        response.setStatus(405)
         render resp as JSON
       }
     }
@@ -37,10 +51,12 @@ class ErrorController {
   def notFound() {
     def resp = [code: 404, message:'Not Found']
     withFormat {
-      html{
-        forward (uri:'/notFound', params:[status:404])
+      html {
+        log.debug("Rendering HTML 404")
+        redirect (uri:'/notFound', params:[status:404])
       }
       json {
+        response.setStatus(404)
         render resp as JSON
       }
     }
