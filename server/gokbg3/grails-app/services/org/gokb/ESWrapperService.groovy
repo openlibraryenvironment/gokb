@@ -1,5 +1,7 @@
 package org.gokb
 
+import groovy.json.JsonBuilder
+
 import java.text.SimpleDateFormat
 import java.net.InetAddress;
 
@@ -24,6 +26,154 @@ class ESWrapperService {
     log.debug("init ES wrapper service");
   }
 
+  def getSettings() {
+    def settings = [
+      number_of_shards: 1,
+      analysis: [
+        filter: [
+          autocomplete_filter: [
+            type: "edge_ngram",
+            min_gram: 1,
+            max_gram: 20
+          ]
+        ],
+        analyzer: [
+          autocomplete: [
+            type: "custom",
+            tokenizer: "standard",
+            filter: ["lowercase","autocomplete_filter"]
+          ]
+        ]
+      ]
+    ]
+
+    return settings
+  }
+
+  def getMapping() {
+    def mapping = [
+      component: [
+        dynamic_templates: [],
+        properties: [
+          name: [
+            type: "text",
+            copy_to: "suggest",
+            fields: [
+              name: [type: "text"],
+              altname: [type: "text"]
+            ]
+          ],
+          identifiers: [
+            type: "nested",
+            properties: [
+              namespace: [type: "keyword"],
+              value: [type: "keyword"]
+            ]
+          ],
+          sortname: [
+            type: "keyword"
+          ],
+          componentType: [
+            type: "keyword"
+          ],
+          lastUpdatedDisplay: [
+            type: "date",
+            format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
+          ],
+          uuid: [
+            type: "keyword"
+          ],
+          status: [
+            type: "keyword"
+          ],
+          suggest: [
+            type: "text",
+            analyzer: "autocomplete",
+            search_analyzer: "standard"
+          ]
+        ]
+      ]
+    ]
+
+    def dynamic = [
+      provider: [
+        match: "provider*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      cpname: [
+        match: "cpname",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      publisher: [
+        match: "publisher*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      listStatus: [
+        match: "listStatus",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      package: [
+        match: "tippPackage*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      title: [
+        match: "tippTitle*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      hostPlatform: [
+        match: "hostPlatform*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      roles: [
+        match: "roles",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      curGroups: [
+        match: "curatoryGroups",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      nominalPlatform: [
+        match: "nominalPlatform*",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      otherUuids: [
+        match: "*Uuid",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      scope: [
+        match: "scope",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      contentType: [
+        match: "contentType",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ],
+      titleType: [
+        match: "titleType",
+        match_mapping_type: "string",
+        mapping: [type: "keyword"]
+      ]
+    ]
+
+    dynamic.each { k, v ->
+      mapping.component.dynamic_templates << [k: v]
+    }
+
+    return mapping
+  }
 
   private def ensureClient() {
 

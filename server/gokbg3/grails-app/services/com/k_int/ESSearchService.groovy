@@ -1,13 +1,13 @@
 package com.k_int
 
 import org.apache.lucene.search.join.ScoreMode
+
 import org.elasticsearch.action.search.*
-import org.elasticsearch.index.query.*
-import org.elasticsearch.search.sort.*
 import org.elasticsearch.client.*
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.index.query.*
+import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.search.sort.*
+
 import org.gokb.cred.*
 
 
@@ -25,6 +25,54 @@ class ESSearchService{
   def grailsApplication
   def genericOIDService
 
+  def requestMapping = [
+    generic: [
+      "id",
+      "uuid",
+      "listStatus"
+    ],
+    simpleMap: [
+      "curatoryGroup": "curatoryGroups",
+      "role": "roles"
+    ],
+    complex: [
+      "identifier",
+      "status",
+      "componentType",
+      "platform",
+      "suggest",
+      "label",
+      "name",
+      "altname",
+      "q"
+    ],
+    linked: [
+      provider: "provider",
+      publisher: "publisher",
+      currentPublisher: "publisher",
+      linkedPackage: "tippPackage",
+      tippPackage: "tippPackage",
+      pkg: "tippPackage",
+      tippTitle: "tippTitle",
+      linkedTitle: "tippTitle",
+      title: "tippTitle"
+    ],
+    dates: [
+      "changedSince",
+      "changedBefore"
+    ],
+    ignore: [
+      "controller",
+      "action",
+      "max",
+      "offset",
+      "from",
+      "skipDomainMapping",
+      "sort",
+      "order"
+    ]
+  ]
+
   def search(params){
     search(params,reversemap)
   }
@@ -32,9 +80,9 @@ class ESSearchService{
   def search(params, field_map){
     log.debug("ESSearchService::search - ${params}")
 
-   def result = [:]
+    def result = [:]
 
-   Client esclient = ESWrapperService.getClient()
+    Client esclient = ESWrapperService.getClient()
   
     try {
       if ( (params.q && params.q.length() > 0) || params.rectype) {
@@ -213,7 +261,7 @@ class ESSearchService{
     result;
   }
 
-  private void checkInt(def result, def errors, def str, String field) {
+  private void checkInt(result, errors, str, String field) {
     def value = null
     if (str && str instanceof String) {
       try {
@@ -228,122 +276,188 @@ class ESSearchService{
     }
   }
 
+  private void addDateQueries(query, errors, qpars) {
+    if ( qpars.changedSince || qpars.changedBefore ) {
+      QueryBuilder dateQuery = QueryBuilders.rangeQuery("lastUpdatedDisplay")
+
+      if (qpars.changedSince) {
+        dateQuery.gte(date_filters.changedSince)
+      }
+      if (qpars.changedBefore) {
+        dateQuery.lt(date_filters.changedBefore)
+      }
+      dateQuery.format("yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
+
+      query.must(dateQuery)
+    }
+  }
+
+  private void addStatusQuery(query, errors, qpars) {
+    if ( qpars.list('status').size() > 0 ) {
+
+      QueryBuilder statusQuery = QueryBuilders.boolQuery()
+
+      qpars.list('status').each {
+        statusQuery.should(QueryBuilders.termQuery('status', it))
+      }
+
+      statusQuery.minimumNumberShouldMatch(1)
+
+      query.must(statusQuery)
+    }
+    else {
+      query.must(QueryBuilders.termQuery('status', 'Current'))
+    }
+  }
+
+  private void addIdentifierQuery(query,errors, qpars) {
+    def id_params = [:]
+
+    if (qpars.identifier) {
+      if (v.contains(',')) {
+        id_params['identifiers.namespace'] = v.split(',')[0]
+        id_params['identifiers.value'] = v.split(',')[1]
+      }else{
+        id_params['identifiers.value'] = v
+      }
+      query.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
+    }
+  }
+
+  private void processNameFields(query, errors, qpars) {
+    if (qpars.label) {
+
+      QueryBuilder labelQuery = QueryBuilders.boolQuery()
+
+      labelQuery.should(QueryBuilders.matchQuery('name', qpars.label))
+      labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label))
+      labelQuery.minimumNumberShouldMatch(1)
+
+      query.must(labelQuery)
+    }
+    else if (qpars.name) {
+      query.must(QueryBuilders.matchQuery('name',qpars.name))
+    }
+    else if (qpars.q) {
+      query.must(QueryBuilders.matchQuery('name',qpars.q))
+    }
+    else if (qpars.altname) {
+      query.must(QueryBuilders.matchQuery('altname',qpars.altname))
+    }
+    else if (qpars.suggest) {
+      query.must(QueryBuilders.matchQuery('suggest',qpars.suggest))
+    }
+  }
+
+  private void processLinkedField(query, field, val) {
+    QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+    linkedFieldQuery.should(QueryBuilders.termQuery(field, val))
+    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), val))
+    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), val))
+    linkedFieldQuery.minimumNumberShouldMatch(1)
+
+    query.must(linkedFieldQuery)
+  }
+
+  private void addPlatformQuery(query, errors, val) {
+    QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformUuid', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', val))
+    linkedFieldQuery.minimumNumberShouldMatch(1)
+
+    query.must(linkedFieldQuery)
+
+    log.debug("Processing platform value ${val} .. ")
+  }
+
   /**
-   * find : Query the Elasticsearch index
-   * @param max : Define result size
-   * @param offset : Define offset
-   * @param from : Define offset
-   * @param label : Search in name + variantNames
-   * @param name : Search in name
-   * @param altname : Search in variantNames
-   * @param id : Search by object ID ([classname]:[id])
-   * @param uuid : Search by component UUID
-   * @param identifier : Search for a linked external identifier ([identifier] or [namespace],[identifier])
-   * @param componentType : Filter by component Type (Package, Org, Platform, BookInstance, JournalInstance, TIPP)
-   * @param role : Filter by Org role (only in context of componentType=Org)
-   * @param linkedPackage : Filter by linked Package (only in context of componentType=TIPP)
-   * @param listStatus : Filter by title list status (only in context of componentType=Package)
-   * @param status : Filter by component status (Current, Expected, Retired, Deleted)
-   * @param linkedTitle : Filter by linked TitleInstance (only in context of componentType=TIPP)
-   * @param curatoryGroup : Filter by connected Curatory Group
+   * find : Query the Elasticsearch index -- 
+   * @param params : Elasticsearch query params
   **/
 
   def find(params) {
-    def result = [:]
-    Client esclient = ESWrapperService.getClient()
+    def result = [result: 'OK']
     def search_action = null
     def errors = [:]
     log.debug("find :: ${params}")
 
     try {
 
+      Client esclient = ESWrapperService.getClient()
+
       QueryBuilder exactQuery = QueryBuilders.boolQuery()
 
       def singleParams = [:]
       def linkedFieldParams = [:]
       def unknown_fields = []
-      def other_fields = ["controller","action","max","offset","from"]
-      def direct_fields = ["cpname", "provider", "id", "uuid", "suggest"]
-      def linked_fields = ["hostPlatform", "nominalPlatform", "platform", "listStatus", "role"]
-      def id_params = [:]
+      def platformParam = null
       def pkgNameSort = false
       def acceptedStatus = []
       def component_type = null
       def date_filters = [changedSince: null, changedBefore: null]
 
+      if (params.componentType){
+        component_type = deriveComponentType(params.componentType)
+
+        if (component_type == "TitleInstance") {
+          QueryBuilder typeQuery = QueryBuilders.boolQuery()
+
+          typeQuery.should(QueryBuilders.termQuery('componentType', "JournalInstance"))
+          typeQuery.should(QueryBuilders.termQuery('componentType', "DatabaseInstance"))
+          typeQuery.should(QueryBuilders.termQuery('componentType', "BookInstance"))
+
+          typeQuery.minimumNumberShouldMatch(1)
+
+          exactQuery.must(typeQuery)
+        }
+        else if (component_type) {
+          exactQuery.must(QueryBuilders.termQuery('componentType',component_type))
+        }
+        log.debug("Using component type ${component_type}")
+      }
+      else {
+        log.debug("Not filtering by component type..")
+      }
+
+      addStatusQuery(exactQuery, errors, params)
+      addDateQueries(exactQuery, errors, params)
+      processNameFields(exactQuery, errors, params)
+
       params.each { k, v ->
-        if ( k == 'componentType' && v instanceof String ) {
-
-          component_type = deriveComponentType(v)
-
-          if(!component_type) {
-            errors['componentType'] = "Requested component type ${v} does not exist"
+        if (k in requestMapping.generic) {
+          exactQuery.must(QueryBuilders.matchQuery(k, v))
+        }
+        else if (requestMapping.simpleMap.containsKey(k)) {
+          exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v))
+        }
+        else if (requestMapping.linked.containsKey(k)) {
+          processLinkedField(exactQuery, k, v)
+        }
+        else if (k.contains('platform') || k.contains('Platform')) {
+          if (!platformParam) {
+            platformParam = k
+            addPlatformQuery(exactQuery, errors, v)
+          }
+          else {
+            errors[k] = "Platform filter has already been defined by parameter '${platformParam}'!"
           }
         }
-        else if (k in direct_fields && v instanceof String) {
-          singleParams[k] = v
+        else if (k in requestMapping.dates) {
+          log.debug("Processing date param ${k}")
         }
-
-        else if (k in linked_fields && v instanceof String) {
-          linkedFieldParams[k] = v
+        else if (k in requestMapping.complex) {
+          log.debug("Processing complex param ${k}")
         }
-
-        else if (params.componentType == 'Package' && k == 'sort' && v == 'name') {
-          pkgNameSort = true
+        else if (k in requestMapping.ignore) {
+          log.debug("Processing unmapped param ${k}")
         }
-
-        else if ( (k == 'publisher' || k == 'currentPublisher') && v instanceof String) {
-          linkedFieldParams['publisher'] = v
-        }
-
-        else if ( (k == 'linkedPackage' || k == 'tippPackage') && v instanceof String) {
-          linkedFieldParams['tippPackage'] = v
-        }
-
-        else if (k == 'status') {
-          acceptedStatus = params.list(k)
-        }
-
-        else if ( (k == 'linkedTitle' || k == 'tippTitle') && v instanceof String) {
-          linkedFieldParams['tippTitle'] = v
-        }
-
-        else if (k == 'curatoryGroup' && v instanceof String) {
-          singleParams['curatoryGroups'] = v
-        }
-
-        else if ((k == 'label' || k == "q") && v instanceof String) {
-
-          QueryBuilder labelQuery = QueryBuilders.boolQuery()
-
-          labelQuery.should(QueryBuilders.matchQuery('name', v))
-          labelQuery.should(QueryBuilders.matchQuery('altname', v))
-          labelQuery.minimumNumberShouldMatch(1)
-
-          exactQuery.must(labelQuery)
-        }
-        else if ((k == 'changedSince' || k == 'changedBefore') && v instanceof String) {
-          date_filters[k] = v
-        }
-
-        else if (!params.label && k == "name" && v instanceof String) {
-          singleParams['name'] = v
-        }
-
-        else if (!params.label && k == "altname" && v instanceof String) {
-          singleParams['altname'] = v
-        }
-
-        else if ( k == "identifier" && v instanceof String) {
-          if (v.contains(',')) {
-            id_params['identifiers.namespace'] = v.split(',')[0]
-            id_params['identifiers.value'] = v.split(',')[1]
-          }else{
-            id_params['identifiers.value'] = v
-          }
-        }
-
-        else if (!other_fields.contains(k)){
+        else {
           unknown_fields.add(k)
         }
       }
@@ -352,153 +466,7 @@ class ESSearchService{
         errors['unknown_params'] = unknown_fields
       }
 
-      if ( date_filters.changedSince || date_filters.changedBefore ) {
-        QueryBuilder dateQuery = QueryBuilders.rangeQuery("lastUpdatedDisplay")
-
-        if (date_filters.changedSince) {
-          dateQuery.gte(date_filters.changedSince)
-        }
-        if (date_filters.changedBefore) {
-          dateQuery.lt(date_filters.changedBefore)
-        }
-        dateQuery.format("yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
-
-        exactQuery.must(dateQuery)
-      }
-
-      if ( linkedFieldParams.listStatus ) {
-        if ( component_type && component_type == 'Package' ) {
-          singleParams['listStatus'] = pkgListStatus
-        }
-        else {
-          errors['listStatus'] = "To filter by Package List Status, please add filter componentType=Package to the query"
-        }
-      }
-
-      if ( acceptedStatus.size() > 0 ) {
-
-        QueryBuilder statusQuery = QueryBuilders.boolQuery()
-
-        acceptedStatus.each {
-          statusQuery.should(QueryBuilders.termQuery('status', it))
-        }
-
-        statusQuery.minimumNumberShouldMatch(1)
-
-        exactQuery.must(statusQuery)
-      }
-
-      else {
-        exactQuery.must(QueryBuilders.termQuery('status', 'Current'))
-      }
-
-      linkedFieldParams.each { k, v ->
-        QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-
-        linkedFieldQuery.should(QueryBuilders.termQuery(k, v))
-        linkedFieldQuery.should(QueryBuilders.termQuery("${k}Uuid".toString(), v))
-        linkedFieldQuery.minimumNumberShouldMatch(1)
-
-        exactQuery.must(linkedFieldQuery)
-      }
-
-      if ( linkedFieldParams['role'] ) {
-        if ( component_type && component_type == 'Org') {
-          singleParams['roles'] = orgRoleParam
-        }
-        else {
-          errors['role'] = "To filter by Org Roles, please add filter componentType=Org to the query"
-        }
-      }
-
-      if ( linkedFieldParams.hostPlatform ) {
-        if ( component_type && component_type == 'TitleInstancePackagePlatform' ) {
-          QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-
-          linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', hostPlatformId))
-          linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', hostPlatformId))
-          linkedFieldQuery.minimumNumberShouldMatch(1)
-
-          exactQuery.must(linkedFieldQuery)
-        }
-        else {
-          errors['hostPlatform'] = "To filter by Host Platform, please add filter componentType=TIPP to the query"
-        }
-      }
-
-      if ( linkedFieldParams.nominalPlatform ) {
-        if ( component_type && component_type == 'Package' ) {
-          QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-
-          linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', nominalPlatformId))
-          linkedFieldQuery.should(QueryBuilders.termQuery('platformUuid', nominalPlatformId))
-          linkedFieldQuery.minimumNumberShouldMatch(1)
-
-          exactQuery.must(linkedFieldQuery)
-        }
-        else {
-          errors['nominalPlatform'] = "To filter by Package Platform, please add filter componentType=Package to the query"
-        }
-      }
-
-      if ( linkedFieldParams.platform ) {
-        if ( component_type ) {
-
-          if( component_type == 'TitleInstancePackagePlatform' ) {
-            QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-
-            linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', genericPlatformId))
-            linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', genericPlatformId))
-            linkedFieldQuery.minimumNumberShouldMatch(1)
-
-            exactQuery.must(linkedFieldQuery)
-          }
-
-          else if ( component_type == 'Package' ) {
-            QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-
-            linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', genericPlatformId))
-            linkedFieldQuery.should(QueryBuilders.termQuery('platformUuid', genericPlatformId))
-            linkedFieldQuery.minimumNumberShouldMatch(1)
-
-            exactQuery.must(linkedFieldQuery)
-          }
-
-          else {
-            errors['platform'] = "No platform context available for component type ${component_type}"
-          }
-        }
-        else {
-          errors['platform'] = "To filter by Platform, please add filter componentType=TIPP to the query"
-        }
-      }
-
-      if (component_type == "TitleInstance") {
-        QueryBuilder typeQuery = QueryBuilders.boolQuery()
-
-        typeQuery.should(QueryBuilders.matchQuery('componentType', "JournalInstance"))
-        typeQuery.should(QueryBuilders.matchQuery('componentType', "DatabaseInstance"))
-        typeQuery.should(QueryBuilders.matchQuery('componentType', "BookInstance"))
-
-        typeQuery.minimumNumberShouldMatch(1)
-
-        exactQuery.must(typeQuery)
-      }
-      else if (component_type) {
-        singleParams['componentType'] = component_type
-      }
-
-      if (singleParams) {
-        singleParams.each { k,v ->
-          exactQuery.must(QueryBuilders.matchQuery(k,v))
-        }
-      }
-
-      if (id_params) {
-        exactQuery.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
-      }
-
-      if( !errors && (singleParams || params.label || id_params || component_type) ) {
+      if( !errors && exactQuery.hasClauses() ) {
         SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
 
         es_request.setIndices(grailsApplication.config.gokb.es.index)
@@ -523,14 +491,40 @@ class ESSearchService{
           result.offset = 0
         }
 
-        if (pkgNameSort) {
-          FieldSortBuilder pkgSort = new FieldSortBuilder('sortname')
-          es_request.addSort(pkgSort)
+        if (params.sort && params.sort instanceof String) {
+          def sortBy = params.sort
+
+          if (sortBy == "name") {
+            sortBy = "sortname"
+          }
+          
+          if (ESWrapperService.mapping.component.properties[sortBy]?.type == 'text') {
+            errors['sort'] = "Unable to sort by text field ${sortBy}!"
+          }
+          else {
+            FieldSortBuilder sortQry = new FieldSortBuilder(sortBy)
+            SortOrder order = SortOrder.ASC
+
+            if (params.order) {
+              if (params.order.toUpperCase() in ['ASC','DESC']) {
+                order = SortOrder.valueOf(params.order?.toUpperCase())
+              }
+              else {
+                errors['order'] = "Unknown sort order value '${params.order}'!"
+              }
+            }
+
+            sortQry.order(order)
+
+            es_request.addSort(sortQry)
+          }
         }
 
-        search_action = es_request.execute()
+        if (!errors) {
+          search_action = es_request.execute()
+        }
       }
-      else if ( !singleParams && !component_type && !params.label && !id_params){
+      else if ( !exactQuery.hasClauses() ){
         errors['params'] = "No valid parameters found"
       }
 
@@ -548,12 +542,31 @@ class ESSearchService{
         result.records = []
 
         search.hits.each { r ->
-          def response_record = mapEsToDomain(r)
+          def response_record = [:]
+          
+          if (!params.skipDomainMapping) {
+            response_record = mapEsToDomain(r)
+          }
+          else {
+            response_record.id = r.id
+
+            if (response_record.score && response_record.score != Float.NaN) {
+              response_record.score = r.score
+            }
+
+            r.source.each { field, val ->
+              response_record."${field}" = val
+            }
+          }
 
           result.records.add(response_record);
         }
       }
-
+    } catch (Exception se) {
+      log.debug("${se}")
+      result = [:]
+      result.result = "ERROR"
+      result.errors = ['unknown': "There has been an unknown error processing the search request!"]
     } finally {
       if (errors) {
         result = [:]
@@ -582,7 +595,10 @@ class ESSearchService{
         esMapping << obj.jsonMapping.es
       }
 
-      domainMapping['links'] = ['self': ['href': base + obj.restPath + "/${obj.uuid}"]]
+      if (KBComponent.has(obj, 'restPath')) {
+        domainMapping['links'] = ['self': ['href': base + obj.restPath + "/${obj.uuid}"]]
+      }
+
       domainMapping['embedded'] = [:]
       
       log.debug("Mapping ${record}")
@@ -608,8 +624,8 @@ class ESSearchService{
           if (fieldPath.size() == 2) {
             def linkedObj = obj."${fieldPath[0]}"
 
-            if (linkedObj) {
-              domainMapping['links'][fieldPath[0]] = ['href': base + linkedObj.restPath + "/${linkedObj.uuid}"]
+            if (linkedObj && KBComponent.has(linkedObj, "restPath")) {
+              domainMapping['links'][fieldPath[0]] = ['href': base + linkedObj.restPath + "/${linkedObj.uuid}", 'name': "${linkedObj.name}"]
             }
           } else {
             domainMapping[fieldPath[0]] = obj."${esMapping[field]}"

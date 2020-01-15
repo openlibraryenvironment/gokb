@@ -17,29 +17,30 @@ class RefdataController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
+    def base = grailsApplication.config.serverURL + "/" + namespace
 
-    result['_links'] = ['self':['href': grailsApplication.config.serverURL + "/refdata/"]]
-    result['_embedded'] = [
+    result['links'] = ['self':['href': base + "/refdata/"]]
+    result['embedded'] = [
       'categories': []
     ]
     
     RefdataCategory.list().each { rc ->
       def rdc = [:]
-      rdc['_links'] = ['self':['href': grailsApplication.config.serverURL + "/refdata/categories/${rc.id}" ]]
+      rdc['links'] = ['self':['href': base + "/refdata/categories/${rc.id}" ]]
       rdc['label'] = rc.label
       rdc['id'] = rc.id
-      rdc['_embedded'] = [
+      rdc['embedded'] = [
         'values' : []
       ]
 
       rc.values.each { rv ->
         def rdv = [:]
-        rdv['_links'] = ['self':['href': grailsApplication.config.serverURL + "/refdata/values/${rv.id}" ],'owner':['href': grailsApplication.config.serverURL + "/refdata/categories/${rc.id}" ]]
+        rdv['links'] = ['self':['href': base + "/refdata/values/${rv.id}" ],'owner':['href': base + "/refdata/categories/${rc.id}" ]]
         rdv['value'] = rv.value
         rdv['id'] = rv.id
-        rdc['_embedded']['values'] << rdv
+        rdc['embedded']['values'] << rdv
       }
-      result['_embedded']['categories'] << rdc
+      result['embedded']['categories'] << rdc
     }
     render result as JSON
   }
@@ -49,6 +50,7 @@ class RefdataController {
     def result = [:]
     def cat = null
     def user = springSecurityService.principal
+    def base = grailsApplication.config.serverURL + "/" + namespace
     
     if (params.id.contains('.')) {
       cat = RefdataCategory.findByDesc(params.id)
@@ -61,22 +63,21 @@ class RefdataController {
     }
 
     if (cat) {
-      result['_links'] = ['self':['href': grailsApplication.config.serverURL + "/refdata/categories/${cat.id}"]]
+      result['links'] = ['self':['href': base + "/refdata/categories/${cat.id}"]]
       result['label'] = cat.label
-      result['_embedded'] = ['values':[]]
+      result['embedded'] = ['values':[]]
 
       cat.values.each { v ->
         def val = [:]
-        val['_links'] = [
-          ['self':['href': grailsApplication.config.serverURL + "/refdata/values/${v.id}"]],
-          ['owner':['href': grailsApplication.config.serverURL + "/refdata/categories/${cat.id}"]]
+        val['links'] = [
+          ['self':['href': base + "/refdata/values/${v.id}"]],
+          ['owner':['href': base + "/refdata/categories/${cat.id}"]]
         ]
-        if (user)
 
         val['value'] = v.value
         val['id'] = v.id
 
-        result['_embedded']['values'].add(val)
+        result['embedded']['values'].add(val)
       }
     }
     render result as JSON
@@ -86,6 +87,7 @@ class RefdataController {
   def showValue() {
     def result = [:]
     def val = null
+    def base = grailsApplication.config.serverURL + "/" + namespace
 
     if (params.id.contains(':')) {
       val = genericOIDService.resolveOID(params.id)
@@ -98,33 +100,33 @@ class RefdataController {
     }
 
     if (val) {
-      result['_links'] = [
-        ['self':['href': grailsApplication.config.serverURL + "/refdata/values/${val.id}"]],
-        ['owner':['href': grailsApplication.config.serverURL + "/refdata/categories/${val.owner.id}"]]
+      result['links'] = [
+        ['self':['href': base + "/refdata/values/${val.id}"]],
+        ['owner':['href': base + "/refdata/categories/${val.owner.id}"]]
       ]
       result['value'] = val.value
-      result['_embedded'] = [:]
-      result['_embedded']['owner'] = [
-        '_links': [
-          'self':['href': grailsApplication.config.serverURL + "/refdata/categories/${val.owner.id}"]
+      result['embedded'] = [:]
+      result['embedded']['owner'] = [
+        'links': [
+          'self':['href': base+ "/refdata/categories/${val.owner.id}"]
         ],
         'label': val.owner.label,
         'id': val.owner.id,
-        '_embedded': [
+        'embedded': [
           'values': []
         ]
       ]
 
       val.owner.values.each { v ->
         def siblings = [:]
-        siblings['_links'] = [
-          ['self':['href': grailsApplication.config.serverURL + "/refdata/values/${v.id}"]],
-          ['owner':['href': grailsApplication.config.serverURL + "/refdata/categories/${val.owner.id}"]]
+        siblings['links'] = [
+          ['self':['href': base + "/refdata/values/${v.id}"]],
+          ['owner':['href': base + "/refdata/categories/${val.owner.id}"]]
         ]
         siblings['value'] = v.value
         siblings['id'] = v.id
 
-        result['_embedded']['owner']['_embedded']['values'].add(siblings)
+        result['embedded']['owner']['embedded']['values'].add(siblings)
       }
     }
     render result as JSON

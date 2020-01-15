@@ -115,16 +115,17 @@ class Package extends KBComponent {
     return "/packages"
   }
 
-  final static Map jsonMapping = [
+  static jsonMapping = [
     'ignore': [
       'lastProject'
     ],
     'es': [
-      'platformUuid': "nominalPlatform.uuid",
-      'platformName': "nominalPlatform.name",
+      'nominalPlatformUuid': "nominalPlatform.uuid",
+      'nominalPlatformName': "nominalPlatform.name",
       'nominalPlatform': false,
-      'cpname': "provider.name",
+      'cpname': false,
       'provider':false,
+      'providerName': "provider.name",
       'providerUuid': "provider.uuid",
       'titleCount': false,
       'paymentType': false
@@ -139,7 +140,7 @@ class Package extends KBComponent {
       'ids',
       'variantNames'
     ]
-  ];
+  ]
 
   static def refdataFind(params) {
     def result = [];
