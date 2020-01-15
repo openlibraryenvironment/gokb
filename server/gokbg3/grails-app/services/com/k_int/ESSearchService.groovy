@@ -43,7 +43,8 @@ class ESSearchService{
       "suggest",
       "label",
       "name",
-      "altname"
+      "altname",
+      "q"
     ],
     linked: [
       provider: "provider",
@@ -337,6 +338,9 @@ class ESSearchService{
     else if (qpars.name) {
       query.must(QueryBuilders.matchQuery('name',qpars.name))
     }
+    else if (qpars.q) {
+      query.must(QueryBuilders.matchQuery('name',qpars.q))
+    }
     else if (qpars.altname) {
       query.must(QueryBuilders.matchQuery('altname',qpars.altname))
     }
@@ -423,6 +427,7 @@ class ESSearchService{
 
       addStatusQuery(exactQuery, errors, params)
       addDateQueries(exactQuery, errors, params)
+      processNameFields(exactQuery, errors, params)
 
       params.each { k, v ->
         if (k in requestMapping.generic) {
@@ -486,7 +491,7 @@ class ESSearchService{
           result.offset = 0
         }
 
-        if (params.sort) {
+        if (params.sort && params.sort instanceof String) {
           def sortBy = params.sort
 
           if (sortBy == "name") {
