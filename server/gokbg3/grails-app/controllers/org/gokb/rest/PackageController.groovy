@@ -309,23 +309,7 @@ class PackageController {
 
       es_result.records.each { tipp ->
         result['links']['items'] << ['href': base + "/tipps/" + tipp.uuid]
-        def ntip = [
-          'links': [
-            'self': ['href': base + "/tipps/" + tipp.uuid],
-            'pkg': ['href': base + "/packages/" + pkgId, 'title': tipp.tippPackageName ?: ''],
-            'hostPlatform': ['href': base + "/platforms/" + tipp.hostPlatformUuid, 'title': tipp.hostPlatformName],
-            'title': ['href': base + genericOIDService.resolveOID(tipp.tippTitle).restPath + "/${tipp.tippTitleUuid}", 'title': tipp.tippTitleName ?: '']
-          ]
-        ]
-
-        ntip.id = genericOIDService.oidToId(tipp.id)
-        ntip.lastUpdated = tipp.lastUpdatedDisplay
-        ntip.status = tipp.status
-        ntip.uuid = tipp.uuid
-        ntip.coverage = tipp.coverage
-        ntip.url = tipp.url
-
-        result['embedded']['tipps'] << ntip
+        result['embedded']['tipps'] << tipp
       }
     }
     else {
