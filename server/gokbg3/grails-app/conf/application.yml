@@ -143,6 +143,8 @@ environments:
                             storage:
                                 jwt:
                                     secret: HollaDieWaldfeeHoffentlichIstDasJetztWirklichLangGenug
+                            validation:
+                                endpointUrl: /rest/validate
                         login:
                             endpointUrl: /rest/login
         gokb:
@@ -186,6 +188,8 @@ environments:
                             storage:
                                 jwt:
                                     secret: HollaDieWaldfeeHoffentlichIstDasJetztWirklichLangGenug
+                            validation:
+                                endpointUrl: /rest/validate
                         login:
                             endpointUrl: /rest/login
         quartz:
@@ -219,6 +223,13 @@ environments:
             plugin:
                 greenmail:
                     disabled: true
+                springsecurity:
+                    rest:
+                        login:
+                            endpointUrl: /rest/login
+                        token:
+                            validation:
+                                endpointUrl: /rest/validate
         gokb:
             es:
                 index: gokbg3

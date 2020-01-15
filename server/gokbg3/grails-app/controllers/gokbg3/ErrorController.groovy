@@ -26,7 +26,7 @@ class ErrorController {
     response.setStatus(500)
     withFormat {
       html {
-        redirect (uri:'/error')
+        forward (uri:'/error')
       }
       json {
         response.setStatus(500)
@@ -39,7 +39,7 @@ class ErrorController {
     def resp = [code: 405, message:'Method not allowed']
     withFormat {
       html {
-        redirect (view:'/error')
+        forward (view:'/error')
       }
       json {
         response.setStatus(405)
@@ -53,7 +53,7 @@ class ErrorController {
     withFormat {
       html {
         log.debug("Rendering HTML 404")
-        redirect (uri:'/notFound', params:[status:404])
+        forward (uri:'/notFound', params:[status:404])
       }
       json {
         response.setStatus(404)
@@ -82,7 +82,7 @@ class ErrorController {
     withFormat {
       html {
         log.debug("Rendering HTML 401")
-        forward controller: 'login', action: 'denied', params:(params)
+        redirect controller: 'login', action: 'auth', params:(params)
       }
       json {
         log.debug("Rendering JSON 401")

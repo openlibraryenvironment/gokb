@@ -628,7 +628,7 @@ class ESSearchService{
               domainMapping['links'][fieldPath[0]] = ['href': base + linkedObj.restPath + "/${linkedObj.uuid}", 'name': "${linkedObj.name}"]
             }
           } else {
-            domainMapping[fieldPath[0]] = obj."${esMapping[field]}"
+            domainMapping[fieldPath[0]] = val
           }
         }
         else {
