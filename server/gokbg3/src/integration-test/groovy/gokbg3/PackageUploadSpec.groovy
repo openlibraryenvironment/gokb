@@ -2,6 +2,7 @@ package gokbg3
 
 import grails.testing.mixin.integration.Integration
 import grails.transaction.*
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.lang.Shared
 import grails.plugins.rest.client.RestBuilder
@@ -15,6 +16,7 @@ import grails.core.GrailsApplication
 
 @Integration
 @Rollback
+@Ignore
 class PackageUploadSpec extends Specification {
 
 

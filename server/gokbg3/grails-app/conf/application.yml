@@ -192,6 +192,8 @@ environments:
                                 endpointUrl: /rest/validate
                         login:
                             endpointUrl: /rest/login
+                        logout:
+                            endpointUrl: /rest/logout
         quartz:
             pluginEnabled: false
         cache:
