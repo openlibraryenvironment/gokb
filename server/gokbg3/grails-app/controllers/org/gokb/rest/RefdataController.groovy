@@ -18,14 +18,14 @@ class RefdataController {
   def index() {
     def result = [:]
 
-    result['_links'] = ['self':['href': grailsApplication.config.serverURL + "/refdata/"]]
+    result['_links'] = ['self':['href': "$grailsApplication.config.serverURL/$namespace/refdata/"]]
     result['_embedded'] = [
       'categories': []
     ]
     
     RefdataCategory.list().each { rc ->
       def rdc = [:]
-      rdc['_links'] = ['self':['href': grailsApplication.config.serverURL + "/refdata/categories/${rc.id}" ]]
+      rdc['_links'] = ['self':['href': "$grailsApplication.config.serverURL/$namespace/refdata/categories/${rc.id}" ]]
       rdc['label'] = rc.label
       rdc['id'] = rc.id
       rdc['_embedded'] = [
@@ -34,7 +34,7 @@ class RefdataController {
 
       rc.values.each { rv ->
         def rdv = [:]
-        rdv['_links'] = ['self':['href': grailsApplication.config.serverURL + "/refdata/values/${rv.id}" ],'owner':['href': grailsApplication.config.serverURL + "/refdata/categories/${rc.id}" ]]
+        rdv['_links'] = ['self':['href': "$grailsApplication.config.serverURL/$namespace/refdata/values/${rv.id}" ],'owner':['href': grailsApplication.config.serverURL + "/refdata/categories/${rc.id}" ]]
         rdv['value'] = rv.value
         rdv['id'] = rv.id
         rdc['_embedded']['values'] << rdv
@@ -61,15 +61,15 @@ class RefdataController {
     }
 
     if (cat) {
-      result['_links'] = ['self':['href': grailsApplication.config.serverURL + "/refdata/categories/${cat.id}"]]
+      result['_links'] = ['self':['href': "$grailsApplication.config.serverURL/$namespace/refdata/categories/${cat.id}"]]
       result['label'] = cat.label
       result['_embedded'] = ['values':[]]
 
       cat.values.each { v ->
         def val = [:]
         val['_links'] = [
-          ['self':['href': grailsApplication.config.serverURL + "/refdata/values/${v.id}"]],
-          ['owner':['href': grailsApplication.config.serverURL + "/refdata/categories/${cat.id}"]]
+          ['self':['href': "$grailsApplication.config.serverURL/$namespace/refdata/values/${v.id}"]],
+          ['owner':['href': "$grailsApplication.config.serverURL/$namespace/refdata/categories/${cat.id}"]]
         ]
         if (user)
 
@@ -99,14 +99,14 @@ class RefdataController {
 
     if (val) {
       result['_links'] = [
-        ['self':['href': grailsApplication.config.serverURL + "/refdata/values/${val.id}"]],
-        ['owner':['href': grailsApplication.config.serverURL + "/refdata/categories/${val.owner.id}"]]
+        ['self':['href': "$grailsApplication.config.serverURL/$namespace/refdata/values/${val.id}"]],
+        ['owner':['href': "$grailsApplication.config.serverURL/$namespace/refdata/categories/${val.owner.id}"]]
       ]
       result['value'] = val.value
       result['_embedded'] = [:]
       result['_embedded']['owner'] = [
         '_links': [
-          'self':['href': grailsApplication.config.serverURL + "/refdata/categories/${val.owner.id}"]
+          'self':['href': "$grailsApplication.config.serverURL/$namespace/refdata/categories/${val.owner.id}"]
         ],
         'label': val.owner.label,
         'id': val.owner.id,
@@ -118,8 +118,8 @@ class RefdataController {
       val.owner.values.each { v ->
         def siblings = [:]
         siblings['_links'] = [
-          ['self':['href': grailsApplication.config.serverURL + "/refdata/values/${v.id}"]],
-          ['owner':['href': grailsApplication.config.serverURL + "/refdata/categories/${val.owner.id}"]]
+          ['self':['href': "$grailsApplication.config.serverURL/$namespace/refdata/values/${v.id}"]],
+          ['owner':['href': "$grailsApplication.config.serverURL/$namespace/refdata/categories/${val.owner.id}"]]
         ]
         siblings['value'] = v.value
         siblings['id'] = v.id
