@@ -9,15 +9,15 @@ import org.springframework.security.access.annotation.Secured;
 @Transactional(readOnly = true)
 class RefdataController {
 
-  static namespace = 'rest'
+  static final namespace = 'rest'
 
   def genericOIDService
   def springSecurityService
+  def base = grailsApplication.config.serverURL + "/" + namespace
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
-    def base = grailsApplication.config.serverURL + "/" + namespace
 
     result['links'] = ['self':['href': base + "/refdata/"]]
     result['embedded'] = [
@@ -50,8 +50,7 @@ class RefdataController {
     def result = [:]
     def cat = null
     def user = springSecurityService.principal
-    def base = grailsApplication.config.serverURL + "/" + namespace
-    
+
     if (params.id.contains('.')) {
       cat = RefdataCategory.findByDesc(params.id)
     }
@@ -87,7 +86,6 @@ class RefdataController {
   def showValue() {
     def result = [:]
     def val = null
-    def base = grailsApplication.config.serverURL + "/" + namespace
 
     if (params.id.contains(':')) {
       val = genericOIDService.resolveOID(params.id)
