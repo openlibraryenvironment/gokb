@@ -22,6 +22,7 @@ class IntegrationController {
   def titleLookupService
   def applicationEventService
   def sessionFactory
+  def packageService
 
 
   @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
@@ -1074,6 +1075,10 @@ class IntegrationController {
 
                     if(the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
                       the_pkg.lastUpdateComment = job_result.message
+
+                      if (!the_pkg.contentType) {
+                        packageService.generatePackageTypes(null, the_pkg.id)
+                      }
                     }
                     job_result.pkgId = the_pkg.id
                     job_result.uuid = the_pkg.uuid
