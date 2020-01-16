@@ -54,7 +54,7 @@
               <li><g:link controller="search" action="index"
                       params="[
                       qbe:'g:reviewRequests',
-                      qp_allocatedto:'org.gokb.cred.User:'+ applicationContext.springSecurityService.currentUser.id,
+                      qp_allocatedto:'org.gokb.cred.User:'+ applicationContext.springSecurityService.principal.id,
                       qp_status: ('org.gokb.cred.RefdataValue:'+(RefdataCategory.lookup('ReviewRequest.Status', 'Open').id))
                       ]">
                       <i class="fa fa-angle-double-right fa-fw"></i> My ToDos</g:link></li>
@@ -64,6 +64,8 @@
                       qp_status: ('org.gokb.cred.RefdataValue:'+(RefdataCategory.lookup('ReviewRequest.Status', 'Open').id))
                       ]}"><i class="fa fa-angle-double-right fa-fw"></i>
                       Data Review</g:link></li>
+              <li><g:link controller="component" action="identifierConflicts"><i class="fa fa-angle-double-right fa-fw"></i>
+                      Identifier Review</g:link></li>
             </ul>
           </li>
         </g:if>
@@ -109,6 +111,7 @@
                 <li><g:link controller="admin" action="cleanupOrphanedTipps" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Expunge Orphaned TIPPs</g:link></li>
                 <li><g:link controller="admin" action="ensureUuids" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Ensure UUIDs</g:link></li>
                 <li><g:link controller="admin" action="ensureTipls" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Ensure TIPLs</g:link></li>
+                <li><g:link controller="admin" action="addPackageTypes" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Ensure Package Content Types</g:link></li>
                 <li><g:link controller="admin" action="triggerEnrichments" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Trigger enrichments</g:link></li>
                 <li><g:link controller="admin" action="logViewer"><i class="fa fa-angle-double-right fa-fw"></i> Log Viewer</g:link></li>
               <%--      <li><g:link controller="admin" action="housekeeping" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Housekeeping</g:link></li> --%>
