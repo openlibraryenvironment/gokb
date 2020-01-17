@@ -81,6 +81,16 @@ grails:
                 - password
                 - password2
                 - email
+    plugin:
+        springsecurity:
+            rest:
+                token:
+                    validation:
+                        endpointUrl: /rest/validate
+                login:
+                    endpointUrl: /rest/login
+                logout:
+                    endpointUrl: /rest/logout
 info:
     app:
         name: '@info.app.name@'
@@ -136,20 +146,6 @@ environments:
                             useFilter: true
             mail:
                 port: 3025
-            plugin:
-                springsecurity:
-                    rest:
-                        token:
-                            storage:
-                                jwt:
-                                    secret: HollaDieWaldfeeHoffentlichIstDasJetztWirklichLangGenug
-                            validation:
-                                endpointUrl: /rest/validate
-                        login:
-                            endpointUrl: /rest/login
-                        logout:
-                            endpointUrl: /rest/logout
-
         gokb:
             es:
                 index: gokbg3dev
@@ -159,7 +155,7 @@ environments:
                 enabled: false
     test:
         dataSource:
-            dbCreate: update
+            dbCreate: create-drop
             url: jdbc:postgresql://pghost:5432/gokbg3test
             username: knowint
             password: knowint
@@ -184,19 +180,6 @@ environments:
         grails:
             mail:
                 port: 3025
-            plugin:
-                springsecurity:
-                    rest:
-                        token:
-                            storage:
-                                jwt:
-                                    secret: HollaDieWaldfeeHoffentlichIstDasJetztWirklichLangGenug
-                            validation:
-                                endpointUrl: /rest/validate
-                        login:
-                            endpointUrl: /rest/login
-                        logout:
-                            endpointUrl: /rest/logout
         quartz:
             pluginEnabled: false
         cache:
@@ -228,13 +211,6 @@ environments:
             plugin:
                 greenmail:
                     disabled: true
-                springsecurity:
-                    rest:
-                        login:
-                            endpointUrl: /rest/login
-                        token:
-                            validation:
-                                endpointUrl: /rest/validate
         gokb:
             es:
                 index: gokbg3

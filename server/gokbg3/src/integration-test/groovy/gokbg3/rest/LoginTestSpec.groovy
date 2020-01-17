@@ -1,6 +1,5 @@
 package gokbg3.rest
 
-
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
@@ -28,6 +27,10 @@ class LoginTestSpec extends Specification {
     response.json.access_token != null
   }
 
+  @Ignore
+  /*
+  refresh_token is not supported by the grailscache token store
+  */
   void "test refresh tokens "() {
     when:
     RestResponse response = rest.post("http://localhost:$serverPort/gokb/rest/login") {
@@ -49,7 +52,6 @@ class LoginTestSpec extends Specification {
     response.json.access_token != accessToken
   }
 
-  @Ignore
   void "test logout"() {
     when:
     RestResponse response = rest.post("http://localhost:$serverPort/gokb/rest/login") {
@@ -67,7 +69,7 @@ class LoginTestSpec extends Specification {
 
     then:
     response.status == 200 // OK
-    response.json.access_token != accessToken
+    response.json == null
   }
 }
 
