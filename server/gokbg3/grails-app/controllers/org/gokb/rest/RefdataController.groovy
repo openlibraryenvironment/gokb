@@ -1,10 +1,8 @@
 package org.gokb.rest
 
-import grails.converters.*
-import grails.gorm.transactions.*
-
-import org.gokb.cred.*
-import org.springframework.security.access.annotation.Secured;
+import grails.converters.JSON
+import grails.gorm.transactions.Transactional
+import org.springframework.security.access.annotation.Secured
 
 @Transactional(readOnly = true)
 class RefdataController {
@@ -13,10 +11,10 @@ class RefdataController {
 
   def genericOIDService
   def springSecurityService
-  def base = grailsApplication.config.serverURL + "/" + namespace
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
+    def base = grailsApplication.config.serverURL + "/" + namespace
     def result = [:]
 
     result['links'] = ['self':['href': base + "/refdata/"]]
@@ -49,7 +47,7 @@ class RefdataController {
   def showCategory() {
     def result = [:]
     def cat = null
-    def user = springSecurityService.principal
+    def base = grailsApplication.config.serverURL + "/" + namespace
 
     if (params.id.contains('.')) {
       cat = RefdataCategory.findByDesc(params.id)
@@ -86,6 +84,7 @@ class RefdataController {
   def showValue() {
     def result = [:]
     def val = null
+    def base = grailsApplication.config.serverURL + "/" + namespace
 
     if (params.id.contains(':')) {
       val = genericOIDService.resolveOID(params.id)
