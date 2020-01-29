@@ -2,6 +2,8 @@ package org.gokb.rest
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
 import org.springframework.security.access.annotation.Secured
 
 @Transactional(readOnly = true)
