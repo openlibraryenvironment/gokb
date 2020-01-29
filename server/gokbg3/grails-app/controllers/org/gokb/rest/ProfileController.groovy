@@ -19,7 +19,6 @@ class ProfileController {
   def messageService
 
   def show() {
-    def result = [:]
     def user = User.get(springSecurityService.principal.id)
 
     def cur_groups = []
@@ -35,12 +34,12 @@ class ProfileController {
     }
 
     def links = [
-      'self'  : 'rest/profile',
-      'update': 'rest/profile/update',
-      'delete': 'rest/profile'
+        'self'  : 'rest/profile',
+        'update': 'rest/profile/update'//,
+//      'delete': 'rest/profile/delete'
     ]
 
-    result = [
+    def result = [
         'id'             : user.id,
         'username'       : user.username,
         'displayName'    : user.displayName,
