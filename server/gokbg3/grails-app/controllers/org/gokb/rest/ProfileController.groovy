@@ -34,6 +34,12 @@ class ProfileController {
         roles.add(role)
     }
 
+    def links = [
+      'self'  : 'rest/profile',
+      'update': 'rest/profile/update',
+      'delete': 'rest/profile'
+    ]
+
     result = [
         'id'             : user.id,
         'username'       : user.username,
@@ -45,7 +51,8 @@ class ProfileController {
         'accountLocked'  : user.accountLocked,
         'passwordExpired': user.accountExpired,
         'defaultPageSize': user.defaultPageSize,
-        'roles'          : roles
+        'roles'          : roles,
+        '_links'         : links
     ]
 
     render result as JSON
