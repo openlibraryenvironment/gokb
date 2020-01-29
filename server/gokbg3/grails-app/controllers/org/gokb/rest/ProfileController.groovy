@@ -19,7 +19,6 @@ class ProfileController {
   def messageService
 
   def show() {
-    def result = [:]
     def user = User.get(springSecurityService.principal.id)
 
     def cur_groups = []
@@ -34,7 +33,13 @@ class ProfileController {
         roles.add(role)
     }
 
-    result = [
+    def links = [
+        'self'  : 'rest/profile',
+        'update': 'rest/profile/update'//,
+//      'delete': 'rest/profile/delete'
+    ]
+
+    def result = [
         'id'             : user.id,
         'username'       : user.username,
         'displayName'    : user.displayName,
@@ -45,7 +50,8 @@ class ProfileController {
         'accountLocked'  : user.accountLocked,
         'passwordExpired': user.accountExpired,
         'defaultPageSize': user.defaultPageSize,
-        'roles'          : roles
+        'roles'          : roles,
+        '_links'         : links
     ]
 
     render result as JSON
