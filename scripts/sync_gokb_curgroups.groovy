@@ -2,6 +2,9 @@
 
 @groovy.transform.BaseScript(GOKbSyncBase)
 import GOKbSyncBase
+import static groovyx.net.http.ContentType.JSON
+
+setSourceResponseType (JSON)
 
 while ( moredata ) {
   
