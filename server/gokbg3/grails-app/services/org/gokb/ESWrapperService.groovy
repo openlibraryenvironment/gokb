@@ -27,7 +27,9 @@ class ESWrapperService {
   }
 
   def getSettings() {
-    def settings = [
+    def settings = [:]
+
+    settings['settings'] = [
       number_of_shards: 1,
       analysis: [
         filter: [
@@ -46,6 +48,7 @@ class ESWrapperService {
         ]
       ]
     ]
+    
 
     return settings
   }

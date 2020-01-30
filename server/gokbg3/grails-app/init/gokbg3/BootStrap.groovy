@@ -1037,7 +1037,7 @@ class BootStrap {
     // get from File?
     def settings = ESWrapperService.getSettings()
 
-    return settings as JSON
+    return settings
   }
   
   def indexMapping() {
@@ -1045,6 +1045,6 @@ class BootStrap {
     
     def mapping = ESWrapperService.getMapping()
       
-    return mapping as JSON
+    return mapping
   }
 }

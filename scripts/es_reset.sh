@@ -7,7 +7,7 @@ echo Drop old index
 curl -XDELETE "http://localhost:9200/$INDEXNAME"
 
 echo \\nCreate index
-curl -X PUT "localhost:9200/$INDEXNAME" -d '{
+curl -X PUT "localhost:9200/$INDEXNAME" -H 'Content-Type: application/json' -d '{
   "settings": {
       "number_of_shards": 1, 
       "analysis": {
@@ -33,7 +33,7 @@ curl -X PUT "localhost:9200/$INDEXNAME" -d '{
 }'
 
 echo \\nCreate component mapping
-curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -d '{
+curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -H 'Content-Type: application/json' -d '{
   "component" : {
     "dynamic_templates": [
       {
