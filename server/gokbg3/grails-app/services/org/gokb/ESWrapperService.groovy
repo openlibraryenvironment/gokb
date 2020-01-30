@@ -27,9 +27,7 @@ class ESWrapperService {
   }
 
   def getSettings() {
-    def settings = [:]
-
-    settings['settings'] = [
+    def settings = [
       number_of_shards: 1,
       analysis: [
         filter: [
@@ -55,45 +53,43 @@ class ESWrapperService {
 
   def getMapping() {
     def mapping = [
-      component: [
-        dynamic_templates: [],
-        properties: [
-          name: [
-            type: "text",
-            copy_to: "suggest",
-            fields: [
-              name: [type: "text"],
-              altname: [type: "text"]
-            ]
-          ],
-          identifiers: [
-            type: "nested",
-            properties: [
-              namespace: [type: "keyword"],
-              value: [type: "keyword"]
-            ]
-          ],
-          sortname: [
-            type: "keyword"
-          ],
-          componentType: [
-            type: "keyword"
-          ],
-          lastUpdatedDisplay: [
-            type: "date",
-            format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
-          ],
-          uuid: [
-            type: "keyword"
-          ],
-          status: [
-            type: "keyword"
-          ],
-          suggest: [
-            type: "text",
-            analyzer: "autocomplete",
-            search_analyzer: "standard"
+      dynamic_templates: [],
+      properties: [
+        name: [
+          type: "text",
+          copy_to: "suggest",
+          fields: [
+            name: [type: "text"],
+            altname: [type: "text"]
           ]
+        ],
+        identifiers: [
+          type: "nested",
+          properties: [
+            namespace: [type: "keyword"],
+            value: [type: "keyword"]
+          ]
+        ],
+        sortname: [
+          type: "keyword"
+        ],
+        componentType: [
+          type: "keyword"
+        ],
+        lastUpdatedDisplay: [
+          type: "date",
+          format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
+        ],
+        uuid: [
+          type: "keyword"
+        ],
+        status: [
+          type: "keyword"
+        ],
+        suggest: [
+          type: "text",
+          analyzer: "autocomplete",
+          search_analyzer: "standard"
         ]
       ]
     ]
