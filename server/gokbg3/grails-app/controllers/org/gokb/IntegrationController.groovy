@@ -52,7 +52,14 @@ class IntegrationController {
     def result = [result:'OK']
     def name = request.JSON.name
     def normname = CuratoryGroup.generateNormname(name)
-    def group = CuratoryGroup.findByNormname(normname)
+    def group = request.JSON.uuid ? CuratoryGroup.findByUuid(request.JSON.uuid) : null
+
+    if ( !group) {
+      group = CuratoryGroup.findByNormname(normname)
+    }
+    else {
+      result.message = "Group ${group.name} matched by uuid!"
+    }
 
     if ( !group ) {
       group = new CuratoryGroup (name: name)
@@ -67,6 +74,9 @@ class IntegrationController {
 
         render result as JSON
       }
+    }
+    else {
+      result.message = "Group ${group.name} matched by name!"
     }
 
     // Defaults first.
@@ -91,7 +101,6 @@ class IntegrationController {
     }
 
     if( group ) {
-      result.message = "Created/looked up group ${group}"
       result.groupId = group.id
     }
     else {
