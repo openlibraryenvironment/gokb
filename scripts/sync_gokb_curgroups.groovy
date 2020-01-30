@@ -6,7 +6,7 @@ import GOKbSyncBase
 while ( moredata ) {
   
   def resources = []
-  fetchFromSource (path: '${sourceContext}/api/groups') { resp, body ->
+  fetchFromSource (path: "${sourceContext}/api/groups") { resp, body ->
 
     body?.result?.eachWithIndex { rec, index ->
       
@@ -16,7 +16,7 @@ while ( moredata ) {
   }
   
   resources.each {
-    sendToTarget (path: '${targetContext}/integration/assertGroup', body: it)
+    sendToTarget (path: "${targetContext}/integration/assertGroup", body: it)
   }
   
   // Save the config.
