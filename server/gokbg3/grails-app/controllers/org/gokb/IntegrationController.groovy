@@ -627,15 +627,18 @@ class IntegrationController {
     render addVariantNameToComponent (org_to_update, request.JSON.name)
   }
 
-  private static def ensureCoreData ( KBComponent component, data ) {
+  private static def ensureCoreData ( KBComponent component, data, boolean sync = false ) {
 
     // Set the name.
+    def hasChanged = false
+
     if(!component.name && data.name) {
       component.name = data.name
+      hasChanged = true
     }
 
     // Core refdata.
-    setAllRefdata ([
+    hasChanged |= setAllRefdata ([
       'status', 'editStatus',
     ], data, component)
 
@@ -656,11 +659,12 @@ class IntegrationController {
 
           log.debug("Checking identifiers of component ${component.id}")
 
-          def duplicate = Combo.executeQuery("from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ?",[canonical_identifier.id,component.id])
+          def duplicate = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?",[canonical_identifier,component])
 
           if(duplicate.size() == 0){
             log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
             def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush:true, failOnError:true)
+            hasChanged = true
           }
           else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
@@ -678,6 +682,20 @@ class IntegrationController {
 
           // Add the value for comparison.
           ids << testKey
+        }
+      }
+    }
+
+    if (sync) {
+      log.debug("Cleaning up deprecated IDs ..")
+      component.ids.each { cid ->
+        if (!data.identifiers.collect {"${it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString()}.contains("${cid.namespace?.value}|${Identifier.normalizeIdentifier(cid.value)}".toString())) {
+          def ctr = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [cid,component])
+
+          if(ctr.size() == 1) {
+            ctr[0].delete()
+            hasChanged = true
+          }
         }
       }
     }
@@ -731,19 +749,35 @@ class IntegrationController {
     }
 
     // If this is a component that supports curatoryGroups we should check for them.
-    if (component.respondsTo('addToCuratoryGroups')) {
-      Set<String> groups = component.curatoryGroups.collect { "${it.name}".toString() }
+    if ( KBComponent.has(component, 'curatoryGroups') ) {
+      def groups = component.curatoryGroups.collect { [id: it.id, name: it.name] }
+
       data.curatoryGroups?.each { String name ->
-        if (!groups.contains(name)) {
+        if (!groups.find {it.name.toLowerCase() == name.toLowerCase()}) {
 
           def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
           // Only add if we have the group already in the system.
           if (group) {
             component.addToCuratoryGroups ( group )
-            groups << name
+            hasChanged = true
+            groups << [id: it.id, name: it.name]
           }
         }
       }
+
+      if (sync) {
+        groups.each { cg ->
+          if (!data.curatoryGroups || !data.curatoryGroups.contains(cg.name)) {
+            log.debug("Removing deprecated CG ${cg.name}")
+            Combo.executeUpdate("delete from Combo as c where c.fromComponent = ? and c.toComponent.id = ?", [component, cg.id])
+            component.refresh()
+            hasChanged = true
+          }
+        }
+      }
+    }
+    else {
+      log.debug("Skipping CG handling ..")
     }
 
     if (data.additionalProperties) {
@@ -772,21 +806,38 @@ class IntegrationController {
         }
       }
     }
+    def variants = component.variantNames.collect { [id: it.id, variantName: it.variantName] }
 
     // Variant names.
     if (data.variantNames) {
-      Set<String> variants = component.variantNames.collect { "${it.variantName}".toString() }
       for (String name : data.variantNames) {
-        if (name?.trim().size() > 0 && !variants.contains(name)) {
+        if (name?.trim().size() > 0 && !variants.find {it.variantName == name}) {
           // Add the variant name.
           log.debug("Adding variantName ${name} to ${component} ..")
 
           def new_variant_name = component.ensureVariantName(name)
 
           // Add to collection.
-          variants << name
+          if(new_variant_name) {
+            variants << [id: new_variant_name.id, variantName: new_variant_name.variantName]
+          }
         }
       }
+    }
+
+    if (sync) {
+      variants.each { vn ->
+        if (!data.variantNames || !data.variantNames.contains(vn.variantName)) {
+          def vobj = KBComponentVariantName.get(vn.id)
+          vobj.delete()
+          component.refresh()
+          hasChanged = true
+        }
+      }
+    }
+
+    if (hasChanged) {
+      component.lastSeen = new Date().getTime()
     }
     component.save(flush:true)
   }
@@ -802,7 +853,12 @@ class IntegrationController {
     def result = [ 'result' : 'OK' ]
     def async = params.async ? true : false
     def rjson = request.JSON
+    def fullsync = false
     User request_user = springSecurityService.currentUser
+
+    if (params.fullsync == "true" && request_user.adminStatus) {
+      fullsync = true
+    }
 
     if ( rjson?.packageHeader?.name ) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
@@ -831,7 +887,7 @@ class IntegrationController {
                 }
 
                 if ( is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
-                  ensureCoreData(the_pkg, json.packageHeader)
+                  ensureCoreData(the_pkg, json.packageHeader, fullsync)
 
                   if ( the_pkg.tipps?.size() > 0 ) {
                     existing_tipps = the_pkg.tipps*.id
@@ -859,7 +915,7 @@ class IntegrationController {
 
                         if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
 
-                          ensureCoreData(ti, tipp.title)
+                          ensureCoreData(ti, tipp.title, fullsync)
                           tipp.title.internalId = ti.id;
                         } else {
                           if (ti != null)
@@ -904,7 +960,7 @@ class IntegrationController {
                         if(pl){
                           platform_cache[tipp.platform.name] = pl.id
 
-                          ensureCoreData(pl, tipp.platform)
+                          ensureCoreData(pl, tipp.platform, fullsync)
                         }else{
                           log.error("Could not find/create ${tipp.platform}")
                           errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
@@ -1075,10 +1131,6 @@ class IntegrationController {
 
                     if(the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
                       the_pkg.lastUpdateComment = job_result.message
-
-                      if (!the_pkg.contentType) {
-                        packageService.generatePackageTypes(null, the_pkg.id)
-                      }
                     }
                     job_result.pkgId = the_pkg.id
                     job_result.uuid = the_pkg.uuid
@@ -1146,7 +1198,12 @@ class IntegrationController {
     def result = [ 'result' : 'OK' ]
     def created = false
     def platformJson = request.JSON
+    def fullsync = false
     User user = springSecurityService.currentUser
+
+    if (params.fullsync == "true" && user.adminStatus) {
+      fullsync = true
+    }
 
     log.debug("crossReferencePlatform - ${platformJson}")
     if ( platformJson?.platformUrl?.trim() && (platformJson?.name?.trim() || platformJson?.platformName?.trim()) ) {
@@ -1179,7 +1236,7 @@ class IntegrationController {
           p.save(flush:true)
 
           // Add the core data.
-          ensureCoreData(p, platformJson)
+          ensureCoreData(p, platformJson, fullsync)
 
     //      if ( changed ) {
     //        p.save(flush:true, failOnError:true);
@@ -1281,11 +1338,16 @@ class IntegrationController {
     User user = springSecurityService.currentUser
     def rjson = request.JSON
     def async = params.async ? true : false
+    def fullsync = false
     def result
+
+    if (params.fullsync == "true" && user.adminStatus) {
+      fullsync = true
+    }
 
     if(org.grails.web.json.JSONArray != rjson.getClass()){
 
-      result = crossReferenceSingleTitle(rjson, user.id)
+      result = crossReferenceSingleTitle(rjson, user.id, fullsync)
 
       cleanUpGorm()
     }
@@ -1306,7 +1368,7 @@ class IntegrationController {
             break;
           }
 
-          job_result.results <<  crossReferenceSingleTitle(e, user.id)
+          job_result.results <<  crossReferenceSingleTitle(e, user.id, fullsync)
 
           ctr++
           job.setProgress(ctr, json.size())
@@ -1334,7 +1396,7 @@ class IntegrationController {
     render result as JSON
   }
 
-  private crossReferenceSingleTitle(Object titleObj, userid) {
+  private crossReferenceSingleTitle(Object titleObj, userid, fullsync) {
 
     def result = [ 'result' : 'OK' ]
 
@@ -1378,7 +1440,7 @@ class IntegrationController {
               }
 
               // Add the core data.
-              ensureCoreData(title, titleObj)
+              ensureCoreData(title, titleObj, fullsync)
 
               title_changed |= setAllRefdata ([
                     'OAStatus', 'medium',
@@ -1415,7 +1477,7 @@ class IntegrationController {
                       );
 
                       if ( p && !p.hasErrors() ) {
-                        ensureCoreData(p, fhe)
+                        ensureCoreData(p, fhe, fullsync)
                         inlist.add(p);
                       }
                       else {
@@ -1437,7 +1499,7 @@ class IntegrationController {
                       );
 
                       if ( p && !p.hasErrors() && !inlist.contains(p) ) {
-                        ensureCoreData(p, fhe)
+                        ensureCoreData(p, fhe, fullsync)
                         outlist.add(p);
                       }
                       else {

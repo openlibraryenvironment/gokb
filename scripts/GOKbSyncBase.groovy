@@ -154,6 +154,8 @@ abstract class GOKbSyncBase extends Script {
           if (parameters['path']) {
             uri.path = parameters['path']
           }
+
+          uri.query = [fullsync: 'true']
           
           if (parameters['body']) {
             body = parameters['body']

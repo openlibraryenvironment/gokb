@@ -555,6 +555,10 @@ class AjaxSupportController {
         log.debug("remove successful?: ${remove_result}")
         log.debug("child ${item_to_remove} removed: "+ contextObj[params.__property]);
 
+        if ( params.propagate == "true") {
+          contextObj.lastSeen = new Date().getTime()
+        }
+
         if (contextObj.save(flush: true, failOnError: true)) {
           log.debug("Saved context object ${contextObj.class.name}")
         }
@@ -1307,9 +1311,12 @@ class AjaxSupportController {
     if (c.fromComponent?.isEditable()) {
       log.debug("Delete combo..")
 
+      if ( params.propagate == "true") {
+        c.fromComponent.lastSeen = new Date().getTime()
+      }
+
       if (params.keepLink) {
         c.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-        c.fromComponent.lastSeen = new Date().getTime()
       }
       else{
         c.delete(flush:true);

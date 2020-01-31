@@ -44,4 +44,8 @@ class KBComponentVariantName {
   def beforeUpdate() {
     normVariantName = GOKbTextUtils.normaliseString(variantName);
   }
+
+  def beforeDelete() {
+    owner.lastUpdateComment = "Deleted Alternate Name '${this.variantName}'."
+  }
 }
