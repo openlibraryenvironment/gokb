@@ -182,6 +182,7 @@ class Org extends KBComponent {
     def issues = getIssuedTitles()
     def provides = getProvidedPackages()
     def platforms = getProvidedPlatforms()
+    def offices = getOffices()
     def identifiers = getIds()
     
     builder.'gokb' (attr) {
@@ -194,6 +195,36 @@ class Org extends KBComponent {
           builder.'roles' {
             roles.each { role ->
               builder.'role' (role.value)
+            }
+          }
+        }
+
+        if (offices) {
+          builder.'offices' {
+            offices.each { office ->
+              builder.'name' (office.name)
+              builder.'website' (office.website)
+              builder.'phoneNumber' (office.phoneNumber)
+              builder.'otherDetails' (office.otherDetails)
+              builder.'addressLine1' (office.addressLine1)
+              builder.'addressLine2' (office.addressLine2)
+              builder.'city' (office.city)
+              builder.'zipPostcode' (office.zipPostcode)
+              builder.'region' (office.region)
+              builder.'state' (office.state)
+
+              if ( office.country ) {
+                builder.'country' ( office.country.value )
+              }
+
+              builder.curatoryGroups {
+                office.curatoryGroups.each { ocg ->
+                  builder.group {
+                    builder.owner(ocg.owner.username)
+                    builder.name(ocg.name)
+                  }
+                }
+              }
             }
           }
         }

@@ -10,24 +10,7 @@ class ErrorController {
   def springSecurityService
 
   def index() {
-    def resp = [code: 500, message:'Server Error']
-
-    if(request.forwardURI.contains('/rest/')) {
-      log.debug("Rendering JSON REST 500 (${request.forwardURI})")
-      response.setStatus(500)
-      render resp as JSON
-    }
-    else {
-      withFormat {
-        html {
-          forward (uri:'/error')
-        }
-        json {
-          response.setStatus(500)
-          render resp as JSON
-        }
-      }
-    }
+    
   }
 
   def serverError() {
@@ -41,7 +24,7 @@ class ErrorController {
     else {
       withFormat {
         html {
-          forward (uri:'/error')
+          redirect (uri:'/error')
         }
         json {
           response.setStatus(500)
@@ -62,7 +45,7 @@ class ErrorController {
     else {
       withFormat {
         html {
-          forward (view:'/error')
+          forward (uri:'/error')
         }
         json {
           response.setStatus(405)
@@ -84,7 +67,7 @@ class ErrorController {
       withFormat {
         html {
           log.debug("Rendering HTML 404 (${request.forwardURI})")
-          forward (uri:'/notFound', params:[status:404])
+          forward (uri:'notFound', params:[status:404])
         }
         json {
           response.setStatus(404)

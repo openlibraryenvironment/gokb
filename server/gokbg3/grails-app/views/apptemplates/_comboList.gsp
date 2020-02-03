@@ -25,7 +25,7 @@
           <g:if test="${d.isEditable() && (d.respondsTo('curatoryGroups') ? (!d.curatoryGroups ? true : cur) : true)}">
             <g:link controller='ajaxSupport'
                     action='unlinkManyToMany'
-                    params="${[__context:ctxoid,__property:property,__itemToRemove:rowoid]}">Unlink</g:link>
+                    params="${[__context:ctxoid,__property:property,__itemToRemove:rowoid, propagate:propagateDelete]}">Unlink</g:link>
           </g:if>
         </td>
       </tr>
@@ -45,7 +45,7 @@
       <g:set var="comboprop" value="toComponent"/>
     </g:else>
     <h4>
-      <g:annotatedLabel owner="${d}" property="addVariantName">Add new Entry</g:annotatedLabel>
+      <g:annotatedLabel owner="${d}" property="${property}">Add new Entry</g:annotatedLabel>
     </h4>
     <dl class="dl-horizontal">
       <g:form controller="ajaxSupport" action="addToCollection" class="form-inline">

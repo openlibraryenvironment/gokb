@@ -269,7 +269,7 @@
             </dt>
             <dd>
               <g:render template="/apptemplates/comboList"
-                      model="${[d:d, property:'offices', noadd:true, cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in']}" />
+                      model="${[d:d, property:'offices', noadd:true, cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in',propagateDelete: 'true']}" />
 
               <g:if test="${d.isEditable()}">
                 <g:if test="${d.id}">
@@ -315,6 +315,12 @@
                       <dt class="dt-label">Region</dt>
                       <dd>
                         <input class="form-control" type="text" name="region" />
+                      </dd>
+                      <dt class="dt-label">Country</dt>
+                      <dd>
+                        <g:simpleReferenceTypedown class="form-control" name="country"
+                          baseClass="org.gokb.cred.RefdataValue"
+                          filter1="Country" />
                       </dd>
                       <dt class="dt-label"></dt>
                       <dd>
