@@ -197,6 +197,23 @@ class ApiController {
     apiReturn(result)
   }
 
+  def groups() {
+
+    def result = []
+
+    CuratoryGroup.list().each {
+      result << [
+        'id':  it.id,
+        'name': it.name,
+        'editStatus': it.editStatus?.value ?: null,
+        'status': it.status?.value ?: null,
+        'uuid': it.uuid
+      ]
+    }
+
+    apiReturn(result)
+  }
+
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def quickCreate() {
     // Get the type of component we are going to attempt to create.

@@ -52,10 +52,19 @@ class IntegrationController {
     def result = [result:'OK']
     def name = request.JSON.name
     def normname = CuratoryGroup.generateNormname(name)
-    def group = CuratoryGroup.findByNormname(normname)
+    def uuid = request.JSON.uuid
+    def group = uuid ? CuratoryGroup.findByUuid(uuid) : null
+    def status = request.JSON.status
+
+    if ( !group) {
+      group = CuratoryGroup.findByNormname(normname)
+    }
+    else {
+      result.message = "Group ${group.name} matched by uuid!"
+    }
 
     if ( !group ) {
-      group = new CuratoryGroup (name: name)
+      group = new CuratoryGroup (name: name, uuid: uuid)
 
       if ( group.validate() ) {
         group.save(flush:true)
@@ -68,9 +77,12 @@ class IntegrationController {
         render result as JSON
       }
     }
+    else {
+      result.message = "Group ${group.name} matched by name!"
+    }
 
     // Defaults first.
-    // ensureCoreData(group, request.JSON)
+    ensureCoreData(group, request.JSON)
 
     // Find by username but do not create missing entries.
     def owner = request.JSON.owner
@@ -91,7 +103,7 @@ class IntegrationController {
     }
 
     if( group ) {
-      result.message = "Created/looked up group ${group}"
+      group.save(flush:true)
       result.groupId = group.id
     }
     else {

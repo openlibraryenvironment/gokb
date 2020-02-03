@@ -46,6 +46,7 @@ class ESWrapperService {
         ]
       ]
     ]
+    
 
     return settings
   }

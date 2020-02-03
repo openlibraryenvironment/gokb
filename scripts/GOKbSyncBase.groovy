@@ -71,7 +71,13 @@ abstract class GOKbSyncBase extends Script {
     if (!source) {
       // Create the source.
       source = new HTTPBuilder(sourceBase, sourceResponseType)
-      source.headers = [Accept: 'application/xml']
+
+      if(sourceResponseType == XML) {
+        source.headers = [Accept: 'application/xml']
+      }
+      else {
+        source.headers = [Accept: 'application/json']
+      }
     }
     
     source
