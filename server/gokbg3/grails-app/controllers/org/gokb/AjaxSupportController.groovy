@@ -22,6 +22,7 @@ class AjaxSupportController {
   def aclUtilService
   def springSecurityService
   def messageSource
+  def messageService
 
 
   @Deprecated
@@ -345,7 +346,7 @@ class AjaxSupportController {
               contextObj.save(flush: true)
             }
             else {
-              errors.addAll(processErrors(new_obj.errors.allErrors))
+              errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
             }
           }
           else if ( params.__addToColl ) {
@@ -357,7 +358,7 @@ class AjaxSupportController {
               log.debug("New Object Saved OK");
             }
             else {
-              errors.addAll(processErrors(new_obj.errors.allErrors))
+              errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
             }
 
             if ( contextObj.validate() ) {
@@ -365,7 +366,7 @@ class AjaxSupportController {
               log.debug("Context Object Saved OK");
             }
             else {
-              errors.addAll(processErrors(contextObj.errors.allErrors))
+              errors.addAll(messageService.processValidationErrors(contextObj.errors, request.locale))
             }
           }
           else {
@@ -376,7 +377,7 @@ class AjaxSupportController {
               log.debug("Saved OK (${new_obj.class.name} ${new_obj.id})");
             }
             else {
-              errors.addAll(processErrors(new_obj.errors.allErrors))
+              errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
             }
           }
 
@@ -395,7 +396,7 @@ class AjaxSupportController {
               new_obj.save(flush:true, failOnError:true)
             }
             else {
-              errors.addAll(processErrors(new_obj.errors.allErrors))
+              errors.addAll(messageService.processValidationErrors(new_obj.errors, request.locale))
             }
           }
         }
@@ -554,11 +555,15 @@ class AjaxSupportController {
         log.debug("remove successful?: ${remove_result}")
         log.debug("child ${item_to_remove} removed: "+ contextObj[params.__property]);
 
+        if ( params.propagate == "true") {
+          contextObj.lastSeen = new Date().getTime()
+        }
+
         if (contextObj.save(flush: true, failOnError: true)) {
           log.debug("Saved context object ${contextObj.class.name}")
         }
         else {
-          flash.error = processErrors(contextObj.errors.allErrors())
+          flash.error = messageService.processValidationErrors(contextObj.errors, request.locale)
           result.result = 'ERROR'
           result.code = 400
         }
@@ -575,7 +580,7 @@ class AjaxSupportController {
             log.debug("parent removed: "+item_to_remove[params.__otherEnd]);
           }
           if (!item_to_remove.validate()) {
-            flash.error = processErrors(item_to_remove.errors.allErrors())
+            flash.error = messageService.processValidationErrors(item_to_remove.errors, request.locale)
           }
           else {
             item_to_remove.save(flush:true)
@@ -747,13 +752,13 @@ class AjaxSupportController {
     def user = springSecurityService.currentUser
     def target_object = resolveOID2(params.pk)
     def result = ['result': 'OK', 'params': params]
-    def errors = []
+    def errors = [:]
     if ( target_object && ( target_object.isEditable() || target_object == user ) ) {
       if ( params.type=='date' ) {
         target_object."${params.name}" = params.date('value',params.dateFormat ?: 'yyyy-MM-dd')
       }
       else if (params.name == 'uuid' || params.name == 'password') {
-        errors.add("This property is not editable.")
+        errors[params.name] = "This property is not editable."
       }
       else {
         def binding_properties = [:]
@@ -765,11 +770,11 @@ class AjaxSupportController {
         target_object.save(flush:true);
       }
       else {
-        errors = processErrors(target_object.errors.allErrors)
+        errors = messageService.processValidationErrors(target_object.errors, request.locale)
       }
     }
     else {
-      errors.add("Object ${target_object} is not editable.".toString())
+      errors['global'] = ["Object ${target_object} is not editable.".toString()]
       log.debug("Object ${target_object} is not editable.");
     }
 
@@ -782,78 +787,20 @@ class AjaxSupportController {
         }
         else {
           response.status = 400
-          outs << errors[0]
+          outs << errors[params.name] ? errors[params.name][0] : errors['global'][0]
         }
         outs.flush()
         outs.close()
       }
       json {
         if (errors) {
-          result.errors = errors
+          result.errors = errors[params.name]
           result.result = 'ERROR'
         }
 
         render result as JSON
       }
     }
-  }
-
-  private List processErrors(errors) {
-    def result = []
-
-    errors.each { eo ->
-
-
-      def resolvedArgs = []
-      def errorMessage = null
-
-      eo.getArguments().each { ma ->
-        log.debug("message arg type is: ${ma?.class?.name ?: 'null'}")
-        if (ma && ma instanceof String) {
-          String[] emptyArgs = []
-          def arg = messageSource.resolveCode(ma, request.locale)
-          
-          if (arg) {
-            arg.format(emptyArgs)
-
-            resolvedArgs.add(arg)
-          }
-        }
-        else {
-          resolvedArgs.add(ma)
-        }
-      }
-
-      String[] messageArgs = resolvedArgs
-
-      eo.getCodes().each { ec ->
-
-        if (!errorMessage) {
-          // log.debug("testing code -> ${ec}")
-
-          def msg = messageSource.resolveCode(ec, request.locale)?.format(messageArgs)
-
-          if(msg && msg != ec) {
-            errorMessage = msg
-          }
-
-          if(!errorMessage) {
-            // log.debug("Could not resolve message")
-          }else{
-            log.debug("found message: ${msg}")
-          }
-        }
-      }
-
-      if (errorMessage) {
-        result.add(errorMessage)
-      }else{
-        log.debug("No message found for ${eo.codes}")
-        log.debug("Default: ${MessageFormat.format(eo.defaultMessage, messageArgs)}")
-        result.add("${MessageFormat.format(eo.defaultMessage, messageArgs)}")
-      }
-    }
-    result
   }
 
   /**
@@ -901,7 +848,7 @@ class AjaxSupportController {
       }
       else {
         log.error("Problem saving.. ${target.errors}");
-        result.errors = processErrors(target.errors.allErrors)
+        result.errors = messageService.processValidationErrors(target.errors, request.locale)
         result.result = "ERROR"
       }
     }
@@ -965,9 +912,9 @@ class AjaxSupportController {
     def result = ['result': 'OK', 'params': params]
     def identifier_instance = null
     // Check identifier namespace present, and identifier value valid for that namespace
-    if ( ( params.identifierNamespace?.length() > 0 ) &&
-         ( params.identifierValue?.length() > 0 ) &&
-         ( params.__context?.length() > 0 ) ) {
+    if ( ( params.identifierNamespace?.trim() ) &&
+         ( params.identifierValue?.trim() ) &&
+         ( params.__context?.trim() ) ) {
       def ns = genericOIDService.resolveOID(params.identifierNamespace)
       def owner = genericOIDService.resolveOID(params.__context)
       if ( ( ns != null ) && ( owner != null ) && owner.isEditable() ) {
@@ -1001,6 +948,7 @@ class AjaxSupportController {
       }
       json {
         if (flash.error) {
+          result.result = 'ERROR'
           result.error = flash.error
         }
         else {
@@ -1363,9 +1311,12 @@ class AjaxSupportController {
     if (c.fromComponent?.isEditable()) {
       log.debug("Delete combo..")
 
+      if ( params.propagate == "true") {
+        c.fromComponent.lastSeen = new Date().getTime()
+      }
+
       if (params.keepLink) {
         c.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-        c.fromComponent.lastSeen = new Date().getTime()
       }
       else{
         c.delete(flush:true);

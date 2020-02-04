@@ -1099,6 +1099,10 @@ where cp.owner = :c
       }
 
       result = ['oid': "${newVal.class.name}:${newVal.id}", 'label': obj_label]
+
+      if ( newVal.class.name == 'org.gokb.cred.RefdataValue' ) {
+        result.category = newVal.owner.label
+      }
     }
     else {
       result = newVal
@@ -1177,7 +1181,7 @@ where cp.owner = :c
 
   @Transient
   def ensureVariantName(String name) {
-
+    def result = null
     if (name.trim().size() != 0) {
       def normname = generateNormname(name)
 
@@ -1193,7 +1197,7 @@ where cp.owner = :c
         // Make sure not already a variant name
         def existing_variants = KBComponentVariantName.findAllByNormVariantName(normname)
         if ( existing_variants.size() == 0 ) {
-          KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
+          result = new KBComponentVariantName( owner:this, variantName:name ).save()
         }
         else {
           log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
@@ -1207,7 +1211,7 @@ where cp.owner = :c
     else {
       log.error("No viable variant name supplied!")
     }
-
+    result
   }
 
   /**

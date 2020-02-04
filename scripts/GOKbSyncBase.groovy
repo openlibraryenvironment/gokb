@@ -71,7 +71,13 @@ abstract class GOKbSyncBase extends Script {
     if (!source) {
       // Create the source.
       source = new HTTPBuilder(sourceBase, sourceResponseType)
-      source.headers = [Accept: 'application/xml']
+
+      if(sourceResponseType == XML) {
+        source.headers = [Accept: 'application/xml']
+      }
+      else {
+        source.headers = [Accept: 'application/json']
+      }
     }
     
     source
@@ -154,6 +160,8 @@ abstract class GOKbSyncBase extends Script {
           if (parameters['path']) {
             uri.path = parameters['path']
           }
+
+          uri.query = [fullsync: 'true']
           
           if (parameters['body']) {
             body = parameters['body']

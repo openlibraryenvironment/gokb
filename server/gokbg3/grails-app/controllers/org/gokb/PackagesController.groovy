@@ -1,6 +1,7 @@
 package org.gokb
 
 import grails.converters.*
+import grails.gorm.transactions.*
 import org.springframework.security.acls.model.NotFoundException
 import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
@@ -9,6 +10,14 @@ import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
 import java.security.MessageDigest
 import grails.converters.JSON
+import grails.core.GrailsClass
+import groovyx.net.http.URIBuilder
+
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
+import org.grails.datastore.mapping.model.*
+import org.grails.datastore.mapping.model.types.*
 
 import org.hibernate.ScrollMode
 import org.hibernate.ScrollableResults
@@ -16,7 +25,7 @@ import org.hibernate.type.*
 import org.hibernate.Hibernate
 
 
-
+@Transactional(readOnly = true)
 class PackagesController {
 
   def genericOIDService
@@ -26,10 +35,9 @@ class PackagesController {
   def ESWrapperService
   def ESSearchService
   def sessionFactory
+  def messageService
 
   public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=? and c.toComponent=tipp  and c.type.value = ? order by tipp.id';
-
-
 
   def packageContent() {
     log.debug("packageContent::${params}")
@@ -73,37 +81,8 @@ class PackagesController {
     }
   }
 
-
-  def index() {
-    def result = [:]
-    params.max = 30
-
-    params.rectype = "Package" // Tells ESSearchService what to look for
-
-    if(params.q == "")  params.remove('q');
-    params.isPublic="Yes"
-    if(params.lastUpdated){
-      params.lastModified ="[${params.lastUpdated} TO 2100]"
-    }
-    if (!params.sort){
-      params.sort="sortname"
-      params.order = "asc"
-    }
-    if(params.search.equals("yes")){
-      //when searching make sure results start from first page
-      params.offset = 0
-      params.search = null
-    }
-    if(params.filter == "current")
-      params.tempFQ = " -pkg_scope:\"Master File\" -\"open access\" ";
-
-    result =  ESSearchService.search(params)
-    result.transforms = grailsApplication.config.packageTransforms
-
-    result
-  }
-
-
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
   def preflight() {
    def result = [:]
     log.debug("preflight::${params}")
@@ -153,6 +132,7 @@ class PackagesController {
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
   def deposit() {
     def result = [:]
     log.debug("deposit::${params}")

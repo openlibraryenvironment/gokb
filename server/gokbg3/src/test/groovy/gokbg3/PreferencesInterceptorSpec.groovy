@@ -14,7 +14,7 @@ class PreferencesInterceptorSpec extends Specification implements InterceptorUni
 
     void "Test preferences interceptor matching"() {
         when:"A request matches the interceptor"
-            withRequest(controller:"preferences")
+            withRequest(controller:"resource")
 
         then:"The interceptor does match"
             interceptor.doesMatch()

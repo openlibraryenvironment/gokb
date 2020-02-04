@@ -34,6 +34,7 @@ class RefdataValue implements Auditable {
       "${this.class.name}:${id}"
   }
 
+  public static final String restPath = "/refdata/values"
 
   @Override
   public String toString() {

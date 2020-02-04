@@ -354,10 +354,18 @@ class PackageService {
   }
 
   @Transactional
-  public def generatePackageTypes(Job j = null) {
+  public def generatePackageTypes(Job j = null, def pkg_id = null) {
     log.debug("Generating missing package content types.")
     def result = [book:0, db:0, journal:0, mixed:0, errors:0]
-    def pkg_list = Package.executeQuery("select id from Package where contentType is null")
+    def pkg_list =[]
+
+    if(!pkg_id) {
+      pkg_list = Package.executeQuery("select id from Package where contentType is null")
+    }
+    else {
+      pkg_list << pkg_id
+    }
+
     def msg_list = []
     def rdv_journal = RefdataCategory.lookup("TitleInstance.Medium", "Journal")
     def rdv_book = RefdataCategory.lookup("TitleInstance.Medium", "Book")
@@ -399,17 +407,21 @@ class PackageService {
           msg_list.add(msg)
         }
         ctr++
-        j.setProgress(ctr, pkg_list.size())
+        if (j) {
+          j.setProgress(ctr, pkg_list.size())
+        }
       }
     }
 
-    j.message("Finished creating ${ctr} new types (${result.errors} errors).".toString())
+    if (j) {
+      j.message("Finished creating ${ctr} new types (${result.errors} errors).".toString())
 
-    msg_list.each {
-      j.message(it.toString())
+      msg_list.each {
+        j.message(it.toString())
+      }
+
+      j.endTime = new Date()
     }
-
-    j.endTime = new Date()
   }
 
   @javax.annotation.PreDestroy

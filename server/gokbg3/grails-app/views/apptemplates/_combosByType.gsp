@@ -61,7 +61,7 @@
                 <g:link
                   controller='ajaxSupport'
                   action='deleteCombo'
-                  params="${['id':row.id,'fragment':fragment,'keepLink': true]}"
+                  params="${['id':row.id,'fragment':fragment,'keepLink': true, 'propagate': "true"]}"
                   class="confirm-click btn-delete"
                   title="Mark this link as 'Deleted'. This will prevent future automatic linkage of these components."
                   data-confirm-message="Are you sure you wish to remove this ${row.toComponent.niceName}?" >Delete</g:link>
@@ -71,7 +71,7 @@
               <g:link
                 controller='ajaxSupport'
                 action='deleteCombo'
-                params="${['id':row.id,'fragment':fragment]}"
+                params="${['id':row.id,'fragment':fragment, 'propagate': "true"]}"
                 class="confirm-click btn-delete"
                 title="Delete this link"
                 data-confirm-message="Are you sure you wish to delete this ${row.toComponent.niceName}?" >Unlink</g:link>

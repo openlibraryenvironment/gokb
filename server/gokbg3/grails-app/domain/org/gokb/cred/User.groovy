@@ -57,6 +57,8 @@ class User extends Party {
     password column: '`password`'
   }
 
+  public static final String restPath = "/users"
+
   String getLogEntityId() {
       "${this.class.name}:${id}"
   }

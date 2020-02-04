@@ -40,6 +40,8 @@ class RefdataCategory {
       "${this.class.name}:${id}"
   }
 
+  public static final String restPath = "/refdata/categories"
+
   static def lookup(category_name, value, def sortkey = null) {
 
     // log.debug("lookupOrCreate(${category_name}, ${value}, ${sortkey})");

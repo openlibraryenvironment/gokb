@@ -39,6 +39,8 @@ class Role {
   public boolean equals (Object obj) {
     return obj instanceof Role && obj?.id?.equals(id)
   }
+
+  public static final String restPath = "/roles"
   
   @Override
   public String toString () {

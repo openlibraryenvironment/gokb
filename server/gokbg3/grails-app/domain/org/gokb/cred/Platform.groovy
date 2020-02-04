@@ -72,6 +72,8 @@ class Platform extends KBComponent {
     })
   }
 
+  public static final String restPath = "/platforms"
+
   @Transient
   static def oaiConfig = [
     id:'platforms',
@@ -241,7 +243,7 @@ class Platform extends KBComponent {
           def url_as_name = new URL(platformDTO.name)
 
           if(url_as_name.getProtocol()){
-            if(!platformDTO.primaryUrl || platformDTO.primaryUrl.trim.size() == 0){
+            if(!platformDTO.primaryUrl || !platformDTO.primaryUrl.trim()){
               log.debug("identified URL as platform name")
               platformDTO.primaryUrl = platformDTO.name
             }

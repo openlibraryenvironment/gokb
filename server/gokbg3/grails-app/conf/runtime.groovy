@@ -4,7 +4,7 @@
 
 import com.k_int.TextUtils
 import org.gokb.cred.KBComponent
-import org.gokb.validation.types.*
+//import org.gokb.validation.types.*
 import java.util.concurrent.Executors
 
 kbart2.mappings= [
@@ -417,7 +417,7 @@ environments {
     // TODO: grails.serverURL = "http://www.changeme.com"
   }
   test {
-    grails.serverURL = "http://localhost:${ System.getProperty("server.port")?:'8080' }/${appName}"
+    grails.serverURL = "http://localhost:$server.port/$appName"
   }
 }
 

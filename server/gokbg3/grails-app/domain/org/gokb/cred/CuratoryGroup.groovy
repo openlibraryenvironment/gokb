@@ -47,6 +47,10 @@ class CuratoryGroup extends KBComponent {
     })
   }
 
+  public String getRestPath() {
+    return "/groups";
+  }
+
   @Override
   public String getNiceName() {
     return "Curatory Group";

@@ -46,6 +46,8 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
   def springSecurityService
 
+  def messageService
+
 	static final String EMAIL_LAYOUT = "/layouts/email"
 	static final String FORGOT_PASSWORD_TEMPLATE = "/register/_forgotPasswordMail"
 	static final String VERIFY_REGISTRATION_TEMPLATE = "/register/_verifyRegistrationMail"
@@ -64,7 +66,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     if ( session.regTries && session.regTries > 3 ) {
       response.setStatus(429)
 
-      return [registerCommand: registerCommand, noTries: true, errors: processErrors(registerCommand.errors)]
+      return [registerCommand: registerCommand, noTries: true, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)]
     }
 
     def secTerms = session.secQuestion ? session.secQuestion.split("\\*") : null
@@ -76,12 +78,12 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     if ( !secTerms || params.int('secAnswer') != secResult ) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
       session.regTries = session.regTries ? (session.regTries + 1) : 1
-      return [registerCommand: registerCommand, secFailed: true, secQuestion: session.secQuestion, errors: processErrors(registerCommand.errors)]
+      return [registerCommand: registerCommand, secFailed: true, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)]
     }
 
     if (registerCommand.hasErrors() || params.phone) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
-      return [registerCommand: registerCommand, secQuestion: session.secQuestion, errors: processErrors(registerCommand.errors)]
+      return [registerCommand: registerCommand, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)]
     }
 
     def user = uiRegistrationCodeStrategy.createUser(registerCommand)
@@ -152,66 +154,6 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
               subject: registerEmailSubject,
               html: body
       )
-  }
-
-  private Map processErrors(errors) {
-    def result = ['username': [], 'email': [], 'password': [], 'password2':[]]
-
-    result.each { fn, val ->
-      def fieldErrors = errors.getFieldErrors(fn)
-
-      fieldErrors.each { eo ->
-
-        def resolvedArgs = []
-        def errorMessage = null
-
-        eo.getArguments().each { ma ->
-          if (ma && ma instanceof String) {
-            String[] emptyArgs = []
-            def arg = messageSource.resolveCode(ma, request.locale)
-
-            if (arg) {
-              arg.format(emptyArgs)
-
-              resolvedArgs.add(arg)
-            }
-          }
-          else {
-            resolvedArgs.add(ma)
-          }
-        }
-
-        String[] messageArgs = resolvedArgs
-
-        eo.getCodes().each { ec ->
-
-          if (!errorMessage) {
-            // log.debug("testing code -> ${ec}")
-
-            def msg = messageSource.resolveCode(ec, request.locale)?.format(messageArgs)
-
-            if(msg && msg != ec) {
-              errorMessage = msg
-            }
-
-            if(!errorMessage) {
-              // log.debug("Could not resolve message")
-            }else{
-              // log.debug("found message: ${msg}")
-            }
-          }
-        }
-
-        if (errorMessage) {
-          result[fn].add(errorMessage)
-        }else{
-          log.debug("No message found for ${eo.codes}")
-          log.debug("Default: ${MessageFormat.format(eo.defaultMessage, messageArgs)}")
-          result[fn].add("${MessageFormat.format(eo.defaultMessage, messageArgs)}")
-        }
-      }
-    }
-    result
   }
 
   @Override

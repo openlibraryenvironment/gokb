@@ -2,13 +2,14 @@ package org.gokb
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
-import org.springframework.security.access.annotation.Secured;
+import grails.plugin.springsecurity.annotation.Secured
 import org.gokb.cred.*
 import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
-import java.text.SimpleDateFormat
 import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
+import java.time.format.*
+import java.time.LocalDateTime
 
 import groovy.util.logging.*
 
@@ -21,13 +22,14 @@ class IntegrationController {
   def titleLookupService
   def applicationEventService
   def sessionFactory
+  def packageService
 
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def index() {
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def assertJsonldPlatform() {
     def result = [result:'OK']
     def name = request.JSON.'skos:prefLabel'
@@ -45,15 +47,24 @@ class IntegrationController {
     render result as JSON
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def assertGroup() {
     def result = [result:'OK']
     def name = request.JSON.name
     def normname = CuratoryGroup.generateNormname(name)
-    def group = CuratoryGroup.findByNormname(normname)
+    def uuid = request.JSON.uuid
+    def group = uuid ? CuratoryGroup.findByUuid(uuid) : null
+    def status = request.JSON.status
+
+    if ( !group) {
+      group = CuratoryGroup.findByNormname(normname)
+    }
+    else {
+      result.message = "Group ${group.name} matched by uuid!"
+    }
 
     if ( !group ) {
-      group = new CuratoryGroup (name: name)
+      group = new CuratoryGroup (name: name, uuid: uuid)
 
       if ( group.validate() ) {
         group.save(flush:true)
@@ -66,9 +77,12 @@ class IntegrationController {
         render result as JSON
       }
     }
+    else {
+      result.message = "Group ${group.name} matched by name!"
+    }
 
     // Defaults first.
-    // ensureCoreData(group, request.JSON)
+    ensureCoreData(group, request.JSON)
 
     // Find by username but do not create missing entries.
     def owner = request.JSON.owner
@@ -89,7 +103,7 @@ class IntegrationController {
     }
 
     if( group ) {
-      result.message = "Created/looked up group ${group}"
+      group.save(flush:true)
       result.groupId = group.id
     }
     else {
@@ -100,7 +114,7 @@ class IntegrationController {
     render result as JSON
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def assertJsonldOrg() {
     // log.debug("assertOrg, request.json = ${request.JSON}");
     def result=[:]
@@ -191,7 +205,7 @@ class IntegrationController {
     render result as JSON
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def createJsonLDOrg(ldjsonorg) {
     log.debug("createJsonLDOrg");
     //             "@id": "http://www.lib.ncsu.edu/ld/onld/00000134" ,
@@ -241,7 +255,7 @@ class IntegrationController {
       log.error("Problem saving new org. ${new_org.errors}");
     }
   }
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def enrichJsonLDOrg(org, jsonld) {
     log.debug("Enrich existing..");
     request.JSON.'skos:altLabel'?.each { al ->
@@ -266,7 +280,7 @@ class IntegrationController {
    *      ]
    *
    */
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def assertOrg() {
     log.debug("assertOrg, request.json = ${request.JSON}");
     def result=[result: 'OK']
@@ -456,7 +470,7 @@ class IntegrationController {
    *         defaultDataFormat:''
    *      ]
    */
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def assertSource() {
     createOrUpdateSource ( request.JSON )
   }
@@ -505,7 +519,7 @@ class IntegrationController {
   }
 
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   @Transactional(readOnly=true)
   private resolveOrgUsingPrivateIdentifiers(idlist) {
     def located_or_new_org = null;
@@ -602,7 +616,7 @@ class IntegrationController {
 //    located_or_new_org
 //  }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def registerVariantName() {
     log.debug("registerVariantName ${params} ${request.JSON}")
 
@@ -625,15 +639,18 @@ class IntegrationController {
     render addVariantNameToComponent (org_to_update, request.JSON.name)
   }
 
-  private static def ensureCoreData ( KBComponent component, data ) {
+  private static def ensureCoreData ( KBComponent component, data, boolean sync = false ) {
 
     // Set the name.
+    def hasChanged = false
+
     if(!component.name && data.name) {
       component.name = data.name
+      hasChanged = true
     }
 
     // Core refdata.
-    setAllRefdata ([
+    hasChanged |= setAllRefdata ([
       'status', 'editStatus',
     ], data, component)
 
@@ -654,11 +671,12 @@ class IntegrationController {
 
           log.debug("Checking identifiers of component ${component.id}")
 
-          def duplicate = Combo.executeQuery("from Combo as c where c.toComponent.id = ? and c.fromComponent.id = ?",[canonical_identifier.id,component.id])
+          def duplicate = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?",[canonical_identifier,component])
 
           if(duplicate.size() == 0){
             log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
             def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush:true, failOnError:true)
+            hasChanged = true
           }
           else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
@@ -676,6 +694,20 @@ class IntegrationController {
 
           // Add the value for comparison.
           ids << testKey
+        }
+      }
+    }
+
+    if (sync) {
+      log.debug("Cleaning up deprecated IDs ..")
+      component.ids.each { cid ->
+        if (!data.identifiers.collect {"${it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString()}.contains("${cid.namespace?.value}|${Identifier.normalizeIdentifier(cid.value)}".toString())) {
+          def ctr = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [cid,component])
+
+          if(ctr.size() == 1) {
+            ctr[0].delete()
+            hasChanged = true
+          }
         }
       }
     }
@@ -729,19 +761,35 @@ class IntegrationController {
     }
 
     // If this is a component that supports curatoryGroups we should check for them.
-    if (component.respondsTo('addToCuratoryGroups')) {
-      Set<String> groups = component.curatoryGroups.collect { "${it.name}".toString() }
+    if ( KBComponent.has(component, 'curatoryGroups') ) {
+      def groups = component.curatoryGroups.collect { [id: it.id, name: it.name] }
+
       data.curatoryGroups?.each { String name ->
-        if (!groups.contains(name)) {
+        if (!groups.find {it.name.toLowerCase() == name.toLowerCase()}) {
 
           def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
           // Only add if we have the group already in the system.
           if (group) {
             component.addToCuratoryGroups ( group )
-            groups << name
+            hasChanged = true
+            groups << [id: it.id, name: it.name]
           }
         }
       }
+
+      if (sync) {
+        groups.each { cg ->
+          if (!data.curatoryGroups || !data.curatoryGroups.contains(cg.name)) {
+            log.debug("Removing deprecated CG ${cg.name}")
+            Combo.executeUpdate("delete from Combo as c where c.fromComponent = ? and c.toComponent.id = ?", [component, cg.id])
+            component.refresh()
+            hasChanged = true
+          }
+        }
+      }
+    }
+    else {
+      log.debug("Skipping CG handling ..")
     }
 
     if (data.additionalProperties) {
@@ -770,21 +818,38 @@ class IntegrationController {
         }
       }
     }
+    def variants = component.variantNames.collect { [id: it.id, variantName: it.variantName] }
 
     // Variant names.
     if (data.variantNames) {
-      Set<String> variants = component.variantNames.collect { "${it.variantName}".toString() }
       for (String name : data.variantNames) {
-        if (name?.trim().size() > 0 && !variants.contains(name)) {
+        if (name?.trim().size() > 0 && !variants.find {it.variantName == name}) {
           // Add the variant name.
           log.debug("Adding variantName ${name} to ${component} ..")
 
           def new_variant_name = component.ensureVariantName(name)
 
           // Add to collection.
-          variants << name
+          if(new_variant_name) {
+            variants << [id: new_variant_name.id, variantName: new_variant_name.variantName]
+          }
         }
       }
+    }
+
+    if (sync) {
+      variants.each { vn ->
+        if (!data.variantNames || !data.variantNames.contains(vn.variantName)) {
+          def vobj = KBComponentVariantName.get(vn.id)
+          vobj.delete()
+          component.refresh()
+          hasChanged = true
+        }
+      }
+    }
+
+    if (hasChanged) {
+      component.lastSeen = new Date().getTime()
     }
     component.save(flush:true)
   }
@@ -795,12 +860,17 @@ class IntegrationController {
     component.ensureVariantName(variant_name)
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferencePackage() {
     def result = [ 'result' : 'OK' ]
     def async = params.async ? true : false
     def rjson = request.JSON
+    def fullsync = false
     User request_user = springSecurityService.currentUser
+
+    if (params.fullsync == "true" && request_user.adminStatus) {
+      fullsync = true
+    }
 
     if ( rjson?.packageHeader?.name ) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
@@ -829,7 +899,7 @@ class IntegrationController {
                 }
 
                 if ( is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
-                  ensureCoreData(the_pkg, json.packageHeader)
+                  ensureCoreData(the_pkg, json.packageHeader, fullsync)
 
                   if ( the_pkg.tipps?.size() > 0 ) {
                     existing_tipps = the_pkg.tipps*.id
@@ -857,7 +927,7 @@ class IntegrationController {
 
                         if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
 
-                          ensureCoreData(ti, tipp.title)
+                          ensureCoreData(ti, tipp.title, fullsync)
                           tipp.title.internalId = ti.id;
                         } else {
                           if (ti != null)
@@ -902,7 +972,7 @@ class IntegrationController {
                         if(pl){
                           platform_cache[tipp.platform.name] = pl.id
 
-                          ensureCoreData(pl, tipp.platform)
+                          ensureCoreData(pl, tipp.platform, fullsync)
                         }else{
                           log.error("Could not find/create ${tipp.platform}")
                           errors.add(['code': 400, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
@@ -1135,12 +1205,17 @@ class IntegrationController {
     render result as JSON
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferencePlatform() {
     def result = [ 'result' : 'OK' ]
     def created = false
     def platformJson = request.JSON
+    def fullsync = false
     User user = springSecurityService.currentUser
+
+    if (params.fullsync == "true" && user.adminStatus) {
+      fullsync = true
+    }
 
     log.debug("crossReferencePlatform - ${platformJson}")
     if ( platformJson?.platformUrl?.trim() && (platformJson?.name?.trim() || platformJson?.platformName?.trim()) ) {
@@ -1173,7 +1248,7 @@ class IntegrationController {
           p.save(flush:true)
 
           // Add the core data.
-          ensureCoreData(p, platformJson)
+          ensureCoreData(p, platformJson, fullsync)
 
     //      if ( changed ) {
     //        p.save(flush:true, failOnError:true);
@@ -1213,7 +1288,7 @@ class IntegrationController {
     changed
   }
 
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferenceLicense() {
     def result = [ 'result' : 'OK' ]
 
@@ -1270,16 +1345,21 @@ class IntegrationController {
    *    ]
    *  }
    */
-  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferenceTitle() {
     User user = springSecurityService.currentUser
     def rjson = request.JSON
     def async = params.async ? true : false
+    def fullsync = false
     def result
+
+    if (params.fullsync == "true" && user.adminStatus) {
+      fullsync = true
+    }
 
     if(org.grails.web.json.JSONArray != rjson.getClass()){
 
-      result = crossReferenceSingleTitle(rjson, user.id)
+      result = crossReferenceSingleTitle(rjson, user.id, fullsync)
 
       cleanUpGorm()
     }
@@ -1300,7 +1380,7 @@ class IntegrationController {
             break;
           }
 
-          job_result.results <<  crossReferenceSingleTitle(e, user.id)
+          job_result.results <<  crossReferenceSingleTitle(e, user.id, fullsync)
 
           ctr++
           job.setProgress(ctr, json.size())
@@ -1328,11 +1408,9 @@ class IntegrationController {
     render result as JSON
   }
 
-  private crossReferenceSingleTitle(Object titleObj, userid) {
+  private crossReferenceSingleTitle(Object titleObj, userid, fullsync) {
 
     def result = [ 'result' : 'OK' ]
-
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
 
     log.debug("crossReferenceTitle(${titleObj.type},${titleObj.title},${titleObj.identifiers}},...)");
 
@@ -1374,7 +1452,7 @@ class IntegrationController {
               }
 
               // Add the core data.
-              ensureCoreData(title, titleObj)
+              ensureCoreData(title, titleObj, fullsync)
 
               title_changed |= setAllRefdata ([
                     'OAStatus', 'medium',
@@ -1383,8 +1461,8 @@ class IntegrationController {
               ], titleObj, title)
 
               if (titleObj.type == 'Serial') {
-                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom', sdf)
-                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo', sdf)
+                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom')
+                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo')
               }
 
               if ( titleObj.historyEvents?.size() > 0 ) {
@@ -1411,7 +1489,7 @@ class IntegrationController {
                       );
 
                       if ( p && !p.hasErrors() ) {
-                        ensureCoreData(p, fhe)
+                        ensureCoreData(p, fhe, fullsync)
                         inlist.add(p);
                       }
                       else {
@@ -1433,7 +1511,7 @@ class IntegrationController {
                       );
 
                       if ( p && !p.hasErrors() && !inlist.contains(p) ) {
-                        ensureCoreData(p, fhe)
+                        ensureCoreData(p, fhe, fullsync)
                         outlist.add(p);
                       }
                       else {
@@ -1479,7 +1557,7 @@ class IntegrationController {
                       def he = new ComponentHistoryEvent()
 
                       if ( jhe.date ) {
-                        he.eventDate = sdf.parse(jhe.date);
+                        ClassUtils.setDateIfPresent(jhe.date, he, 'eventDate');
                       }
 
                       he.save(flush:true, failOnError:true);
@@ -1516,7 +1594,7 @@ class IntegrationController {
               if( title.class.name == "org.gokb.cred.BookInstance" && (titleObj.type == 'Book' || titleObj.type == 'Monograph') ){
 
                 log.debug("Adding Monograph fields for ${title.class.name}: ${title}")
-                def mg_change = addMonographFields(title, titleObj, sdf)
+                def mg_change = addMonographFields(title, titleObj)
 
                 // TODO: Here we will have to add authors and editors, like addPerson() in TSVIngestionService
                 if(mg_change){
@@ -1524,7 +1602,7 @@ class IntegrationController {
                 }
               }
 
-              addPublisherHistory(title, titleObj.publisher_history, sdf)
+              addPublisherHistory(title, titleObj.publisher_history)
 
               if (!result.message) {
                 result.message = "Created/looked up title ${title.id}"
@@ -1584,9 +1662,9 @@ class IntegrationController {
     result
   }
 
-  private static addPublisherHistory ( TitleInstance ti, publishers, sdf) {
+  private static addPublisherHistory ( TitleInstance ti, publishers) {
 
-    def sdfs = ["yyyy-MM-dd' 'HH:mm:ss.SSS","yyyy-MM-dd"]
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("" + "[yyyy-MM-dd' 'HH:mm:ss.SSS]" + "[yyyy-MM-dd'T'HH:mm:ss'Z']" + "[yyyy-MM-dd]")
 
     if (publishers && ti) {
 
@@ -1625,33 +1703,23 @@ class IntegrationController {
           Date pub_add_sd = null
           Date pub_add_ed = null
 
-          if ( pub_to_add.startDate?.trim().size() > 0 ) {
+          if ( pub_to_add.startDate?.trim() ) {
+            try {
+              LocalDateTime startDate = LocalDateTime.parse(pub_to_add.startDate, formatter)
 
-            sdfs.each { s ->
-              if (!pub_add_sd) {
-                try {
-                  SimpleDateFormat sdfStart = new SimpleDateFormat(s)
-
-                  pub_add_sd = sdfStart.parse(pub_to_add.startDate)
-                }
-                catch (Exception e) {
-                }
-              }
+              pub_add_sd = startDate.toDate()
+            }
+            catch (Exception e) {
             }
           }
 
-          if ( pub_to_add.endDate?.trim().size() > 0 ) {
+          if ( pub_to_add.endDate?.trim() ) {
+            try {
+              LocalDateTime endDate = LocalDateTime.parse(pub_to_add.endDate, formatter)
 
-            sdfs.each { s ->
-              if (!pub_add_ed) {
-                try {
-                  SimpleDateFormat sdfEnd = new SimpleDateFormat(s)
-
-                  pub_add_ed = sdfEnd.parse(pub_to_add.endDate)
-                }
-                catch (Exception e) {
-                }
-              }
+              pub_add_ed = endDate.toDate()
+            }
+            catch (Exception e) {
             }
           }
 
@@ -1661,9 +1729,9 @@ class IntegrationController {
             def idMatch = pc."${propName}".id == publisher.id
 
             if (idMatch) {
-              if (pub_add_sd && pc.startDate && sdf.format(pub_add_sd) != sdf.format(pc.startDate)) {
+              if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
               }
-              else if (pub_add_ed && pc.endDate && sdf.format(pub_add_ed) != sdf.format(pc.endDate)) {
+              else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
               }
               else {
                 found = true
@@ -1734,7 +1802,7 @@ class IntegrationController {
     }
   }
 
-  private static addMonographFields ( BookInstance bi, titleObj, sdf ) {
+  private static addMonographFields ( BookInstance bi, titleObj ) {
 
     def book_changed = false
 
@@ -1748,8 +1816,8 @@ class IntegrationController {
       }
     }
 
-    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstInPrint, bi, 'dateFirstInPrint', sdf)
-    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstOnline, bi, 'dateFirstOnline', sdf)
+    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstInPrint, bi, 'dateFirstInPrint')
+    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstOnline, bi, 'dateFirstOnline')
 
     if ( book_changed ) {
       bi.save(flush: true, failOnError:true)

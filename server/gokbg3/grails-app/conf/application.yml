@@ -81,6 +81,16 @@ grails:
                 - password
                 - password2
                 - email
+    plugin:
+        springsecurity:
+            rest:
+                token:
+                    validation:
+                        endpointUrl: /rest/validate
+                login:
+                    endpointUrl: /rest/login
+                logout:
+                    endpointUrl: /rest/logout
 info:
     app:
         name: '@info.app.name@'
@@ -136,15 +146,6 @@ environments:
                             useFilter: true
             mail:
                 port: 3025
-            plugin:
-                springsecurity:
-                    rest:
-                        token:
-                            storage:
-                                jwt:
-                                    secret: HollaDieWaldfeeHoffentlichIstDasJetztWirklichLangGenug
-                        login:
-                            endpointUrl: /rest/login
         gokb:
             es:
                 index: gokbg3dev
@@ -179,15 +180,6 @@ environments:
         grails:
             mail:
                 port: 3025
-            plugin:
-                springsecurity:
-                    rest:
-                        token:
-                            storage:
-                                jwt:
-                                    secret: HollaDieWaldfeeHoffentlichIstDasJetztWirklichLangGenug
-                        login:
-                            endpointUrl: /rest/login
         quartz:
             pluginEnabled: false
         cache:

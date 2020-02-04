@@ -192,7 +192,7 @@
           </dt>
           <dd>
             <g:render template="/apptemplates/combosByType"
-              model="${[d:d, property:'ids', fragment:'identifiers', cols:[
+              model="${[d:d, property:'ids', fragment:'identifiers', propagateDelete: "true", cols:[
                         [expr:'toComponent.namespace.value', colhead:'Namespace'],
                         [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
             <g:if test="${editable}">

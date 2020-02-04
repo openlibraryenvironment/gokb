@@ -89,6 +89,8 @@ class ReviewRequest implements Auditable {
     req
   }
 
+  public static final String restPath = "/reviews"
+
   String getLogEntityId() {
       "${this.class.name}:${id}"
   }

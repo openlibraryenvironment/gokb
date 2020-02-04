@@ -111,6 +111,37 @@ class Package extends KBComponent {
     })
   }
 
+  public String getRestPath() {
+    return "/packages"
+  }
+
+  static jsonMapping = [
+    'ignore': [
+      'lastProject'
+    ],
+    'es': [
+      'nominalPlatformUuid': "nominalPlatform.uuid",
+      'nominalPlatformName': "nominalPlatform.name",
+      'nominalPlatform': false,
+      'cpname': false,
+      'provider':false,
+      'providerName': "provider.name",
+      'providerUuid': "provider.uuid",
+      'titleCount': false,
+      'paymentType': false
+    ],
+    'defaultLinks': [
+      'tipps',
+      'provider',
+      'nominalPlatform',
+      'curatoryGroups'
+    ],
+    'defaultEmbeds': [
+      'ids',
+      'variantNames'
+    ]
+  ]
+
   static def refdataFind(params) {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
