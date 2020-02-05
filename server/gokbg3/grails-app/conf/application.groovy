@@ -267,6 +267,7 @@ globalSearchTemplates = [
         [heading:'Provider', property:'provider?.name', link:true],
         [heading:'Name', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Nominal Platform', property:'nominalPlatform?.name'],
+        [heading:'Content Type', property:'contentType?.value', sort:'contentType'],
         [heading:'Availability', property:'global', sort:'global'],
         [heading:'List Status', property:'listStatus?.value',sort:'listStatus'],
         [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated'],

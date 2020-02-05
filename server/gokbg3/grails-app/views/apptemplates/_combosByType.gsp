@@ -87,4 +87,4 @@
     var form =$(event.target).closest("form")
     form.submit();
   });
-</asset:script
+</asset:script>

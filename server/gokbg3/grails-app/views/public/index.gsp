@@ -129,16 +129,25 @@
                   <td>
                       <g:link controller="public" action="packageContent" id="${hit.id}">${hit.source.name}</g:link>
                       <!-- <g:link controller="public" action="kbart" id="${hit.id}">(Download Kbart File)</g:link>-->
-                      (Curated by <g:each in="${hit.source.curatoryGroups}" var="cg" status="i"><g:if test="${i>0}">; </g:if>${cg}</g:each>)
+                      <g:if test="${hit.source.curatoryGroups?.size() > 0}">
+                        <div>(Curated by <g:each in="${hit.source.curatoryGroups}" var="cg" status="i"><g:if test="${i>0}">; </g:if>${cg}</g:each>)</div>
+                      </g:if>
+                      <g:else>
+                        <div>No Curators</div>
+                      </g:else>
                   </td>
                   <td>${hit.source.cpname}</td>
                   <td>${hit.source.contentType}</td>
-                  <td>${hit.source.titleCount}</td>
+                  <td>${hit.source.titleCount}<g:if test="${hit.source.listStatus != 'Checked'}">*</g:if></td>
                   <td>${hit.source.lastUpdatedDisplay}</td>
                 </tr>
               </g:each>
             </tbody>
           </table>
+
+          <div style="font-size:0.8em;">
+            <b>*</b> The editing status of this package is marked as 'In Progress'. The number of titles in this package should therefore not be taken as final.
+          </div>
 
           <g:if test="${resultsTotal?:0 > 0 }" >
             <div class="pagination">
