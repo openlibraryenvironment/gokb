@@ -14,11 +14,12 @@ class RestMappingService {
   /**
    *  mapObjectToJson : Maps an domain class object to JSON based on its jsonMapping config.
    * @param obj : The object to be mapped
-   * @param embed_active : The list of object associations to be embedded
+   * @param params : The map of request parameters
    */
 
-  def mapObjectToJson(obj, def embed_active = []) {
+  def mapObjectToJson(obj, params) {
     def result = [:]
+    def embed_active = params['_embed']?.split(',') ?: []
     def base = grailsApplication.config.serverURL + "/rest"
     def jsonMap = null
     def defaultIgnore = [      

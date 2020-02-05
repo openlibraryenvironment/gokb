@@ -89,7 +89,6 @@ class PackageController {
     def result = [:]
     def obj = null
     def base = grailsApplication.config.serverURL
-    def embed_active = params['_embed']?.split(',') ?: []
 
     if (params.oid || params.id) {
       obj = Package.findByUuid(params.id) 
@@ -103,7 +102,7 @@ class PackageController {
       }
 
       if (obj?.isReadable()) {
-        result = restMappingService.mapObjectToJson(obj, embed_active)
+        result = restMappingService.mapObjectToJson(obj, params)
 
         // result['_currentTipps'] = obj.currentTippCount
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
@@ -141,8 +140,11 @@ class PackageController {
     if (reqBody) {
       Package pkg = Package.upsertDTO(reqBody, user)
 
-      if (pkg.errors) {
+      if (pkg?.errors) {
         errors = messsageService.processValidationErrors(pkg.errors, request.locale)
+      }
+      else if (!pkg) {
+        errors = [badData: reqBody, message:"Unable to save package!"]
       }
     }
   }
