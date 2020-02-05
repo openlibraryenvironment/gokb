@@ -239,30 +239,30 @@ class OaiController {
     def request_map = params
     request_map.keySet().removeAll(['controller','action','id'])
 
-    if ( ( params.resumptionToken != null ) && ( params.resumptionToken.length() > 0 ) ) {
+    if ( ( params.resumptionToken != null ) && ( params.resumptionToken.trim() ) ) {
       def rtc = params.resumptionToken.split('\\|');
       log.debug("Got resumption: ${rtc}")
       if ( rtc.length == 4 ) {
-        if ( rtc[0].length() > 0 ) {
+        if ( rtc[0].trim() ) {
           try {
             from = sdf.parse(rtc[0])
           }
-          catch (ParseException pe) {
+          catch (Exception pe) {
             errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
           }
         }
-        if ( rtc[1].length() > 0 ) {
+        if ( rtc[1].trim() ) {
           try {
             until = sdf.parse(rtc[1])
           }
-          catch (ParseException pe) {
+          catch (Exception pe) {
             errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
           }
         }
-        if ( rtc[2].length() > 0 ) {
+        if ( rtc[2].trim() ) {
           offset=Long.parseLong(rtc[2]);
         }
-        if ( rtc[3].length() > 0 ) {
+        if ( rtc[3].trim() ) {
           metadataPrefix=rtc[3];
         }
         log.debug("Resume from cursor ${offset} using prefix ${metadataPrefix}");
@@ -300,7 +300,7 @@ class OaiController {
       query += 'o.lastUpdated > ?'
       query_params.add(from)
     }
-    else if ((params.from != null)&&(params.from.length()>0)) {
+    else if ((params.from != null)&&(params.from.trim())) {
       def fparam = params.from
 
       if( params.from.length() == 10 ) {
@@ -322,7 +322,7 @@ class OaiController {
 
         query_params.add(from)
       }
-      catch (ParseException pe) {
+      catch (Exception pe) {
         errors.add([code:'badArgument', name: 'from', expl: 'This date format is not supported.'])
         returnAttrs = false
       }
@@ -339,7 +339,7 @@ class OaiController {
       query += 'o.lastUpdated < ?'
       query_params.add(until)
     }
-    else if ((params.until != null)&&(params.until.length()>0)) {
+    else if ((params.until != null)&&(params.until.trim())) {
       def uparam = params.until
 
       if( params.until.length() == 10 ) {
@@ -361,7 +361,7 @@ class OaiController {
 
         query_params.add(until)
       }
-      catch (ParseException pe) {
+      catch (Exception pe) {
         errors.add([code:'badArgument', name: 'until', expl: 'This date format is not supported.'])
         returnAttrs = false
       }
@@ -481,30 +481,30 @@ class OaiController {
       def request_map = params
       request_map.keySet().removeAll(['controller','action','id'])
 
-      if ( params.resumptionToken && ( params.resumptionToken.length() > 0 ) ) {
+      if ( params.resumptionToken && ( params.resumptionToken.trim() ) ) {
         def rtc = params.resumptionToken.split('\\|');
         log.debug("Got resumption: ${rtc}")
         if ( rtc.length == 4 ) {
-          if ( rtc[0].length() > 0 ) {
+          if ( rtc[0].trim() ) {
             try {
               from = sdf.parse(rtc[0])
             }
-            catch (ParseException pe) {
+            catch (Exception pe) {
               errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
             }
           }
-          if ( rtc[1].length() > 0 ) {
+          if ( rtc[1].trim() ) {
             try {
               until = sdf.parse(rtc[1])
             }
-            catch (ParseException pe) {
+            catch (Exception pe) {
               errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
             }
           }
-          if ( rtc[2].length() > 0 ) {
+          if ( rtc[2].trim() ) {
             offset=Long.parseLong(rtc[2]);
           }
-          if ( rtc[3].length() > 0 ) {
+          if ( rtc[3].trim() ) {
             metadataPrefix=rtc[3];
           }
           log.debug("Resume from cursor ${offset} using prefix ${metadataPrefix}");
@@ -581,7 +581,7 @@ class OaiController {
         query += 'o.lastUpdated > ?'
         query_params.add(from)
       }
-      else if ((params.from != null)&&(params.from.length()>0)) {
+      else if ((params.from != null)&&(params.from.trim())) {
         def fparam = params.from
 
         if( params.from.length() == 10 ) {
@@ -602,7 +602,7 @@ class OaiController {
           query += 'o.lastUpdated > ? '
                     query_params.add(from)
         }
-        catch (ParseException pe) {
+        catch (Exception pe) {
           errors.add([code:'badArgument', name: 'from', expl: 'This date format is not supported.'])
           returnAttrs = false
         }
@@ -619,7 +619,7 @@ class OaiController {
         query += 'o.lastUpdated < ?'
         query_params.add(until)
       }
-      else if ((params.until != null)&&(params.until.length()>0)) {
+      else if ((params.until != null)&&(params.until.trim())) {
         def uparam = params.until
 
         if( params.until.length() == 10 ) {
@@ -641,7 +641,7 @@ class OaiController {
 
           query_params.add(until)
         }
-        catch (ParseException pe) {
+        catch (Exception pe) {
           errors.add([code:'badArgument', name: 'until', expl: 'This date format is not supported.'])
           returnAttrs = false
         }
