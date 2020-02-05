@@ -49,115 +49,7 @@ class FTUpdateService {
     def esclient = ESWrapperService.getClient()
 
     try {
-  
-      updateES(esclient, org.gokb.cred.BookInstance.class) { kbc ->
-  
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
-        def result = null
-        def current_pub = kbc.currentPublisher
-  
-        result = [:]
-        result._id = "${kbc.class.name}:${kbc.id}"
-        result.uuid = kbc.uuid
-        result.name = kbc.name
-        result.sortname = kbc.name
-//         result.publisher = kbc.currentPublisher?.name
-        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
-        result.publisherName = current_pub?.name
-        result.publisherUuid = current_pub?.uuid ?: ""
-        result.altname = []
-        result.updater='book'
-        kbc.variantNames.each { vn ->
-          result.altname.add(vn.variantName)
-        }
 
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
-        
-        result.status = kbc.status?.value
-  
-        result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
-        }
-    
-        result.componentType=kbc.class.simpleName
-  
-        // log.debug("process ${result}");
-        result
-      }
-  
-  
-      updateES(esclient, org.gokb.cred.JournalInstance.class) { kbc ->
-  
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
-        def result = null
-        def current_pub = kbc.currentPublisher
-  
-        result = [:]
-        result._id = "${kbc.class.name}:${kbc.id}"
-        result.uuid = kbc.uuid
-        result.name = kbc.name
-        result.sortname = kbc.name
-        result.updater='journal'
-        // result.publisher = kbc.currentPublisher?.name
-        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
-        result.publisherName = current_pub?.name
-        result.publisherUuid = current_pub?.uuid ?: ""
-        result.altname = []
-        kbc.variantNames.each { vn ->
-          result.altname.add(vn.variantName)
-        }
-
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
-        
-        result.status = kbc.status?.value
-  
-        result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
-        }
-  
-        result.componentType=kbc.class.simpleName
-  
-        // log.debug("process ${result}");
-        result
-      }
-
-      updateES(esclient, org.gokb.cred.DatabaseInstance.class) { kbc ->
-
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
-        def result = null
-        def current_pub = kbc.currentPublisher
-
-        result = [:]
-        result._id = "${kbc.class.name}:${kbc.id}"
-        result.uuid = kbc.uuid
-        result.name = kbc.name
-        result.sortname = kbc.name
-        // result.publisher = kbc.currentPublisher?.name
-        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
-        result.publisherName = current_pub?.name
-        result.publisherUuid = current_pub?.uuid ?: ""
-        result.altname = []
-        kbc.variantNames.each { vn ->
-          result.altname.add(vn.variantName)
-        }
-
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
-
-        result.status = kbc.status?.value
-
-        result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
-        }
-
-        result.componentType=kbc.class.simpleName
-
-        // log.debug("process ${result}");
-        result
-      }
-  
       updateES(esclient, org.gokb.cred.Package.class) { kbc ->
 
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
@@ -207,6 +99,175 @@ class FTUpdateService {
 
         result.componentType=kbc.class.simpleName
 
+        result
+      }
+
+      updateES(esclient, org.gokb.cred.Org.class) { kbc ->
+        def result = [:]
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
+        result.name = kbc.name
+        result.sortname = kbc.name
+        result.altname = []
+        result.updater='org'
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+
+        result.roles = []
+        kbc.roles.each { role ->
+          result.roles.add(role.value)
+        }
+
+        result.status = kbc.status?.value
+
+        result.identifiers = []
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        }
+
+        result.componentType=kbc.class.simpleName
+
+        result
+      }
+
+      updateES(esclient, org.gokb.cred.Platform.class) { kbc ->
+        def result = [:]
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
+        result.name = kbc.name
+        result.sortname = kbc.name
+        result.updater='platform'
+
+        result.cpname = kbc.provider?.name
+
+        result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
+        result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+
+        result.altname = []
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+        result.updater='platform'
+        result.primaryUrl = kbc.primaryUrl
+        result.status = kbc.status?.value
+        
+        result.identifiers = []
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        }
+
+        result.componentType=kbc.class.simpleName
+
+        result
+      }
+
+      updateES(esclient, org.gokb.cred.JournalInstance.class) { kbc ->
+
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
+        def result = null
+        def current_pub = kbc.currentPublisher
+
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
+        result.name = kbc.name
+        result.sortname = kbc.name
+        result.updater='journal'
+        // result.publisher = kbc.currentPublisher?.name
+        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
+        result.publisherName = current_pub?.name
+        result.publisherUuid = current_pub?.uuid ?: ""
+        result.altname = []
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+        result.status = kbc.status?.value
+
+        result.identifiers = []
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        }
+
+        result.componentType=kbc.class.simpleName
+
+        // log.debug("process ${result}");
+        result
+      }
+
+      updateES(esclient, org.gokb.cred.DatabaseInstance.class) { kbc ->
+
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
+        def result = null
+        def current_pub = kbc.currentPublisher
+
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
+        result.name = kbc.name
+        result.sortname = kbc.name
+        // result.publisher = kbc.currentPublisher?.name
+        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
+        result.publisherName = current_pub?.name
+        result.publisherUuid = current_pub?.uuid ?: ""
+        result.altname = []
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+
+        result.status = kbc.status?.value
+
+        result.identifiers = []
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        }
+
+        result.componentType=kbc.class.simpleName
+
+        // log.debug("process ${result}");
+        result
+      }
+
+      updateES(esclient, org.gokb.cred.BookInstance.class) { kbc ->
+
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
+        def result = null
+        def current_pub = kbc.currentPublisher
+
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
+        result.name = kbc.name
+        result.sortname = kbc.name
+//         result.publisher = kbc.currentPublisher?.name
+        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
+        result.publisherName = current_pub?.name
+        result.publisherUuid = current_pub?.uuid ?: ""
+        result.altname = []
+        result.updater='book'
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+        result.status = kbc.status?.value
+
+        result.identifiers = []
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        }
+
+        result.componentType=kbc.class.simpleName
+
+        // log.debug("process ${result}");
         result
       }
 
@@ -266,70 +327,6 @@ class FTUpdateService {
 
         result.status = kbc.status?.value
 
-        result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
-        }
-
-        result.componentType=kbc.class.simpleName
-
-        result
-      }
-  
-      updateES(esclient, org.gokb.cred.Org.class) { kbc ->
-        def result = [:]
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
-        result._id = "${kbc.class.name}:${kbc.id}"
-        result.uuid = kbc.uuid
-        result.name = kbc.name
-        result.sortname = kbc.name
-        result.altname = []
-        result.updater='org'
-        kbc.variantNames.each { vn ->
-          result.altname.add(vn.variantName)
-        }
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
-
-        result.roles = []
-        kbc.roles.each { role ->
-          result.roles.add(role.value)
-        }
-
-        result.status = kbc.status?.value
-
-        result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
-        }
-
-        result.componentType=kbc.class.simpleName
-  
-        result
-      }
-
-      updateES(esclient, org.gokb.cred.Platform.class) { kbc ->
-        def result = [:]
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
-        result._id = "${kbc.class.name}:${kbc.id}"
-        result.uuid = kbc.uuid
-        result.name = kbc.name
-        result.sortname = kbc.name
-        result.updater='platform'
-
-        result.cpname = kbc.provider?.name
-
-        result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
-        result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
-
-        result.altname = []
-        kbc.variantNames.each { vn ->
-          result.altname.add(vn.variantName)
-        }
-        result.updater='platform'
-        result.primaryUrl = kbc.primaryUrl
-        result.status = kbc.status?.value
-        
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
           result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
