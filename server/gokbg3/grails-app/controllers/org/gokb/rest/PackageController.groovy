@@ -33,8 +33,8 @@ class PackageController {
     params.componentType = params.componentType ?: "Package" // Tells ESSearchService what to look for
 
     def es_result = ESSearchService.find(params)
-    result['links'] = [:]
-    result['embedded'] = ['packages': []]
+    result['_links'] = [:]
+    result['_embedded'] = ['packages': []]
     result.count = es_result.max
     result.total = es_result.count
     result.offset = es_result.offset
@@ -44,7 +44,7 @@ class PackageController {
     selfLink.removeQueryParam('controller')
     selfLink.removeQueryParam('action')
     selfLink.removeQueryParam('componentType')
-    result['links']['self'] = [href: selfLink.toString()]
+    result['_links']['self'] = [href: selfLink.toString()]
 
 
     if (es_result.count > es_result.offset+es_result.max) {
@@ -57,7 +57,7 @@ class PackageController {
       link.removeQueryParam('action')
       link.removeQueryParam('componentType')
       link.addQueryParam('offset', "${es_result.offset + es_result.max}")
-      result['links']['next'] = ['href': (link.toString())]
+      result['_links']['next'] = ['href': (link.toString())]
     }
     if (es_result.offset > 0) {
       def link = new URIBuilder(base + '/packages')
@@ -69,13 +69,13 @@ class PackageController {
       link.removeQueryParam('action')
       link.removeQueryParam('componentType')
       link.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
-      result['links']['prev'] = ['href': link.toString()]
+      result['_links']['prev'] = ['href': link.toString()]
     }
 
     es_result.records.each { pkg ->
       def halPkg = pkg
 
-      halPkg['links'] << ['tipps': ['href': (base + "/packages/${halPkg.uuid}/tipps")]]
+      halPkg['_links'] << ['tipps': ['href': (base + "/packages/${halPkg.uuid}/tipps")]]
 
       result['embedded']['packages'] << halPkg
     }
@@ -88,7 +88,9 @@ class PackageController {
   def show() {
     def result = [:]
     def obj = null
-    def base = grailsApplication.config.serverURL
+    def base = grailsApplication.config.serverURL + "/rest"
+    def is_curator = true
+    User user = User.get(springSecurityService.principal.id)
 
     if (params.oid || params.id) {
       obj = Package.findByUuid(params.id) 
@@ -118,6 +120,16 @@ class PackageController {
         response.setStatus(403)
         result.code = 403
         result.result = 'ERROR'
+      }
+
+      if ( obj.curatoryGroups && obj.curatoryGroups?.size() > 0 ) {
+        is_curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
+      }
+
+      if (is_curator) {
+        if (result._links) {
+          result._links.update = ['href': base + obj.restPath + "/${obj.uuid}"]
+        }
       }
     }
     else {

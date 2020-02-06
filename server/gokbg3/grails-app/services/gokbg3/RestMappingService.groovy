@@ -50,14 +50,14 @@ class RestMappingService {
 
     jsonMap = KBComponent.has(obj.deproxy(),'jsonMapping') ? obj.jsonMapping : null
 
-    result['links'] = [:]
+    result['_links'] = [:]
 
     if (KBComponent.has(obj.deproxy(),"restPath")) {
-      result['links']['self'] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
+      result['_links']['self'] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
     }
 
     if ( embed_active.size() > 0 || jsonMap?.defaultEmbeds ) {
-      result['embedded'] = [:]
+      result['_embedded'] = [:]
     }
 
     if ( embed_active.size() == 0 && jsonMap?.defaultEmbeds ) {
@@ -75,8 +75,8 @@ class RestMappingService {
 
               if(p.type.name == 'org.gokb.cred.RefdataValue'){
                 if (embed_active.contains(p.name)) {
-                  result['embedded'][p.name] = [
-                    'links':[
+                  result['_embedded'][p.name] = [
+                    '_links':[
                       'self':['href': base + "/refdata/values/" + associatedObj.id, 'title': associatedObj.value],
                       'owner':['href': base + "/refdata/categories/" + associatedObj.owner.id]
                     ],
@@ -89,14 +89,14 @@ class RestMappingService {
               else {
 
                 if (KBComponent.has(associatedObj, "restPath")) {
-                  result['links'][p.name] = ['href': base + associatedObj.restPath + "/${associatedObj.hasProperty('uuid') ? associatedObj.uuid : associatedObj.id}"]
-                  result['links'][p.name]['title'] = selectPreferredLabel(associatedObj)
+                  result['_links'][p.name] = ['href': base + associatedObj.restPath + "/${associatedObj.hasProperty('uuid') ? associatedObj.uuid : associatedObj.id}"]
+                  result['_links'][p.name]['title'] = selectPreferredLabel(associatedObj)
 
                   if(associatedObj.hasProperty('uuid')) {
-                    result['links'][p.name]['uuid'] = associatedObj.uuid
+                    result['_links'][p.name]['uuid'] = associatedObj.uuid
                   }
                   else {
-                    result['links'][p.name]['id'] = associatedObj.id
+                    result['_links'][p.name]['id'] = associatedObj.id
                   }
                 }
                 else {
@@ -104,20 +104,20 @@ class RestMappingService {
                 }
 
                 if (embed_active.contains(p.name)) {
-                  result['embedded'][p.name] = getEmbeddedJson(associatedObj)
+                  result['_embedded'][p.name] = getEmbeddedJson(associatedObj)
                 }
               }
             } 
           }
           else {
             if(KBComponent.has(obj,"restPath")) {
-              result['links'][p.name] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}/" + p.name]
+              result['_links'][p.name] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}/" + p.name]
             }
             if(embed_active.contains(p.name)) {
-              result['embedded'][p.name] = []
+              result['_embedded'][p.name] = []
 
               obj[p.name].each {
-                result['embedded'][p.name] << getEmbeddedJson(it)
+                result['_embedded'][p.name] << getEmbeddedJson(it)
               }
             }
           }
@@ -149,15 +149,15 @@ class RestMappingService {
             def cval = obj[cp]
 
             if(KBComponent.has(cval.deproxy(),"restPath")) {
-              result['links'][cp] = ['href': base + cval.restPath + "/" + cval.uuid, 'title': cval.name, 'uuid': cval.uuid]
+              result['_links'][cp] = ['href': base + cval.restPath + "/" + cval.uuid, 'title': cval.name, 'uuid': cval.uuid]
             }
           }
         }
         else {
           if( embed_active.contains(cp) ) {
-            result['embedded'][cp] = []
+            result['_embedded'][cp] = []
             obj[cp].take(10).each {
-              result['embedded'][cp] << getEmbeddedJson(it)
+              result['_embedded'][cp] << getEmbeddedJson(it)
             }
           }
         }

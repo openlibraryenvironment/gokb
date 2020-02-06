@@ -19,28 +19,28 @@ class RefdataController {
     def base = grailsApplication.config.serverURL + "/" + namespace
     def result = [:]
 
-    result['links'] = ['self':['href': base + "/refdata/"]]
-    result['embedded'] = [
+    result['_links'] = ['self':['href': base + "/refdata/"]]
+    result['_embedded'] = [
       'categories': []
     ]
     
     RefdataCategory.list().each { rc ->
       def rdc = [:]
-      rdc['links'] = ['self':['href': base + "/refdata/categories/${rc.id}" ]]
+      rdc['_links'] = ['self':['href': base + "/refdata/categories/${rc.id}" ]]
       rdc['label'] = rc.label
       rdc['id'] = rc.id
-      rdc['embedded'] = [
+      rdc['_embedded'] = [
         'values' : []
       ]
 
       rc.values.each { rv ->
         def rdv = [:]
-        rdv['links'] = ['self':['href': base + "/refdata/values/${rv.id}" ],'owner':['href': base + "/refdata/categories/${rc.id}" ]]
+        rdv['_links'] = ['self':['href': base + "/refdata/values/${rv.id}" ],'owner':['href': base + "/refdata/categories/${rc.id}" ]]
         rdv['value'] = rv.value
         rdv['id'] = rv.id
-        rdc['embedded']['values'] << rdv
+        rdc['_embedded']['values'] << rdv
       }
-      result['embedded']['categories'] << rdc
+      result['_embedded']['categories'] << rdc
     }
     render result as JSON
   }
@@ -62,13 +62,13 @@ class RefdataController {
     }
 
     if (cat) {
-      result['links'] = ['self':['href': base + "/refdata/categories/${cat.id}"]]
+      result['_links'] = ['self':['href': base + "/refdata/categories/${cat.id}"]]
       result['label'] = cat.label
-      result['embedded'] = ['values':[]]
+      result['_embedded'] = ['values':[]]
 
       cat.values.each { v ->
         def val = [:]
-        val['links'] = [
+        val['_links'] = [
           ['self':['href': base + "/refdata/values/${v.id}"]],
           ['owner':['href': base + "/refdata/categories/${cat.id}"]]
         ]
@@ -76,7 +76,7 @@ class RefdataController {
         val['value'] = v.value
         val['id'] = v.id
 
-        result['embedded']['values'].add(val)
+        result['_embedded']['values'].add(val)
       }
     }
     render result as JSON
@@ -99,33 +99,33 @@ class RefdataController {
     }
 
     if (val) {
-      result['links'] = [
+      result['_links'] = [
         ['self':['href': base + "/refdata/values/${val.id}"]],
         ['owner':['href': base + "/refdata/categories/${val.owner.id}"]]
       ]
       result['value'] = val.value
-      result['embedded'] = [:]
-      result['embedded']['owner'] = [
-        'links': [
+      result['_embedded'] = [:]
+      result['_embedded']['owner'] = [
+        '_links': [
           'self':['href': base+ "/refdata/categories/${val.owner.id}"]
         ],
         'label': val.owner.label,
         'id': val.owner.id,
-        'embedded': [
+        '_embedded': [
           'values': []
         ]
       ]
 
       val.owner.values.each { v ->
         def siblings = [:]
-        siblings['links'] = [
+        siblings['_links'] = [
           ['self':['href': base + "/refdata/values/${v.id}"]],
           ['owner':['href': base + "/refdata/categories/${val.owner.id}"]]
         ]
         siblings['value'] = v.value
         siblings['id'] = v.id
 
-        result['embedded']['owner']['embedded']['values'].add(siblings)
+        result['_embedded']['owner']['_embedded']['values'].add(siblings)
       }
     }
     render result as JSON
