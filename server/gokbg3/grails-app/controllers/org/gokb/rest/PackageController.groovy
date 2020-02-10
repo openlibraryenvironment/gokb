@@ -33,51 +33,13 @@ class PackageController {
     params.componentType = params.componentType ?: "Package" // Tells ESSearchService what to look for
 
     def es_result = ESSearchService.find(params)
-    result['_links'] = [:]
-    result['_embedded'] = ['packages': []]
-    result.count = es_result.max
-    result.total = es_result.count
-    result.offset = es_result.offset
 
-    def selfLink = new URIBuilder(base + '/packages')
-    selfLink.addQueryParams(params)
-    selfLink.removeQueryParam('controller')
-    selfLink.removeQueryParam('action')
-    selfLink.removeQueryParam('componentType')
-    result['_links']['self'] = [href: selfLink.toString()]
-
-
-    if (es_result.count > es_result.offset+es_result.max) {
-      def link = new URIBuilder(base + '/packages')
-      link.addQueryParams(params)
-      if(link.query.offset){
-        link.removeQueryParam('offset')
-      }
-      link.removeQueryParam('controller')
-      link.removeQueryParam('action')
-      link.removeQueryParam('componentType')
-      link.addQueryParam('offset', "${es_result.offset + es_result.max}")
-      result['_links']['next'] = ['href': (link.toString())]
-    }
-    if (es_result.offset > 0) {
-      def link = new URIBuilder(base + '/packages')
-      link.addQueryParams(params)
-      if(link.query.offset){
-        link.removeQueryParam('offset')
-      }
-      link.removeQueryParam('controller')
-      link.removeQueryParam('action')
-      link.removeQueryParam('componentType')
-      link.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
-      result['_links']['prev'] = ['href': link.toString()]
+    if (es_result.result == 'OK') {
+      result = restMappingService.convertEsLinks(params, es_result, "packages")
     }
 
-    es_result.records.each { pkg ->
-      def halPkg = pkg
-
-      halPkg['_links'] << ['tipps': ['href': (base + "/packages/${halPkg.uuid}/tipps")]]
-
-      result['embedded']['packages'] << halPkg
+    result.data?.each { pkg ->
+      pkg['_links'] << ['tipps': ['href': (base + "/packages/${pkg.uuid}/tipps")]]
     }
 
     render result as JSON
@@ -127,9 +89,8 @@ class PackageController {
       }
 
       if (is_curator) {
-        if (result._links) {
-          result._links.update = ['href': base + obj.restPath + "/${obj.uuid}"]
-        }
+        result._links.update = ['href': base + obj.restPath + "/${obj.uuid}"]
+        result._links.delete = ['href': base + obj.restPath + "/${obj.uuid}"]
       }
     }
     else {
@@ -152,13 +113,28 @@ class PackageController {
     if (reqBody) {
       Package pkg = Package.upsertDTO(reqBody, user)
 
-      if (pkg?.errors) {
-        errors = messsageService.processValidationErrors(pkg.errors, request.locale)
-      }
-      else if (!pkg) {
+      if (!pkg) {
         errors = [badData: reqBody, message:"Unable to save package!"]
       }
+      else if (pkg?.errors) {
+        errors = messsageService.processValidationErrors(pkg.errors, request.locale)
+      }
+      else {
+        if (reqBody.identifiers) {
+          pkg
+        }
+      }
     }
+    else {
+      errors = [badData: reqBody, message:"Unable to save package!"]
+    }
+
+    if (errors) {
+      result.result = 'ERROR'
+      result.errors = errors
+    }
+
+    result
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
@@ -222,11 +198,11 @@ class PackageController {
         }
 
         if (reqBody.provider) {
-          pkg.provider = genericOIDService.resolveOID(reqBody.provider.oid)
+          pkg.provider = genericOIDService.resolveOID(reqBody.provider.uuid)
         }
 
         if (reqBody.nominalPlatform) {
-          pkg.nominalPlatform = genericOIDService.resolveOID(reqBody.nominalPlatform.oid)
+          pkg.nominalPlatform = genericOIDService.resolveOID(reqBody.nominalPlatform.uuid)
         }
 
 

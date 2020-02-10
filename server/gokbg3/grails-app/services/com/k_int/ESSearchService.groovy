@@ -1,5 +1,7 @@
 package com.k_int
 
+import grails.core.GrailsClass
+
 import org.apache.lucene.search.join.ScoreMode
 
 import org.elasticsearch.action.search.*
@@ -578,40 +580,48 @@ class ESSearchService{
     result
   }
 
+  /**
+   *  mapEsToDomain : Maps an ES record to its final REST serialization.
+   * @param record : An ES record map
+   */
+
   private Map mapEsToDomain(record) {
     def domainMapping = [:]
     def base = grailsApplication.config.serverURL + "/rest"
+    def linkedObjects = [:]
     def esMapping = [
       'lastUpdatedDisplay': 'lastUpdated',
       'sortname': false,
       'updater': false,
     ]
 
-    def obj = KBComponent.findByUuid(record.source.uuid)
+    def obj_cls = Class.forName("org.gokb.cred.${record.source.componentType}").newInstance()
 
-    if (obj) {
+    if (obj_cls) {
 
-      if (KBComponent.has(obj,'jsonMapping') && obj.jsonMapping.es) {
-        esMapping << obj.jsonMapping.es
+      if (obj_cls.hasProperty('jsonMapping') && obj_cls.jsonMapping.es) {
+        esMapping << obj_cls.jsonMapping.es
+        log.debug("Found es mapping for class.")
+      }
+      else {
+        log.debug("No es mapping found for class ${obj_cls} ..")
       }
 
-      if (KBComponent.has(obj, 'restPath')) {
-        domainMapping['links'] = ['self': ['href': base + obj.restPath + "/${obj.uuid}"]]
+      if (obj_cls.hasProperty('restPath')) {
+        domainMapping['_links'] = ['self': ['href': base + obj_cls.restPath + "/${record.source.uuid}"]]
       }
 
-      domainMapping['embedded'] = [:]
-      
-      log.debug("Mapping ${record}")
+      domainMapping['_embedded'] = [:]
 
       record.source.each { field, val ->
         if (field == "curatoryGroups") {
           mapCuratoryGroups(domainMapping, val)
         }
         else if (field == "altname") {
-          domainMapping['embedded']['variantNames'] = val
+          domainMapping['_embedded']['variantNames'] = val
         }
         else if (field == "identifiers") {
-          domainMapping['embedded']['ids'] = val
+          domainMapping['_embedded']['ids'] = val
         }
         else if (esMapping[field] == false) {
           log.debug("Skipping field ${field}!")
@@ -622,11 +632,10 @@ class ESSearchService{
           log.debug("FieldPath: ${fieldPath}")
 
           if (fieldPath.size() == 2) {
-            def linkedObj = obj."${fieldPath[0]}"
-
-            if (linkedObj && KBComponent.has(linkedObj, "restPath")) {
-              domainMapping['links'][fieldPath[0]] = ['href': base + linkedObj.restPath + "/${linkedObj.uuid}", 'name': "${linkedObj.name}"]
+            if (!linkedObjects[fieldPath[0]]) {
+              linkedObjects[fieldPath[0]] = [:]
             }
+            linkedObjects[fieldPath[0]][fieldPath[1]] = val
           } else {
             domainMapping[fieldPath[0]] = val
           }
@@ -636,19 +645,29 @@ class ESSearchService{
           domainMapping[field] = val
         }
       }
+
+      linkedObjects.each { field, val ->
+        domainMapping[field] = val
+      }
     }
 
     log.debug("${domainMapping}")
     return domainMapping
   }
 
+  /**
+   *  mapCuratoryGroups : Generates an embed object for curatoryGroups listed in ES.
+   * @param domainMapping : The current domainMapping object
+   * @param cgs : The array of names of connected curatory groups
+   */
+
   private def mapCuratoryGroups(domainMapping, cgs) {
     def base = grailsApplication.config.serverURL + "/rest"
 
-    domainMapping['embedded']['curatoryGroups'] = []
+    domainMapping['_embedded']['curatoryGroups'] = []
     cgs.each { cg ->
       def cg_obj = CuratoryGroup.findByName(cg)
-      domainMapping['embedded']['curatoryGroups'] << [
+      domainMapping['_embedded']['curatoryGroups'] << [
         'links': [
           'self': [
             'href': base + "/groups/" + cg_obj.uuid
@@ -660,6 +679,11 @@ class ESSearchService{
       ]
     }
   }
+
+  /**
+   *  deriveComponentType : Selects the actual componentType of a ES record.
+   * @param typeString : The componentType parameter of the request
+   */
 
   private def deriveComponentType(String typeString) {
     def result = null

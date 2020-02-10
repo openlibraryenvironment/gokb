@@ -11,6 +11,54 @@ class RestMappingService {
   def grailsApplication
   def genericOIDService
 
+  def convertEsLinks(params, es_result, component_endpoint) {
+    def result = [:]
+    def base = grailsApplication.config.serverURL + "/rest"
+
+    result['_links'] = [:]
+    result['data'] = es_result.records
+    result['_pagination'] = [
+      offset: es_result.offset,
+      limit: es_result.max,
+      total: es_result.count
+    ]
+
+    def selfLink = new URIBuilder(base + "/${component_endpoint}")
+    selfLink.addQueryParams(params)
+    selfLink.removeQueryParam('controller')
+    selfLink.removeQueryParam('action')
+    selfLink.removeQueryParam('componentType')
+    result['_links']['self'] = [href: selfLink.toString()]
+
+
+    if (es_result.count > es_result.offset+es_result.max) {
+      def link = new URIBuilder(base + "/${component_endpoint}")
+      link.addQueryParams(params)
+      if(link.query.offset){
+        link.removeQueryParam('offset')
+      }
+      link.removeQueryParam('controller')
+      link.removeQueryParam('action')
+      link.removeQueryParam('componentType')
+      link.addQueryParam('offset', "${es_result.offset + es_result.max}")
+      result['_links']['next'] = ['href': (link.toString())]
+    }
+    if (es_result.offset > 0) {
+      def link = new URIBuilder(base + "/${component_endpoint}")
+      link.addQueryParams(params)
+      if(link.query.offset){
+        link.removeQueryParam('offset')
+      }
+      link.removeQueryParam('controller')
+      link.removeQueryParam('action')
+      link.removeQueryParam('componentType')
+      link.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
+      result['_links']['prev'] = ['href': link.toString()]
+    }
+
+    result
+  }
+
   /**
    *  mapObjectToJson : Maps an domain class object to JSON based on its jsonMapping config.
    * @param obj : The object to be mapped
