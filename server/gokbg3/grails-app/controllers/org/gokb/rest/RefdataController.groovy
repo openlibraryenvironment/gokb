@@ -91,9 +91,6 @@ class RefdataController {
     if (params.id.contains(':')) {
       val = genericOIDService.resolveOID(params.id)
     }
-    else if (params.id.contains('-')) {
-      val = RefdataValue.findByUuid(params.id)
-    }
     else {
       val = RefdataValue.get(params.id)
     }

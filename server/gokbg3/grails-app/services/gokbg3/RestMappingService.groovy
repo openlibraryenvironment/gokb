@@ -3,6 +3,9 @@ package gokbg3
 import grails.core.GrailsClass
 import groovyx.net.http.URIBuilder
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -144,7 +147,7 @@ class RestMappingService {
                     result['_links'][p.name]['uuid'] = associatedObj.uuid
                   }
                   else {
-                    result['_links'][p.name]['id'] = associatedObj.id
+                    result['_links'][p.name]['oid'] = associatedObj.logEntityId
                   }
                 }
                 else {
@@ -212,6 +215,58 @@ class RestMappingService {
       }
     }
     result
+  }
+
+  def updateObject(obj, jonMap) {
+    PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
+
+    pent.getPersistentProperties().each { p -> // list of PersistentProperties
+      log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
+      if ( (!jsonMap.ignore || !jsonMap.ignore.contains(p.name)) && (!jsonMap.immutable || !jsonMap.immutable.contains(p.name)) && reqBody[p.name] ) {
+        if ( p instanceof Association ) {
+          if ( p instanceof ManyToOne || p instanceof OneToOne ) {
+            // Set ref property
+            if ( p.type.name == 'org.gokb.cred.RefdataValue' ) {
+              pkg[p.name] = RefdataValue.get(reqBody[p.name].id)
+            }
+            else {
+              log.debug("set assoc ${p.name} to lookup of OID ${reqBody[p.name].oid}");
+              if ( reqBody[p.name].uuid ) {
+                pkg[p.name] = genericOIDService.resolveOID(reqBody.provider.uuid)
+              }
+              else {
+                pkg[p.name] = genericOIDService.resolveOID(reqBody[p.name].oid)
+              }
+            }
+          }
+          else {
+            // Add to collection
+            log.debug("Skip handling collections}");
+          }
+        }
+        else {
+          log.debug("checking for type of property -> ${p.type}")
+          switch ( p.type ) {
+            case Long.class:
+              log.debug("Set simple prop ${p.name} = ${reqBody[p.name]} (as long=${Long.parseLong(reqBody[p.name])})");
+              pkg[p.name] = Long.parseLong(reqBody[p.name]);
+              break;
+
+            case Date.class:
+              LocalDateTime dateObj = reqBody[p.name] ? LocalDate.parse(reqBody[p.name], formatter) : null
+              pkg[p.name] = dateObj ? java.sql.Timestamp.valueOf(dateObj) : null
+              log.debug("Set simple prop ${p.name} = ${reqBody[p.name]} (as date ${dateObj}))");
+              break;
+            default:
+              log.debug("Default for type ${p.type}")
+              log.debug("Set simple prop ${p.name} = ${reqBody[p.name]}");
+              pkg[p.name] = reqBody[p.name]
+              break;
+          }
+        }
+      }
+    }
+    obj
   }
 
   private String selectPreferredLabel(obj) {

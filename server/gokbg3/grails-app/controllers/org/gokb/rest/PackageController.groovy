@@ -146,7 +146,6 @@ class PackageController {
     def user = User.get(springSecurityService.principal.id)
     def editable = true
     def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT
 
     if (pkg && reqBody) {
       if ( !user.hasRole('ROLE_ADMIN') && pkg.curatoryGroups && pkg.curatoryGroups.size() > 0 ) {
@@ -157,43 +156,45 @@ class PackageController {
         }
       }
       if (editable) {
-        GrailsClass obj_cls = grailsApplication.getArtefact('Domain','org.gokb.cred.Package')
-        PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj_cls.fullName)
 
-        pent.getPersistentProperties().each { p -> // list of PersistentProperties
-          log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
-          if (!jsonMap.ignore.contains(p.name) && !jsonMap.immutable.contains(p.name) && reqBody[p.name]) {
-            if ( p instanceof Association ) {
-              if ( p instanceof ManyToOne || p instanceof OneToOne ) {
-                // Set ref property
-                log.debug("set assoc ${p.name} to lookup of OID ${reqBody[p.name].oid}");
-                pkg[p.name] = genericOIDService.resolveOID(reqBody[p.name].oid)
-              }
-              else {
-                // Add to collection
-                log.debug("Skip handling collections}");
-              }
-            }
-            else {
-              log.debug("checking for type of property -> ${p.type}")
-              switch ( p.type ) {
-                case Long.class:
-                  log.debug("Set simple prop ${p.name} = ${reqBody[p.name]} (as long=${Long.parseLong(reqBody[p.name])})");
-                  pkg[p.name] = Long.parseLong(reqBody[p.name]);
-                  break;
+        def jsonMap = pkg.jsonMapping
 
-                case Date.class:
-                  LocalDateTime dateObj = reqBody[p.name] ? LocalDate.parse(reqBody[p.name], formatter) : null
-                  pkg[p.name] = dateObj ? java.sql.Timestamp.valueOf(dateObj) : null
-                  log.debug("Set simple prop ${p.name} = ${reqBody[p.name]} (as date ${dateObj}))");
-                  break;
-                default:
-                  log.debug("Default for type ${p.type}")
-                  log.debug("Set simple prop ${p.name} = ${reqBody[p.name]}");
-                  pkg[p.name] = reqBody[p.name]
-                  break;
-              }
-            }
+        jsonMap.ignore = [
+          'lastProject',
+          'bucketHash',
+          'shortcode',
+          'normname',
+          'people',
+          'status',
+          'lastSeen',
+          'additionalProperties',
+          'updateBenchmark',
+          'systemComponent',
+          'provenance',
+          'insertBenchmark',
+          'componentHash',
+          'prices',
+          'subjects',
+          'reference',
+          'duplicateOf',
+          'componentDiscriminator',
+          'incomingCombos',
+          'outgoingCombos'
+        ]
+
+        pkg = restMappingService.updateObject(pkg, jsonMap)
+
+        if (reqBody.identifiers) {
+          restMappingService.updateIdentifiers(pkg, reqBody.identifiers)
+        }
+
+        if (reqBody.variantNames) {
+          restMappingService.updateVariants(pkg, reqBody.variantNames)
+        }
+
+        if ( reqBody.status ) {
+          if ( reqBody.status.value != 'Deleted' || pkg.isDeletable() ) {
+            pkg.status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
           }
         }
 
@@ -204,7 +205,6 @@ class PackageController {
         if (reqBody.nominalPlatform) {
           pkg.nominalPlatform = genericOIDService.resolveOID(reqBody.nominalPlatform.uuid)
         }
-
 
         if( pkg.validate() ) {
           if(errors.size() == 0) {
