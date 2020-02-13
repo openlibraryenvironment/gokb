@@ -412,7 +412,7 @@ class PackagesController {
 
               TitleInstancePackagePlatform.withNewSession {
                 def tipp = TitleInstancePackagePlatform.get(tipp_id)
-                def pub_type = tipp.title?.niceName == 'Journal' ? 'Serial' : 'Monograph'
+                def pub_type = tipp.title?.niceName == 'Book' ? 'Monograph' : 'Serial'
 
                 if (tipp.coverageStatements?.size() > 0) {
                   tipp.coverageStatements.each { cst ->
