@@ -393,7 +393,9 @@ class PackagesController {
                         'parent_publication_title_id\t'+
                         'publication_type\t'+
                         'access_type\t'+
-                        'zdb_id\n');
+                        'zdb_id\t'+
+                        'gokb_tipp_uid\t'+
+                        'gokb_title_uid\n');
 
           // scroll(ScrollMode.FORWARD_ONLY)
           def session = sessionFactory.getCurrentSession()
@@ -442,7 +444,9 @@ class PackagesController {
                                 '\t' +  // parent_publication_title_id
                                 sanitize( pub_type ) + '\t' +  // publication_type
                                 sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
-                                sanitize( tipp.title.getIdentifierValue('ZDB')) +
+                                sanitize( tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                                sanitize( tipp.uuid ) + '\t' +
+                                sanitize( tipp.title.uuid ) +
                                 '\n');
                   }
                 }
@@ -473,7 +477,9 @@ class PackagesController {
                                 '\t' +  // parent_publication_title_id
                                 sanitize( pub_type ) + '\t' +  // publication_type
                                 sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
-                                sanitize( tipp.title.getIdentifierValue('ZDB')) +
+                                sanitize( tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                                sanitize( tipp.uuid ) + '\t' +
+                                sanitize( tipp.title.uuid ) +
                                 '\n');
                 }
                 tipp.discard();
