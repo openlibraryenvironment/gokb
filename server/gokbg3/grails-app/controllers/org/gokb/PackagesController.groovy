@@ -412,6 +412,7 @@ class PackagesController {
 
               TitleInstancePackagePlatform.withNewSession {
                 def tipp = TitleInstancePackagePlatform.get(tipp_id)
+                def pub_type = tipp.title?.niceName == 'Journal' ? 'Serial' : 'Monograph'
 
                 if (tipp.coverageStatements?.size() > 0) {
                   tipp.coverageStatements.each { cst ->
@@ -429,7 +430,7 @@ class PackagesController {
                                 (tipp.title.hasProperty('firstAuthor') ? sanitize( tipp.title.firstAuthor ) : '') + '\t'+
                                 sanitize( tipp.title.getId() ) + '\t' +
                                 sanitize( cst.embargo ) + '\t' +
-                                sanitize( cst.coverageDepth ) + '\t' +
+                                sanitize( cst.coverageDepth ).toLowerCase() + '\t' +
                                 sanitize( cst.coverageNote ) + '\t' +
                                 sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
                                 sanitize( tipp.title.getPrecedingTitleId() ) + '\t' +
@@ -439,7 +440,7 @@ class PackagesController {
                                 (tipp.title.hasProperty('editionStatement') ? sanitize( tipp.title.editionStatement ) : '') + '\t' +
                                 (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
                                 '\t' +  // parent_publication_title_id
-                                sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
+                                sanitize( pub_type ) + '\t' +  // publication_type
                                 sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
                                 sanitize( tipp.title.getIdentifierValue('ZDB')) +
                                 '\n');
@@ -460,7 +461,7 @@ class PackagesController {
                                 (tipp.title.hasProperty('firstAuthor') ? sanitize( tipp.title.firstAuthor ) : '') + '\t'+
                                 sanitize( tipp.title.getId() ) + '\t' +
                                 sanitize( tipp.embargo ) + '\t' +
-                                sanitize( tipp.coverageDepth ) + '\t' +
+                                sanitize( tipp.coverageDepth ).toLowerCase() + '\t' +
                                 sanitize( tipp.coverageNote ) + '\t' +
                                 sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
                                 sanitize( tipp.title.getPrecedingTitleId() ) + '\t' +
@@ -470,7 +471,7 @@ class PackagesController {
                                 (tipp.title.hasProperty('editionStatement') ? sanitize( tipp.title.editionStatement ) : '') + '\t' +
                                 (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
                                 '\t' +  // parent_publication_title_id
-                                sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
+                                sanitize( pub_type ) + '\t' +  // publication_type
                                 sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
                                 sanitize( tipp.title.getIdentifierValue('ZDB')) +
                                 '\n');
