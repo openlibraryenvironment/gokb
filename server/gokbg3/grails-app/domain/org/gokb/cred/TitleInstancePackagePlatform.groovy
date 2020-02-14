@@ -4,6 +4,8 @@ import javax.persistence.Transient
 import java.text.SimpleDateFormat
 import com.k_int.ClassUtils
 import groovy.util.logging.*
+import java.time.format.*
+import java.time.LocalDateTime
 
 @Slf4j
 class TitleInstancePackagePlatform extends KBComponent {
@@ -250,32 +252,30 @@ class TitleInstancePackagePlatform extends KBComponent {
   @Transient
   public static def validateDTO(tipp_dto) {
     def result = ['valid':true, 'errors':[]]
-    def sdfs = [
-        "yyyy-MM-dd' 'HH:mm:ss.SSS",
-        "yyyy-MM-dd'T'HH:mm:ss'Z'",
-        "yyyy-MM-dd"
-    ]
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("" + "[yyyy-MM-dd' 'HH:mm:ss.SSS]" + "[yyyy-MM-dd'T'HH:mm:ss'Z']" + "[yyyy-MM-dd]")
 
     result.valid &= tipp_dto.package?.internalId != null
     result.valid &= tipp_dto.platform?.internalId != null
     result.valid &= tipp_dto.title?.internalId != null
 
     for(def coverage : tipp_dto.coverage){
-        def startDate = null
-        def endDate = null
+        def startDate = coverage.startDate
+        LocalDateTime parsedStart = null
+        def endDate = coverage.endDate
+        LocalDateTime parsedEnd = null
 
         if (coverage.startDate) {
-          sdfs.each { df -> 
+          if ( coverage.startDate.length() == 4 ) {
+            startDate << '-01-01'
+          }
+          else if (coverage.startDate.length() == 7 ) {
+            startDate << '-01'
+          }
 
-            if (!startDate) {
-              try {
-                SimpleDateFormat sdfV = new SimpleDateFormat(df)
-
-                startDate = sdfV.parse(coverage.startDate)
-              }
-              catch (java.text.ParseException pe) {
-              }
-            }
+          try {
+            startDate = LocalDateTime.parse(startDate, formatter)
+          }
+          catch (Exception e) {
           }
 
           if (!startDate) {
@@ -285,17 +285,17 @@ class TitleInstancePackagePlatform extends KBComponent {
         }
 
         if (coverage.endDate) {
-          sdfs.each { df -> 
+          if ( coverage.endDate.length() == 4 ) {
+            endDate << '-12-31'
+          }
+          else if (coverage.endDate.length() == 7 ) {
+            endDate << '-31'
+          }
 
-            if (!endDate) {
-             try {
-                SimpleDateFormat sdfV = new SimpleDateFormat(df)
-
-                endDate = sdfV.parse(coverage.endDate)
-              }
-              catch (java.text.ParseException pe) {
-              }
-            }
+          try {
+            endDate = LocalDateTime.parse(endDate, formatter)
+          }
+          catch (Exception e) {
           }
 
           if (!endDate) {
@@ -334,6 +334,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     def ti = TitleInstance.get(tipp_dto.title?.internalId)
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("" + "[yyyy-MM-dd' 'HH:mm:ss.SSS]" + "[yyyy-MM-dd'T'HH:mm:ss'Z']" + "[yyyy-MM-dd]")
     def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
 
     if ( pkg && plt && ti ) {
@@ -476,49 +477,53 @@ class TitleInstancePackagePlatform extends KBComponent {
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate,tipp,'accessEndDate')
 
         tipp_dto.coverage.each { c ->
+          def initStartDate = c.startDate
+          Date parsedStart = null
+          def initEndDate = c.endDate
+          Date parsedEnd = null
+
+          if ( c.startDate && c.startDate.trim() ) {
+            if ( c.startDate.length() == 4 ) {
+              initStartDate << '-01-01'
+            }
+            else if (c.startDate.length() == 7 ) {
+              initStartDate << '-01'
+            }
+
+            try {
+              LocalDateTime startDate = LocalDateTime.parse(initStartDate, formatter)
+
+              parsedStart = startDate.toDate()
+            }
+            catch (Exception e) {
+            }
+          }
+
+          if ( c.endDate && c.endDate.trim() ) {
+            if ( c.endDate.length() == 4 ) {
+              initEndDate << '-12-31'
+            }
+            else if (c.endDate.length() == 7 ) {
+              initEndDate << '-31'
+            }
+
+            try {
+              LocalDateTime startDate = LocalDateTime.parse(initEndDate, formatter)
+
+              parsedEnd = endDate.toDate()
+            }
+            catch (Exception e) {
+            }
+          }
+
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
-          changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tipp,'startDate')
-          changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tipp,'endDate')
-
-          def sdfs = [
-              "yyyy-MM-dd' 'HH:mm:ss.SSS",
-              "yyyy-MM-dd'T'HH:mm:ss'Z'",
-              "yyyy-MM-dd"
-          ]
-
-          def parsedStart = null
-          def parsedEnd = null
-
-          if ( c.startDate && c.startDate.trim().length() > 0 ) {
-
-            sdfs.each { s ->
-              try {
-                SimpleDateFormat sdf = new SimpleDateFormat(s)
-
-                parsedStart = sdf.parse(c.startDate)
-              }
-              catch (Exception e) {
-              }
-            }
-          }
-
-          if ( c.endDate && c.endDate.trim().length() > 0 ) {
-
-            sdfs.each { s ->
-              try {
-                SimpleDateFormat sdf = new SimpleDateFormat(s)
-
-                parsedEnd = sdf.parse(c.endDate)
-              }
-              catch (Exception e) {
-              }
-            }
-          }
+          changed |= com.k_int.ClassUtils.setDateIfPresent(initStartDate,tipp,'startDate')
+          changed |= com.k_int.ClassUtils.setDateIfPresent(initEndDate,tipp,'endDate')
 
           if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
             changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
@@ -539,8 +544,8 @@ class TitleInstancePackagePlatform extends KBComponent {
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-                changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tcs,'startDate')
-                changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tcs,'endDate')
+                changed |= com.k_int.ClassUtils.setDateIfPresent(initStartDate,tcs,'startDate')
+                changed |= com.k_int.ClassUtils.setDateIfPresent(initEndDate,tcs,'endDate')
 
                 cs_match = true
             }

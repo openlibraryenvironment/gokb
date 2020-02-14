@@ -2,6 +2,8 @@ package org.gokb.cred
 
 import java.text.SimpleDateFormat
 import java.time.Instant
+import java.time.format.*
+import java.time.LocalDateTime
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
@@ -577,11 +579,7 @@ class TitleInstance extends KBComponent {
   @Transient
   public static def validateDTO(titleDTO) {
     def result = ['valid':true, 'errors':[]]
-    def sdfs = [
-        "yyyy-MM-dd' 'HH:mm:ss.SSS",
-        "yyyy-MM-dd'T'HH:mm:ss'Z'",
-        "yyyy-MM-dd"
-    ]
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("" + "[yyyy-MM-dd' 'HH:mm:ss.SSS]" + "[yyyy-MM-dd'T'HH:mm:ss'Z']" + "[yyyy-MM-dd]")
 
     if (titleDTO == null) {
       result.valid = false
@@ -602,20 +600,22 @@ class TitleInstance extends KBComponent {
     }
 
     def startDate = null
+    def initStartDate = titleDTO.publishedFrom
     def endDate = null
+    def initEndDate = titleDTO.publishedTo
 
-    if (titleDTO.publishedFrom) {
-      sdfs.each { df ->
+    if (titleDTO.publishedFrom && titleDTO.publishedFrom.trim()) {
+      if ( titleDTO.publishedFrom.length() == 4 ) {
+        initStartDate << '-01-01'
+      }
+      else if (titleDTO.publishedFrom.length() == 7 ) {
+        initStartDate << '-01'
+      }
 
-        if (!startDate) {
-          try {
-            SimpleDateFormat sdfV = new SimpleDateFormat(df)
-
-            startDate = sdfV.parse(titleDTO.publishedFrom)
-          }
-          catch (java.text.ParseException pe) {
-          }
-        }
+      try {
+        startDate = LocalDateTime.parse(initStartDate, formatter)
+      }
+      catch (Exception e) {
       }
 
       if (!startDate) {
@@ -624,18 +624,18 @@ class TitleInstance extends KBComponent {
       }
     }
 
-    if (titleDTO.publishedTo) {
-      sdfs.each { df ->
+    if (titleDTO.publishedTo && titleDTO.publishedTo.trim()) {
+      if ( titleDTO.publishedTo.length() == 4 ) {
+        initEndDate << '-12-31'
+      }
+      else if (titleDTO.publishedTo.length() == 7 ) {
+        initEndDate << '-31'
+      }
 
-        if (!endDate) {
-          try {
-            SimpleDateFormat sdfV = new SimpleDateFormat(df)
-
-            endDate = sdfV.parse(titleDTO.publishedTo)
-          }
-          catch (java.text.ParseException pe) {
-          }
-        }
+      try {
+        startDate = LocalDateTime.parse(titleDTO.publishedTo, formatter)
+      }
+      catch (Exception e) {
       }
 
       if (!endDate) {

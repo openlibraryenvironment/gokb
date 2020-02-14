@@ -878,7 +878,7 @@ class IntegrationController {
         def job_result = [:]
         def ctr = 0
         def errors = []
-        
+
         job_result.results = []
 
         def valid = Package.validateDTO(json.packageHeader)
@@ -921,7 +921,7 @@ class IntegrationController {
                     }
                     else {
                       def valid_ti = true
-                      
+
                       try {
                         def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
@@ -1026,7 +1026,7 @@ class IntegrationController {
                       valid = false
                       errors.add(['code': 400, message: "TIPP Validation for title ${tipp.title.name} failed: " + "${validation_result.errors}", baddata: tipp, errors: validation_result.errors])
                     }
-                    
+
                     if (idx % 50 == 0) {
                       cleanUpGorm()
                     }
@@ -1052,7 +1052,7 @@ class IntegrationController {
                   // If valid, upsert tipps
                   json.tipps.eachWithIndex { tipp, idx ->
                     tippctr++
-                    
+
                     log.debug("Upsert tipp [${tippctr}] ${tipp}")
                     def upserted_tipp = null
 
@@ -1461,6 +1461,21 @@ class IntegrationController {
               ], titleObj, title)
 
               if (titleObj.type == 'Serial') {
+
+                if (titleObj.publishedFrom?.length() == 4) {
+                  titleObj.publishedFrom << "-01-01"
+                }
+                else if (titleObj.publishedFrom?.length() == 7) {
+                  titleObj.publishedFrom << "-01"
+                }
+
+                if (titleObj.publishedFrom?.length() == 4) {
+                  titleObj.publishedFrom << "-12-31"
+                }
+                else if (titleObj.publishedFrom?.length() == 7) {
+                  titleObj.publishedFrom << "-12"
+                }
+
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom')
                 title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo')
               }
@@ -1814,6 +1829,20 @@ class IntegrationController {
       if(titleObj[it] && titleObj[it].toString().trim().length() > 0){
         book_changed |= ClassUtils.setStringIfDifferent(bi, it, titleObj[it])
       }
+    }
+
+    if (titleObj.dateFirstInPrint?.length() == 4) {
+      titleObj.dateFirstInPrint << "-01-01"
+    }
+    else if (titleObj.dateFirstInPrint?.length() == 7) {
+      titleObj.dateFirstInPrint << "-01"
+    }
+
+    if (titleObj.dateFirstOnline?.length() == 4) {
+      titleObj.dateFirstOnline << "-01-01"
+    }
+    else if (titleObj.dateFirstOnline?.length() == 7) {
+      titleObj.dateFirstOnline << "-01"
     }
 
     book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstInPrint, bi, 'dateFirstInPrint')
