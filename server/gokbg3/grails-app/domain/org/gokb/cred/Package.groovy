@@ -36,7 +36,7 @@ class Package extends KBComponent {
   User userListVerifier
   Date listVerifiedDate
   String descriptionURL
-  
+
   private static refdataDefaults = [
     "scope"       : "Front File",
     "listStatus"  : "Checked",
@@ -46,13 +46,13 @@ class Package extends KBComponent {
     "paymentType" : "Unknown",
     "global"      : "Global"
   ]
-  
+
   static manyByCombo = [
     tipps         : TitleInstancePackagePlatform,
     children      : Package,
     curatoryGroups: CuratoryGroup
   ]
-  
+
   static hasByCombo = [
              parent : Package,
              broker : Org,
@@ -63,7 +63,7 @@ class Package extends KBComponent {
          'previous' : Package,
           successor : Package
   ]
-  
+
   static mappedByCombo = [
      children : 'parent',
     successor : 'previous',
@@ -146,11 +146,11 @@ class Package extends KBComponent {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     def status_filter = null
-    
+
     if(params.filter1) {
       status_filter = RefdataCategory.lookup('KBComponent.Status', params.filter1)
     }
-    
+
     def ql = null;
     ql = Package.findAllByNameIlikeAndStatusNotEqual("${params.q}%", status_deleted, params)
 
@@ -311,55 +311,54 @@ class Package extends KBComponent {
 
     return all_rrs;
   }
-  
+
   private static OAI_PKG_CONTENTS_QRY = '''
 select tipp.id,
-       title.name, 
+       title.name,
        title.id,
-       plat.name, 
+       plat.name,
        plat.id,
-       tipp.startDate, 
-       tipp.startVolume, 
-       tipp.startIssue, 
-       tipp.endDate, 
-       tipp.endVolume, 
-       tipp.endIssue, 
-       tipp.coverageDepth, 
-       tipp.coverageNote, 
-       tipp.url, 
-       tipp.status, 
-       tipp.accessStartDate, 
-       tipp.accessEndDate, 
-       tipp.format, 
-       tipp.embargo, 
+       tipp.startDate,
+       tipp.startVolume,
+       tipp.startIssue,
+       tipp.endDate,
+       tipp.endVolume,
+       tipp.endIssue,
+       tipp.coverageDepth,
+       tipp.coverageNote,
+       tipp.url,
+       tipp.status,
+       tipp.accessStartDate,
+       tipp.accessEndDate,
+       tipp.format,
+       tipp.embargo,
        plat.primaryUrl,
        tipp.lastUpdated,
        tipp.uuid,
        title.uuid,
        plat.uuid,
        title.status
-    from TitleInstancePackagePlatform as tipp, 
-         Combo as hostPlatformCombo, 
-         Combo as titleCombo,  
+    from TitleInstancePackagePlatform as tipp,
+         Combo as hostPlatformCombo,
+         Combo as titleCombo,
          Combo as pkgCombo,
          Platform as plat,
          TitleInstance as title
-    where pkgCombo.toComponent=tipp 
-      and pkgCombo.fromComponent= ?  
-      and pkgCombo.type= ?  
-      and hostPlatformCombo.toComponent=tipp 
-      and hostPlatformCombo.type = ?  
+    where pkgCombo.toComponent=tipp
+      and pkgCombo.fromComponent= ?
+      and pkgCombo.type= ?
+      and hostPlatformCombo.toComponent=tipp
+      and hostPlatformCombo.type = ?
       and hostPlatformCombo.fromComponent = plat
-      and titleCombo.toComponent=tipp 
+      and titleCombo.toComponent=tipp
       and titleCombo.type = ?
       and titleCombo.fromComponent=title
-      and tipp.status != ?  
     order by tipp.id''';
 
   public void deleteSoft (context) {
     // Call the delete method on the superClass.
     super.deleteSoft(context)
-    
+
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
     def tipps = getTipps()
@@ -371,7 +370,7 @@ select tipp.id,
       TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids])
     }
   }
-  
+
 
   public void retire (context) {
     log.debug("package::retire");
@@ -389,7 +388,7 @@ select tipp.id,
 
     if ( tipps?.size() > 0) {
       def tipp_ids = tipps?.collect { it.id }
-      
+
       TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret where t.id IN (:ttd)",[ret: retired_status, ttd:tipp_ids])
     }
   }
@@ -455,14 +454,14 @@ select tipp.id,
     // log.debug("Running package contents qry : ${OAI_PKG_CONTENTS_QRY}");
 
     // Get the tipps manually rather than iterating over the collection - For better management
-    def tipps = TitleInstancePackagePlatform.executeQuery(OAI_PKG_CONTENTS_QRY, [this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps,refdata_deleted],[readOnly: true]); // , fetchSize:250]);
+    def tipps = TitleInstancePackagePlatform.executeQuery(OAI_PKG_CONTENTS_QRY, [this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps],[readOnly: true]); // , fetchSize:250]);
 
     log.debug("Query complete...");
-    
+
     builder.'gokb' (attr) {
       builder.'package' (['id':(id), 'uuid':(uuid)]) {
         addCoreGOKbXmlFields(builder, attr)
-        
+
         'scope' ( scope?.value )
         'listStatus' ( listStatus?.value )
         'breakable' ( breakable?.value )
@@ -591,11 +590,11 @@ select tipp.id,
 //                        'from TitleInstancePackagePlatform as tipp, Combo as c '+
 //                        'where c.fromComponent= :pkg and c.toComponent=tipp and tipp.accessEndDate is not null order by tipp.lastUpdated DESC',
 //                        [pkg: this], [max:n]);
-                       
+
       def changes =   TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as c '+
                        'where c.fromComponent= ? and c.toComponent=tipp order by tipp.lastUpdated DESC',
                        [this]);
-                       
+
       use( TimeCategory ) {
         changes.each {
           if ( it.isDeleted() ){
@@ -764,7 +763,7 @@ select tipp.id,
       log.debug("No existing package matched. Creating new package..")
 
       result = new Package(name:packageHeaderDTO.name, normname:pkg_normname)
-      
+
       created = true
 
       if (packageHeaderDTO.uuid && packageHeaderDTO.uuid.trim().size() > 0) {
@@ -775,7 +774,7 @@ select tipp.id,
     }
     else if ( user && !user.hasRole('ROLE_SUPERUSER') && result.curatoryGroups && result.curatoryGroups?.size() > 0 ) {
       def cur = user.curatoryGroups?.id.intersect(result.curatoryGroups?.id)
-      
+
       if (!cur) {
         log.debug("No curator!")
         return result
@@ -837,45 +836,59 @@ select tipp.id,
 
     if ( packageHeaderDTO.nominalProvider ) {
 
+      def providerDTO = [:]
+
+      if (packageHeaderDTO.nominalProvider instanceof String && packageHeaderDTO.nominalProvider.trim()){
+        providerDTO['name'] = packageHeaderDTO.nominalProvider
+      }else if(packageHeaderDTO.nominalProvider.name && packageHeaderDTO.nominalProvider.name.trim()){
+        providerDTO = packageHeaderDTO.nominalProvider
+      }
+
       log.debug("Trying to set package provider..")
-      def norm_prov_name = KBComponent.generateNormname(packageHeaderDTO.nominalProvider)
+      def prov = null
 
-      def prov = Org.findByNormname(norm_prov_name)
+      if (providerDTO?.uuid) {
+        prov = Org.findByUuid(providerDTO.uuid)
+      }
 
-      if ( prov ) {
-        if ( result.provider != prov ) {
-          result.provider = prov;
+      if (providerDTO && !prov) {
+        def norm_prov_name = KBComponent.generateNormname(providerDTO.name)
 
-          log.debug("Provider ${prov.name} set.")
-          changed = true
-        }
-        else {
-          log.debug("No provider change")
-        }
-      }else{
-        def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.nominalProvider)
-        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status = ?",[variant_normname, status_deleted]);
+        prov = Org.findByNormname(norm_prov_name)
 
-        if ( candidate_orgs.size() == 1 ) {
+        if ( prov ) {
+          if ( result.provider != prov ) {
+            result.provider = prov;
 
-          if ( result.provider != candidate_orgs[0] ) {
-            result.provider = candidate_orgs[0]
-
-            log.debug("Provider ${candidate_orgs[0].name} set.")
+            log.debug("Provider ${prov.name} set.")
             changed = true
           }
           else {
             log.debug("No provider change")
           }
-        }
-        else if ( candidate_orgs.size() == 0 ) {
+        }else{
+          def variant_normname = GOKbTextUtils.normaliseString(providerDTO.name)
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status = ?",[variant_normname, status_deleted]);
 
-          log.debug("No org match for provider ${packageHeaderDTO.nominalProvider}. Creating new org..")
-          result.provider = new Org(name:packageHeaderDTO.nominalProvider, normname:norm_prov_name).save(flush:true, failOnError:true);
-          changed = true
-        }
-        else {
-          log.warn("Multiple org matches for provider ${packageHeaderDTO.nominalProvider}. Skipping..");
+          if ( candidate_orgs.size() == 1 ) {
+            if ( result.provider != candidate_orgs[0] ) {
+              result.provider = candidate_orgs[0]
+
+              log.debug("Provider ${candidate_orgs[0].name} set.")
+              changed = true
+            }
+            else {
+              log.debug("No provider change")
+            }
+          }
+          else if ( candidate_orgs.size() == 0 ) {
+            log.debug("No org match for provider ${packageHeaderDTO.nominalProvider}. Creating new org..")
+            result.provider = new Org(name:providerDTO.name, normname:norm_prov_name, uuid: providerDTO.uuid ?: null).save(flush:true, failOnError:true);
+            changed = true
+          }
+          else {
+            log.warn("Multiple org matches for provider ${packageHeaderDTO.nominalProvider}. Skipping..");
+          }
         }
       }
     }
@@ -898,7 +911,7 @@ select tipp.id,
     packageHeaderDTO.curatoryGroups?.each {
 
       String normname = CuratoryGroup.generateNormname(it)
-      
+
       def cg = CuratoryGroup.findByNormname(normname)
 
       if ( cg ) {
