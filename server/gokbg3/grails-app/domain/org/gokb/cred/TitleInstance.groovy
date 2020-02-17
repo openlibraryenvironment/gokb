@@ -128,7 +128,7 @@ class TitleInstance extends KBComponent {
   }
 
   def availableActions() {
-    [ [code:'setStatus::Deleted', label:'Delete', perm:'delete'],
+    [ [code:'method::deleteSoft', label:'Delete', perm:'delete'],
       [code:'setStatus::Current', label:'Set Current', perm:'admin'],
       [code:'setStatus::Expected', label:'Mark Expected'],
       [code:'title::transfer', label:'Title Transfer'],
@@ -783,4 +783,25 @@ class TitleInstance extends KBComponent {
 
   }
 
+  def beforeUpdate() {
+    if (this.isDirty('status') && this.status == RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+      // Delete the tipps too as a TIPP should not exist without the associated
+      // title.
+      def tipps = getTipps()
+
+      if ( tipps?.size() > 0 ) {
+        def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+        def tipp_ids = tipps?.collect { it.id }
+
+        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids])
+      }
+
+      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this])
+
+      events_to_delete.each {
+        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = ?",[it])
+        ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
+      }
+    }
+  }
 }
