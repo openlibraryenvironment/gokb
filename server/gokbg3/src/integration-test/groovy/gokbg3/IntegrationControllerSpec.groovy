@@ -195,6 +195,7 @@ class IntegrationControllerSpec extends Specification {
         title.publishedFrom == Date.from(LocalDate.of(1953, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant())
         title.publishedTo == Date.from(LocalDate.of(2001, 12, 31).atStartOfDay(ZoneId.systemDefault()).toInstant())
         title.publishedFrom.toString() == "1953-01-01 00:00:00.0"
+        title.getCombosByPropertyName('publisher')[0].startDate == Date.from(LocalDate.of(1953, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant())
     }
 
     void "Test crossReferenceTitle :: Journal with history"() {

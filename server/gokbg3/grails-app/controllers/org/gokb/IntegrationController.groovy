@@ -8,7 +8,8 @@ import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
-import java.time.*
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 import groovy.util.logging.*
 
@@ -1702,8 +1703,8 @@ class IntegrationController {
 
           LocalDateTime parsedStart = GOKbTextUtils.completeDateString(pub_to_add.startDate)
           LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(pub_to_add.endDate)
-          Date pub_add_sd = parsedStart ? Date.from( parsedStart.atZone(ZoneOffset.UTC).toInstant()) : null
-          Date pub_add_ed = parsedEnd ? Date.from( parsedEnd.atZone(ZoneOffset.UTC).toInstant()) : null
+          Date pub_add_sd = parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null
+          Date pub_add_ed = parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null
 
           boolean found = false
           for ( int i=0; !found && i<publisher_combos.size(); i++) {
