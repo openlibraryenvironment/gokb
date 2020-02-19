@@ -48,6 +48,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
       auth("Bearer $accessToken")
       body()
     }
+    resp.status == 200
     // reuse the stale token
     resp = rest.get("http://localhost:$serverPort/gokb/rest/profile") {
       // headers
@@ -76,27 +77,41 @@ class ProfileTestSpec extends AbstractAuthSpec {
       contentType('application/json')
       auth("Bearer $accessToken")
       body('{"id":8,"username":"admin","displayName":null,"email":"admin@localhost","curatoryGroups":[],"enabled":true,"accountExpired":false,"accountLocked":false,"passwordExpired":false,"defaultPageSize":10,' +
-          '"roles":[' +
-          '{' +
-          '"authority":"ROLE_CONTRIBUTOR",' +
-          '},' +
-          '{' +
-          '"authority":"ROLE_USER",' +
-          '},' +
-          '{' +
-          '"authority":"ROLE_EDITOR",' +
-          '},' +
-          '{' +
-          '"authority":"ROLE_ADMIN",' +
-          '},' +
-          '{' +
-          '"authority":"ROLE_API",' +
-          '},' +
-          '{' +
-          '"authority":"ROLE_SUPERUSER",' +
-          '}' +
-          ']' +
-          '}')
+        '"roles":[' +
+        '{' +
+        '"authority":"ROLE_CONTRIBUTOR",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_USER",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_EDITOR",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_ADMIN",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_API",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_SUPERUSER",' +
+        '}' +
+        ']' +
+        '}')
+    }
+    then:
+    resp.status == 200
+  }
+
+  void "test DELETE /rest/profile/"() {
+    // use the bearerToken to write to /rest/profile/update
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.delete("http://localhost:$serverPort/gokb/rest/profile/") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      auth("Bearer $accessToken")
     }
     then:
     resp.status == 200
