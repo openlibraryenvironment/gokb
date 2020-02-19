@@ -1797,23 +1797,11 @@ class IntegrationController {
         book_changed |= ClassUtils.setStringIfDifferent(bi, it, titleObj[it])
       }
     }
+    def dfip = GOKbTextUtils.completeDateString(titleObj.dateFirstInPrint)
+    def dfo = GOKbTextUtils.completeDateString(titleObj.dateFirstOnline)
 
-    if (titleObj.dateFirstInPrint?.length() == 4) {
-      titleObj.dateFirstInPrint << "-01-01"
-    }
-    else if (titleObj.dateFirstInPrint?.length() == 7) {
-      titleObj.dateFirstInPrint << "-01"
-    }
-
-    if (titleObj.dateFirstOnline?.length() == 4) {
-      titleObj.dateFirstOnline << "-01-01"
-    }
-    else if (titleObj.dateFirstOnline?.length() == 7) {
-      titleObj.dateFirstOnline << "-01"
-    }
-
-    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstInPrint, bi, 'dateFirstInPrint')
-    book_changed |= ClassUtils.setDateIfPresent(titleObj.dateFirstOnline, bi, 'dateFirstOnline')
+    book_changed |= ClassUtils.setDateIfPresent(dfip, bi, 'dateFirstInPrint')
+    book_changed |= ClassUtils.setDateIfPresent(dfo, bi, 'dateFirstOnline')
 
     if ( book_changed ) {
       bi.save(flush: true, failOnError:true)
