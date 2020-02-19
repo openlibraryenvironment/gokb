@@ -8,8 +8,7 @@ import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
-import java.time.format.*
-import java.time.LocalDateTime
+import java.time.*
 
 import groovy.util.logging.*
 
@@ -68,6 +67,7 @@ class IntegrationController {
 
       if ( group.validate() ) {
         group.save(flush:true)
+        result.message = "Created new group ${name}!"
       }
       else {
         result.message = "Could not reference group ${name}"
@@ -1461,23 +1461,11 @@ class IntegrationController {
               ], titleObj, title)
 
               if (titleObj.type == 'Serial') {
+                def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
+                def pubTo = GOKbTextUtils.completeDateString(titleObj.publishedTo, false)
 
-                if (titleObj.publishedFrom?.length() == 4) {
-                  titleObj.publishedFrom << "-01-01"
-                }
-                else if (titleObj.publishedFrom?.length() == 7) {
-                  titleObj.publishedFrom << "-01"
-                }
-
-                if (titleObj.publishedFrom?.length() == 4) {
-                  titleObj.publishedFrom << "-12-31"
-                }
-                else if (titleObj.publishedFrom?.length() == 7) {
-                  titleObj.publishedFrom << "-12"
-                }
-
-                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedFrom, title, 'publishedFrom')
-                title_changed |= ClassUtils.setDateIfPresent(titleObj.publishedTo, title, 'publishedTo')
+                title_changed |= ClassUtils.setDateIfPresent(pubFrom, title, 'publishedFrom')
+                title_changed |= ClassUtils.setDateIfPresent(pubTo, title, 'publishedTo')
               }
 
               if ( titleObj.historyEvents?.size() > 0 ) {
@@ -1678,9 +1666,6 @@ class IntegrationController {
   }
 
   private static addPublisherHistory ( TitleInstance ti, publishers) {
-
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("" + "[yyyy-MM-dd' 'HH:mm:ss.SSS]" + "[yyyy-MM-dd'T'HH:mm:ss'Z']" + "[yyyy-MM-dd]")
-
     if (publishers && ti) {
 
       def publisher_combos = []
@@ -1715,28 +1700,10 @@ class IntegrationController {
 
         if (publisher) {
 
-          Date pub_add_sd = null
-          Date pub_add_ed = null
-
-          if ( pub_to_add.startDate?.trim() ) {
-            try {
-              LocalDateTime startDate = LocalDateTime.parse(pub_to_add.startDate, formatter)
-
-              pub_add_sd = startDate.toDate()
-            }
-            catch (Exception e) {
-            }
-          }
-
-          if ( pub_to_add.endDate?.trim() ) {
-            try {
-              LocalDateTime endDate = LocalDateTime.parse(pub_to_add.endDate, formatter)
-
-              pub_add_ed = endDate.toDate()
-            }
-            catch (Exception e) {
-            }
-          }
+          LocalDateTime parsedStart = GOKbTextUtils.completeDateString(pub_to_add.startDate)
+          LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(pub_to_add.endDate)
+          Date pub_add_sd = parsedStart ? Date.from( parsedStart.atZone(ZoneOffset.UTC).toInstant()) : null
+          Date pub_add_ed = parsedEnd ? Date.from( parsedEnd.atZone(ZoneOffset.UTC).toInstant()) : null
 
           boolean found = false
           for ( int i=0; !found && i<publisher_combos.size(); i++) {

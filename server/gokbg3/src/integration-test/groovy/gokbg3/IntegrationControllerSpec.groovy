@@ -13,6 +13,9 @@ import grails.converters.JSON
 import grails.core.GrailsApplication
 import org.springframework.web.context.WebApplicationContext
 import grails.transaction.Rollback
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 /**
  * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
@@ -53,6 +56,7 @@ class IntegrationControllerSpec extends Specification {
         }
 
       then: "The item is created up as it does not already exist"
+        resp.json.groupId != null
         resp.json.message != null
         resp.json.message.startsWith('Created')
       expect: "Find item by name only returns one item"
@@ -314,6 +318,93 @@ class IntegrationControllerSpec extends Specification {
         matching_pkgs[0].id == resp.json.pkgId
         matching_pkgs[0].tipps?.size() == 1
         matching_pkgs[0].provider?.name == "American Chemical Society"
+    }
+
+    void "Test crossReferencePackage with incomplete coverage dates"() {
+
+      when: "Caller asks for this record to be cross referenced"
+        def json_record = [
+          "packageHeader" : [
+            "breakable" : "No",
+            "consistent" : "Yes",
+            "editStatus" : "In Progress",
+            "fixed" : "No",
+            "global" : "Consortium",
+            "identifiers" : [
+              [
+                "type" : "isil",
+                "value" : "ZDB-1-ACS"
+              ]
+            ],
+            "listStatus" : "In Progress",
+            "name" : "American Chemical Society: ACS Legacy Archives: CompleteDates",
+            "nominalPlatform" : [
+              "name" : "ACS Publications",
+              "primaryUrl" : "https://pubs.acs.org"
+            ],
+            "nominalProvider" : "American Chemical Society"
+          ],
+          "tipps" : [
+            [
+              "accessEnd" : "",
+              "accessStart" : "",
+              "coverage" : [
+                  [
+                    "coverageDepth" : "Fulltext",
+                    "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                    "embargo" : "",
+                    "endDate" : "1995",
+                    "endIssue" : "",
+                    "endVolume" : "43",
+                    "startDate" : "1953-01",
+                    "startIssue" : "",
+                    "startVolume" : "1"
+                  ]
+              ],
+              "medium" : "Electronic",
+              "platform" : [
+                "name" : "pubs.acs.org",
+                "primaryUrl" : "http://pubs.acs.org"
+              ],
+              "status" : "Current",
+              "title" : [
+                  "identifiers" : [
+                    [
+                        "type" : "zdb",
+                        "value" : "1483109-0"
+                    ],
+                    [
+                        "type" : "eissn",
+                        "value" : "1520-5118"
+                    ],
+                    [
+                        "type" : "issn",
+                        "value" : "0021-8561"
+                    ]
+                  ],
+                  "name" : "Journal of agricultural and food chemistry",
+                  "type" : "Serial"
+              ],
+              "url" : "http://pubs.acs.org/journal/jafcau"
+            ]
+          ]
+        ]
+
+        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
+          auth('admin', 'admin')
+          body(json_record as JSON)
+        }
+
+      then: "The item is created in the database because it does not exist"
+        resp.json.message != null
+        resp.json.message.startsWith('Created')
+      expect: "The TIPP coverage dates are correctly set"
+        def pkg = Package.get(resp.json.pkgId)
+        pkg.tipps?.size() == 1
+        def coverageStatement = pkg.tipps[0].coverageStatements[0]
+        coverageStatement != null
+        coverageStatement.startDate == Date.from(LocalDate.of(1953, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant())
+        coverageStatement.endDate == Date.from(LocalDate.of(1995, 12, 31).atStartOfDay(ZoneId.systemDefault()).toInstant())
     }
 
     void "Test crossReferenceTitle (BOOK) Case 1"() {
