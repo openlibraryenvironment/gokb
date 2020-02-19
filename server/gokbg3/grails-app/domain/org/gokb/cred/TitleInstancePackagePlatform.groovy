@@ -1,12 +1,10 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
-import java.text.SimpleDateFormat
 import com.k_int.ClassUtils
 import org.gokb.GOKbTextUtils
 import groovy.util.logging.*
-import java.time.format.*
-import java.time.*
+import java.time.LocalDateTime
 
 @Slf4j
 class TitleInstancePackagePlatform extends KBComponent {
@@ -302,7 +300,6 @@ class TitleInstancePackagePlatform extends KBComponent {
     def ti = TitleInstance.get(tipp_dto.title?.internalId)
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("" + "[yyyy-MM-dd' 'HH:mm:ss.SSS]" + "[yyyy-MM-dd'T'HH:mm:ss'Z']" + "[yyyy-MM-dd]")
     def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
 
     if ( pkg && plt && ti ) {

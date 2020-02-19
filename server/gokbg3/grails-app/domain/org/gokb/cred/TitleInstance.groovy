@@ -1,7 +1,5 @@
 package org.gokb.cred
 
-import java.text.SimpleDateFormat
-import java.time.format.*
 import java.time.LocalDateTime
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
