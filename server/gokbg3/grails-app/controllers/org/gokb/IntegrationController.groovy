@@ -1702,7 +1702,7 @@ class IntegrationController {
         if (publisher) {
 
           LocalDateTime parsedStart = GOKbTextUtils.completeDateString(pub_to_add.startDate)
-          LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(pub_to_add.endDate)
+          LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(pub_to_add.endDate, false)
           Date pub_add_sd = parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null
           Date pub_add_ed = parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null
 
@@ -1799,7 +1799,7 @@ class IntegrationController {
       }
     }
     def dfip = GOKbTextUtils.completeDateString(titleObj.dateFirstInPrint)
-    def dfo = GOKbTextUtils.completeDateString(titleObj.dateFirstOnline)
+    def dfo = GOKbTextUtils.completeDateString(titleObj.dateFirstOnline, false)
 
     book_changed |= ClassUtils.setDateIfPresent(dfip, bi, 'dateFirstInPrint')
     book_changed |= ClassUtils.setDateIfPresent(dfo, bi, 'dateFirstOnline')
