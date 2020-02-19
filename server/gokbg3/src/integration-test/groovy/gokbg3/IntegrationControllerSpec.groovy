@@ -158,6 +158,45 @@ class IntegrationControllerSpec extends Specification {
         matching_with_class_one_ids[0] == resp.json.titleId
     }
 
+    void "Test crossReferenceTitle with incomplete dates"() {
+
+      when: "Caller asks for this record to be cross referenced"
+        def json_record = [
+          "identifiers" : [
+            [
+                "type" : "zdb",
+                "value" : "1423434-0"
+            ]
+          ],
+          "name" : "TestJournal_Dates",
+          "publishedFrom" : "1953-01",
+          "publishedTo" : "2001",
+          "publisher_history" : [
+            [
+                "endDate" : "",
+                "name" : "American Chemical Society",
+                "startDate" : "1953",
+                "status" : ""
+            ]
+          ],
+          "type" : "Serial"
+        ]
+        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
+          auth('admin', 'admin')
+          body(json_record as JSON)
+        }
+
+      then: "The item is created in the database because it does not exist"
+        resp.json.message != null
+        resp.json.message.startsWith('Created')
+      expect: "Find item by ID can now locate that item"
+        def title = TitleInstance.get(resp.json.titleId)
+        title != null
+        title.publishedFrom == Date.from(LocalDate.of(1953, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant())
+        title.publishedTo == Date.from(LocalDate.of(2001, 12, 31).atStartOfDay(ZoneId.systemDefault()).toInstant())
+        title.publishedFrom.toString() == "1953-01-01 00:00:00.0"
+    }
+
     void "Test crossReferenceTitle :: Journal with history"() {
 
       when: "Caller asks for this record to be cross referenced"
