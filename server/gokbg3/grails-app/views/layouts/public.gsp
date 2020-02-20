@@ -54,6 +54,7 @@
           <g:if test="${grailsApplication.config.gokb.blogUrl}">
             <li><a  style="font-weight:bold;" href ="${grailsApplication.config.gokb.blogUrl}">About GOKb</a></li>
           </g:if>
+          <li><a href="https://github.com/openlibraryenvironment/gokb/wiki/API"  style="font-weight:bold;">API Documentation</a></li>
           <li><span style="width:15px"></span></li>
           <li><g:link controller="register" action="register" style="font-weight:bold;">Register</g:link></li>
           <li><g:link controller="home" action="index" style="font-weight:bold;">Admin Home</g:link></li>

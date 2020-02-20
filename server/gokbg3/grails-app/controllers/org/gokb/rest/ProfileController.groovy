@@ -14,9 +14,7 @@ class ProfileController {
 
   def genericOIDService
   def springSecurityService
-  def concurrencyManagerService
-  def sessionFactory
-  def messageService
+  def userProfileService
 
   def show() {
     def user = User.get(springSecurityService.principal.id)
@@ -34,24 +32,24 @@ class ProfileController {
     }
 
     def links = [
-        'self'  : 'rest/profile',
-        'update': 'rest/profile/update'//,
+      'self'  : 'rest/profile',
+      'update': 'rest/profile/update'//,
 //      'delete': 'rest/profile/delete'
     ]
 
     def result = [
-        'id'             : user.id,
-        'username'       : user.username,
-        'displayName'    : user.displayName,
-        'email'          : user.email,
-        'curatoryGroups' : cur_groups,
-        'enabled'        : user.enabled,
-        'accountExpired' : user.accountExpired,
-        'accountLocked'  : user.accountLocked,
-        'passwordExpired': user.accountExpired,
-        'defaultPageSize': user.defaultPageSize,
-        'roles'          : roles,
-        '_links'         : links
+      'id'             : user.id,
+      'username'       : user.username,
+      'displayName'    : user.displayName,
+      'email'          : user.email,
+      'curatoryGroups' : cur_groups,
+      'enabled'        : user.enabled,
+      'accountExpired' : user.accountExpired,
+      'accountLocked'  : user.accountLocked,
+      'passwordExpired': user.accountExpired,
+      'defaultPageSize': user.defaultPageSize,
+      'roles'          : roles,
+      '_links'         : links
     ]
 
     render result as JSON
@@ -130,6 +128,13 @@ class ProfileController {
       response.setStatus(400)
       result.message = "Missing update payload or wrong user id!"
     }
+    render result as JSON
+  }
+
+  @Transactional
+  def delete() {
+    userProfileService.delete(springSecurityService.currentUser)
+    def result = [:]
     render result as JSON
   }
 }
