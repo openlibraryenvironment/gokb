@@ -1,5 +1,6 @@
 package gokbg3
 
+import com.k_int.ClassUtils
 import grails.core.GrailsClass
 import groovyx.net.http.URIBuilder
 
@@ -211,9 +212,27 @@ class RestMappingService {
               break;
 
             case Date.class:
-              LocalDateTime dateObj = reqBody[p.name] ? LocalDate.parse(reqBody[p.name], formatter) : null
-              obj[p.name] = dateObj ? java.sql.Timestamp.valueOf(dateObj) : null
-              log.debug("Set simple prop ${p.name} = ${reqBody[p.name]} (as date ${dateObj}))");
+              if (reqBody[p.name] == null) {
+                obj[p.name] = null
+              }
+              else if (reqBody[p.name].trim()) {
+                LocalDateTime dateObj = GOKbTextUtils.completeDateString(reqBody[p.name])
+                if (dateObj) {
+                  obj[p.name] = Date.from(dateObj.atZone(ZoneId.systemDefault()).toInstant())
+                }
+                else {
+                  obj.errors.reject(
+                    'typeMismatch.java.util.Date',
+                    [p.name] as Object[],
+                    '[Invalid date value for property [{0}]]'
+                  )
+                  obj.errors.rejectValue(
+                    p.name,
+                    'typeMismatch.java.util.Date'
+                  )
+                }
+                log.debug("Set simple prop ${p.name} = ${reqBody[p.name]} (as date ${dateObj}))");
+              }
               break;
             default:
               log.debug("Default for type ${p.type}")
