@@ -123,23 +123,36 @@ class ComponentLookupService {
     boolean outgoingJoin = false
     def max = params.max ? params.long('max') : 10
     def offset = params.offset ? params.long('offset') : 0
-    def first = false
+    def first = true
     def combos = grailsApplication.getArtefact("Domain",cls.name).newInstance().allComboPropertyNames
 
     combos.each { c ->
       if (params[c]) {
         def alts = params.list(c)
         boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
-        if (incoming && !incomingJoin) {
-          hqlQry += " join p.incomingCombos as ic"
+        log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
+        alts.eachWithIndex { val, idx ->
+          if (incoming) {
+            hqlQry += " join p.incomingCombos as ${c}co${idx}"
+            hqlQry += " join ${c}co${idx}.fromComponent as ${c}${idx}"
+          }
+          else {
+            hqlQry += " join p.outgoingCombos as ${c}co${idx}"
+            hqlQry += " join ${c}co${idx}.toComponent as ${c}${idx}"
+          }
         }
-        if (!incoming && !outgoingJoin) {
-          hqlQry += " join p.outgoingCombos as oc"
-        }
+      }
+    }
+
+    combos.each { c ->
+      if (params[c]) {
+        def alts = params.list(c)
+        boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
         log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
 
-        if (!first) {
+        if (first) {
           hqlQry += " WHERE "
+          first = false
         }
         else {
           hqlQry += " AND "
@@ -152,8 +165,8 @@ class ComponentLookupService {
           else {
             hqlQry += "("
           }
-          hqlQry += "${incoming ? 'ic.fromComponent.id' : 'oc.toComponent.id'} = :${c}${idx}"
-          qryParams[parName] = Long.valueOf(val)
+          hqlQry += "${c}${idx} = :${c}${idx}"
+          qryParams[parName] = KBComponent.get(Long.valueOf(val))
         }
         hqlQry += ")"
       }
@@ -164,13 +177,13 @@ class ComponentLookupService {
     pent.getPersistentProperties().each { p ->
       if (params[p.name]) {
         log.debug("Handling persistent param prop: ${p.name}")
-        if (!first) {
+        if (first) {
           hqlQry += " WHERE "
+          first = false
         }
         else {
           hqlQry += " AND "
         }
-        first = false
         def alts = params.list(p.name)
 
         alts.eachWithIndex { val, idx ->
@@ -180,8 +193,19 @@ class ComponentLookupService {
           else {
             hqlQry += "("
           }
-          hqlQry += "${p.name} = :${p.name}${idx}"
-          qryParams["${p.name}${idx}"] = val
+          if ( p instanceof Association ) {
+            qryParams["${p.name}${idx}"] = Long.valueOf(val)
+            hqlQry += "p.${p.name}.id = :${p.name}${idx}"
+          }
+          else if ( p.type == Long ) {
+            qryParams["${p.name}${idx}"] = Long.valueOf(val)
+            hqlQry += "p.${p.name} = :${p.name}${idx}"
+          }
+          else {
+            hqlQry += "p.${p.name} = :${p.name}${idx}"
+            qryParams["${p.name}${idx}"] = val
+          }
+
         }
         hqlQry += ")"
       }
@@ -192,9 +216,12 @@ class ComponentLookupService {
     // }
 
     def hqlCount = "select count(*) ${hqlQry}".toString()
+    def hqlFinal = "select p ${hqlQry}".toString()
+
+    log.debug("Final qry: ${hqlFinal}")
 
     def hqlTotal = cls.executeQuery(hqlCount, qryParams,[:])[0]
-    def hqlResult = cls.executeQuery(hqlQry, qryParams, [max: max, offset: offset])
+    def hqlResult = cls.executeQuery(hqlFinal, qryParams, [max: max, offset: offset])
 
     result.data = []
 

@@ -183,7 +183,7 @@ class PackageController {
           'outgoingCombos'
         ]
 
-        pkg = restMappingService.updateObject(pkg, jsonMap, reqBody)
+        restMappingService.updateObject(pkg, jsonMap, reqBody)
 
         if (reqBody.identifiers) {
           restMappingService.updateIdentifiers(pkg, reqBody.identifiers)
@@ -200,11 +200,11 @@ class PackageController {
         }
 
         if (reqBody.provider) {
-          pkg.provider = genericOIDService.resolveOID(reqBody.provider.uuid)
+          pkg.provider = Org.get(reqBody.provider.id)
         }
 
         if (reqBody.nominalPlatform) {
-          pkg.nominalPlatform = genericOIDService.resolveOID(reqBody.nominalPlatform.uuid)
+          pkg.nominalPlatform = Platform.get(reqBody.nominalPlatform.id)
         }
 
         if( pkg.validate() ) {

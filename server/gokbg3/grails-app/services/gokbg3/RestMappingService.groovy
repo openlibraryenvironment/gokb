@@ -186,7 +186,7 @@ class RestMappingService {
     result
   }
 
-  def updateObject(obj, jonMap, reqBody) {
+  def updateObject(obj, jsonMap, reqBody) {
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
     pent.getPersistentProperties().each { p -> // list of PersistentProperties
