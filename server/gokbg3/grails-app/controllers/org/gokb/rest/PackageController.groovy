@@ -22,21 +22,22 @@ class PackageController {
   def genericOIDService
   def springSecurityService
   def ESSearchService
-  def messsageService
+  def messageService
   def restMappingService
+  def componentLookupService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
+    def minResponse = ['id','label']
 
     params.componentType = params.componentType ?: "Package" // Tells ESSearchService what to look for
 
     def es_result = ESSearchService.find(params)
+    def db_result = componentLookupService.restLookup(Package, params)
 
-    if (es_result.result == 'OK') {
-      result = restMappingService.convertEsLinks(params, es_result, "packages")
-    }
+    result = db_result
 
     result.data?.each { pkg ->
       pkg['_links'] << ['tipps': ['href': (base + "/packages/${pkg.uuid}/tipps")]]
@@ -55,8 +56,8 @@ class PackageController {
     User user = User.get(springSecurityService.principal.id)
 
     if (params.oid || params.id) {
-      obj = Package.findByUuid(params.id) 
-      
+      obj = Package.findByUuid(params.id)
+
       if (!obj) {
         obj = genericOIDService.resolveOID(params.id)
       }
@@ -109,7 +110,7 @@ class PackageController {
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
-    
+
     if (reqBody) {
       Package pkg = Package.upsertDTO(reqBody, user)
 
@@ -150,7 +151,7 @@ class PackageController {
     if (pkg && reqBody) {
       if ( !user.hasRole('ROLE_ADMIN') && pkg.curatoryGroups && pkg.curatoryGroups.size() > 0 ) {
         def cur = user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id)
-        
+
         if (!cur) {
           editable = false
         }
@@ -182,7 +183,7 @@ class PackageController {
           'outgoingCombos'
         ]
 
-        pkg = restMappingService.updateObject(pkg, jsonMap)
+        pkg = restMappingService.updateObject(pkg, jsonMap, reqBody)
 
         if (reqBody.identifiers) {
           restMappingService.updateIdentifiers(pkg, reqBody.identifiers)
@@ -242,13 +243,13 @@ class PackageController {
     def tippParams = params
     def base = grailsApplication.config.serverURL + "/rest"
     def pkgId = Package.findByUuid(params.id)?.uuid ?: null
-    
+
     if (!pkgId) {
       try {
         pkgId = Package.get(genericOIDService.oidToId(params.id))?.uuid ?: null
       }
       catch (Exception e) {
-      } 
+      }
     }
 
     if (pkgId) {

@@ -69,11 +69,12 @@ class RestMappingService {
    */
 
   def mapObjectToJson(obj, params) {
+    log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
     def result = [:]
     def embed_active = params['_embed']?.split(',') ?: []
     def base = grailsApplication.config.serverURL + "/rest"
     def jsonMap = null
-    def defaultIgnore = [      
+    def defaultIgnore = [
       'lastProject',
       'bucketHash',
       'shortcode',
@@ -96,8 +97,7 @@ class RestMappingService {
       'outgoingCombos'
     ]
 
-    GrailsClass obj_cls = grailsApplication.getArtefact('Domain', obj.class.name)
-    PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj_cls.fullName)
+    PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
     jsonMap = KBComponent.has(obj.deproxy(),'jsonMapping') ? obj.jsonMapping : null
 
@@ -122,48 +122,19 @@ class RestMappingService {
             // Set ref property
             log.debug("set assoc ${p.name} to lookup of OID ${obj[p.name]?.id}");
             if (obj[p.name]) {
-              def associatedObj = obj[p.name]
+              def label = selectPreferredLabel(obj[p.name])
 
-              if(p.type.name == 'org.gokb.cred.RefdataValue'){
-                if (embed_active.contains(p.name)) {
-                  result['_embedded'][p.name] = [
-                    '_links':[
-                      'self':['href': base + "/refdata/values/" + associatedObj.id, 'title': associatedObj.value],
-                      'owner':['href': base + "/refdata/categories/" + associatedObj.owner.id]
-                    ],
-                    'value': associatedObj.value,
-                    'id': associatedObj.id
-                  ]
-                }
-                result[p.name] = associatedObj.value
+              result[p.name] = [
+                'name': label,
+                'id': obj[p.name].id
+              ]
+
+              if (embed_active.contains(p.name)) {
+                result['_embedded'][p.name] = getEmbeddedJson(obj[p.name])
               }
-              else {
-
-                if (KBComponent.has(associatedObj, "restPath")) {
-                  result['_links'][p.name] = ['href': base + associatedObj.restPath + "/${associatedObj.hasProperty('uuid') ? associatedObj.uuid : associatedObj.id}"]
-                  result['_links'][p.name]['title'] = selectPreferredLabel(associatedObj)
-
-                  if(associatedObj.hasProperty('uuid')) {
-                    result['_links'][p.name]['uuid'] = associatedObj.uuid
-                  }
-                  else {
-                    result['_links'][p.name]['oid'] = associatedObj.logEntityId
-                  }
-                }
-                else {
-                  log.warn("No restPath defined for class ${p.type.name}!")
-                }
-
-                if (embed_active.contains(p.name)) {
-                  result['_embedded'][p.name] = getEmbeddedJson(associatedObj)
-                }
-              }
-            } 
+            }
           }
           else {
-            if(KBComponent.has(obj,"restPath")) {
-              result['_links'][p.name] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}/" + p.name]
-            }
             if(embed_active.contains(p.name)) {
               result['_embedded'][p.name] = []
 
@@ -190,18 +161,15 @@ class RestMappingService {
       }
     }
     // Handle combo properties
-    if ( KBComponent.isAssignableFrom(obj_cls.clazz) ) {
+    if ( KBComponent.isAssignableFrom(obj.class) ) {
       def combo_props = obj.allComboPropertyNames
 
       combo_props.each { cp ->
-        log.debug("Combo prop ${cp} is ${obj.getCardinalityFor(obj_cls.clazz,cp)}")
-        if (obj.getCardinalityFor(obj_cls.clazz,cp) == 'hasByCombo') {
+        log.debug("Combo prop ${cp} is ${obj.getCardinalityFor(obj.class,cp)}")
+        if (obj.getCardinalityFor(obj.class,cp) == 'hasByCombo') {
           if ( obj[cp] != null) {
             def cval = obj[cp]
-
-            if(KBComponent.has(cval.deproxy(),"restPath")) {
-              result['_links'][cp] = ['href': base + cval.restPath + "/" + cval.uuid, 'title': cval.name, 'uuid': cval.uuid]
-            }
+            result[cp] = ['id': cval.id, 'name': cval.name, 'uuid': cval.uuid]
           }
         }
         else {
@@ -217,7 +185,7 @@ class RestMappingService {
     result
   }
 
-  def updateObject(obj, jonMap) {
+  def updateObject(obj, jonMap, reqBody) {
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
     pent.getPersistentProperties().each { p -> // list of PersistentProperties
@@ -226,18 +194,8 @@ class RestMappingService {
         if ( p instanceof Association ) {
           if ( p instanceof ManyToOne || p instanceof OneToOne ) {
             // Set ref property
-            if ( p.type.name == 'org.gokb.cred.RefdataValue' ) {
-              pkg[p.name] = RefdataValue.get(reqBody[p.name].id)
-            }
-            else {
-              log.debug("set assoc ${p.name} to lookup of OID ${reqBody[p.name].oid}");
-              if ( reqBody[p.name].uuid ) {
-                pkg[p.name] = genericOIDService.resolveOID(reqBody.provider.uuid)
-              }
-              else {
-                pkg[p.name] = genericOIDService.resolveOID(reqBody[p.name].oid)
-              }
-            }
+            Class objClass = p.type
+            obj[p.name] = objClass.get(reqBody[p.name].id)
           }
           else {
             // Add to collection
@@ -249,18 +207,18 @@ class RestMappingService {
           switch ( p.type ) {
             case Long.class:
               log.debug("Set simple prop ${p.name} = ${reqBody[p.name]} (as long=${Long.parseLong(reqBody[p.name])})");
-              pkg[p.name] = Long.parseLong(reqBody[p.name]);
+              obj[p.name] = Long.parseLong(reqBody[p.name]);
               break;
 
             case Date.class:
               LocalDateTime dateObj = reqBody[p.name] ? LocalDate.parse(reqBody[p.name], formatter) : null
-              pkg[p.name] = dateObj ? java.sql.Timestamp.valueOf(dateObj) : null
+              obj[p.name] = dateObj ? java.sql.Timestamp.valueOf(dateObj) : null
               log.debug("Set simple prop ${p.name} = ${reqBody[p.name]} (as date ${dateObj}))");
               break;
             default:
               log.debug("Default for type ${p.type}")
               log.debug("Set simple prop ${p.name} = ${reqBody[p.name]}");
-              pkg[p.name] = reqBody[p.name]
+              obj[p.name] = reqBody[p.name]
               break;
           }
         }
@@ -289,6 +247,8 @@ class RestMappingService {
   }
 
   public def getEmbeddedJson(obj) {
-    mapObjectToJson(obj)
+    def pars = [:]
+    log.debug("Embedded object ${obj}")
+    mapObjectToJson(obj, pars)
   }
 }
