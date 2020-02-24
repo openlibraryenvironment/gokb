@@ -50,14 +50,14 @@ class TitleInstance extends KBComponent {
 
     // Check that the variant is not equal to the name of this title first.
     if (!title.equalsIgnoreCase(this.name)) {
-    
+
       def normTitle = GOKbTextUtils.normaliseString(title)
 
       // Need to compare the existing variant names here. Rather than use the equals method,
       // we are going to compare certain attributes here.
       RefdataValue title_type = RefdataCategory.lookupOrCreate("KBComponentVariantName.VariantType", "Alternate Title")
       def locale_rd = null
-      
+
       if(locale){
         locale_rd = RefdataValue.findByOwnerAndValue(RefdataCategory.findByDesc("KBComponentVariantName.Locale"), (locale))
       }
@@ -239,11 +239,11 @@ class TitleInstance extends KBComponent {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     def status_filter = null
-    
+
     if(params.filter1) {
       status_filter = RefdataCategory.lookup('KBComponent.Status', params.filter1)
     }
-    
+
     def ql = null;
     // ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
     // Return all titles where the title matches (Left anchor) OR there is an identifier for the title matching what is input
@@ -314,7 +314,7 @@ class TitleInstance extends KBComponent {
             builder.'firstEditor' (this.firstEditor)
             builder.'firstAuthor' (this.firstAuthor)
           }
-          
+
           builder.'imprint' (imprint?.name)
           builder.'medium' (medium?.value)
           builder.'type' (this.class.simpleName)
@@ -489,7 +489,7 @@ class TitleInstance extends KBComponent {
 
   def addTitlesToHistory(title, final_list, depth) {
     def result = false;
-    
+
     if ( title ) {
       // Check to see whether this component has an id first. If not then return an empty set.
       if (title.id && title.id > 0) {
@@ -523,7 +523,7 @@ class TitleInstance extends KBComponent {
   @Transient
   def getFullTitleHistory() {
     def result = [:]
-    
+
     // Check to see whether this component has an id first. If not then return an empty set.
     if (id && id > 0) {
       def il = []
@@ -731,7 +731,7 @@ class TitleInstance extends KBComponent {
     log.debug('remapWork');
     // BKM:TITLE + then FIRSTAUTHOR if duplicates found
 
-      if ( ( normname ) && 
+      if ( ( normname ) &&
            ( normname.length() > 0 ) &&
            ( ! normname.startsWith('unknown title')) ) {
         // book bucket (Work) hashes are based on the normalised name.
@@ -792,8 +792,9 @@ class TitleInstance extends KBComponent {
       if ( tipps?.size() > 0 ) {
         def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def tipp_ids = tipps?.collect { it.id }
+        Date now = new Date()
 
-        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids])
+        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids, now: now])
       }
 
       def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this])

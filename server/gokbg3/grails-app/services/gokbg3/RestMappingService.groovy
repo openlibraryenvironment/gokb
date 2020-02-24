@@ -15,13 +15,12 @@ class RestMappingService {
   def grailsApplication
   def genericOIDService
 
-  def convertEsLinks(params, es_result, component_endpoint) {
-    def result = [:]
+  def convertEsLinks(es_result, params, component_endpoint) {
     def base = grailsApplication.config.serverURL + "/rest"
 
-    result['_links'] = [:]
-    result['data'] = es_result.records
-    result['_pagination'] = [
+    es_result['_links'] = [:]
+    es_result['data'] = es_result.records
+    es_result['_pagination'] = [
       offset: es_result.offset,
       limit: es_result.max,
       total: es_result.count
@@ -32,7 +31,7 @@ class RestMappingService {
     selfLink.removeQueryParam('controller')
     selfLink.removeQueryParam('action')
     selfLink.removeQueryParam('componentType')
-    result['_links']['self'] = [href: selfLink.toString()]
+    es_result['_links']['self'] = [href: selfLink.toString()]
 
 
     if (es_result.count > es_result.offset+es_result.max) {
@@ -57,10 +56,10 @@ class RestMappingService {
       link.removeQueryParam('action')
       link.removeQueryParam('componentType')
       link.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
-      result['_links']['prev'] = ['href': link.toString()]
+      es_result['_links']['prev'] = ['href': link.toString()]
     }
 
-    result
+    es_result
   }
 
   /**
@@ -121,7 +120,6 @@ class RestMappingService {
         if ( p instanceof Association ) {
           if ( p instanceof ManyToOne || p instanceof OneToOne ) {
             // Set ref property
-            log.debug("set assoc ${p.name} to lookup of OID ${obj[p.name]?.id}");
             if (obj[p.name]) {
               def label = selectPreferredLabel(obj[p.name])
 
@@ -166,7 +164,6 @@ class RestMappingService {
       def combo_props = obj.allComboPropertyNames
 
       combo_props.each { cp ->
-        log.debug("Combo prop ${cp} is ${obj.getCardinalityFor(obj.class,cp)}")
         if (obj.getCardinalityFor(obj.class,cp) == 'hasByCombo') {
           if ( obj[cp] != null) {
             def cval = obj[cp]

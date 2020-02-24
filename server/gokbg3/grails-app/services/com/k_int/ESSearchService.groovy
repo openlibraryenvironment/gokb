@@ -26,6 +26,7 @@ class ESSearchService{
   def ESWrapperService
   def grailsApplication
   def genericOIDService
+  def restMappingService
 
   def requestMapping = [
     generic: [
@@ -85,7 +86,7 @@ class ESSearchService{
     def result = [:]
 
     Client esclient = ESWrapperService.getClient()
-  
+
     try {
       if ( (params.q && params.q.length() > 0) || params.rectype) {
 
@@ -103,12 +104,12 @@ class ESSearchService{
           params.remove("tempFQ") //remove from GSP access
         }
 
-        
+
         def es_index = grailsApplication.config.gokb?.es?.index ?: "gokbg3"
         log.debug("index:${es_index} query: ${query_str}");
 
         def search_results = null
-        
+
         try {
           log.debug("start to build srb with index: " + es_index)
           SearchRequestBuilder srb = esclient.prepareSearch(es_index)
@@ -121,13 +122,13 @@ class ESSearchService{
             srb = srb.addSort("${params.sort}".toString(), order)
           }
           log.debug("srb start to add query and aggregration query string is ${query_str}")
-    
+
           srb.setQuery(QueryBuilders.queryStringQuery(query_str))//QueryBuilders.wrapperQuery(query_str)
              .addAggregation(AggregationBuilders.terms('curatoryGroups').size(25).field('curatoryGroups'))
              .addAggregation(AggregationBuilders.terms('provider').size(25).field('provider'))
              .setFrom(params.offset)
              .setSize(params.max)
-             
+
           // log.debug("finished srb and aggregrations: " + srb)
           search_results = srb.get()
           // log.debug("search results: " + search_results)
@@ -135,7 +136,7 @@ class ESSearchService{
         catch (Exception ex) {
           log.error("Error processing ${es_index} ${query_str}",ex);
         }
-        
+
         //TODO: change this part to represent what we really need if this is not it, see the final part of this method where hits are done
         if (search_results) {
           def search_hits = search_results.getHits()
@@ -143,7 +144,7 @@ class ESSearchService{
           result.firstrec = params.offset + 1
           result.resultsTotal = search_hits.totalHits
           result.lastrec = Math.min ( params.offset + params.max, result.resultsTotal)
-          
+
           if (search_results.getAggregations()) {
             result.facets = [:]
             search_results.getAggregations().each { entry ->
@@ -184,11 +185,11 @@ class ESSearchService{
     if ( params?.q != null ){
       sw.write("name:${params.q}")
     }
-      
+
     if(params?.rectype){
       if(sw.toString()) sw.write(" AND ");
       sw.write(" rectype:${params.rectype} ")
-    } 
+    }
 
     field_map.each { mapping ->
 
@@ -379,7 +380,7 @@ class ESSearchService{
   }
 
   /**
-   * find : Query the Elasticsearch index -- 
+   * find : Query the Elasticsearch index --
    * @param params : Elasticsearch query params
   **/
 
@@ -499,7 +500,7 @@ class ESSearchService{
           if (sortBy == "name") {
             sortBy = "sortname"
           }
-          
+
           if (ESWrapperService.mapping.component.properties[sortBy]?.type == 'text') {
             errors['sort'] = "Unable to sort by text field ${sortBy}!"
           }
@@ -545,7 +546,7 @@ class ESSearchService{
 
         search.hits.each { r ->
           def response_record = [:]
-          
+
           if (!params.skipDomainMapping) {
             response_record = mapEsToDomain(r)
           }
@@ -562,6 +563,9 @@ class ESSearchService{
           }
 
           result.records.add(response_record);
+        }
+        if (!params.skipDomainMapping) {
+          restMappingService.convertEsLinks(result, params, "packages")
         }
       }
     } catch (Exception se) {

@@ -362,12 +362,13 @@ select tipp.id,
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
     def tipps = getTipps()
+    Date now = new Date()
 
     if ( tipps?.size() > 0 ) {
       def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
       def tipp_ids = tipps?.collect { it.id }
 
-      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids])
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdateComment = 'Deleted via Package delete', t.lastUpdated = :now where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids, now: now])
     }
   }
 
@@ -385,11 +386,12 @@ select tipp.id,
     log.debug("Retiring tipps");
 
     def tipps = getTipps()
+    Date now = new Date()
 
     if ( tipps?.size() > 0) {
       def tipp_ids = tipps?.collect { it.id }
 
-      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret where t.id IN (:ttd)",[ret: retired_status, ttd:tipp_ids])
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret, t.lastUpdateComment = 'Retired via Package retire', t.lastUpdated = :now where t.id IN (:ttd)",[ret: retired_status, ttd:tipp_ids, now: now])
     }
   }
 

@@ -201,6 +201,10 @@ class ComponentLookupService {
             qryParams["${p.name}${idx}"] = Long.valueOf(val)
             hqlQry += "p.${p.name} = :${p.name}${idx}"
           }
+          else if ( p.name == 'name' ){
+            hqlQry += "p.${p.name} like :${p.name}${idx}"
+            qryParams["${p.name}${idx}"] = "${val}%"
+          }
           else {
             hqlQry += "p.${p.name} = :${p.name}${idx}"
             qryParams["${p.name}${idx}"] = val

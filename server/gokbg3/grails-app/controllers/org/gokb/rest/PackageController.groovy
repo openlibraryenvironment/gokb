@@ -7,6 +7,7 @@ import grails.plugin.springsecurity.annotation.Secured
 
 import groovyx.net.http.URIBuilder
 
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -34,8 +35,13 @@ class PackageController {
 
     params.componentType = params.componentType ?: "Package" // Tells ESSearchService what to look for
 
+    def start_es = LocalDateTime.now()
     def es_result = ESSearchService.find(params)
+    log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+
+    def start_db = LocalDateTime.now()
     def db_result = componentLookupService.restLookup(Package, params)
+    log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
 
     result = db_result
 
