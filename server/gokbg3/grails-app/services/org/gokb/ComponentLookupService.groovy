@@ -128,18 +128,16 @@ class ComponentLookupService {
 
     combos.each { c ->
       if (params[c]) {
-        def alts = params.list(c)
         boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
         log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
-        alts.eachWithIndex { val, idx ->
-          if (incoming) {
-            hqlQry += " join p.incomingCombos as ${c}co${idx}"
-            hqlQry += " join ${c}co${idx}.fromComponent as ${c}${idx}"
-          }
-          else {
-            hqlQry += " join p.outgoingCombos as ${c}co${idx}"
-            hqlQry += " join ${c}co${idx}.toComponent as ${c}${idx}"
-          }
+
+        if (incoming) {
+          hqlQry += " join p.incomingCombos as ${c}_combo"
+          hqlQry += " join ${c}_combo.fromComponent as ${c}"
+        }
+        else {
+          hqlQry += " join p.outgoingCombos as ${c}_combo"
+          hqlQry += " join ${c}_combo.toComponent as ${c}"
         }
       }
     }
@@ -157,18 +155,14 @@ class ComponentLookupService {
         else {
           hqlQry += " AND "
         }
-        alts.eachWithIndex { val, idx ->
-          String parName = "${c}${idx}".toString()
-          if (idx > 0) {
-            hqlQry += " OR "
-          }
-          else {
-            hqlQry += "("
-          }
-          hqlQry += "${c}${idx} = :${c}${idx}"
-          qryParams[parName] = KBComponent.get(Long.valueOf(val))
+        if (alts.size() > 1) {
+          hqlQry += "${c} IN :${c}"
+          qryParams[c] = alts.collect { KBComponent.get(Long.valueOf(it)) }
         }
-        hqlQry += ")"
+        else {
+          hqlQry += "${c} = :${c}"
+          qryParams[c] = KBComponent.get(Long.valueOf(params[c]))
+        }
       }
     }
 
@@ -186,32 +180,22 @@ class ComponentLookupService {
         }
         def alts = params.list(p.name)
 
-        alts.eachWithIndex { val, idx ->
-          if (idx > 0) {
-            hqlQry += " OR "
-          }
-          else {
-            hqlQry += "("
-          }
-          if ( p instanceof Association ) {
-            qryParams["${p.name}${idx}"] = Long.valueOf(val)
-            hqlQry += "p.${p.name}.id = :${p.name}${idx}"
-          }
-          else if ( p.type == Long ) {
-            qryParams["${p.name}${idx}"] = Long.valueOf(val)
-            hqlQry += "p.${p.name} = :${p.name}${idx}"
-          }
-          else if ( p.name == 'name' ){
-            hqlQry += "p.${p.name} like :${p.name}${idx}"
-            qryParams["${p.name}${idx}"] = "${val}%"
-          }
-          else {
-            hqlQry += "p.${p.name} = :${p.name}${idx}"
-            qryParams["${p.name}${idx}"] = val
-          }
-
+        if ( p instanceof Association ) {
+          qryParams[p.name] = alts.collect { Long.valueOf(it) }
+          hqlQry += "p.${p.name}.id IN :${p.name}"
         }
-        hqlQry += ")"
+        else if ( p.type == Long ) {
+          qryParams[p.name] = alts.collect { Long.valueOf(it) }
+          hqlQry += "p.${p.name} IN :${p.name}"
+        }
+        else if ( p.name == 'name' ){
+          hqlQry += "p.${p.name} like :${p.name}"
+          qryParams[p.name] = "${params[p.name]}%"
+        }
+        else {
+          hqlQry += "p.${p.name} = :${p.name}"
+          qryParams[p.name] = val
+        }
       }
     }
 
