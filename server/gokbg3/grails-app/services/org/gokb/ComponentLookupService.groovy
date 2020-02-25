@@ -115,7 +115,7 @@ class ComponentLookupService {
     comp
   }
 
-  public def restLookup (cls, params) {
+  public def restLookup (cls, params, def context = null) {
     def result = [:]
     def hqlQry = "from ${cls.simpleName} as p".toString()
     def qryParams = [:]
@@ -128,80 +128,153 @@ class ComponentLookupService {
     def sort = null
     def order = params['order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
 
+    def comboJoinStr = ""
+    def comboFilterStr = ""
+
     comboProps.each { c ->
+
       if (params[c] || params['sort'] == c) {
         boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
         log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
 
         if (incoming) {
-          hqlQry += " join p.incomingCombos as ${c}_combo"
-          hqlQry += " join ${c}_combo.fromComponent as ${c}"
+          comboJoinStr += " join p.incomingCombos as ${c}_combo"
+          comboJoinStr += " join ${c}_combo.fromComponent as ${c}"
         }
         else {
-          hqlQry += " join p.outgoingCombos as ${c}_combo"
-          hqlQry += " join ${c}_combo.toComponent as ${c}"
+          comboJoinStr += " join p.outgoingCombos as ${c}_combo"
+          comboJoinStr += " join ${c}_combo.toComponent as ${c}"
         }
-      }
-    }
-
-    comboProps.each { c ->
-      if (params[c]) {
-        def alts = params.list(c)
-        boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
-        log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
 
         if (first) {
-          hqlQry += " WHERE "
+          comboFilterStr += " WHERE "
           first = false
         }
         else {
-          hqlQry += " AND "
+          comboFilterStr += " AND "
         }
-        hqlQry += "${c}_combo.type = :${c}type AND "
+
+        comboFilterStr += "${c}_combo.type = :${c}type AND "
         qryParams["${c}type"] = RefdataCategory.lookupOrCreate ( "Combo.Type", cls.getComboTypeValueFor(cls, c))
-        hqlQry += "${c}_combo.status = :${c}status AND "
+        comboFilterStr += "${c}_combo.status = :${c}status "
         qryParams["${c}status"] = RefdataCategory.lookup("Combo.Status", "Active")
-        hqlQry += "${c} IN :${c}"
-        qryParams[c] = alts.collect { KBComponent.get(Long.valueOf(it)) }
-      }
-      if (params['sort'] == c) {
-        sort = " order by ${c}.name ${order ?: ''}"
+
+        def useIds = true
+        def validLong = []
+        def validStr = []
+        def paramStr = ""
+
+        if (params[c]) {
+          params.list(c)?.each { a ->
+            if (a?.trim()) {
+              try {
+                validLong.add(Long.valueOf(a))
+              }
+              catch (java.lang.NumberFormatException nfe) {
+                validStr.add(a)
+                useIds = false
+              }
+            }
+          }
+
+          if (validStr.size() > 0 || validLong.size() > 0) {
+            paramStr += " AND ("
+
+            if (validLong.size() > 0) {
+              paramStr += "${c}.id IN :${c}"
+              qryParams["${c}"] = validLong
+            }
+            if (validStr.size() > 0) {
+              if (validLong.size() > 0) {
+                paramStr += " OR "
+              }
+              paramStr += "${c}.uuid IN :${c}_str OR "
+              paramStr += "${c}.name IN :${c}_str"
+              qryParams["${c}_str"] = validStr
+            }
+            paramStr += ")"
+            comboFilterStr += paramStr
+          }
+        }
+        else {
+          sort = " order by ${c}.name ${order ?: ''}"
+        }
       }
     }
+
+    hqlQry += comboJoinStr + comboFilterStr
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(cls.name)
 
     pent.getPersistentProperties().each { p ->
       if (params[p.name]) {
         log.debug("Handling persistent param prop: ${p.name}")
+        def paramStr = ""
+        def addParam = true
+
         if (first) {
-          hqlQry += " WHERE "
+          paramStr += " WHERE "
           first = false
         }
         else {
-          hqlQry += " AND "
+          paramStr += " AND "
         }
         def alts = params.list(p.name)
 
         if ( p instanceof Association ) {
-          qryParams[p.name] = alts.collect { Long.valueOf(it) }
-          hqlQry += "p.${p.name}.id IN :${p.name}"
+          def validLong = []
+          def validStr = []
+
+          alts.each { a ->
+            if ( a?.trim() ) {
+              try {
+                validLong.add(Long.valueOf(a))
+              }
+              catch (java.lang.NumberFormatException nfe) {
+                validStr.add(a)
+              }
+            }
+          }
+
+          if ( validLong.size() > 0 || validStr.size() > 0 ) {
+            paramStr += "("
+            if (validLong.size() > 0) {
+              paramStr += "p.${p.name}.id IN :${p.name}"
+              qryParams[p.name] = validLong
+            }
+            if (validStr.size() > 0) {
+
+              paramStr += "p.${p.name}.${selectPreferredLabelProp(p.type)} IN :${p.name}_str"
+              if (p.type.hasProperty('uuid')) {
+                paramStr += " OR p.${p.name}.uuid IN :${p.name}_str"
+              }
+              qryParams["${p.name}_str"] = validStr
+            }
+            paramStr += ")"
+          }
+          else {
+            addParam = false
+          }
         }
         else if ( p.type == Long ) {
           qryParams[p.name] = alts.collect { Long.valueOf(it) }
-          hqlQry += "p.${p.name} IN :${p.name}"
+          paramStr += "p.${p.name} IN :${p.name}"
         }
         else if ( p.name == 'name' ){
-          hqlQry += "p.${p.name} like :${p.name}"
+          paramStr += "p.${p.name} like :${p.name}"
           qryParams[p.name] = "${params[p.name]}%"
         }
         else {
-          hqlQry += "p.${p.name} = :${p.name}"
+          paramStr += "p.${p.name} = :${p.name}"
           qryParams[p.name] = val
         }
 
         if (params['sort'] == p) {
           sort = " order by ${p.name} ${order ?: ''}"
+        }
+
+        if (addParam) {
+          hqlQry += paramStr
         }
       }
     }
@@ -241,48 +314,79 @@ class ComponentLookupService {
       total: hqlTotal
     ]
 
-    generateLinks(result, cls, params, max, offset, hqlTotal)
+    generateLinks(result, cls, context, params, max, offset, hqlTotal)
 
     result
   }
 
-  private generateLinks(result, cls, params, max, offset, total) {
+  private String selectPreferredLabelProp(cls) {
+    def obj_label = null
+    def cls_inst = cls.newInstance()
+
+    if (cls_inst.hasProperty('username')) {
+      obj_label = "username"
+    }
+    else if (cls_inst.hasProperty('name')) {
+      obj_label = "name"
+    }
+    else if (cls_inst.hasProperty('value')) {
+      obj_label = "value"
+    }
+    else if (cls_inst.hasProperty('variantName')) {
+      obj_label = "variantName"
+    }
+
+    return obj_label
+  }
+
+  private generateLinks(result, cls, context, params, max, offset, total) {
     def endpoint = cls.newInstance().hasProperty('restPath') ? cls.newInstance().restPath : ""
-    def base = grailsApplication.config.serverURL + "/rest" + "${endpoint}"
+    def base = grailsApplication.config.serverURL + "/rest" + "${context ?: endpoint}"
 
     result['_links'] = [:]
 
     def selfLink = new URIBuilder(base)
     selfLink.addQueryParams(params)
+    params.each { p, vals ->
+      log.debug("handling param ${p}: ${vals}")
+      if (vals instanceof String[]) {
+        selfLink.removeQueryParam(p)
+        vals.each { val ->
+          if (val.trim()) {
+            log.debug("Val: ${val} -- ${val.class.name}")
+            selfLink.addQueryParam(p, val)
+          }
+        }
+        log.debug("${selfLink.toString()}")
+      }
+      else if (!p.trim()) {
+        selfLink.removeQueryParam(p)
+      }
+    }
     selfLink.removeQueryParam('controller')
     selfLink.removeQueryParam('action')
-    selfLink.removeQueryParam('componentType')
+    if (params.componentType) {
+      selfLink.removeQueryParam('componentType')
+    }
     result['_links']['self'] = [href: selfLink.toString()]
 
 
     if (total > offset+max) {
-      def link = new URIBuilder(base)
-      link.addQueryParams(params)
-      if(link.query.offset){
-        link.removeQueryParam('offset')
+      def nextLink = selfLink
+      if(nextLink.query.offset){
+        nextLink.removeQueryParam('offset')
       }
-      link.removeQueryParam('controller')
-      link.removeQueryParam('action')
-      link.removeQueryParam('componentType')
-      link.addQueryParam('offset', "${offset + max}")
-      result['_links']['next'] = ['href': (link.toString())]
+      nextLink.addQueryParam('offset', "${offset + max}")
+      result['_links']['next'] = ['href': (nextLink.toString())]
     }
     if (offset > 0) {
-      def link = new URIBuilder(base)
-      link.addQueryParams(params)
-      if(link.query.offset){
-        link.removeQueryParam('offset')
+      def prevLink = selfLink
+
+      if(prevLink.query.offset){
+        prevLink.removeQueryParam('offset')
       }
-      link.removeQueryParam('controller')
-      link.removeQueryParam('action')
-      link.removeQueryParam('componentType')
-      link.addQueryParam('offset', "${(offset - max) > 0 ? offset - max : 0}")
-      result['_links']['prev'] = ['href': link.toString()]
+      prevLink.addQueryParam('offset', "${(offset - max) > 0 ? offset - max : 0}")
+      result['_links']['prev'] = ['href': prevLink.toString()]
     }
 
   }

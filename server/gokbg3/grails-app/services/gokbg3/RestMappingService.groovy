@@ -16,7 +16,7 @@ class RestMappingService {
   def genericOIDService
 
   def convertEsLinks(es_result, params, component_endpoint) {
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.serverURL + "/rest" + "${component_endpoint}"
 
     es_result['_links'] = [:]
     es_result['data'] = es_result.records
@@ -26,8 +26,25 @@ class RestMappingService {
       total: es_result.count
     ]
 
-    def selfLink = new URIBuilder(base + "/${component_endpoint}")
+    def selfLink = new URIBuilder(base)
     selfLink.addQueryParams(params)
+
+    params.each { p, vals ->
+      log.debug("handling param ${p}: ${vals}")
+      if (vals instanceof String[]) {
+        selfLink.removeQueryParam(p)
+        vals.each { val ->
+          if (val.trim()) {
+            log.debug("Val: ${val} -- ${val.class.name}")
+            selfLink.addQueryParam(p, val)
+          }
+        }
+        log.debug("${selfLink.toString()}")
+      }
+      else if (!p.trim()) {
+        selfLink.removeQueryParam(p)
+      }
+    }
     selfLink.removeQueryParam('controller')
     selfLink.removeQueryParam('action')
     selfLink.removeQueryParam('componentType')
@@ -35,28 +52,24 @@ class RestMappingService {
 
 
     if (es_result.count > es_result.offset+es_result.max) {
-      def link = new URIBuilder(base + "/${component_endpoint}")
-      link.addQueryParams(params)
-      if(link.query.offset){
-        link.removeQueryParam('offset')
+      def nextLink = selfLink
+
+      if(nextLink.query.offset){
+        nextLink.removeQueryParam('offset')
       }
-      link.removeQueryParam('controller')
-      link.removeQueryParam('action')
-      link.removeQueryParam('componentType')
-      link.addQueryParam('offset', "${es_result.offset + es_result.max}")
-      result['_links']['next'] = ['href': (link.toString())]
+
+      nextLink.addQueryParam('offset', "${es_result.offset + es_result.max}")
+      result['_links']['next'] = ['href': (nextLink.toString())]
     }
     if (es_result.offset > 0) {
-      def link = new URIBuilder(base + "/${component_endpoint}")
-      link.addQueryParams(params)
-      if(link.query.offset){
-        link.removeQueryParam('offset')
+      def prevLink = selfLink
+
+      if(prevLink.query.offset){
+        prevLink.removeQueryParam('offset')
       }
-      link.removeQueryParam('controller')
-      link.removeQueryParam('action')
-      link.removeQueryParam('componentType')
+
       link.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
-      es_result['_links']['prev'] = ['href': link.toString()]
+      es_result['_links']['prev'] = ['href': prevLink.toString()]
     }
 
     es_result
@@ -205,7 +218,20 @@ class RestMappingService {
           switch ( p.type ) {
             case Long.class:
               log.debug("Set simple prop ${p.name} = ${reqBody[p.name]} (as long=${Long.parseLong(reqBody[p.name])})");
-              obj[p.name] = Long.parseLong(reqBody[p.name]);
+              try {
+                obj[p.name] = Long.parseLong(reqBody[p.name]);
+              }
+              catch (Exception e) {
+                obj.errors.reject(
+                  'typeMismatch.java.lang.Long',
+                  [p.name] as Object[],
+                  '[Invalid number value for property [{0}]]'
+                )
+                obj.errors.rejectValue(
+                  p.name,
+                  'typeMismatch.java.lang.Long'
+                )
+              }
               break;
 
             case Date.class:

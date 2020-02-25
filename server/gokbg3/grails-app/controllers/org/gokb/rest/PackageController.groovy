@@ -246,67 +246,43 @@ class PackageController {
   def tipps() {
     def result = [:]
     log.debug("tipps :: ${params}")
-    def tippParams = params
-    def base = grailsApplication.config.serverURL + "/rest"
-    def pkgId = Package.findByUuid(params.id)?.uuid ?: null
+    def pkgId = Package.findByUuid(params.id)?.id ?: null
 
     if (!pkgId) {
       try {
-        pkgId = Package.get(genericOIDService.oidToId(params.id))?.uuid ?: null
+        pkgId = Package.get(genericOIDService.oidToId(params.id))?.id ?: null
       }
       catch (Exception e) {
       }
     }
 
     if (pkgId) {
+      def context = "/packages/" + pkgId + "/tipps"
+      def base = grailsApplication.config.serverURL + "/rest"
+      def es_search = params.es ? true : false
 
-      result['links'] = ['self':['href': base + "/packages/" + pkgId + "/tipps"]]
+      params.remove('id')
+      params.remove('uuid')
+      params.remove('es')
 
-      tippParams.remove('componentType')
-      tippParams.componentType = "TIPP" // Tells ESSearchService what to look for
-      tippParams.tippPackage = pkgId
-      tippParams.remove('id')
-      tippParams.remove('uuid')
+      def esParams = new HashMap(params)
+      esParams.remove('componentType')
+      esParams.componentType = "TIPP" // Tells ESSearchService what to look for
+      esParams.tippPackage = pkgId
 
-      def es_result =  ESSearchService.find(tippParams)
+      log.debug("New ES params: ${esParams}")
 
-      result.count = es_result.max
-      result.total = es_result.count
-      result.offset = es_result.offset
+      params.pkg = pkgId
 
-      if (es_result.count > (es_result.offset + es_result.max)) {
-        def link = new URIBuilder(base + "/packages/${pkgId}/tipps")
-        link.addQueryParams(params)
-        if(link.query.offset){
-          link.removeQueryParam('offset')
-        }
-        link.removeQueryParam('tippPackage')
-        link.removeQueryParam('controller')
-        link.removeQueryParam('action')
-        link.removeQueryParam('componentType')
-        link.addQueryParam('offset', "${es_result.offset + es_result.max}")
-        result['links']['next'] = ['href': (link.toString())]
+      if (es_search) {
+        def start_es = LocalDateTime.now()
+        result = ESSearchService.find(esParams, context)
+        log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
       }
-      if (es_result.offset > 0) {
-        def link = new URIBuilder(base + "/packages/${pkgId}/tipps")
-        link.addQueryParams(params)
-        if(link.query.offset){
-          link.removeQueryParam('offset')
-        }
-        link.removeQueryParam('tippPackage')
-        link.removeQueryParam('controller')
-        link.removeQueryParam('action')
-        link.removeQueryParam('componentType')
-        link.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
-        result['links']['prev'] = ['href': link.toString()]
-      }
-
-      result['embedded'] = ['tipps':[]]
-      result['links']['items'] = []
-
-      es_result.records.each { tipp ->
-        result['links']['items'] << ['href': base + "/tipps/" + tipp.uuid]
-        result['embedded']['tipps'] << tipp
+      else {
+        def start_db = LocalDateTime.now()
+        result = componentLookupService.restLookup(TitleInstancePackagePlatform, params)
+        log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
       }
     }
     else {

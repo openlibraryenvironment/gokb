@@ -296,11 +296,18 @@ class ESSearchService{
   }
 
   private void addStatusQuery(query, errors, qpars) {
-    if ( qpars.list('status').size() > 0 ) {
+    if ( qpars.status && qpars.status instanceof List ) {
 
       QueryBuilder statusQuery = QueryBuilders.boolQuery()
 
-      qpars.list('status').each {
+      qpars.status.each {
+        def ref_status = it
+
+        try {
+          ref_status = RefdataValue.get(Long.valueOf(it))
+        }
+        catch (Exception e) {
+        }
         statusQuery.should(QueryBuilders.termQuery('status', it))
       }
 
@@ -382,9 +389,10 @@ class ESSearchService{
   /**
    * find : Query the Elasticsearch index --
    * @param params : Elasticsearch query params
+   * @param context : Overrides dynamic url path
   **/
 
-  def find(params) {
+  def find(params, def context = null) {
     def result = [result: 'OK']
     def search_action = null
     def errors = [:]
@@ -433,13 +441,13 @@ class ESSearchService{
       processNameFields(exactQuery, errors, params)
 
       params.each { k, v ->
-        if (k in requestMapping.generic) {
+        if (requestMapping.generic && k in requestMapping.generic) {
           exactQuery.must(QueryBuilders.matchQuery(k, v))
         }
-        else if (requestMapping.simpleMap.containsKey(k)) {
+        else if (requestMapping.simpleMap?.containsKey(k)) {
           exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v))
         }
-        else if (requestMapping.linked.containsKey(k)) {
+        else if (requestMapping.linked?.containsKey(k)) {
           processLinkedField(exactQuery, k, v)
         }
         else if (k.contains('platform') || k.contains('Platform')) {
@@ -451,13 +459,13 @@ class ESSearchService{
             errors[k] = "Platform filter has already been defined by parameter '${platformParam}'!"
           }
         }
-        else if (k in requestMapping.dates) {
+        else if (requestMapping.dates && k in requestMapping.dates) {
           log.debug("Processing date param ${k}")
         }
-        else if (k in requestMapping.complex) {
+        else if (requestMapping.complex && k in requestMapping.complex) {
           log.debug("Processing complex param ${k}")
         }
-        else if (k in requestMapping.ignore) {
+        else if (requestMapping.ignore && k in requestMapping.ignore) {
           log.debug("Processing unmapped param ${k}")
         }
         else {
@@ -564,8 +572,19 @@ class ESSearchService{
 
           result.records.add(response_record);
         }
+
         if (!params.skipDomainMapping) {
-          restMappingService.convertEsLinks(result, params, "packages")
+          def contextPath = "component"
+
+          if(context) {
+            contextPath = context
+          }
+          else if (component_type) {
+            def obj_cls = Class.forName("org.gokb.cred.${record.source.componentType}").newInstance()
+            contextPath = obj_cls.restPath
+          }
+
+          restMappingService.convertEsLinks(result, params, contextPath)
         }
       }
     } catch (Exception se) {
