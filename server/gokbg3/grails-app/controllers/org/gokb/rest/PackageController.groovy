@@ -31,19 +31,21 @@ class PackageController {
   def index() {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
-    def minResponse = ['id','label']
+    def es_search = params.es ? true : false
 
-    params.componentType = params.componentType ?: "Package" // Tells ESSearchService what to look for
+    params.componentType = "Package" // Tells ESSearchService what to look for
 
-    def start_es = LocalDateTime.now()
-    def es_result = ESSearchService.find(params)
-    log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
-
-    def start_db = LocalDateTime.now()
-    def db_result = componentLookupService.restLookup(Package, params)
-    log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
-
-    result = db_result
+    if (es_search) {
+      params.remove('es')
+      def start_es = LocalDateTime.now()
+      result = ESSearchService.find(params)
+      log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+    }
+    else {
+      def start_db = LocalDateTime.now()
+      result = componentLookupService.restLookup(Package, params)
+      log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+    }
 
     result.data?.each { pkg ->
       pkg['_links'] << ['tipps': ['href': (base + "/packages/${pkg.uuid}/tipps")]]
@@ -246,33 +248,32 @@ class PackageController {
   def tipps() {
     def result = [:]
     log.debug("tipps :: ${params}")
-    def pkgId = Package.findByUuid(params.id)?.id ?: null
+    def pkg = Package.findByUuid(params.id)
 
-    if (!pkgId) {
+    if (!pkg) {
       try {
-        pkgId = Package.get(genericOIDService.oidToId(params.id))?.id ?: null
+        pkg = Package.get(genericOIDService.oidToId(params.id))
       }
       catch (Exception e) {
       }
     }
 
-    if (pkgId) {
-      def context = "/packages/" + pkgId + "/tipps"
+    if (pkg) {
+      def context = "/packages/" + params.id + "/tipps"
       def base = grailsApplication.config.serverURL + "/rest"
       def es_search = params.es ? true : false
 
       params.remove('id')
       params.remove('uuid')
       params.remove('es')
+      params.pkg = pkg.uuid
 
       def esParams = new HashMap(params)
       esParams.remove('componentType')
       esParams.componentType = "TIPP" // Tells ESSearchService what to look for
-      esParams.tippPackage = pkgId
 
       log.debug("New ES params: ${esParams}")
-
-      params.pkg = pkgId
+      log.debug("New DB params: ${params}")
 
       if (es_search) {
         def start_es = LocalDateTime.now()
@@ -281,13 +282,13 @@ class PackageController {
       }
       else {
         def start_db = LocalDateTime.now()
-        result = componentLookupService.restLookup(TitleInstancePackagePlatform, params)
+        result = componentLookupService.restLookup(TitleInstancePackagePlatform, params, context)
         log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
       }
     }
     else {
       result.result = 'ERROR'
-      result.message = 'Package id could not be resolved!'
+      result.message = 'Package id ${params.id} could not be resolved!'
       response.setStatus(404)
     }
 

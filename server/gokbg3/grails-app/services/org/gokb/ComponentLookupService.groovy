@@ -115,6 +115,13 @@ class ComponentLookupService {
     comp
   }
 
+  /**
+   *  restLookup : Look up components via HQL query.
+   * @param cls : The Class of objects to be searched for
+   * @param params : The map of request parameters
+   * @param context : Possible override of the self link path
+   */
+
   public def restLookup (cls, params, def context = null) {
     def result = [:]
     def hqlQry = "from ${cls.simpleName} as p".toString()
@@ -130,6 +137,8 @@ class ComponentLookupService {
 
     def comboJoinStr = ""
     def comboFilterStr = ""
+
+    // Check params for known combo properties
 
     comboProps.each { c ->
 
@@ -159,20 +168,18 @@ class ComponentLookupService {
         comboFilterStr += "${c}_combo.status = :${c}status "
         qryParams["${c}status"] = RefdataCategory.lookup("Combo.Status", "Active")
 
-        def useIds = true
         def validLong = []
         def validStr = []
         def paramStr = ""
 
         if (params[c]) {
           params.list(c)?.each { a ->
-            if (a?.trim()) {
-              try {
-                validLong.add(Long.valueOf(a))
-              }
-              catch (java.lang.NumberFormatException nfe) {
+            try {
+              validLong.add(Long.valueOf(a))
+            }
+            catch (java.lang.NumberFormatException nfe) {
+              if (a?.trim()) {
                 validStr.add(a)
-                useIds = false
               }
             }
           }
@@ -205,6 +212,8 @@ class ComponentLookupService {
     hqlQry += comboJoinStr + comboFilterStr
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(cls.name)
+
+    // Check params for persistent properties
 
     pent.getPersistentProperties().each { p ->
       if (params[p.name]) {
@@ -279,9 +288,19 @@ class ComponentLookupService {
       }
     }
 
-    // if (es_result.result == 'OK') {
-    //   result = restMappingService.convertEsLinks(params, es_result, "packages")
-    // }
+    // Filter out deleted records by default.
+
+    if (!params['status']) {
+      if (first) {
+        hqlQry += " WHERE "
+        first = false
+      }
+      else {
+        hqlQry += " AND "
+      }
+      hqlQry += "p.status != :status"
+      qryParams['status'] = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+    }
 
     def hqlCount = "select count(p.id) ${hqlQry}".toString()
     def hqlFinal = "select p ${sort ? ',' + params['sort'] : ''} ${hqlQry} ${sort ?: ''}".toString()
@@ -319,6 +338,11 @@ class ComponentLookupService {
     result
   }
 
+  /**
+   *  selectPreferredLabelProp : Determines the correct label property for a specific class.
+   * @param cls : The class to be examined
+   */
+
   private String selectPreferredLabelProp(cls) {
     def obj_label = null
     def cls_inst = cls.newInstance()
@@ -326,11 +350,11 @@ class ComponentLookupService {
     if (cls_inst.hasProperty('username')) {
       obj_label = "username"
     }
-    else if (cls_inst.hasProperty('name')) {
-      obj_label = "name"
-    }
     else if (cls_inst.hasProperty('value')) {
       obj_label = "value"
+    }
+    else if (cls_inst.hasProperty('name')) {
+      obj_label = "name"
     }
     else if (cls_inst.hasProperty('variantName')) {
       obj_label = "variantName"
@@ -338,6 +362,16 @@ class ComponentLookupService {
 
     return obj_label
   }
+
+  /**
+   *  generateLinks : Generates pagination links for the JSON response.
+   * @param result : The result object
+   * @param cls : The class of returned objects
+   * @param context : Possible override of the generated link path
+   * @param max : Maximum items per page
+   * @param offset : Result offset
+   * @param total : Number of total results
+   */
 
   private generateLinks(result, cls, context, params, max, offset, total) {
     def endpoint = cls.newInstance().hasProperty('restPath') ? cls.newInstance().restPath : ""
@@ -363,8 +397,12 @@ class ComponentLookupService {
         selfLink.removeQueryParam(p)
       }
     }
-    selfLink.removeQueryParam('controller')
-    selfLink.removeQueryParam('action')
+    if(params.controller) {
+      selfLink.removeQueryParam('controller')
+    }
+    if (params.action) {
+      selfLink.removeQueryParam('action')
+    }
     if (params.componentType) {
       selfLink.removeQueryParam('componentType')
     }

@@ -2,7 +2,6 @@ package gokbg3
 
 import com.k_int.ClassUtils
 import grails.core.GrailsClass
-import groovyx.net.http.URIBuilder
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -11,69 +10,11 @@ import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 
+import grails.gorm.transactions.Transactional
+
 class RestMappingService {
   def grailsApplication
   def genericOIDService
-
-  def convertEsLinks(es_result, params, component_endpoint) {
-    def base = grailsApplication.config.serverURL + "/rest" + "${component_endpoint}"
-
-    es_result['_links'] = [:]
-    es_result['data'] = es_result.records
-    es_result['_pagination'] = [
-      offset: es_result.offset,
-      limit: es_result.max,
-      total: es_result.count
-    ]
-
-    def selfLink = new URIBuilder(base)
-    selfLink.addQueryParams(params)
-
-    params.each { p, vals ->
-      log.debug("handling param ${p}: ${vals}")
-      if (vals instanceof String[]) {
-        selfLink.removeQueryParam(p)
-        vals.each { val ->
-          if (val.trim()) {
-            log.debug("Val: ${val} -- ${val.class.name}")
-            selfLink.addQueryParam(p, val)
-          }
-        }
-        log.debug("${selfLink.toString()}")
-      }
-      else if (!p.trim()) {
-        selfLink.removeQueryParam(p)
-      }
-    }
-    selfLink.removeQueryParam('controller')
-    selfLink.removeQueryParam('action')
-    selfLink.removeQueryParam('componentType')
-    es_result['_links']['self'] = [href: selfLink.toString()]
-
-
-    if (es_result.count > es_result.offset+es_result.max) {
-      def nextLink = selfLink
-
-      if(nextLink.query.offset){
-        nextLink.removeQueryParam('offset')
-      }
-
-      nextLink.addQueryParam('offset', "${es_result.offset + es_result.max}")
-      result['_links']['next'] = ['href': (nextLink.toString())]
-    }
-    if (es_result.offset > 0) {
-      def prevLink = selfLink
-
-      if(prevLink.query.offset){
-        prevLink.removeQueryParam('offset')
-      }
-
-      link.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
-      es_result['_links']['prev'] = ['href': prevLink.toString()]
-    }
-
-    es_result
-  }
 
   /**
    *  mapObjectToJson : Maps an domain class object to JSON based on its jsonMapping config.
@@ -196,6 +137,13 @@ class RestMappingService {
     result
   }
 
+  /**
+   *  updateObject : Maps an domain class object to JSON based on its jsonMapping config.
+   * @param obj : The object to be mapped
+   * @param params : The map of request parameters
+   */
+
+  @Transactional
   def updateObject(obj, jsonMap, reqBody) {
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
@@ -269,6 +217,11 @@ class RestMappingService {
     obj
   }
 
+  /**
+   *  selectPreferredLabel : Determines the correct label property for a specific object.
+   * @param obj : The object to be examined
+   */
+
   private String selectPreferredLabel(obj) {
     def obj_label = null
 
@@ -287,6 +240,11 @@ class RestMappingService {
 
     return obj_label
   }
+
+  /**
+   *  getEmbeddedJson : Map embedded object.
+   * @param obj : The object to be mapped
+   */
 
   public def getEmbeddedJson(obj) {
     def pars = [:]

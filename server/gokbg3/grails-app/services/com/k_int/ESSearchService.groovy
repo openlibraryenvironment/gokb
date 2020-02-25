@@ -2,6 +2,8 @@ package com.k_int
 
 import grails.core.GrailsClass
 
+import groovyx.net.http.URIBuilder
+
 import org.apache.lucene.search.join.ScoreMode
 
 import org.elasticsearch.action.search.*
@@ -361,10 +363,19 @@ class ESSearchService{
 
   private void processLinkedField(query, field, val) {
     QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+    def finalVal = val
 
-    linkedFieldQuery.should(QueryBuilders.termQuery(field, val))
-    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), val))
-    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), val))
+    try {
+      finalVal = KBComponent.get(Long.valueOf(val)).getLogEntityId()
+    }
+    catch (java.lang.NumberFormatException nfe) {
+    }
+
+    log.debug("processLinkedField: ${field} -> ${finalVal}")
+
+    linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
+    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), finalVal))
+    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), finalVal))
     linkedFieldQuery.minimumNumberShouldMatch(1)
 
     query.must(linkedFieldQuery)
@@ -389,7 +400,7 @@ class ESSearchService{
   /**
    * find : Query the Elasticsearch index --
    * @param params : Elasticsearch query params
-   * @param context : Overrides dynamic url path
+   * @param context : Overrides default url path
   **/
 
   def find(params, def context = null) {
@@ -448,7 +459,7 @@ class ESSearchService{
           exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v))
         }
         else if (requestMapping.linked?.containsKey(k)) {
-          processLinkedField(exactQuery, k, v)
+          processLinkedField(exactQuery, requestMapping.linked[k], v)
         }
         else if (k.contains('platform') || k.contains('Platform')) {
           if (!platformParam) {
@@ -580,15 +591,15 @@ class ESSearchService{
             contextPath = context
           }
           else if (component_type) {
-            def obj_cls = Class.forName("org.gokb.cred.${record.source.componentType}").newInstance()
+            def obj_cls = Class.forName("org.gokb.cred.${component_type}").newInstance()
             contextPath = obj_cls.restPath
           }
 
-          restMappingService.convertEsLinks(result, params, contextPath)
+          convertEsLinks(result, params, contextPath)
         }
       }
     } catch (Exception se) {
-      log.debug("${se}")
+      log.debug("${se.getStackTrace()}")
       result = [:]
       result.result = "ERROR"
       result.errors = ['unknown': "There has been an unknown error processing the search request!"]
@@ -676,6 +687,84 @@ class ESSearchService{
 
     log.debug("${domainMapping}")
     return domainMapping
+  }
+
+  /**
+   *  convertEsLinks : Converts es response layout to conform with REST mapping.
+   * @param es_result : The result object
+   * @param params : Request parameters
+   * @param component_endpoint : Possible URL path override
+   */
+
+  private def convertEsLinks(es_result, params, component_endpoint) {
+    def base = grailsApplication.config.serverURL + "/rest" + "${component_endpoint}"
+
+    es_result['_links'] = [:]
+    es_result['data'] = es_result.records
+    es_result.remove('records')
+    es_result.remove('result')
+    es_result['_pagination'] = [
+      offset: es_result.offset,
+      limit: es_result.max,
+      total: es_result.count
+    ]
+
+    def selfLink = new URIBuilder(base)
+    selfLink.addQueryParams(params)
+
+    params.each { p, vals ->
+      log.debug("handling param ${p}: ${vals}")
+      if (vals instanceof String[]) {
+        selfLink.removeQueryParam(p)
+        vals.each { val ->
+          if (val.trim()) {
+            log.debug("Val: ${val} -- ${val.class.name}")
+            selfLink.addQueryParam(p, val)
+          }
+        }
+        log.debug("${selfLink.toString()}")
+      }
+      else if (!p.trim()) {
+        selfLink.removeQueryParam(p)
+      }
+    }
+    if(params.controller) {
+      selfLink.removeQueryParam('controller')
+    }
+    if (params.action) {
+      selfLink.removeQueryParam('action')
+    }
+    if (params.componentType) {
+      selfLink.removeQueryParam('componentType')
+    }
+    es_result['_links']['self'] = [href: selfLink.toString()]
+
+
+    if (es_result.count > es_result.offset+es_result.max) {
+      def nextLink = selfLink
+
+      if(nextLink.query.offset){
+        nextLink.removeQueryParam('offset')
+      }
+
+      nextLink.addQueryParam('offset', "${es_result.offset + es_result.max}")
+      es_result['_links']['next'] = ['href': (nextLink.toString())]
+    }
+    if (es_result.offset > 0) {
+      def prevLink = selfLink
+
+      if(prevLink.query.offset){
+        prevLink.removeQueryParam('offset')
+      }
+
+      prevLink.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
+      es_result['_links']['prev'] = ['href': prevLink.toString()]
+    }
+    es_result.remove("offset")
+    es_result.remove("max")
+    es_result.remove("count")
+
+    es_result
   }
 
   /**
