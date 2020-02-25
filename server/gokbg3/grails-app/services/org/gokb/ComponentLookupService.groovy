@@ -124,10 +124,12 @@ class ComponentLookupService {
     def max = params.max ? params.long('max') : 10
     def offset = params.offset ? params.long('offset') : 0
     def first = true
-    def combos = grailsApplication.getArtefact("Domain",cls.name).newInstance().allComboPropertyNames
+    def comboProps = grailsApplication.getArtefact("Domain",cls.name).newInstance().allComboPropertyNames
+    def sort = null
+    def order = params['order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
 
-    combos.each { c ->
-      if (params[c]) {
+    comboProps.each { c ->
+      if (params[c] || params['sort'] == c) {
         boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
         log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
 
@@ -142,7 +144,7 @@ class ComponentLookupService {
       }
     }
 
-    combos.each { c ->
+    comboProps.each { c ->
       if (params[c]) {
         def alts = params.list(c)
         boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
@@ -155,14 +157,15 @@ class ComponentLookupService {
         else {
           hqlQry += " AND "
         }
-        if (alts.size() > 1) {
-          hqlQry += "${c} IN :${c}"
-          qryParams[c] = alts.collect { KBComponent.get(Long.valueOf(it)) }
-        }
-        else {
-          hqlQry += "${c} = :${c}"
-          qryParams[c] = KBComponent.get(Long.valueOf(params[c]))
-        }
+        hqlQry += "${c}_combo.type = :${c}type AND "
+        qryParams["${c}type"] = RefdataCategory.lookupOrCreate ( "Combo.Type", cls.getComboTypeValueFor(cls, c))
+        hqlQry += "${c}_combo.status = :${c}status AND "
+        qryParams["${c}status"] = RefdataCategory.lookup("Combo.Status", "Active")
+        hqlQry += "${c} IN :${c}"
+        qryParams[c] = alts.collect { KBComponent.get(Long.valueOf(it)) }
+      }
+      if (params['sort'] == c) {
+        sort = " order by ${c}.name ${order ?: ''}"
       }
     }
 
@@ -196,6 +199,10 @@ class ComponentLookupService {
           hqlQry += "p.${p.name} = :${p.name}"
           qryParams[p.name] = val
         }
+
+        if (params['sort'] == p) {
+          sort = " order by ${p.name} ${order ?: ''}"
+        }
       }
     }
 
@@ -203,8 +210,8 @@ class ComponentLookupService {
     //   result = restMappingService.convertEsLinks(params, es_result, "packages")
     // }
 
-    def hqlCount = "select count(*) ${hqlQry}".toString()
-    def hqlFinal = "select p ${hqlQry}".toString()
+    def hqlCount = "select count(p.id) ${hqlQry}".toString()
+    def hqlFinal = "select p ${sort ? ',' + params['sort'] : ''} ${hqlQry} ${sort ?: ''}".toString()
 
     log.debug("Final qry: ${hqlFinal}")
 
@@ -223,6 +230,7 @@ class ComponentLookupService {
       else {
         obj = r
       }
+
       log.debug("${obj}")
       result.data << restMappingService.mapObjectToJson(obj, params)
     }
