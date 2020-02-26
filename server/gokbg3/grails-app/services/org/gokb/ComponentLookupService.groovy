@@ -126,8 +126,6 @@ class ComponentLookupService {
     def result = [:]
     def hqlQry = "from ${cls.simpleName} as p".toString()
     def qryParams = [:]
-    boolean incomingJoin = false
-    boolean outgoingJoin = false
     def max = params.max ? params.long('max') : 10
     def offset = params.offset ? params.long('offset') : 0
     def first = true
@@ -178,9 +176,9 @@ class ComponentLookupService {
               validLong.add(Long.valueOf(a))
             }
             catch (java.lang.NumberFormatException nfe) {
-              if (a?.trim()) {
-                validStr.add(a)
-              }
+            }
+            if (a instanceof String && a?.trim()) {
+              validStr.add(a)
             }
           }
 
@@ -235,13 +233,14 @@ class ComponentLookupService {
           def validStr = []
 
           alts.each { a ->
-            if ( a?.trim() ) {
-              try {
-                validLong.add(Long.valueOf(a))
-              }
-              catch (java.lang.NumberFormatException nfe) {
-                validStr.add(a)
-              }
+            try {
+              validLong.add(Long.valueOf(a))
+            }
+            catch (java.lang.NumberFormatException nfe) {
+            }
+
+            if (a instanceof String && a?.trim() ) {
+              validStr.add(a)
             }
           }
 
