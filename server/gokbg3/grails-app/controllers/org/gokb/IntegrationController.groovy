@@ -879,7 +879,7 @@ class IntegrationController {
         def job_result = [:]
         def ctr = 0
         def errors = []
-        
+
         job_result.results = []
 
         def valid = Package.validateDTO(json.packageHeader)
@@ -922,7 +922,7 @@ class IntegrationController {
                     }
                     else {
                       def valid_ti = true
-                      
+
                       try {
                         def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
@@ -1027,7 +1027,7 @@ class IntegrationController {
                       valid = false
                       errors.add(['code': 400, idx: idx, message: "TIPP Validation for title ${tipp.title.name} failed: " + "${validation_result.errors}", baddata: tipp, errors: validation_result.errors])
                     }
-                    
+
                     if (idx % 50 == 0) {
                       cleanUpGorm()
                     }
@@ -1053,7 +1053,7 @@ class IntegrationController {
                   // If valid, upsert tipps
                   json.tipps.eachWithIndex { tipp, idx ->
                     tippctr++
-                    
+
                     log.debug("Upsert tipp [${tippctr}] ${tipp}")
                     def upserted_tipp = null
 
@@ -1117,7 +1117,12 @@ class IntegrationController {
                         def to_retire = TitleInstancePackagePlatform.get(ttd)
 
                         if ( to_retire?.isCurrent() ) {
-                          to_retire.retire()
+                          if (fullsync) {
+                            to_retire.deleteSoft()
+                          }
+                          else {
+                            to_retire.retire()
+                          }
                           to_retire.save(failOnError: true)
 
                           num_removed_tipps++;
