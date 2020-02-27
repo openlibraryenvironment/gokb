@@ -29,6 +29,7 @@ class ESSearchService{
   def grailsApplication
   def genericOIDService
   def restMappingService
+  def classExaminationService
 
   def requestMapping = [
     generic: [
@@ -599,7 +600,7 @@ class ESSearchService{
         }
       }
     } catch (Exception se) {
-      log.debug("${se.getStackTrace()}")
+      log.error("${se}")
       result = [:]
       result.result = "ERROR"
       result.errors = ['unknown': "There has been an unknown error processing the search request!"]
@@ -657,8 +658,21 @@ class ESSearchService{
         else if (field == "identifiers") {
           domainMapping['_embedded']['ids'] = val
         }
+        else if (field == "status" || field == "editStatus") {
+          domainMapping[field] = [id: RefdataCategory.lookup("KBComponent.${field}", val).id, name: val]
+        }
         else if (esMapping[field] == false) {
           log.debug("Skipping field ${field}!")
+        }
+        else if (esMapping[field] == "refdata") {
+          if (val) {
+            def cat = classExaminationService.deriveCategoryForProperty("org.gokb.cred.${record.source.componentType}", field)
+            def rdv = RefdataCategory.lookup(cat, val)
+            domainMapping[field] = [id: rdv.id, name:rdv.value]
+          }
+          else {
+            domainMapping[field] = null
+          }
         }
         else if (esMapping[field]) {
           log.debug("Field ${esMapping[field]}")

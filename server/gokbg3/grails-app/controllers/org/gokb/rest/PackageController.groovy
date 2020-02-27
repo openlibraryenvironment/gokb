@@ -54,7 +54,6 @@ class PackageController {
     render result as JSON
   }
 
-  @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def show() {
     def result = [:]
@@ -112,6 +111,7 @@ class PackageController {
     render result as JSON
   }
 
+  @Transactional
   @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def save() {
     def result = ['result':'OK', 'params': params]
@@ -157,6 +157,8 @@ class PackageController {
     def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
 
     if (pkg && reqBody) {
+      pkg.lock()
+
       if ( !user.hasRole('ROLE_ADMIN') && pkg.curatoryGroups && pkg.curatoryGroups.size() > 0 ) {
         def cur = user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id)
 
@@ -170,25 +172,7 @@ class PackageController {
 
         jsonMap.ignore = [
           'lastProject',
-          'bucketHash',
-          'shortcode',
-          'normname',
-          'people',
-          'status',
-          'lastSeen',
-          'additionalProperties',
-          'updateBenchmark',
-          'systemComponent',
-          'provenance',
-          'insertBenchmark',
-          'componentHash',
-          'prices',
-          'subjects',
-          'reference',
-          'duplicateOf',
-          'componentDiscriminator',
-          'incomingCombos',
-          'outgoingCombos'
+          'status'
         ]
 
         restMappingService.updateObject(pkg, jsonMap, reqBody)
@@ -197,22 +181,63 @@ class PackageController {
           restMappingService.updateIdentifiers(pkg, reqBody.identifiers)
         }
 
-        if (reqBody.variantNames) {
-          restMappingService.updateVariants(pkg, reqBody.variantNames)
-        }
-
         if ( reqBody.status ) {
-          if ( reqBody.status.value != 'Deleted' || pkg.isDeletable() ) {
-            pkg.status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+          RefdataValue newStatus = RefdataValue.get(reqBody.status)
+
+          if ( status_deleted != RefdataValue.get(reqBody.status) || pkg.isDeletable() ) {
+            pkg.status = newStatus
           }
         }
 
         if (reqBody.provider) {
-          pkg.provider = Org.get(reqBody.provider.id)
+          def prov = null
+
+          try {
+            prov = Org.get(reqBody.provider)
+          }
+          catch (Exception e) {
+          }
+
+          if (prov) {
+            pkg.provider = prov
+          }
+          else {
+            obj.errors.reject(
+              'default.not.found.message',
+              ['Org', reqBody.provider] as Object[],
+              '[{0} not found with id {1}!]'
+            )
+            obj.errors.rejectValue(
+              'provider',
+              'default.not.found.message'
+            )
+          }
         }
 
         if (reqBody.nominalPlatform) {
-          pkg.nominalPlatform = Platform.get(reqBody.nominalPlatform.id)
+          def plt = null
+
+          try {
+            plt = Platform.get(reqBody.nominalPlatform)
+          }
+          catch (Exception e) {
+          }
+
+          if (plt) {
+            pkg.nominalPlatform = plt
+          }
+          else {
+            obj.errors.reject(
+              'default.not.found.message',
+              ['Platform', reqBody.nominalPlatform] as Object[],
+              '[{0} not found with id {1}!]'
+            )
+            obj.errors.rejectValue(
+              'nominalPlatform',
+              'default.not.found.message'
+            )
+          }
         }
 
         if( pkg.validate() ) {

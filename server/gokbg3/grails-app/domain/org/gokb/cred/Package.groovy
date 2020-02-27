@@ -128,7 +128,10 @@ class Package extends KBComponent {
       'providerName': "provider.name",
       'providerUuid': "provider.uuid",
       'titleCount': false,
-      'paymentType': false
+      'paymentType': false,
+      'listStatus': "refdata",
+      'contentType': "refdata",
+      'scope': "refdata"
     ],
     'defaultLinks': [
       'tipps',

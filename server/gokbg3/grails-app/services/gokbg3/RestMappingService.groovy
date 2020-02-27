@@ -15,6 +15,30 @@ import grails.gorm.transactions.Transactional
 class RestMappingService {
   def grailsApplication
   def genericOIDService
+  def classExaminationService
+
+  def defaultIgnore = [
+    'id',
+    'bucketHash',
+    'shortcode',
+    'normname',
+    'people',
+    'lastSeen',
+    'additionalProperties',
+    'updateBenchmark',
+    'systemComponent',
+    'provenance',
+    'insertBenchmark',
+    'componentHash',
+    'prices',
+    'subjects',
+    'lastUpdateComment',
+    'reference',
+    'duplicateOf',
+    'componentDiscriminator',
+    'incomingCombos',
+    'outgoingCombos'
+  ]
 
   /**
    *  mapObjectToJson : Maps an domain class object to JSON based on its jsonMapping config.
@@ -28,28 +52,6 @@ class RestMappingService {
     def embed_active = params['_embed']?.split(',') ?: []
     def base = grailsApplication.config.serverURL + "/rest"
     def jsonMap = null
-    def defaultIgnore = [
-      'lastProject',
-      'bucketHash',
-      'shortcode',
-      'normname',
-      'people',
-      'lastSeen',
-      'additionalProperties',
-      'updateBenchmark',
-      'systemComponent',
-      'provenance',
-      'insertBenchmark',
-      'componentHash',
-      'prices',
-      'subjects',
-      'lastUpdateComment',
-      'reference',
-      'duplicateOf',
-      'componentDiscriminator',
-      'incomingCombos',
-      'outgoingCombos'
-    ]
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
@@ -68,6 +70,8 @@ class RestMappingService {
     if ( embed_active.size() == 0 && jsonMap?.defaultEmbeds ) {
       embed_active = jsonMap.defaultEmbeds
     }
+
+    result['id'] = obj.id
 
     pent.getPersistentProperties().each { p ->
       if (!defaultIgnore.contains(p.name) && (!jsonMap || !jsonMap.ignore.contains(p.name)) ) {
@@ -147,18 +151,122 @@ class RestMappingService {
   def updateObject(obj, jsonMap, reqBody) {
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
+    def toIgnore = defaultIgnore + (jsonMap?.ignore ?: [])
+
     pent.getPersistentProperties().each { p -> // list of PersistentProperties
       log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
-      if ( (!jsonMap.ignore || !jsonMap.ignore.contains(p.name)) && (!jsonMap.immutable || !jsonMap.immutable.contains(p.name)) && reqBody[p.name] ) {
+      if ( !toIgnore.contains(p.name) && (!jsonMap.immutable || !jsonMap.immutable.contains(p.name)) && reqBody[p.name] ) {
         if ( p instanceof Association ) {
           if ( p instanceof ManyToOne || p instanceof OneToOne ) {
             // Set ref property
-            Class objClass = p.type
-            obj[p.name] = objClass.get(reqBody[p.name].id)
+            def linkObj = p.type.get(reqBody[p.name])
+
+            if (linkObj) {
+              if (p.type == RefdataValue) {
+                String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, p.name)
+
+                if (catName) {
+                  def cat = RefdataCategory.findByDesc(catName)
+
+                  if (linkObj in cat.values) {
+                    obj[p.name] = linkObj
+                  }
+                  else {
+                    obj.errors.reject(
+                      'rdc.values.notFound',
+                      [linkObj.id, catName] as Object[],
+                      '[Value with ID {0} does not belong to category {1}!]'
+                    )
+                    obj.errors.rejectValue(
+                      p.name,
+                      'rdc.values.notFound'
+                    )
+                  }
+
+                }
+                else {
+                  log.error("Could not resolve category (${obj.niceName}.${p.name})!")
+                }
+              }
+              else {
+                obj[p.name] = linkObj
+              }
+            }
+            else {
+              obj.errors.reject(
+                'default.not.found.message',
+                [p.type, reqBody[p.name]] as Object[],
+                '[{0} not found with id {1}]'
+              )
+              obj.errors.rejectValue(
+                p.name,
+                'default.not.found.message'
+              )
+            }
           }
           else {
             // Add to collection
             log.debug("Skip handling collections}");
+
+            if (p.name == "variantNames") {
+              def remaining = []
+              def notFound = []
+
+              try {
+                reqBody[p.name].each {
+                  def nobj = null
+                  if (it instanceof String) {
+                    if (it.trim()) {
+                      def nvn = GOKbTextUtils.normaliseString(variantName)
+                      def dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj)
+
+                      if (dupes) {
+                        log.debug("Not adding duplicate variant")
+                      }
+                      else {
+                        obj.addToVariantNames(variantName: it)
+                      }
+                    }
+                  }
+                  else {
+                    nobj = p.type.get(it)
+
+                    if (nobj && nobj.owner == obj) {
+                      remaining << nobj
+                    }
+                    else {
+                      notFound << it
+                    }
+                  }
+                }
+
+                if (notFound.size() == 0) {
+                  obj[p.name].retainAll(remaining)
+                }
+                else {
+                  obj.errors.reject(
+                    'component.addToList.denied.label',
+                    [p.name] as Object[],
+                    '[Could not process list of items for property {0}]'
+                  )
+                  obj.errors.rejectValue(
+                    p.name,
+                    'component.addToList.denied.label'
+                  )
+                }
+              }
+              catch (Exception e) {
+                obj.errors.reject(
+                  'component.addToList.denied.label',
+                  [p.name] as Object[],
+                  '[Could not process list of items for property {0}]'
+                )
+                obj.errors.rejectValue(
+                  p.name,
+                  'component.addToList.denied.label'
+                )
+              }
+            }
           }
         }
         else {
