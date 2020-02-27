@@ -69,6 +69,7 @@ class IntegrationController {
 
       if ( group.validate() ) {
         group.save(flush:true)
+        result.message = "Created new Group ${group.id}"
       }
       else {
         result.message = "Could not reference group ${name}"

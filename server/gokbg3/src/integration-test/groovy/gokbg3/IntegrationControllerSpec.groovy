@@ -53,7 +53,7 @@ class IntegrationControllerSpec extends Specification {
         }
 
       then: "The item is created up as it does not already exist"
-        resp.json.message != null
+        resp.json.result == 'OK'
         resp.json.message.startsWith('Created')
       expect: "Find item by name only returns one item"
         def matching_groups = CuratoryGroup.executeQuery('select cg from CuratoryGroup as cg where cg.name = :n',[n:json_record.name]);
@@ -346,8 +346,7 @@ class IntegrationControllerSpec extends Specification {
         resp.json.message.startsWith('Created')
       expect: "Find item by ID can now locate that item and the discriminator is set correctly"
         def ids = [ ['ns':'isbn', 'value':'987-13-12232-23-X']  ]
-        def matching_books = titleLookupService.matchClassOneComponentIds(ids)
-        matching_books.size() == 1
-        matching_books[0] == resp.json.titleId
+        def obj = TitleInstance.get(resp.json.titleId)
+        obj?.ids?.collect { it.value == ids[0].value }
     }
 }
