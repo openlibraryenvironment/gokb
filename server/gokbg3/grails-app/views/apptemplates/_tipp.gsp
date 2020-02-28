@@ -79,12 +79,12 @@
   </g:if>
   <g:if test="${ d.isEditable() }">
     <li>
-      <a href="#addprops" data-toggle="tab">Additional Properties 
+      <a href="#addprops" data-toggle="tab">Additional Properties
         <span class="badge badge-warning"> ${d.additionalProperties?.size() ?: '0'}</span>
       </a>
     </li>
     <li>
-      <a href="#review" data-toggle="tab">Review Requests 
+      <a href="#review" data-toggle="tab">Review Requests
         <span class="badge badge-warning"> ${d.reviewRequests?.size() ?: '0'}</span>
       </a>
     </li>
@@ -189,41 +189,42 @@
                     <input type="hidden" name="__newObjectClass"
                             value="org.gokb.cred.TIPPCoverageStatement" />
                     <input type="hidden" name="__recip" value="owner" />
-                    <dt>Start Date</dt>
+                    <dt class="dt-label">Start Date</dt>
                     <dd>
-                      <input type="date" name="startDate" />
+                      <input class="form-control" type="date" name="startDate" />
                     </dd>
-                    <dt>Start Volume</dt>
+                    <dt class="dt-label">Start Volume</dt>
                     <dd>
-                      <input type="text" name="startVolume" />
+                      <input class="form-control" type="text" name="startVolume" />
                     </dd>
-                    <dt>Start Issue</dt>
+                    <dt class="dt-label">Start Issue</dt>
                     <dd>
-                      <input type="text" name="startIssue" />
+                      <input class="form-control" type="text" name="startIssue" />
                     </dd>
-                    <dt>End Date</dt>
+                    <dt class="dt-label">End Date</dt>
                     <dd>
-                      <input type="date" name="endDate" />
+                      <input class="form-control"  type="date" name="endDate" />
                     </dd>
-                    <dt>End Volume</dt>
+                    <dt class="dt-label">End Volume</dt>
                     <dd>
-                      <input type="text" name="endVolume" />
+                      <input class="form-control"  type="text" name="endVolume" />
                     </dd>
-                    <dt>End Issue</dt>
+                    <dt class="dt-label">End Issue</dt>
                     <dd>
-                      <input type="text" name="endIssue" />
+                      <input class="form-control"  type="text" name="endIssue" />
                     </dd>
-                    <dt>Embargo</dt>
+                    <dt class="dt-label">Embargo</dt>
                     <dd>
-                      <input type="text" name="embargo" />
+                      <input class="form-control"  type="text" name="embargo" />
                     </dd>
-                    <dt>Coverage Depth</dt>
+                    <dt class="dt-label">Coverage Depth</dt>
                     <dd>
-                      <g:simpleHiddenRefdata name="coverageDepth" refdataCategory="TIPPCoverageStatement.CoverageDepth" />
+                      <g:simpleReferenceTypedown name="coverageDepth" baseClass="org.gokb.cred.RefdataValue"
+                          filter1="TIPPCoverageStatement.CoverageDepth" />
                     </dd>
-                    <dt>Coverage Note</dt>
+                    <dt class="dt-label">Coverage Note</dt>
                     <dd>
-                      <input type="text" name="coverageNote" />
+                      <input class="form-control"  type="text" name="coverageNote" />
                     </dd>
                     <dt></dt>
                     <dd>
@@ -233,19 +234,6 @@
                   </g:form>
                 </dl>
               </g:if>
-      </dd>
-      <dt>
-        <g:annotatedLabel owner="${d}" property="coverageNote">Coverage Note</g:annotatedLabel>
-      </dt>
-      <dd>
-        <g:xEditable class="ipe" owner="${d}" field="coverageNote" />
-      </dd>
-      <dt>
-        <g:annotatedLabel owner="${d}" property="coverageDepth">Coverage Depth</g:annotatedLabel>
-      </dt>
-      <dd>
-        <g:xEditableRefData owner="${d}" field="coverageDepth"
-          config='TitleInstancePackagePlatform.CoverageDepth' />
       </dd>
     </dl>
   </div>
@@ -261,6 +249,6 @@
     </div>
   </g:if>
 </div>
-<g:render template="/apptemplates/componentStatus" 
+<g:render template="/apptemplates/componentStatus"
   model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 
