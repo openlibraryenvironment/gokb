@@ -1118,7 +1118,12 @@ class IntegrationController {
                         def to_retire = TitleInstancePackagePlatform.get(ttd)
 
                         if ( to_retire?.isCurrent() ) {
-                          to_retire.retire()
+                          if (fullsync) {
+                            to_retire.deleteSoft()
+                          }
+                          else {
+                            to_retire.retire()
+                          }
                           to_retire.save(failOnError: true)
 
                           num_removed_tipps++;
