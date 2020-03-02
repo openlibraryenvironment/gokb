@@ -223,6 +223,26 @@ class AjaxSupportController {
       cols:['value'],
       format:'simple'
     ],
+    'TitleInstancePackagePlatform.CoverageDepth' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      required:true,
+      qryParams:[],
+      rdvCat: "TitleInstancePackagePlatform.CoverageDepth",
+      cols:['value'],
+      format:'simple'
+    ],
+    'TIPPCoverageStatement.coverageDepth' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      required:true,
+      qryParams:[],
+      rdvCat: "TIPPCoverageStatement.coverageDepth",
+      cols:['value'],
+      format:'simple'
+    ],
   ]
 
 
@@ -765,7 +785,7 @@ class AjaxSupportController {
         binding_properties[ params.name ] = params.value
         bindData(target_object, binding_properties)
       }
-      
+
       if (target_object.validate()) {
         target_object.save(flush:true);
       }
@@ -1095,7 +1115,7 @@ class AjaxSupportController {
              break;
          }
        }
-       
+
        result.status = 'OK'
        result.newcount = ComponentLike.executeQuery('select count(cl) from ComponentLike as cl where cl.ownerClass=:oc and cl.ownerId=:oi',
                              [oc:oid_components[0], oi:Long.parseLong(oid_components[1])]).get(0)
