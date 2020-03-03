@@ -26,8 +26,6 @@ class UrlMappings {
             get "/profile" (controller: 'profile', namespace:'rest', action: 'show')
             put "/profile" (controller: 'profile', namespace:'rest', action: 'update')
             delete "/profile" (controller: 'profile', namespace:'rest', action: 'delete')
-
-            get "/users" (controller: 'users', namespace:'rest', action: 'index')
         }
         "/$controller/$action?/$id?"{
             constraints {
