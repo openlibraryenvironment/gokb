@@ -33,8 +33,8 @@ class ProfileController {
 
     def links = [
       'self'  : 'rest/profile',
-      'update': 'rest/profile/update'//,
-//      'delete': 'rest/profile/delete'
+      'update': 'rest/profile/update',
+      'delete': 'rest/profile/delete'
     ]
 
     def result = [
