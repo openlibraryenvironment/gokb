@@ -198,10 +198,6 @@ class TitleInstancePackagePlatform extends KBComponent {
 	return "TIPP";
   }
 
-  def afterUpdate() {
-    this.pkg.lastSeen = new Date().getTime()
-  }
-
   /**
    * Create a new TIPP being mindful of the need to create TIPLs
    */
