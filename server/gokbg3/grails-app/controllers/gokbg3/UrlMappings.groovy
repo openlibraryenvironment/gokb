@@ -36,7 +36,7 @@ class UrlMappings {
             put "/provider/$id" (controller: 'org', namespace: 'rest', action:'update')
             delete "/provider/$id" (controller: 'org', namespace: 'rest', action:'delete')
             get "/provider" (controller: 'org', namespace:'rest', action:'index')
-        
+
             get "/publisher/$id/$action" (controller: 'org', namespace:'rest')
             get "/publisher/$id" (controller: 'org', namespace: 'rest', action:'show')
             put "/publisher/$id" (controller: 'org', namespace: 'rest', action:'update')
@@ -59,6 +59,8 @@ class UrlMappings {
             delete "/profile" (controller: 'profile', namespace:'rest', action: 'delete')
 
             get "/entities" (controller: 'global', namespace:'rest', action: 'index')
+
+            get "/users" (controller: 'users', namespace:'rest', action: 'index')
         }
         "/$controller/$action?/$id?"{
             constraints {
