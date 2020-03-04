@@ -11,7 +11,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest = new RestBuilder()
 
-  void "test /rest/profile without token"() {
+  void "test GET /rest/profile without token"() {
     when:
     RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/profile") {
       // headers
@@ -21,7 +21,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     resp.status == 401 // Unauthorized
   }
 
-  void "test /rest/profile with valid token"() {
+  void "test GET /rest/profile with valid token"() {
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
@@ -33,9 +33,10 @@ class ProfileTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200 // OK
     resp.json.email == "admin@localhost"
+    resp.json._links.self.href == "rest/profile"
   }
 
-  void "test /rest/profile with stale token"() {
+  void "test GET /rest/profile with stale token"() {
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
@@ -65,12 +66,11 @@ class ProfileTestSpec extends AbstractAuthSpec {
     resp.status == 401 // Unauthorized
   }
 
-  //@Ignore
-  void "test /rest/profile/update"() {
+  void "test PUT /rest/profile"() {
     // use the bearerToken to write to /rest/profile/update
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("http://localhost:$serverPort/gokb/rest/profile/") {
+    RestResponse resp = rest.put("http://localhost:$serverPort/gokb/rest/profile") {
       // headers
       accept('application/json')
       contentType('application/json')
