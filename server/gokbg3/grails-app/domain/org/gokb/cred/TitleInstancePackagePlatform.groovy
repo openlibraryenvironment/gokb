@@ -1,9 +1,10 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
-import java.text.SimpleDateFormat
 import com.k_int.ClassUtils
+import org.gokb.GOKbTextUtils
 import groovy.util.logging.*
+import java.time.LocalDateTime
 
 @Slf4j
 class TitleInstancePackagePlatform extends KBComponent {
@@ -36,7 +37,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     "paymentType"   : "Paid",
     "coverageDepth" : "Fulltext"
   ]
-  
+
   static jsonMapping = [
     'ignore': [
       'format',
@@ -117,7 +118,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   public getPersistentId() {
     "${uuid ?: 'gokb:TIPP:' + title?.id + ':' + pkg?.id + ':' + hostPlatform?.id}"
   }
-  
+
   public static isTypeCreatable(boolean defaultValue = false) {
     return defaultValue;
   }
@@ -246,62 +247,27 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   /**
    * Please see https://github.com/openlibraryenvironment/gokb/wiki/tipp_dto
-   */ 
+   */
   @Transient
   public static def validateDTO(tipp_dto) {
     def result = ['valid':true, 'errors':[]]
-    def sdfs = [
-        "yyyy-MM-dd' 'HH:mm:ss.SSS",
-        "yyyy-MM-dd'T'HH:mm:ss'Z'",
-        "yyyy-MM-dd"
-    ]
 
     result.valid &= tipp_dto.package?.internalId != null
     result.valid &= tipp_dto.platform?.internalId != null
     result.valid &= tipp_dto.title?.internalId != null
 
     for(def coverage : tipp_dto.coverage){
-        def startDate = null
-        def endDate = null
+        LocalDateTime parsedStart = GOKbTextUtils.completeDateString(coverage.startDate)
+        LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(coverage.endDate, false)
 
-        if (coverage.startDate) {
-          sdfs.each { df -> 
-
-            if (!startDate) {
-              try {
-                SimpleDateFormat sdfV = new SimpleDateFormat(df)
-
-                startDate = sdfV.parse(coverage.startDate)
-              }
-              catch (java.text.ParseException pe) {
-              }
-            }
-          }
-
-          if (!startDate) {
-            result.valid = false
-            result.errors.add("Unable to parse coverage start date ${coverage.startDate}!")
-          }
+        if (coverage.startDate && !parsedStart) {
+          result.valid = false
+          result.errors.add("Unable to parse coverage start date ${coverage.startDate}!")
         }
 
-        if (coverage.endDate) {
-          sdfs.each { df -> 
-
-            if (!endDate) {
-             try {
-                SimpleDateFormat sdfV = new SimpleDateFormat(df)
-
-                endDate = sdfV.parse(coverage.endDate)
-              }
-              catch (java.text.ParseException pe) {
-              }
-            }
-          }
-
-          if (!endDate) {
-            result.valid = false
-            result.errors.add("Unable to parse coverage end date ${coverage.endDate}!")
-          }
+        if (coverage.endDate && !parsedEnd) {
+          result.valid = false
+          result.errors.add("Unable to parse coverage end date ${coverage.endDate}!")
         }
 
         if ( !['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase()) ) {
@@ -309,7 +275,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           result.errors.add("Unrecognized value '${coverage.coverageDepth}' for coverage depth")
         }
 
-        if (startDate && endDate && (endDate < startDate)) {
+        if (parsedStart && parsedEnd && (parsedEnd < parsedStart)) {
           result.valid = false
           result.errors.add("Coverage end date must not be prior to its start date!")
         }
@@ -324,7 +290,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   /**
    * Please see https://github.com/openlibraryenvironment/gokb/wiki/tipp_dto
-   */ 
+   */
   @Transient
   static TitleInstancePackagePlatform upsertDTO(tipp_dto, def user = null) {
     def result = null
@@ -360,29 +326,29 @@ class TitleInstancePackagePlatform extends KBComponent {
             }
             else {
               tipp = tipps[0]
-            } 
+            }
             break;
           case 0:
             log.debug("not found");
-            
+
             break;
           default:
             if ( trimmed_url && trimmed_url.size() > 0 ) {
               tipps = tipps.findAll { !it.url || it.url == trimmed_url };
               log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
             }
-          
+
             def cur_tipps = tipps.findAll { it.status == status_current };
             def ret_tipps = tipps.findAll { it.status == status_retired };
-            
+
             if ( cur_tipps.size() > 0 ){
               tipp = cur_tipps[0]
-              
+
               log.warn("found ${cur_tipps.size()} current TIPPs!")
             }
             else if ( ret_tipps.size() > 0 ) {
               tipp = ret_tipps[0]
-              
+
               log.warn("found ${ret_tipps.size()} retired TIPPs!")
             }
             else {
@@ -435,7 +401,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             "Retired TIPP reenabled.",
             user
           )
-          
+
           if ( tipp.accessEndDate ) {
             tipp.accessEndDate = null
           }
@@ -443,7 +409,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           changed = true
         }
         else if( tipp.isDeleted() && tipp_dto.status != "Deleted" ) {
-          
+
           ReviewRequest.raise(
             tipp,
             "Matched TIPP was marked as Deleted.",
@@ -451,7 +417,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             user
           )
         }
-        
+
         if ( tipp_dto.paymentType && tipp_dto.paymentType.length() > 0 ) {
 
           def payment_statement = null
@@ -465,9 +431,9 @@ class TitleInstancePackagePlatform extends KBComponent {
           else {
             payment_statement = tipp_dto.paymentType
           }
-          
+
           def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
-          
+
           if (payment_ref) tipp.paymentType = payment_ref
         }
 
@@ -476,49 +442,17 @@ class TitleInstancePackagePlatform extends KBComponent {
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate,tipp,'accessEndDate')
 
         tipp_dto.coverage.each { c ->
+          def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+          def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
-          changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tipp,'startDate')
-          changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tipp,'endDate')
-
-          def sdfs = [
-              "yyyy-MM-dd' 'HH:mm:ss.SSS",
-              "yyyy-MM-dd'T'HH:mm:ss'Z'",
-              "yyyy-MM-dd"
-          ]
-
-          def parsedStart = null
-          def parsedEnd = null
-
-          if ( c.startDate && c.startDate.trim().length() > 0 ) {
-
-            sdfs.each { s ->
-              try {
-                SimpleDateFormat sdf = new SimpleDateFormat(s)
-
-                parsedStart = sdf.parse(c.startDate)
-              }
-              catch (Exception e) {
-              }
-            }
-          }
-
-          if ( c.endDate && c.endDate.trim().length() > 0 ) {
-
-            sdfs.each { s ->
-              try {
-                SimpleDateFormat sdf = new SimpleDateFormat(s)
-
-                parsedEnd = sdf.parse(c.endDate)
-              }
-              catch (Exception e) {
-              }
-            }
-          }
+          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tipp,'startDate')
+          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tipp,'endDate')
 
           if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
             changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
@@ -539,8 +473,8 @@ class TitleInstancePackagePlatform extends KBComponent {
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-                changed |= com.k_int.ClassUtils.setDateIfPresent(c.startDate,tcs,'startDate')
-                changed |= com.k_int.ClassUtils.setDateIfPresent(c.endDate,tcs,'endDate')
+                changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tcs,'startDate')
+                changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tcs,'endDate')
 
                 cs_match = true
             }
@@ -560,8 +494,9 @@ class TitleInstancePackagePlatform extends KBComponent {
              'embargo':c.embargo, \
              'coverageDepth': cov_depth, \
              'coverageNote': c.coverageNote, \
-             'startDate': parsedStart, \
-             'endDate': parsedEnd)
+             'startDate': (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null), \
+             'endDate': (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+            )
           }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
         }

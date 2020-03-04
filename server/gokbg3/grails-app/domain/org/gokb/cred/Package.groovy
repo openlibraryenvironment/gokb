@@ -356,6 +356,7 @@ select tipp.id,
       and titleCombo.toComponent=tipp
       and titleCombo.type = ?
       and titleCombo.fromComponent=title
+      and tipp.status != ?
     order by tipp.id''';
 
   public void deleteSoft (context) {
@@ -459,7 +460,7 @@ select tipp.id,
     // log.debug("Running package contents qry : ${OAI_PKG_CONTENTS_QRY}");
 
     // Get the tipps manually rather than iterating over the collection - For better management
-    def tipps = TitleInstancePackagePlatform.executeQuery(OAI_PKG_CONTENTS_QRY, [this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps],[readOnly: true]); // , fetchSize:250]);
+    def tipps = TitleInstancePackagePlatform.executeQuery(OAI_PKG_CONTENTS_QRY, [this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps, refdata_deleted],[readOnly: true]); // , fetchSize:250]);
 
     log.debug("Query complete...");
 

@@ -1,7 +1,6 @@
 package org.gokb.cred
 
-import java.text.SimpleDateFormat
-import java.time.Instant
+import java.time.LocalDateTime
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
@@ -577,11 +576,6 @@ class TitleInstance extends KBComponent {
   @Transient
   public static def validateDTO(titleDTO) {
     def result = ['valid':true, 'errors':[]]
-    def sdfs = [
-        "yyyy-MM-dd' 'HH:mm:ss.SSS",
-        "yyyy-MM-dd'T'HH:mm:ss'Z'",
-        "yyyy-MM-dd"
-    ]
 
     if (titleDTO == null) {
       result.valid = false
@@ -601,47 +595,17 @@ class TitleInstance extends KBComponent {
       return result
     }
 
-    def startDate = null
-    def endDate = null
+    LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
+    LocalDateTime endDate = GOKbTextUtils.completeDateString(titleDTO.publishedTo, false)
 
-    if (titleDTO.publishedFrom) {
-      sdfs.each { df ->
-
-        if (!startDate) {
-          try {
-            SimpleDateFormat sdfV = new SimpleDateFormat(df)
-
-            startDate = sdfV.parse(titleDTO.publishedFrom)
-          }
-          catch (java.text.ParseException pe) {
-          }
-        }
-      }
-
-      if (!startDate) {
-        result.valid = false
-        result.errors.add("Unable to parse publishing start date ${titleDTO.publishedFrom}!")
-      }
+    if ( titleDTO.publishedFrom && !startDate ) {
+      result.valid = false
+      result.errors.add("Unable to parse publishing start date ${titleDTO.publishedFrom}!")
     }
 
-    if (titleDTO.publishedTo) {
-      sdfs.each { df ->
-
-        if (!endDate) {
-          try {
-            SimpleDateFormat sdfV = new SimpleDateFormat(df)
-
-            endDate = sdfV.parse(titleDTO.publishedTo)
-          }
-          catch (java.text.ParseException pe) {
-          }
-        }
-      }
-
-      if (!endDate) {
-        result.valid = false
-        result.errors.add("Unable to parse publishing end date ${titleDTO.publishedTo}!")
-      }
+    if ( titleDTO.publishedTo && !endDate ) {
+      result.valid = false
+      result.errors.add("Unable to parse publishing end date ${titleDTO.publishedTo}!")
     }
 
     if (startDate && endDate && (endDate < startDate)) {
