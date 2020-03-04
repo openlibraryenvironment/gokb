@@ -1,7 +1,6 @@
 package org.gokb.cred
 
-import java.text.SimpleDateFormat
-import java.time.Instant
+import java.time.LocalDateTime
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
@@ -50,14 +49,14 @@ class TitleInstance extends KBComponent {
 
     // Check that the variant is not equal to the name of this title first.
     if (!title.equalsIgnoreCase(this.name)) {
-    
+
       def normTitle = GOKbTextUtils.normaliseString(title)
 
       // Need to compare the existing variant names here. Rather than use the equals method,
       // we are going to compare certain attributes here.
       RefdataValue title_type = RefdataCategory.lookupOrCreate("KBComponentVariantName.VariantType", "Alternate Title")
       def locale_rd = null
-      
+
       if(locale){
         locale_rd = RefdataValue.findByOwnerAndValue(RefdataCategory.findByDesc("KBComponentVariantName.Locale"), (locale))
       }
@@ -128,7 +127,7 @@ class TitleInstance extends KBComponent {
   }
 
   def availableActions() {
-    [ [code:'setStatus::Deleted', label:'Delete', perm:'delete'],
+    [ [code:'method::deleteSoft', label:'Delete', perm:'delete'],
       [code:'setStatus::Current', label:'Set Current', perm:'admin'],
       [code:'setStatus::Expected', label:'Mark Expected'],
       [code:'title::transfer', label:'Title Transfer'],
@@ -239,11 +238,11 @@ class TitleInstance extends KBComponent {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     def status_filter = null
-    
+
     if(params.filter1) {
       status_filter = RefdataCategory.lookup('KBComponent.Status', params.filter1)
     }
-    
+
     def ql = null;
     // ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
     // Return all titles where the title matches (Left anchor) OR there is an identifier for the title matching what is input
@@ -314,7 +313,7 @@ class TitleInstance extends KBComponent {
             builder.'firstEditor' (this.firstEditor)
             builder.'firstAuthor' (this.firstAuthor)
           }
-          
+
           builder.'imprint' (imprint?.name)
           builder.'medium' (medium?.value)
           builder.'type' (this.class.simpleName)
@@ -489,7 +488,7 @@ class TitleInstance extends KBComponent {
 
   def addTitlesToHistory(title, final_list, depth) {
     def result = false;
-    
+
     if ( title ) {
       // Check to see whether this component has an id first. If not then return an empty set.
       if (title.id && title.id > 0) {
@@ -523,7 +522,7 @@ class TitleInstance extends KBComponent {
   @Transient
   def getFullTitleHistory() {
     def result = [:]
-    
+
     // Check to see whether this component has an id first. If not then return an empty set.
     if (id && id > 0) {
       def il = []
@@ -577,11 +576,6 @@ class TitleInstance extends KBComponent {
   @Transient
   public static def validateDTO(titleDTO) {
     def result = ['valid':true, 'errors':[]]
-    def sdfs = [
-        "yyyy-MM-dd' 'HH:mm:ss.SSS",
-        "yyyy-MM-dd'T'HH:mm:ss'Z'",
-        "yyyy-MM-dd"
-    ]
 
     if (titleDTO == null) {
       result.valid = false
@@ -601,47 +595,17 @@ class TitleInstance extends KBComponent {
       return result
     }
 
-    def startDate = null
-    def endDate = null
+    LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
+    LocalDateTime endDate = GOKbTextUtils.completeDateString(titleDTO.publishedTo, false)
 
-    if (titleDTO.publishedFrom) {
-      sdfs.each { df ->
-
-        if (!startDate) {
-          try {
-            SimpleDateFormat sdfV = new SimpleDateFormat(df)
-
-            startDate = sdfV.parse(titleDTO.publishedFrom)
-          }
-          catch (java.text.ParseException pe) {
-          }
-        }
-      }
-
-      if (!startDate) {
-        result.valid = false
-        result.errors.add("Unable to parse publishing start date ${titleDTO.publishedFrom}!")
-      }
+    if ( titleDTO.publishedFrom && !startDate ) {
+      result.valid = false
+      result.errors.add("Unable to parse publishing start date ${titleDTO.publishedFrom}!")
     }
 
-    if (titleDTO.publishedTo) {
-      sdfs.each { df ->
-
-        if (!endDate) {
-          try {
-            SimpleDateFormat sdfV = new SimpleDateFormat(df)
-
-            endDate = sdfV.parse(titleDTO.publishedTo)
-          }
-          catch (java.text.ParseException pe) {
-          }
-        }
-      }
-
-      if (!endDate) {
-        result.valid = false
-        result.errors.add("Unable to parse publishing end date ${titleDTO.publishedTo}!")
-      }
+    if ( titleDTO.publishedTo && !endDate ) {
+      result.valid = false
+      result.errors.add("Unable to parse publishing end date ${titleDTO.publishedTo}!")
     }
 
     if (startDate && endDate && (endDate < startDate)) {
@@ -731,7 +695,7 @@ class TitleInstance extends KBComponent {
     log.debug('remapWork');
     // BKM:TITLE + then FIRSTAUTHOR if duplicates found
 
-      if ( ( normname ) && 
+      if ( ( normname ) &&
            ( normname.length() > 0 ) &&
            ( ! normname.startsWith('unknown title')) ) {
         // book bucket (Work) hashes are based on the normalised name.
@@ -783,4 +747,25 @@ class TitleInstance extends KBComponent {
 
   }
 
+  def beforeUpdate() {
+    if (this.isDirty('status') && this.status == RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+      // Delete the tipps too as a TIPP should not exist without the associated
+      // title.
+      def tipps = getTipps()
+
+      if ( tipps?.size() > 0 ) {
+        def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+        def tipp_ids = tipps?.collect { it.id }
+
+        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids])
+      }
+
+      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this])
+
+      events_to_delete.each {
+        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = ?",[it])
+        ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
+      }
+    }
+  }
 }
