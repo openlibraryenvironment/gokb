@@ -307,7 +307,7 @@ class FTUpdateService {
             cst.endIssue = tcs.endIssue ?: ""
             cst.embargo = tcs.embargo ?: ""
             cst.coverageNote = tcs.coverageNote ?: ""
-            cst.coverageDepth = tcs.coverageDepth ?: ""
+            cst.coverageDepth = tcs.coverageDepth ? tcs.coverageDepth.value : ""
 
             result.coverage.add(cst)
           }
@@ -419,7 +419,7 @@ class FTUpdateService {
 
         if ( count > 250 ) {
           count = 0;
-          log.debug("interim:: processed ${++total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
+          log.debug("interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
           FTControl.withNewTransaction {
             latest_ft_record = FTControl.get(latest_ft_record.id);
             if ( latest_ft_record ) {

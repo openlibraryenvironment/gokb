@@ -233,13 +233,13 @@ class AjaxSupportController {
       cols:['value'],
       format:'simple'
     ],
-    'TIPPCoverageStatement.coverageDepth' : [
+    'TIPPCoverageStatement.CoverageDepth' : [
       domain:'RefdataValue',
       countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
       rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
       required:true,
       qryParams:[],
-      rdvCat: "TIPPCoverageStatement.coverageDepth",
+      rdvCat: "TIPPCoverageStatement.CoverageDepth",
       cols:['value'],
       format:'simple'
     ],
