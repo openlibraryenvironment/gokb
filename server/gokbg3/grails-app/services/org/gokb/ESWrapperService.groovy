@@ -9,7 +9,7 @@ import org.elasticsearch.client.Client
 import org.elasticsearch.node.Node
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
-import org.elasticsearch.common.transport.InetSocketTransportAddress
+import org.elasticsearch.common.transport.TransportAddress
 
 import static groovy.json.JsonOutput.*
 
@@ -189,7 +189,7 @@ class ESWrapperService {
 
       Settings settings = Settings.builder().put("cluster.name", es_cluster_name).build();
       esclient = new org.elasticsearch.transport.client.PreBuiltTransportClient(settings);
-      esclient.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(es_host_name), 9300));
+      esclient.addTransportAddress(new TransportAddress(InetAddress.getByName(es_host_name), 9300));
 
       log.debug("ES wrapper service init completed OK");
     }

@@ -538,14 +538,14 @@ class ESSearchService{
           search.hits.maxScore = 0;
         }
 
-        result.count = search.hits.totalHits
+        result.count = search.hits.totalHits.value
         result.records = []
 
         search.hits.each { r ->
           def response_record = [:]
           
           if (!params.skipDomainMapping) {
-            response_record = mapEsToDomain(r)
+            response_record = mapEsToDomain(r.getSourceAsMap())
           }
           else {
             response_record.id = r.id
@@ -554,7 +554,7 @@ class ESSearchService{
               response_record.score = r.score
             }
 
-            r.source.each { field, val ->
+            r.getSourceAsMap().each { field, val ->
               response_record."${field}" = val
             }
           }
@@ -563,7 +563,7 @@ class ESSearchService{
         }
       }
     } catch (Exception se) {
-      log.debug("${se}")
+      println se
       result = [:]
       result.result = "ERROR"
       result.errors = ['unknown': "There has been an unknown error processing the search request!"]
@@ -587,7 +587,7 @@ class ESSearchService{
       'updater': false,
     ]
 
-    def obj = KBComponent.findByUuid(record.source.uuid)
+    def obj = KBComponent.findByUuid(record.uuid)
 
     if (obj) {
 
@@ -603,7 +603,7 @@ class ESSearchService{
       
       log.debug("Mapping ${record}")
 
-      record.source.each { field, val ->
+      record.each { field, val ->
         if (field == "curatoryGroups") {
           mapCuratoryGroups(domainMapping, val)
         }

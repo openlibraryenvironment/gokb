@@ -41,8 +41,6 @@ import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsReques
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse
 import static org.elasticsearch.common.xcontent.XContentFactory.*
 import org.elasticsearch.common.xcontent.XContentBuilder
