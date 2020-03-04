@@ -7,6 +7,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import org.gokb.cred.*
+import org.gokb.GOKbTextUtils
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 
@@ -18,7 +19,6 @@ class RestMappingService {
   def classExaminationService
 
   def defaultIgnore = [
-    'id',
     'bucketHash',
     'shortcode',
     'normname',
@@ -38,6 +38,16 @@ class RestMappingService {
     'componentDiscriminator',
     'incomingCombos',
     'outgoingCombos'
+  ]
+
+  def defaultImmmutable = [
+    'id',
+    'uuid',
+    'lastUpdate',
+    'dateCreated',
+    'lastUpdatedBy',
+    'value',
+    'version'
   ]
 
   /**
@@ -70,8 +80,6 @@ class RestMappingService {
     if ( embed_active.size() == 0 && jsonMap?.defaultEmbeds ) {
       embed_active = jsonMap.defaultEmbeds
     }
-
-    result['id'] = obj.id
 
     pent.getPersistentProperties().each { p ->
       if (!defaultIgnore.contains(p.name) && (!jsonMap || !jsonMap.ignore.contains(p.name)) ) {
@@ -152,10 +160,11 @@ class RestMappingService {
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
     def toIgnore = defaultIgnore + (jsonMap?.ignore ?: [])
+    def immutable = defaultImmmutable + (jsonMap?.immutable ?: [])
 
     pent.getPersistentProperties().each { p -> // list of PersistentProperties
       log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
-      if ( !toIgnore.contains(p.name) && (!jsonMap.immutable || !jsonMap.immutable.contains(p.name)) && reqBody[p.name] ) {
+      if ( !toIgnore.contains(p.name) && !immutable.contains(p.name) && reqBody[p.name] ) {
         if ( p instanceof Association ) {
           if ( p instanceof ManyToOne || p instanceof OneToOne ) {
             // Set ref property

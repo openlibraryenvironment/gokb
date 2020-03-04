@@ -69,8 +69,8 @@ class PackageController {
         obj = genericOIDService.resolveOID(params.id)
       }
 
-      if (!obj) {
-        obj = Package.get(params.id)
+      if (!obj && params.long('id')) {
+        obj = Package.get(params.long('id'))
       }
 
       if (obj?.isReadable()) {
@@ -98,7 +98,10 @@ class PackageController {
 
       if (is_curator) {
         result._links.update = ['href': base + obj.restPath + "/${obj.uuid}"]
-        result._links.delete = ['href': base + obj.restPath + "/${obj.uuid}"]
+
+        if (obj.isDeletable()) {
+          result._links.delete = ['href': base + obj.restPath + "/${obj.uuid}"]
+        }
       }
     }
     else {
@@ -173,6 +176,12 @@ class PackageController {
         jsonMap.ignore = [
           'lastProject',
           'status'
+        ]
+
+        jsonMap.immutable = [
+          'listVerifier',
+          'listVerifiedDate',
+          'listStatus'
         ]
 
         restMappingService.updateObject(pkg, jsonMap, reqBody)
@@ -276,12 +285,14 @@ class PackageController {
     def pkg = Package.findByUuid(params.id)
 
     if (!pkg) {
-      try {
-        pkg = Package.get(genericOIDService.oidToId(params.id))
-      }
-      catch (Exception e) {
-      }
+      pkg = genericOIDService.resolveOID(params.id)
     }
+
+    if (!pkg && params.long('id')) {
+      pkg = Package.get(params.long('id'))
+    }
+
+    log.debug("TIPPs for Package: ${pkg}")
 
     if (pkg) {
       def context = "/packages/" + params.id + "/tipps"
@@ -313,7 +324,7 @@ class PackageController {
     }
     else {
       result.result = 'ERROR'
-      result.message = 'Package id ${params.id} could not be resolved!'
+      result.message = "Package id ${params.id} could not be resolved!"
       response.setStatus(404)
     }
 

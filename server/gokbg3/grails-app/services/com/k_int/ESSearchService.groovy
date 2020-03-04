@@ -375,8 +375,8 @@ class ESSearchService{
     log.debug("processLinkedField: ${field} -> ${finalVal}")
 
     linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
-    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), finalVal))
-    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), finalVal))
+    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), val))
+    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), val))
     linkedFieldQuery.minimumNumberShouldMatch(1)
 
     query.must(linkedFieldQuery)
@@ -683,7 +683,12 @@ class ESSearchService{
             if (!linkedObjects[fieldPath[0]]) {
               linkedObjects[fieldPath[0]] = [:]
             }
-            linkedObjects[fieldPath[0]][fieldPath[1]] = val
+            if (fieldPath[1] == 'id') {
+              linkedObjects[fieldPath[0]][fieldPath[1]] = genericOIDService.oidToId(val)
+            }
+            else {
+              linkedObjects[fieldPath[0]][fieldPath[1]] = val
+            }
           } else {
             domainMapping[fieldPath[0]] = val
           }

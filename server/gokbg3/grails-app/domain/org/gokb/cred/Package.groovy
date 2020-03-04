@@ -122,9 +122,9 @@ class Package extends KBComponent {
     'es': [
       'nominalPlatformUuid': "nominalPlatform.uuid",
       'nominalPlatformName': "nominalPlatform.name",
-      'nominalPlatform': false,
+      'nominalPlatform': "nominalPlatform.id",
       'cpname': false,
-      'provider':false,
+      'provider':"provider.id",
       'providerName': "provider.name",
       'providerUuid': "provider.uuid",
       'titleCount': false,
