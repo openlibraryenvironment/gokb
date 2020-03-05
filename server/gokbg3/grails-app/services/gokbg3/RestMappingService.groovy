@@ -167,114 +167,14 @@ class RestMappingService {
       if ( !toIgnore.contains(p.name) && !immutable.contains(p.name) && reqBody[p.name] ) {
         if ( p instanceof Association ) {
           if ( p instanceof ManyToOne || p instanceof OneToOne ) {
-            // Set ref property
-            def linkObj = p.type.get(reqBody[p.name])
-
-            if (linkObj) {
-              if (p.type == RefdataValue) {
-                String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, p.name)
-
-                if (catName) {
-                  def cat = RefdataCategory.findByDesc(catName)
-
-                  if (linkObj in cat.values) {
-                    obj[p.name] = linkObj
-                  }
-                  else {
-                    obj.errors.reject(
-                      'rdc.values.notFound',
-                      [linkObj.id, catName] as Object[],
-                      '[Value with ID {0} does not belong to category {1}!]'
-                    )
-                    obj.errors.rejectValue(
-                      p.name,
-                      'rdc.values.notFound'
-                    )
-                  }
-
-                }
-                else {
-                  log.error("Could not resolve category (${obj.niceName}.${p.name})!")
-                }
-              }
-              else {
-                obj[p.name] = linkObj
-              }
-            }
-            else {
-              obj.errors.reject(
-                'default.not.found.message',
-                [p.type, reqBody[p.name]] as Object[],
-                '[{0} not found with id {1}]'
-              )
-              obj.errors.rejectValue(
-                p.name,
-                'default.not.found.message'
-              )
-            }
+            updateAssoc(obj, p.name, reqBody[p.name])
           }
           else {
             // Add to collection
-            log.debug("Skip handling collections}");
+            log.debug("Skip generic handling of collections}");
 
             if (p.name == "variantNames") {
-              def remaining = []
-              def notFound = []
-
-              try {
-                reqBody[p.name].each {
-                  def nobj = null
-                  if (it instanceof String) {
-                    if (it.trim()) {
-                      def nvn = GOKbTextUtils.normaliseString(variantName)
-                      def dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj)
-
-                      if (dupes) {
-                        log.debug("Not adding duplicate variant")
-                      }
-                      else {
-                        obj.addToVariantNames(variantName: it)
-                      }
-                    }
-                  }
-                  else {
-                    nobj = p.type.get(it)
-
-                    if (nobj && nobj.owner == obj) {
-                      remaining << nobj
-                    }
-                    else {
-                      notFound << it
-                    }
-                  }
-                }
-
-                if (notFound.size() == 0) {
-                  obj[p.name].retainAll(remaining)
-                }
-                else {
-                  obj.errors.reject(
-                    'component.addToList.denied.label',
-                    [p.name] as Object[],
-                    '[Could not process list of items for property {0}]'
-                  )
-                  obj.errors.rejectValue(
-                    p.name,
-                    'component.addToList.denied.label'
-                  )
-                }
-              }
-              catch (Exception e) {
-                obj.errors.reject(
-                  'component.addToList.denied.label',
-                  [p.name] as Object[],
-                  '[Could not process list of items for property {0}]'
-                )
-                obj.errors.rejectValue(
-                  p.name,
-                  'component.addToList.denied.label'
-                )
-              }
+              updateVariantNames(obj, reqBody.variantNames)
             }
           }
         }
@@ -282,45 +182,10 @@ class RestMappingService {
           log.debug("checking for type of property -> ${p.type}")
           switch ( p.type ) {
             case Long.class:
-              log.debug("Set simple prop ${p.name} = ${reqBody[p.name]} (as long=${Long.parseLong(reqBody[p.name])})");
-              try {
-                obj[p.name] = Long.parseLong(reqBody[p.name]);
-              }
-              catch (Exception e) {
-                obj.errors.reject(
-                  'typeMismatch.java.lang.Long',
-                  [p.name] as Object[],
-                  '[Invalid number value for property [{0}]]'
-                )
-                obj.errors.rejectValue(
-                  p.name,
-                  'typeMismatch.java.lang.Long'
-                )
-              }
               break;
-
+              updateLongField(obj, p.name, reqBody[p.name])
             case Date.class:
-              if (reqBody[p.name] == null) {
-                obj[p.name] = null
-              }
-              else if (reqBody[p.name].trim()) {
-                LocalDateTime dateObj = GOKbTextUtils.completeDateString(reqBody[p.name])
-                if (dateObj) {
-                  obj[p.name] = Date.from(dateObj.atZone(ZoneId.systemDefault()).toInstant())
-                }
-                else {
-                  obj.errors.reject(
-                    'typeMismatch.java.util.Date',
-                    [p.name] as Object[],
-                    '[Invalid date value for property [{0}]]'
-                  )
-                  obj.errors.rejectValue(
-                    p.name,
-                    'typeMismatch.java.util.Date'
-                  )
-                }
-                log.debug("Set simple prop ${p.name} = ${reqBody[p.name]} (as date ${dateObj}))");
-              }
+              updateDateField(obj, p.name, reqBody[p.name])
               break;
             default:
               log.debug("Default for type ${p.type}")
@@ -330,6 +195,159 @@ class RestMappingService {
           }
         }
       }
+    }
+    obj
+  }
+
+  public def updateAssoc(obj, prop, val) {
+    def ptype = grailsApplication.mappingContext.getPersistentEntity(obj.class.name).getPropertyByName(prop).type
+    def linkObj = ptype.get(val)
+
+    if (linkObj) {
+      if (ptype == RefdataValue) {
+        String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
+
+        if (catName) {
+          def cat = RefdataCategory.findByDesc(catName)
+
+          if (linkObj in cat.values) {
+            obj[prop] = linkObj
+          }
+          else {
+            obj.errors.reject(
+              'rdc.values.notFound',
+              [linkObj.id, catName] as Object[],
+              '[Value with ID {0} does not belong to category {1}!]'
+            )
+            obj.errors.rejectValue(
+              p.name,
+              'rdc.values.notFound'
+            )
+          }
+        }
+        else {
+          log.error("Could not resolve category (${obj.niceName}.${p.name})!")
+        }
+      }
+      else {
+        obj[p.name] = linkObj
+      }
+    }
+    else {
+      obj.errors.reject(
+        'default.not.found.message',
+        [ptype, val] as Object[],
+        '[{0} not found with id {1}]'
+      )
+      obj.errors.rejectValue(
+        prop,
+        'default.not.found.message'
+      )
+    }
+  }
+
+  public def updateVariantNames(obj, vals) {
+    def remaining = []
+    def notFound = []
+
+    try {
+      vals.each {
+        def newVariant = null
+        if (it instanceof String) {
+          if (it.trim()) {
+            def nvn = GOKbTextUtils.normaliseString(it)
+            def dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj)
+
+            if (dupes) {
+              log.debug("Not adding duplicate variant")
+            }
+            else {
+              obj.addToVariantNames(variantName: it)
+            }
+          }
+        }
+        else {
+          newVariant = KBComponentVariantName.get(it)
+
+          if (newVariant && newVariant.owner == obj) {
+            remaining << newVariant
+          }
+          else {
+            notFound << it
+          }
+        }
+      }
+
+      if (notFound.size() == 0) {
+        obj.variantNames.retainAll(remaining)
+      }
+      else {
+        obj.errors.reject(
+          'component.addToList.denied.label',
+          ['variantNames'] as Object[],
+          '[Could not process list of items for property {0}]'
+        )
+        obj.errors.rejectValue(
+          'variantNames',
+          'component.addToList.denied.label'
+        )
+      }
+    }
+    catch (Exception e) {
+      obj.errors.reject(
+        'component.addToList.denied.label',
+        ['variantNames'] as Object[],
+        '[Could not process list of items for property {0}]'
+      )
+      obj.errors.rejectValue(
+        'variantNames',
+        'component.addToList.denied.label'
+      )
+    }
+    obj
+  }
+
+  public def updateLongField(obj, prop, val) {
+    log.debug("Set simple prop ${prop} = ${val} (as Long)");
+    try {
+      obj[prop] = Long.parseLong(val);
+    }
+    catch (Exception e) {
+      obj.errors.reject(
+        'typeMismatch.java.lang.Long',
+        [prop] as Object[],
+        '[Invalid number value for property [{0}]]'
+      )
+      obj.errors.rejectValue(
+        prop,
+        'typeMismatch.java.lang.Long'
+      )
+    }
+    obj
+  }
+
+  public def updateDateField(obj, prop, val) {
+    if (val == null) {
+      obj[prop] = null
+    }
+    else if (val.trim()) {
+      LocalDateTime dateObj = GOKbTextUtils.completeDateString(val)
+
+      if (dateObj) {
+        obj[prop] = Date.from(dateObj.atZone(ZoneId.systemDefault()).toInstant())
+      }
+      else {
+        obj.errors.reject(
+          'typeMismatch.java.util.Date',
+          [prop] as Object[],
+          '[Invalid date value for property [{0}]]'
+        )
+        obj.errors.rejectValue(
+          prop,
+          'typeMismatch.java.util.Date'
+        )
+      }
+      log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))");
     }
     obj
   }
