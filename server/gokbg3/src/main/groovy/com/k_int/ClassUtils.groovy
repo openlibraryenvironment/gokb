@@ -73,6 +73,48 @@ class ClassUtils {
     return result
   }
 
+  public static boolean updateDateField(def value, obj, prop) {
+    boolean result = false
+    LocalDateTime ldt = null
+    DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
+    DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']").withResolverStyle(ResolverStyle.STRICT)
+
+    if ( value && value.toString().trim() ) {
+      if (value instanceof LocalDateTime) {
+        ldt = value
+      }
+      else if (value instanceof LocalDate) {
+        ldt = value.atStartOfDay()
+      }
+      else {
+        try {
+          ldt = LocalDateTime.parse(value, datetimeformatter)
+          result = true
+        }
+        catch ( Exception e ) {
+        }
+
+        if (!ldt) {
+          try {
+            ldt = LocalDate.parse(value, dateformatter).atStartOfDay()
+            result = true
+          }
+          catch ( Exception e ) {
+          }
+        }
+      }
+
+      if (ldt) {
+        obj[prop] = Date.from( ldt.atZone(ZoneId.systemDefault()).toInstant())
+      }
+    }
+    else if (!value) {
+      obj[prop] = null
+    }
+
+    return result
+  }
+
   public static boolean setDateIfPresent(String value, obj, prop, SimpleDateFormat sdf) {
     //request.JSON.title.publishedFrom, title, 'publishedFrom', sdf)
     boolean result = false;

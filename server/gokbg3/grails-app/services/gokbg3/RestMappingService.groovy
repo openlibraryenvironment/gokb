@@ -334,7 +334,7 @@ class RestMappingService {
       LocalDateTime dateObj = GOKbTextUtils.completeDateString(val)
 
       if (dateObj) {
-        obj[prop] = Date.from(dateObj.atZone(ZoneId.systemDefault()).toInstant())
+        ClassUtils.updateDateField(val, obj, prop)
       }
       else {
         obj.errors.reject(
