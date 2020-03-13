@@ -79,12 +79,12 @@
   </g:if>
   <g:if test="${ d.isEditable() }">
     <li>
-      <a href="#addprops" data-toggle="tab">Additional Properties 
+      <a href="#addprops" data-toggle="tab">Additional Properties
         <span class="badge badge-warning"> ${d.additionalProperties?.size() ?: '0'}</span>
       </a>
     </li>
     <li>
-      <a href="#review" data-toggle="tab">Review Requests 
+      <a href="#review" data-toggle="tab">Review Requests
         <span class="badge badge-warning"> ${d.reviewRequests?.size() ?: '0'}</span>
       </a>
     </li>
@@ -175,64 +175,65 @@
             </g:else>
           </tbody>
         </table>
-<g:if test="${editable}">
-                <button
-                        class="hidden-license-details btn btn-default btn-sm btn-primary "
-                        data-toggle="collapse" data-target="#collapseableAddCoverageStatement">
-                        Add new <i class="fas fa-plus"></i>
-                </button>
-                <dl id="collapseableAddCoverageStatement" class="dl-horizontal collapse">
-                  <g:form controller="ajaxSupport" action="addToCollection"
-                          class="form-inline" params="[fragment:'tippcoverage']">
-                    <input type="hidden" name="__context"
-                            value="${d.class.name}:${d.id}" />
-                    <input type="hidden" name="__newObjectClass"
-                            value="org.gokb.cred.TIPPCoverageStatement" />
-                    <input type="hidden" name="__recip" value="owner" />
-                    <dt>Start Date</dt>
-                    <dd>
-                      <input type="date" name="startDate" />
-                    </dd>
-                    <dt>Start Volume</dt>
-                    <dd>
-                      <input type="text" name="startVolume" />
-                    </dd>
-                    <dt>Start Issue</dt>
-                    <dd>
-                      <input type="text" name="startIssue" />
-                    </dd>
-                    <dt>End Date</dt>
-                    <dd>
-                      <input type="date" name="endDate" />
-                    </dd>
-                    <dt>End Volume</dt>
-                    <dd>
-                      <input type="text" name="endVolume" />
-                    </dd>
-                    <dt>End Issue</dt>
-                    <dd>
-                      <input type="text" name="endIssue" />
-                    </dd>
-                    <dt>Embargo</dt>
-                    <dd>
-                      <input type="text" name="embargo" />
-                    </dd>
-                    <dt>Coverage Depth</dt>
-                    <dd>
-                      <g:simpleHiddenRefdata name="coverageDepth" refdataCategory="TIPPCoverageStatement.CoverageDepth" />
-                    </dd>
-                    <dt>Coverage Note</dt>
-                    <dd>
-                      <input type="text" name="coverageNote" />
-                    </dd>
-                    <dt></dt>
-                    <dd>
-                      <button type="submit"
-                              class="btn btn-default btn-primary btn-sm ">Add</button>
-                    </dd>
-                  </g:form>
-                </dl>
-              </g:if>
+        <g:if test="${editable}">
+          <button
+                  class="hidden-license-details btn btn-default btn-sm btn-primary "
+                  data-toggle="collapse" data-target="#collapseableAddCoverageStatement">
+                  Add new <i class="fas fa-plus"></i>
+          </button>
+          <dl id="collapseableAddCoverageStatement" class="dl-horizontal collapse">
+            <g:form controller="ajaxSupport" action="addToCollection"
+                    class="form-inline" params="[fragment:'tippcoverage']">
+              <input type="hidden" name="__context"
+                      value="${d.class.name}:${d.id}" />
+              <input type="hidden" name="__newObjectClass"
+                      value="org.gokb.cred.TIPPCoverageStatement" />
+              <input type="hidden" name="__recip" value="owner" />
+              <dt class="dt-label">Start Date</dt>
+              <dd>
+                <input class="form-control" type="date" name="startDate" />
+              </dd>
+              <dt class="dt-label">Start Volume</dt>
+              <dd>
+                <input class="form-control" type="text" name="startVolume" />
+              </dd>
+              <dt class="dt-label">Start Issue</dt>
+              <dd>
+                <input class="form-control" type="text" name="startIssue" />
+              </dd>
+              <dt class="dt-label">End Date</dt>
+              <dd>
+                <input class="form-control"  type="date" name="endDate" />
+              </dd>
+              <dt class="dt-label">End Volume</dt>
+              <dd>
+                <input class="form-control"  type="text" name="endVolume" />
+              </dd>
+              <dt class="dt-label">End Issue</dt>
+              <dd>
+                <input class="form-control"  type="text" name="endIssue" />
+              </dd>
+              <dt class="dt-label">Embargo</dt>
+              <dd>
+                <input class="form-control"  type="text" name="embargo" />
+              </dd>
+              <dt class="dt-label">Coverage Depth</dt>
+              <dd>
+                <g:simpleReferenceTypedown name="coverageDepth" baseClass="org.gokb.cred.RefdataValue"
+                    filter1="TIPPCoverageStatement.CoverageDepth" />
+              </dd>
+              <dt class="dt-label">Coverage Note</dt>
+              <dd>
+                <input class="form-control"  type="text" name="coverageNote" />
+              </dd>
+              <dt></dt>
+              <dd>
+                <button type="submit"
+                        class="btn btn-default btn-primary btn-sm ">Add</button>
+              </dd>
+            </g:form>
+          </dl>
+        </g:if>
       </dd>
       <dt>
         <g:annotatedLabel owner="${d}" property="coverageNote">Coverage Note</g:annotatedLabel>
@@ -261,6 +262,6 @@
     </div>
   </g:if>
 </div>
-<g:render template="/apptemplates/componentStatus" 
+<g:render template="/apptemplates/componentStatus"
   model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
 
