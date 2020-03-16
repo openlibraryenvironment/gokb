@@ -122,7 +122,7 @@ class ComponentLookupService {
    * @param context : Possible override of the self link path
    */
 
-  public def restLookup (cls, params, def context = null) {
+  public def restLookup (user, cls, params, def context = null) {
     def result = [:]
     def hqlQry = "from ${cls.simpleName} as p".toString()
     def qryParams = [:]
@@ -323,7 +323,7 @@ class ComponentLookupService {
       }
 
       log.debug("${obj}")
-      result.data << restMappingService.mapObjectToJson(obj, params)
+      result.data << restMappingService.mapObjectToJson(obj, params, user)
     }
 
     result['_pagination'] = [

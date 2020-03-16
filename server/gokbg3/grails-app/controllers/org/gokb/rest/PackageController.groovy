@@ -31,6 +31,7 @@ class PackageController {
   def index() {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
+    User user = User.get(springSecurityService.principal.id)
     def es_search = params.es ? true : false
 
     params.componentType = "Package" // Tells ESSearchService what to look for
@@ -43,7 +44,7 @@ class PackageController {
     }
     else {
       def start_db = LocalDateTime.now()
-      result = componentLookupService.restLookup(Package, params)
+      result = componentLookupService.restLookup(user, Package, params)
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }
 
@@ -74,7 +75,7 @@ class PackageController {
       }
 
       if (obj?.isReadable()) {
-        result = restMappingService.mapObjectToJson(obj, params)
+        result = restMappingService.mapObjectToJson(obj, params, user)
 
         // result['_currentTipps'] = obj.currentTippCount
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
@@ -90,18 +91,6 @@ class PackageController {
         response.setStatus(403)
         result.code = 403
         result.result = 'ERROR'
-      }
-
-      if ( obj.curatoryGroups && obj.curatoryGroups?.size() > 0 ) {
-        is_curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
-      }
-
-      if (is_curator) {
-        result._links.update = ['href': base + obj.restPath + "/${obj.uuid}"]
-
-        if (obj.isDeletable()) {
-          result._links.delete = ['href': base + obj.restPath + "/${obj.uuid}"]
-        }
       }
     }
     else {
@@ -273,9 +262,40 @@ class PackageController {
     }
 
     if(errors.size() > 0) {
-      result.errors = errors
+      result.error = errors
     }
     render result as JSON
+  }
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
+  @Transactional
+  def delete() {
+    def result = ['result':'OK', 'params': params]
+    def user = User.get(springSecurityService.principal.id)
+    def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def curator = user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id)
+
+    if ( pkg && pkg.isDeletable() ) {
+      if ( curator || user.isAdmin() ) {
+        pkg.deleteSoft()
+      }
+      else {
+        result.result = 'ERROR'
+        response.setStatus(403)
+        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+      }
+    }
+    else if (!pkg) {
+      result.result = 'ERROR'
+      response.setStatus(404)
+      result.message = "Package not found or empty request body!"
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(403)
+      result.message = "User is not allowed to delete this component!"
+    }
+    result
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])

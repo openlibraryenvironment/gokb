@@ -56,12 +56,13 @@ class RestMappingService {
    * @param params : The map of request parameters
    */
 
-  def mapObjectToJson(obj, params) {
+  def mapObjectToJson(obj, params, def user = null) {
     log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
     def result = [:]
     def embed_active = params['_embed']?.split(',') ?: []
     def base = grailsApplication.config.serverURL + "/rest"
     def jsonMap = null
+    def is_curator = true
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
@@ -71,6 +72,15 @@ class RestMappingService {
 
     if (KBComponent.has(obj.deproxy(),"restPath")) {
       result['_links']['self'] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
+
+      if ( obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
+        is_curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
+      }
+
+      if (is_curator || user?.isAdmin()) {
+        result._links.update = ['href': base + obj.restPath + "/${obj.uuid}"]
+        result._links.delete = ['href': base + obj.restPath + "/${obj.uuid}"]
+      }
     }
 
     if ( embed_active.size() > 0 || jsonMap?.defaultEmbeds ) {
@@ -95,7 +105,7 @@ class RestMappingService {
               ]
 
               if (embed_active.contains(p.name)) {
-                result['_embedded'][p.name] = getEmbeddedJson(obj[p.name])
+                result['_embedded'][p.name] = getEmbeddedJson(obj[p.name], user)
               }
             }
           }
@@ -104,7 +114,7 @@ class RestMappingService {
               result['_embedded'][p.name] = []
 
               obj[p.name].each {
-                result['_embedded'][p.name] << getEmbeddedJson(it)
+                result['_embedded'][p.name] << getEmbeddedJson(it, user)
               }
             }
           }
@@ -140,7 +150,7 @@ class RestMappingService {
           if( embed_active.contains(cp) ) {
             result['_embedded'][cp] = []
             obj[cp].take(10).each {
-              result['_embedded'][cp] << getEmbeddedJson(it)
+              result['_embedded'][cp] << getEmbeddedJson(it, user)
             }
           }
         }
@@ -381,9 +391,9 @@ class RestMappingService {
    * @param obj : The object to be mapped
    */
 
-  public def getEmbeddedJson(obj) {
+  public def getEmbeddedJson(obj, user) {
     def pars = [:]
     log.debug("Embedded object ${obj}")
-    mapObjectToJson(obj, pars)
+    mapObjectToJson(obj, pars, user)
   }
 }
