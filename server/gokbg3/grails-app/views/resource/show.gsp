@@ -63,21 +63,35 @@
       </g:if>
       <g:elseif test="${displayobj != null}">
         <g:if test="${ (!displayobj.respondsTo("isEditable")) || displayobj.isEditable() }" >
-          <g:if test="${ !((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" >
+          <g:if test="${ !((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true" && request.user.isAdmin())) }" >
             <div class="col-xs-3 pull-right well" style="min-width:320px;">
-              <div class="alert alert-warning">
-                <h4>Warning</h4>
-                <p>You are not a curator of this component. You can still edit it, but please contact a curator before making major changes.</p>
-                <p><g:link class="btn btn-danger" controller="${ params.controller }" action="${ params.action }" id="${ displayobj.className }:${ displayobj.id }" params="${ (request.param ?: [:]) + ["curationOverride" : true] }" >Confirm and switch to edit mode</g:link></p>
+              <div class="alert alert-info" style="font-weight:bold;">
+                <h4>Info</h4>
+                <p>You are not a curator of this component. If you notice any errors, please contact a curator or request a review.</p>
               </div>
-              <g:if test="${displayobj.respondsTo('getCuratoryGroups')}">
-                <div>
-                  <h4>Curatory Groups</h4>
-                  <div style="background-color:#ffffff">
-                    <g:render template="/apptemplates/curatory_groups" model="${[d:displayobj, editable:false]}" />
-                  </div>
+              <sec:ifAnyGranted roles="ROLE_ADMIN">
+                <div class="alert alert-warning" style="font-weight:bold;">
+                  <h4>Warning</h4>
+                  <p>As an admin you can still edit, but please contact a curator before making major changes.</p>
+                  <p>
+                    <g:link class="btn btn-danger" 
+                            controller="${ params.controller }" 
+                            action="${ params.action }" 
+                            id="${ displayobj.className }:${ displayobj.id }" 
+                            params="${ (request.param ?: [:]) + ["curationOverride" : true] }" >
+                      Enable admin override
+                    </g:link>
+                  </p>
                 </div>
-              </g:if>
+                <g:if test="${displayobj.respondsTo('getCuratoryGroups')}">
+                  <div>
+                    <h4>Curatory Groups</h4>
+                    <div style="background-color:#ffffff">
+                      <g:render template="/apptemplates/curatory_groups" model="${[d:displayobj, editable:false]}" />
+                    </div>
+                  </div>
+                </g:if>
+              </sec:ifAnyGranted>
             </div>
           </g:if>
           <g:elseif test="${displayobj.respondsTo('availableActions')}">

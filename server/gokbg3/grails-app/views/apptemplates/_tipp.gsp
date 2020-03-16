@@ -1,4 +1,4 @@
-<g:set var="editable" value="${ d.isEditable() && ((request.curator != null ? request.curator.size() > 0 ? true : false : true) || (params.curationOverride == 'true')) }" />
+<g:set var="editable" value="${ d.isEditable() && ((request.curator != null ? request.curator.size() > 0 ? true : false : true) || (params.curationOverride == 'true' && request.user.isAdmin())) }" />
 <dl class="dl-horizontal">
     <dt>
       <g:annotatedLabel owner="${d}" property="title">Title</g:annotatedLabel>
