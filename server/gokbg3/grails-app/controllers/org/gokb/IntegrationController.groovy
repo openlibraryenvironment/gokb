@@ -865,8 +865,8 @@ class IntegrationController {
   @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferencePackage() {
     def result = [ 'result' : 'OK' ]
-    def async = params.async ? params.boolean(async) : false
-    def update = params.addOnly ? params.boolean(addOnly) : false
+    def async = params.async ? params.boolean('async') : false
+    def update = params.addOnly ? params.boolean('addOnly') : false
     def rjson = request.JSON
     def fullsync = false
     User request_user = springSecurityService.currentUser
@@ -1357,7 +1357,7 @@ class IntegrationController {
   def crossReferenceTitle() {
     User user = springSecurityService.currentUser
     def rjson = request.JSON
-    def async = params.async ? true : false
+    def async = params.async ? params.boolean('async') : false
     def fullsync = false
     def result
 
