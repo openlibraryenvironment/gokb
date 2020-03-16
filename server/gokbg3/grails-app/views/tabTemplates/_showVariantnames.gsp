@@ -1,4 +1,4 @@
-<g:set var="editable" value="${ d.isEditable() && ((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true")) }" />
+<g:set var="editable" value="${ d.isEditable() && ((request.curator != null ? request.curator.size() > 0 : true) || (params.curationOverride == "true" && request.user.isAdmin())) }" />
 <div class="tab-pane" id="altnames">
   <g:if test="${d.id != null}">
     <dl>

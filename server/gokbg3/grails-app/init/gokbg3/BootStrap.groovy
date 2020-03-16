@@ -1,5 +1,6 @@
 package gokbg3;
 
+import grails.util.Environment
 import grails.util.GrailsNameUtils;
 
 import grails.core.GrailsClass
@@ -134,6 +135,23 @@ class BootStrap {
             display: 'Deleted User',
             email: '',
             enabled: false).save(failOnError: true)
+      }
+
+      if (Environment.current != Environment.PRODUCTION) {
+        def tempUser = User.findByUsername('tempUser')
+        if ( ! tempUser ) {
+          log.error("No tempUser found, create")
+          tempUser = new User(
+              username: 'tempUser',
+              password: 'tempUser',
+              display: 'Temp User',
+              email: '',
+              enabled: true).save(failOnError: true)
+        }
+
+        if (!tempUser.authorities.contains(userRole)) {
+          UserRole.create tempUser, userRole
+        }
       }
 
 
@@ -326,7 +344,7 @@ class BootStrap {
         dcinfo.save(flush:true);
       }
 
-      if (dcinfo.dcName.startsWith('org.gokb.cred')) {
+      if (dcinfo.dcName.startsWith('org.gokb.cred') || dcinfo.dcName == 'org.gokb.Annotation') {
         AclObjectIdentity oid
 
         if (!AclObjectIdentity.findByObjectId(dcinfo.id)) {
@@ -450,6 +468,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("Package.LinkType", "Previous").save(flush:true, failOnError:true)
 
     RefdataCategory.lookupOrCreate("Package.Global", "Consortium").save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate("Package.Global", "Regional").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Package.Global", "Global").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Package.Global", "Other").save(flush:true, failOnError:true)
 
