@@ -1,6 +1,5 @@
 package gokbg3.rest
 
-
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
@@ -106,7 +105,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
   void "test DELETE /rest/profile/"() {
     // use the bearerToken to write to /rest/profile/update
     when:
-    String accessToken = getAccessToken()
+    String accessToken = getAccessToken('tempUser')
     RestResponse resp = rest.delete("http://localhost:$serverPort/gokb/rest/profile/") {
       // headers
       accept('application/json')

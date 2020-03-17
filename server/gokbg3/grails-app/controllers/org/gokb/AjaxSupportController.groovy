@@ -223,6 +223,26 @@ class AjaxSupportController {
       cols:['value'],
       format:'simple'
     ],
+    'TitleInstancePackagePlatform.CoverageDepth' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      required:true,
+      qryParams:[],
+      rdvCat: "TitleInstancePackagePlatform.CoverageDepth",
+      cols:['value'],
+      format:'simple'
+    ],
+    'TIPPCoverageStatement.CoverageDepth' : [
+      domain:'RefdataValue',
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      required:true,
+      qryParams:[],
+      rdvCat: "TIPPCoverageStatement.CoverageDepth",
+      cols:['value'],
+      format:'simple'
+    ],
   ]
 
 
@@ -750,7 +770,7 @@ class AjaxSupportController {
   def editableSetValue() {
     log.debug("editableSetValue ${params}");
     def user = springSecurityService.currentUser
-    def target_object = resolveOID2(params.pk)
+    def target_object = genericOIDService.resolveOID(params.pk)
     def result = ['result': 'OK', 'params': params]
     def errors = [:]
     if ( target_object && ( target_object.isEditable() || target_object == user ) ) {
@@ -765,7 +785,7 @@ class AjaxSupportController {
         binding_properties[ params.name ] = params.value
         bindData(target_object, binding_properties)
       }
-      
+
       if (target_object.validate()) {
         target_object.save(flush:true);
       }
@@ -773,9 +793,13 @@ class AjaxSupportController {
         errors = messageService.processValidationErrors(target_object.errors, request.locale)
       }
     }
-    else {
+    else if (target_object){
       errors['global'] = ["Object ${target_object} is not editable.".toString()]
       log.debug("Object ${target_object} is not editable.");
+    }
+    else {
+      errors['global'] = ["Not able to resolve object from ${params.pk}.".toString()]
+      log.debug("Object ${target_object} could not be resolved.");
     }
 
     withFormat {
@@ -786,15 +810,16 @@ class AjaxSupportController {
           outs << params.value
         }
         else {
+          def resp = errors[params.name] ? errors[params.name][0].toString() : errors['global'][0]
           response.status = 400
-          outs << errors[params.name] ? errors[params.name][0] : errors['global'][0]
+          outs << resp
         }
         outs.flush()
         outs.close()
       }
       json {
         if (errors) {
-          result.errors = errors[params.name]
+          result.errors = errors[params.name] ?: errors['global']
           result.result = 'ERROR'
         }
 
@@ -1095,7 +1120,7 @@ class AjaxSupportController {
              break;
          }
        }
-       
+
        result.status = 'OK'
        result.newcount = ComponentLike.executeQuery('select count(cl) from ComponentLike as cl where cl.ownerClass=:oc and cl.ownerId=:oi',
                              [oc:oid_components[0], oi:Long.parseLong(oid_components[1])]).get(0)

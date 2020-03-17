@@ -32,7 +32,7 @@ class InplaceTagLib {
     }
 
     if ( tl_editable && owner?.respondsTo('getCuratoryGroups')) {
-      tl_editable = (cur || params.curationOverride == "true")
+      tl_editable = ( cur || (user.hasRole("ROLE_ADMIN") && params.curationOverride == "true") )
     }
 
     if ( !tl_editable && !owner?.respondsTo('getCuratoryGroups') && baseClass?.isTypeAdministerable()) {

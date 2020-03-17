@@ -3,29 +3,31 @@ package gokbg3.rest
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import spock.lang.Specification
+import grails.converters.JSON
 
 class AbstractAuthSpec extends Specification {
 
   private RestBuilder rest = new RestBuilder()
 
-  private String accessToken = null
+  private def accessToken = null
   private String refreshToken = null
+  private String activeUser = "admin"
 
-  private String getAccessToken() {
+  private String getAccessToken(def username = 'admin') {
     if (accessToken == null) {
-      login()
+      login(username)
     }
     return accessToken
   }
 
-  private String getRefreshToken() {
+  private String getRefreshToken(def username = 'admin') {
     if (refreshToken == null) {
-      login()
+      login(username)
     }
     return accessToken
   }
 
-  private void login() {
+  private void login(username) {
     // calling /rest/login to obtain a valid bearerToken
 
     RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/login") {
@@ -33,9 +35,10 @@ class AbstractAuthSpec extends Specification {
       accept('application/json')
       contentType('application/json')
       // body
-      body('{"username":"admin","password":"admin"}')
+      body([username: username, password:username] as JSON)
     }
-    accessToken = resp.json.access_token
-    refreshToken = resp.json.refresh_token
+    accessToken = resp.json?.access_token ?: accessToken
+    refreshToken = resp.json?.refresh_token ?: refreshToken
+    activeUser = username
   }
 }

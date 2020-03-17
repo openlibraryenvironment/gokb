@@ -23,6 +23,7 @@ class Org extends KBComponent {
     children    : Org,
     'previous'  : Org,
     ownedImprints  : Imprint,
+    curatoryGroups: CuratoryGroup,
     publishedTitles    : TitleInstance,
     issuedTitles    : TitleInstance,
     providedPlatforms  : Platform,
@@ -195,6 +196,14 @@ class Org extends KBComponent {
           builder.'roles' {
             roles.each { role ->
               builder.'role' (role.value)
+            }
+          }
+        }
+
+        builder.'curatoryGroups' {
+          curatoryGroups.each { cg ->
+            builder.'group' {
+              builder.'name'(cg.name)
             }
           }
         }

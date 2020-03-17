@@ -1,3 +1,4 @@
+<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null && request.curator.size() > 0) : true) || (params.curationOverride == 'true' && request.user.isAdmin())) }" />
 <dl class="dl-horizontal">
       <dt>
               <g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel>
@@ -150,7 +151,7 @@
                 model="${[d:d, property:'ids', fragment:'identifiers', cols:[
                           [expr:'toComponent.namespace.value', colhead:'Namespace'],
                           [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
-              <g:if test="${d.isEditable()}">
+              <g:if test="${editable}">
                 <h4>
                   <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
                 </h4>

@@ -122,6 +122,11 @@ class FTUpdateService {
           result.roles.add(role.value)
         }
 
+        result.curatoryGroups = []
+        kbc.curatoryGroups?.each { cg ->
+          result.curatoryGroups.add(cg.name)
+        }
+
         result.status = kbc.status?.value
 
         result.identifiers = []
@@ -148,6 +153,11 @@ class FTUpdateService {
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
         result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+
+        result.curatoryGroups = []
+        kbc.curatoryGroups?.each { cg ->
+          result.curatoryGroups.add(cg.name)
+        }
 
         result.altname = []
         kbc.variantNames.each { vn ->
@@ -308,7 +318,7 @@ class FTUpdateService {
             cst.endIssue = tcs.endIssue ?: ""
             cst.embargo = tcs.embargo ?: ""
             cst.coverageNote = tcs.coverageNote ?: ""
-            cst.coverageDepth = tcs.coverageDepth ?: ""
+            cst.coverageDepth = tcs.coverageDepth ? tcs.coverageDepth.value : ""
 
             result.coverage.add(cst)
           }
