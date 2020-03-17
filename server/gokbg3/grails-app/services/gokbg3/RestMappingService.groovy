@@ -68,18 +68,18 @@ class RestMappingService {
 
     jsonMap = KBComponent.has(obj.deproxy(),'jsonMapping') ? obj.jsonMapping : null
 
-    result['_links'] = [:]
-
     if (KBComponent.has(obj.deproxy(),"restPath")) {
+      result['_links'] = [:]
       result['_links']['self'] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
 
       if ( obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
-        is_curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
+        is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
       }
 
       if (is_curator || user?.isAdmin()) {
         result._links.update = ['href': base + obj.restPath + "/${obj.uuid}"]
         result._links.delete = ['href': base + obj.restPath + "/${obj.uuid}"]
+        result._links.retire = ['href': base + obj.restPath + "/${obj.uuid}/retire"]
       }
     }
 
@@ -90,6 +90,8 @@ class RestMappingService {
     if ( embed_active.size() == 0 && jsonMap?.defaultEmbeds ) {
       embed_active = jsonMap.defaultEmbeds
     }
+
+    result['id'] = obj.id
 
     pent.getPersistentProperties().each { p ->
       if (!defaultIgnore.contains(p.name) && (!jsonMap || !jsonMap.ignore.contains(p.name)) ) {

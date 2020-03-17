@@ -16,7 +16,7 @@ import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 
 @Transactional(readOnly = true)
-class PackageController {
+class OrgController {
 
   static namespace = 'rest'
 
@@ -34,7 +34,7 @@ class PackageController {
     User user = User.get(springSecurityService.principal.id)
     def es_search = params.es ? true : false
 
-    params.componentType = "Package" // Tells ESSearchService what to look for
+    params.componentType = "Org" // Tells ESSearchService what to look for
 
     if (es_search) {
       params.remove('es')
@@ -44,12 +44,8 @@ class PackageController {
     }
     else {
       def start_db = LocalDateTime.now()
-      result = componentLookupService.restLookup(user, Package, params)
+      result = componentLookupService.restLookup(user, Org, params)
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
-    }
-
-    result.data?.each { pkg ->
-      pkg['_links'] << ['tipps': ['href': (base + "/packages/${pkg.uuid}/tipps")]]
     }
 
     render result as JSON
@@ -64,14 +60,14 @@ class PackageController {
     User user = User.get(springSecurityService.principal.id)
 
     if (params.oid || params.id) {
-      obj = Package.findByUuid(params.id)
+      obj = Org.findByUuid(params.id)
 
       if (!obj) {
         obj = genericOIDService.resolveOID(params.id)
       }
 
       if (!obj && params.long('id')) {
-        obj = Package.get(params.long('id'))
+        obj = Org.get(params.long('id'))
       }
 
       if (obj?.isReadable()) {
@@ -112,27 +108,22 @@ class PackageController {
     def user = User.get(springSecurityService.principal.id)
 
     if (reqBody) {
-      Package pkg = Package.upsertDTO(reqBody, user)
+      Org obj = Org.upsertDTO(reqBody, user)
 
-      if (!pkg) {
-        errors = [badData: reqBody, message:"Unable to save package!"]
+      if (!obj) {
+        errors = [badData: reqBody, message:"Unable to save organization!"]
       }
-      else if (pkg?.errors) {
-        errors = messsageService.processValidationErrors(pkg.errors, request.locale)
-      }
-      else {
-        if (reqBody.identifiers) {
-          pkg
-        }
+      else if (obj?.errors) {
+        errors = messsageService.processValidationErrors(obj.errors, request.locale)
       }
     }
     else {
-      errors = [badData: reqBody, message:"Unable to save package!"]
+      errors = [badData: reqBody, message:"Unable to save organization!"]
     }
 
     if (errors) {
       result.result = 'ERROR'
-      result.errors = errors
+      result.error = errors
     }
 
     result
@@ -145,102 +136,42 @@ class PackageController {
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
-    def editable = true
-    def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def obj = Org.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def editable = obj.isEditable()
 
-    if (pkg && reqBody) {
-      pkg.lock()
+    if (obj && reqBody) {
+      obj.lock()
 
-      if ( !user.hasRole('ROLE_ADMIN') && pkg.curatoryGroups && pkg.curatoryGroups.size() > 0 ) {
-        def cur = user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id)
+      if ( editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
+        def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
 
         if (!cur) {
           editable = false
         }
       }
+
       if (editable) {
 
-        def jsonMap = pkg.jsonMapping
+        def jsonMap = obj.jsonMapping
 
-        jsonMap.ignore = [
-          'lastProject',
-          'status'
-        ]
-
-        jsonMap.immutable = [
-          'listVerifier',
-          'listVerifiedDate',
-          'listStatus'
-        ]
-
-        restMappingService.updateObject(pkg, jsonMap, reqBody)
+        restMappingService.updateObject(obj, jsonMap, reqBody)
 
         if (reqBody.identifiers) {
-          restMappingService.updateIdentifiers(pkg, reqBody.identifiers)
+          restMappingService.updateIdentifiers(obj, reqBody.identifiers)
         }
 
         if ( reqBody.status ) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
           RefdataValue newStatus = RefdataValue.get(reqBody.status)
 
-          if ( status_deleted != RefdataValue.get(reqBody.status) || pkg.isDeletable() ) {
-            pkg.status = newStatus
+          if ( status_deleted != RefdataValue.get(reqBody.status) || obj.isDeletable() ) {
+            obj.status = newStatus
           }
         }
 
-        if (reqBody.provider) {
-          def prov = null
-
-          try {
-            prov = Org.get(reqBody.provider)
-          }
-          catch (Exception e) {
-          }
-
-          if (prov) {
-            pkg.provider = prov
-          }
-          else {
-            obj.errors.reject(
-              'default.not.found.message',
-              ['Org', reqBody.provider] as Object[],
-              '[{0} not found with id {1}!]'
-            )
-            obj.errors.rejectValue(
-              'provider',
-              'default.not.found.message'
-            )
-          }
-        }
-
-        if (reqBody.nominalPlatform) {
-          def plt = null
-
-          try {
-            plt = Platform.get(reqBody.nominalPlatform)
-          }
-          catch (Exception e) {
-          }
-
-          if (plt) {
-            pkg.nominalPlatform = plt
-          }
-          else {
-            obj.errors.reject(
-              'default.not.found.message',
-              ['Platform', reqBody.nominalPlatform] as Object[],
-              '[{0} not found with id {1}!]'
-            )
-            obj.errors.rejectValue(
-              'nominalPlatform',
-              'default.not.found.message'
-            )
-          }
-        }
-
-        if( pkg.validate() ) {
+        if( obj.validate() ) {
           if(errors.size() == 0) {
-            pkg.save(flush:true)
+            obj.save(flush:true)
           }
         }
         else {
@@ -272,12 +203,12 @@ class PackageController {
   def delete() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id)
+    def obj = Org.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
-    if ( pkg && pkg.isDeletable() ) {
+    if ( obj && obj.isDeletable() ) {
       if ( curator || user.isAdmin() ) {
-        pkg.deleteSoft()
+        obj.deleteSoft()
       }
       else {
         result.result = 'ERROR'
@@ -285,7 +216,7 @@ class PackageController {
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
-    else if (!pkg) {
+    else if (!obj) {
       result.result = 'ERROR'
       response.setStatus(404)
       result.message = "Package not found or empty request body!"
@@ -303,12 +234,12 @@ class PackageController {
   def retire() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id)
+    def obj = Org.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
-    if ( pkg && pkg.isEditable() ) {
+    if ( obj && obj.isEditable() ) {
       if ( curator || user.isAdmin() ) {
-        pkg.retire()
+        obj.retire()
       }
       else {
         result.result = 'ERROR'
@@ -316,7 +247,7 @@ class PackageController {
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
-    else if (!pkg) {
+    else if (!obj) {
       result.result = 'ERROR'
       response.setStatus(404)
       result.message = "Package not found or empty request body!"
@@ -327,58 +258,5 @@ class PackageController {
       result.message = "User is not allowed to edit this component!"
     }
     result
-  }
-
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def tipps() {
-    def result = [:]
-    log.debug("tipps :: ${params}")
-    def pkg = Package.findByUuid(params.id)
-
-    if (!pkg) {
-      pkg = genericOIDService.resolveOID(params.id)
-    }
-
-    if (!pkg && params.long('id')) {
-      pkg = Package.get(params.long('id'))
-    }
-
-    log.debug("TIPPs for Package: ${pkg}")
-
-    if (pkg) {
-      def context = "/packages/" + params.id + "/tipps"
-      def base = grailsApplication.config.serverURL + "/rest"
-      def es_search = params.es ? true : false
-
-      params.remove('id')
-      params.remove('uuid')
-      params.remove('es')
-      params.pkg = pkg.uuid
-
-      def esParams = new HashMap(params)
-      esParams.remove('componentType')
-      esParams.componentType = "TIPP" // Tells ESSearchService what to look for
-
-      log.debug("New ES params: ${esParams}")
-      log.debug("New DB params: ${params}")
-
-      if (es_search) {
-        def start_es = LocalDateTime.now()
-        result = ESSearchService.find(esParams, context)
-        log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
-      }
-      else {
-        def start_db = LocalDateTime.now()
-        result = componentLookupService.restLookup(TitleInstancePackagePlatform, params, context)
-        log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
-      }
-    }
-    else {
-      result.result = 'ERROR'
-      result.message = "Package id ${params.id} could not be resolved!"
-      response.setStatus(404)
-    }
-
-    render result as JSON
   }
 }

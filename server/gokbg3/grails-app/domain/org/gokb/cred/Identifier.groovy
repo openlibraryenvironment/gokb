@@ -17,6 +17,21 @@ class Identifier extends KBComponent {
       "${this.class.name}:${id}"
   }
 
+  static jsonMapping = [
+    'ignore': [
+      'lastUpdatedBy',
+      'editStatus',
+      'name',
+      'status',
+      'lastUpdated'
+    ],
+    'defaultLinks': [
+      'namespace'
+    ],
+    'defaultEmbeds': [
+    ]
+  ]
+
   private static nameSpaceRules = [
     "issn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
     "issnl" : "^\\d{4}\\-\\d{3}[\\dX]\$",
