@@ -16,7 +16,7 @@ import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 
 @Transactional(readOnly = true)
-class OrgController {
+class PlatformController {
 
   static namespace = 'rest'
 
@@ -26,7 +26,6 @@ class OrgController {
   def messageService
   def restMappingService
   def componentLookupService
-  def componentUpdateService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -35,7 +34,7 @@ class OrgController {
     User user = User.get(springSecurityService.principal.id)
     def es_search = params.es ? true : false
 
-    params.componentType = "Org" // Tells ESSearchService what to look for
+    params.componentType = "Platform" // Tells ESSearchService what to look for
 
     if (es_search) {
       params.remove('es')
@@ -45,7 +44,7 @@ class OrgController {
     }
     else {
       def start_db = LocalDateTime.now()
-      result = componentLookupService.restLookup(user, Org, params)
+      result = componentLookupService.restLookup(user, Platform, params)
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }
 
@@ -61,14 +60,14 @@ class OrgController {
     User user = User.get(springSecurityService.principal.id)
 
     if (params.oid || params.id) {
-      obj = Org.findByUuid(params.id)
+      obj = Platform.findByUuid(params.id)
 
       if (!obj) {
         obj = genericOIDService.resolveOID(params.id)
       }
 
       if (!obj && params.long('id')) {
-        obj = Org.get(params.long('id'))
+        obj = Platform.get(params.long('id'))
       }
 
       if (obj?.isReadable()) {
@@ -109,20 +108,17 @@ class OrgController {
     def user = User.get(springSecurityService.principal.id)
 
     if (reqBody) {
-      Org obj = Org.upsertDTO(reqBody, user)
+      Platform obj = Platform.upsertDTO(reqBody, user)
 
       if (!obj) {
-        errors = [badData: reqBody, message:"Unable to save organization!"]
+        errors = [badData: reqBody, message:"Unable to save platform!"]
       }
       else if (obj?.errors) {
         errors = messsageService.processValidationErrors(obj.errors, request.locale)
       }
-      else {
-        restMappingService.updateObject ( obj, obj.jsonMapping, reqBody)
-      }
     }
     else {
-      errors = [badData: reqBody, message:"Unable to save organization!"]
+      errors = [badData: reqBody, message:"Unable to save platform!"]
     }
 
     if (errors) {
@@ -140,7 +136,7 @@ class OrgController {
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
-    def obj = Org.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
     def editable = obj.isEditable()
 
     if (obj && reqBody) {
@@ -159,6 +155,10 @@ class OrgController {
         def jsonMap = obj.jsonMapping
 
         restMappingService.updateObject(obj, jsonMap, reqBody)
+
+        if (reqBody.identifiers) {
+          restMappingService.updateIdentifiers(obj, reqBody.identifiers)
+        }
 
         if ( reqBody.status ) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -203,7 +203,7 @@ class OrgController {
   def delete() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Org.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
     def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
     if ( obj && obj.isDeletable() ) {
@@ -229,12 +229,12 @@ class OrgController {
     result
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
   @Transactional
   def retire() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Org.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
     def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
     if ( obj && obj.isEditable() ) {

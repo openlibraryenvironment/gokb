@@ -17,6 +17,7 @@ class RestMappingService {
   def grailsApplication
   def genericOIDService
   def classExaminationService
+  def componentLookupService
 
   def defaultIgnore = [
     'bucketHash',
@@ -98,16 +99,21 @@ class RestMappingService {
         if ( p instanceof Association ) {
           if ( p instanceof ManyToOne || p instanceof OneToOne ) {
             // Set ref property
-            if (obj[p.name]) {
-              def label = selectPreferredLabel(obj[p.name])
+            if ( user?.isAdmin() || p.type != User ) {
+              if ( obj[p.name] ) {
+                def label = selectPreferredLabel(obj[p.name])
 
-              result[p.name] = [
-                'name': label,
-                'id': obj[p.name].id
-              ]
+                result[p.name] = [
+                  'name': label,
+                  'id': obj[p.name].id
+                ]
 
-              if (embed_active.contains(p.name)) {
-                result['_embedded'][p.name] = getEmbeddedJson(obj[p.name], user)
+                if (embed_active.contains(p.name)) {
+                  result['_embedded'][p.name] = getEmbeddedJson(obj[p.name], user)
+                }
+              }
+              else {
+                result[p.name] = null
               }
             }
           }
@@ -208,6 +214,11 @@ class RestMappingService {
         }
       }
     }
+
+    if (reqBody.ids) {
+      updateIdentifiers(obj, reqBody.ids)
+    }
+
     obj
   }
 
@@ -256,6 +267,56 @@ class RestMappingService {
         'default.not.found.message'
       )
     }
+  }
+
+  public def updateIdentifiers(obj, ids) {
+    def new_ids = []
+    if (obj && ids instanceof List) {
+      ids.each { i ->
+        Identifier id = null
+
+        if (i instanceof Long) {
+          id = Identifier.get(i)
+        }
+        else if (i instanceof Map) {
+          def ns = null
+
+          if (i.namespace instanceof Long) {
+            ns = IdentifierNamespace.get(i.namespace)?.value ?: null
+          }
+          else {
+            ns = i.namespace
+          }
+
+          try {
+            if (ns) {
+              id = Identifier.lookupOrCreateCanonicalIdentifier(ns, i.value)
+            }
+          }
+          catch (grails.validation.ValidationException ve) {
+            obj.errors.reject(
+              'identifier.value.IllegalIDForm',
+              [i.value, ns] as Object[],
+              '[Value {0} is not valid for namespace {1}]'
+            )
+            obj.errors.rejectValue(
+              'ids',
+              'identifier.value.IllegalIDForm'
+            )
+          }
+        }
+
+        if ( id && !obj.errors ) {
+          new_ids << id
+        }
+      }
+
+      if (!obj.errors) {
+        obj.ids.addAll(new_ids)
+        obj.ids.retainAll(new_ids)
+      }
+    }
+    obj
   }
 
   public def updateVariantNames(obj, vals) {

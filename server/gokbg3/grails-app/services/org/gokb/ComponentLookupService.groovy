@@ -172,12 +172,16 @@ class ComponentLookupService {
 
         if (params[c]) {
           params.list(c)?.each { a ->
+            def addedLong = false
+
             try {
               validLong.add(Long.valueOf(a))
+              addedLong = true
             }
             catch (java.lang.NumberFormatException nfe) {
             }
-            if (a instanceof String && a?.trim()) {
+
+            if (!addedLong && a instanceof String && a?.trim() ) {
               validStr.add(a)
             }
           }
@@ -233,13 +237,16 @@ class ComponentLookupService {
           def validStr = []
 
           alts.each { a ->
+            def addedLong = false
+
             try {
               validLong.add(Long.valueOf(a))
+              addedLong = true
             }
             catch (java.lang.NumberFormatException nfe) {
             }
 
-            if (a instanceof String && a?.trim() ) {
+            if (!addedLong && a instanceof String && a?.trim() ) {
               validStr.add(a)
             }
           }
@@ -251,8 +258,12 @@ class ComponentLookupService {
               qryParams[p.name] = validLong
             }
             if (validStr.size() > 0) {
+              if (validLong.size() > 0) {
+                paramStr += " OR "
+              }
 
               paramStr += "p.${p.name}.${selectPreferredLabelProp(p.type)} IN :${p.name}_str"
+
               if (p.type.hasProperty('uuid')) {
                 paramStr += " OR p.${p.name}.uuid IN :${p.name}_str"
               }
@@ -274,7 +285,7 @@ class ComponentLookupService {
         }
         else {
           paramStr += "p.${p.name} = :${p.name}"
-          qryParams[p.name] = val
+          qryParams[p.name] = params[p.name]
         }
 
         if (params['sort'] == p) {
@@ -425,6 +436,7 @@ class ComponentLookupService {
       prevLink.addQueryParam('offset', "${(offset - max) > 0 ? offset - max : 0}")
       result['_links']['prev'] = ['href': prevLink.toString()]
     }
-
   }
+
+  public 
 }

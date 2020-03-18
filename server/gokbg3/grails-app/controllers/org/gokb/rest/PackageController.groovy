@@ -110,6 +110,7 @@ class PackageController {
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
+    def jsonMap = pkg.jsonMapping
 
     if (reqBody) {
       Package pkg = Package.upsertDTO(reqBody, user)
@@ -118,12 +119,10 @@ class PackageController {
         errors = [badData: reqBody, message:"Unable to save package!"]
       }
       else if (pkg?.errors) {
-        errors = messsageService.processValidationErrors(pkg.errors, request.locale)
+        errors = messageService.processValidationErrors(pkg.errors, request.locale)
       }
       else {
-        if (reqBody.identifiers) {
-          pkg
-        }
+        restMappingService.updateObject(pkg, jsonMap, reqBody)
       }
     }
     else {

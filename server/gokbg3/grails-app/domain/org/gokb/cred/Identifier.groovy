@@ -20,6 +20,7 @@ class Identifier extends KBComponent {
   static jsonMapping = [
     'ignore': [
       'lastUpdatedBy',
+      'dateCreated',
       'editStatus',
       'name',
       'status',
