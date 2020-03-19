@@ -865,7 +865,8 @@ class IntegrationController {
   @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferencePackage() {
     def result = [ 'result' : 'OK' ]
-    def async = params.async ? true : false
+    def async = params.async ? params.boolean('async') : false
+    def update = params.addOnly ? params.boolean('addOnly') : false
     def rjson = request.JSON
     def fullsync = false
     User request_user = springSecurityService.currentUser
@@ -1051,6 +1052,11 @@ class IntegrationController {
 
                   def tipp_upsert_start_time = System.currentTimeMillis()
                   def tipp_fails = 0
+
+                  if ( json.tipps?.size() > 0 ) {
+                    the_pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+                  }
+
                   // If valid, upsert tipps
                   json.tipps.eachWithIndex { tipp, idx ->
                     tippctr++
@@ -1110,7 +1116,7 @@ class IntegrationController {
                     job_result.message = "Package was created, but ${tipp_fails} TIPPs could not be created!"
                   }
                   else {
-                    if ( existing_tipps.size() > 0 ) {
+                    if ( !update && existing_tipps.size() > 0 ) {
 
 
                       tipps_to_delete.eachWithIndex { ttd, idx ->
@@ -1356,7 +1362,7 @@ class IntegrationController {
   def crossReferenceTitle() {
     User user = springSecurityService.currentUser
     def rjson = request.JSON
-    def async = params.async ? true : false
+    def async = params.async ? params.boolean('async') : false
     def fullsync = false
     def result
 
