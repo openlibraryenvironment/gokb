@@ -1052,6 +1052,11 @@ class IntegrationController {
 
                   def tipp_upsert_start_time = System.currentTimeMillis()
                   def tipp_fails = 0
+
+                  if ( json.tipps?.size() > 0 ) {
+                    the_pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+                  }
+
                   // If valid, upsert tipps
                   json.tipps.eachWithIndex { tipp, idx ->
                     tippctr++
