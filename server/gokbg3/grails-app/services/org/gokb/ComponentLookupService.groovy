@@ -437,6 +437,4 @@ class ComponentLookupService {
       result['_links']['prev'] = ['href': prevLink.toString()]
     }
   }
-
-  public 
 }
