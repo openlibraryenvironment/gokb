@@ -224,7 +224,7 @@ class BootStrap {
     sourceObjects()
 
     def isbn_ns = IdentifierNamespace.findByValue('isbn') ?: new IdentifierNamespace(value:'isbn', family:'isxn').save(flush:true, failOnError:true);
-    def isbn_ns = IdentifierNamespace.findByValue('pisbn') ?: new IdentifierNamespace(value:'pisbn', family:'isxn').save(flush:true, failOnError:true);
+    def pisbn_ns = IdentifierNamespace.findByValue('pisbn') ?: new IdentifierNamespace(value:'pisbn', family:'isxn').save(flush:true, failOnError:true);
     def issn_ns = IdentifierNamespace.findByValue('issn') ?: new IdentifierNamespace(value:'issn', family:'isxn').save(flush:true, failOnError:true);
     def eissn_ns = IdentifierNamespace.findByValue('eissn') ?: new IdentifierNamespace(value:'eissn', family:'isxn').save(flush:true, failOnError:true);
     def issnl_ns = IdentifierNamespace.findByValue('issnl') ?: new IdentifierNamespace(value:'issnl', family:'isxn').save(flush:true, failOnError:true);
