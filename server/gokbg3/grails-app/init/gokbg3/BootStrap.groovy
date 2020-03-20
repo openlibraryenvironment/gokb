@@ -224,6 +224,7 @@ class BootStrap {
     sourceObjects()
 
     def isbn_ns = IdentifierNamespace.findByValue('isbn') ?: new IdentifierNamespace(value:'isbn', family:'isxn').save(flush:true, failOnError:true);
+    def isbn_ns = IdentifierNamespace.findByValue('pisbn') ?: new IdentifierNamespace(value:'pisbn', family:'isxn').save(flush:true, failOnError:true);
     def issn_ns = IdentifierNamespace.findByValue('issn') ?: new IdentifierNamespace(value:'issn', family:'isxn').save(flush:true, failOnError:true);
     def eissn_ns = IdentifierNamespace.findByValue('eissn') ?: new IdentifierNamespace(value:'eissn', family:'isxn').save(flush:true, failOnError:true);
     def issnl_ns = IdentifierNamespace.findByValue('issnl') ?: new IdentifierNamespace(value:'issnl', family:'isxn').save(flush:true, failOnError:true);
@@ -878,9 +879,11 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Combo.Type','Platform.HostedTitles').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Platform.Provider').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Office.Org').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Office.CuratoryGroups').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Org.Previous').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Org.Parent').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Org.OwnedImprints').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Org.CuratoryGroups').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Package.Provider').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Package.CuratoryGroups').save(flush:true, failOnError:true)
