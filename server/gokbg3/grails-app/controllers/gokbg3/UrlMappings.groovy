@@ -30,6 +30,18 @@ class UrlMappings {
             delete "/orgs/$id" (controller: 'org', namespace: 'rest', action:'delete')
             get "/orgs" (controller: 'org', namespace:'rest', action:'index')
 
+            get "/provider/$id/$action" (controller: 'org', namespace:'rest')
+            get "/provider/$id" (controller: 'org', namespace: 'rest', action:'show')
+            put "/provider/$id" (controller: 'org', namespace: 'rest', action:'update')
+            delete "/provider/$id" (controller: 'org', namespace: 'rest', action:'delete')
+            get "/provider" (controller: 'org', namespace:'rest', action:'index')
+        
+            get "/publisher/$id/$action" (controller: 'org', namespace:'rest')
+            get "/publisher/$id" (controller: 'org', namespace: 'rest', action:'show')
+            put "/publisher/$id" (controller: 'org', namespace: 'rest', action:'update')
+            delete "/publisher/$id" (controller: 'org', namespace: 'rest', action:'delete')
+            get "/publisher" (controller: 'org', namespace:'rest', action:'index')
+
             get "/platforms/$id/$action" (controller: 'platform', namespace:'rest')
             get "/platforms/$id" (controller: 'platform', namespace: 'rest', action:'show')
             put "/platforms/$id" (controller: 'platform', namespace: 'rest', action:'update')

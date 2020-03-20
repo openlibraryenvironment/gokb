@@ -6,6 +6,7 @@ import groovyx.net.http.URIBuilder
 import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
+import groovy.transform.Synchronized
 import com.k_int.ClassUtils
 import grails.util.Holders
 
@@ -17,9 +18,19 @@ class ComponentUpdateService {
   def restMappingService
 
   public boolean ensureCoreData ( KBComponent component, data, boolean sync = false ) {
+    return ensureSync (component, data, sync)
+  }
+
+  private final findLock = new Object()
+
+  @Synchronized("findLock")
+  private boolean ensureSync ( KBComponent component, data, boolean sync = false ) {
 
     // Set the name.
     def hasChanged = false
+
+    component.lock()
+    component.refresh()
 
     if(!component.name && data.name) {
       component.name = data.name
@@ -44,33 +55,46 @@ class ComponentUpdateService {
       if ( ci.type && ci.value && ci.type.toLowerCase() != "originediturl") {
 
         if (!ids.contains(testKey)) {
-          def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type,ci.value)
+          def canonical_identifier = null 
 
-          log.debug("Checking identifiers of component ${component.id}")
-
-          def duplicate = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?",[canonical_identifier,component])
-
-          if(duplicate.size() == 0){
-            log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
-            def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush:true, failOnError:true)
-            hasChanged = true
-          }
-          else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
-
-            log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
-            ReviewRequest.raise(
-              component,
-              "Review ID status.",
-              "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
-              user
-            )
+          if ( !KBComponent.has(component, 'publisher') ) {
+            canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type, ci.value)
           }
           else {
-            log.debug("Identifier combo is already present, probably via titleLookupService.")
+            def norm_id = Identifier.normalizeIdentifier(ci.value)
+            def ns = IdentifierNamespace.findByValueIlike(ci.type)
+            canonical_identifier = Identifier.findByNamespaceAndNormname(ns, norm_id)
           }
 
-          // Add the value for comparison.
-          ids << testKey
+          log.debug("Checking identifiers of component ${component.id}")
+          if (canonical_identifier) {
+            def duplicate = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?",[canonical_identifier,component])
+
+            if(duplicate.size() == 0){
+              log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
+              def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush:true, failOnError:true)
+              hasChanged = true
+            }
+            else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
+
+              log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
+              ReviewRequest.raise(
+                component,
+                "Review ID status.",
+                "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
+                user
+              )
+            }
+            else {
+              log.debug("Identifier combo is already present, probably via titleLookupService.")
+            }
+
+            // Add the value for comparison.
+            ids << testKey
+          }
+          else {
+            log.debug("Could not find or create Identifier!")
+          }
         }
       }
     }

@@ -93,6 +93,20 @@ class Org extends KBComponent {
     })
   }
 
+  static jsonMapping = [
+    'ignore': [
+    ],
+    'es': [
+    ],
+    'defaultLinks': [
+      'imprint',
+    ],
+    'defaultEmbeds': [
+      'ids',
+      'variantNames'
+    ]
+  ]
+
   //  @Transient
   //  def getPermissableCombos() {
   //  [

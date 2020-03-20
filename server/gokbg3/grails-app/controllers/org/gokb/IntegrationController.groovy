@@ -646,6 +646,8 @@ class IntegrationController {
 
     // Set the name.
     def hasChanged = false
+    component.lock()
+    component.refresh()
 
     if(!component.name && data.name) {
       component.name = data.name
@@ -1426,7 +1428,7 @@ class IntegrationController {
 
     def result = [ 'result' : 'OK' ]
 
-    log.debug("crossReferenceTitle(${titleObj.type},${titleObj.title},${titleObj.identifiers}},...)");
+    log.debug("crossReferenceTitle(${titleObj.type},${titleObj.name},${titleObj.identifiers}},...)");
 
         TitleInstance.withNewSession {
           User user = User.get(userid)

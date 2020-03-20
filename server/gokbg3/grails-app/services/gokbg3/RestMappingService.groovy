@@ -149,9 +149,15 @@ class RestMappingService {
 
       combo_props.each { cp ->
         if (obj.getCardinalityFor(obj.class,cp) == 'hasByCombo') {
-          if ( obj[cp] != null) {
+          if ( jsonMap?.defaultLinks?.contains(cp) ) {
             def cval = obj[cp]
-            result[cp] = ['id': cval.id, 'name': cval.name, 'uuid': cval.uuid]
+
+            if ( cval == null ) {
+              result[cp] = null
+            }
+            else {
+              result[cp] = ['id': cval.id, 'name': cval.name, 'uuid': cval.uuid]
+            }
           }
         }
         else {

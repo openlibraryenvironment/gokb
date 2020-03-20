@@ -182,13 +182,13 @@ class TitleLookupService {
             def project = null,
             def newTitleClassName = 'org.gokb.cred.JournalInstance',
             def uuid = null) {
-    return find([title:title, publisher_name:publisher_name,identifiers:identifiers,uuid:uuid],user,project,newTitleClassName)
+    return findTitle([title:title, publisher_name:publisher_name,identifiers:identifiers,uuid:uuid],user,project,newTitleClassName)
   }
 
   private final findLock = new Object()
 
   @Synchronized("findLock")
-  def find (Map metadata,
+  private def findTitle (Map metadata,
             def user = null, 
             def project = null,
             def newTitleClassName = 'org.gokb.cred.JournalInstance') {

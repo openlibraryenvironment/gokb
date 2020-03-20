@@ -624,20 +624,16 @@ class TitleInstance extends KBComponent {
         def final_val = idobj.value
 
         if (found_ns) {
-          try {
-
-            if (found_ns.family == 'isxn') {
-              final_val = final_val.replaceAll("x","X")
-            }
-
-            if (!Identifier.findByNamespaceAndNormname(found_ns, Identifier.normalizeIdentifier(final_val))) {
-              def test_id = new Identifier(namespace:found_ns, value:final_val).validate()
-            }
+          if (found_ns.family == 'isxn') {
+            final_val = final_val.replaceAll("x","X")
           }
-          catch (grails.validation.ValidationException ve) {
-            log.warn("Validation for ${found_ns.value}:${final_val} failed!")
-            result.errors.add("Validation for identifier ${found_ns.value}:${final_val} failed!")
-            result.valid = false
+
+          if (!Identifier.findByNamespaceAndNormname(found_ns, Identifier.normalizeIdentifier(final_val))) {
+            if ( (Identifier.nameSpaceRules[found_ns.value] && !(final_val ==~ Identifier.nameSpaceRules[found_ns.value])) || (found_ns.pattern && !(final_val ==~ found_ns.pattern)) ) {
+              log.warn("Validation for ${found_ns.value}:${final_val} failed!")
+              result.errors.add("Validation for identifier ${found_ns.value}:${final_val} failed!")
+              result.valid = false
+            }
           }
         }
       }
