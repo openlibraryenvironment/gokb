@@ -4,6 +4,7 @@ import org.hibernate.proxy.HibernateProxy
 import org.hibernate.proxy.LazyInitializer
 import org.hibernate.Hibernate
 import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
 import grails.util.GrailsClassUtils
 import org.gokb.ClassExaminationService
 import java.text.SimpleDateFormat
@@ -135,27 +136,36 @@ class ClassUtils {
   public static boolean setRefdataIfPresent(value, kbc, prop, cat = null, boolean create = false) {
     boolean result = false
     ClassExaminationService classExaminationService = grails.util.Holders.applicationContext.getBean('classExaminationService')
+    def v = null
 
     if (!cat) {
       cat = classExaminationService.deriveCategoryForProperty(kbc.class.name, prop)
     }
 
-    if ( ( value ) && ( cat ) &&
-         ( value.toString().trim().length() > 0 ) &&
-         ( ( kbc[prop] == null ) || ( kbc[prop].value != value.trim() ) ) ) {
-
-      def v = null
+    if ( value instanceof String && value.trim() && cat ) {
       if (create) {
         v = RefdataCategory.lookupOrCreate(cat,value)
       }
       else {
         v = RefdataCategory.lookup(cat, value)
       }
+    }
+    else if (value && cat) {
+      try {
+        def candidate = RefdataValue.get(value)
 
-      if (v) {
-        kbc[prop] = v
-        result = true
+        if ( candidate && candidate.owner == cat ) {
+          v = candidate
+        }
       }
+      catch (Exception e) {
+
+      }
+    }
+
+    if (v) {
+      kbc[prop] = v
+      result = true
     }
 
     result

@@ -131,6 +131,7 @@ class ComponentLookupService {
     def first = true
     def comboProps = grailsApplication.getArtefact("Domain",cls.name).newInstance().allComboPropertyNames
     def sort = null
+    def sortField = null
     def order = params['order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
 
     def comboJoinStr = ""
@@ -206,6 +207,7 @@ class ComponentLookupService {
           }
         }
         else {
+          sortField = "${c}.name"
           sort = " order by ${c}.name ${order ?: ''}"
         }
       }
@@ -288,13 +290,14 @@ class ComponentLookupService {
           qryParams[p.name] = params[p.name]
         }
 
-        if (params['sort'] == p) {
-          sort = " order by ${p.name} ${order ?: ''}"
-        }
-
         if (addParam) {
           hqlQry += paramStr
         }
+      }
+
+      if (params['sort'] == p.name) {
+        sortField = "p.${p.name}"
+        sort = " order by ${p.name} ${order ?: ''}"
       }
     }
 
@@ -313,7 +316,7 @@ class ComponentLookupService {
     }
 
     def hqlCount = "select count(p.id) ${hqlQry}".toString()
-    def hqlFinal = "select p ${sort ? ',' + params['sort'] : ''} ${hqlQry} ${sort ?: ''}".toString()
+    def hqlFinal = "select p ${sort ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
     log.debug("Final qry: ${hqlFinal}")
 
@@ -323,7 +326,7 @@ class ComponentLookupService {
     result.data = []
 
     hqlResult.each { r ->
-      log.debug("Handling ${r} -- Total: ${hqlTotal}")
+      log.debug("Handling ${r} (${r.class.name}) -- Total: ${hqlTotal}")
       def obj = null
 
       if (r instanceof Object[]) {

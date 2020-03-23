@@ -44,7 +44,7 @@ class RestMappingService {
   def defaultImmmutable = [
     'id',
     'uuid',
-    'lastUpdate',
+    'lastUpdated',
     'dateCreated',
     'lastUpdatedBy',
     'value',
@@ -67,9 +67,9 @@ class RestMappingService {
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
-    jsonMap = KBComponent.has(obj.deproxy(),'jsonMapping') ? obj.jsonMapping : null
+    jsonMap = KBComponent.has(ClassUtils.deproxy(obj),'jsonMapping') ? obj.jsonMapping : null
 
-    if (KBComponent.has(obj.deproxy(),"restPath")) {
+    if (KBComponent.has(ClassUtils.deproxy(obj),"restPath")) {
       result['_links'] = [:]
       result['_links']['self'] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
 
@@ -181,14 +181,16 @@ class RestMappingService {
 
   @Transactional
   def updateObject(obj, jsonMap, reqBody) {
+    log.debug("Update object ${obj} - ${reqBody}")
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
     def toIgnore = defaultIgnore + (jsonMap?.ignore ?: [])
     def immutable = defaultImmmutable + (jsonMap?.immutable ?: [])
 
+    log.debug("Ignore: ${toIgnore}, Immutable: ${immutable}")
     pent.getPersistentProperties().each { p -> // list of PersistentProperties
-      log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
       if ( !toIgnore.contains(p.name) && !immutable.contains(p.name) && reqBody[p.name] ) {
+        log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
         if ( p instanceof Association ) {
           if ( p instanceof ManyToOne || p instanceof OneToOne ) {
             updateAssoc(obj, p.name, reqBody[p.name])
@@ -221,10 +223,10 @@ class RestMappingService {
       }
     }
 
-    if (reqBody.ids) {
-      updateIdentifiers(obj, reqBody.ids)
+    if (reqBody.ids || reqBody.identifiers) {
+      def idmap = reqBody.ids ?: reqBody.identifiers
+      updateIdentifiers(obj, idmap)
     }
-
     obj
   }
 
@@ -285,21 +287,34 @@ class RestMappingService {
           id = Identifier.get(i)
         }
         else if (i instanceof Map) {
-          def ns = null
+          if (i.value && i.namespace) {
+            def ns = null
 
-          if (i.namespace instanceof Long) {
-            ns = IdentifierNamespace.get(i.namespace)?.value ?: null
-          }
-          else {
-            ns = i.namespace
-          }
+            if (i.namespace instanceof Long) {
+              ns = IdentifierNamespace.get(i.namespace)?.value ?: null
+            }
+            else {
+              ns = i.namespace
+            }
 
-          try {
-            if (ns) {
-              id = Identifier.lookupOrCreateCanonicalIdentifier(ns, i.value)
+            try {
+              if (ns) {
+                id = Identifier.lookupOrCreateCanonicalIdentifier(ns, i.value)
+              }
+            }
+            catch (grails.validation.ValidationException ve) {
+              obj.errors.reject(
+                'identifier.value.IllegalIDForm',
+                [i.value, ns] as Object[],
+                '[Value {0} is not valid for namespace {1}]'
+              )
+              obj.errors.rejectValue(
+                'ids',
+                'identifier.value.IllegalIDForm'
+              )
             }
           }
-          catch (grails.validation.ValidationException ve) {
+          else {
             obj.errors.reject(
               'identifier.value.IllegalIDForm',
               [i.value, ns] as Object[],

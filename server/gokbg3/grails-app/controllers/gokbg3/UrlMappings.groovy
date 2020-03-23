@@ -18,6 +18,7 @@ class UrlMappings {
             get "/packages/$id" (controller: 'package', namespace: 'rest', action:'show')
             put "/packages/$id" (controller: 'package', namespace: 'rest', action:'update')
             delete "/packages/$id" (controller: 'package', namespace: 'rest', action:'delete')
+            post "/packages" (controller: 'package', namespace: 'rest', action:'save')
             get "/packages" (controller: 'package', namespace:'rest', action:'index')
 
             get "/refdata/categories/$id" (controller: 'refdata', namespace: 'rest', action: 'showCategory')

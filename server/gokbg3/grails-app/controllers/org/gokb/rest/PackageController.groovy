@@ -110,19 +110,40 @@ class PackageController {
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
-    def jsonMap = pkg.jsonMapping
 
     if (reqBody) {
-      Package pkg = Package.upsertDTO(reqBody, user)
+      log.debug("Save package ${reqBody}")
+      def pkg = Package.upsertDTO(reqBody, user)
 
       if (!pkg) {
+        log.debug("Could not upsert package!")
         errors = [badData: reqBody, message:"Unable to save package!"]
       }
-      else if (pkg?.errors) {
+      else if (pkg.hasErrors()) {
+        log.debug("Package has errors!")
         errors = messageService.processValidationErrors(pkg.errors, request.locale)
+        log.debug("${errors}")
       }
       else {
-        restMappingService.updateObject(pkg, jsonMap, reqBody)
+        def jsonMap = pkg.jsonMapping
+
+        jsonMap.ignore = [
+          'lastProject',
+          'status'
+        ]
+
+        jsonMap.immutable = [
+          'userListVerifier',
+          'listVerifiedDate',
+          'listStatus'
+        ]
+
+        log.debug("Updating package ${pkg}")
+        pkg = restMappingService.updateObject(pkg, jsonMap, reqBody)
+
+        updateCombos(pkg, reqBody)
+
+        result = restMappingService.mapObjectToJson(pkg, params, user)
       }
     }
     else {
@@ -134,7 +155,7 @@ class PackageController {
       result.errors = errors
     }
 
-    result
+    render result as JSON
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
@@ -167,79 +188,20 @@ class PackageController {
         ]
 
         jsonMap.immutable = [
-          'listVerifier',
+          'userListVerifier',
           'listVerifiedDate',
           'listStatus'
         ]
 
-        restMappingService.updateObject(pkg, jsonMap, reqBody)
+        pkg = restMappingService.updateObject(pkg, jsonMap, reqBody)
 
-        if (reqBody.identifiers) {
-          restMappingService.updateIdentifiers(pkg, reqBody.identifiers)
-        }
-
-        if ( reqBody.status ) {
-          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          RefdataValue newStatus = RefdataValue.get(reqBody.status)
-
-          if ( status_deleted != RefdataValue.get(reqBody.status) || pkg.isDeletable() ) {
-            pkg.status = newStatus
-          }
-        }
-
-        if (reqBody.provider) {
-          def prov = null
-
-          try {
-            prov = Org.get(reqBody.provider)
-          }
-          catch (Exception e) {
-          }
-
-          if (prov) {
-            pkg.provider = prov
-          }
-          else {
-            obj.errors.reject(
-              'default.not.found.message',
-              ['Org', reqBody.provider] as Object[],
-              '[{0} not found with id {1}!]'
-            )
-            obj.errors.rejectValue(
-              'provider',
-              'default.not.found.message'
-            )
-          }
-        }
-
-        if (reqBody.nominalPlatform) {
-          def plt = null
-
-          try {
-            plt = Platform.get(reqBody.nominalPlatform)
-          }
-          catch (Exception e) {
-          }
-
-          if (plt) {
-            pkg.nominalPlatform = plt
-          }
-          else {
-            obj.errors.reject(
-              'default.not.found.message',
-              ['Platform', reqBody.nominalPlatform] as Object[],
-              '[{0} not found with id {1}!]'
-            )
-            obj.errors.rejectValue(
-              'nominalPlatform',
-              'default.not.found.message'
-            )
-          }
-        }
+        updateCombos(pkg, reqBody)
 
         if( pkg.validate() ) {
           if(errors.size() == 0) {
+            log.debug("No errors.. saving")
             pkg.save(flush:true)
+            result = restMappingService.mapObjectToJson(pkg, params, user)
           }
         }
         else {
@@ -264,6 +226,63 @@ class PackageController {
       result.error = errors
     }
     render result as JSON
+  }
+
+  private void updateCombos(pkg, reqBody) {
+    log.debug("Updating package combos ..")
+
+    if (reqBody.provider) {
+      def prov = null
+
+      try {
+        prov = Org.get(reqBody.provider)
+      }
+      catch (Exception e) {
+      }
+
+      if (prov) {
+        pkg.provider = prov
+      }
+      else {
+        pkg.errors.reject(
+          'default.not.found.message',
+          ['Org', reqBody.provider] as Object[],
+          '[{0} not found with id {1}!]'
+        )
+        pkg.errors.rejectValue(
+          'provider',
+          'default.not.found.message'
+        )
+      }
+    }
+
+    if (reqBody.nominalPlatform || reqBody.platform) {
+      def plt_id = reqBody.nominalPlatform ?: reqBody.platform
+      def plt = null
+
+      try {
+        plt = Platform.get(plt_id)
+      }
+      catch (Exception e) {
+      }
+
+      if (plt) {
+        pkg.nominalPlatform = plt
+      }
+      else {
+        pkg.errors.reject(
+          'default.not.found.message',
+          ['Platform', reqBody.nominalPlatform] as Object[],
+          '[{0} not found with id {1}!]'
+        )
+        pkg.errors.rejectValue(
+          'nominalPlatform',
+          'default.not.found.message'
+        )
+      }
+    }
+
+    log.debug("After update: ${pkg}")
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
