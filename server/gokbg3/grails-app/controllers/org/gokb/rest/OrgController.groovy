@@ -73,9 +73,6 @@ class OrgController {
 
       if (obj?.isReadable()) {
         result = restMappingService.mapObjectToJson(obj, params, user)
-
-        // result['_currentTipps'] = obj.currentTippCount
-        // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
       }
       else if (!obj) {
         result.message = "Object ID could not be resolved!"

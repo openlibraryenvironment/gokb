@@ -404,7 +404,7 @@ class ESSearchService{
    * @param context : Overrides default url path
   **/
 
-  def find(params, def context = null) {
+  def find(params, def context = null, def user = null) {
     def result = [result: 'OK']
     def search_action = null
     def errors = [:]
@@ -656,7 +656,7 @@ class ESSearchService{
           domainMapping['_embedded']['variantNames'] = val
         }
         else if (field == "identifiers") {
-          domainMapping['_embedded']['ids'] = val
+          domainMapping['_embedded']['ids'] = mapIdentifiers(val)
         }
         else if (field == "status" || field == "editStatus") {
           domainMapping[field] = [id: RefdataCategory.lookup("KBComponent.${field}", val).id, name: val]
@@ -784,6 +784,15 @@ class ESSearchService{
     es_result.remove("count")
 
     es_result
+  }
+
+  private def mapIdentifiers(ids) {
+    def idmap = []
+    ids.each { id ->
+      def ns = IdentifierNamespace.findByValueIlike(id.namespace)
+      idmap << [namespace : [value: id.namespace, id: ns.id], value: id.value ]
+    }
+    idmap
   }
 
   /**

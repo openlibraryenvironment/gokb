@@ -143,7 +143,14 @@ class PackageController {
 
         updateCombos(pkg, reqBody)
 
-        result = restMappingService.mapObjectToJson(pkg, params, user)
+        if (!pkg.hasErrors()) {
+          result = restMappingService.mapObjectToJson(pkg, params, user)
+        }
+        else {
+          result.result = 'ERROR'
+          response.setStatus(422)
+          errors.addAll(messsageService.processValidationErrors(pkg.errors, request.locale))
+        }
       }
     }
     else {
@@ -313,7 +320,7 @@ class PackageController {
       response.setStatus(403)
       result.message = "User is not allowed to delete this component!"
     }
-    result
+    render result as JSON
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
@@ -344,7 +351,7 @@ class PackageController {
       response.setStatus(403)
       result.message = "User is not allowed to edit this component!"
     }
-    result
+    render result as JSON
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])

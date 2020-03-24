@@ -61,6 +61,7 @@ class RestMappingService {
     log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
     def result = [:]
     def embed_active = params['_embed']?.split(',') ?: []
+    def include_list = params['_include']?.split(',') ?: null
     def base = grailsApplication.config.serverURL + "/rest"
     def jsonMap = null
     def is_curator = true
@@ -95,7 +96,7 @@ class RestMappingService {
     result['id'] = obj.id
 
     pent.getPersistentProperties().each { p ->
-      if (!defaultIgnore.contains(p.name) && (!jsonMap || !jsonMap.ignore.contains(p.name)) ) {
+      if (!defaultIgnore.contains(p.name) && (!jsonMap || !jsonMap.ignore.contains(p.name)) && (!include_list || include_list.contains(p.name)) ) {
         if ( p instanceof Association ) {
           if ( p instanceof ManyToOne || p instanceof OneToOne ) {
             // Set ref property
@@ -149,7 +150,7 @@ class RestMappingService {
 
       combo_props.each { cp ->
         if (obj.getCardinalityFor(obj.class,cp) == 'hasByCombo') {
-          if ( jsonMap?.defaultLinks?.contains(cp) ) {
+          if ( (include_list && include_list?.contains(cp)) || (!include_list && jsonMap?.defaultLinks?.contains(cp)) ) {
             def cval = obj[cp]
 
             if ( cval == null ) {
