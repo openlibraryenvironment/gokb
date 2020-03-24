@@ -74,6 +74,27 @@ class Platform extends KBComponent {
 
   public static final String restPath = "/platforms"
 
+  static jsonMapping = [
+    'ignore': [
+      'service',
+      'software'
+    ],
+    'es': [
+      'providerUuid': "provider.uuid",
+      'providerName': "provider.name",
+      'provider': "provider.id"
+    ],
+    'defaultLinks': [
+      'tipps',
+      'provider',
+      'curatoryGroups'
+    ],
+    'defaultEmbeds': [
+      'ids',
+      'variantNames'
+    ]
+  ]
+
   @Transient
   static def oaiConfig = [
     id:'platforms',

@@ -111,10 +111,30 @@ class PlatformController {
       Platform obj = Platform.upsertDTO(reqBody, user)
 
       if (!obj) {
-        errors = [badData: reqBody, message:"Unable to save platform!"]
+        log.debug("Could not upsert object!")
+        errors = [badData: reqBody, message:"Unable to save object!"]
       }
-      else if (obj?.errors) {
-        errors = messsageService.processValidationErrors(obj.errors, request.locale)
+      else if (obj.hasErrors()) {
+        log.debug("Object has errors!")
+        errors = messageService.processValidationErrors(obj.errors, request.locale)
+        log.debug("${errors}")
+      }
+      else {
+        def jsonMap = obj.jsonMapping
+
+        log.debug("Updating ${obj}")
+        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+
+        updateCombos(obj, reqBody)
+
+        if (!obj.hasErrors()) {
+          result = restMappingService.mapObjectToJson(obj, params, user)
+        }
+        else {
+          result.result = 'ERROR'
+          response.setStatus(422)
+          errors.addAll(messsageService.processValidationErrors(obj.errors, request.locale))
+        }
       }
     }
     else {
@@ -196,6 +216,35 @@ class PlatformController {
       result.error = errors
     }
     render result as JSON
+  }
+
+  private void updateCombos(obj, reqBody) {
+    log.debug("Updating platform combos ..")
+
+    if (reqBody.provider) {
+      def prov = null
+
+      try {
+        prov = Org.get(reqBody.provider)
+      }
+      catch (Exception e) {
+      }
+
+      if (prov) {
+        obj.provider = prov
+      }
+      else {
+        obj.errors.reject(
+          'default.not.found.message',
+          ['Org', reqBody.provider] as Object[],
+          '[{0} not found with id {1}!]'
+        )
+        obj.errors.rejectValue(
+          'provider',
+          'default.not.found.message'
+        )
+      }
+    }
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')

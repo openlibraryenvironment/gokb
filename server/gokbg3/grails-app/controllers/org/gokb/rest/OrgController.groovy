@@ -108,14 +108,30 @@ class OrgController {
     if (reqBody) {
       Org obj = Org.upsertDTO(reqBody, user)
 
+
       if (!obj) {
-        errors = [badData: reqBody, message:"Unable to save organization!"]
+        log.debug("Could not upsert object!")
+        errors = [badData: reqBody, message:"Unable to save object!"]
       }
-      else if (obj?.errors) {
-        errors = messsageService.processValidationErrors(obj.errors, request.locale)
+      else if (obj.hasErrors()) {
+        log.debug("Object has errors!")
+        errors = messageService.processValidationErrors(obj.errors, request.locale)
+        log.debug("${errors}")
       }
       else {
-        restMappingService.updateObject ( obj, obj.jsonMapping, reqBody)
+        def jsonMap = obj.jsonMapping
+
+        log.debug("Updating ${obj}")
+        pkg = restMappingService.updateObject(obj, jsonMap, reqBody)
+
+        if (!obj.hasErrors()) {
+          result = restMappingService.mapObjectToJson(obj, params, user)
+        }
+        else {
+          result.result = 'ERROR'
+          response.setStatus(422)
+          errors.addAll(messsageService.processValidationErrors(obj.errors, request.locale))
+        }
       }
     }
     else {
@@ -156,15 +172,6 @@ class OrgController {
         def jsonMap = obj.jsonMapping
 
         restMappingService.updateObject(obj, jsonMap, reqBody)
-
-        if ( reqBody.status ) {
-          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          RefdataValue newStatus = RefdataValue.get(reqBody.status)
-
-          if ( status_deleted != RefdataValue.get(reqBody.status) || obj.isDeletable() ) {
-            obj.status = newStatus
-          }
-        }
 
         if( obj.validate() ) {
           if(errors.size() == 0) {

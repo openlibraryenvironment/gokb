@@ -48,8 +48,8 @@ class PackageController {
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }
 
-    result.data?.each { pkg ->
-      pkg['_links'] << ['tipps': ['href': (base + "/packages/${pkg.uuid}/tipps")]]
+    result.data?.each { obj ->
+      obj['_links'] << ['tipps': ['href': (base + "/packages/${obj.uuid}/tipps")]]
     }
 
     render result as JSON
@@ -113,19 +113,19 @@ class PackageController {
 
     if (reqBody) {
       log.debug("Save package ${reqBody}")
-      def pkg = Package.upsertDTO(reqBody, user)
+      def obj = Package.upsertDTO(reqBody, user)
 
-      if (!pkg) {
-        log.debug("Could not upsert package!")
-        errors = [badData: reqBody, message:"Unable to save package!"]
+      if (!obj) {
+        log.debug("Could not upsert object!")
+        errors = [badData: reqBody, message:"Unable to save object!"]
       }
-      else if (pkg.hasErrors()) {
-        log.debug("Package has errors!")
-        errors = messageService.processValidationErrors(pkg.errors, request.locale)
+      else if (obj.hasErrors()) {
+        log.debug("Object has errors!")
+        errors = messageService.processValidationErrors(obj.errors, request.locale)
         log.debug("${errors}")
       }
       else {
-        def jsonMap = pkg.jsonMapping
+        def jsonMap = obj.jsonMapping
 
         jsonMap.ignore = [
           'lastProject',
@@ -138,18 +138,18 @@ class PackageController {
           'listStatus'
         ]
 
-        log.debug("Updating package ${pkg}")
-        pkg = restMappingService.updateObject(pkg, jsonMap, reqBody)
+        log.debug("Updating ${obj}")
+        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        updateCombos(pkg, reqBody)
+        updateCombos(obj, reqBody)
 
-        if (!pkg.hasErrors()) {
-          result = restMappingService.mapObjectToJson(pkg, params, user)
+        if (!obj.hasErrors()) {
+          result = restMappingService.mapObjectToJson(obj, params, user)
         }
         else {
           result.result = 'ERROR'
           response.setStatus(422)
-          errors.addAll(messsageService.processValidationErrors(pkg.errors, request.locale))
+          errors.addAll(messsageService.processValidationErrors(obj.errors, request.locale))
         }
       }
     }
@@ -173,13 +173,13 @@ class PackageController {
     def errors = []
     def user = User.get(springSecurityService.principal.id)
     def editable = true
-    def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def obj = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
 
-    if (pkg && reqBody) {
-      pkg.lock()
+    if (obj && reqBody) {
+      obj.lock()
 
-      if ( !user.hasRole('ROLE_ADMIN') && pkg.curatoryGroups && pkg.curatoryGroups.size() > 0 ) {
-        def cur = user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id)
+      if ( !user.hasRole('ROLE_ADMIN') && obj.curatoryGroups && obj.curatoryGroups.size() > 0 ) {
+        def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
 
         if (!cur) {
           editable = false
@@ -187,7 +187,7 @@ class PackageController {
       }
       if (editable) {
 
-        def jsonMap = pkg.jsonMapping
+        def jsonMap = obj.jsonMapping
 
         jsonMap.ignore = [
           'lastProject',
@@ -200,21 +200,21 @@ class PackageController {
           'listStatus'
         ]
 
-        pkg = restMappingService.updateObject(pkg, jsonMap, reqBody)
+        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        updateCombos(pkg, reqBody)
+        updateCombos(obj, reqBody)
 
-        if( pkg.validate() ) {
+        if( obj.validate() ) {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
-            pkg.save(flush:true)
-            result = restMappingService.mapObjectToJson(pkg, params, user)
+            obj.save(flush:true)
+            result = restMappingService.mapObjectToJson(obj, params, user)
           }
         }
         else {
           result.result = 'ERROR'
           response.setStatus(422)
-          errors.addAll(messsageService.processValidationErrors(pkg.errors, request.locale))
+          errors.addAll(messsageService.processValidationErrors(obj.errors, request.locale))
         }
       }
       else {
@@ -235,7 +235,7 @@ class PackageController {
     render result as JSON
   }
 
-  private void updateCombos(pkg, reqBody) {
+  private void updateCombos(obj, reqBody) {
     log.debug("Updating package combos ..")
 
     if (reqBody.provider) {
@@ -248,15 +248,15 @@ class PackageController {
       }
 
       if (prov) {
-        pkg.provider = prov
+        obj.provider = prov
       }
       else {
-        pkg.errors.reject(
+        obj.errors.reject(
           'default.not.found.message',
           ['Org', reqBody.provider] as Object[],
           '[{0} not found with id {1}!]'
         )
-        pkg.errors.rejectValue(
+        obj.errors.rejectValue(
           'provider',
           'default.not.found.message'
         )
@@ -274,22 +274,22 @@ class PackageController {
       }
 
       if (plt) {
-        pkg.nominalPlatform = plt
+        obj.nominalPlatform = plt
       }
       else {
-        pkg.errors.reject(
+        obj.errors.reject(
           'default.not.found.message',
           ['Platform', reqBody.nominalPlatform] as Object[],
           '[{0} not found with id {1}!]'
         )
-        pkg.errors.rejectValue(
+        obj.errors.rejectValue(
           'nominalPlatform',
           'default.not.found.message'
         )
       }
     }
 
-    log.debug("After update: ${pkg}")
+    log.debug("After update: ${obj}")
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
@@ -297,12 +297,12 @@ class PackageController {
   def delete() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id)
+    def obj = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
 
-    if ( pkg && pkg.isDeletable() ) {
+    if ( obj && obj.isDeletable() ) {
       if ( curator || user.isAdmin() ) {
-        pkg.deleteSoft()
+        obj.deleteSoft()
       }
       else {
         result.result = 'ERROR'
@@ -310,7 +310,7 @@ class PackageController {
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
-    else if (!pkg) {
+    else if (!obj) {
       result.result = 'ERROR'
       response.setStatus(404)
       result.message = "Package not found or empty request body!"
@@ -328,12 +328,12 @@ class PackageController {
   def retire() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id)
+    def obj = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
 
-    if ( pkg && pkg.isEditable() ) {
+    if ( obj && obj.isEditable() ) {
       if ( curator || user.isAdmin() ) {
-        pkg.retire()
+        obj.retire()
       }
       else {
         result.result = 'ERROR'
@@ -341,7 +341,7 @@ class PackageController {
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
-    else if (!pkg) {
+    else if (!obj) {
       result.result = 'ERROR'
       response.setStatus(404)
       result.message = "Package not found or empty request body!"
@@ -358,19 +358,19 @@ class PackageController {
   def tipps() {
     def result = [:]
     log.debug("tipps :: ${params}")
-    def pkg = Package.findByUuid(params.id)
+    def obj = Package.findByUuid(params.id)
 
-    if (!pkg) {
-      pkg = genericOIDService.resolveOID(params.id)
+    if (!obj) {
+      obj = genericOIDService.resolveOID(params.id)
     }
 
-    if (!pkg && params.long('id')) {
-      pkg = Package.get(params.long('id'))
+    if (!obj && params.long('id')) {
+      obj = Package.get(params.long('id'))
     }
 
-    log.debug("TIPPs for Package: ${pkg}")
+    log.debug("TIPPs for Package: ${obj}")
 
-    if (pkg) {
+    if (obj) {
       def context = "/packages/" + params.id + "/tipps"
       def base = grailsApplication.config.serverURL + "/rest"
       def es_search = params.es ? true : false
@@ -378,7 +378,7 @@ class PackageController {
       params.remove('id')
       params.remove('uuid')
       params.remove('es')
-      params.pkg = pkg.uuid
+      params.obj = obj.uuid
 
       def esParams = new HashMap(params)
       esParams.remove('componentType')
