@@ -52,11 +52,7 @@ class IdentifierController {
       obj = Identifier.findByUuid(params.id)
 
       if (!obj) {
-        obj = genericOIDService.resolveOID(params.id)
-      }
-
-      if (!obj && params.long('id')) {
-        obj = Identifier.get(params.long('id'))
+        obj = Identifier.get(genericOIDService.oidToId(params.id))
       }
 
       if (obj?.isReadable()) {

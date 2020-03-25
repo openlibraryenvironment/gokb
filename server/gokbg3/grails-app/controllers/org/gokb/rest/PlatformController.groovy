@@ -63,18 +63,11 @@ class PlatformController {
       obj = Platform.findByUuid(params.id)
 
       if (!obj) {
-        obj = genericOIDService.resolveOID(params.id)
-      }
-
-      if (!obj && params.long('id')) {
-        obj = Platform.get(params.long('id'))
+        obj = Platform.get(genericOIDService.oidToId(params.id))
       }
 
       if (obj?.isReadable()) {
         result = restMappingService.mapObjectToJson(obj, params, user)
-
-        // result['_currentTipps'] = obj.currentTippCount
-        // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
       }
       else if (!obj) {
         result.message = "Object ID could not be resolved!"
@@ -156,7 +149,11 @@ class PlatformController {
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
-    def obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def obj = Platform.findByUuid(params.id)
+
+    if (!obj) {
+      obj = Platform.get(genericOIDService.oidToId(params.id))
+    }
     def editable = obj.isEditable()
 
     if (obj && reqBody) {
@@ -252,10 +249,15 @@ class PlatformController {
   def delete() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+    def obj = Platform.findByUuid(params.id)
+
+    if (!obj) {
+      obj = Platform.get(genericOIDService.oidToId(params.id))
+    }
 
     if ( obj && obj.isDeletable() ) {
+      def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
       }

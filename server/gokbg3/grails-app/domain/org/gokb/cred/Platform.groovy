@@ -85,13 +85,13 @@ class Platform extends KBComponent {
       'provider': "provider.id"
     ],
     'defaultLinks': [
-      'tipps',
       'provider',
       'curatoryGroups'
     ],
     'defaultEmbeds': [
       'ids',
-      'variantNames'
+      'variantNames',
+      'curatoryGroups'
     ]
   ]
 

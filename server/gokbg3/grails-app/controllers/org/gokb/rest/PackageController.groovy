@@ -67,11 +67,7 @@ class PackageController {
       obj = Package.findByUuid(params.id)
 
       if (!obj) {
-        obj = genericOIDService.resolveOID(params.id)
-      }
-
-      if (!obj && params.long('id')) {
-        obj = Package.get(params.long('id'))
+        obj = Package.get(genericOIDService.oidToId(params.id))
       }
 
       if (obj?.isReadable()) {
@@ -173,7 +169,11 @@ class PackageController {
     def errors = []
     def user = User.get(springSecurityService.principal.id)
     def editable = true
-    def obj = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def obj = Package.findByUuid(params.id)
+
+    if (!obj) {
+      obj = Package.get(genericOIDService.oidToId(params.id))
+    }
 
     if (obj && reqBody) {
       obj.lock()
@@ -292,15 +292,20 @@ class PackageController {
     log.debug("After update: ${obj}")
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def delete() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
+    def obj = Package.findByUuid(params.id)
+
+    if (!obj) {
+      obj = Package.get(genericOIDService.oidToId(params.id))
+    }
 
     if ( obj && obj.isDeletable() ) {
+      def curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
+
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
       }
@@ -323,15 +328,20 @@ class PackageController {
     render result as JSON
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def retire() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
+    def obj = Package.findByUuid(params.id)
+
+    if (!obj) {
+      obj = Package.get(genericOIDService.oidToId(params.id))
+    }
 
     if ( obj && obj.isEditable() ) {
+      def curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
+
       if ( curator || user.isAdmin() ) {
         obj.retire()
       }
@@ -357,15 +367,12 @@ class PackageController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def tipps() {
     def result = [:]
+    def user = User.get(springSecurityService.principal.id)
     log.debug("tipps :: ${params}")
     def obj = Package.findByUuid(params.id)
 
     if (!obj) {
-      obj = genericOIDService.resolveOID(params.id)
-    }
-
-    if (!obj && params.long('id')) {
-      obj = Package.get(params.long('id'))
+      obj = Package.get(genericOIDService.oidToId(params.id))
     }
 
     log.debug("TIPPs for Package: ${obj}")
@@ -394,7 +401,7 @@ class PackageController {
       }
       else {
         def start_db = LocalDateTime.now()
-        result = componentLookupService.restLookup(TitleInstancePackagePlatform, params, context)
+        result = componentLookupService.restLookup(user, TitleInstancePackagePlatform, params, context)
         log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
       }
     }

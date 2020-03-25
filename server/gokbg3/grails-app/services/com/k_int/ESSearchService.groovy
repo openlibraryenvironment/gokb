@@ -586,7 +586,7 @@ class ESSearchService{
         }
 
         if (!params.skipDomainMapping) {
-          def contextPath = "component"
+          def contextPath = "/components"
 
           if(context) {
             contextPath = context

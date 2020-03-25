@@ -119,7 +119,7 @@ class RestMappingService {
             }
           }
           else {
-            if(embed_active.contains(p.name)) {
+            if( embed_active.contains(p.name) && (user?.isAdmin() || p.type != User) ) {
               result['_embedded'][p.name] = []
 
               obj[p.name].each {

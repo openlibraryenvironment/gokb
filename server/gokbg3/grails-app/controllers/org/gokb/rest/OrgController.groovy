@@ -153,11 +153,15 @@ class OrgController {
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
-    def obj = Org.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def editable = obj.isEditable()
+    def obj = Org.findByUuid(params.id)
+
+    if (!obj) {
+      obj = Org.get(genericOIDService.oidToId(params.id))
+    }
 
     if (obj && reqBody) {
       obj.lock()
+      def editable = obj.isEditable()
 
       if ( editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
         def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
@@ -207,10 +211,15 @@ class OrgController {
   def delete() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Org.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+    def obj = Org.findByUuid(params.id)
+
+    if (!obj) {
+      obj = Org.get(genericOIDService.oidToId(params.id))
+    }
 
     if ( obj && obj.isDeletable() ) {
+      def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
       }
@@ -238,10 +247,15 @@ class OrgController {
   def retire() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Org.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+    def obj = Org.findByUuid(params.id)
+
+    if (!obj) {
+      obj = Org.get(genericOIDService.oidToId(params.id))
+    }
 
     if ( obj && obj.isEditable() ) {
+      def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+
       if ( curator || user.isAdmin() ) {
         obj.retire()
       }

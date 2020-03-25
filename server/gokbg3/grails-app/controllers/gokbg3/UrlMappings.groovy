@@ -14,7 +14,7 @@ class UrlMappings {
         "/package" (controller: 'packages')
 
         group "/rest", {
-            get "/packages/$id/$action" (controller: 'package', namespace:'rest')
+            "/packages/$id/$action" (controller: 'package', namespace:'rest')
             get "/packages/$id" (controller: 'package', namespace: 'rest', action:'show')
             put "/packages/$id" (controller: 'package', namespace: 'rest', action:'update')
             delete "/packages/$id" (controller: 'package', namespace: 'rest', action:'delete')
