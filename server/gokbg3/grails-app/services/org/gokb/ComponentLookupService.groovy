@@ -199,7 +199,7 @@ class ComponentLookupService {
                 paramStr += " OR "
               }
               paramStr += "${c}.uuid IN :${c}_str OR "
-              paramStr += "${c}.name IN :${c}_str"
+              paramStr += "${c}.${c == 'ids' ? 'value' : 'name'} IN :${c}_str"
               qryParams["${c}_str"] = validStr
             }
             paramStr += ")"

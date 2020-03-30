@@ -228,6 +228,14 @@ class RestMappingService {
       def idmap = reqBody.ids ?: reqBody.identifiers
       updateIdentifiers(obj, idmap)
     }
+
+    if (reqBody.groups || reqBody.curatoryGroups) {
+      if ( KBComponent.has(obj,'curatoryGroups') ) {
+
+        def cgs = reqBody.groups ?: reqBody.curatoryGroups
+        updateCuratoryGroups(obj, cgs)
+      }
+    }
     obj
   }
 
@@ -279,7 +287,8 @@ class RestMappingService {
   }
 
   public def updateIdentifiers(obj, ids) {
-    def new_ids = []
+    Set new_ids = []
+
     if (obj && ids instanceof List) {
       ids.each { i ->
         Identifier id = null
@@ -333,11 +342,61 @@ class RestMappingService {
         }
       }
 
-      if (!obj.errors) {
-        obj.ids.addAll(new_ids)
+      if (!obj.hasErrors()) {
+        new_ids.each { ni ->
+          if (!obj.ids.contains(ni)) {
+            obj.ids.add(ni)
+          }
+        }
         obj.ids.retainAll(new_ids)
       }
     }
+    obj
+  }
+
+  public def updateCuratoryGroups(obj, cgs) {
+    log.debug("Update curatory Groups ${cgs}")
+    Set new_cgs = []
+
+    cgs.each { cg ->
+      def cg_obj = null
+
+      if (cg instanceof String) {
+        cg_obj = CuratoryGroup.findByNameIlike(cg)
+      }
+      else {
+        cg_obj = CuratoryGroup.get(cg)
+      }
+
+      if (cg_obj) {
+        new_cgs << cg_obj
+      }
+      else {
+        obj.errors.reject(
+          'component.addToList.denied.label',
+          ['curatoryGroups'] as Object[],
+          '[Could not process list of items for property {0}]'
+        )
+        obj.errors.rejectValue(
+          'curatoryGroups',
+          'component.addToList.denied.label'
+        )
+      }
+    }
+
+    if (!obj.hasErrors()) {
+      new_cgs.each { c ->
+        if (!obj.curatoryGroups.contains(c)) {
+          log.debug("Adding new cg ${c}..")
+          obj.curatoryGroups.add(c)
+        }
+        else {
+          log.debug("Existing cg ${c}..")
+        }
+      }
+      obj.curatoryGroups.retainAll(new_cgs)
+    }
+    log.debug("New cgs: ${obj.curatoryGroups}")
     obj
   }
 

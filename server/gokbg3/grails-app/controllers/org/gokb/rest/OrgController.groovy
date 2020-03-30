@@ -242,7 +242,7 @@ class OrgController {
     result
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def retire() {
     def result = ['result':'OK', 'params': params]
@@ -254,7 +254,7 @@ class OrgController {
     }
 
     if ( obj && obj.isEditable() ) {
-      def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+      def curator = obj.respondsTo('curatoryGroups') ? (obj.curatoryGroups?.size() == 0 || user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)) : true
 
       if ( curator || user.isAdmin() ) {
         obj.retire()
