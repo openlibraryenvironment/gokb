@@ -209,8 +209,8 @@ class RestMappingService {
           log.debug("checking for type of property -> ${p.type}")
           switch ( p.type ) {
             case Long.class:
-              break;
               updateLongField(obj, p.name, reqBody[p.name])
+              break;
             case Date.class:
               updateDateField(obj, p.name, reqBody[p.name])
               break;
