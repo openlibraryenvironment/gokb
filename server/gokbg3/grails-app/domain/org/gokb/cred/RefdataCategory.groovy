@@ -61,7 +61,7 @@ class RefdataCategory {
     }
     else {
       // The category.
-      def cats = RefdataCategory.executeQuery('select c from RefdataCategory as c where c.desc = ?',category_name);
+      def cats = RefdataCategory.executeQuery('select c from RefdataCategory as c where lower(c.desc) = ?',category_name.toLowerCase());
       def cat = null;
 
       if ( cats.size() == 0 ) {
@@ -92,7 +92,7 @@ class RefdataCategory {
   static RefdataValue lookupOrCreate(category_name, value, sortkey) {
 
     // log.debug("lookupOrCreate(${category_name}, ${value}, ${sortkey})");
-  
+
     if ( ( value == null ) || ( category_name == null ) )
       throw new RuntimeException("Request to lookupOrCreate null value in category ${category_name}");
 
@@ -109,11 +109,11 @@ class RefdataCategory {
     else {
       // The category.
       // RefdataCategory.withTransaction { status ->
-  
-  
-        def cats = RefdataCategory.executeQuery('select c from RefdataCategory as c where c.desc = ?',category_name);
+
+
+        def cats = RefdataCategory.executeQuery('select c from RefdataCategory as c where lower(c.desc) = ?',category_name.toLowerCase());
         def cat = null;
-  
+
         if ( cats.size() == 0 ) {
           // log.debug("Create new refdata category ${category_name}");
           cat = new RefdataCategory(desc:category_name, label:category_name)
@@ -136,7 +136,7 @@ class RefdataCategory {
         else {
           throw new RuntimeException("Multiple matching refdata category names");
         }
-  
+
         if ( !result ) {
           // Create and save a new refdata value.
           // log.info("Attempt to create new refdataValue(${category_name},${value},${sortkey})");
@@ -156,7 +156,7 @@ class RefdataCategory {
         }
       // }
     }
-    
+
 
     assert result != null
 
@@ -178,5 +178,5 @@ class RefdataCategory {
       }
     }
   }
-  
+
 }

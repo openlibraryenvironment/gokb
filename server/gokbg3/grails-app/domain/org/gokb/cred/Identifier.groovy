@@ -1,7 +1,10 @@
 package org.gokb.cred
 import groovy.transform.Synchronized
 import java.util.regex.Pattern
+import groovy.util.logging.*
 
+
+@Slf4j
 class Identifier extends KBComponent {
 
   IdentifierNamespace namespace
@@ -16,6 +19,22 @@ class Identifier extends KBComponent {
   String getLogEntityId() {
       "${this.class.name}:${id}"
   }
+
+  static jsonMapping = [
+    'ignore': [
+      'lastUpdatedBy',
+      'dateCreated',
+      'editStatus',
+      'name',
+      'status',
+      'lastUpdated'
+    ],
+    'defaultLinks': [
+      'namespace'
+    ],
+    'defaultEmbeds': [
+    ]
+  ]
 
   private static nameSpaceRules = [
     "issn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
@@ -117,8 +136,8 @@ class Identifier extends KBComponent {
         if (namespace.family == 'isxn') {
           final_val = final_val.replaceAll("x","X")
         }
-
-        identifier = new Identifier(namespace:namespace, value:final_val, normname:norm_id).save(flush:true, failOnError:true)
+        log.debug("Creating new Identifier ${namespace}:${value} ..")
+        identifier = new Identifier(namespace:namespace, value:final_val, normname:norm_id).save(flush:true)
       }
     }
 

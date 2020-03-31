@@ -63,13 +63,13 @@ class TitleInstancePackagePlatform extends KBComponent {
     'es': [
       'hostPlatformUuid': "hostPlatform.uuid",
       'hostPlatformName': "hostPlatform.name",
-      'hostPlatform': false,
+      'hostPlatform': "hostPlatform.id",
       'tippTitleUuid': "title.uuid",
       'tippTitleName': "title.name",
-      'tippTitle': false,
+      'tippTitle': "title.id",
       'tippPackageUuid': "pkg.uuid",
       'tippPackageName': "pkg.name",
-      'tippPackage': false,
+      'tippPackage': "pkg.id",
       'titleType': "title.niceName",
       'coverage': "coverageStatements"
     ],

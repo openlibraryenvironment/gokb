@@ -1,5 +1,9 @@
 package com.k_int
 
+import grails.core.GrailsClass
+
+import groovyx.net.http.URIBuilder
+
 import org.apache.lucene.search.join.ScoreMode
 
 import org.elasticsearch.action.search.*
@@ -24,6 +28,8 @@ class ESSearchService{
   def ESWrapperService
   def grailsApplication
   def genericOIDService
+  def restMappingService
+  def classExaminationService
 
   def requestMapping = [
     generic: [
@@ -83,7 +89,7 @@ class ESSearchService{
     def result = [:]
 
     Client esclient = ESWrapperService.getClient()
-  
+
     try {
       if ( (params.q && params.q.length() > 0) || params.rectype) {
 
@@ -101,12 +107,12 @@ class ESSearchService{
           params.remove("tempFQ") //remove from GSP access
         }
 
-        
+
         def es_index = grailsApplication.config.gokb?.es?.index ?: "gokbg3"
         log.debug("index:${es_index} query: ${query_str}");
 
         def search_results = null
-        
+
         try {
           log.debug("start to build srb with index: " + es_index)
           SearchRequestBuilder srb = esclient.prepareSearch(es_index)
@@ -119,13 +125,13 @@ class ESSearchService{
             srb = srb.addSort("${params.sort}".toString(), order)
           }
           log.debug("srb start to add query and aggregration query string is ${query_str}")
-    
+
           srb.setQuery(QueryBuilders.queryStringQuery(query_str))//QueryBuilders.wrapperQuery(query_str)
              .addAggregation(AggregationBuilders.terms('curatoryGroups').size(25).field('curatoryGroups'))
              .addAggregation(AggregationBuilders.terms('provider').size(25).field('provider'))
              .setFrom(params.offset)
              .setSize(params.max)
-             
+
           // log.debug("finished srb and aggregrations: " + srb)
           search_results = srb.get()
           // log.debug("search results: " + search_results)
@@ -133,7 +139,7 @@ class ESSearchService{
         catch (Exception ex) {
           log.error("Error processing ${es_index} ${query_str}",ex);
         }
-        
+
         //TODO: change this part to represent what we really need if this is not it, see the final part of this method where hits are done
         if (search_results) {
           def search_hits = search_results.getHits()
@@ -141,7 +147,7 @@ class ESSearchService{
           result.firstrec = params.offset + 1
           result.resultsTotal = search_hits.totalHits
           result.lastrec = Math.min ( params.offset + params.max, result.resultsTotal)
-          
+
           if (search_results.getAggregations()) {
             result.facets = [:]
             search_results.getAggregations().each { entry ->
@@ -182,11 +188,11 @@ class ESSearchService{
     if ( params?.q != null ){
       sw.write("name:${params.q}")
     }
-      
+
     if(params?.rectype){
       if(sw.toString()) sw.write(" AND ");
       sw.write(" rectype:${params.rectype} ")
-    } 
+    }
 
     field_map.each { mapping ->
 
@@ -293,11 +299,18 @@ class ESSearchService{
   }
 
   private void addStatusQuery(query, errors, qpars) {
-    if ( qpars.list('status').size() > 0 ) {
+    if ( qpars.status && qpars.status instanceof List ) {
 
       QueryBuilder statusQuery = QueryBuilders.boolQuery()
 
-      qpars.list('status').each {
+      qpars.status.each {
+        def ref_status = it
+
+        try {
+          ref_status = RefdataValue.get(Long.valueOf(it))
+        }
+        catch (Exception e) {
+        }
         statusQuery.should(QueryBuilders.termQuery('status', it))
       }
 
@@ -351,8 +364,17 @@ class ESSearchService{
 
   private void processLinkedField(query, field, val) {
     QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+    def finalVal = val
 
-    linkedFieldQuery.should(QueryBuilders.termQuery(field, val))
+    try {
+      finalVal = KBComponent.get(Long.valueOf(val)).getLogEntityId()
+    }
+    catch (java.lang.NumberFormatException nfe) {
+    }
+
+    log.debug("processLinkedField: ${field} -> ${finalVal}")
+
+    linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
     linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), val))
     linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), val))
     linkedFieldQuery.minimumNumberShouldMatch(1)
@@ -377,11 +399,12 @@ class ESSearchService{
   }
 
   /**
-   * find : Query the Elasticsearch index -- 
+   * find : Query the Elasticsearch index --
    * @param params : Elasticsearch query params
+   * @param context : Overrides default url path
   **/
 
-  def find(params) {
+  def find(params, def context = null, def user = null) {
     def result = [result: 'OK']
     def search_action = null
     def errors = [:]
@@ -430,14 +453,14 @@ class ESSearchService{
       processNameFields(exactQuery, errors, params)
 
       params.each { k, v ->
-        if (k in requestMapping.generic) {
+        if (requestMapping.generic && k in requestMapping.generic) {
           exactQuery.must(QueryBuilders.matchQuery(k, v))
         }
-        else if (requestMapping.simpleMap.containsKey(k)) {
+        else if (requestMapping.simpleMap?.containsKey(k)) {
           exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v))
         }
-        else if (requestMapping.linked.containsKey(k)) {
-          processLinkedField(exactQuery, k, v)
+        else if (requestMapping.linked?.containsKey(k)) {
+          processLinkedField(exactQuery, requestMapping.linked[k], v)
         }
         else if (k.contains('platform') || k.contains('Platform')) {
           if (!platformParam) {
@@ -448,13 +471,13 @@ class ESSearchService{
             errors[k] = "Platform filter has already been defined by parameter '${platformParam}'!"
           }
         }
-        else if (k in requestMapping.dates) {
+        else if (requestMapping.dates && k in requestMapping.dates) {
           log.debug("Processing date param ${k}")
         }
-        else if (k in requestMapping.complex) {
+        else if (requestMapping.complex && k in requestMapping.complex) {
           log.debug("Processing complex param ${k}")
         }
-        else if (k in requestMapping.ignore) {
+        else if (requestMapping.ignore && k in requestMapping.ignore) {
           log.debug("Processing unmapped param ${k}")
         }
         else {
@@ -497,7 +520,7 @@ class ESSearchService{
           if (sortBy == "name") {
             sortBy = "sortname"
           }
-          
+
           if (ESWrapperService.mapping.component.properties[sortBy]?.type == 'text') {
             errors['sort'] = "Unable to sort by text field ${sortBy}!"
           }
@@ -543,7 +566,7 @@ class ESSearchService{
 
         search.hits.each { r ->
           def response_record = [:]
-          
+
           if (!params.skipDomainMapping) {
             response_record = mapEsToDomain(r)
           }
@@ -561,9 +584,23 @@ class ESSearchService{
 
           result.records.add(response_record);
         }
+
+        if (!params.skipDomainMapping) {
+          def contextPath = "/components"
+
+          if(context) {
+            contextPath = context
+          }
+          else if (component_type) {
+            def obj_cls = Class.forName("org.gokb.cred.${component_type}").newInstance()
+            contextPath = obj_cls.restPath
+          }
+
+          convertEsLinks(result, params, contextPath)
+        }
       }
     } catch (Exception se) {
-      log.debug("${se}")
+      log.error("${se}")
       result = [:]
       result.result = "ERROR"
       result.errors = ['unknown': "There has been an unknown error processing the search request!"]
@@ -578,43 +615,64 @@ class ESSearchService{
     result
   }
 
+  /**
+   *  mapEsToDomain : Maps an ES record to its final REST serialization.
+   * @param record : An ES record map
+   */
+
   private Map mapEsToDomain(record) {
     def domainMapping = [:]
     def base = grailsApplication.config.serverURL + "/rest"
+    def linkedObjects = [:]
     def esMapping = [
       'lastUpdatedDisplay': 'lastUpdated',
       'sortname': false,
       'updater': false,
     ]
 
-    def obj = KBComponent.findByUuid(record.source.uuid)
+    def obj_cls = Class.forName("org.gokb.cred.${record.source.componentType}").newInstance()
 
-    if (obj) {
+    if (obj_cls) {
 
-      if (KBComponent.has(obj,'jsonMapping') && obj.jsonMapping.es) {
-        esMapping << obj.jsonMapping.es
+      if (obj_cls.hasProperty('jsonMapping') && obj_cls.jsonMapping.es) {
+        esMapping << obj_cls.jsonMapping.es
+        log.debug("Found es mapping for class.")
+      }
+      else {
+        log.debug("No es mapping found for class ${obj_cls} ..")
       }
 
-      if (KBComponent.has(obj, 'restPath')) {
-        domainMapping['links'] = ['self': ['href': base + obj.restPath + "/${obj.uuid}"]]
+      if (obj_cls.hasProperty('restPath')) {
+        domainMapping['_links'] = ['self': ['href': base + obj_cls.restPath + "/${record.source.uuid}"]]
       }
 
-      domainMapping['embedded'] = [:]
-      
-      log.debug("Mapping ${record}")
+      domainMapping['_embedded'] = [:]
 
       record.source.each { field, val ->
         if (field == "curatoryGroups") {
           mapCuratoryGroups(domainMapping, val)
         }
         else if (field == "altname") {
-          domainMapping['embedded']['variantNames'] = val
+          domainMapping['_embedded']['variantNames'] = val
         }
         else if (field == "identifiers") {
-          domainMapping['embedded']['ids'] = val
+          domainMapping['_embedded']['ids'] = mapIdentifiers(val)
+        }
+        else if (field == "status" || field == "editStatus") {
+          domainMapping[field] = [id: RefdataCategory.lookup("KBComponent.${field}", val).id, name: val]
         }
         else if (esMapping[field] == false) {
           log.debug("Skipping field ${field}!")
+        }
+        else if (esMapping[field] == "refdata") {
+          if (val) {
+            def cat = classExaminationService.deriveCategoryForProperty("org.gokb.cred.${record.source.componentType}", field)
+            def rdv = RefdataCategory.lookup(cat, val)
+            domainMapping[field] = [id: rdv.id, name:rdv.value]
+          }
+          else {
+            domainMapping[field] = null
+          }
         }
         else if (esMapping[field]) {
           log.debug("Field ${esMapping[field]}")
@@ -622,10 +680,14 @@ class ESSearchService{
           log.debug("FieldPath: ${fieldPath}")
 
           if (fieldPath.size() == 2) {
-            def linkedObj = obj."${fieldPath[0]}"
-
-            if (linkedObj && KBComponent.has(linkedObj, "restPath")) {
-              domainMapping['links'][fieldPath[0]] = ['href': base + linkedObj.restPath + "/${linkedObj.uuid}", 'name': "${linkedObj.name}"]
+            if (!linkedObjects[fieldPath[0]]) {
+              linkedObjects[fieldPath[0]] = [:]
+            }
+            if (fieldPath[1] == 'id') {
+              linkedObjects[fieldPath[0]][fieldPath[1]] = genericOIDService.oidToId(val)
+            }
+            else {
+              linkedObjects[fieldPath[0]][fieldPath[1]] = val
             }
           } else {
             domainMapping[fieldPath[0]] = val
@@ -636,19 +698,116 @@ class ESSearchService{
           domainMapping[field] = val
         }
       }
+
+      linkedObjects.each { field, val ->
+        domainMapping[field] = val
+      }
     }
 
     log.debug("${domainMapping}")
     return domainMapping
   }
 
+  /**
+   *  convertEsLinks : Converts es response layout to conform with REST mapping.
+   * @param es_result : The result object
+   * @param params : Request parameters
+   * @param component_endpoint : Possible URL path override
+   */
+
+  private def convertEsLinks(es_result, params, component_endpoint) {
+    def base = grailsApplication.config.serverURL + "/rest" + "${component_endpoint}"
+
+    es_result['_links'] = [:]
+    es_result['data'] = es_result.records
+    es_result.remove('records')
+    es_result.remove('result')
+    es_result['_pagination'] = [
+      offset: es_result.offset,
+      limit: es_result.max,
+      total: es_result.count
+    ]
+
+    def selfLink = new URIBuilder(base)
+    selfLink.addQueryParams(params)
+
+    params.each { p, vals ->
+      log.debug("handling param ${p}: ${vals}")
+      if (vals instanceof String[]) {
+        selfLink.removeQueryParam(p)
+        vals.each { val ->
+          if (val.trim()) {
+            log.debug("Val: ${val} -- ${val.class.name}")
+            selfLink.addQueryParam(p, val)
+          }
+        }
+        log.debug("${selfLink.toString()}")
+      }
+      else if (!p.trim()) {
+        selfLink.removeQueryParam(p)
+      }
+    }
+    if(params.controller) {
+      selfLink.removeQueryParam('controller')
+    }
+    if (params.action) {
+      selfLink.removeQueryParam('action')
+    }
+    if (params.componentType) {
+      selfLink.removeQueryParam('componentType')
+    }
+    es_result['_links']['self'] = [href: selfLink.toString()]
+
+
+    if (es_result.count > es_result.offset+es_result.max) {
+      def nextLink = selfLink
+
+      if(nextLink.query.offset){
+        nextLink.removeQueryParam('offset')
+      }
+
+      nextLink.addQueryParam('offset', "${es_result.offset + es_result.max}")
+      es_result['_links']['next'] = ['href': (nextLink.toString())]
+    }
+    if (es_result.offset > 0) {
+      def prevLink = selfLink
+
+      if(prevLink.query.offset){
+        prevLink.removeQueryParam('offset')
+      }
+
+      prevLink.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
+      es_result['_links']['prev'] = ['href': prevLink.toString()]
+    }
+    es_result.remove("offset")
+    es_result.remove("max")
+    es_result.remove("count")
+
+    es_result
+  }
+
+  private def mapIdentifiers(ids) {
+    def idmap = []
+    ids.each { id ->
+      def ns = IdentifierNamespace.findByValueIlike(id.namespace)
+      idmap << [namespace : [value: id.namespace, id: ns.id], value: id.value ]
+    }
+    idmap
+  }
+
+  /**
+   *  mapCuratoryGroups : Generates an embed object for curatoryGroups listed in ES.
+   * @param domainMapping : The current domainMapping object
+   * @param cgs : The array of names of connected curatory groups
+   */
+
   private def mapCuratoryGroups(domainMapping, cgs) {
     def base = grailsApplication.config.serverURL + "/rest"
 
-    domainMapping['embedded']['curatoryGroups'] = []
+    domainMapping['_embedded']['curatoryGroups'] = []
     cgs.each { cg ->
       def cg_obj = CuratoryGroup.findByName(cg)
-      domainMapping['embedded']['curatoryGroups'] << [
+      domainMapping['_embedded']['curatoryGroups'] << [
         'links': [
           'self': [
             'href': base + "/groups/" + cg_obj.uuid
@@ -660,6 +819,11 @@ class ESSearchService{
       ]
     }
   }
+
+  /**
+   *  deriveComponentType : Selects the actual componentType of a ES record.
+   * @param typeString : The componentType parameter of the request
+   */
 
   private def deriveComponentType(String typeString) {
     def result = null

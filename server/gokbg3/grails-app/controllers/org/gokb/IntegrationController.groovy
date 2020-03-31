@@ -19,6 +19,7 @@ class IntegrationController {
   def springSecurityService
   def concurrencyManagerService
   def classExaminationService
+  def componentUpdateService
   def titleLookupService
   def applicationEventService
   def sessionFactory
@@ -84,7 +85,7 @@ class IntegrationController {
     }
 
     // Defaults first.
-    ensureCoreData(group, request.JSON)
+    componentUpdateService.ensureCoreData(group, request.JSON)
 
     // Find by username but do not create missing entries.
     def owner = request.JSON.owner
@@ -366,7 +367,7 @@ class IntegrationController {
         return
       }
 
-      setAllRefdata ([
+      componentUpdateService.setAllRefdata ([
         'software', 'service'
       ], jsonOrg, located_or_new_org)
 
@@ -421,7 +422,7 @@ class IntegrationController {
       }
 
       // Core data...
-      ensureCoreData(located_or_new_org, jsonOrg)
+      componentUpdateService.ensureCoreData(located_or_new_org, jsonOrg)
 
       log.debug("Attempt to save - validate: ${located_or_new_org}");
 
@@ -496,7 +497,7 @@ class IntegrationController {
           ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
           ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
 
-          setAllRefdata ([
+          componentUpdateService.setAllRefdata ([
             'software', 'service'
           ], source_data, located_or_new_source)
 
@@ -645,6 +646,8 @@ class IntegrationController {
 
     // Set the name.
     def hasChanged = false
+    component.lock()
+    component.refresh()
 
     if(!component.name && data.name) {
       component.name = data.name
@@ -902,7 +905,7 @@ class IntegrationController {
                 }
 
                 if ( is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
-                  ensureCoreData(the_pkg, json.packageHeader, fullsync)
+                  componentUpdateService.ensureCoreData(the_pkg, json.packageHeader, fullsync)
 
                   if ( the_pkg.tipps?.size() > 0 ) {
                     existing_tipps = the_pkg.tipps*.id
@@ -930,7 +933,7 @@ class IntegrationController {
 
                         if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
 
-                          ensureCoreData(ti, tipp.title, fullsync)
+                          componentUpdateService.ensureCoreData(ti, tipp.title, fullsync)
                           tipp.title.internalId = ti.id;
                         } else {
                           if (ti != null)
@@ -975,7 +978,7 @@ class IntegrationController {
                         if(pl){
                           platform_cache[tipp.platform.name] = pl.id
 
-                          ensureCoreData(pl, tipp.platform, fullsync)
+                          componentUpdateService.ensureCoreData(pl, tipp.platform, fullsync)
                         }else{
                           log.error("Could not find/create ${tipp.platform}")
                           errors.add(['code': 400, idx: idx, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
@@ -1242,7 +1245,7 @@ class IntegrationController {
         if (p) {
           log.debug("created or looked up platform ${p}!")
 
-          setAllRefdata ([
+          componentUpdateService.setAllRefdata ([
             'software', 'service'
           ], platformJson, p)
           ClassUtils.setRefdataIfPresent(platformJson.authentication, p, 'authentication', 'Platform.AuthMethod')
@@ -1261,7 +1264,7 @@ class IntegrationController {
           p.save(flush:true)
 
           // Add the core data.
-          ensureCoreData(p, platformJson, fullsync)
+          componentUpdateService.ensureCoreData(p, platformJson, fullsync)
 
     //      if ( changed ) {
     //        p.save(flush:true, failOnError:true);
@@ -1318,13 +1321,13 @@ class IntegrationController {
         summaryStatement = data.summaryStatement
       }
 
-      setAllRefdata ([
+      componentUpdateService.setAllRefdata ([
         'type'
       ], data, l)
 
 
       // Add the core data.
-      ensureCoreData(l, data)
+      componentUpdateService.ensureCoreData(l, data)
 
 //      l.save(flush:true, failOnError:true)
     }
@@ -1425,7 +1428,7 @@ class IntegrationController {
 
     def result = [ 'result' : 'OK' ]
 
-    log.debug("crossReferenceTitle(${titleObj.type},${titleObj.title},${titleObj.identifiers}},...)");
+    log.debug("crossReferenceTitle(${titleObj.type},${titleObj.name},${titleObj.identifiers}},...)");
 
         TitleInstance.withNewSession {
           User user = User.get(userid)
@@ -1475,9 +1478,9 @@ class IntegrationController {
                 }
 
                 // Add the core data.
-                ensureCoreData(title, titleObj, fullsync)
+                componentUpdateService.ensureCoreData(title, titleObj, fullsync)
 
-                title_changed |= setAllRefdata ([
+                title_changed |= componentUpdateService.setAllRefdata ([
                       'OAStatus', 'medium',
                       'pureOA', 'continuingSeries',
                       'reasonRetired'
@@ -1515,7 +1518,7 @@ class IntegrationController {
                         );
 
                         if ( p && !p.hasErrors() ) {
-                          ensureCoreData(p, fhe, fullsync)
+                          componentUpdateService.ensureCoreData(p, fhe, fullsync)
                           inlist.add(p);
                         }
                         else {
@@ -1537,7 +1540,7 @@ class IntegrationController {
                         );
 
                         if ( p && !p.hasErrors() && !inlist.contains(p) ) {
-                          ensureCoreData(p, fhe, fullsync)
+                          componentUpdateService.ensureCoreData(p, fhe, fullsync)
                           outlist.add(p);
                         }
                         else {
