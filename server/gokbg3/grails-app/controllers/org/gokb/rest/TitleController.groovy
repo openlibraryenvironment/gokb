@@ -375,7 +375,7 @@ class TitleController {
   def retire() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def obj = TitleInstance.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
     def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
     if ( obj && obj.isEditable() ) {
