@@ -173,10 +173,6 @@ class PlatformController {
 
         restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        if (reqBody.identifiers) {
-          restMappingService.updateIdentifiers(obj, reqBody.identifiers)
-        }
-
         if ( reqBody.status ) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
           RefdataValue newStatus = RefdataValue.get(reqBody.status)
@@ -256,7 +252,7 @@ class PlatformController {
     }
 
     if ( obj && obj.isDeletable() ) {
-      def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+      def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
@@ -286,7 +282,7 @@ class PlatformController {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
     def obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+    def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
     if ( obj && obj.isEditable() ) {
       if ( curator || user.isAdmin() ) {

@@ -16,7 +16,7 @@ import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 
 @Transactional(readOnly = true)
-class OrgController {
+class TitleController {
 
   static namespace = 'rest'
 
@@ -25,8 +25,8 @@ class OrgController {
   def ESSearchService
   def messageService
   def restMappingService
+  def titleLookupService
   def componentLookupService
-  def componentUpdateService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -34,8 +34,9 @@ class OrgController {
     def base = grailsApplication.config.serverURL + "/rest"
     User user = User.get(springSecurityService.principal.id)
     def es_search = params.es ? true : false
+    Class type = setType(params)
 
-    params.componentType = "Org" // Tells ESSearchService what to look for
+    params.componentType = params.type ?: 'title' // Tells ESSearchService what to look for
 
     if (es_search) {
       params.remove('es')
@@ -44,12 +45,42 @@ class OrgController {
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
     }
     else {
-      def start_db = LocalDateTime.now()
-      result = componentLookupService.restLookup(user, Org, params)
-      log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+
+      if (type) {
+        def start_db = LocalDateTime.now()
+        result = componentLookupService.restLookup(user, type, params)
+        log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+      }
+      else {
+        result.errors = [
+          [message: "Unrecognized type ${params.type}", code: 400, result:"ERROR"]
+        ]
+      }
     }
 
     render result as JSON
+  }
+
+  private Class setType(params) {
+    Class type = TitleInstance
+
+    if (params.type) {
+      if (params.type == 'journal' || params        result.errors = [
+          [message: "Unrecognized type ${params.type}", code: 400, result:"ERROR"]
+        ].type == 'serial') {
+        type = JournalInstance
+      }
+      else if (params.type == 'book' || params.type == 'monograph') {
+        type = BookInstance
+      }
+      else if (params.type == 'database') {
+        type = DatabaseInstance
+      }
+      else {
+        type = null
+      }
+    }
+    return type
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -58,17 +89,14 @@ class OrgController {
     def obj = null
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
+    Class type = setType(params)
     User user = User.get(springSecurityService.principal.id)
 
     if (params.oid || params.id) {
-      obj = Org.findByUuid(params.id)
+      obj = type.findByUuid(params.id)
 
       if (!obj) {
-        obj = genericOIDService.resolveOID(params.id)
-      }
-
-      if (!obj && params.long('id')) {
-        obj = Org.get(params.long('id'))
+        obj = type.get(genericOIDService.oidToId(params.id))
       }
 
       if (obj?.isReadable()) {
@@ -103,11 +131,18 @@ class OrgController {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
     def errors = []
+    Class type = setType(params)
     def user = User.get(springSecurityService.principal.id)
 
-    if (reqBody) {
-      Org obj = Org.upsertDTO(reqBody, user)
-
+    if ( reqBody?.name?.trim() && type && type != TitleInstance ) {
+      def obj = titleLookupService.find(
+        reqBody.name,
+        reqBody.publisher,
+        reqBody.identifiers,
+        user,
+        null,
+        type.name
+      );
 
       if (!obj) {
         log.debug("Could not upsert object!")
@@ -122,7 +157,9 @@ class OrgController {
         def jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
-        pkg = restMappingService.updateObject(obj, jsonMap, reqBody)
+        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+
+        updateCombos(obj, reqBody)
 
         if (!obj.hasErrors()) {
           result = restMappingService.mapObjectToJson(obj, params, user)
@@ -134,8 +171,14 @@ class OrgController {
         }
       }
     }
+    else if (!type) {
+      errors = [badData: reqBody, message:"Unrecognized title type!"]
+    }
+    else if (type == TitleInstance) {
+      errors = [badData: reqBody, message:"Specific title type required!"]
+    }
     else {
-      errors = [badData: reqBody, message:"Unable to save organization!"]
+      errors = [badData: reqBody, message:"Unable to save title!"]
     }
 
     if (errors) {
@@ -153,17 +196,17 @@ class OrgController {
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
-    def obj = Org.findByUuid(params.id)
+    def obj = Platform.findByUuid(params.id)
 
     if (!obj) {
-      obj = Org.get(genericOIDService.oidToId(params.id))
+      obj = Platform.get(genericOIDService.oidToId(params.id))
     }
+    def editable = obj.isEditable()
 
     if (obj && reqBody) {
       obj.lock()
-      def editable = obj.isEditable()
 
-      if ( editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
+      if ( editable && KBComponent.has(obj, 'curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
         def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
 
         if (!cur) {
@@ -176,6 +219,15 @@ class OrgController {
         def jsonMap = obj.jsonMapping
 
         restMappingService.updateObject(obj, jsonMap, reqBody)
+
+        if ( reqBody.status ) {
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+          RefdataValue newStatus = RefdataValue.get(reqBody.status)
+
+          if ( status_deleted != RefdataValue.get(reqBody.status) || obj.isDeletable() ) {
+            obj.status = newStatus
+          }
+        }
 
         if( obj.validate() ) {
           if(errors.size() == 0) {
@@ -206,15 +258,91 @@ class OrgController {
     render result as JSON
   }
 
+  private void updateCombos(obj, reqBody) {
+    log.debug("Updating title combos ..")
+
+    if (reqBody.publisher) {
+      if (reqBody.publisher instanceof Collection) {
+        Set new_pubs = []
+
+        reqBody.publisher.each { pub ->
+          def pub_obj = null
+
+          if (pub instanceof String) {
+            pub_obj = Org.findByNameIlike(pub)
+          }
+          else {
+            pub_obj = Org.get(pub)
+          }
+
+          if (pub_obj) {
+            new_pubs << pub_obj
+          }
+          else {
+            obj.errors.reject(
+              'component.addToList.denied.label',
+              ['publisher'] as Object[],
+              '[Could not process list of items for property {0}]'
+            )
+            obj.errors.rejectValue(
+              'publisher',
+              'component.addToList.denied.label'
+            )
+          }
+        }
+
+        if (!obj.hasErrors()) {
+          new_pubs.each { c ->
+            if (!obj.publisher.contains(c)) {
+              log.debug("Adding new publisher ${c}..")
+              obj.publisher.add(c)
+            }
+            else {
+              log.debug("Existing publisher ${c}..")
+            }
+          }
+          obj.publisher.retainAll(new_pubs)
+        }
+        log.debug("New cgs: ${obj.publisher}")
+      }
+      else {
+        def prov = null
+
+        try {
+          prov = Org.get(reqBody.publisher)
+        }
+        catch (Exception e) {
+        }
+
+        if (prov) {
+          if (!obj.publisher.contains(prov)) {
+            obj.changePublisher(prov)
+          }
+        }
+        else {
+          obj.errors.reject(
+            'default.not.found.message',
+            ['Org', reqBody.publisher] as Object[],
+            '[{0} not found with id {1}!]'
+          )
+          obj.errors.rejectValue(
+            'publisher',
+            'default.not.found.message'
+          )
+        }
+      }
+    }
+  }
+
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
   @Transactional
   def delete() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Org.findByUuid(params.id)
+    def obj = TitleInstance.findByUuid(params.id)
 
     if (!obj) {
-      obj = Org.get(genericOIDService.oidToId(params.id))
+      obj = TitleInstance.get(genericOIDService.oidToId(params.id))
     }
 
     if ( obj && obj.isDeletable() ) {
@@ -226,13 +354,13 @@ class OrgController {
       else {
         result.result = 'ERROR'
         response.setStatus(403)
-        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+        result.message = "User must belong to at least one curatory group of an existing title to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
       response.setStatus(404)
-      result.message = "Package not found or empty request body!"
+      result.message = "TitleInstance not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
@@ -242,20 +370,15 @@ class OrgController {
     result
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
   @Transactional
   def retire() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Org.findByUuid(params.id)
-
-    if (!obj) {
-      obj = Org.get(genericOIDService.oidToId(params.id))
-    }
+    def obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+    def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
     if ( obj && obj.isEditable() ) {
-      def curator = KBComponent.has(obj, 'curatoryGroups') ? (obj.curatoryGroups?.size() == 0 || user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)) : true
-
       if ( curator || user.isAdmin() ) {
         obj.retire()
       }
