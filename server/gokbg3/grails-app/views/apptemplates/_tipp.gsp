@@ -72,11 +72,9 @@
 
 <ul id="tabs" class="nav nav-tabs">
   <li class="active"><a href="#tippdetails" data-toggle="tab">TIPP Details</a></li>
-  <g:if test="${d.title?.getNiceName() == 'Journal'}">
-    <li>
-      <a href="#tippcoverage" data-toggle="tab">Coverage</a>
-    </li>
-  </g:if>
+  <li>
+    <a href="#tippcoverage" data-toggle="tab">Coverage</a>
+  </li>
   <g:if test="${ d.isEditable() }">
     <li>
       <a href="#addprops" data-toggle="tab">Additional Properties
