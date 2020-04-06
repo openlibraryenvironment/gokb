@@ -72,16 +72,16 @@ class RestMappingService {
 
     if (KBComponent.has(ClassUtils.deproxy(obj),"restPath")) {
       result['_links'] = [:]
-      result['_links']['self'] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
+      result['_links']['self'] = ['href': base + obj.restPath + "/${obj.id}", 'method': "GET"]
 
       if ( obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
         is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
       }
 
       if (is_curator || user?.isAdmin()) {
-        result._links.update = ['href': base + obj.restPath + "/${obj.uuid}"]
-        result._links.delete = ['href': base + obj.restPath + "/${obj.uuid}"]
-        result._links.retire = ['href': base + obj.restPath + "/${obj.uuid}/retire"]
+        result._links.update = ['href': base + obj.restPath + "/${obj.id}", 'method': "PUT"]
+        result._links.delete = ['href': base + obj.restPath + "/${obj.id}", 'method': "DELETE"]
+        result._links.retire = ['href': base + obj.restPath + "/${obj.id}/retire"]
       }
     }
 
@@ -150,8 +150,11 @@ class RestMappingService {
 
       combo_props.each { cp ->
         if (obj.getCardinalityFor(obj.class,cp) == 'hasByCombo') {
+          def cval = null
+
           if ( (include_list && include_list?.contains(cp)) || (!include_list && jsonMap?.defaultLinks?.contains(cp)) ) {
-            def cval = obj[cp]
+
+            cval = obj[cp]
 
             if ( cval == null ) {
               result[cp] = null
@@ -160,11 +163,16 @@ class RestMappingService {
               result[cp] = ['id': cval.id, 'name': cval.name, 'uuid': cval.uuid]
             }
           }
+
+          if ( embed_active.contains(cp) ) {
+            cval = obj[cp]
+            result['_embedded'][cp] = getEmbeddedJson(cval, user)
+          }
         }
         else {
           if( embed_active.contains(cp) ) {
             result['_embedded'][cp] = []
-            obj[cp].take(10).each {
+            obj[cp].each {
               result['_embedded'][cp] << getEmbeddedJson(it, user)
             }
           }
@@ -536,7 +544,7 @@ class RestMappingService {
    */
 
   public def getEmbeddedJson(obj, user) {
-    def pars = [:]
+    def pars = ['_embed': ""]
     log.debug("Embedded object ${obj}")
     mapObjectToJson(obj, pars, user)
   }

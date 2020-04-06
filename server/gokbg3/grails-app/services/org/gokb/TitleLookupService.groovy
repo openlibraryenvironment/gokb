@@ -41,13 +41,28 @@ class TitleLookupService {
     ids.each { id_def ->
 
       // We only treat a component as a match if the matching Identifer
+      Identifier the_id = null
+
+      def id_ns = id_def.type ?: (id_def.namespace ?: null)
+
+      if (id_ns instanceof String) {
+        log.debug("Default namespace handling..")
+        id_def.type = id_ns
+      }
+      else if (ns) {
+        id_def.type = IdentifierNamespace.get(id_ns)
+      }
+
+      
       // is a class 1 identifier.
       if (id_def.type && id_def.value && class_one_ids.contains(id_def.type) ) {
 
         log.debug("Attempt match using component ${id_def}");
 
         // id_def is map with keys 'type' and 'value'
-        Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
+        if (!the_id) {
+          the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
+        }
 
         // Add the id.
         result['ids'] << the_id
@@ -158,7 +173,7 @@ class TitleLookupService {
       }
       else if (id_def.type.toLowerCase() != 'originediturl'){
         log.debug("Skipping problem ID ${id_def}");
-        Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
+        the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
         result['other_identifiers'] << the_id
       }
     }

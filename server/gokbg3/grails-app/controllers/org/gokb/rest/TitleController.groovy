@@ -65,9 +65,7 @@ class TitleController {
     Class type = TitleInstance
 
     if (params.type) {
-      if (params.type == 'journal' || params        result.errors = [
-          [message: "Unrecognized type ${params.type}", code: 400, result:"ERROR"]
-        ].type == 'serial') {
+      if (params.type == 'journal' || params ) {
         type = JournalInstance
       }
       else if (params.type == 'book' || params.type == 'monograph') {
@@ -87,12 +85,11 @@ class TitleController {
   def show() {
     def result = [:]
     def obj = null
-    def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
     Class type = setType(params)
     User user = User.get(springSecurityService.principal.id)
 
-    if (params.oid || params.id) {
+    if (type && (params.oid || params.id)) {
       obj = type.findByUuid(params.id)
 
       if (!obj) {
@@ -189,6 +186,59 @@ class TitleController {
     result
   }
 
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
+  def getHistory() {
+    def result = null
+    def user = User.get(springSecurityService.principal.id)
+    def full = params.full ? true : false
+    def obj = null
+
+    if (params.id) {
+      obj = TitleInstance.findByUuid(params.id)
+
+      if (!obj) {
+        obj = TitleInstance.get(genericOIDService.oidToId(params.id))
+      }
+
+      if (obj) {
+        def history = obj.titleHistory
+
+        if (history) {
+          result = []
+
+          history.each { he ->
+            def mapped_event = [id: he.id, date: he.date, from: [], to: []]
+
+            he.from.each { f ->
+              if (full) {
+                mapped_event.from << restMappingService.mapObjectToJson(f, params, user)
+              }
+              else {
+                mapped_event.from << [name: f.name, id: f.id, uuid: f.uuid]
+              }
+            }
+
+            he.to.each { t ->
+              if (full) {
+                mapped_event.to << restMappingService.mapObjectToJson(t, params, user)
+              }
+              else {
+                mapped_event.to << [name: t.name, id: t.id, uuid: t.uuid]
+              }
+            }
+
+            result << mapped_event
+          }
+        }
+      }
+    }
+    else {
+      log.debug("getHistory :: Missing ID!")
+    }
+
+    render result as JSON
+  }
+
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
   @Transactional
   def update() {
@@ -196,10 +246,10 @@ class TitleController {
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
-    def obj = Platform.findByUuid(params.id)
+    def obj = TitleInstance.findByUuid(params.id)
 
     if (!obj) {
-      obj = Platform.get(genericOIDService.oidToId(params.id))
+      obj = TitleInstance.get(genericOIDService.oidToId(params.id))
     }
     def editable = obj.isEditable()
 

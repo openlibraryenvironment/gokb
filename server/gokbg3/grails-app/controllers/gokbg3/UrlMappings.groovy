@@ -58,6 +58,14 @@ class UrlMappings {
             put "/profile" (controller: 'profile', namespace:'rest', action: 'update')
             delete "/profile" (controller: 'profile', namespace:'rest', action: 'delete')
 
+            get "/titles/$id/history" (controller: 'title', namespace: 'rest', action:'getHistory')
+            "/titles/$id/$action" (controller: 'title', namespace:'rest')
+            get "/titles/$id" (controller: 'title', namespace: 'rest', action:'show')
+            put "/titles/$id" (controller: 'title', namespace: 'rest', action:'update')
+            delete "/titles/$id" (controller: 'title', namespace: 'rest', action:'delete')
+            post "/titles" (controller: 'title', namespace: 'rest', action:'save')
+            get "/titles" (controller: 'title', namespace:'rest', action:'index')
+
             get "/entities" (controller: 'global', namespace:'rest', action: 'index')
         }
         "/$controller/$action?/$id?"{
