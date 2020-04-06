@@ -10,6 +10,7 @@ import org.gokb.cred.KBComponent
 import org.gokb.cred.Note
 import org.gokb.cred.Package
 import org.gokb.cred.ReviewRequest
+import org.gokb.cred.Role
 import org.gokb.cred.SavedSearch
 import org.gokb.cred.User
 import org.gokb.cred.UserOrganisation
@@ -22,7 +23,7 @@ import org.gokb.refine.RefineProject
 class UserProfileService {
 
   def delete(User user) {
-    def result=[:]
+    def result = [:]
     log.debug("Deleting user ${user.id} ..")
     def user_to_delete = User.get(user.id)
     def del_user = User.findByUsername('deleted')
@@ -79,6 +80,7 @@ class UserProfileService {
     if (reqBody && reqBody.id && reqBody.id == user.id) {
       reqBody.each { field, val ->
         if (val && user.hasProperty(field)) {
+          // roles have to be treated separately, as they're not a user property
           if (field != 'curatoryGroups') {
             if (!immutables.contains(field)) {
               user."${field}" = val
@@ -118,6 +120,29 @@ class UserProfileService {
               }
             } else {
               skippedCG = true
+            }
+          }
+        } else if (field == "roles") {
+          // scan data
+          Set<Role> newRoles = new HashSet<Role>()
+          val.each { value ->
+            Role newRole = Role.findByAuthority(value.authority)
+            if (newRole) {
+              newRoles.add(newRole)
+            } else {
+              errors << ['message': 'Could not find referenced role!', 'baddata': value.authority]
+              log.error("Role Autority '$value.authority' is unknown!")
+            }
+          }
+          // alter previous role set
+          Set<Role> previousRoles = user.getAuthorities()
+          Role.findAll().each { role ->
+            if (newRoles.contains(role)) {
+              if (!previousRoles.contains(role)) {
+                UserRole.create(user, role, true)
+              }
+            } else if (previousRoles.contains(role)) {
+              UserRole.remove(user, role, true)
             }
           }
         }

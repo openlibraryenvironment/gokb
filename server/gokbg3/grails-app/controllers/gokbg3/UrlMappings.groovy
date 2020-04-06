@@ -60,7 +60,10 @@ class UrlMappings {
 
             get "/entities" (controller: 'global', namespace:'rest', action: 'index')
 
-            get "/users" (controller: 'users', namespace:'rest', action: 'index')
+            get "/users/$id" (controller: 'users', namespace:'rest', action: 'show')
+            put "/users/$id" (controller: 'users', namespace:'rest', action: 'update')
+            delete "/users/$id" (controller: 'users', namespace:'rest', action: 'delete')
+
         }
         "/$controller/$action?/$id?"{
             constraints {

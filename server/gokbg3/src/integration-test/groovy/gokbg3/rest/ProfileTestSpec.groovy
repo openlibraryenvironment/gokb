@@ -1,12 +1,15 @@
 package gokbg3.rest
 
+import grails.gorm.transactions.Transactional
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
+import grails.transaction.Rollback
 import spock.lang.Ignore
 import spock.lang.Specification
 
 @Integration
+@Rollback
 class ProfileTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest = new RestBuilder()
@@ -32,8 +35,8 @@ class ProfileTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200 // OK
-    resp.json.email == "admin@localhost"
-    resp.json._links.self.href == "rest/profile"
+    resp.json.data.email == "admin@localhost"
+    resp.json.data._links.self.href == "rest/profile"
   }
 
   void "test GET /rest/profile with stale token"() {
@@ -76,34 +79,33 @@ class ProfileTestSpec extends AbstractAuthSpec {
       contentType('application/json')
       auth("Bearer $accessToken")
       body('{"id":8,"username":"admin","displayName":null,"email":"admin@localhost","curatoryGroups":[],"enabled":true,"accountExpired":false,"accountLocked":false,"passwordExpired":false,"defaultPageSize":10,' +
-        '"roles":[' +
-        '{' +
-        '"authority":"ROLE_CONTRIBUTOR",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_USER",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_EDITOR",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_ADMIN",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_API",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_SUPERUSER",' +
-        '}' +
-        ']' +
-        '}')
+              '"roles":[' +
+              '{' +
+              '"authority":"ROLE_CONTRIBUTOR",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_USER",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_EDITOR",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_ADMIN",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_API",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_SUPERUSER",' +
+              '}' +
+              ']' +
+              '}')
     }
     then:
     resp.status == 200
   }
 
   void "test DELETE /rest/profile/"() {
-    // use the bearerToken to write to /rest/profile/update
     when:
     String accessToken = getAccessToken('tempUser')
     RestResponse resp = rest.delete("http://localhost:$serverPort/gokb/rest/profile/") {
