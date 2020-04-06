@@ -231,8 +231,12 @@ class TitleController {
           }
         }
       }
+      else {
+        result = ['result': "ERROR", 'message': "Could not resolve object", 'code': 404]
+      }
     }
     else {
+      result = ['result': "ERROR", 'message': "Missing ID", 'code': 400]
       log.debug("getHistory :: Missing ID!")
     }
 
