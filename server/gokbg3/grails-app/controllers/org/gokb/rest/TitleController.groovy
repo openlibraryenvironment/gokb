@@ -7,6 +7,7 @@ import grails.plugin.springsecurity.annotation.Secured
 
 import groovyx.net.http.URIBuilder
 
+import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -85,6 +86,8 @@ class TitleController {
   def show() {
     def result = [:]
     def obj = null
+    def includes = params['_include'] ? params['_include'].split(',') : []
+    def embeds = params['_embed'] ? params['_embed'].split(',') : []
     def is_curator = true
     Class type = setType(params)
     User user = User.get(springSecurityService.principal.id)
@@ -98,6 +101,15 @@ class TitleController {
 
       if (obj?.isReadable()) {
         result = restMappingService.mapObjectToJson(obj, params, user)
+
+        if ( (params.history && params.history == 'true') || includes.contains('history') || embeds.contains('history') ) {
+          if (embeds.contains('history')) {
+            result._embedded['history'] = getDirectHistory(obj, params, user)
+          }
+          else {
+            result.history = getDirectHistory(obj, params, user)
+          }
+        }
       }
       else if (!obj) {
         result.message = "Object ID could not be resolved!"
@@ -188,9 +200,8 @@ class TitleController {
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
   def getHistory() {
-    def result = null
+    def result = [:]
     def user = User.get(springSecurityService.principal.id)
-    def full = params.full ? true : false
     def obj = null
 
     if (params.id) {
@@ -201,35 +212,7 @@ class TitleController {
       }
 
       if (obj) {
-        def history = obj.titleHistory
-
-        if (history) {
-          result = []
-
-          history.each { he ->
-            def mapped_event = [id: he.id, date: he.date, from: [], to: []]
-
-            he.from.each { f ->
-              if (full) {
-                mapped_event.from << restMappingService.mapObjectToJson(f, params, user)
-              }
-              else {
-                mapped_event.from << [name: f.name, id: f.id, uuid: f.uuid]
-              }
-            }
-
-            he.to.each { t ->
-              if (full) {
-                mapped_event.to << restMappingService.mapObjectToJson(t, params, user)
-              }
-              else {
-                mapped_event.to << [name: t.name, id: t.id, uuid: t.uuid]
-              }
-            }
-
-            result << mapped_event
-          }
-        }
+        result.data = getDirectHistory(obj, params, user)
       }
       else {
         result = ['result': "ERROR", 'message': "Could not resolve object", 'code': 404]
@@ -241,6 +224,43 @@ class TitleController {
     }
 
     render result as JSON
+  }
+
+  private def getDirectHistory(obj, params, user) {
+    def result = []
+    def embeds = params['_embed'] ? params['_embed'].split(',') : []
+    def sdf = new SimpleDateFormat("yyyy-MM-dd")
+
+    if (obj) {
+      def history = obj.titleHistory
+
+      if (history) {
+        history.each { he ->
+          def mapped_event = [id: he.id, date: sdf.format(he.date), from: [], to: []]
+
+          he.from.each { f ->
+            if (embeds.contains('history')) {
+              mapped_event.from << restMappingService.mapObjectToJson(f, params, user)
+            }
+            else {
+              mapped_event.from << [name: f.name, id: f.id, uuid: f.uuid]
+            }
+          }
+
+          he.to.each { t ->
+            if (embeds.contains('history')) {
+              mapped_event.to << restMappingService.mapObjectToJson(t, params, user)
+            }
+            else {
+              mapped_event.to << [name: t.name, id: t.id, uuid: t.uuid]
+            }
+          }
+
+          result << mapped_event
+        }
+      }
+    }
+    result
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
