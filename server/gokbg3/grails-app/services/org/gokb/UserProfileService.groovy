@@ -126,7 +126,9 @@ class UserProfileService {
           // scan data
           Set<Role> newRoles = new HashSet<Role>()
           val.each { value ->
-            Role newRole = Role.findByAuthority(value.authority)
+            Role newRole = Role.findById(value.id)
+            if (!newRole)
+              newRole = Role.findByAuthority(value.authority)
             if (newRole) {
               newRoles.add(newRole)
             } else {
