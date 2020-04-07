@@ -61,7 +61,6 @@ class UserProfileService {
 
       log.debug("Done")
       result.result = "OK"
-      result.errors = user_to_delete.errors
     } else {
       log.error("Could not find either the user object for deletion (${params.id}) or the placeholder user")
       result.result = "ERROR"
