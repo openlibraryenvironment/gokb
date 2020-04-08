@@ -10,6 +10,7 @@ import org.gokb.cred.KBComponent
 import org.gokb.cred.Note
 import org.gokb.cred.Package
 import org.gokb.cred.ReviewRequest
+import org.gokb.cred.Role
 import org.gokb.cred.SavedSearch
 import org.gokb.cred.User
 import org.gokb.cred.UserOrganisation
@@ -22,6 +23,7 @@ import org.gokb.refine.RefineProject
 class UserProfileService {
 
   def delete(User user) {
+    def result = [:]
     log.debug("Deleting user ${user.id} ..")
     def user_to_delete = User.get(user.id)
     def del_user = User.findByUsername('deleted')
@@ -58,8 +60,111 @@ class UserProfileService {
       user_to_delete.delete(flush: true, failOnError: true)
 
       log.debug("Done")
+      result.result = "OK"
     } else {
       log.error("Could not find either the user object for deletion (${params.id}) or the placeholder user")
+      result.result = "ERROR"
+      result.errors = user_to_delete.errors
     }
+    return result
+  }
+
+  def update(User user, def data) {
+    def result = ['result': 'OK']
+    def immutables = ['id', 'username', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
+    def errors = []
+    def skippedCG = false
+    def reqBody = data
+
+    if (reqBody && reqBody.id && reqBody.id == user.id) {
+      reqBody.each { field, val ->
+        if (val && user.hasProperty(field)) {
+          // roles have to be treated separately, as they're not a user property
+          if (field != 'curatoryGroups') {
+            if (!immutables.contains(field)) {
+              user."${field}" = val
+            } else {
+              log.debug("Ignoring immutable field ${field}")
+            }
+          } else {
+            if (user.hasRole('ROLE_EDITOR') || user.hasRole('ROLE_ADMIN')) {
+              def curGroups = []
+              val.each { cg ->
+                def cg_obj = null
+
+                if (cg.uuid?.trim()) {
+                  cg_obj = CuratoryGroup.findByUuid(cg.uuid)
+                }
+
+                if (!cg_obj && cg.id) {
+                  cg_obj = cg.id instanceof String ? genericOIDService.resolveOID(cg.id) : CuratoryGroup.get(cg.id)
+                }
+
+                if (cg_obj) {
+                  curGroups.add(cg_obj)
+                } else {
+                  log.debug("CuratoryGroup ${cg} not found!")
+                  errors << ['message': 'Could not find referenced curatory group!', 'baddata': cg]
+                }
+              }
+              log.debug("New CuratoryGroups: ${curGroups}")
+
+              if (errors.size() > 0) {
+                result.message = "There have been errors updating the users curatory groups."
+                result.errors = errors
+                response.setStatus(400)
+              } else {
+                user.curatoryGroups.addAll(curGroups)
+                user.curatoryGroups.retainAll(curGroups)
+              }
+            } else {
+              skippedCG = true
+            }
+          }
+        } else if (field == "roles") {
+          // scan data
+          Set<Role> newRoles = new HashSet<Role>()
+          val.each { value ->
+            Role newRole = Role.findById(value.id)
+            if (!newRole)
+              newRole = Role.findByAuthority(value.authority)
+            if (newRole) {
+              newRoles.add(newRole)
+            } else {
+              errors << ['message': 'Could not find referenced role!', 'baddata': value.authority]
+              log.error("Role Autority '$value.authority' is unknown!")
+            }
+          }
+          // alter previous role set
+          Set<Role> previousRoles = user.getAuthorities()
+          Role.findAll().each { role ->
+            if (newRoles.contains(role)) {
+              if (!previousRoles.contains(role)) {
+                UserRole.create(user, role, true)
+              }
+            } else if (previousRoles.contains(role)) {
+              UserRole.remove(user, role, true)
+            }
+          }
+        }
+      }
+
+      if (errors.size() == 0) {
+        if (user.validate()) {
+          user.save(flush: true)
+          result.message = "User profile sucessfully updated."
+        } else {
+          result.result = "ERROR"
+          result.message = "There have been errors saving the user object."
+          result.errors = user.errors
+        }
+      }
+    } else {
+      log.debug("Missing update payload or wrong user id")
+      result.result = "ERROR"
+      response.setStatus(400)
+      result.message = "Missing update payload or wrong user id!"
+    }
+    return result
   }
 }

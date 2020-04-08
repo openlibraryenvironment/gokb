@@ -6,6 +6,7 @@ import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
 import org.gokb.cred.Identifier
 import org.gokb.cred.IdentifierNamespace
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.WebApplicationContext
 
 @Integration
@@ -22,7 +23,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
 
   def setup() {
     def ns_eissn = IdentifierNamespace.findByValue('eissn')
-    def test_id = Identifier.findByValue("1234-4567") ?: new Identifier(name: "1234-4567", namespace: ns_eissn).save(flush:true)
+    def test_id = Identifier.findByValue("1234-4567") ?: new Identifier(value: "1234-4567", namespace: ns_eissn).save(flush:true)
   }
 
   void "test /rest/identifiers/<id> without token"() {

@@ -24,7 +24,7 @@ class AbstractAuthSpec extends Specification {
     if (refreshToken == null) {
       login(username)
     }
-    return accessToken
+    return refreshToken
   }
 
   private void login(username) {
