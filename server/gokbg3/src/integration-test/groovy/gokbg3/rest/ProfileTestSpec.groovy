@@ -1,6 +1,5 @@
 package gokbg3.rest
 
-
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
