@@ -298,7 +298,7 @@ class TitleController {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
           RefdataValue newStatus = RefdataValue.get(reqBody.status)
 
-          if ( status_deleted != RefdataValue.get(reqBody.status) || obj.isDeletable() ) {
+          if ( status_deleted != newStatus || obj.isDeletable() ) {
             obj.status = newStatus
           }
         }
