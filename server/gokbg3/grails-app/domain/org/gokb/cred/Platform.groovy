@@ -371,7 +371,7 @@ class Platform extends KBComponent {
 
       if(!result && !skip){
         log.debug("Creating new platform for: ${platformDTO}")
-        result = new Platform(name:platformDTO.name, normname: KBComponent.generateNormname(platformDTO.name), primaryUrl: (viable_url ? platformDTO.primaryUrl : null )).save(flush:true,failOnError:true)
+        result = new Platform(name:platformDTO.name, normname: KBComponent.generateNormname(platformDTO.name), primaryUrl: (viable_url ? platformDTO.primaryUrl : null), uuid: platformDTO.uuid ?: null).save(flush:true,failOnError:true)
 
         ReviewRequest.raise(
           result,
