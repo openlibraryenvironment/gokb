@@ -46,12 +46,9 @@ class TitleTestSpec extends AbstractAuthSpec {
     }
   }
 
-  void "test /rest/titles/<id> without token"() {
-    def test_ti = JournalInstance.findByName("TestJournal")
-
+  void "test /rest/titles without token"() {
     when:
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/titles/${test_ti.id}") {
-      // headers
+    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/titles") {
       accept('application/json')
     }
     then:
@@ -59,25 +56,21 @@ class TitleTestSpec extends AbstractAuthSpec {
   }
 
   void "test /rest/titles/<id> with valid token"() {
-    def test_ti = JournalInstance.findByName("TestJournal")
-    // use the bearerToken to read /rest/profile
+
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/titles/${test_ti.id}") {
-      // headers
+    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/titles") {
       accept('application/json')
       auth("Bearer $accessToken")
     }
     then:
     resp.status == 200 // OK
-    resp.json.name == "TestJournal"
   }
 
   void "test journal index"() {
     when:
     String accessToken = getAccessToken()
     RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/titles?type=journal&ids=1491237-5") {
-      // headers
       accept('application/json')
       auth("Bearer $accessToken")
     }
@@ -92,7 +85,6 @@ class TitleTestSpec extends AbstractAuthSpec {
     when:
     String accessToken = getAccessToken()
     RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/titles/$title_id?_embed=history") {
-      // headers
       accept('application/json')
       auth("Bearer $accessToken")
     }
