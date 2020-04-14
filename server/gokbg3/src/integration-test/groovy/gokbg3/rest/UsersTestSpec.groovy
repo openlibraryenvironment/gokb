@@ -15,7 +15,7 @@ class UsersTestSpec extends AbstractAuthSpec {
   def altUser
 
   def setup() {
-    delUser = User.findByUsername("delUser") ?: new User(username: "delUser").save(flush: true)
+    delUser = User.findByUsername("deleteUser") ?: new User(username: "deleteUser").save(flush: true)
     altUser = User.findByUsername("altUser") ?: new User(username: "altUser").save(flush: true)
   }
 
@@ -42,7 +42,21 @@ class UsersTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200 // OK
-    resp.json.data.username == "delUser"
+    resp.json.data.username == "deleteUser"
+  }
+
+  void "test GET /rest/users/search?{params} with valid token and parameters"() {
+    // use the bearerToken to read /rest/users
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/users/search?name=m&roleId=3&_embed=id,organisations,roles&_include=id,username&_sort=username&_order=desc") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
+    then:
+    resp.status == 200 // OK
+    resp.json.data[1].username == "admin"
   }
 
   void "test DELETE /rest/users/{id} with valid token"() {
