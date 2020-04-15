@@ -1,12 +1,9 @@
 package org.gokb.rest
 
 import grails.converters.JSON
-import grails.core.GrailsApplication
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
 import org.gokb.cred.User
-import org.gokb.cred.UserRole
-import org.springframework.beans.factory.annotation.Autowired
 
 @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
 @Transactional(readOnly = true)
@@ -19,7 +16,7 @@ class UsersController {
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
   def show() {
     def result = [data: [:]]
-    def user = User.get(params.id)
+    def user = User.get(params.id as int)
     if (user) {
       result.data = collectUserProps(user)
     }
@@ -33,15 +30,14 @@ class UsersController {
     // parse params
     int offset = params.offset ? params.offset as int : 0
     int limit = params.limit ? params.limit as int : 10
-
-    def paging
     String[] sortFields, sortOrders
     if (params._sort)
       sortFields = params._sort.split(',')
     if (params._order)
       sortOrders = params._order.split(',')
 
-    def hqlQuery = "select ultimate from User ultimate where ultimate in (select distinct u " +
+    def sortQuery = "select ultimate from User ultimate where ultimate in ("
+    def hqlQuery = "select distinct u " +
             "from User u, UserRole ur, Role r " +
             "where u = ur.user and ur.role=r"
     def hqlParams = [:]
@@ -57,24 +53,55 @@ class UsersController {
       hqlQuery += " and :group in u.curatoryGroups.id"
       hqlParams += ["group": params.curatoryGroupId as Long]
     }
-    hqlQuery += ")"
+    sortQuery += hqlQuery + ")"
     if (sortOrders && sortFields) {
       int maxIndex = sortOrders.size() < sortFields.size() ? sortOrders.size() : sortFields.size()
       for (int i = 0; i < maxIndex; i++) {
         if (i == 0)
-          hqlQuery += " order by"
+          sortQuery += " order by"
         else
-          hqlQuery += " ,"
-        hqlQuery += " ultimate.${sortFields[i]}"
-        hqlQuery += "desc" == sortOrders[i].toLowerCase() ? " desc" : " asc"
+          sortQuery += " ,"
+        sortQuery += " ultimate.${sortFields[i]}"
+        sortQuery += "desc" == sortOrders[i].toLowerCase() ? " desc" : " asc"
       }
     }
 
     def metaParams = [max: limit, offset: offset]
-    def users = User.executeQuery(hqlQuery, hqlParams, metaParams)
+    int count = User.executeQuery(hqlQuery, hqlParams).size()
+    def users = User.executeQuery(sortQuery, hqlParams, metaParams)
     users.each { user ->
       result.data.add(collectUserProps(user))
     }
+    result += [
+            _pagination: [
+                    offset: offset,
+                    limit : limit,
+                    total : count
+            ]
+    ]
+
+    def base = grailsApplication.config.serverURL + "/" + namespace
+    def filter = ['limit', 'offset', 'controller', 'action']
+    String outParams = '?'
+    params.each { param, val ->
+      if (!(param in filter)) {
+        if (outParams.size() > 1)
+          outParams += "&"
+        outParams += "$param=$val"
+      }
+    }
+
+    result += [
+            _links: [
+                    self : [href: base + "/users/search/$outParams&limit=$limit&offset=$offset"],
+                    first: [href: base + "/users/search/$outParams&limit=$limit&offset=0"],
+                    last : [href: base + "/users/search/$outParams&limit=$limit&offset=${((int) (count / limit)) * limit}"]
+            ]
+    ]
+    if (offset >= limit)
+      result._links += [prev: [href: base + "/users/search/$outParams&limit=$limit&offset=${offset - limit}"]]
+    if (offset + limit < count)
+      result._links += [next: [href: base + "/users/search/$outParams&limit=$limit&offset=${offset + limit}"]]
 
     render result as JSON
   }
