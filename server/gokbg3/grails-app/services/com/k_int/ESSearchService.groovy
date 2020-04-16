@@ -810,7 +810,7 @@ class ESSearchService{
       domainMapping['_embedded']['curatoryGroups'] << [
         'links': [
           'self': [
-            'href': base + "/groups/" + cg_obj.uuid
+            'href': base + cg_obj.getRestPath()+"/" + cg_obj.uuid
           ]
         ],
         'name': cg_obj.name,

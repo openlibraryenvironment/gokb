@@ -65,6 +65,8 @@ class UrlMappings {
             put "/users/$id" (controller: 'users', namespace:'rest', action: 'update')
             delete "/users/$id" (controller: 'users', namespace:'rest', action: 'delete')
 
+            get "/curatoryGroups/$id" (controller: 'curatoryGroups', namespace:'rest', action: 'show')
+            get "/curatoryGroups" (controller: 'curatoryGroups', namespace:'rest', action: 'index')
         }
         "/$controller/$action?/$id?"{
             constraints {
