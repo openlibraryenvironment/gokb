@@ -6,20 +6,30 @@ import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
 import org.gokb.cred.Role
 import org.gokb.cred.User
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
+import org.springframework.web.client.RestTemplate
+import spock.lang.Shared
 
 @Integration
 @Rollback
 class UsersTestSpec extends AbstractAuthSpec {
 
+  def rest
   def delUser
   def altUser
+
+  def setupSpec() {
+  }
 
   def setup() {
     delUser = User.findByUsername("deleteUser") ?: new User(username: "deleteUser").save(flush: true)
     altUser = User.findByUsername("altUser") ?: new User(username: "altUser").save(flush: true)
+    if (!rest){
+      RestTemplate restTemp = new RestTemplate()
+      restTemp.setRequestFactory(new HttpComponentsClientHttpRequestFactory())
+      rest = new RestBuilder(restTemp)
+    }
   }
-
-  private RestBuilder rest = new RestBuilder()
 
   void "test GET /rest/users/{id} without token"() {
     when:
@@ -98,5 +108,22 @@ class UsersTestSpec extends AbstractAuthSpec {
     resp.status == 200
     def checkUser = User.findById(altUser.id)
     checkUser.authorities.contains(Role.findByAuthority("ROLE_USER"))
+  }
+
+  void "test PATCH /rest/users/{id}"() {
+    // use the bearerToken to write to /rest/user
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.patch("http://localhost:$serverPort/gokb/rest/users/$altUser.id") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      auth("Bearer $accessToken")
+      body('{"active":"false"}')
+    }
+    then:
+    resp.status == 200
+    def checkUser = User.findById(altUser.id)
+    checkUser.enabled == false
   }
 }

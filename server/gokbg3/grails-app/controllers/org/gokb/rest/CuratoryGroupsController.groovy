@@ -14,8 +14,7 @@ class CuratoryGroupsController {
 
   static namespace = 'rest'
 
-  def componentLookupService
-  def springSecurityService
+  def genericOIDService
   def restMappingService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
@@ -24,8 +23,9 @@ class CuratoryGroupsController {
     String sortField = params._sort
     String sortOrder = params._order?.toLowerCase()
 
-    curGroups = curGroups.toSorted { a, b ->
-      if (sortField) {
+    if (sortField) {
+      curGroups = curGroups.toSorted { a, b ->
+
         if (sortOrder?.toLowerCase() == "desc")
           b[sortField].toString().toLowerCase() <=> a[sortField].toString().toLowerCase()
         else
@@ -48,17 +48,18 @@ class CuratoryGroupsController {
 
     if (params.oid || params.id) {
       curGroup = CuratoryGroup.findByUuid(params.id)
-
+      if (!curGroup) {
+        curGroup = CuratoryGroup.findById(params.id)
+      }
       if (!curGroup) {
         curGroup = genericOIDService.resolveOID(params.id)
       }
-
       if (!curGroup && params.long('id')) {
         curGroup = Org.get(params.long('id'))
       }
 
       if (curGroup) {
-        result = restMappingService.mapObjectToJson(curGroup, params, null)
+        result.data = restMappingService.mapObjectToJson(curGroup, params, null)
       } else {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)

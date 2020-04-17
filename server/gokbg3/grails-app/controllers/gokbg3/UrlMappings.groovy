@@ -63,10 +63,13 @@ class UrlMappings {
             get "/users/$id" (controller: 'users', namespace:'rest', action: 'show')
             get "/users/search" (controller: 'users', namespace:'rest', action: 'search')
             put "/users/$id" (controller: 'users', namespace:'rest', action: 'update')
+            patch "/users/$id" (controller: 'users', namespace:'rest', action: 'patch')
             delete "/users/$id" (controller: 'users', namespace:'rest', action: 'delete')
 
             get "/curatoryGroups/$id" (controller: 'curatoryGroups', namespace:'rest', action: 'show')
             get "/curatoryGroups" (controller: 'curatoryGroups', namespace:'rest', action: 'index')
+
+            get "/roles" (controller: 'roles', namespace:'rest', action: 'index')
         }
         "/$controller/$action?/$id?"{
             constraints {

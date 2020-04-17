@@ -79,9 +79,9 @@ class RestMappingService {
       }
 
       if (is_curator || user?.isAdmin()) {
-        result._links.update = ['href': base + obj.restPath + "/${obj.uuid}"]
-        result._links.delete = ['href': base + obj.restPath + "/${obj.uuid}"]
-        result._links.retire = ['href': base + obj.restPath + "/${obj.uuid}/retire"]
+        result._links.update = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
+        result._links.delete = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
+        result._links.retire = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}/retire"]
       }
     }
 

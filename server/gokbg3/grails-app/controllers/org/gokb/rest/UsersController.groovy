@@ -120,6 +120,20 @@ class UsersController {
     render userProfileService.delete(delUser) as JSON
   }
 
+  @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
+  @Transactional
+  def patch() {
+    def user = User.get(params.id)
+    boolean active = request.JSON.active?.toLowerCase() == "true"
+    if (user) {
+      user.setEnabled(active)
+      user.save()
+    }
+    def result = [data: []]
+    result.data += collectUserProps(user)
+    render result as JSON
+  }
+
   def private collectUserProps(User user) {
     def base = grailsApplication.config.serverURL + "/" + namespace
     def includes = [], excludes = [],
