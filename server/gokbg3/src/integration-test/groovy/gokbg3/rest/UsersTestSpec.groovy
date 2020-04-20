@@ -55,11 +55,11 @@ class UsersTestSpec extends AbstractAuthSpec {
     resp.json.data.username == "deleteUser"
   }
 
-  void "test GET /rest/users/search?{params} with valid token and parameters"() {
+  void "test GET /rest/users/?{params} with valid token and parameters"() {
     // use the bearerToken to read /rest/users
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/users/search?name=m&roleId=3&_embed=id,organisations,roles&_include=id,username&_sort=username&_order=desc") {
+    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/users/?name=m&roleId=3&_embed=id,organisations,roles&_include=id,username&_sort=username&_order=desc") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")

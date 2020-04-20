@@ -16,10 +16,10 @@ class UsersController {
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
   def show() {
     def result = [data: [:]]
-    def user = User.get(params.id as int)
-    if (user) {
-      result.data = collectUserProps(user)
-    }
+      def user = User.get(params.id as int)
+      if (user) {
+        result.data = collectUserProps(user)
+      }
     render result as JSON
   }
 
@@ -185,4 +185,5 @@ class UsersController {
 
     return newUserData
   }
+
 }

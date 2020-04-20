@@ -52,7 +52,7 @@ class CuratoryGroupsController {
         curGroup = CuratoryGroup.findById(params.id)
       }
       if (!curGroup) {
-        curGroup = genericOIDService.resolveOID(params.id)
+        curGroup = genericOIDService.resolveOID(params.oid)
       }
       if (!curGroup && params.long('id')) {
         curGroup = Org.get(params.long('id'))

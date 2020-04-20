@@ -60,8 +60,8 @@ class UrlMappings {
 
             get "/entities" (controller: 'global', namespace:'rest', action: 'index')
 
+            get "/users/" (controller: 'users', namespace:'rest', action: 'search')
             get "/users/$id" (controller: 'users', namespace:'rest', action: 'show')
-            get "/users/search" (controller: 'users', namespace:'rest', action: 'search')
             put "/users/$id" (controller: 'users', namespace:'rest', action: 'update')
             patch "/users/$id" (controller: 'users', namespace:'rest', action: 'patch')
             delete "/users/$id" (controller: 'users', namespace:'rest', action: 'delete')
