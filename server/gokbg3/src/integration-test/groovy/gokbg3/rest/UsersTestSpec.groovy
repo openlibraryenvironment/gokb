@@ -24,7 +24,7 @@ class UsersTestSpec extends AbstractAuthSpec {
   def setup() {
     delUser = User.findByUsername("deleteUser") ?: new User(username: "deleteUser").save(flush: true)
     altUser = User.findByUsername("altUser") ?: new User(username: "altUser").save(flush: true)
-    if (!rest){
+    if (!rest) {
       RestTemplate restTemp = new RestTemplate()
       restTemp.setRequestFactory(new HttpComponentsClientHttpRequestFactory())
       rest = new RestBuilder(restTemp)
@@ -91,23 +91,26 @@ class UsersTestSpec extends AbstractAuthSpec {
       contentType('application/json')
       auth("Bearer $accessToken")
       body('{"id":' + altUser.id + ',"username":"OtherUser","displayName":null,"email":"nobody@localhost","curatoryGroups":[],"enabled":true,"accountExpired":false,"accountLocked":false,"passwordExpired":false,"defaultPageSize":15,' +
-              '"roles":[' +
-              '{' +
-              '"authority":"ROLE_CONTRIBUTOR",' +
-              '},' +
-              '{' +
-              '"authority":"ROLE_USER",' +
-              '},' +
-              '{' +
-              '"authority":"ROLE_EDITOR",' +
-              '},' +
-              ']' +
-              '}')
+        '"roles":[' +
+        '{' +
+        '"authority":"ROLE_CONTRIBUTOR",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_USER",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_EDITOR",' +
+        '},' +
+        ']' +
+        '}')
     }
     then:
     resp.status == 200
     def checkUser = User.findById(altUser.id)
+    !checkUser.authorities.contains(Role.findByAuthority("ROLE_ADMIN"))
     checkUser.authorities.contains(Role.findByAuthority("ROLE_USER"))
+    checkUser.username != "OtherUser"
+    checkUser.email == "nobody@localhost"
   }
 
   void "test PATCH /rest/users/{id}"() {
@@ -128,7 +131,6 @@ class UsersTestSpec extends AbstractAuthSpec {
   }
 
   void "test POST /rest/register"() {
-    // use the bearerToken to write to /rest/user
     when:
     RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/register") {
       // headers
@@ -139,6 +141,6 @@ class UsersTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     User checkUser = User.findByUsername("newUser")
-    checkUser!=null
+    checkUser != null
   }
 }
