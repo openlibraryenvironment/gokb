@@ -65,6 +65,10 @@ class UrlMappings {
             put "/users/$id" (controller: 'users', namespace:'rest', action: 'update')
             patch "/users/$id" (controller: 'users', namespace:'rest', action: 'patch')
             delete "/users/$id" (controller: 'users', namespace:'rest', action: 'delete')
+            post "/register" (controller: 'users', namespace:'rest', action: 'register')
+
+            get "/sources" (controller: 'sources', namespace:'rest', action: 'index')
+            get "/sources/$id" (controller: 'sources', namespace:'rest', action: 'show')
 
             get "/curatoryGroups/$id" (controller: 'curatoryGroups', namespace:'rest', action: 'show')
             get "/curatoryGroups" (controller: 'curatoryGroups', namespace:'rest', action: 'index')

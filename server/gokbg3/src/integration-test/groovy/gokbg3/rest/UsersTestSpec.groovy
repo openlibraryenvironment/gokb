@@ -126,4 +126,19 @@ class UsersTestSpec extends AbstractAuthSpec {
     def checkUser = User.findById(altUser.id)
     checkUser.enabled == false
   }
+
+  void "test POST /rest/register"() {
+    // use the bearerToken to write to /rest/user
+    when:
+    RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/register") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      body('{"username":"newUser", "email":"nobody@localhost","password":"defaultPassword"}')
+    }
+    then:
+    resp.status == 200
+    User checkUser = User.findByUsername("newUser")
+    checkUser!=null
+  }
 }
