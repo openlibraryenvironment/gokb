@@ -122,15 +122,19 @@ class OrgController {
         def jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
-        pkg = restMappingService.updateObject(obj, jsonMap, reqBody)
+        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        if (!obj.hasErrors()) {
-          result = restMappingService.mapObjectToJson(obj, params, user)
+        if( obj.validate() ) {
+          if(errors.size() == 0) {
+            log.debug("No errors.. saving")
+            obj.save(flush:true)
+            result = restMappingService.mapObjectToJson(obj, params, user)
+          }
         }
         else {
           result.result = 'ERROR'
           response.setStatus(422)
-          errors.addAll(messsageService.processValidationErrors(obj.errors, request.locale))
+          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
     }
@@ -143,7 +147,7 @@ class OrgController {
       result.error = errors
     }
 
-    result
+    render result as JSON
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
@@ -175,17 +179,19 @@ class OrgController {
 
         def jsonMap = obj.jsonMapping
 
-        restMappingService.updateObject(obj, jsonMap, reqBody)
+        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
         if( obj.validate() ) {
           if(errors.size() == 0) {
+            log.debug("No errors.. saving")
             obj.save(flush:true)
+            result = restMappingService.mapObjectToJson(obj, params, user)
           }
         }
         else {
           result.result = 'ERROR'
           response.setStatus(422)
-          errors.addAll(messsageService.processValidationErrors(pkg.errors, request.locale))
+          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
       else {
@@ -204,6 +210,62 @@ class OrgController {
       result.error = errors
     }
     render result as JSON
+  }
+
+  private void updateCombos(obj, reqBody) {
+    log.debug("Updating package combos ..")
+
+    if (reqBody.ids || reqBody.identifiers) {
+      def idmap = reqBody.ids ?: reqBody.identifiers
+      restMappingService.updateIdentifiers(obj, idmap)
+    }
+
+    if (reqBody.providedPlatforms || reqBody.platforms) {
+      def plt_list = reqBody.providedPlatforms ?: reqBody.platforms
+      Set new_plts = []
+
+      plt_list.each { plt ->
+        def plt_obj = null
+
+        if (plt instanceof String) {
+          plt_obj = Platform.findByNameIlike(plt)
+        }
+        else {
+          plt_obj = Platform.get(plt)
+        }
+
+        if (pub_obj) {
+          new_plts << plt_obj
+        }
+        else {
+          obj.errors.reject(
+            'component.addToList.denied.label',
+            ['providedPlatforms'] as Object[],
+            '[Could not process list of items for property {0}]'
+          )
+          obj.errors.rejectValue(
+            'providedPlatforms',
+            'component.addToList.denied.label'
+          )
+        }
+      }
+
+      if (!obj.hasErrors()) {
+        new_plts.each { c ->
+          if (!obj.providedPlatforms.contains(c)) {
+            log.debug("Adding new platform ${c}..")
+            obj.providedPlatforms.add(c)
+          }
+          else {
+            log.debug("Existing platform ${c}..")
+          }
+        }
+        obj.providedPlatforms.retainAll(new_plts)
+      }
+      log.debug("New cgs: ${obj.providedPlatforms}")
+    }
+
+    log.debug("After update: ${obj}")
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
@@ -239,7 +301,7 @@ class OrgController {
       response.setStatus(403)
       result.message = "User is not allowed to delete this component!"
     }
-    result
+    render result as JSON
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
@@ -275,6 +337,6 @@ class OrgController {
       response.setStatus(403)
       result.message = "User is not allowed to edit this component!"
     }
-    result
+    render result as JSON
   }
 }

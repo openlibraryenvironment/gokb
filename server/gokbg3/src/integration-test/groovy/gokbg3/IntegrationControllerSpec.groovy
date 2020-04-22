@@ -112,7 +112,7 @@ class IntegrationControllerSpec extends Specification {
       matching_platforms[0].id == resp.json.platformId
   }
 
-  void "Test crossReferenceTitle (JOURNAL) Case 1"() {
+  void "Test crossReferenceTitle JOURNAL Case 1"() {
 
     when: "Caller asks for this record to be cross referenced"
       def json_record = [
@@ -447,7 +447,7 @@ class IntegrationControllerSpec extends Specification {
       coverageStatement.endDate == Date.from(LocalDate.of(1995, 12, 31).atStartOfDay(ZoneId.systemDefault()).toInstant())
   }
 
-  void "Test crossReferenceTitle (BOOK) Case 1"() {
+  void "Test crossReferenceTitle BOOK Case 1"() {
 
     when: "Caller asks for this record to be cross referenced"
       def json_record = [

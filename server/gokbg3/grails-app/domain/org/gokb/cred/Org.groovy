@@ -99,7 +99,7 @@ class Org extends KBComponent {
     'es': [
     ],
     'defaultLinks': [
-      'imprint',
+
     ],
     'defaultEmbeds': [
       'ids',

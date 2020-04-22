@@ -142,16 +142,18 @@ class TitleController {
     def errors = []
     Class type = setType(params)
     def user = User.get(springSecurityService.principal.id)
+    def ids = reqBody.ids ?: reqBody.identifiers
+    def publisher_name = reqBody.publisher ? (reqBody.publisher instanceof String ? reqBody.publisher : ( Org.get(reqBody.publisher)?.name ?: null )) : null
 
     if ( reqBody?.name?.trim() && type && type != TitleInstance ) {
       def obj = titleLookupService.find(
         reqBody.name,
-        reqBody.publisher,
-        reqBody.identifiers,
+        publisher_name,
+        ids,
         user,
         null,
         type.name
-      );
+      )
 
       if (!obj) {
         log.debug("Could not upsert object!")
@@ -164,19 +166,29 @@ class TitleController {
       }
       else {
         def jsonMap = obj.jsonMapping
-
-        log.debug("Updating ${obj}")
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        updateCombos(obj, reqBody)
+        if ( obj.validate() ) {
+          if ( errors.size() == 0 ) {
+            log.debug("No errors.. saving")
+            obj.save(flush:true)
 
-        if (!obj.hasErrors()) {
-          result = restMappingService.mapObjectToJson(obj, params, user)
+            updateCombos(obj, reqBody)
+
+            if (obj.validate()) {
+              result = restMappingService.mapObjectToJson(obj, params, user)
+            }
+            else {
+              result.result = 'ERROR'
+              response.setStatus(422)
+              errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+            }
+          }
         }
         else {
           result.result = 'ERROR'
           response.setStatus(422)
-          errors.addAll(messsageService.processValidationErrors(obj.errors, request.locale))
+          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
     }
@@ -187,7 +199,7 @@ class TitleController {
       errors = [badData: reqBody, message:"Specific title type required!"]
     }
     else {
-      errors = [badData: reqBody, message:"Unable to save title!"]
+      errors = [badData: reqBody, message:"Missing name for the title!"]
     }
 
     if (errors) {
@@ -195,7 +207,7 @@ class TitleController {
       result.error = errors
     }
 
-    result
+    render result as JSON
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
@@ -335,7 +347,17 @@ class TitleController {
   private void updateCombos(obj, reqBody) {
     log.debug("Updating title combos ..")
 
+
+    if (reqBody.ids || reqBody.identifiers) {
+      def idmap = reqBody.ids ?: reqBody.identifiers
+      obj = restMappingService.updateIdentifiers(obj, idmap)
+    }
+
     if (reqBody.publisher) {
+      RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+      String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
+      String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+
       if (reqBody.publisher instanceof Collection) {
         Set new_pubs = []
 
@@ -377,20 +399,51 @@ class TitleController {
           }
           obj.publisher.retainAll(new_pubs)
         }
-        log.debug("New cgs: ${obj.publisher}")
+        log.debug("New publisher: ${obj.publisher}")
       }
       else {
+        log.debug("Setting new publisher..") 
         def prov = null
 
         try {
           prov = Org.get(reqBody.publisher)
         }
         catch (Exception e) {
+          log.debug("Could not find Org ${reqBody}")
         }
 
         if (prov) {
           if (!obj.publisher.contains(prov)) {
-            obj.changePublisher(prov)
+            RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, obj.getComboTypeValue('publisher'))
+
+            def combo = null
+
+            if (propName == "toComponent") {
+              combo = new Combo(
+                type            : (type),
+                status          : combo_active,
+                toComponent     : prov,
+                fromComponent   : obj
+              )
+            } else {
+              combo = new Combo(
+                type            : (type),
+                status          : combo_active,
+                fromComponent   : prov,
+                toComponent     : obj
+              )
+            }
+
+            if (combo) {
+              combo.save(flush:true, failOnError:true)
+
+              log.debug "Added publisher ${prov.name} for '${obj.name}' -- ${obj.publisher}"
+            } else {
+              log.error("Could not create publisher Combo..")
+            }
+          }
+          else {
+            log.debug("Publisher is already set ..")
           }
         }
         else {

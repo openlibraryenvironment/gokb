@@ -38,21 +38,32 @@ class TitleLookupService {
     ]
 
     // Go through each of the class_one_ids and look for a match.
-    ids.each { id_def ->
-
+    ids.each { id_inc ->
       // We only treat a component as a match if the matching Identifer
+
       Identifier the_id = null
+      def id_def = [:]
 
-      def id_ns = id_def.type ?: (id_def.namespace ?: null)
+      if (id_inc instanceof Long) {
+        the_id = Identifier.get(this)
 
-      if (id_ns instanceof String) {
-        log.debug("Default namespace handling..")
-        id_def.type = id_ns
+        id_def.value = the_id.value
+        id_def.type = the_id.namespace.value
       }
-      else if (ns) {
-        id_def.type = IdentifierNamespace.get(id_ns)
-      }
+      else {
+        def id_ns = id_inc.type ?: (id_inc.namespace ?: null)
 
+        id_def.value = id_inc.value
+
+        if (id_ns instanceof String) {
+          log.debug("Default namespace handling for ${id_ns}..")
+          id_def.type = id_ns
+        }
+        else if (id_ns) {
+          log.debug("Handling namespace def ${is_ns}")
+          id_def.type = IdentifierNamespace.get(id_ns).value
+        }
+      }
       
       // is a class 1 identifier.
       if (id_def.type && id_def.value && class_one_ids.contains(id_def.type) ) {

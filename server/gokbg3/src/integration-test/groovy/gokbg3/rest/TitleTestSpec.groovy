@@ -1,5 +1,6 @@
 package gokbg3.rest
 
+import grails.converters.JSON
 import grails.core.GrailsApplication
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
@@ -11,6 +12,7 @@ import org.gokb.cred.DatabaseInstance
 import org.gokb.cred.Identifier
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.JournalInstance
+import org.gokb.cred.Org
 import org.gokb.cred.RefdataCategory
 import org.gokb.TitleLookupService
 import org.springframework.web.context.WebApplicationContext
@@ -35,15 +37,8 @@ class TitleTestSpec extends AbstractAuthSpec {
   def setup() {
     def ns_eissn = IdentifierNamespace.findByValue('eissn')
     def new_id = Identifier.findByValue('2345-2334') ?: new Identifier(value: '2345-2334', namespace: ns_eissn).save(flush:true)
+    def new_org = Org.findByName('TestOrg') ?: new Org(name: 'TestOrg').save(flush:true)
     def test_ti = JournalInstance.findByName("TestJournal") ?: new JournalInstance(name: "TestJournal").save(flush:true)
-
-    def id_combos = Combo.executeQuery("from Combo as c where c.fromComponent = :ti and c.toComponent = :id", [ti: test_ti, id: new_id])
-    def combo = null
-
-    if ( id_combos.size() == 0 ) {
-      def id_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
-      combo = new Combo(fromComponent: test_ti, toComponent: new_id, type: id_type).save(flush:true)
-    }
   }
 
   void "test /rest/titles without token"() {
@@ -65,6 +60,35 @@ class TitleTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200 // OK
+  }
+
+  void "test insert new title"() {
+    def issn_ns = IdentifierNamespace.findByValue('issn')
+    def test_id = Identifier.findByValue('2345-2334')
+    def publisher = Org.findByName("TestOrg")
+
+    when:
+    def json_record = [
+      name: "TestFullJournal",
+      ids: [
+        test_id.id,
+        [namespace: issn_ns.id, value: "3344-5544"],
+        [namespace: "zdb", value: "1234435-6"]
+      ],
+      publisher: publisher.id
+    ]
+
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/titles?type=journal") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(json_record as JSON)
+    }
+    then:
+    resp.status == 200 // OK
+    expect:
+    resp.json._embedded?.ids?.size() == 3
+    resp.json._embedded?.publisher?.size() == 1
   }
 
   void "test journal index"() {

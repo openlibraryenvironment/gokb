@@ -174,6 +174,7 @@ class RestMappingService {
         else {
           if( embed_active.contains(cp) ) {
             result['_embedded'][cp] = []
+            log.debug("Mapping ManyByCombo ${cp} ${obj[cp]}")
             obj[cp].each {
               result['_embedded'][cp] << getEmbeddedJson(it, user)
             }
@@ -234,11 +235,6 @@ class RestMappingService {
       }
     }
 
-    if (reqBody.ids || reqBody.identifiers) {
-      def idmap = reqBody.ids ?: reqBody.identifiers
-      updateIdentifiers(obj, idmap)
-    }
-
     if (reqBody.groups || reqBody.curatoryGroups) {
       if ( KBComponent.has(obj,'curatoryGroups') ) {
 
@@ -297,24 +293,30 @@ class RestMappingService {
   }
 
   public def updateIdentifiers(obj, ids) {
+    log.debug("updating ids ${ids}")
+    RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
     Set new_ids = []
 
     if (obj && ids instanceof List) {
       ids.each { i ->
         Identifier id = null
 
-        if (i instanceof Long) {
+        if (i instanceof Integer) {
           id = Identifier.get(i)
         }
-        else if (i instanceof Map) {
-          if (i.value && i.namespace) {
+        if (i instanceof Map) {
+          def ns_val = i.namespace ?: i.type
+
+          if (i.value && ns_val) {
             def ns = null
 
-            if (i.namespace instanceof Long) {
-              ns = IdentifierNamespace.get(i.namespace)?.value ?: null
+            if (ns_val instanceof String) {
+              ns = ns_val
             }
-            else {
-              ns = i.namespace
+            else if (ns_val) {
+              ns = IdentifierNamespace.get(ns_val)?.value ?: null
             }
 
             try {
@@ -325,7 +327,7 @@ class RestMappingService {
             catch (grails.validation.ValidationException ve) {
               obj.errors.reject(
                 'identifier.value.IllegalIDForm',
-                [i.value, ns] as Object[],
+                [i.value, ns_val] as Object[],
                 '[Value {0} is not valid for namespace {1}]'
               )
               obj.errors.rejectValue(
@@ -337,7 +339,7 @@ class RestMappingService {
           else {
             obj.errors.reject(
               'identifier.value.IllegalIDForm',
-              [i.value, ns] as Object[],
+              [i.value, ns_val] as Object[],
               '[Value {0} is not valid for namespace {1}]'
             )
             obj.errors.rejectValue(
@@ -347,18 +349,32 @@ class RestMappingService {
           }
         }
 
-        if ( id && !obj.errors ) {
+        if ( id && !obj.hasErrors() ) {
+          log.debug("Adding id ${id} to current set")
           new_ids << id
+        }
+        else {
+          log.debug("No Identifier found for ID ${i}, or errors on object ..")
         }
       }
 
       if (!obj.hasErrors()) {
         new_ids.each { ni ->
-          if (!obj.ids.contains(ni)) {
-            obj.ids.add(ni)
+          def id_combos = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?",[ni,obj])
+
+          if (id_combos.size() == 0) {
+            log.debug("Adding new ID combo for ${ni}..")
+            def id_c = new Combo(fromComponent: obj, toComponent: ni, status: combo_active, type: combo_type_id).save(flush:true)
+          }
+          else if (id_combos[0].status == combo_deleted) {
+            log.debug("Reactivating previously deleted combo ..")
+            id_combos[0].status = combo_active
           }
         }
         obj.ids.retainAll(new_ids)
+      }
+      else {
+        log.debug("Object has errors, not adding IDs ..")
       }
     }
     obj
