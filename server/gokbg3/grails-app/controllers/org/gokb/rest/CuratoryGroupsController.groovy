@@ -21,12 +21,17 @@ class CuratoryGroupsController {
   def index() {
     def curGroups = CuratoryGroup.findAll()
 
-    String sortField = params.hasProperty('_sort') ? params._sort : null
-    String sortOrder = params.hasProperty('_order') ? params._order?.toLowerCase() : null
+    String sortField = null, sortOrder = null
+    if (params._sort) {
+      sortField = params._sort
+    }
+    if (params._order) {
+      sortOrder = params._order.toLowerCase()
+    }
 
     if (sortField) {
       curGroups = curGroups.toSorted { a, b ->
-        if (sortOrder?.toLowerCase() == "desc")
+        if (sortOrder == "desc")
           b[sortField].toString().toLowerCase() <=> a[sortField].toString().toLowerCase()
         else
           a[sortField].toString().toLowerCase() <=> b[sortField].toString().toLowerCase()
@@ -49,7 +54,7 @@ class CuratoryGroupsController {
     if (params.oid || params.id) {
       curGroup = CuratoryGroup.findByUuid(params.id)
 
-      if (!curGroup) {
+      if (!curGroup && params.oid) {
         curGroup = genericOIDService.resolveOID(params.oid)
       }
       if (!curGroup && params.long('id')) {

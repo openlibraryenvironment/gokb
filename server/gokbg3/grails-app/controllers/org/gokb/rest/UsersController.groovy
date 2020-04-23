@@ -41,10 +41,13 @@ class UsersController {
     // parse params
     int offset = params.offset ? params.offset as int : 0
     int limit = params.limit ? params.limit as int : 10
-    String[] sortFields, sortOrders
-    sortFields = params.hasProperty('_sort') ? params._sort.split(',') : null
-    sortOrders = params.hasProperty('_order') ? params._order.split(',') : null
-
+    String[] sortFields = null, sortOrders = null
+    if (params['_sort']) {
+      sortFields = params['_sort'].split(',')
+    }
+    if (params['_order']) {
+      sortOrders = params['_order'].split(',')
+    }
     def sortQuery = "select ultimate from User ultimate where ultimate in ("
     def hqlQuery = "select distinct u " +
       "from User u, UserRole ur, Role r " +
@@ -150,7 +153,7 @@ class UsersController {
     render result as JSON
   }
 
-  def private collectUserProps(User user) {
+  def collectUserProps(User user) {
     def base = grailsApplication.config.serverURL + "/" + namespace
     def includes = [], excludes = [],
         newUserData = [

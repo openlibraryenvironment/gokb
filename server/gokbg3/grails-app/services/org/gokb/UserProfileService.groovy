@@ -18,9 +18,14 @@ import org.gokb.cred.UserOrganisationMembership
 import org.gokb.cred.UserRole
 import org.gokb.cred.WebHookEndpoint
 import org.gokb.refine.RefineProject
+import org.gokb.rest.UsersController
+import org.springframework.beans.factory.annotation.Autowired
 
 @Transactional
 class UserProfileService {
+
+  @Autowired
+  UsersController usersController
 
   def delete(User user) {
     def result = [:]
@@ -153,6 +158,7 @@ class UserProfileService {
         if (user.validate()) {
           user.save(flush: true)
           result.message = "User profile sucessfully updated."
+          result.data = usersController.collectUserProps(user)
         } else {
           result.result = "ERROR"
           result.message = "There have been errors saving the user object."
@@ -170,7 +176,8 @@ class UserProfileService {
 
   def create(def data) {
     User user = new User()
-    def result = ['result': 'OK']
+    def result = [data:[],
+                  result: 'OK']
     def errors = []
     def skippedCG = false
     def reqBody = data
@@ -243,7 +250,7 @@ class UserProfileService {
       if (user.validate()) {
         user.save(flush: true)
         result.message = "User profile sucessfully created."
-        result.data = user
+        result.data = usersController.collectUserProps(user)
       } else {
         result.result = "ERROR"
         result.message = "There have been errors saving the user object."
