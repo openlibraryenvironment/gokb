@@ -130,6 +130,21 @@ class UsersTestSpec extends AbstractAuthSpec {
     checkUser.enabled == false
   }
 
+  void "test POST /rest/users"() {
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/users") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      auth("Bearer $accessToken")
+      body('{"username":"newerUser", "email":"nobody@localhost","password":"defaultPassword"}')
+    }
+    then:
+    resp.status == 200
+    resp.json.data.username == "newerUser"
+  }
+
   void "test POST /rest/register"() {
     when:
     RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/register") {

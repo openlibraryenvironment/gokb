@@ -36,16 +36,14 @@ class UsersController {
 
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
-  def search() {
+  def index() {
     def result = [data: []]
     // parse params
     int offset = params.offset ? params.offset as int : 0
     int limit = params.limit ? params.limit as int : 10
     String[] sortFields, sortOrders
-    if (params._sort)
-      sortFields = params._sort.split(',')
-    if (params._order)
-      sortOrders = params._order.split(',')
+    sortFields = params.hasProperty('_sort') ? params._sort.split(',') : null
+    sortOrders = params.hasProperty('_order') ? params._order.split(',') : null
 
     def sortQuery = "select ultimate from User ultimate where ultimate in ("
     def hqlQuery = "select distinct u " +
@@ -66,14 +64,14 @@ class UsersController {
     }
     sortQuery += hqlQuery + ")"
     if (sortOrders && sortFields) {
-      int maxIndex = sortOrders.size() < sortFields.size() ? sortOrders.size() : sortFields.size()
+      int maxIndex = sortFields.size()
       for (int i = 0; i < maxIndex; i++) {
         if (i == 0)
           sortQuery += " order by"
         else
           sortQuery += " ,"
         sortQuery += " ultimate.${sortFields[i]}"
-        sortQuery += "desc" == sortOrders[i].toLowerCase() ? " desc" : " asc"
+        sortQuery += ((sortOrders[i] != null) && ("desc" != sortOrders[i].toLowerCase())) ? " asc" : " desc"
       }
     }
 
@@ -114,6 +112,13 @@ class UsersController {
     if (offset + limit < count)
       result._links += [next: [href: base + "/users/search/$outParams&limit=$limit&offset=${offset + limit}"]]
 
+    render result as JSON
+  }
+
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def create() {
+    def result = userProfileService.create(request.JSON)
     render result as JSON
   }
 

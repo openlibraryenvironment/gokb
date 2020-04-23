@@ -18,8 +18,8 @@ class RolesController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     Role[] roles = Role.findAll()
-    String sortField = params._sort
-    String sortOrder = params._order?.toLowerCase()
+    String sortField = params.hasProperty('_sort') ? params._sort : null
+    String sortOrder = params.hasProperty('_order') ? params._order?.toLowerCase() : null
     if (sortField) {
       roles = roles.toSorted { a, b ->
         if (sortOrder?.toLowerCase() == "desc")

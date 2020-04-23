@@ -60,11 +60,13 @@ class UrlMappings {
 
       get "/entities"(controller: 'global', namespace: 'rest', action: 'index')
 
-      get "/users"(controller: 'users', namespace: 'rest', action: 'search')
+      get "/users"(controller: 'users', namespace: 'rest', action: 'index')
+      post "/users"(controller: 'users', namespace: 'rest', action: 'create')
       get "/users/$id"(controller: 'users', namespace: 'rest', action: 'show')
       put "/users/$id"(controller: 'users', namespace: 'rest', action: 'update')
       patch "/users/$id"(controller: 'users', namespace: 'rest', action: 'patch')
       delete "/users/$id"(controller: 'users', namespace: 'rest', action: 'delete')
+
       post "/register"(controller: 'users', namespace: 'rest', action: 'register')
 
       get "/sources"(controller: 'sources', namespace: 'rest', action: 'index')

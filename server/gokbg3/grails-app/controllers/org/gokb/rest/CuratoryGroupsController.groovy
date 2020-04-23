@@ -20,12 +20,12 @@ class CuratoryGroupsController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def curGroups = CuratoryGroup.findAll()
-    String sortField = params._sort
-    String sortOrder = params._order?.toLowerCase()
+
+    String sortField = params.hasProperty('_sort') ? params._sort : null
+    String sortOrder = params.hasProperty('_order') ? params._order?.toLowerCase() : null
 
     if (sortField) {
       curGroups = curGroups.toSorted { a, b ->
-
         if (sortOrder?.toLowerCase() == "desc")
           b[sortField].toString().toLowerCase() <=> a[sortField].toString().toLowerCase()
         else
@@ -48,14 +48,12 @@ class CuratoryGroupsController {
 
     if (params.oid || params.id) {
       curGroup = CuratoryGroup.findByUuid(params.id)
-      if (!curGroup) {
-        curGroup = CuratoryGroup.findById(params.id)
-      }
+
       if (!curGroup) {
         curGroup = genericOIDService.resolveOID(params.oid)
       }
       if (!curGroup && params.long('id')) {
-        curGroup = Org.get(params.long('id'))
+        curGroup = CuratoryGroup.get(params.long('id'))
       }
 
       if (curGroup) {
