@@ -17,7 +17,7 @@ class CuratoryGroupsController {
   def genericOIDService
   def restMappingService
 
-  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+  @Secured(['IS_AUTHENTICATED_FULLY'])
   def index() {
     def curGroups = CuratoryGroup.findAll()
 
@@ -45,7 +45,7 @@ class CuratoryGroupsController {
     render result as JSON
   }
 
-  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+  @Secured(['IS_AUTHENTICATED_FULLY'])
   def show() {
     def result = [:]
     def curGroup = null

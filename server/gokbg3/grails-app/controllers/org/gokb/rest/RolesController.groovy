@@ -15,7 +15,7 @@ class RolesController {
   def genericOIDService
   def restMappingService
 
-  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+  @Secured(['IS_AUTHENTICATED_FULLY'])
   def index() {
     Role[] roles = Role.findAll()
     String sortField = params.hasProperty('_sort') ? params._sort : null
