@@ -111,7 +111,7 @@ class Identifier extends KBComponent {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
     def namespace = null
     def identifier = null
-    def namespaces = IdentifierNamespace.findAllByValue(ns.toLowerCase())
+    def namespaces = IdentifierNamespace.findAllByValueIlike(ns)
 
     switch ( namespaces.size() ) {
       case 0:
@@ -129,7 +129,14 @@ class Identifier extends KBComponent {
 
     if (namespace) {
       def norm_id = Identifier.normalizeIdentifier(value)
-      identifier = Identifier.findByNamespaceAndNormname(namespace,norm_id)
+      def existing = Identifier.executeQuery("from Identifier where normname = ? and namespace = ?",[norm_id, namespace])
+
+      if ( existing.size() == 1 ) {
+        identifier = existing[0]
+      }
+      else if ( existing.size() > 1 ) {
+        log.error("Conflicting identifiers found: ${existing}")
+      }
 
       def final_val = value
       if (!identifier) {
@@ -137,7 +144,17 @@ class Identifier extends KBComponent {
           final_val = final_val.replaceAll("x","X")
         }
         log.debug("Creating new Identifier ${namespace}:${value} ..")
-        identifier = new Identifier(namespace:namespace, value:final_val, normname:norm_id).save(flush:true)
+        try {
+          identifier = new Identifier(namespace:namespace, value:final_val, normname: norm_id).save(flush:true, failOnError:true)
+        }
+        catch (Exception e) {
+          def dupe = Identifier.executeQuery("from Identifier where normname = ? and namespace = ?",[norm_id, namespace])
+
+          if (dupe.size() == 1) {
+            identifier = dupe[0]
+          }
+          log.error("Thread synchronization failed for ID ${dupe} ...")
+        }
       }
     }
 

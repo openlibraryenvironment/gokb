@@ -22,8 +22,9 @@ class UsersTestSpec extends AbstractAuthSpec {
   private RestBuilder rest = new RestBuilder()
 
   void "test GET /rest/users/{id} without token"() {
+    def urlPath = getUrlPath()
     when:
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/users/$altUser.id") {
+    RestResponse resp = rest.get("${urlPath}/rest/users/$altUser.id") {
       // headers
       accept('application/json')
     }
@@ -32,10 +33,11 @@ class UsersTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/users/{id} with valid token"() {
+    def urlPath = getUrlPath()
     // use the bearerToken to read /rest/users
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/users/$delUser.id?_embed=id,organisations,roles&_include=id,name") {
+    RestResponse resp = rest.get("${urlPath}/rest/users/$delUser.id?_embed=id,organisations,roles&_include=id,name") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -46,9 +48,10 @@ class UsersTestSpec extends AbstractAuthSpec {
   }
 
   void "test DELETE /rest/users/{id} with valid token"() {
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.delete("http://localhost:$serverPort/gokb/rest/users/$delUser.id") {
+    RestResponse resp = rest.delete("${urlPath}/rest/users/$delUser.id") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -58,10 +61,11 @@ class UsersTestSpec extends AbstractAuthSpec {
   }
 
   void "test PUT /rest/users/{id}"() {
+    def urlPath = getUrlPath()
     // use the bearerToken to write to /rest/user
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("http://localhost:$serverPort/gokb/rest/users/$altUser.id") {
+    RestResponse resp = rest.put("${urlPath}/rest/users/$altUser.id") {
       // headers
       accept('application/json')
       contentType('application/json')

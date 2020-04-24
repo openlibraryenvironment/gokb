@@ -15,8 +15,9 @@ class ProfileTestSpec extends AbstractAuthSpec {
   private RestBuilder rest = new RestBuilder()
 
   void "test GET /rest/profile without token"() {
+    def urlPath = getUrlPath()
     when:
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/profile") {
+    RestResponse resp = rest.get("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
     }
@@ -25,10 +26,11 @@ class ProfileTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/profile with valid token"() {
+    def urlPath = getUrlPath()
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/profile") {
+    RestResponse resp = rest.get("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -40,11 +42,12 @@ class ProfileTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/profile with stale token"() {
+    def urlPath = getUrlPath()
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
     // logout => invalidate token on the server
-    RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/logout") {
+    RestResponse resp = rest.post("${urlPath}/rest/logout") {
       // headers
       accept('application/json')
       contentType('application/json')
@@ -53,7 +56,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     }
     resp.status == 200
     // reuse the stale token
-    resp = rest.get("http://localhost:$serverPort/gokb/rest/profile") {
+    resp = rest.get("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -61,7 +64,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 401 // Unauthorized
     when:
-    resp = rest.get("http://localhost:$serverPort/gokb/rest/profile") {
+    resp = rest.get("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
     }
@@ -70,10 +73,11 @@ class ProfileTestSpec extends AbstractAuthSpec {
   }
 
   void "test PUT /rest/profile"() {
+    def urlPath = getUrlPath()
     // use the bearerToken to write to /rest/profile/update
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("http://localhost:$serverPort/gokb/rest/profile") {
+    RestResponse resp = rest.put("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
       contentType('application/json')
@@ -106,9 +110,10 @@ class ProfileTestSpec extends AbstractAuthSpec {
   }
 
   void "test DELETE /rest/profile/"() {
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken('tempUser')
-    RestResponse resp = rest.delete("http://localhost:$serverPort/gokb/rest/profile/") {
+    RestResponse resp = rest.delete("${urlPath}/rest/profile/") {
       // headers
       accept('application/json')
       contentType('application/json')
