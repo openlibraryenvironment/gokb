@@ -1,6 +1,5 @@
 package gokbg3.rest
 
-
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
@@ -78,27 +77,27 @@ class ProfileTestSpec extends AbstractAuthSpec {
       contentType('application/json')
       auth("Bearer $accessToken")
       body('{"id":8,"username":"admin","displayName":null,"email":"admin@localhost","curatoryGroups":[],"enabled":true,"accountExpired":false,"accountLocked":false,"passwordExpired":false,"defaultPageSize":10,' +
-        '"roles":[' +
-        '{' +
-        '"authority":"ROLE_CONTRIBUTOR",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_USER",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_EDITOR",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_ADMIN",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_API",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_SUPERUSER",' +
-        '}' +
-        ']' +
-        '}')
+              '"roles":[' +
+              '{' +
+              '"authority":"ROLE_CONTRIBUTOR",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_USER",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_EDITOR",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_ADMIN",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_API",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_SUPERUSER",' +
+              '}' +
+              ']' +
+              '}')
     }
     then:
     resp.status == 200

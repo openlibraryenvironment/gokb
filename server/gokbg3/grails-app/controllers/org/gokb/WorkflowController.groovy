@@ -1004,7 +1004,10 @@ class WorkflowController {
 
           if ( ohe.to.contains(old_ti) ) {
 
-            new_to = ohe.to.removeIf { it == old_ti }.add(new_ti)
+            ohe.to.removeIf { it == old_ti }
+            ohe.to.add(new_ti)
+
+            new_to = ohe.to
 
             ohe.from.each { hep ->
               def he_match = ComponentHistoryEvent.executeQuery("select che from ComponentHistoryEvent as che where exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :fromPart) AND exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :toPart)",[fromPart:hep,toPart:new_ti])
@@ -1018,7 +1021,10 @@ class WorkflowController {
           }
           else if ( ohe.from.contains(old_ti) ) {
 
-            new_from = ohe.from.removeIf { it == old_ti }.add(new_ti)
+            ohe.from.removeIf { it == old_ti }
+            ohe.from.add(new_ti)
+
+            new_from = ohe.from
 
             ohe.from.each { hep ->
               def he_match = ComponentHistoryEvent.executeQuery("select che from ComponentHistoryEvent as che where exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :fromPart) AND exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :toPart)",[fromPart:new_ti,toPart:hep])
@@ -1035,7 +1041,7 @@ class WorkflowController {
             def he = new ComponentHistoryEvent()
 
             if ( ohe.date ) {
-              he.eventDate = sdf.parse(ohe.date);
+              he.eventDate = ohe.date;
             }
 
             he.save(flush:true, failOnError:true);

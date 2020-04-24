@@ -804,18 +804,19 @@ class AjaxSupportController {
 
     withFormat {
       html {
-        response.setContentType('text/plain')
-        def outs = response.outputStream
+        def resp = null
         if (errors.size() == 0) {
-          outs << params.value
+          resp = params.value
         }
         else {
-          def resp = errors[params.name] ? errors[params.name][0].toString() : errors['global'][0]
+          def error_message = errors[params.name] ? errors[params.name][0].toString() : errors['global'][0]
+          log.debug("Error msg: ${error_message}")
+
+          resp = error_message
+          response.setContentType('text/plain;charset=UTF-8')
           response.status = 400
-          outs << resp
+          render resp
         }
-        outs.flush()
-        outs.close()
       }
       json {
         if (errors) {
