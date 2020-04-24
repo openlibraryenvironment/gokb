@@ -1,12 +1,10 @@
 package gokbg3.rest
 
-import grails.gorm.transactions.Transactional
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
-import spock.lang.Ignore
-import spock.lang.Specification
+import org.gokb.cred.User
 
 @Integration
 @Rollback
@@ -107,7 +105,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
 
   void "test DELETE /rest/profile/"() {
     when:
-    String accessToken = getAccessToken('tempUser')
+    String accessToken = getAccessToken('tempUser', 'tempUser')
     RestResponse resp = rest.delete("http://localhost:$serverPort/gokb/rest/profile/") {
       // headers
       accept('application/json')
@@ -116,5 +114,6 @@ class ProfileTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
+    User.findByUsername('tempUser') == null
   }
 }

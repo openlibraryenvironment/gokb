@@ -96,7 +96,6 @@ dependencies {
     //  and https://github.com/grails-plugins/grails-rest-client-builder
     compile 'org.grails:grails-datastore-rest-client'
 
-
     console "org.grails:grails-console"
     profile "org.grails.profiles:web"
     runtime "org.glassfish.web:el-impl:2.1.2-b03"
@@ -115,6 +114,7 @@ dependencies {
     testRuntime "org.seleniumhq.selenium:selenium-remote-driver:3.141.59"
     testRuntime "org.seleniumhq.selenium:selenium-api:3.141.59"
     testRuntime 'com.bertramlabs.plugins:less-asset-pipeline:2.14.10'
+    testRuntime "org.apache.httpcomponents:httpclient"
 }
 
 bootRun {
