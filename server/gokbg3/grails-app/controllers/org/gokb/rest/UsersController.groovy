@@ -204,23 +204,4 @@ class UsersController {
 
     return newUserData
   }
-
-  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
-  @Transactional
-  def register() {
-    RegisterCommand command = new RegisterCommand()
-    command.setUsername(request.JSON.username)
-    command.setEmail(request.JSON.email)
-    command.setPassword(request.JSON.password)
-
-    def user = uiRegistrationCodeStrategy.createUser(command)
-    String salt = saltSource instanceof NullSaltSource ? null : command.username
-    RegistrationCode registrationCode = uiRegistrationCodeStrategy.register(user, command.password, salt)
-
-    if (registrationCode == null || registrationCode.hasErrors()) {
-      // null means problem creating the user
-      flash.error = message(code: 'spring.security.ui.register.miscError')
-    }
-    return command as JSON
-  }
 }

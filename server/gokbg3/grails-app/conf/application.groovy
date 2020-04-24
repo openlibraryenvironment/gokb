@@ -98,7 +98,6 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
  // [pattern: '/rest/roles',              access: ['permitAll']],
   //[pattern: '/rest/curatoryGroups',     access: ['permitAll']],
   //[pattern: '/rest/curatoryGroups/**',  access: ['permitAll']],
-  [pattern: '/rest/register',           access: ['permitAll']],
   [pattern: '/rest/refdata',            access: ['permitAll']],
   [pattern: '/rest/refdata/**',         access: ['permitAll']],
   [pattern: '/rest/**',                 access: ['ROLE_USER', 'IS_AUTHENTICATED_FULLY']],
