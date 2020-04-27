@@ -939,4 +939,17 @@ class TitleLookupService {
     // was identifier.identifiedComponents
     KBComponent.executeQuery('select DISTINCT c.fromComponent from Combo as c where c.toComponent = :id and c.type.value = :tp and c.fromComponent.status <> :del',[id:identifier,tp:'KBComponent.Ids', del: status_deleted]);
   }
+
+  def compareIdentifierMaps(ids_one, ids_two) {
+    def result = true
+
+    ids_one.each { ido ->
+      ids_two.each { idt ->
+        if (ido.type == idt.type && ido.value != idt.value) {
+          result = false
+        }
+      }
+    }
+    result
+  }
 }
