@@ -18,9 +18,14 @@ import org.gokb.cred.UserOrganisationMembership
 import org.gokb.cred.UserRole
 import org.gokb.cred.WebHookEndpoint
 import org.gokb.refine.RefineProject
+import org.gokb.rest.UsersController
+import org.springframework.beans.factory.annotation.Autowired
 
 @Transactional
 class UserProfileService {
+
+  @Autowired
+  UsersController usersController
 
   def delete(User user) {
     def result = [:]
@@ -64,7 +69,7 @@ class UserProfileService {
     } else {
       log.error("Could not find either the user object for deletion (${params.id}) or the placeholder user")
       result.result = "ERROR"
-      result.errors = user_to_delete.errors
+      result.errors = user_to_delete?.errors
     }
     return result
   }
@@ -153,6 +158,7 @@ class UserProfileService {
         if (user.validate()) {
           user.save(flush: true)
           result.message = "User profile sucessfully updated."
+          result.data = usersController.collectUserProps(user)
         } else {
           result.result = "ERROR"
           result.message = "There have been errors saving the user object."
@@ -164,6 +170,92 @@ class UserProfileService {
       result.result = "ERROR"
       response.setStatus(400)
       result.message = "Missing update payload or wrong user id!"
+    }
+    return result
+  }
+
+  def create(def data) {
+    User user = new User()
+    def result = [data:[],
+                  result: 'OK']
+    def errors = []
+    def skippedCG = false
+    def reqBody = data
+
+    reqBody.each { field, val ->
+      if (val && user.hasProperty(field)) {
+        // roles have to be treated separately, as they're not a user property
+        if (field != 'curatoryGroups') {
+          user."${field}" = val
+        } else {
+          def curGroups = []
+          val.each { cg ->
+            def cg_obj = null
+            if (cg.uuid?.trim()) {
+              cg_obj = CuratoryGroup.findByUuid(cg.uuid)
+            }
+
+            if (!cg_obj && cg.id) {
+              cg_obj = cg.id instanceof String ? genericOIDService.resolveOID(cg.id) : CuratoryGroup.get(cg.id)
+            }
+
+            if (cg_obj) {
+              curGroups.add(cg_obj)
+            } else {
+              log.debug("CuratoryGroup ${cg} not found!")
+              errors << ['message': 'Could not find referenced curatory group!', 'baddata': cg]
+            }
+          }
+          log.debug("New CuratoryGroups: ${curGroups}")
+
+          if (errors.size() > 0) {
+            result.message = "There have been errors updating the users curatory groups."
+            result.errors = errors
+            response.setStatus(400)
+          } else {
+            user.curatoryGroups.addAll(curGroups)
+            user.curatoryGroups.retainAll(curGroups)
+          }
+        }
+      }
+      if (field == "roles") {
+        // scan data
+        Set<Role> newRoles = new HashSet<Role>()
+        val.each { value ->
+          Role newRole = Role.findById(value.id)
+          if (!newRole)
+            newRole = Role.findByAuthority(value.authority)
+          if (newRole) {
+            newRoles.add(newRole)
+          } else {
+            errors << ['message': 'Could not find referenced role!', 'baddata': value.authority]
+            log.error("Role Autority '$value.authority' is unknown!")
+          }
+        }
+        // alter previous role set
+        Set<Role> previousRoles = user.getAuthorities()
+        Role.findAll().each { role ->
+          if (newRoles.contains(role)) {
+            if (!previousRoles.contains(role)) {
+              UserRole.create(user, role, true)
+            }
+          } else if (previousRoles.contains(role)) {
+            UserRole.remove(user, role, true)
+          }
+        }
+      }
+    }
+
+    if (errors.size() == 0) {
+      if (user.validate()) {
+        user.save(flush: true)
+        result.message = "User profile sucessfully created."
+        result.data = usersController.collectUserProps(user)
+      } else {
+        result.result = "ERROR"
+        result.message = "There have been errors saving the user object."
+        result.errors = user.errors
+      }
     }
     return result
   }

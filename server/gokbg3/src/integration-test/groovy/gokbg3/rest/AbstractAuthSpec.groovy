@@ -6,8 +6,10 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.WebApplicationContext
+import groovy.util.logging.Slf4j
 import spock.lang.Specification
 
+@Slf4j
 class AbstractAuthSpec extends Specification {
 
   GrailsApplication grailsApplication
@@ -21,16 +23,16 @@ class AbstractAuthSpec extends Specification {
   private String refreshToken = null
   private String activeUser = "admin"
 
-  private String getAccessToken(def username = 'admin') {
+  private String getAccessToken(String username = 'admin', String password = 'admin') {
     if (accessToken == null) {
-      login(username)
+      login(username, password)
     }
     return accessToken
   }
 
-  private String getRefreshToken(def username = 'admin') {
+  private String getRefreshToken(def username = 'admin', String password = 'admin') {
     if (refreshToken == null) {
-      login(username)
+      login(username, password)
     }
     return refreshToken
   }
@@ -47,10 +49,11 @@ class AbstractAuthSpec extends Specification {
       accept('application/json')
       contentType('application/json')
       // body
-      body([username: username, password:username] as JSON)
+      body([username: username, password: password] as JSON)
     }
     accessToken = resp.json?.access_token ?: accessToken
     refreshToken = resp.json?.refresh_token ?: refreshToken
     activeUser = username
+    log.debug(resp.toString())
   }
 }

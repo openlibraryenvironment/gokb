@@ -50,7 +50,7 @@ class CuratoryGroup extends KBComponent {
   }
 
   public String getRestPath() {
-    return "/groups";
+    return "/curatoryGroups";
   }
 
   @Override
