@@ -148,7 +148,7 @@ class RestMappingService {
           }
         }
       } else {
-        log.info("$p.name is ignored")
+        log.debug("$p.name is ignored")
       }
     }
     // Handle combo properties
