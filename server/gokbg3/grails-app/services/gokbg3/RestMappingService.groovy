@@ -63,6 +63,9 @@ class RestMappingService {
     def embed_active = params['_embed']?.split(',') ?: []
     def include_list = params['_include']?.split(',') ?: null
     def exclude_list = params['_exclude']?.split(',') ?: null
+    if (include_list && exclude_list) {
+      exclude_list.removeAll(include_list)
+    }
     def base = grailsApplication.config.serverURL + "/rest"
     def jsonMap = null
     def is_curator = true
@@ -76,7 +79,7 @@ class RestMappingService {
       result['_links']['self'] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
 
       if (obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0) {
-        is_curator = user?.curatoryGroups?.id?.intersect(obj.curatoryGroups.id)
+        is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
       }
 
       if (is_curator || user?.isAdmin()) {
@@ -96,17 +99,12 @@ class RestMappingService {
     }
 
     result['id'] = obj.id
-    def ignoreProperties = []
-    ignoreProperties.addAll(defaultIgnore)
-    if (jsonMap)
-      ignoreProperties.addAll(jsonMap.ignore)
-    if (exclude_list)
-      ignoreProperties.addAll(exclude_list)
-    if (include_list)
-      ignoreProperties.removeAll(include_list)
 
     pent.getPersistentProperties().each { p ->
-      if (ignoreProperties.contains(p.name)) {
+      if (!defaultIgnore.contains(p.name)
+        && (!jsonMap || !jsonMap.ignore.contains(p.name))
+        && (!include_list || include_list.contains(p.name))
+        && (!exclude_list || !exclude_list.contains(p.name))) {
         if (p instanceof Association) {
           if (p instanceof ManyToOne || p instanceof OneToOne) {
             // Set ref property
@@ -149,8 +147,8 @@ class RestMappingService {
               break;
           }
         }
-      }else {
-        log.info ("${p.name} got ignored")
+      } else {
+        log.info("$p.name is ignored")
       }
     }
     // Handle combo properties
