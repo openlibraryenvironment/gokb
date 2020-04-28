@@ -6,14 +6,10 @@ import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
 import org.gokb.cred.Identifier
 import org.gokb.cred.IdentifierNamespace
-import org.springframework.web.context.WebApplicationContext
 
 @Integration
 @Rollback
 class IdentifierTestSpec extends AbstractAuthSpec {
-
-  @Autowired
-  WebApplicationContext ctx
 
   private RestBuilder rest = new RestBuilder()
 
@@ -27,9 +23,10 @@ class IdentifierTestSpec extends AbstractAuthSpec {
 
   void "test /rest/identifiers/<id> without token"() {
     def test_id = Identifier.findByValue("1234-4567")
+    def urlPath = getUrlPath()
 
     when:
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/identifiers/${test_id.id}") {
+    RestResponse resp = rest.get("${urlPath}/rest/identifiers/${test_id.id}") {
       // headers
       accept('application/json')
     }
@@ -39,10 +36,11 @@ class IdentifierTestSpec extends AbstractAuthSpec {
 
   void "test /rest/identifiers/<id> with valid token"() {
     def test_id = Identifier.findByValue("1234-4567")
+    def urlPath = getUrlPath()
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/identifiers/${test_id.id}") {
+    RestResponse resp = rest.get("${urlPath}/rest/identifiers/${test_id.id}") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")

@@ -1443,6 +1443,41 @@ class IntegrationController {
             result.errors = title_validation.errors
           }
           else {
+            def title_class_name = null
+
+            if (titleObj.type) {
+              switch (titleObj.type) {
+                case "serial":
+                case "Serial":
+                case "Journal":
+                case "journal":
+                  title_class_name = "org.gokb.cred.JournalInstance"
+                  break;
+                case "monograph":
+                case "Monograph":
+                case "Book":
+                case "book":
+                  title_class_name = "org.gokb.cred.BookInstance"
+                  break;
+                case "Database":
+                case "database":
+                  title_class_name = "org.gokb.cred.DatabaseInstance"
+                  break;
+                default:
+                  log.warn("Missing type for title!")
+                  break;
+              }
+            }
+
+            if (!title_class_name) {
+              log.error("Missing or unknown publication type: ${titleObj.type}")
+              result.result="ERROR"
+              result.message="Could not identify the publication type (serial or monograph) of title ${titleObj.name}."
+              result.baddata=titleObj
+
+              return result
+            }
+
             try {
               def title = titleLookupService.find(
                 titleObj.name,
@@ -1450,8 +1485,7 @@ class IntegrationController {
                 titleObj.identifiers,
                 user,
                 null,
-                titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                  (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
+                title_class_name,
                 titleObj.uuid
               );  // project
 
@@ -1505,20 +1539,29 @@ class IntegrationController {
                       def cont = true
 
                       jhe.from.each { fhe ->
+                        def p = null
 
-                        def p = titleLookupService.find(
-                          fhe.title,
-                          null,
-                          fhe.identifiers,
-                          user,
-                          null,
-                          titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                            (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
-                          fhe.uuid
-                        );
+                        if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
+                          log.debug("Setting main title ${title} as participant")
+                          p = title
+                        }
+                        else {
+                          log.debug("Looking up connected title ${fhe} as participant")
+                          p = titleLookupService.find(
+                            fhe.title,
+                            null,
+                            fhe.identifiers,
+                            user,
+                            null,
+                            title_class_name,
+                            fhe.uuid
+                          );
+                        }
 
                         if ( p && !p.hasErrors() ) {
-                          componentUpdateService.ensureCoreData(p, fhe, fullsync)
+                          if ( p != title ) {
+                            componentUpdateService.ensureCoreData(p, fhe, fullsync)
+                          }
                           inlist.add(p);
                         }
                         else {
@@ -1528,19 +1571,29 @@ class IntegrationController {
 
                       jhe.to.each { fhe ->
 
-                        def p =  titleLookupService.find(
-                          fhe.title,
-                          null,
-                          fhe.identifiers,
-                          user,
-                          null,
-                          titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                            (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
-                          fhe.uuid
-                        );
+                        def p = null
+
+                        if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
+                          log.debug("Setting main title ${title} as participant")
+                          p = title
+                        }
+                        else {
+                          log.debug("Looking up connected title ${fhe} as participant")
+                          p = titleLookupService.find(
+                            fhe.title,
+                            null,
+                            fhe.identifiers,
+                            user,
+                            null,
+                            title_class_name,
+                            fhe.uuid
+                          );
+                        }
 
                         if ( p && !p.hasErrors() && !inlist.contains(p) ) {
-                          componentUpdateService.ensureCoreData(p, fhe, fullsync)
+                          if ( p != title ) {
+                            componentUpdateService.ensureCoreData(p, fhe, fullsync)
+                          }
                           outlist.add(p);
                         }
                         else {
@@ -1620,7 +1673,7 @@ class IntegrationController {
                     }
                   }
                 }
-                if( title.class.name == "org.gokb.cred.BookInstance" && (titleObj.type == 'Book' || titleObj.type == 'Monograph') ){
+                if( title_class_name == 'org.gokb.cred.BookInstance' ){
 
                   log.debug("Adding Monograph fields for ${title.class.name}: ${title}")
                   def mg_change = addMonographFields(title, titleObj)
@@ -1840,7 +1893,7 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def getJobInfo() {
     def result = [ 'result' : 'OK', 'params' : params ]
-    Job job = concurrencyManagerService.jobs.containsKey(params.int('id')) ? concurrencyManagerService.jobs[params.int('id')] : null
+    Job job = concurrencyManagerService?.jobs?.containsKey(params.int('id')) ? concurrencyManagerService.jobs[params.int('id')] : null
 
     if ( job ) {
       log.debug("${job}")

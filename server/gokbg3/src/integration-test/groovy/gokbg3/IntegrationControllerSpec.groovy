@@ -10,7 +10,10 @@ import spock.lang.*
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.converters.JSON
+import groovy.json.JsonSlurper
 import grails.core.GrailsApplication
+import org.springframework.core.io.ClassPathResource
+import org.springframework.core.io.Resource
 import org.springframework.web.context.WebApplicationContext
 import grails.transaction.Rollback
 import java.time.LocalDate
@@ -462,6 +465,7 @@ class IntegrationControllerSpec extends Specification {
           ]
         ],
         "name" : "Test Book 1",
+        "type": "monograph",
         "editionNumber" : "4",
         "volumeNumber" : "3",
         "firstAuthor" : "J. Smith",
@@ -559,5 +563,58 @@ class IntegrationControllerSpec extends Specification {
       def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
       id_num.size() == 1
       matching_with_class_one_ids?.size() == 1
+  }
+
+  void "Test crossReferenceTitle with wrong type"() {
+    when: "Caller asks for this record to be cross referenced"
+      def book_record = [
+        "identifiers" : [
+          [
+            "type" : "isbn",
+            "value" : "987-13-12324-23-8"
+          ]
+        ],
+        "name" : "Test Book Missing Type"
+      ]
+
+      RestResponse respBook = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
+        auth('admin', 'admin')
+        body(book_record as JSON)
+      }
+
+    then: "Item is rejected"
+      respBook.json.result == 'ERROR'
+  }
+
+  void "Test crossReferenceTitle multithreading"() {
+    when: "Caller asks for this list of titles to be cross referenced"
+      Resource journals = new ClassPathResource("/karger_journals_test.json")
+      def jsonSlurper = new JsonSlurper()
+      def journals_json = jsonSlurper.parse(journals.getFile())
+
+      RestResponse respOne = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle?async=true") {
+        auth('admin', 'admin')
+        body(journals_json as JSON)
+      }
+
+      RestResponse respTwo = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle?") {
+        auth('admin', 'admin')
+        body(journals_json as JSON)
+      }
+
+    then: "Both calls are successful"
+      respOne.json.job_id != null
+      respTwo.json.results.size() > 0
+    expect: "Find item by ID can now locate that item and the discriminator is set correctly"
+      journals_json.each {
+        def ids = []
+        it.identifiers.each { idr ->
+          if (idr.type == 'zdb') {
+            ids << [ns: idr.type, value: idr.value]
+          }
+        }
+        def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
+        matching_with_class_one_ids?.size() == 1
+      }
   }
 }

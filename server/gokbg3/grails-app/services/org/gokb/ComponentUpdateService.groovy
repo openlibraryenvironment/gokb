@@ -28,8 +28,7 @@ class ComponentUpdateService {
 
     // Set the name.
     def hasChanged = false
-
-    component.lock()
+    
     component.refresh()
 
     if(!component.name && data.name) {
@@ -63,7 +62,7 @@ class ComponentUpdateService {
           else {
             def norm_id = Identifier.normalizeIdentifier(ci.value)
             def ns = IdentifierNamespace.findByValueIlike(ci.type)
-            canonical_identifier = Identifier.findByNamespaceAndNormname(ns, norm_id)
+            canonical_identifier = Identifier.findByNamespaceAndNormnameIlike(ns, norm_id)
           }
 
           log.debug("Checking identifiers of component ${component.id}")
@@ -252,7 +251,7 @@ class ComponentUpdateService {
     if (hasChanged) {
       component.lastSeen = new Date().getTime()
     }
-    component.save(flush:true)
+    component.save()
 
     hasChanged
   }

@@ -3,17 +3,19 @@ package gokbg3.rest
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
-import spock.lang.Ignore
-import spock.lang.Specification
+import grails.transaction.Rollback
+import org.gokb.cred.User
 
 @Integration
+@Rollback
 class ProfileTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest = new RestBuilder()
 
-  void "test /rest/profile without token"() {
+  void "test GET /rest/profile without token"() {
+    def urlPath = getUrlPath()
     when:
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/profile") {
+    RestResponse resp = rest.get("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
     }
@@ -21,26 +23,29 @@ class ProfileTestSpec extends AbstractAuthSpec {
     resp.status == 401 // Unauthorized
   }
 
-  void "test /rest/profile with valid token"() {
+  void "test GET /rest/profile with valid token"() {
+    def urlPath = getUrlPath()
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/profile") {
+    RestResponse resp = rest.get("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
     }
     then:
     resp.status == 200 // OK
-    resp.json.email == "admin@localhost"
+    resp.json.data.email == "admin@localhost"
+    resp.json.data._links.self.href == "rest/profile"
   }
 
-  void "test /rest/profile with stale token"() {
+  void "test GET /rest/profile with stale token"() {
+    def urlPath = getUrlPath()
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
     // logout => invalidate token on the server
-    RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/logout") {
+    RestResponse resp = rest.post("${urlPath}/rest/logout") {
       // headers
       accept('application/json')
       contentType('application/json')
@@ -49,7 +54,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     }
     resp.status == 200
     // reuse the stale token
-    resp = rest.get("http://localhost:$serverPort/gokb/rest/profile") {
+    resp = rest.get("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -57,7 +62,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 401 // Unauthorized
     when:
-    resp = rest.get("http://localhost:$serverPort/gokb/rest/profile") {
+    resp = rest.get("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
     }
@@ -65,48 +70,49 @@ class ProfileTestSpec extends AbstractAuthSpec {
     resp.status == 401 // Unauthorized
   }
 
-  //@Ignore
-  void "test /rest/profile/update"() {
+  void "test PUT /rest/profile"() {
+    def urlPath = getUrlPath()
     // use the bearerToken to write to /rest/profile/update
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("http://localhost:$serverPort/gokb/rest/profile/") {
+    RestResponse resp = rest.put("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
       body('{"id":8,"username":"admin","displayName":null,"email":"admin@localhost","curatoryGroups":[],"enabled":true,"accountExpired":false,"accountLocked":false,"passwordExpired":false,"defaultPageSize":10,' +
-        '"roles":[' +
-        '{' +
-        '"authority":"ROLE_CONTRIBUTOR",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_USER",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_EDITOR",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_ADMIN",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_API",' +
-        '},' +
-        '{' +
-        '"authority":"ROLE_SUPERUSER",' +
-        '}' +
-        ']' +
-        '}')
+              '"roles":[' +
+              '{' +
+              '"authority":"ROLE_CONTRIBUTOR",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_USER",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_EDITOR",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_ADMIN",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_API",' +
+              '},' +
+              '{' +
+              '"authority":"ROLE_SUPERUSER",' +
+              '}' +
+              ']' +
+              '}')
     }
     then:
     resp.status == 200
   }
 
   void "test DELETE /rest/profile/"() {
-    // use the bearerToken to write to /rest/profile/update
+    def urlPath = getUrlPath()
     when:
+
     String accessToken = getAccessToken('tempUser')
-    RestResponse resp = rest.delete("http://localhost:$serverPort/gokb/rest/profile/") {
+    RestResponse resp = rest.delete("${urlPath}/rest/profile/") {
       // headers
       accept('application/json')
       contentType('application/json')
@@ -114,5 +120,6 @@ class ProfileTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
+    User.findByUsername('tempUser') == null
   }
 }

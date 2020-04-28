@@ -28,9 +28,10 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages/<id> without token"() {
     def pack = Package.findByName("TestPack")
+    def urlPath = getUrlPath()
 
     when:
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/packages/${pack.id}") {
+    RestResponse resp = rest.get("${urlPath}/rest/packages/${pack.id}") {
       // headers
       accept('application/json')
     }
@@ -40,11 +41,12 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   void "test /rest/packages with valid token"() {
     def pack = Package.findByName("TestPack")
+    def urlPath = getUrlPath()
 
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/packages/${pack.id}") {
+    RestResponse resp = rest.get("${urlPath}/rest/packages/${pack.id}") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -57,11 +59,12 @@ class PackageTestSpec extends AbstractAuthSpec {
   void "test /rest/packages update name"() {
     def pack = Package.findByName("TestPack")
     def upd_body = [name: 'UpdPack']
+    def urlPath = getUrlPath()
 
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("http://localhost:$serverPort/gokb/rest/packages/${pack.id}") {
+    RestResponse resp = rest.put("${urlPath}/rest/packages/${pack.id}") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -76,11 +79,12 @@ class PackageTestSpec extends AbstractAuthSpec {
     def pack = Package.findByName("UpdPack")
     def cg = CuratoryGroup.findByName("cgtest1")
     def upd_body = [curatoryGroups:[cg.id]]
+    def urlPath = getUrlPath()
 
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("http://localhost:$serverPort/gokb/rest/packages/${pack.id}") {
+    RestResponse resp = rest.put("${urlPath}/rest/packages/${pack.id}") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
