@@ -66,7 +66,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200 // OK
-    resp.json.data[0].username == "admin"
+    resp.json.data[1].username == "admin"
   }
 
   void "test DELETE /rest/users/{id} with valid token"() {
@@ -127,7 +127,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     def checkUser = User.findById(altUser.id)
-    checkUser.enabled == false
+    !checkUser.enabled
   }
 
   void "test POST /rest/users"() {
