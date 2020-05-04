@@ -107,6 +107,43 @@ class ProfileTestSpec extends AbstractAuthSpec {
     resp.status == 200
   }
 
+  void "test PATCH /rest/profile"() {
+    def urlPath = getUrlPath()
+    // use the bearerToken to write to /rest/profile
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.patch("${urlPath}/rest/profile") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      auth("Bearer $accessToken")
+      body('{"id":8,"username":"badmin","displayName":null,"email":"admin@localhost","curatoryGroups":[],"enabled":true,"accountExpired":false,"accountLocked":false,"passwordExpired":false,"defaultPageSize":10,' +
+        '"roles":[' +
+        '{' +
+        '"authority":"ROLE_CONTRIBUTOR",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_USER",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_EDITOR",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_ADMIN",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_API",' +
+        '},' +
+        '{' +
+        '"authority":"ROLE_SUPERUSER",' +
+        '}' +
+        ']' +
+        '}')
+    }
+    then:
+    resp.status == 200
+  }
+
   void "test DELETE /rest/profile/"() {
     def urlPath = getUrlPath()
     when:
