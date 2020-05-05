@@ -94,16 +94,25 @@ class UsersTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{"id":' + altUser.id + ',"username":"OtherUser","displayName":null,"email":"nobody@localhost","curatoryGroups":[],"enabled":true,"accountExpired":false,"accountLocked":false,"passwordExpired":false,"defaultPageSize":15,' +
-        '"roles":[' +
+      body('{id: + altUser.id + ,' +
+        'username:"OtherUser",' +
+        'displayName:"DisplayName",' +
+        'email:"nobody@localhost",' +
+        'curatoryGroups:[],' +
+        'enabled:true,' +
+        'accountExpired:false,' +
+        'accountLocked:false,' +
+        'passwordExpired:false,' +
+        'defaultPageSize:15,' +
+        'roles:[' +
         '{' +
-        '"authority":"ROLE_CONTRIBUTOR",' +
+        'authority:"ROLE_CONTRIBUTOR",' +
         '},' +
         '{' +
-        '"authority":"ROLE_USER",' +
+        'authority:"ROLE_USER",' +
         '},' +
         '{' +
-        '"authority":"ROLE_EDITOR",' +
+        'authority:"ROLE_EDITOR",' +
         '},' +
         ']' +
         '}')

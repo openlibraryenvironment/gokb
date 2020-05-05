@@ -4,9 +4,6 @@ import gokbg3.RegisterController
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
-import grails.plugin.springsecurity.authentication.dao.NullSaltSource
-import grails.plugin.springsecurity.ui.RegisterCommand
-import grails.plugin.springsecurity.ui.RegistrationCode
 import grails.plugin.springsecurity.ui.strategy.RegistrationCodeStrategy
 import org.gokb.UserProfileService
 import org.gokb.cred.CuratoryGroup
@@ -21,8 +18,6 @@ class UsersController {
   static namespace = 'rest'
   @Autowired
   SaltSource saltSource
-  RegistrationCodeStrategy uiRegistrationCodeStrategy
-  RegisterController registerController
   UserProfileService userProfileService
   def springSecurityService
 
@@ -40,10 +35,11 @@ class UsersController {
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def index() {
+    int pageSize = springSecurityService.currentUser.defaultPageSize
     def result = [data: []]
     // parse params
     int offset = params.offset ? params.offset as int : 0
-    int limit = params.limit ? params.limit as int : 10
+    int limit = params.limit ? params.limit as int : (pageSize > 0 ? pageSize : 10)
     String[] sortFields = null, sortOrders = null
     if (params['_sort']) {
       sortFields = params['_sort'].split(',')
@@ -90,7 +86,7 @@ class UsersController {
 
     if (params.containsKey("status")) {
       hqlQuery += "${params.roleId || params.curatoryGroupId || params.name ? 'and' : ' where'}"
-      if (params.status=="true") {
+      if (params.status == "true") {
         hqlQuery += " u.enabled = true and u.accountLocked = false and u.accountExpired = false and u.passwordExpired = false"
       } else {
         hqlQuery += " (u.enabled = false or u.accountLocked = true or u.accountExpired = true or u.passwordExpired = true)"
@@ -165,6 +161,13 @@ class UsersController {
     render userProfileService.update(user, request.JSON, springSecurityService.currentUser) as JSON
   }
 
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def patch() {
+    def user = User.get(params.id)
+    render userProfileService.update(user, request.JSON, springSecurityService.currentUser) as JSON
+  }
+
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
@@ -172,7 +175,7 @@ class UsersController {
     render userProfileService.delete(delUser) as JSON
   }
 
-  @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
+/*  @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
   @Transactional
   def patch() {
     def user = User.get(params.id)
@@ -184,7 +187,7 @@ class UsersController {
     def result = [data: []]
     result.data += collectUserProps(user)
     render result as JSON
-  }
+  } */
 
   def collectUserProps(User user) {
     def base = grailsApplication.config.serverURL + "/" + namespace

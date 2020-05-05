@@ -76,31 +76,32 @@ class UserProfileService {
   }
 
   def update(User user, def data, User adminUser) {
-    def result = ['result': 'OK']
+    def result = [:]
     def immutables = ['id', 'username', 'passwordExpired', 'last_alert_check']
     def adminAttributes = ['roles', 'curatoryGroups', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
-    def errors = []
+    def error = [:]
     def reqBody = data
     if (!adminUser.isAdmin() && user != adminUser) {
-      result.message = "$adminUser.username is not allowed to change $user.username"
+      error.message = "$adminUser.username is not allowed to change $user.username"
+      result.error = error
       response.setStatus(400)
       return result
     }
     // apply changes
     reqBody.each { field, value ->
       if (value && !user.hasProperty(field)) {
-        result.message = "$field is unknown"
-        result += [status: 401]
-        return result as JSON
+        error.message = "$field is unknown"
+        result.error = error
+        return result
       }
       if (immutables.contains(field) && value != user.$field) {
-        result.message = "$field is immutable"
-        response.setStatus(400)
+        error.message = "$field is immutable"
+        result.error = error
         return result
       }
       if (adminAttributes.contains(field) && !adminUser.isAdmin()) {
-        result.message = "$adminUser.username is not allowed to change $field "
-        response.setStatus(400)
+        error.message = "$adminUser.username is not allowed to change $field "
+        result.error = error
         return result
       }
       if (field == "roles") {
@@ -114,8 +115,8 @@ class UserProfileService {
           if (newRole) {
             newRoles.add(newRole)
           } else {
-            result.message = "Role Authority $field is unknown"
-            response.setStatus(400)
+            error.message = "Role Authority $field is unknown"
+            result.error = error
             return result
           }
         }
@@ -145,21 +146,20 @@ class UserProfileService {
             curGroups.add(cg_obj)
           } else {
             log.debug("CuratoryGroup ${cg} not found!")
-            result.message = "unknown CuratoryGroup $cg"
-            response.setStatus(400)
+            error.message = "unknown CuratoryGroup $cg"
+            result.error = error
             return result
           }
         }
         user.curatoryGroups.addAll(curGroups)
         user.curatoryGroups.retainAll(curGroups)
       } else {
-        user.$field = value
+        user[field] = value
       }
     }
     user.save(flush: true)
     result.data = user
-    result.message = "$user.username changed successfully"
-    result
+    return result
   }
 
   def create(def data) {
