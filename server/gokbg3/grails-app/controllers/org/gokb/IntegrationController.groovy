@@ -1893,26 +1893,34 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def getJobInfo() {
     def result = [ 'result' : 'OK', 'params' : params ]
-    Job job = concurrencyManagerService?.jobs?.containsKey(params.int('id')) ? concurrencyManagerService.jobs[params.int('id')] : null
+    Integer id = params.int('id')
 
-    if ( job ) {
-      log.debug("${job}")
-      result.description = job.description
-      result.startTime = job.startTime
+    if (id == null){
+      result.result = "ERROR"
+      result.message = "Request is missing an id parameter."
+    }
+    else{
+      Job job = concurrencyManagerService?.jobs?.containsKey(id) ? concurrencyManagerService.jobs[id] : null
 
-      if ( job.endTime ) {
-        result.finished = true
-        result.endTime = job.endTime
-        result.job_result = job.get()
+      if ( job ) {
+        log.debug("${job}")
+        result.description = job.description
+        result.startTime = job.startTime
+
+        if ( job.endTime ) {
+          result.finished = true
+          result.endTime = job.endTime
+          result.job_result = job.get()
+        }
+        else {
+          result.finished = false
+          result.progress = job.progress
+        }
       }
       else {
-        result.finished = false
-        result.progress = job.progress
+        result.result = "ERROR"
+        result.message = "Could not find job with ID ${id}."
       }
-    }
-    else {
-      result.result = "ERROR"
-      result.message = "Could not find job with ID ${params.id}."
     }
     render result as JSON
   }
