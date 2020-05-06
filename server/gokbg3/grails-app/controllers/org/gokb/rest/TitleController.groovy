@@ -143,7 +143,20 @@ class TitleController {
     Class type = setType(params)
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
-    def publisher_name = reqBody.publisher ? (reqBody.publisher instanceof String ? reqBody.publisher : ( Org.get(reqBody.publisher)?.name ?: null )) : null
+
+    def publisher_name = null
+
+    if (reqBody.publisher) {
+      if (reqBody.publisher instanceof Collection) {
+        log.debug("Skipping publisher list")
+      }
+      else if (reqBody.publisher instanceof String) {
+        publisher_name = reqBody.publisher
+      }
+      else {
+        publisher_name = Org.get(reqBody.publisher)?.name
+      }
+    }
 
     if ( reqBody?.name?.trim() && type && type != TitleInstance ) {
       def obj = titleLookupService.find(
@@ -168,26 +181,12 @@ class TitleController {
         def jsonMap = obj.jsonMapping
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        if ( obj.validate() ) {
-          if ( errors.size() == 0 ) {
-            log.debug("No errors.. saving")
-            obj.save(flush:true)
-
-            updateCombos(obj, reqBody)
-
-            if (obj.validate()) {
-              result = restMappingService.mapObjectToJson(obj, params, user)
-            }
-            else {
-              result.result = 'ERROR'
-              response.setStatus(422)
-              errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
-            }
-          }
+        if ( !obj.hasErrors() && errors.size() == 0 ) {
+          obj.save(flush:true)
+          result = restMappingService.mapObjectToJson(obj, params, user)
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(422)
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
@@ -204,6 +203,7 @@ class TitleController {
 
     if (errors) {
       result.result = 'ERROR'
+      response.setStatus(400)
       result.error = errors
     }
 
@@ -287,10 +287,9 @@ class TitleController {
     if (!obj) {
       obj = TitleInstance.get(genericOIDService.oidToId(params.id))
     }
-    def editable = obj.isEditable()
 
     if (obj && reqBody) {
-      obj.lock()
+      def editable = obj.isEditable()
 
       if ( editable && KBComponent.has(obj, 'curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
         def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
@@ -304,7 +303,7 @@ class TitleController {
 
         def jsonMap = obj.jsonMapping
 
-        restMappingService.updateObject(obj, jsonMap, reqBody)
+        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
         if ( reqBody.status ) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -315,15 +314,27 @@ class TitleController {
           }
         }
 
-        if( obj.validate() ) {
-          if(errors.size() == 0) {
-            obj.save(flush:true)
+        if ( obj.validate() ) {
+          if ( errors.size() == 0 ) {
+            log.debug("No errors.. updating combos..")
+
+            obj = updateCombos(obj, reqBody)
+
+            if (obj.validate()) {
+              obj = obj.merge(flush:true)
+              result = restMappingService.mapObjectToJson(obj, params, user)
+            }
+            else {
+              result.result = 'ERROR'
+              response.setStatus(422)
+              errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+            }
           }
         }
         else {
           result.result = 'ERROR'
           response.setStatus(422)
-          errors.addAll(messsageService.processValidationErrors(pkg.errors, request.locale))
+          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
       else {
@@ -344,121 +355,139 @@ class TitleController {
     render result as JSON
   }
 
-  private void updateCombos(obj, reqBody) {
+  private def updateCombos(obj, reqBody) {
     log.debug("Updating title combos ..")
 
+    def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    def combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
+    def combo_expired = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_EXPIRED)
 
     if (reqBody.ids || reqBody.identifiers) {
-      def idmap = reqBody.ids ?: reqBody.identifiers
-      obj = restMappingService.updateIdentifiers(obj, idmap)
-    }
+      def id_combos = []
+      id_combos.addAll( obj.getCombosByPropertyName('ids') )
+      def new_ids = restMappingService.updateIdentifiers(obj, reqBody.ids ?: reqBody.identifiers)
 
-    if (reqBody.publisher) {
-      RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-      String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
-      String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+      new_ids.each { i ->
 
-      if (reqBody.publisher instanceof Collection) {
-        Set new_pubs = []
+        def dupe = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?",[combo_id_type, obj, i])
 
-        reqBody.publisher.each { pub ->
-          def pub_obj = null
-
-          if (pub instanceof String) {
-            pub_obj = Org.findByNameIlike(pub)
+        if (dupe.size() == 0) {
+          log.debug("No combo found, adding ID ..")
+          def newc = new Combo(fromComponent: obj, toComponent: i, status: combo_active, type: combo_id_type).save(flush:true)
+        }
+        else if (dupe.size() == 1 ) {
+          if (dupe[0].status == combo_deleted) {
+            log.debug("Matched ID combo was marked as deleted!")
           }
           else {
-            pub_obj = Org.get(pub)
-          }
-
-          if (pub_obj) {
-            new_pubs << pub_obj
-          }
-          else {
-            obj.errors.reject(
-              'component.addToList.denied.label',
-              ['publisher'] as Object[],
-              '[Could not process list of items for property {0}]'
-            )
-            obj.errors.rejectValue(
-              'publisher',
-              'component.addToList.denied.label'
-            )
-          }
-        }
-
-        if (!obj.hasErrors()) {
-          new_pubs.each { c ->
-            if (!obj.publisher.contains(c)) {
-              log.debug("Adding new publisher ${c}..")
-              obj.publisher.add(c)
-            }
-            else {
-              log.debug("Existing publisher ${c}..")
-            }
-          }
-          obj.publisher.retainAll(new_pubs)
-        }
-        log.debug("New publisher: ${obj.publisher}")
-      }
-      else {
-        log.debug("Setting new publisher..") 
-        def prov = null
-
-        try {
-          prov = Org.get(reqBody.publisher)
-        }
-        catch (Exception e) {
-          log.debug("Could not find Org ${reqBody}")
-        }
-
-        if (prov) {
-          if (!obj.publisher.contains(prov)) {
-            RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, obj.getComboTypeValue('publisher'))
-
-            def combo = null
-
-            if (propName == "toComponent") {
-              combo = new Combo(
-                type            : (type),
-                status          : combo_active,
-                toComponent     : prov,
-                fromComponent   : obj
-              )
-            } else {
-              combo = new Combo(
-                type            : (type),
-                status          : combo_active,
-                fromComponent   : prov,
-                toComponent     : obj
-              )
-            }
-
-            if (combo) {
-              combo.save(flush:true, failOnError:true)
-
-              log.debug "Added publisher ${prov.name} for '${obj.name}' -- ${obj.publisher}"
-            } else {
-              log.error("Could not create publisher Combo..")
-            }
-          }
-          else {
-            log.debug("Publisher is already set ..")
+            log.debug("Not adding duplicate ..")
           }
         }
         else {
-          obj.errors.reject(
-            'default.not.found.message',
-            ['Org', reqBody.publisher] as Object[],
-            '[{0} not found with id {1}!]'
-          )
-          obj.errors.rejectValue(
-            'publisher',
-            'default.not.found.message'
-          )
+          log.error("Multiple ID combos for ${obj} -- ${i}!")
+        }
+      }
+
+      Iterator items = id_combos.iterator();
+      Object element;
+      while (items.hasNext()) {
+        element = items.next();
+        if (!new_ids.contains(element.toComponent)) {
+          // Remove.
+          element.status = combo_deleted
         }
       }
     }
+
+    if (reqBody.publisher) {
+      def publisher_combos = []
+      publisher_combos.addAll( obj.getCombosByPropertyName('publisher') )
+      String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
+      String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+      def pubs_to_add = []
+
+      if (reqBody.publisher instanceof Collection) {
+        reqBody.publisher.each { pub ->
+          if (!pubs_to_add.collect { it.id == pub}) {
+            pubs_to_add << Org.get(pub)
+          }
+          else {
+            log.warn("Duplicate for incoming publisher ${pub}!")
+          }
+        }
+      }
+      else {
+          if (!pubs_to_add.collect { it.id == reqBody.publisher}) {
+            pubs_to_add << Org.get(reqBody.publisher)
+          }
+          else {
+            log.warn("Duplicate for incoming publisher ${reqBody.publisher}!")
+          }
+      }
+
+      pubs_to_add.each { publisher ->
+        boolean found = false
+        for ( int i=0; !found && i<publisher_combos.size(); i++) {
+          Combo pc = publisher_combos[i]
+          def idMatch = pc."${propName}".id == publisher.id
+
+          if (idMatch) {
+            found = true
+          }
+        }
+
+        if (!found) {
+
+          log.debug("Adding new combo for publisher ${publisher} (${propName}) to title ${obj} (${tiPropName})")
+
+          RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, obj.getComboTypeValue('publisher'))
+
+          def combo = null
+
+          if (propName == "toComponent") {
+            combo = new Combo(
+              type            : (type),
+              status          : combo_active,
+              toComponent     : publisher,
+              fromComponent   : obj
+            )
+          } else {
+            combo = new Combo(
+              type            : (type),
+              status          : combo_active,
+              fromComponent   : publisher,
+              toComponent     : obj
+            )
+          }
+
+          if (combo) {
+            combo.save(flush:true, failOnError:true)
+
+            log.debug "Added publisher ${publisher.name} for '${obj.name}'" +
+              (combo.startDate ? ' from ' + combo.startDate : '') +
+              (combo.endDate ? ' to ' + combo.endDate : '')
+          } else {
+            log.error("Could not create publisher Combo..")
+          }
+
+        } else {
+          log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
+        }
+      }
+
+      Iterator items = publisher_combos.iterator();
+      Object element;
+      while (items.hasNext()) {
+        element = items.next();
+        if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
+          // Remove.
+          element.delete()
+        }
+      }
+    }
+
+    return obj
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')

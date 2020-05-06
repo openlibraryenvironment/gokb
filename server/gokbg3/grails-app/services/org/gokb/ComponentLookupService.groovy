@@ -132,7 +132,7 @@ class ComponentLookupService {
     def comboProps = grailsApplication.getArtefact("Domain",cls.name).newInstance().allComboPropertyNames
     def sort = null
     def sortField = null
-    def order = params['order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
+    def order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
 
     def comboJoinStr = ""
     def comboFilterStr = ""
@@ -141,7 +141,7 @@ class ComponentLookupService {
 
     comboProps.each { c ->
 
-      if (params[c] || params['sort'] == c) {
+      if (params[c] || params['_sort'] == c) {
         boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
         log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
 
@@ -295,7 +295,7 @@ class ComponentLookupService {
         }
       }
 
-      if (params['sort'] == p.name) {
+      if (params['_sort'] == p.name) {
         sortField = "p.${p.name}"
         sort = " order by ${p.name} ${order ?: ''}"
       }

@@ -8,6 +8,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import org.gokb.cred.*
+import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -247,7 +248,7 @@ class RestMappingService {
       if (ptype == RefdataValue) {
         String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
 
-        if (catName) {
+        if (catName && catName != 'KBComponent.Status') {
           def cat = RefdataCategory.findByDesc(catName)
 
           if (linkObj in cat.values) {
@@ -284,12 +285,11 @@ class RestMappingService {
 
   public def updateIdentifiers(obj, ids) {
     log.debug("updating ids ${ids}")
-    RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
+    def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    def combo_type_id = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
     Set new_ids = []
 
-    if (obj && ids instanceof List) {
+    if (obj && ids instanceof Collection) {
       ids.each { i ->
         Identifier id = null
 
@@ -315,6 +315,7 @@ class RestMappingService {
               }
             }
             catch (grails.validation.ValidationException ve) {
+              log.debug("Could not create ID ${ns}:${i.value}")
               obj.errors.reject(
                 'identifier.value.IllegalIDForm',
                 [i.value, ns_val] as Object[],
@@ -337,6 +338,9 @@ class RestMappingService {
             )
           }
         }
+        else {
+          log.error("Could not identify ID form!")
+        }
 
         if ( id && !obj.hasErrors() ) {
           log.debug("Adding id ${id} to current set")
@@ -346,27 +350,11 @@ class RestMappingService {
           log.debug("No Identifier found for ID ${i}, or errors on object ..")
         }
       }
-
-      if (!obj.hasErrors()) {
-        new_ids.each { ni ->
-          def id_combos = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?",[ni,obj])
-
-          if (id_combos.size() == 0) {
-            log.debug("Adding new ID combo for ${ni}..")
-            def id_c = new Combo(fromComponent: obj, toComponent: ni, status: combo_active, type: combo_type_id).save(flush:true)
-          }
-          else if (id_combos[0].status == combo_deleted) {
-            log.debug("Reactivating previously deleted combo ..")
-            id_combos[0].status = combo_active
-          }
-        }
-        obj.ids.retainAll(new_ids)
-      }
-      else {
-        log.debug("Object has errors, not adding IDs ..")
-      }
     }
-    obj
+    else {
+      log.error("Object ${obj} not found or illegal id format")
+    }
+    new_ids
   }
 
   public def updateCuratoryGroups(obj, cgs) {

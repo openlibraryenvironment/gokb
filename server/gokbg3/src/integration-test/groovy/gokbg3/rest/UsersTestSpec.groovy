@@ -44,7 +44,6 @@ class UsersTestSpec extends AbstractAuthSpec {
 
   void "test GET /rest/users/{id} with valid token"() {
     def urlPath = getUrlPath()
-    // use the bearerToken to read /rest/users
     when:
     String accessToken = getAccessToken()
     RestResponse resp = rest.get("${urlPath}/rest/users/$delUser.id?_embed=id,organisations,roles&_include=id,name") {
@@ -58,17 +57,17 @@ class UsersTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/users/?{params} with valid token and parameters"() {
-    // use the bearerToken to read /rest/users
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/users/?name=m&roleId=3&_embed=id,organisations,roles&_include=id,username&_sort=username&_order=desc") {
+    RestResponse resp = rest.get("${urlPath}/rest/users/?name=m&roleId=3&_embed=id,organisations,roles&_include=id,username&_sort=username&_order=desc") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
     }
     then:
     resp.status == 200 // OK
-    resp.json.data[0].username == "admin"
+    resp.json.data[0].username == "tempUser"
   }
 
   void "test DELETE /rest/users/{id} with valid token"() {
@@ -103,14 +102,14 @@ class UsersTestSpec extends AbstractAuthSpec {
         '"authority":"ROLE_USER",' +
         '},' +
         '{' +
-        '"authority":"ROLE_EDITOR",' +
-        '},' +
+        '"authority":"ROLE_EDITOR"' +
+        '}' +
         ']' +
         '}')
     }
     then:
     resp.status == 200
-    def checkUser = User.findById(altUser.id)
+    def checkUser = User.get(altUser.id)
     !checkUser.authorities.contains(Role.findByAuthority("ROLE_ADMIN"))
     checkUser.authorities.contains(Role.findByAuthority("ROLE_USER"))
     checkUser.username != "OtherUser"
@@ -118,10 +117,10 @@ class UsersTestSpec extends AbstractAuthSpec {
   }
 
   void "test PATCH /rest/users/{id}"() {
-    // use the bearerToken to write to /rest/user
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.patch("http://localhost:$serverPort/gokb/rest/users/$altUser.id") {
+    RestResponse resp = rest.patch("${urlPath}/rest/users/$altUser.id") {
       // headers
       accept('application/json')
       contentType('application/json')
@@ -135,9 +134,10 @@ class UsersTestSpec extends AbstractAuthSpec {
   }
 
   void "test POST /rest/users"() {
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/users") {
+    RestResponse resp = rest.post("${urlPath}/rest/users") {
       // headers
       accept('application/json')
       contentType('application/json')
@@ -147,19 +147,5 @@ class UsersTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.data.username == "newerUser"
-  }
-
-  void "test POST /rest/register"() {
-    when:
-    RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/register") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      body('{"username":"newUser", "email":"nobody@localhost","password":"defaultPassword"}')
-    }
-    then:
-    resp.status == 200
-    User checkUser = User.findByUsername("newUser")
-    checkUser != null
   }
 }

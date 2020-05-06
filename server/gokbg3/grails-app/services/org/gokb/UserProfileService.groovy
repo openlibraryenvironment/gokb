@@ -27,10 +27,9 @@ class UserProfileService {
   @Autowired
   UsersController usersController
 
-  def delete(User user) {
+  def delete(User user_to_delete) {
     def result = [:]
-    log.debug("Deleting user ${user.id} ..")
-    def user_to_delete = User.get(user.id)
+    log.debug("Deleting user ${user_to_delete.id} ..")
     def del_user = User.findByUsername('deleted')
 
     if (user_to_delete && del_user) {
@@ -168,7 +167,6 @@ class UserProfileService {
     } else {
       log.debug("Missing update payload or wrong user id")
       result.result = "ERROR"
-      response.setStatus(400)
       result.message = "Missing update payload or wrong user id!"
     }
     return result
@@ -211,7 +209,6 @@ class UserProfileService {
           if (errors.size() > 0) {
             result.message = "There have been errors updating the users curatory groups."
             result.errors = errors
-            response.setStatus(400)
           } else {
             user.curatoryGroups.addAll(curGroups)
             user.curatoryGroups.retainAll(curGroups)

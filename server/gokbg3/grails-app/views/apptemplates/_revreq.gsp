@@ -17,31 +17,33 @@
         <dd>
           <g:xEditable class="ipe" owner="${d}" field="reviewRequest" />
         </dd>
-        <sec:ifAnyGranted roles="ROLE_ADMIN">
-          <dt>
-            <g:annotatedLabel owner="${d}" property="allocationLog">Allocation Log</g:annotatedLabel>
-          </dt>
-          <dd>
-            <table class="table table-bordered table-striped">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>User</th>
-                  <th>Note</th>
-                </tr>
-              </thead>
-              <tbody>
-                <g:each in="${d.allocationLog}" var="l">
+        <g:if test="${d.id}">
+          <sec:ifAnyGranted roles="ROLE_ADMIN">
+            <dt>
+              <g:annotatedLabel owner="${d}" property="allocationLog">Allocation Log</g:annotatedLabel>
+            </dt>
+            <dd>
+              <table class="table table-bordered table-striped">
+                <thead>
                   <tr>
-                    <td>${l.dateCreated}</td>
-                    <td>${l.allocatedTo}</td>
-                    <td>${l.note}</td>
+                    <th>Date</th>
+                    <th>User</th>
+                    <th>Note</th>
                   </tr>
-                </g:each>
-              </tbody>
-            </table>
-          </dd>
-        </sec:ifAnyGranted>
+                </thead>
+                <tbody>
+                  <g:each in="${d.allocationLog}" var="l">
+                    <tr>
+                      <td>${l.dateCreated}</td>
+                      <td>${l.allocatedTo}</td>
+                      <td>${l.note}</td>
+                    </tr>
+                  </g:each>
+                </tbody>
+              </table>
+            </dd>
+          </sec:ifAnyGranted>
+        </g:if>
      </dl>
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">

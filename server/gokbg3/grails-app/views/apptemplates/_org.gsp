@@ -45,22 +45,22 @@
           </a>
         </li>
         <li>
-          <a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a>
+          <a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a>
         </li>
         <li><a href="#relationships" data-toggle="tab">Relations</a></li>
         <li>
           <a href="#packages" data-toggle="tab">Packages
-            <span class="badge badge-warning"> ${d.providedPackages?.size() ?: '0'}</span>
+            <span class="badge badge-warning"> ${d.getCombosByPropertyNameAndStatus('providedPackages','Active')?.size() ?: '0'}</span>
           </a>
         </li>
         <li>
           <a href="#titles" data-toggle="tab">Published Titles
-            <span class="badge badge-warning"> ${d.publishedTitles?.size() ?: '0'}</span>
+            <span class="badge badge-warning"> ${d.getCombosByPropertyNameAndStatus('publishedTitles','Active')?.size() ?: '0'}</span>
           </a>
         </li>
         <li>
           <a href="#platforms" data-toggle="tab">Platforms
-            <span class="badge badge-warning"> ${d.providedPlatforms?.size() ?: '0'}</span>
+            <span class="badge badge-warning"> ${d.getCombosByPropertyNameAndStatus('providedPlatforms','Active')?.size() ?: '0'}</span>
           </a>
         </li>
         <li>
@@ -71,8 +71,8 @@
         </li>
         <li>
           <a href="#review" data-toggle="tab">
-            Review Tasks
-            <span class="badge badge-warning"> ${d.reviewRequests?.size() ?: '0'}</span>
+            Review Tasks (Open/Total)
+            <span class="badge badge-warning"> ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()} </span>
           </a>
         </li>
         <li>

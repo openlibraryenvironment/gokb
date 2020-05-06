@@ -56,13 +56,13 @@ class ProfileController {
 
   @Transactional
   def update() {
-    render userProfileService.update(springSecurityService.currentUser, request.JSON) as JSON
+    def user = User.get(springSecurityService.principal.id)
+    render userProfileService.update(user, request.JSON) as JSON
   }
 
   @Transactional
   def delete() {
-    userProfileService.delete(springSecurityService.currentUser)
-    def result = [:]
-    render result as JSON
+    def user = User.get(springSecurityService.principal.id)
+    render userProfileService.delete(user) as JSON
   }
 }

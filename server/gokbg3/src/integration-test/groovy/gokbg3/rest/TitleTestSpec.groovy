@@ -1,7 +1,6 @@
 package gokbg3.rest
 
 import grails.converters.JSON
-import grails.core.GrailsApplication
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
@@ -15,16 +14,10 @@ import org.gokb.cred.JournalInstance
 import org.gokb.cred.Org
 import org.gokb.cred.RefdataCategory
 import org.gokb.TitleLookupService
-import org.springframework.web.context.WebApplicationContext
 
 @Integration
 @Rollback
 class TitleTestSpec extends AbstractAuthSpec {
-
-  GrailsApplication grailsApplication
-
-  @Autowired
-  WebApplicationContext ctx
 
   @Autowired
   TitleLookupService titleLookupService
@@ -42,8 +35,9 @@ class TitleTestSpec extends AbstractAuthSpec {
   }
 
   void "test /rest/titles without token"() {
+    def urlPath = getUrlPath()
     when:
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/titles") {
+    RestResponse resp = rest.get("${urlPath}/rest/titles") {
       accept('application/json')
     }
     then:
@@ -51,10 +45,10 @@ class TitleTestSpec extends AbstractAuthSpec {
   }
 
   void "test /rest/titles/<id> with valid token"() {
-
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/titles") {
+    RestResponse resp = rest.get("${urlPath}/rest/titles") {
       accept('application/json')
       auth("Bearer $accessToken")
     }
@@ -63,6 +57,7 @@ class TitleTestSpec extends AbstractAuthSpec {
   }
 
   void "test insert new title"() {
+    def urlPath = getUrlPath()
     def issn_ns = IdentifierNamespace.findByValue('issn')
     def test_id = Identifier.findByValue('2345-2334')
     def publisher = Org.findByName("TestOrg")
@@ -79,7 +74,7 @@ class TitleTestSpec extends AbstractAuthSpec {
     ]
 
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/titles?type=journal") {
+    RestResponse resp = rest.post("${urlPath}/rest/titles?type=journal") {
       accept('application/json')
       auth("Bearer $accessToken")
       body(json_record as JSON)
@@ -92,9 +87,10 @@ class TitleTestSpec extends AbstractAuthSpec {
   }
 
   void "test journal index"() {
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/titles?type=journal&ids=1491237-5") {
+    RestResponse resp = rest.get("${urlPath}/rest/titles?type=journal&ids=1491237-5") {
       accept('application/json')
       auth("Bearer $accessToken")
     }
@@ -105,10 +101,11 @@ class TitleTestSpec extends AbstractAuthSpec {
   }
 
   void "retrieve title with embedded history"() {
+    def urlPath = getUrlPath()
     def title_id = titleLookupService.matchClassOneComponentIds([[ns: 'zdb', value:'1491237-5']])[0]
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/titles/$title_id?_embed=history") {
+    RestResponse resp = rest.get("${urlPath}/rest/titles/$title_id?_embed=history") {
       accept('application/json')
       auth("Bearer $accessToken")
     }

@@ -44,13 +44,7 @@ class TitleLookupService {
       Identifier the_id = null
       def id_def = [:]
 
-      if (id_inc instanceof Long) {
-        the_id = Identifier.get(this)
-
-        id_def.value = the_id.value
-        id_def.type = the_id.namespace.value
-      }
-      else {
+      if (id_inc instanceof Map) {
         def id_ns = id_inc.type ?: (id_inc.namespace ?: null)
 
         id_def.value = id_inc.value
@@ -60,9 +54,15 @@ class TitleLookupService {
           id_def.type = id_ns
         }
         else if (id_ns) {
-          log.debug("Handling namespace def ${is_ns}")
+          log.debug("Handling namespace def ${id_ns}")
           id_def.type = IdentifierNamespace.get(id_ns).value
         }
+      }
+      else {
+        the_id = Identifier.get(id_inc)
+
+        id_def.value = the_id.value
+        id_def.type = the_id.namespace.value
       }
       
       // is a class 1 identifier.
@@ -601,33 +601,16 @@ class TitleLookupService {
 
       // Make sure we're all saved before looking up the publisher
       if(the_title.validate()) {
-        if(title_created) {
-          the_title.save(flush:true, failOnError:true);
-        }
-        else {
-          the_title = the_title.merge(flush:true)
-        }
+
+        addIdentifiers(results.ids, the_title)
+
+        addPublisher(metadata.publisher_name, the_title)
 
         if(the_title.name.startsWith("Unknown Title")){
           the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
         }
 
-        // Add the publisher.
-
-        // addPublisher(metadata.publisher_name, the_title, user, project)
-
-        // Try and save the result now.
-        // if ( the_title.isDirty() ) {
-        //   if ( the_title.validate() ) {
-        //     the_title = the_title.merge(flush:true, failOnError:true)
-        //     log.debug("Succesfully saved TI: ${the_title.name} (This may not change the db)")
-        //   }
-        //   else {
-        //     the_title.errors.each { e ->
-        //       log.error("Problem saving title: ${e}");
-        //     }
-        //   }
-        // }
+        the_title.save(flush:true)
       }
       else {
         log.error("title validation failed for ${the_title}!")
@@ -646,6 +629,7 @@ class TitleLookupService {
       log.debug("Add publisher \"${publisher_name}\"")
       Org publisher = Org.findByName(publisher_name)
       def norm_pub_name = Org.generateNormname(publisher_name);
+      def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
       
       if ( !publisher ) {
         // Lookup using norm name.
@@ -654,14 +638,11 @@ class TitleLookupService {
         publisher = Org.findByNormname(norm_pub_name)
       }      
 
-      if ( !publisher || publisher.status.value == 'Deleted') {
+      if ( !publisher || publisher.status == status_deleted) {
         def variant_normname = GOKbTextUtils.normaliseString(publisher_name)
-        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status.value <> 'Deleted'",[variant_normname]);
+        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status != ?",[variant_normname, status_deleted]);
         if ( candidate_orgs.size() == 1 ) {
           publisher = candidate_orgs[0]
-        }
-        else if ( candidate_orgs.size() == 0 ) {
-          publisher = new Org(name:publisher_name, normname:norm_pub_name).save(flush:true, failOnError:true);
         }
         else {
           log.error("Unable to match unique pub");
@@ -682,11 +663,25 @@ class TitleLookupService {
           boolean not_first = orgs.size() > 0
 
           // Added a publisher?
-          ti.changePublisher (publisher)
+          ti.publisher.add (publisher)
         }
       }
     }
 
+    ti
+  }
+
+  private TitleInstance addIdentifiers (ids, ti) {
+    ids.each { new_id ->
+
+      def existing_combo = Combo.executeQuery("from Combo where fromComponent = ? and toComponent = ?",[ti, new_id])
+      if ( existing_combo.size() == 0 ) {
+        ti.ids.add(new_id)
+      }
+      else {
+        log.debug("Not adding duplicate ID ${new_id}..")
+      }
+    }
     ti
   }
 
