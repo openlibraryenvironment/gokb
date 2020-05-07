@@ -158,14 +158,16 @@ class UsersController {
   @Transactional
   def update() {
     def user = User.get(params.id)
-    render userProfileService.update(user, request.JSON, springSecurityService.currentUser) as JSON
+    def result = userProfileService.update(user, request.JSON, springSecurityService.currentUser)
+    render result as JSON
   }
 
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def patch() {
     def user = User.get(params.id)
-    render userProfileService.update(user, request.JSON, springSecurityService.currentUser) as JSON
+    def result = userProfileService.update(user, request.JSON, springSecurityService.currentUser)
+    render result as JSON
   }
 
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
@@ -218,7 +220,20 @@ class UsersController {
         ]
       }
     }
-    newUserData.roles = user.authorities
+    if (params._embed?.split(',')?.contains('roles'))
+      newUserData.roles = user.authorities
+    else {
+      newUserData.roles = []
+      user.authorities.each { role ->
+        newUserData.roles += [
+          id    : role.id,
+          authority  : role.authority,
+          _links: [
+            'self': [href: base + "/roles/$role.id"]
+          ]
+        ]
+      }
+    }
 
     if (params._include)
       includes = params._include.split(',')

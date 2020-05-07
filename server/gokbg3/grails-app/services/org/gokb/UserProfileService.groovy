@@ -2,6 +2,7 @@ package org.gokb
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+import groovy.util.logging.Log
 import org.gokb.cred.ComponentLike
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.DSAppliedCriterion
@@ -27,6 +28,7 @@ class UserProfileService {
 
   @Autowired
   UsersController usersController
+ // Log log
 
   def delete(User user) {
     def result = [:]
@@ -77,9 +79,11 @@ class UserProfileService {
 
   def update(User user, def data, User adminUser) {
     def result = [:]
+    def error = [:]
+    log.debug("Updating user ${user.id} ..")
     def immutables = ['id', 'username', 'passwordExpired', 'last_alert_check']
     def adminAttributes = ['roles', 'curatoryGroups', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
-    def error = [:]
+
     def reqBody = data
     if (!adminUser.isAdmin() && user != adminUser) {
       error.message = "$adminUser.username is not allowed to change $user.username"
@@ -89,12 +93,12 @@ class UserProfileService {
     }
     // apply changes
     reqBody.each { field, value ->
-      if (value && !user.hasProperty(field)) {
+      if (field != "roles" && field != "curatoryGroups" && value && !user.hasProperty(field)) {
         error.message = "$field is unknown"
         result.error = error
         return result
       }
-      if (immutables.contains(field) && value != user.$field) {
+      if (immutables.contains(field) && value != user[field]) {
         error.message = "$field is immutable"
         result.error = error
         return result
@@ -158,7 +162,7 @@ class UserProfileService {
       }
     }
     user.save(flush: true)
-    result.data = user
+    result.data = usersController.collectUserProps(user)
     return result
   }
 

@@ -23,7 +23,7 @@ class UsersTestSpec extends AbstractAuthSpec {
 
   def setup() {
     delUser = User.findByUsername("deleteUser") ?: new User(username: "deleteUser").save(flush: true)
-    altUser = User.findByUsername("altUser") ?: new User(username: "altUser").save(flush: true)
+    altUser = User.findByUsername("altUser") ?: new User(username: "altUser", enabled:true).save(flush: true)
     if (!rest) {
       RestTemplate restTemp = new RestTemplate()
       restTemp.setRequestFactory(new HttpComponentsClientHttpRequestFactory())
@@ -129,13 +129,27 @@ class UsersTestSpec extends AbstractAuthSpec {
   void "test PATCH /rest/users/{id}"() {
     // use the bearerToken to write to /rest/user
     when:
-    String accessToken = getAccessToken()
+    String accessToken = getAccessToken("admin", "admin")
     RestResponse resp = rest.patch("http://localhost:$serverPort/gokb/rest/users/$altUser.id") {
       // headers
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{"active":"false"}')
+      body('{displayName:"DisplayName",' +
+        'enabled:false,' +
+        'defaultPageSize:15,' +
+        'roles:[' +
+        '{' +
+        'authority:"ROLE_CONTRIBUTOR",' +
+        '},' +
+        '{' +
+        'authority:"ROLE_USER",' +
+        '},' +
+        '{' +
+        'authority:"ROLE_EDITOR",' +
+        '},' +
+        ']' +
+        '}')
     }
     then:
     resp.status == 200
