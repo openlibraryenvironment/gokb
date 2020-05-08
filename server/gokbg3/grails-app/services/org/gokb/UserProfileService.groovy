@@ -28,7 +28,6 @@ class UserProfileService {
 
   @Autowired
   UsersController usersController
- // Log log
 
   def delete(User user) {
     def result = [:]

@@ -57,41 +57,34 @@ class ProfileController {
 
   @Transactional
   def update() {
-    render userProfileService.update(springSecurityService.currentUser, request.JSON, springSecurityService.currentUser) as JSON
+    User user = User.get(springSecurityService.principal.id)
+    render userProfileService.update(user, request.JSON, user) as JSON
   }
 
   @grails.plugin.springsecurity.annotation.Secured(value = ['IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
   @Transactional
   def patch() {
     def result = [:]
-    User user = springSecurityService.currentUser
-    if (request.JSON.new_password) {
-      if (passwordEncoder.matches(user.password, params.password, null)) {
-        user.password = request.JSON.new_password
+    Map reqData = request.JSON
+    User user = User.get(springSecurityService.principal.id)
+    if (reqData.new_password && reqData.password) {
+      if (passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
+        user.password = reqData.new_password
+        user.save(flush: true, failOnError: true);
       } else {
-        result.data = user
-        result.error.message = "wrong password - profile unchanged"
+//        result.data = user
+        result.error = [message: "wrong password - profile unchanged"]
         render result as JSON
       }
     }
-    request.JSON.each { propName, propValue ->
-      if (!propName in ["new_password", "password"]) {
-        if (propName == "curatoryGroups") {
-          // patch curatory groups
-        } else if (propName == "roles") {
-          // patch roles
-        }
-        user.propName = propValue
-      }
-    }
-    user.save(flush: true, failOnError: true)
-    result.data = user
-    render result as JSON
+    reqData.remove('new_password')
+    reqData.remove('password')
+    render userProfileService.update(user, reqData, user) as JSON
   }
 
   @Transactional
   def delete() {
-    userProfileService.delete(springSecurityService.currentUser)
+    userProfileService.delete(User.get(springSecurityService.principal.id))
     def result = [:]
     render result as JSON
   }

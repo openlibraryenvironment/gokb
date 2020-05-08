@@ -2,6 +2,7 @@ package org.gokb.rest
 
 import gokbg3.RegisterController
 import grails.converters.JSON
+import grails.core.GrailsApplication
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
 import grails.plugin.springsecurity.ui.strategy.RegistrationCodeStrategy
@@ -16,11 +17,12 @@ import org.springframework.security.authentication.dao.SaltSource
 class UsersController {
 
   static namespace = 'rest'
+
   @Autowired
   SaltSource saltSource
   UserProfileService userProfileService
+  GrailsApplication grailsApplication
   def springSecurityService
-
 
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
   def show() {
@@ -50,6 +52,7 @@ class UsersController {
     def sortQuery = "select ultimate from User ultimate where ultimate in ("
     def hqlParams = [:]
     def hqlQuery = "select distinct u from User u"
+
     if (params.roleId) {
       hqlQuery += ", UserRole ur, Role r where u = ur.user and ur.role=r "
       def roleIds = params.roleId.split(',')
@@ -60,6 +63,7 @@ class UsersController {
       }
       hqlQuery += ")"
     }
+
     if (params.curatoryGroupId) {
       def cgIds = params.curatoryGroupId.split(',')
       hqlQuery += " ${params.roleId ? 'and' : ' where'} ("
@@ -92,6 +96,7 @@ class UsersController {
         hqlQuery += " (u.enabled = false or u.accountLocked = true or u.accountExpired = true or u.passwordExpired = true)"
       }
     }
+
     sortQuery += hqlQuery + ")"
     if (sortOrders && sortFields) {
       int maxIndex = sortFields.size()
@@ -134,15 +139,15 @@ class UsersController {
 
     result += [
       _links: [
-        self : [href: base + "/users/search/$outParams&limit=$limit&offset=$offset "],
-        first: [href: base + "/users/search/$outParams&limit=$limit&offset=0 "],
-        last : [href: base + "/users/search/$outParams&limit=$limit&offset=${((int) (count / limit)) * limit}  "]
+        self : [href: base + "/${params.controller}/$outParams&limit=$limit&offset=$offset "],
+        first: [href: base + "/users/$outParams&limit=$limit&offset=0 "],
+        last : [href: base + "/users/$outParams&limit=$limit&offset=${((int) (count / limit)) * limit}  "]
       ]
     ]
     if (offset >= limit)
-      result._links += [prev: [href: base + "/users/search/$outParams&limit=$limit&offset=${offset - limit}"]]
+      result._links += [prev: [href: base + "/users/$outParams&limit=$limit&offset=${offset - limit}"]]
     if (offset + limit < count)
-      result._links += [next: [href: base + "/users/search/$outParams&limit=$limit&offset=${offset + limit}"]]
+      result._links += [next: [href: base + "/users/$outParams&limit=$limit&offset=${offset + limit}"]]
 
     render result as JSON
   }
@@ -162,34 +167,12 @@ class UsersController {
     render result as JSON
   }
 
-  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
-  @Transactional
-  def patch() {
-    def user = User.get(params.id)
-    def result = userProfileService.update(user, request.JSON, springSecurityService.currentUser)
-    render result as JSON
-  }
-
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
     def delUser = User.get(params.id)
     render userProfileService.delete(delUser) as JSON
   }
-
-/*  @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
-  @Transactional
-  def patch() {
-    def user = User.get(params.id)
-    boolean active = request.JSON.active?.toLowerCase() == "true"
-    if (user) {
-      user.setEnabled(active)
-      user.save()
-    }
-    def result = [data: []]
-    result.data += collectUserProps(user)
-    render result as JSON
-  } */
 
   def collectUserProps(User user) {
     def base = grailsApplication.config.serverURL + "/" + namespace
