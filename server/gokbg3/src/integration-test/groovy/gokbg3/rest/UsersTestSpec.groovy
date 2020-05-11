@@ -4,12 +4,12 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
-import jdk.nashorn.internal.ir.annotations.Ignore
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import org.gokb.cred.UserRole
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.web.client.RestTemplate
+import spock.lang.Ignore
 
 @Integration
 @Rollback
@@ -48,7 +48,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       accept('application/json')
     }
     then:
-    resp.status in  [401, 403] // Unauthorized/Forbidden
+    resp.status in [401, 403] // Unauthorized/Forbidden
   }
 
   void "test GET /rest/users/{id} with valid token"() {
@@ -188,7 +188,8 @@ class UsersTestSpec extends AbstractAuthSpec {
   /*
   * /register is not implemented for security reasons.
   */
-@Ignore
+
+  @Ignore
   void "test POST /rest/register"() {
     when:
     RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/register") {
