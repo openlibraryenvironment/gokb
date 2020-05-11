@@ -41,7 +41,7 @@ class AbstractAuthSpec extends Specification {
     return "http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}".toString()
   }
 
-  private void login(username) {
+  private void login(username, password) {
     // calling /rest/login to obtain a valid bearerToken
 
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login") {
@@ -54,6 +54,6 @@ class AbstractAuthSpec extends Specification {
     accessToken = resp.json?.access_token ?: accessToken
     refreshToken = resp.json?.refresh_token ?: refreshToken
     activeUser = username
-    log.debug(resp.toString())
+    // log.debug(resp.toString())
   }
 }

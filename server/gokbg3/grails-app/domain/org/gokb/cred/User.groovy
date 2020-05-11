@@ -35,7 +35,6 @@ class User extends Party {
 
   static hasMany = [
     curatoryGroups : CuratoryGroup,
-
   ]
 
   static mappedBy = [curatoryGroups: "users"]

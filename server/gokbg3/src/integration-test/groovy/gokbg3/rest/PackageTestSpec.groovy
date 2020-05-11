@@ -7,6 +7,7 @@ import grails.transaction.Rollback
 import org.gokb.cred.Package
 import org.gokb.cred.CuratoryGroup
 import grails.converters.JSON
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.WebApplicationContext
 
 @Integration
@@ -18,12 +19,18 @@ class PackageTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest = new RestBuilder()
 
-  def setupSpec(){
+  def setupSpec() {
   }
 
   def setup() {
-    def pkg = Package.findByName("TestPack") ?: new Package(name: "TestPack").save(flush:true)
-    def cg1 = CuratoryGroup.findByName("cgtest1") ?: new CuratoryGroup(name: "cgtest1").save(flush:true)
+    Package.findByName("TestPack") ?: new Package(name: "TestPack").save(flush: true)
+    CuratoryGroup.findByName("cgtest1") ?: new CuratoryGroup(name: "cgtest1").save(flush: true)
+  }
+
+  def cleanup() {
+    Package.findByName("TestPack")?.expunge()
+    Package.findByName("UpdPack")?.expunge()
+    CuratoryGroup.findByName("cgtest1")?.expunge()
   }
 
   void "test /rest/packages/<id> without token"() {
@@ -76,9 +83,9 @@ class PackageTestSpec extends AbstractAuthSpec {
   }
 
   void "test /rest/packages update comboList"() {
-    def pack = Package.findByName("UpdPack")
+    def pack = Package.findByName("TestPack")
     def cg = CuratoryGroup.findByName("cgtest1")
-    def upd_body = [curatoryGroups:[cg.id]]
+    def upd_body = [curatoryGroups: [cg.id]]
     def urlPath = getUrlPath()
 
     // use the bearerToken to read /rest/profile

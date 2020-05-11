@@ -15,6 +15,7 @@ class ProfileController {
   def genericOIDService
   def springSecurityService
   def userProfileService
+  def passwordEncoder
 
   def show() {
     def user = User.get(springSecurityService.principal.id)
@@ -32,36 +33,58 @@ class ProfileController {
     }
 
     def links = [
-            'self'  : ['href': 'rest/profile'],
-            'update': ['href': 'rest/profile'],
-            'delete': ['href': 'rest/profile']
+      'self'  : ['href': 'rest/profile'],
+      'update': ['href': 'rest/profile'],
+      'delete': ['href': 'rest/profile']
     ]
 
     def result = ['data': [
-            'id'             : user.id,
-            'username'       : user.username,
-            'displayName'    : user.displayName,
-            'email'          : user.email,
-            'curatoryGroups' : cur_groups,
-            'enabled'        : user.enabled,
-            'accountExpired' : user.accountExpired,
-            'accountLocked'  : user.accountLocked,
-            'passwordExpired': user.accountExpired,
-            'defaultPageSize': user.defaultPageSize,
-            'roles'          : roles,
-            '_links'         : links
+      'id'             : user.id,
+      'username'       : user.username,
+      'displayName'    : user.displayName,
+      'email'          : user.email,
+      'curatoryGroups' : cur_groups,
+      'enabled'        : user.enabled,
+      'accountExpired' : user.accountExpired,
+      'accountLocked'  : user.accountLocked,
+      'passwordExpired': user.accountExpired,
+      'defaultPageSize': user.defaultPageSize,
+      'roles'          : roles,
+      '_links'         : links
     ]]
     render result as JSON
   }
 
   @Transactional
   def update() {
-    render userProfileService.update(springSecurityService.currentUser, request.JSON) as JSON
+    User user = User.get(springSecurityService.principal.id)
+    render userProfileService.update(user, request.JSON, user) as JSON
+  }
+
+  @grails.plugin.springsecurity.annotation.Secured(value = ['IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
+  @Transactional
+  def patch() {
+    def result = [:]
+    Map reqData = request.JSON
+    User user = User.get(springSecurityService.principal.id)
+    if (reqData.new_password && reqData.password) {
+      if (passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
+        user.password = reqData.new_password
+        user.save(flush: true, failOnError: true);
+      } else {
+//        result.data = user
+        result.error = [message: "wrong password - profile unchanged"]
+        render result as JSON
+      }
+    }
+    reqData.remove('new_password')
+    reqData.remove('password')
+    render userProfileService.update(user, reqData, user) as JSON
   }
 
   @Transactional
   def delete() {
-    userProfileService.delete(springSecurityService.currentUser)
+    userProfileService.delete(User.get(springSecurityService.principal.id))
     def result = [:]
     render result as JSON
   }
