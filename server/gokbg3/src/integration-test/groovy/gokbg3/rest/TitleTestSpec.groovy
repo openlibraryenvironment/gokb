@@ -90,7 +90,7 @@ class TitleTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/titles?type=journal&ids=1491237-5") {
+    RestResponse resp = rest.get("${urlPath}/rest/titles?type=journal&ids=1234435-6") {
       accept('application/json')
       auth("Bearer $accessToken")
     }

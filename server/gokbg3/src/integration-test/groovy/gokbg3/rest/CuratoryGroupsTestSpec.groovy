@@ -5,7 +5,6 @@ import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
 import org.gokb.cred.CuratoryGroup
-import org.gokb.cred.Role
 import org.gokb.cred.User
 
 @Integration
@@ -19,7 +18,15 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
     group2 = CuratoryGroup.findByName("Curatory Group B") ?: new CuratoryGroup(name: "Curatory Group B").save(flush: true)
     group3 = CuratoryGroup.findByName("Curatory Group C") ?: new CuratoryGroup(name: "Curatory Group C").save(flush: true)
     group4 = CuratoryGroup.findByName("Curatory Group D") ?: new CuratoryGroup(name: "Curatory Group D").save(flush: true)
-    user = new User(username: "groupUser", password: "groupUser", enabled: true).save(flush: true)
+    user = User.findByUsername("groupUser")?:new User(username:"groupUser", password: "groupUser", enabled: true).save(flush:true)
+  }
+
+  def cleanup() {
+    CuratoryGroup.findByName("Curatory Group A")?.expunge()
+    CuratoryGroup.findByName("Curatory Group B")?.expunge()
+    CuratoryGroup.findByName("Curatory Group C")?.expunge()
+    CuratoryGroup.findByName("Curatory Group D")?.expunge()
+    User.findByUsername("groupUser")?.delete(flush:true)
   }
 
   private RestBuilder rest = new RestBuilder()
@@ -49,7 +56,7 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data.size() == 4
+    resp.json.data.size() == 5
   }
 
   void "test GET /rest/curatoryGroups with inverse sorting by name"() {
@@ -63,6 +70,6 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data[0].id == 1
+    resp.json.data[4].id == group1.id
   }
 }

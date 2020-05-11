@@ -6,9 +6,10 @@ import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
 import org.gokb.cred.Role
 import org.gokb.cred.User
+import org.gokb.cred.UserRole
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.web.client.RestTemplate
-import spock.lang.Shared
+import spock.lang.Ignore
 
 @Integration
 @Rollback
@@ -18,17 +19,25 @@ class UsersTestSpec extends AbstractAuthSpec {
   def delUser
   def altUser
 
-  def setupSpec() {
-  }
-
   def setup() {
     delUser = User.findByUsername("deleteUser") ?: new User(username: "deleteUser").save(flush: true)
-    altUser = User.findByUsername("altUser") ?: new User(username: "altUser").save(flush: true)
+    altUser = User.findByUsername("altUser") ?: new User(username: "altUser", enabled: true).save(flush: true)
     if (!rest) {
       RestTemplate restTemp = new RestTemplate()
       restTemp.setRequestFactory(new HttpComponentsClientHttpRequestFactory())
       rest = new RestBuilder(restTemp)
     }
+  }
+
+  def cleanup() {
+    UserRole.findAllByUser(delUser).each { ur ->
+      ur.delete(flush: true)
+    }
+    UserRole.findAllByUser(altUser).each { ur ->
+      ur.delete(flush: true)
+    }
+    User.findByUsername('delUser')?.delete(flush: true)
+    User.findByUsername('altUser')?.delete(flush: true)
   }
 
   void "test GET /rest/users/{id} without token"() {
@@ -39,7 +48,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       accept('application/json')
     }
     then:
-    resp.status == 401 // Unauthorized
+    resp.status in [401, 403] // Unauthorized/Forbidden
   }
 
   void "test GET /rest/users/{id} with valid token"() {
@@ -67,7 +76,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200 // OK
-    resp.json.data[0].username == "tempUser"
+    resp.json.data[1].username == "admin"
   }
 
   void "test DELETE /rest/users/{id} with valid token"() {
@@ -81,6 +90,8 @@ class UsersTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200 // OK
+    def checkUser = User.findById(delUser.id)
+    checkUser == null
   }
 
   void "test PUT /rest/users/{id}"() {
@@ -93,23 +104,33 @@ class UsersTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{"id":' + altUser.id + ',"username":"OtherUser","displayName":null,"email":"nobody@localhost","curatoryGroups":[],"enabled":true,"accountExpired":false,"accountLocked":false,"passwordExpired":false,"defaultPageSize":15,' +
-        '"roles":[' +
+      body('{id: + altUser.id + ,' +
+        'username:"OtherUser",' +
+        'displayName:"DisplayName",' +
+        'email:"nobody@localhost",' +
+        'curatoryGroups:[],' +
+        'enabled:true,' +
+        'accountExpired:false,' +
+        'accountLocked:false,' +
+        'passwordExpired:false,' +
+        'defaultPageSize:15,' +
+        'roles:[' +
         '{' +
-        '"authority":"ROLE_CONTRIBUTOR",' +
+        'authority:"ROLE_CONTRIBUTOR",' +
         '},' +
         '{' +
-        '"authority":"ROLE_USER",' +
+        'authority:"ROLE_USER",' +
         '},' +
         '{' +
-        '"authority":"ROLE_EDITOR"' +
+        'authority:"ROLE_EDITOR",' +
         '}' +
         ']' +
         '}')
     }
     then:
     resp.status == 200
-    def checkUser = User.get(altUser.id)
+    resp.json.data.defaultPageSize == 15
+    def checkUser = User.findById(altUser.id)
     !checkUser.authorities.contains(Role.findByAuthority("ROLE_ADMIN"))
     checkUser.authorities.contains(Role.findByAuthority("ROLE_USER"))
     checkUser.username != "OtherUser"
@@ -125,10 +146,25 @@ class UsersTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{"active":"false"}')
+      body('{displayName:"DisplayName",' +
+        'enabled:false,' +
+        'defaultPageSize:18,' +
+        'roles:[' +
+        '{' +
+        'authority:"ROLE_CONTRIBUTOR",' +
+        '},' +
+        '{' +
+        'authority:"ROLE_USER",' +
+        '},' +
+        '{' +
+        'authority:"ROLE_EDITOR",' +
+        '},' +
+        ']' +
+        '}')
     }
     then:
     resp.status == 200
+    resp.json.data.defaultPageSize == 18
     def checkUser = User.findById(altUser.id)
     checkUser.enabled == false
   }
@@ -147,5 +183,24 @@ class UsersTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.data.username == "newerUser"
+  }
+
+  /*
+  * /register is not implemented for security reasons.
+  */
+
+  @Ignore
+  void "test POST /rest/register"() {
+    when:
+    RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/register") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      body('{"username":"newUser", "email":"nobody@localhost","password":"defaultPassword"}')
+    }
+    then:
+    resp.status == 200
+    User checkUser = User.findByUsername("newUser")
+    checkUser != null
   }
 }

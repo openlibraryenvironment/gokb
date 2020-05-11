@@ -43,6 +43,7 @@ class IntegrationControllerSpec extends Specification {
   }
 
   def cleanup() {
+    CuratoryGroup.findByName('TestGroup1')?.expunge()
   }
 
   void "Test assertGroup"() {

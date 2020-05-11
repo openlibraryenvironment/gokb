@@ -2,13 +2,12 @@ package org.gokb.rest
 
 import gokbg3.RegisterController
 import grails.converters.JSON
+import grails.core.GrailsApplication
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
-import grails.plugin.springsecurity.authentication.dao.NullSaltSource
-import grails.plugin.springsecurity.ui.RegisterCommand
-import grails.plugin.springsecurity.ui.RegistrationCode
 import grails.plugin.springsecurity.ui.strategy.RegistrationCodeStrategy
 import org.gokb.UserProfileService
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.User
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.authentication.dao.SaltSource
@@ -18,11 +17,12 @@ import org.springframework.security.authentication.dao.SaltSource
 class UsersController {
 
   static namespace = 'rest'
+
   @Autowired
   SaltSource saltSource
-  RegistrationCodeStrategy uiRegistrationCodeStrategy
-  RegisterController registerController
   UserProfileService userProfileService
+  GrailsApplication grailsApplication
+  def springSecurityService
 
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
   def show() {
@@ -37,10 +37,11 @@ class UsersController {
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def index() {
+    int pageSize = springSecurityService.currentUser.defaultPageSize
     def result = [data: []]
     // parse params
     int offset = params.offset ? params.offset as int : 0
-    int limit = params.limit ? params.limit as int : 10
+    int limit = params.limit ? params.limit as int : (pageSize > 0 ? pageSize : 10)
     String[] sortFields = null, sortOrders = null
     if (params['_sort']) {
       sortFields = params['_sort'].split(',')
@@ -49,22 +50,53 @@ class UsersController {
       sortOrders = params['_order'].split(',')
     }
     def sortQuery = "select ultimate from User ultimate where ultimate in ("
-    def hqlQuery = "select distinct u " +
-      "from User u, UserRole ur, Role r " +
-      "where u = ur.user and ur.role=r"
     def hqlParams = [:]
+    def hqlQuery = "select distinct u from User u"
+
+    if (params.roleId) {
+      hqlQuery += ", UserRole ur, Role r where u = ur.user and ur.role=r "
+      def roleIds = params.roleId.split(',')
+      hqlQuery += ' and ('
+      roleIds.eachWithIndex { v, i ->
+        hqlQuery += "${i > 0 ? " or" : ""} r.id = :roleId$i"
+        hqlParams += ["roleId$i": v as Long]
+      }
+      hqlQuery += ")"
+    }
+
+    if (params.curatoryGroupId) {
+      def cgIds = params.curatoryGroupId.split(',')
+      hqlQuery += " ${params.roleId ? 'and' : ' where'} ("
+      cgIds.eachWithIndex { v, i ->
+        CuratoryGroup cg = CuratoryGroup.findById(v as Long)
+        if (cg) {
+          hqlQuery += "${i > 0 ? " or" : ""} :group$i in elements (u.curatoryGroups)"
+          hqlParams += ["group$i": cg]
+        } else {
+          result += [error: [message: "curatoryGroupId $v is unknown",
+                             code   : 1]]
+        }
+      }
+      hqlQuery += ')'
+    }
+
     if (params.name) {
-      hqlQuery += " and (lower(u.username) like :name or lower(u.displayName) like :name)"
+      hqlQuery += " ${params.roleId || params.curatoryGroupId ? 'and' : ' where'} (lower(u.username) like :name " +
+        // displayName matching might get kicked out
+        "or lower(u.displayName) like :name" +
+        ")"
       hqlParams << ["name": "%$params.name%"]
     }
-    if (params.roleId) {
-      hqlQuery += " and r.id = :roleId"
-      hqlParams += ["roleId": params.roleId as Long]
+
+    if (params.containsKey("status")) {
+      hqlQuery += "${params.roleId || params.curatoryGroupId || params.name ? 'and' : ' where'}"
+      if (params.status == "true") {
+        hqlQuery += " u.enabled = true and u.accountLocked = false and u.accountExpired = false and u.passwordExpired = false"
+      } else {
+        hqlQuery += " (u.enabled = false or u.accountLocked = true or u.accountExpired = true or u.passwordExpired = true)"
+      }
     }
-    if (params.curatoryGroupId) {
-      hqlQuery += " and :group in u.curatoryGroups.id"
-      hqlParams += ["group": params.curatoryGroupId as Long]
-    }
+
     sortQuery += hqlQuery + ")"
     if (sortOrders && sortFields) {
       int maxIndex = sortFields.size()
@@ -81,8 +113,9 @@ class UsersController {
     def metaParams = [max: limit, offset: offset]
     int count = User.executeQuery(hqlQuery, hqlParams).size()
     def users = User.executeQuery(sortQuery, hqlParams, metaParams)
-    users.each { user ->
-      result.data.add(collectUserProps(user))
+    users.each {
+      user ->
+        result.data.add(collectUserProps(user))
     }
     result += [
       _pagination: [
@@ -95,25 +128,26 @@ class UsersController {
     def base = grailsApplication.config.serverURL + "/" + namespace
     def filter = ['limit', 'offset', 'controller', 'action']
     String outParams = '?'
-    params.each { param, val ->
-      if (!(param in filter)) {
-        if (outParams.size() > 1)
-          outParams += "&"
-        outParams += "$param=$val"
-      }
+    params.each {
+      param, val ->
+        if (!(param in filter)) {
+          if (outParams.size() > 1)
+            outParams += "&"
+          outParams += "$param=$val"
+        }
     }
 
     result += [
       _links: [
-        self : [href: base + "/users/search/$outParams&limit=$limit&offset=$offset"],
-        first: [href: base + "/users/search/$outParams&limit=$limit&offset=0"],
-        last : [href: base + "/users/search/$outParams&limit=$limit&offset=${((int) (count / limit)) * limit}"]
+        self : [href: base + "/${params.controller}/$outParams&limit=$limit&offset=$offset "],
+        first: [href: base + "/users/$outParams&limit=$limit&offset=0 "],
+        last : [href: base + "/users/$outParams&limit=$limit&offset=${((int) (count / limit)) * limit}  "]
       ]
     ]
     if (offset >= limit)
-      result._links += [prev: [href: base + "/users/search/$outParams&limit=$limit&offset=${offset - limit}"]]
+      result._links += [prev: [href: base + "/users/$outParams&limit=$limit&offset=${offset - limit}"]]
     if (offset + limit < count)
-      result._links += [next: [href: base + "/users/search/$outParams&limit=$limit&offset=${offset + limit}"]]
+      result._links += [next: [href: base + "/users/$outParams&limit=$limit&offset=${offset + limit}"]]
 
     render result as JSON
   }
@@ -129,7 +163,8 @@ class UsersController {
   @Transactional
   def update() {
     def user = User.get(params.id)
-    render userProfileService.update(user, request.JSON) as JSON
+    def result = userProfileService.update(user, request.JSON, springSecurityService.currentUser)
+    render result as JSON
   }
 
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
@@ -137,20 +172,6 @@ class UsersController {
   def delete() {
     def delUser = User.get(params.id)
     render userProfileService.delete(delUser) as JSON
-  }
-
-  @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
-  @Transactional
-  def patch() {
-    def user = User.get(params.id)
-    boolean active = request.JSON.active?.toLowerCase() == "true"
-    if (user) {
-      user.setEnabled(active)
-      user.save()
-    }
-    def result = [data: []]
-    result.data += collectUserProps(user)
-    render result as JSON
   }
 
   def collectUserProps(User user) {
@@ -164,7 +185,8 @@ class UsersController {
           'enabled'        : user.enabled,
           'accountExpired' : user.accountExpired,
           'accountLocked'  : user.accountLocked,
-          'passwordExpired': user.accountExpired,
+          'passwordExpired': user.passwordExpired,
+          'status'         : user.enabled && !user.accountExpired && !user.accountLocked && !user.passwordExpired,
           'defaultPageSize': user.defaultPageSize
         ]
     if (params._embed?.split(',')?.contains('curatoryGroups'))
@@ -181,7 +203,20 @@ class UsersController {
         ]
       }
     }
-    newUserData.roles = user.authorities
+    if (params._embed?.split(',')?.contains('roles'))
+      newUserData.roles = user.authorities
+    else {
+      newUserData.roles = []
+      user.authorities.each { role ->
+        newUserData.roles += [
+          id    : role.id,
+          authority  : role.authority,
+          _links: [
+            'self': [href: base + "/roles/$role.id"]
+          ]
+        ]
+      }
+    }
 
     if (params._include)
       includes = params._include.split(',')

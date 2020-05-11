@@ -54,6 +54,6 @@ class AbstractAuthSpec extends Specification {
     accessToken = resp.json?.access_token ?: accessToken
     refreshToken = resp.json?.refresh_token ?: refreshToken
     activeUser = username
-    log.debug(resp.toString())
+    // log.debug(resp.toString())
   }
 }

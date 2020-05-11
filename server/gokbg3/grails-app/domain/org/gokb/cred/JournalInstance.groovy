@@ -30,7 +30,7 @@ class JournalInstance extends TitleInstance {
     return "Journal";
   }
 
-  public static final String restPath = "/journals"
+  public static final String restPath = "/titles"
 
   /**
    * Auditable plugin, on change

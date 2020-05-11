@@ -56,6 +56,7 @@ class UrlMappings {
 
       get "/profile"(controller: 'profile', namespace: 'rest', action: 'show')
       put "/profile"(controller: 'profile', namespace: 'rest', action: 'update')
+      patch "/profile"(controller: 'profile', namespace: 'rest', action: 'patch')
       delete "/profile"(controller: 'profile', namespace: 'rest', action: 'delete')
 
       get "/entities"(controller: 'global', namespace: 'rest', action: 'index')
@@ -64,7 +65,7 @@ class UrlMappings {
       post "/users"(controller: 'users', namespace: 'rest', action: 'create')
       get "/users/$id"(controller: 'users', namespace: 'rest', action: 'show')
       put "/users/$id"(controller: 'users', namespace: 'rest', action: 'update')
-      patch "/users/$id"(controller: 'users', namespace: 'rest', action: 'patch')
+      patch "/users/$id"(controller: 'users', namespace: 'rest', action: 'update')
       delete "/users/$id"(controller: 'users', namespace: 'rest', action: 'delete')
 
       get "/sources"(controller: 'sources', namespace: 'rest', action: 'index')
