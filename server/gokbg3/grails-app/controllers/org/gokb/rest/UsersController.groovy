@@ -1,11 +1,9 @@
 package org.gokb.rest
 
-import gokbg3.RegisterController
 import grails.converters.JSON
 import grails.core.GrailsApplication
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
-import grails.plugin.springsecurity.ui.strategy.RegistrationCodeStrategy
 import org.gokb.UserProfileService
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.User
@@ -65,25 +63,27 @@ class UsersController {
     }
 
     if (params.curatoryGroupId) {
+      String cgQuery = " ${params.roleId ? 'and' : ' where'} ("
       def cgIds = params.curatoryGroupId.split(',')
-      hqlQuery += " ${params.roleId ? 'and' : ' where'} ("
       cgIds.eachWithIndex { v, i ->
         CuratoryGroup cg = CuratoryGroup.findById(v as Long)
         if (cg) {
-          hqlQuery += "${i > 0 ? " or" : ""} :group$i in elements (u.curatoryGroups)"
+          cgQuery += "${i > 0 ? " or" : ""} :group$i in elements (u.curatoryGroups)"
           hqlParams += ["group$i": cg]
         } else {
           result += [error: [message: "curatoryGroupId $v is unknown",
                              code   : 1]]
         }
       }
-      hqlQuery += ')'
+      cgQuery += ')'
+      if (!result.error)
+        hqlQuery += cgQuery
     }
 
     if (params.name) {
-      hqlQuery += " ${params.roleId || params.curatoryGroupId ? 'and' : ' where'} (lower(u.username) like :name " +
+      hqlQuery += " ${params.roleId || params.curatoryGroupId ? 'and' : ' where'} (lower(u.username) like lower(:name) " +
         // displayName matching might get kicked out
-        "or lower(u.displayName) like :name" +
+        "or lower(u.displayName) like lower(:name)" +
         ")"
       hqlParams << ["name": "%$params.name%"]
     }
@@ -167,6 +167,17 @@ class UsersController {
     render result as JSON
   }
 
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def patch() {
+    def user = User.get(params.id)
+    if (request.JSON.password){
+      user.password = request.JSON.password
+    }
+    def result = userProfileService.update(user, request.JSON, springSecurityService.currentUser)
+    render result as JSON
+  }
+
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
@@ -209,9 +220,9 @@ class UsersController {
       newUserData.roles = []
       user.authorities.each { role ->
         newUserData.roles += [
-          id    : role.id,
-          authority  : role.authority,
-          _links: [
+          id       : role.id,
+          authority: role.authority,
+          _links   : [
             'self': [href: base + "/roles/$role.id"]
           ]
         ]

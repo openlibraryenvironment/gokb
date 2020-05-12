@@ -1,8 +1,6 @@
 package org.gokb
 
-import grails.converters.JSON
 import grails.gorm.transactions.Transactional
-import groovy.util.logging.Log
 import org.gokb.cred.ComponentLike
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.DSAppliedCriterion
@@ -79,11 +77,10 @@ class UserProfileService {
   def update(User user, def data, User adminUser) {
     def result = [:]
     def error = [:]
-    log.debug("Updating user ${user.id} ..")
-    def immutables = ['id', 'username', 'passwordExpired', 'last_alert_check']
+    log.debug("Updating user ${user.id} ..".toString())
+    def immutables = ['id', 'username', 'password', 'last_alert_check']
     def adminAttributes = ['roles', 'curatoryGroups', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
 
-    def reqBody = data
     if (!adminUser.isAdmin() && user != adminUser) {
       error.message = "$adminUser.username is not allowed to change $user.username"
       result.error = error
@@ -91,7 +88,7 @@ class UserProfileService {
       return result
     }
     // apply changes
-    reqBody.each { field, value ->
+    data.each { field, value ->
       if (field != "roles" && field != "curatoryGroups" && value && !user.hasProperty(field)) {
         error.message = "$field is unknown"
         result.error = error
@@ -158,6 +155,7 @@ class UserProfileService {
         user.curatoryGroups.retainAll(curGroups)
       } else {
         user[field] = value
+        log.debug("$field = $value")
       }
     }
     user.save(flush: true)

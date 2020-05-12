@@ -4,6 +4,7 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import org.gokb.cred.UserRole
@@ -18,10 +19,16 @@ class UsersTestSpec extends AbstractAuthSpec {
   def rest
   def delUser
   def altUser
+  CuratoryGroup cg
+  Role role
 
   def setup() {
-    delUser = User.findByUsername("deleteUser") ?: new User(username: "deleteUser").save(flush: true)
-    altUser = User.findByUsername("altUser") ?: new User(username: "altUser", enabled: true).save(flush: true)
+    role = Role.findByAuthority("ROLE_USER")
+    cg = CuratoryGroup.findByName("UserTestGroup") ?: new CuratoryGroup(name: "UserTestGroup").save(flush: true)
+    delUser = User.findByUsername("deleteUser") ?: new User(username: "deleteUser", curatoryGroups: [cg]).save(flush: true)
+    UserRole.findOrCreateByRoleAndUser(role, delUser).save(flush: true)
+    altUser = User.findByUsername("altUser") ?: new User(username: "altUser", curatoryGroups: [cg], enabled: true).save(flush: true)
+    UserRole.findOrCreateByRoleAndUser(role, altUser).save(flush: true)
     if (!rest) {
       RestTemplate restTemp = new RestTemplate()
       restTemp.setRequestFactory(new HttpComponentsClientHttpRequestFactory())
@@ -36,8 +43,18 @@ class UsersTestSpec extends AbstractAuthSpec {
     UserRole.findAllByUser(altUser).each { ur ->
       ur.delete(flush: true)
     }
-    User.findByUsername('delUser')?.delete(flush: true)
-    User.findByUsername('altUser')?.delete(flush: true)
+    User user = User.findByUsername(delUser.username)
+    if (user) {
+      user.curatoryGroups -= cg
+      user.delete(flush: true)
+    }
+    user = User.findByUsername(altUser.username)
+    if (user) {
+      user.curatoryGroups -= cg
+      user.delete(flush: true)
+    }
+    CuratoryGroup group = CuratoryGroup.findByName(cg.name)
+    group.expunge()
   }
 
   void "test GET /rest/users/{id} without token"() {
@@ -70,14 +87,14 @@ class UsersTestSpec extends AbstractAuthSpec {
     // use the bearerToken to read /rest/users
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/users/?name=m&roleId=3&_embed=id,organisations,roles&_include=id,username&_sort=username&_order=desc") {
+    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/users/?name=Use&roleId=$role.id&curatoryGroupId=$cg.id&_embed=id,organisations,roles&_include=id,username&_sort=username&_order=desc&offset=0&limit=10") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
     }
     then:
     resp.status == 200 // OK
-    resp.json.data[1].username == "admin"
+    resp.json.data[1].username == "altUser"
   }
 
   void "test DELETE /rest/users/{id} with valid token"() {
@@ -98,6 +115,29 @@ class UsersTestSpec extends AbstractAuthSpec {
   void "test PUT /rest/users/{id}"() {
     def urlPath = getUrlPath()
     // use the bearerToken to write to /rest/user
+    String bodyText = "{id: $altUser.id," +
+      "username:\"$altUser.username\"," +
+      'displayName:"DisplayName",' +
+      'email:"nobody@localhost",' +
+      'curatoryGroups:[],' +
+      'enabled:true,' +
+      'accountExpired:false,' +
+      'accountLocked:false,' +
+      'passwordExpired:false,' +
+      'defaultPageSize:15,' +
+      'roles:[' +
+      '{' +
+      'authority:"ROLE_CONTRIBUTOR",' +
+      '},' +
+      '{' +
+      'authority:"ROLE_USER",' +
+      '},' +
+      '{' +
+      'authority:"ROLE_EDITOR",' +
+      '},' +
+      '],' +
+      'cake:"cherry"' +
+      '}'
     when:
     String accessToken = getAccessToken()
     RestResponse resp = rest.put("${urlPath}/rest/users/$altUser.id") {
@@ -105,28 +145,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{id: + altUser.id + ,' +
-        'username:"OtherUser",' +
-        'displayName:"DisplayName",' +
-        'email:"nobody@localhost",' +
-        'curatoryGroups:[],' +
-        'enabled:true,' +
-        'accountExpired:false,' +
-        'accountLocked:false,' +
-        'passwordExpired:false,' +
-        'defaultPageSize:15,' +
-        'roles:[' +
-        '{' +
-        'authority:"ROLE_CONTRIBUTOR",' +
-        '},' +
-        '{' +
-        'authority:"ROLE_USER",' +
-        '},' +
-        '{' +
-        'authority:"ROLE_EDITOR",' +
-        '},' +
-        ']' +
-        '}')
+      body(bodyText)
     }
     then:
     resp.status == 200
@@ -141,7 +160,7 @@ class UsersTestSpec extends AbstractAuthSpec {
   void "test PATCH /rest/users/{id}"() {
     // use the bearerToken to write to /rest/user
     when:
-    String accessToken = getAccessToken("admin", "admin")
+    String accessToken = getAccessToken()
     RestResponse resp = rest.patch("http://localhost:$serverPort/gokb/rest/users/$altUser.id") {
       // headers
       accept('application/json')
@@ -178,16 +197,16 @@ class UsersTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{"username":"newerUser", "email":"nobody@localhost","password":"defaultPassword"}')
+      body('{"username":"newerUser","email":"nobody@localhost","password":"defaultPassword"}')
     }
     then:
     resp.status == 200
     resp.json.data.username == "newerUser"
   }
 
-  /*
-  * /register is not implemented for security reasons.
-  */
+/*
+* /register is not implemented for security reasons.
+*/
 
   @Ignore
   void "test POST /rest/register"() {
@@ -203,4 +222,5 @@ class UsersTestSpec extends AbstractAuthSpec {
     User checkUser = User.findByUsername("newUser")
     checkUser != null
   }
+
 }
