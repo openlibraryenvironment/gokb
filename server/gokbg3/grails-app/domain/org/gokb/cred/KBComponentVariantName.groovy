@@ -36,6 +36,15 @@ class KBComponentVariantName {
       "${this.class.name}:${id}"
   }
 
+  static jsonMapping = [
+    'ignore': [
+      'status',
+      'normVariantName',
+      'status',
+      'owner'
+    ]
+  ]
+
   def beforeInsert() {
     // Generate the any necessary values.
     normVariantName = GOKbTextUtils.normaliseString(variantName);

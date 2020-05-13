@@ -26,6 +26,11 @@ class TitleInstance extends KBComponent {
     "OAStatus"  : "Unknown"
   ]
 
+  static touchOnUpdate = [
+    "tipps",
+    "tipls"
+  ]
+
   static mapping = {
     // From TitleInstance
     includes KBComponent.mapping
@@ -38,6 +43,34 @@ class TitleInstance extends KBComponent {
   }
 
   public static final String restPath = "/titles"
+
+  static jsonMapping = [
+    'ignore': [
+      'pureOA',
+      'continuingSeries',
+      'reasonRetired',
+      'work',
+      'coverImage',
+      'issuer',
+      'translatedFrom',
+      'absorbedBy',
+      'mergedWith',
+      'renamedTo',
+      'splitFrom'
+    ],
+    'es': [
+      'publisherUuid': "publisher.uuid",
+      'publisherName': "publisher.name",
+      'publisher': "publisher.id"
+    ],
+    'defaultLinks': [
+      'publisher'
+    ],
+    'defaultEmbeds': [
+      'ids',
+      'variantNames'
+    ]
+  ]
 
   // This map is used to convey information about the title in general processing. The initial usecase is so that we can attach
   // information about how this specific title was located, for example, by class 1 identifier match, or some other method
@@ -619,20 +652,16 @@ class TitleInstance extends KBComponent {
         def final_val = idobj.value
 
         if (found_ns) {
-          try {
-
-            if (found_ns.family == 'isxn') {
-              final_val = final_val.replaceAll("x","X")
-            }
-
-            if (!Identifier.findByNamespaceAndNormname(found_ns, Identifier.normalizeIdentifier(final_val))) {
-              def test_id = new Identifier(namespace:found_ns, value:final_val).validate()
-            }
+          if (found_ns.family == 'isxn') {
+            final_val = final_val.replaceAll("x","X")
           }
-          catch (grails.validation.ValidationException ve) {
-            log.warn("Validation for ${found_ns.value}:${final_val} failed!")
-            result.errors.add("Validation for identifier ${found_ns.value}:${final_val} failed!")
-            result.valid = false
+
+          if (!Identifier.findByNamespaceAndNormname(found_ns, Identifier.normalizeIdentifier(final_val))) {
+            if ( (Identifier.nameSpaceRules[found_ns.value] && !(final_val ==~ Identifier.nameSpaceRules[found_ns.value])) || (found_ns.pattern && !(final_val ==~ found_ns.pattern)) ) {
+              log.warn("Validation for ${found_ns.value}:${final_val} failed!")
+              result.errors.add("Validation for identifier ${found_ns.value}:${final_val} failed!")
+              result.valid = false
+            }
           }
         }
       }
@@ -756,8 +785,9 @@ class TitleInstance extends KBComponent {
       if ( tipps?.size() > 0 ) {
         def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def tipp_ids = tipps?.collect { it.id }
+        Date now = new Date()
 
-        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids])
+        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids, now: now])
       }
 
       def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this])
@@ -767,5 +797,9 @@ class TitleInstance extends KBComponent {
         ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
       }
     }
+  }
+
+  def afterInsert() {
+
   }
 }

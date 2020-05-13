@@ -182,13 +182,13 @@ class TitleLookupService {
             def project = null,
             def newTitleClassName = 'org.gokb.cred.JournalInstance',
             def uuid = null) {
-    return find([title:title, publisher_name:publisher_name,identifiers:identifiers,uuid:uuid],user,project,newTitleClassName)
+    return findTitle([title:title, publisher_name:publisher_name,identifiers:identifiers,uuid:uuid],user,project,newTitleClassName)
   }
 
   private final findLock = new Object()
 
   @Synchronized("findLock")
-  def find (Map metadata,
+  private def findTitle (Map metadata,
             def user = null, 
             def project = null,
             def newTitleClassName = 'org.gokb.cred.JournalInstance') {
@@ -938,5 +938,18 @@ class TitleLookupService {
     def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     // was identifier.identifiedComponents
     KBComponent.executeQuery('select DISTINCT c.fromComponent from Combo as c where c.toComponent = :id and c.type.value = :tp and c.fromComponent.status <> :del',[id:identifier,tp:'KBComponent.Ids', del: status_deleted]);
+  }
+
+  def compareIdentifierMaps(ids_one, ids_two) {
+    def result = true
+
+    ids_one.each { ido ->
+      ids_two.each { idt ->
+        if (ido.type == idt.type && ido.value != idt.value) {
+          result = false
+        }
+      }
+    }
+    result
   }
 }

@@ -24,13 +24,13 @@ class MessageService {
       }
 
       eo.getArguments().each { ma ->
-        log.debug("message arg type is: ${ma?.class?.name ?: 'null'}")
+        log.debug("message arg ${ma} type is: ${ma?.class?.name ?: 'null'}")
         if (ma && ma instanceof String) {
           String[] emptyArgs = []
           def arg = messageSource.resolveCode(ma, locale)
           
           if (arg) {
-            arg.format(emptyArgs)
+            arg = arg.format(emptyArgs)
 
             resolvedArgs.add(arg)
           }

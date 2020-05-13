@@ -19,6 +19,7 @@ class IntegrationController {
   def springSecurityService
   def concurrencyManagerService
   def classExaminationService
+  def componentUpdateService
   def titleLookupService
   def applicationEventService
   def sessionFactory
@@ -84,7 +85,7 @@ class IntegrationController {
     }
 
     // Defaults first.
-    ensureCoreData(group, request.JSON)
+    componentUpdateService.ensureCoreData(group, request.JSON)
 
     // Find by username but do not create missing entries.
     def owner = request.JSON.owner
@@ -366,7 +367,7 @@ class IntegrationController {
         return
       }
 
-      setAllRefdata ([
+      componentUpdateService.setAllRefdata ([
         'software', 'service'
       ], jsonOrg, located_or_new_org)
 
@@ -421,7 +422,7 @@ class IntegrationController {
       }
 
       // Core data...
-      ensureCoreData(located_or_new_org, jsonOrg)
+      componentUpdateService.ensureCoreData(located_or_new_org, jsonOrg)
 
       log.debug("Attempt to save - validate: ${located_or_new_org}");
 
@@ -496,7 +497,7 @@ class IntegrationController {
           ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
           ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
 
-          setAllRefdata ([
+          componentUpdateService.setAllRefdata ([
             'software', 'service'
           ], source_data, located_or_new_source)
 
@@ -645,6 +646,8 @@ class IntegrationController {
 
     // Set the name.
     def hasChanged = false
+    component.lock()
+    component.refresh()
 
     if(!component.name && data.name) {
       component.name = data.name
@@ -865,7 +868,8 @@ class IntegrationController {
   @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferencePackage() {
     def result = [ 'result' : 'OK' ]
-    def async = params.async ? true : false
+    def async = params.async ? params.boolean('async') : false
+    def update = params.addOnly ? params.boolean('addOnly') : false
     def rjson = request.JSON
     def fullsync = false
     User request_user = springSecurityService.currentUser
@@ -901,7 +905,7 @@ class IntegrationController {
                 }
 
                 if ( is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
-                  ensureCoreData(the_pkg, json.packageHeader, fullsync)
+                  componentUpdateService.ensureCoreData(the_pkg, json.packageHeader, fullsync)
 
                   if ( the_pkg.tipps?.size() > 0 ) {
                     existing_tipps = the_pkg.tipps*.id
@@ -929,7 +933,7 @@ class IntegrationController {
 
                         if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
 
-                          ensureCoreData(ti, tipp.title, fullsync)
+                          componentUpdateService.ensureCoreData(ti, tipp.title, fullsync)
                           tipp.title.internalId = ti.id;
                         } else {
                           if (ti != null)
@@ -974,7 +978,7 @@ class IntegrationController {
                         if(pl){
                           platform_cache[tipp.platform.name] = pl.id
 
-                          ensureCoreData(pl, tipp.platform, fullsync)
+                          componentUpdateService.ensureCoreData(pl, tipp.platform, fullsync)
                         }else{
                           log.error("Could not find/create ${tipp.platform}")
                           errors.add(['code': 400, idx: idx, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
@@ -1051,6 +1055,11 @@ class IntegrationController {
 
                   def tipp_upsert_start_time = System.currentTimeMillis()
                   def tipp_fails = 0
+
+                  if ( json.tipps?.size() > 0 ) {
+                    the_pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+                  }
+
                   // If valid, upsert tipps
                   json.tipps.eachWithIndex { tipp, idx ->
                     tippctr++
@@ -1110,7 +1119,7 @@ class IntegrationController {
                     job_result.message = "Package was created, but ${tipp_fails} TIPPs could not be created!"
                   }
                   else {
-                    if ( existing_tipps.size() > 0 ) {
+                    if ( !update && existing_tipps.size() > 0 ) {
 
 
                       tipps_to_delete.eachWithIndex { ttd, idx ->
@@ -1236,7 +1245,7 @@ class IntegrationController {
         if (p) {
           log.debug("created or looked up platform ${p}!")
 
-          setAllRefdata ([
+          componentUpdateService.setAllRefdata ([
             'software', 'service'
           ], platformJson, p)
           ClassUtils.setRefdataIfPresent(platformJson.authentication, p, 'authentication', 'Platform.AuthMethod')
@@ -1255,7 +1264,7 @@ class IntegrationController {
           p.save(flush:true)
 
           // Add the core data.
-          ensureCoreData(p, platformJson, fullsync)
+          componentUpdateService.ensureCoreData(p, platformJson, fullsync)
 
     //      if ( changed ) {
     //        p.save(flush:true, failOnError:true);
@@ -1312,13 +1321,13 @@ class IntegrationController {
         summaryStatement = data.summaryStatement
       }
 
-      setAllRefdata ([
+      componentUpdateService.setAllRefdata ([
         'type'
       ], data, l)
 
 
       // Add the core data.
-      ensureCoreData(l, data)
+      componentUpdateService.ensureCoreData(l, data)
 
 //      l.save(flush:true, failOnError:true)
     }
@@ -1356,7 +1365,7 @@ class IntegrationController {
   def crossReferenceTitle() {
     User user = springSecurityService.currentUser
     def rjson = request.JSON
-    def async = params.async ? true : false
+    def async = params.async ? params.boolean('async') : false
     def fullsync = false
     def result
 
@@ -1419,7 +1428,7 @@ class IntegrationController {
 
     def result = [ 'result' : 'OK' ]
 
-    log.debug("crossReferenceTitle(${titleObj.type},${titleObj.title},${titleObj.identifiers}},...)");
+    log.debug("crossReferenceTitle(${titleObj.type},${titleObj.name},${titleObj.identifiers}},...)");
 
         TitleInstance.withNewSession {
           User user = User.get(userid)
@@ -1434,6 +1443,41 @@ class IntegrationController {
             result.errors = title_validation.errors
           }
           else {
+            def title_class_name = null
+
+            if (titleObj.type) {
+              switch (titleObj.type) {
+                case "serial":
+                case "Serial":
+                case "Journal":
+                case "journal":
+                  title_class_name = "org.gokb.cred.JournalInstance"
+                  break;
+                case "monograph":
+                case "Monograph":
+                case "Book":
+                case "book":
+                  title_class_name = "org.gokb.cred.BookInstance"
+                  break;
+                case "Database":
+                case "database":
+                  title_class_name = "org.gokb.cred.DatabaseInstance"
+                  break;
+                default:
+                  log.warn("Missing type for title!")
+                  break;
+              }
+            }
+
+            if (!title_class_name) {
+              log.error("Missing or unknown publication type: ${titleObj.type}")
+              result.result="ERROR"
+              result.message="Could not identify the publication type (serial or monograph) of title ${titleObj.name}."
+              result.baddata=titleObj
+
+              return result
+            }
+
             try {
               def title = titleLookupService.find(
                 titleObj.name,
@@ -1441,8 +1485,7 @@ class IntegrationController {
                 titleObj.identifiers,
                 user,
                 null,
-                titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                  (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
+                title_class_name,
                 titleObj.uuid
               );  // project
 
@@ -1469,9 +1512,9 @@ class IntegrationController {
                 }
 
                 // Add the core data.
-                ensureCoreData(title, titleObj, fullsync)
+                componentUpdateService.ensureCoreData(title, titleObj, fullsync)
 
-                title_changed |= setAllRefdata ([
+                title_changed |= componentUpdateService.setAllRefdata ([
                       'OAStatus', 'medium',
                       'pureOA', 'continuingSeries',
                       'reasonRetired'
@@ -1496,20 +1539,29 @@ class IntegrationController {
                       def cont = true
 
                       jhe.from.each { fhe ->
+                        def p = null
 
-                        def p = titleLookupService.find(
-                          fhe.title,
-                          null,
-                          fhe.identifiers,
-                          user,
-                          null,
-                          titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                            (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
-                          fhe.uuid
-                        );
+                        if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
+                          log.debug("Setting main title ${title} as participant")
+                          p = title
+                        }
+                        else {
+                          log.debug("Looking up connected title ${fhe} as participant")
+                          p = titleLookupService.find(
+                            fhe.title,
+                            null,
+                            fhe.identifiers,
+                            user,
+                            null,
+                            title_class_name,
+                            fhe.uuid
+                          );
+                        }
 
                         if ( p && !p.hasErrors() ) {
-                          ensureCoreData(p, fhe, fullsync)
+                          if ( p != title ) {
+                            componentUpdateService.ensureCoreData(p, fhe, fullsync)
+                          }
                           inlist.add(p);
                         }
                         else {
@@ -1519,19 +1571,29 @@ class IntegrationController {
 
                       jhe.to.each { fhe ->
 
-                        def p =  titleLookupService.find(
-                          fhe.title,
-                          null,
-                          fhe.identifiers,
-                          user,
-                          null,
-                          titleObj.type=='Serial' ? 'org.gokb.cred.JournalInstance' :
-                            (titleObj.type=='Database' ? 'org.gokb.cred.DatabaseInstance' : 'org.gokb.cred.BookInstance'),
-                          fhe.uuid
-                        );
+                        def p = null
+
+                        if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
+                          log.debug("Setting main title ${title} as participant")
+                          p = title
+                        }
+                        else {
+                          log.debug("Looking up connected title ${fhe} as participant")
+                          p = titleLookupService.find(
+                            fhe.title,
+                            null,
+                            fhe.identifiers,
+                            user,
+                            null,
+                            title_class_name,
+                            fhe.uuid
+                          );
+                        }
 
                         if ( p && !p.hasErrors() && !inlist.contains(p) ) {
-                          ensureCoreData(p, fhe, fullsync)
+                          if ( p != title ) {
+                            componentUpdateService.ensureCoreData(p, fhe, fullsync)
+                          }
                           outlist.add(p);
                         }
                         else {
@@ -1611,7 +1673,7 @@ class IntegrationController {
                     }
                   }
                 }
-                if( title.class.name == "org.gokb.cred.BookInstance" && (titleObj.type == 'Book' || titleObj.type == 'Monograph') ){
+                if( title_class_name == 'org.gokb.cred.BookInstance' ){
 
                   log.debug("Adding Monograph fields for ${title.class.name}: ${title}")
                   def mg_change = addMonographFields(title, titleObj)
@@ -1831,26 +1893,34 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def getJobInfo() {
     def result = [ 'result' : 'OK', 'params' : params ]
-    Job job = concurrencyManagerService.jobs.containsKey(params.int('id')) ? concurrencyManagerService.jobs[params.int('id')] : null
+    Integer id = params.int('id')
 
-    if ( job ) {
-      log.debug("${job}")
-      result.description = job.description
-      result.startTime = job.startTime
+    if (id == null){
+      result.result = "ERROR"
+      result.message = "Request is missing an id parameter."
+    }
+    else{
+      Job job = concurrencyManagerService?.jobs?.containsKey(id) ? concurrencyManagerService.jobs[id] : null
 
-      if ( job.endTime ) {
-        result.finished = true
-        result.endTime = job.endTime
-        result.job_result = job.get()
+      if ( job ) {
+        log.debug("${job}")
+        result.description = job.description
+        result.startTime = job.startTime
+
+        if ( job.endTime ) {
+          result.finished = true
+          result.endTime = job.endTime
+          result.job_result = job.get()
+        }
+        else {
+          result.finished = false
+          result.progress = job.progress
+        }
       }
       else {
-        result.finished = false
-        result.progress = job.progress
+        result.result = "ERROR"
+        result.message = "Could not find job with ID ${id}."
       }
-    }
-    else {
-      result.result = "ERROR"
-      result.message = "Could not find job with ID ${params.id}."
     }
     render result as JSON
   }

@@ -15,6 +15,7 @@ class ProfileController {
   def genericOIDService
   def springSecurityService
   def userProfileService
+  def passwordEncoder
 
   def show() {
     def user = User.get(springSecurityService.principal.id)
@@ -32,12 +33,12 @@ class ProfileController {
     }
 
     def links = [
-      'self'  : 'rest/profile',
-      'update': 'rest/profile/update',
-      'delete': 'rest/profile/delete'
+      'self'  : ['href': 'rest/profile'],
+      'update': ['href': 'rest/profile'],
+      'delete': ['href': 'rest/profile']
     ]
 
-    def result = [
+    def result = ['data': [
       'id'             : user.id,
       'username'       : user.username,
       'displayName'    : user.displayName,
@@ -50,90 +51,40 @@ class ProfileController {
       'defaultPageSize': user.defaultPageSize,
       'roles'          : roles,
       '_links'         : links
-    ]
-
+    ]]
     render result as JSON
   }
 
   @Transactional
   def update() {
-    def result = ['result': 'OK']
-    def immutables = ['id', 'username', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
-    def errors = []
-    def skippedCG = false
-    def reqBody = request.JSON
-    User user = springSecurityService.currentUser
+    User user = User.get(springSecurityService.principal.id)
+    render userProfileService.update(user, request.JSON, user) as JSON
+  }
 
-
-    if (reqBody && reqBody.id && reqBody.id == user.id) {
-      reqBody.each { field, val ->
-        if (val && user.hasProperty(field)) {
-          if (field != 'curatoryGroups') {
-            if (!immutables.contains(field)) {
-              user."${field}" = val
-            } else {
-              log.debug("Ignoring immutable field ${field}")
-            }
-          } else {
-            if (user.hasRole('ROLE_EDITOR') || user.hasRole('ROLE_ADMIN')) {
-              def curGroups = []
-              val.each { cg ->
-                def cg_obj = null
-
-                if (cg.uuid?.trim()) {
-                  cg_obj = CuratoryGroup.findByUuid(cg.uuid)
-                }
-
-                if (!cg_obj && cg.id) {
-                  cg_obj = cg.id instanceof String ? genericOIDService.resolveOID(cg.id) : CuratoryGroup.get(cg.id)
-                }
-
-                if (cg_obj) {
-                  curGroups.add(cg_obj)
-                } else {
-                  log.debug("CuratoryGroup ${cg} not found!")
-                  errors << ['message': 'Could not find referenced curatory group!', 'baddata': cg]
-                }
-              }
-              log.debug("New CuratoryGroups: ${curGroups}")
-
-              if (errors.size() > 0) {
-                result.message = "There have been errors updating the users curatory groups."
-                result.errors = errors
-                response.setStatus(400)
-              } else {
-                user.curatoryGroups.addAll(curGroups)
-                user.curatoryGroups.retainAll(curGroups)
-              }
-            } else {
-              skippedCG = true
-            }
-          }
-        }
+  @grails.plugin.springsecurity.annotation.Secured(value = ['IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
+  @Transactional
+  def patch() {
+    def result = [:]
+    Map reqData = request.JSON
+    User user = User.get(springSecurityService.principal.id)
+    if (reqData.new_password && reqData.password) {
+      if (passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
+        user.password = reqData.new_password
+        user.save(flush: true, failOnError: true);
+      } else {
+//        result.data = user
+        result.error = [message: "wrong password - profile unchanged"]
+        render result as JSON
       }
-
-      if (errors.size() == 0) {
-        if (user.validate()) {
-          user.save(flush: true)
-          result.message = "User profile sucessfully updated."
-        } else {
-          result.result = "ERROR"
-          result.message = "There have been errors saving the user object."
-          result.errors = user.errors
-        }
-      }
-    } else {
-      log.debug("Missing update payload or wrong user id")
-      result.result = "ERROR"
-      response.setStatus(400)
-      result.message = "Missing update payload or wrong user id!"
     }
-    render result as JSON
+    reqData.remove('new_password')
+    reqData.remove('password')
+    render userProfileService.update(user, reqData, user) as JSON
   }
 
   @Transactional
   def delete() {
-    userProfileService.delete(springSecurityService.currentUser)
+    userProfileService.delete(User.get(springSecurityService.principal.id))
     def result = [:]
     render result as JSON
   }

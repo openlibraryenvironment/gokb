@@ -1,17 +1,17 @@
 package gokbg3
 
-import grails.testing.mixin.integration.Integration
-import grails.transaction.*
-import spock.lang.Ignore
-import spock.lang.Specification
-import spock.lang.Shared
+import grails.core.GrailsApplication
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
+import grails.testing.mixin.integration.Integration
+import grails.transaction.*
 import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
 import org.springframework.beans.factory.annotation.*
 import org.springframework.web.context.WebApplicationContext
-import grails.core.GrailsApplication
+import spock.lang.Ignore
+import spock.lang.Specification
+import spock.lang.Shared
 
 
 @Integration

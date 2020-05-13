@@ -17,17 +17,19 @@ class CuratoryGroup extends KBComponent {
   static mappedBy = [users: "curatoryGroups", ]
   
   static manyByCombo = [
-  	licenses: License,
-  	packages: Package,
-  	platforms: Platform,
-  	offices: Office,
+    licenses: License,
+    packages: Package,
+    platforms: Platform,
+    orgs: Org,
+    offices: Office,
   ]
   
   static mappedByCombo = [
-  	licenses: 'curatoryGroups',
-  	packages: 'curatoryGroups',
-  	platforms: 'curatoryGroups',
-  	offices: 'curatoryGroups',
+    licenses: 'curatoryGroups',
+    packages: 'curatoryGroups',
+    platforms: 'curatoryGroups',
+    orgs: 'curatoryGroups',
+    offices: 'curatoryGroups',
   ]
 
   static constraints = {
@@ -48,7 +50,7 @@ class CuratoryGroup extends KBComponent {
   }
 
   public String getRestPath() {
-    return "/groups";
+    return "/curatoryGroups";
   }
 
   @Override

@@ -1,5 +1,6 @@
 package gokbg3;
 
+import grails.util.Environment
 import grails.util.GrailsNameUtils;
 
 import grails.core.GrailsClass
@@ -136,6 +137,23 @@ class BootStrap {
             enabled: false).save(failOnError: true)
       }
 
+      if (Environment.current != Environment.PRODUCTION) {
+        def tempUser = User.findByUsername('tempUser')
+        if ( ! tempUser ) {
+          log.error("No tempUser found, create")
+          tempUser = new User(
+              username: 'tempUser',
+              password: 'tempUser',
+              display: 'Temp User',
+              email: '',
+              enabled: true).save(failOnError: true)
+        }
+
+        if (!tempUser.authorities.contains(userRole)) {
+          UserRole.create tempUser, userRole
+        }
+      }
+
 
       // Make sure admin user has all the system roles.
       [contributorRole,userRole,editorRole,adminRole,apiRole,suRole].each { role ->
@@ -206,11 +224,13 @@ class BootStrap {
     sourceObjects()
 
     def isbn_ns = IdentifierNamespace.findByValue('isbn') ?: new IdentifierNamespace(value:'isbn', family:'isxn').save(flush:true, failOnError:true);
+    def pisbn_ns = IdentifierNamespace.findByValue('pisbn') ?: new IdentifierNamespace(value:'pisbn', family:'isxn').save(flush:true, failOnError:true);
     def issn_ns = IdentifierNamespace.findByValue('issn') ?: new IdentifierNamespace(value:'issn', family:'isxn').save(flush:true, failOnError:true);
     def eissn_ns = IdentifierNamespace.findByValue('eissn') ?: new IdentifierNamespace(value:'eissn', family:'isxn').save(flush:true, failOnError:true);
     def issnl_ns = IdentifierNamespace.findByValue('issnl') ?: new IdentifierNamespace(value:'issnl', family:'isxn').save(flush:true, failOnError:true);
     def doi_ns = IdentifierNamespace.findByValue('doi') ?: new IdentifierNamespace(value:'doi').save(flush:true, failOnError:true);
     def zdb_ns = IdentifierNamespace.findByValue('zdb') ?: new IdentifierNamespace(value:'zdb').save(flush:true, failOnError:true);
+    def isil_ns = IdentifierNamespace.findByValue('isil') ?: new IdentifierNamespace(value:'isil').save(flush:true, failOnError:true);
 
     // log.info("Default batch loader config");
     // defaultBulkLoaderConfig();
@@ -326,7 +346,7 @@ class BootStrap {
         dcinfo.save(flush:true);
       }
 
-      if (dcinfo.dcName.startsWith('org.gokb.cred')) {
+      if (dcinfo.dcName.startsWith('org.gokb.cred') || dcinfo.dcName == 'org.gokb.Annotation') {
         AclObjectIdentity oid
 
         if (!AclObjectIdentity.findByObjectId(dcinfo.id)) {
@@ -450,6 +470,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("Package.LinkType", "Previous").save(flush:true, failOnError:true)
 
     RefdataCategory.lookupOrCreate("Package.Global", "Consortium").save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate("Package.Global", "Regional").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Package.Global", "Global").save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate("Package.Global", "Other").save(flush:true, failOnError:true)
 
@@ -848,11 +869,30 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Platform.Roles','Host').save(flush:true, failOnError:true)
 
     RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.FileAttachments').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipps').save(flush:true, failOnError:true)
-    RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipls').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Publisher').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Issuer').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Imprint').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Platform.CuratoryGroups').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Platform.HostedTipps').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Platform.HostedTitles').save(flush:true, failOnError:true)
-    RefdataCategory.lookupOrCreate('Combo.Type','TitleInstance.Tipls').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Platform.Provider').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Office.Org').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Office.CuratoryGroups').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Org.Previous').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Org.Parent').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Org.OwnedImprints').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Org.CuratoryGroups').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Package.Provider').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Package.CuratoryGroups').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Package.NominalPlatform').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Package.Previous').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Package.Parent').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Package.Broker').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','License.Licensee').save(flush:true, failOnError:true)
 
     RefdataCategory.lookupOrCreate('MembershipRole','Administrator').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('MembershipRole','Member').save(flush:true, failOnError:true)

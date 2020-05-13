@@ -2,6 +2,7 @@ package org.gokb
 
 
 import grails.gorm.transactions.Transactional
+import org.elasticsearch.action.bulk.BulkRequestBuilder
 import org.gokb.FTControl
 import org.hibernate.ScrollMode
 import java.nio.charset.Charset
@@ -84,7 +85,7 @@ class FTUpdateService {
 
         result.scope = kbc.scope ? kbc.scope.value : ""
         result.listVerifiedDate = kbc.listVerifiedDate ? sdf.format(kbc.listVerifiedDate) : ""
-        
+
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
           result.curatoryGroups.add(cg.name)
@@ -121,6 +122,11 @@ class FTUpdateService {
           result.roles.add(role.value)
         }
 
+        result.curatoryGroups = []
+        kbc.curatoryGroups?.each { cg ->
+          result.curatoryGroups.add(cg.name)
+        }
+
         result.status = kbc.status?.value
 
         result.identifiers = []
@@ -148,6 +154,11 @@ class FTUpdateService {
         result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
         result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
 
+        result.curatoryGroups = []
+        kbc.curatoryGroups?.each { cg ->
+          result.curatoryGroups.add(cg.name)
+        }
+
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -155,7 +166,7 @@ class FTUpdateService {
         result.updater='platform'
         result.primaryUrl = kbc.primaryUrl
         result.status = kbc.status?.value
-        
+
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
           result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
@@ -307,7 +318,7 @@ class FTUpdateService {
             cst.endIssue = tcs.endIssue ?: ""
             cst.embargo = tcs.embargo ?: ""
             cst.coverageNote = tcs.coverageNote ?: ""
-            cst.coverageDepth = tcs.coverageDepth ?: ""
+            cst.coverageDepth = tcs.coverageDepth ? tcs.coverageDepth.value : ""
 
             result.coverage.add(cst)
           }
@@ -355,7 +366,7 @@ class FTUpdateService {
     try {
       log.debug("updateES - ${domain.name}");
 
- 
+
       def latest_ft_record = null;
       def highest_timestamp = 0;
       def highest_id = 0;
@@ -379,13 +390,15 @@ class FTUpdateService {
 
       def total = 0;
       Date from = new Date(latest_ft_record.lastTimestamp);
-  
+
       def countq = domain.executeQuery("select count(o.id) from "+domain.name+" as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ",[ts: from], [readonly:true])[0];
       log.debug("Will process ${countq} records");
 
       def q = domain.executeQuery("select o.id from "+domain.name+" as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id",[ts: from], [readonly:true]);
-    
+
       log.debug("Query completed.. processing rows...");
+
+      BulkRequestBuilder bulkRequest = esclient.prepareBulk();
 
       // while (results.next()) {
       for (r_id in q) {
@@ -403,9 +416,8 @@ class FTUpdateService {
         if ( idx_record != null ) {
           def recid = idx_record['_id'].toString()
           idx_record.remove('_id');
-          
-          def future = esclient.prepareIndex(es_index,'component',recid).setSource(idx_record)
-          def result=future.get()
+
+          bulkRequest.add(esclient.prepareIndex(es_index,'component',recid).setSource(idx_record))
         }
 
 
@@ -419,7 +431,10 @@ class FTUpdateService {
 
         if ( count > 250 ) {
           count = 0;
-          log.debug("interim:: processed ${++total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
+          log.debug("interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
+          def bulkResponse = bulkRequest.get()
+          bulkRequest = esclient.prepareBulk();
+          log.debug("BulkResponse: ${bulkResponse}")
           FTControl.withNewTransaction {
             latest_ft_record = FTControl.get(latest_ft_record.id);
             if ( latest_ft_record ) {
@@ -434,9 +449,13 @@ class FTUpdateService {
           cleanUpGorm();
           synchronized(this) {
             Thread.yield()
-            Thread.sleep(2000);
           }
         }
+      }
+
+      if (count > 0) {
+        def bulkFinalResponse = bulkRequest.get()
+        log.debug("Final BulkResponse: ${bulkFinalResponse}")
       }
 
       // update timestamp
@@ -483,5 +502,5 @@ class FTUpdateService {
   def destroy() {
     log.debug("Destroy");
   }
- 
+
 }

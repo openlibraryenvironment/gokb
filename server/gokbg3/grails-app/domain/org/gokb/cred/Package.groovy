@@ -122,13 +122,16 @@ class Package extends KBComponent {
     'es': [
       'nominalPlatformUuid': "nominalPlatform.uuid",
       'nominalPlatformName': "nominalPlatform.name",
-      'nominalPlatform': false,
+      'nominalPlatform': "nominalPlatform.id",
       'cpname': false,
-      'provider':false,
+      'provider':"provider.id",
       'providerName': "provider.name",
       'providerUuid': "provider.uuid",
       'titleCount': false,
-      'paymentType': false
+      'paymentType': false,
+      'listStatus': "refdata",
+      'contentType': "refdata",
+      'scope': "refdata"
     ],
     'defaultLinks': [
       'tipps',
@@ -138,7 +141,8 @@ class Package extends KBComponent {
     ],
     'defaultEmbeds': [
       'ids',
-      'variantNames'
+      'variantNames',
+      'curatoryGroups'
     ]
   ]
 
@@ -318,20 +322,11 @@ select tipp.id,
        title.id,
        plat.name,
        plat.id,
-       tipp.startDate,
-       tipp.startVolume,
-       tipp.startIssue,
-       tipp.endDate,
-       tipp.endVolume,
-       tipp.endIssue,
-       tipp.coverageDepth,
-       tipp.coverageNote,
        tipp.url,
        tipp.status,
        tipp.accessStartDate,
        tipp.accessEndDate,
        tipp.format,
-       tipp.embargo,
        plat.primaryUrl,
        tipp.lastUpdated,
        tipp.uuid,
@@ -353,7 +348,6 @@ select tipp.id,
       and titleCombo.toComponent=tipp
       and titleCombo.type = ?
       and titleCombo.fromComponent=title
-      and tipp.status != ?
     order by tipp.id''';
 
   public void deleteSoft (context) {
@@ -363,12 +357,13 @@ select tipp.id,
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
     def tipps = getTipps()
+    Date now = new Date()
 
     if ( tipps?.size() > 0 ) {
       def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
       def tipp_ids = tipps?.collect { it.id }
 
-      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids])
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdateComment = 'Deleted via Package delete', t.lastUpdated = :now where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids, now: now])
     }
   }
 
@@ -386,11 +381,12 @@ select tipp.id,
     log.debug("Retiring tipps");
 
     def tipps = getTipps()
+    Date now = new Date()
 
     if ( tipps?.size() > 0) {
       def tipp_ids = tipps?.collect { it.id }
 
-      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret where t.id IN (:ttd)",[ret: retired_status, ttd:tipp_ids])
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret, t.lastUpdateComment = 'Retired via Package retire', t.lastUpdated = :now where t.id IN (:ttd)",[ret: retired_status, ttd:tipp_ids, now: now])
     }
   }
 
@@ -455,7 +451,7 @@ select tipp.id,
     // log.debug("Running package contents qry : ${OAI_PKG_CONTENTS_QRY}");
 
     // Get the tipps manually rather than iterating over the collection - For better management
-    def tipps = TitleInstancePackagePlatform.executeQuery(OAI_PKG_CONTENTS_QRY, [this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps, refdata_deleted],[readOnly: true]); // , fetchSize:250]);
+    def tipps = this.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery(OAI_PKG_CONTENTS_QRY, [this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps],[readOnly: true]) : []
 
     log.debug("Query complete...");
 
@@ -496,54 +492,42 @@ select tipp.id,
         'dateCreated' (sdf.format(dateCreated))
         'TIPPs'(count:tipps?.size()) {
           tipps.each { tipp ->
-            builder.'TIPP' (['id':tipp[0],'uuid':tipp[21]]) {
-              builder.'status' (tipp[14]?.value)
-              builder.'lastUpdated' (tipp[20]?sdf.format(tipp[20]):null)
-              builder.'medium' (tipp[17]?.value)
-              builder.'title' (['id':tipp[2],'uuid':tipp[22]]) {
+            builder.'TIPP' (['id':tipp[0],'uuid':tipp[12]]) {
+              builder.'status' (tipp[6]?.value)
+              builder.'lastUpdated' (tipp[11]?sdf.format(tipp[11]):null)
+              builder.'medium' (tipp[9]?.value)
+              builder.'title' (['id':tipp[2],'uuid':tipp[13]]) {
                 builder.'name' (tipp[1]?.trim())
                 builder.'type' (getTitleClass(tipp[2]))
-                builder.'status' (tipp[24])
+                builder.'status' (tipp[15])
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
                     builder.'identifier'('namespace':tid[0], 'value':tid[1], 'type':tid[2])
                   }
                 }
               }
-              'platform'([id:tipp[4],'uuid':tipp[23]]) {
-                'primaryUrl' (tipp[19]?.trim())
+              'platform'([id:tipp[4],'uuid':tipp[14]]) {
+                'primaryUrl' (tipp[10]?.trim())
                 'name' (tipp[3]?.trim())
               }
-              'access'(start:tipp[15]?sdf.format(tipp[15]):null,end:tipp[16]?sdf.format(tipp[16]):null)
+              'access'(start:tipp[7]?sdf.format(tipp[7]):null,end:tipp[8]?sdf.format(tipp[8]):null)
               def cov_statements = getCoverageStatements(tipp[0])
               if(cov_statements?.size() > 0){
                 cov_statements.each { tcs ->
                   'coverage'(
                     startDate:(tcs.startDate?sdf.format(tcs.startDate):null),
-                    startVolume:tcs.startVolume,
-                    startIssue:tcs.startIssue,
+                    startVolume:(tcs.startVolume),
+                    startIssue:(tcs.startIssue),
                     endDate:(tcs.endDate?sdf.format(tcs.endDate):null),
-                    endVolume:tcs.endVolume,
-                    endIssue:tcs.endIssue,
-                    coverageDepth:tcs.coverageDepth?.value?:tipp[11]?.value,
-                    coverageNote:tcs.coverageNote,
-                    embargo: tcs.embargo
+                    endVolume:(tcs.endVolume),
+                    endIssue:(tcs.endIssue),
+                    coverageDepth:(tcs.coverageDepth?.value?:null),
+                    coverageNote:(tcs.coverageNote),
+                    embargo: (tcs.embargo)
                   )
                 }
               }
-              else{
-              'coverage'(
-                startDate:(tipp[5]?sdf.format(tipp[5]):null),
-                startVolume:tipp[6],
-                startIssue:tipp[7],
-                endDate:(tipp[8]?sdf.format(tipp[8]):null),
-                endVolume:tipp[9],
-                endIssue:tipp[10],
-                coverageDepth:tipp[11]?.value,
-                coverageNote:tipp[12],
-                embargo: tipp[18] )
-              }
-              'url'(tipp[13]?:"")
+              'url'(tipp[5]?:"")
             }
           }
         }

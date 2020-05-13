@@ -5,6 +5,7 @@ import com.k_int.ClassUtils
 import org.gokb.GOKbTextUtils
 import groovy.util.logging.*
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Slf4j
 class TitleInstancePackagePlatform extends KBComponent {
@@ -62,13 +63,13 @@ class TitleInstancePackagePlatform extends KBComponent {
     'es': [
       'hostPlatformUuid': "hostPlatform.uuid",
       'hostPlatformName': "hostPlatform.name",
-      'hostPlatform': false,
+      'hostPlatform': "hostPlatform.id",
       'tippTitleUuid': "title.uuid",
       'tippTitleName': "title.name",
-      'tippTitle': false,
+      'tippTitle': "title.id",
       'tippPackageUuid': "pkg.uuid",
       'tippPackageName': "pkg.name",
-      'tippPackage': false,
+      'tippPackage': "pkg.id",
       'titleType': "title.niceName",
       'coverage': "coverageStatements"
     ],
@@ -196,10 +197,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   @Override
   public String getNiceName() {
 	return "TIPP";
-  }
-
-  def afterUpdate() {
-    this.pkg.lastSeen = new Date().getTime()
   }
 
   /**

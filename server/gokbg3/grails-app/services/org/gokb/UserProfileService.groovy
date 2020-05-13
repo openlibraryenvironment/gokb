@@ -1,6 +1,8 @@
 package org.gokb
 
+import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+import groovy.util.logging.Log
 import org.gokb.cred.ComponentLike
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.DSAppliedCriterion
@@ -10,6 +12,7 @@ import org.gokb.cred.KBComponent
 import org.gokb.cred.Note
 import org.gokb.cred.Package
 import org.gokb.cred.ReviewRequest
+import org.gokb.cred.Role
 import org.gokb.cred.SavedSearch
 import org.gokb.cred.User
 import org.gokb.cred.UserOrganisation
@@ -17,11 +20,17 @@ import org.gokb.cred.UserOrganisationMembership
 import org.gokb.cred.UserRole
 import org.gokb.cred.WebHookEndpoint
 import org.gokb.refine.RefineProject
+import org.gokb.rest.UsersController
+import org.springframework.beans.factory.annotation.Autowired
 
 @Transactional
 class UserProfileService {
 
+  @Autowired
+  UsersController usersController
+
   def delete(User user) {
+    def result = [:]
     log.debug("Deleting user ${user.id} ..")
     def user_to_delete = User.get(user.id)
     def del_user = User.findByUsername('deleted')
@@ -58,8 +67,187 @@ class UserProfileService {
       user_to_delete.delete(flush: true, failOnError: true)
 
       log.debug("Done")
+      result.result = "OK"
     } else {
       log.error("Could not find either the user object for deletion (${params.id}) or the placeholder user")
+      result.result = "ERROR"
+      result.errors = user_to_delete?.errors
     }
+    return result
+  }
+
+  def update(User user, def data, User adminUser) {
+    def result = [:]
+    def error = [:]
+    log.debug("Updating user ${user.id} ..")
+    def immutables = ['id', 'username', 'passwordExpired', 'last_alert_check']
+    def adminAttributes = ['roles', 'curatoryGroups', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
+
+    def reqBody = data
+    if (!adminUser.isAdmin() && user != adminUser) {
+      error.message = "$adminUser.username is not allowed to change $user.username"
+      result.error = error
+      response.setStatus(400)
+      return result
+    }
+    // apply changes
+    reqBody.each { field, value ->
+      if (field != "roles" && field != "curatoryGroups" && value && !user.hasProperty(field)) {
+        error.message = "$field is unknown"
+        result.error = error
+        return result
+      }
+      if (immutables.contains(field) && value != user[field]) {
+        error.message = "$field is immutable"
+        result.error = error
+        return result
+      }
+      if (adminAttributes.contains(field) && !adminUser.isAdmin()) {
+        error.message = "$adminUser.username is not allowed to change $field "
+        result.error = error
+        return result
+      }
+      if (field == "roles") {
+        // change roles
+        // scan data
+        Set<Role> newRoles = new HashSet<Role>()
+        value.each { role ->
+          Role newRole = Role.findById(role.id)
+          if (!newRole)
+            newRole = Role.findByAuthority(role.authority)
+          if (newRole) {
+            newRoles.add(newRole)
+          } else {
+            error.message = "Role Authority $field is unknown"
+            result.error = error
+            return result
+          }
+        }
+        // alter previous role set
+        Set<Role> previousRoles = user.getAuthorities()
+        Role.findAll().each { role ->
+          if (newRoles.contains(role)) {
+            if (!previousRoles.contains(role)) {
+              UserRole.create(user, role, true)
+            }
+          } else if (previousRoles.contains(role)) {
+            UserRole.remove(user, role, true)
+          }
+        }
+      } else if (field == "curatoryGroups") {
+        // change cGroups
+        def curGroups = []
+        value.each { cg ->
+          CuratoryGroup cg_obj = null
+          if (cg.uuid?.trim()) {
+            cg_obj = CuratoryGroup.findByUuid(cg.uuid)
+          }
+          if (!cg_obj && cg.id) {
+            cg_obj = cg.id instanceof String ? genericOIDService.resolveOID(cg.id) : CuratoryGroup.get(cg.id)
+          }
+          if (cg_obj) {
+            curGroups.add(cg_obj)
+          } else {
+            log.debug("CuratoryGroup ${cg} not found!")
+            error.message = "unknown CuratoryGroup $cg"
+            result.error = error
+            return result
+          }
+        }
+        user.curatoryGroups.addAll(curGroups)
+        user.curatoryGroups.retainAll(curGroups)
+      } else {
+        user[field] = value
+      }
+    }
+    user.save(flush: true)
+    result.data = usersController.collectUserProps(user)
+    return result
+  }
+
+  def create(def data) {
+    User user = new User()
+    def result = [data  : [],
+                  result: 'OK']
+    def errors = []
+    def skippedCG = false
+    def reqBody = data
+
+    reqBody.each { field, val ->
+      if (val && user.hasProperty(field)) {
+        // roles have to be treated separately, as they're not a user property
+        if (field != 'curatoryGroups') {
+          user."${field}" = val
+        } else {
+          def curGroups = []
+          val.each { cg ->
+            def cg_obj = null
+            if (cg.uuid?.trim()) {
+              cg_obj = CuratoryGroup.findByUuid(cg.uuid)
+            }
+
+            if (!cg_obj && cg.id) {
+              cg_obj = cg.id instanceof String ? genericOIDService.resolveOID(cg.id) : CuratoryGroup.get(cg.id)
+            }
+
+            if (cg_obj) {
+              curGroups.add(cg_obj)
+            } else {
+              log.debug("CuratoryGroup ${cg} not found!")
+              errors << ['message': 'Could not find referenced curatory group!', 'baddata': cg]
+            }
+          }
+          log.debug("New CuratoryGroups: ${curGroups}")
+
+          if (errors.size() > 0) {
+            result.message = "There have been errors updating the users curatory groups."
+            result.errors = errors
+            response.setStatus(400)
+          } else {
+            user.curatoryGroups.addAll(curGroups)
+            user.curatoryGroups.retainAll(curGroups)
+          }
+        }
+      }
+      if (field == "roles") {
+        // scan data
+        Set<Role> newRoles = new HashSet<Role>()
+        val.each { value ->
+          Role newRole = Role.findById(value.id)
+          if (!newRole)
+            newRole = Role.findByAuthority(value.authority)
+          if (newRole) {
+            newRoles.add(newRole)
+          } else {
+            errors << ['message': 'Could not find referenced role!', 'baddata': value.authority]
+            log.error("Role Autority '$value.authority' is unknown!")
+          }
+        }
+        // alter previous role set
+        Set<Role> previousRoles = user.getAuthorities()
+        Role.findAll().each { role ->
+          if (newRoles.contains(role)) {
+            if (!previousRoles.contains(role)) {
+              UserRole.create(user, role, true)
+            }
+          } else if (previousRoles.contains(role)) {
+            UserRole.remove(user, role, true)
+          }
+        }
+      }
+    }
+
+    if (errors.size() == 0) {
+      if (user.validate()) {
+        user.save(flush: true)
+        result.message = "User profile sucessfully created."
+        result.data = usersController.collectUserProps(user)
+      } else {
+        result.result = "ERROR"
+        result.message = "There have been errors saving the user object."
+        result.errors = user.errors
+      }
+    }
+    return result
   }
 }

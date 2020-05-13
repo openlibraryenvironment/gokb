@@ -31,9 +31,9 @@ abstract class KBComponent implements Auditable {
   static final String EDIT_STATUS_REJECTED    = "Rejected"
 
   static final String CURRENT_PRICE_HQL = '''
-select cp 
-from ComponentPrice as cp 
-where cp.owner = :c 
+select cp
+from ComponentPrice as cp
+where cp.owner = :c
   and cp.priceType.value = :t
   and ( ( startDate is null OR startDate <= :d ) and ( endDate is null OR endDate > :d ) )
 '''
@@ -94,51 +94,54 @@ where cp.owner = :c
   protected void touchAllDependants () {
 
     //TODO: SO - This really needs to be reviewed. There must be an easy way to do this without hibernate freaking out. Commenting out for now.
+    log.debug("Update dependent objects for ${this}..")
 
     // The update closure.
-//    def doUpdate = { obj, Date stamp ->
-//
-//      try {
-//
-//        def saveParams = [failOnError:true, "system_save" : (systemComponent)]
-//
-//        obj.lastUpdated = stamp
-//        obj.save(saveParams)
-//
-//      } catch (Throwable t) {
-//
-//        // Suppress but log.
-//        log.error(t)
-//      }
-//    }
-//
-//    if (hasProperty("touchOnUpdate")) {
-//
-//      // We should also update the object(s).
-//      this.touchOnUpdate.each { dep_name ->
-//
-//        // Get the dependant.
-//        def deps = this."${dep_name}"
-//
-//        if (deps) {
-//          if (deps instanceof Map) {
-//
-//            deps.each { k,obj ->
-//              doUpdate(obj, lastUpdated)
-//            }
-//
-//          } else if (deps instanceof Iterable) {
-//
-//            deps.each { obj ->
-//              doUpdate(obj, lastUpdated)
-//            }
-//
-//          } else if (grailsApplication.isDomainClass(deps.class)) {
-//            doUpdate(deps, lastUpdated)
-//          }
-//        }
-//      }
-//    }
+    def doUpdate = { obj, Date stamp ->
+
+      try {
+
+        def saveParams = [failOnError:true]
+
+        obj.lastSeen = stamp.getTime()
+        obj.save(saveParams)
+
+      } catch (Throwable t) {
+
+       // Suppress but log.
+      log.error("${t}")
+    }
+  }
+
+    if (hasProperty("touchOnUpdate")) {
+
+      // We should also update the object(s).
+      this.touchOnUpdate.each { dep_name ->
+
+        // Get the dependant.
+        def deps = this."${dep_name}"
+
+        log.debug("Got ${dep_name}: ${deps}")
+
+        if (deps) {
+          if (deps instanceof Map) {
+
+            deps.each { k,obj ->
+              doUpdate(obj, this.lastUpdated)
+            }
+
+          } else if (deps instanceof Iterable) {
+
+            deps.each { obj ->
+              doUpdate(obj, this.lastUpdated)
+            }
+
+          } else if (grailsApplication.isDomainClass(deps.class)) {
+            doUpdate(deps, this.lastUpdated)
+          }
+        }
+      }
+    }
   }
 
   @Transient
@@ -178,13 +181,13 @@ where cp.owner = :c
             // log.error("MissingPropertyExceptiono - clearing out classMap",e);
             classMap = null
           }
-  
+
           // If we have values then add.
           if (classMap) {
             // Add using the class simple name.
             defaultsForThis[theClass.getSimpleName()] = classMap
           }
-  
+
           // Get the superclass.
           theClass = theClass.getSuperclass()
         }
@@ -221,15 +224,15 @@ where cp.owner = :c
               // Get the type defined against the class.
               PersistentProperty propertyDef = dClass.getPropertyByName(lone_property)
               String propType = propertyDef?.getType()?.getName()
-  
+
               if (propType) {
-  
+
                 switch (propType) {
                   case RefdataValue.class.getName() :
-  
+
                         final String ucProp = GrailsNameUtils.getClassName(lone_property);
                         final String key = "${rdc ?: className}.${ucProp}"
-    
+
                         if (values instanceof Collection) {
                           values.each { val ->
                             def v= RefdataCategory.lookupOrCreate(key, val)
@@ -494,7 +497,7 @@ where cp.owner = :c
 
     result;
   }
-  
+
   @Transient
   static <T extends KBComponent> T lookupByIO(String idtype, String idvalue) {
     // println("lookupByIO(${idtype},${idvalue})");
@@ -502,39 +505,39 @@ where cp.owner = :c
     def result = null
     def crit = T.createCriteria()
     def db_results = crit.list {
-        
+
       createAlias('outgoingCombos', 'ogc')
       createAlias('ogc.type', 'ogcType')
       createAlias('ogcType.owner', 'ogcOwner')
-      
+
       createAlias('ogc.toComponent', 'tc')
       createAlias('tc.namespace', 'tcNamespace')
-      
+
       and {
         eq 'ogcOwner.desc', 'Combo.Type'
         eq 'ogcType.value', 'KBComponent.Ids'
-        
+
         eq 'tc.value', idvalue
         eq 'tcNamespace.value', idtype
       }
-      
+
       projections {
         distinct 'id'
       }
     }
-    
+
     switch (db_results.size()) {
       case 1 :
         result = T.get(db_results[0])
         break
-//      case {it > 1} : 
+//      case {it > 1} :
 //        // Error. Should only match 1...
-//        break 
+//        break
     }
-    
+
     result
   }
-  
+
 //  @Transient
 //  static def lookupByIO(String idtype, String idvalue) {
 //    // println("lookupByIO(${idtype},${idvalue})");
@@ -803,7 +806,7 @@ where cp.owner = :c
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
     save(flush:true, failOnError:true)
   }
-  
+
   public void setExpected (context) {
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_EXPECTED))
     save(flush:true, failOnError:true)
@@ -823,7 +826,7 @@ where cp.owner = :c
   public boolean isCurrent () {
     return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
   }
-  
+
   @Transient
   public boolean isExpected () {
     return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_EXPECTED))
@@ -851,7 +854,7 @@ where cp.owner = :c
     if ( this.getId() != null ) {
       // Unsaved components can't have combo relations
       RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue(propertyName))
-      
+
       if(status && status!="null") status_ref = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, status);
 
       hql_query = "from Combo where type=? "
@@ -1284,8 +1287,8 @@ where cp.owner = :c
               def cat_code = c.owner.code //e.g. Fromat,Access - Read Online, etc.
 
               if (result[cat_code] == null)
-                  result[cat_code] = [description: c.owner.description, 
-                                      id:c.owner.id, 
+                  result[cat_code] = [description: c.owner.description,
+                                      id:c.owner.id,
                                       criterion: [:],
                                       comment_count:0,
                                       vote_count:0,
@@ -1365,13 +1368,13 @@ where cp.owner = :c
                     def group_intersection = note.criterion.user.groupMemberships?.intersect(currentUser.groupMemberships)
 
                     // Control comment inclusion based on filter
-                    if ( 
+                    if (
                            ( filter == null ) || ( filter=='all' ) || ( filter == '' ) ||                                // NO filter == everything
                          ( ( filter == 'mylib' )    && ((  note.criterion.user.org == currentUser.org ) || group_intersection )) ||              // User only wants comments from their own org
                          ( ( filter == 'otherlib' ) && ( note.criterion.user.org != currentUser.org ) && !group_intersection ) ||               // HEIs other than the users
                          ( ( filter == 'vendor' )   && ( note.criterion.user.org?.mission?.value == 'Commercial' || note.criterion.user.groupMemberships?.collect { it.mission?.value == 'Commercial'} )) ||  // Filter to vendor comments
                          ( ( filter == 'curator' )  && comment_user_is_curator )                                         // User is a curator
-                       ) { 
+                       ) {
                       if (!note.isDeleted )
                           liveOrg.add(note)
                       else if (note.isDeleted)
@@ -1429,13 +1432,13 @@ where cp.owner = :c
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def cids = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[this,refdata_ids,status_active],[readOnly:true])
     String cName = this.class.name
-    
+
     // Singel props.
     builder.'name' (name)
     builder.'status' (status?.value)
     builder.'editStatus' (editStatus?.value)
     builder.'shortcode' (shortcode)
-    
+
     // Identifiers
     builder.'identifiers' {
       cids?.each { tid ->
@@ -1445,7 +1448,7 @@ where cp.owner = :c
         builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl ?: grailsApplication.config.baseUrl}/resource/show/${cName}:${id}")
       }
     }
-    
+
     // Variant Names
     if ( variantNames ) {
       builder.'variantNames' {
@@ -1454,7 +1457,7 @@ where cp.owner = :c
         }
       }
     }
-    
+
     // Tags
 //     if ( tags ) {
 //       builder.'tags' {
@@ -1463,7 +1466,7 @@ where cp.owner = :c
 //         }
 //       }
 //     }
-    
+
     if (additionalProperties) {
       builder.'additionalProperties' {
         additionalProperties.each { prop ->
@@ -1491,7 +1494,7 @@ where cp.owner = :c
         }
       }
     }
-    
+
     if (source) {
       builder.'source' {
         source.with {
@@ -1567,11 +1570,11 @@ where cp.owner = :c
 
       // Create the new component price
       ComponentPrice cp = new ComponentPrice(
-                                             owner:this, 
-                                             priceType:rdv_type, 
+                                             owner:this,
+                                             priceType:rdv_type,
                                              currency:rdv_currency ,
                                              startDate:now,
-                                             endDate:null, 
+                                             endDate:null,
                                              price:f).save(flush:true, failOnError:true);
     }
   }
