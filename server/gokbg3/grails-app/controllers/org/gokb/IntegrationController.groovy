@@ -361,7 +361,7 @@ class IntegrationController {
           result.errors.add("${e}".toString());
         }
         result.result = 'ERROR'
-        result.setStatus(400)
+        response.setStatus(400)
         result.message = "There was a problem saving the new Org!"
         result.baddata = jsonOrg
         return
@@ -438,7 +438,7 @@ class IntegrationController {
           log.error("Problem saving new org record",e);
           result.errors.add("${e}".toString());
         }
-        result.setStatus(400)
+        response.setStatus(400)
         result.baddata = jsonOrg
         result.result = 'ERROR'
         result.message = "There was a problem saving the Org!"
@@ -450,7 +450,7 @@ class IntegrationController {
       result.result = 'ERROR'
       result.message = "Unexpected error importing the Org!"
       result.baddata = jsonOrg
-      result.setStatus(500)
+      response.setStatus(500)
     }
     render result as JSON
   }
@@ -1214,7 +1214,7 @@ class IntegrationController {
       log.debug("Not ingesting package without name!")
       result.result = "ERROR"
       result.message = "The provided package has no name!"
-      result.setStatus(400)
+      response.setStatus(400)
     }
     cleanUpGorm()
 

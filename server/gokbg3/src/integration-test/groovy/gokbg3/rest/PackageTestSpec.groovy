@@ -18,27 +18,30 @@ class PackageTestSpec extends AbstractAuthSpec {
   WebApplicationContext ctx
 
   private RestBuilder rest = new RestBuilder()
+  def testPackage
+  def testGroup
+  def last = false
 
   def setupSpec() {
   }
 
   def setup() {
-    Package.findByName("TestPack") ?: new Package(name: "TestPack").save(flush: true)
-    CuratoryGroup.findByName("cgtest1") ?: new CuratoryGroup(name: "cgtest1").save(flush: true)
+    testPackage = Package.findByName("TestPack") ?: new Package(name: "TestPack").save(flush: true)
+    testGroup = CuratoryGroup.findByName("cgtest1") ?: new CuratoryGroup(name: "cgtest1").save(flush: true)
   }
 
   def cleanup() {
-    Package.findByName("TestPack")?.expunge()
-    Package.findByName("UpdPack")?.expunge()
-    CuratoryGroup.findByName("cgtest1")?.expunge()
+    if (last) {
+      testPackage?.refresh().expunge()
+      testGroup?.refresh().expunge()
+    }
   }
 
   void "test /rest/packages/<id> without token"() {
-    def pack = Package.findByName("TestPack")
+    given:
     def urlPath = getUrlPath()
-
     when:
-    RestResponse resp = rest.get("${urlPath}/rest/packages/${pack.id}") {
+    RestResponse resp = rest.get("${urlPath}/rest/packages/${testPackage.id}") {
       // headers
       accept('application/json')
     }
@@ -47,13 +50,11 @@ class PackageTestSpec extends AbstractAuthSpec {
   }
 
   void "test /rest/packages with valid token"() {
-    def pack = Package.findByName("TestPack")
+    given:
     def urlPath = getUrlPath()
-
-    // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/packages/${pack.id}") {
+    RestResponse resp = rest.get("${urlPath}/rest/packages/${testPackage.id}") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -64,14 +65,12 @@ class PackageTestSpec extends AbstractAuthSpec {
   }
 
   void "test /rest/packages update name"() {
-    def pack = Package.findByName("TestPack")
+    given:
     def upd_body = [name: 'UpdPack']
     def urlPath = getUrlPath()
-
-    // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("${urlPath}/rest/packages/${pack.id}") {
+    RestResponse resp = rest.put("${urlPath}/rest/packages/${testPackage.id}") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -83,15 +82,13 @@ class PackageTestSpec extends AbstractAuthSpec {
   }
 
   void "test /rest/packages update comboList"() {
-    def pack = Package.findByName("TestPack")
-    def cg = CuratoryGroup.findByName("cgtest1")
-    def upd_body = [curatoryGroups: [cg.id]]
+    given:
+    def upd_body = [curatoryGroups: [testGroup.id]]
     def urlPath = getUrlPath()
-
-    // use the bearerToken to read /rest/profile
+    last = true
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("${urlPath}/rest/packages/${pack.id}") {
+    RestResponse resp = rest.put("${urlPath}/rest/packages/${testPackage.id}") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -100,6 +97,6 @@ class PackageTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200 // OK
     resp.json._embedded?.curatoryGroups?.size() == 1
-    resp.json._embedded?.curatoryGroups[0].name == "cgtest1"
+    resp.json._embedded?.curatoryGroups[0].id == testGroup.id
   }
 }

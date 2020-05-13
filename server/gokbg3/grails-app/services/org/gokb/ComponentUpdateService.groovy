@@ -263,4 +263,47 @@ class ComponentUpdateService {
     }
     changed
   }
+
+  private static def createOrUpdateSource( data ) {
+    log.debug("assertSource, data = ${data}");
+    def result=[:]
+    def source_data = data;
+    result.status = true;
+
+    try {
+      if ( data.name ) {
+
+        Source.withNewSession {
+          def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name).save(flush:true, failOnError:true)
+
+          ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'contextualNotes',data.contextualNotes)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
+          ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
+
+          componentUpdateService.setAllRefdata ([
+            'software', 'service'
+          ], source_data, located_or_new_source)
+
+          ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
+          ClassUtils.setRefdataIfPresent(data.defaultDataFormat, located_or_new_source, 'defaultDataFormat', 'Source.DataFormat')
+
+          log.debug("Variant names processing: ${data.variantNames}")
+
+          // variants
+          data.variantNames.each { vn ->
+            addVariantNameToComponent(located_or_new_source, vn)
+          }
+
+          result['component'] = located_or_new_source
+        }
+      }
+    }
+    catch ( Exception e ) {
+      e.printStackTrace()
+    }
+    result
+  }
 }

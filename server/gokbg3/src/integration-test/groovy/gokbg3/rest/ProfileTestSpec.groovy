@@ -147,6 +147,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
+    sleep(1000)
     User.findByUsername('normalUser') == null
   }
 }

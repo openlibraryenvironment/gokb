@@ -99,19 +99,4 @@ class TitleTestSpec extends AbstractAuthSpec {
     expect:
     resp.json.data?.size() == 1
   }
-
-  void "retrieve title with embedded history"() {
-    def urlPath = getUrlPath()
-    def title_id = titleLookupService.matchClassOneComponentIds([[ns: 'zdb', value:'1491237-5']])[0]
-    when:
-    String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/titles/$title_id?_embed=history") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
-    then:
-    resp.status == 200 // OK
-    expect:
-    resp.json._embedded?.history?.size() == 1
-  }
 }
