@@ -105,7 +105,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{"displayName":null,"email":"MrX@localhost","enabled":true,"accountExpired":false,"accountLocked":false,"passwordExpired":false,"defaultPageSize":10}')
+      body('{data:{"displayName":null,"email":"MrX@localhost","enabled":true,"accountExpired":false,"accountLocked":false,"passwordExpired":false,"defaultPageSize":10}}')
     }
     then:
     resp.status == 200
@@ -122,11 +122,11 @@ class ProfileTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{displayName:"tempo",' +
+      body('{data:{displayName:"tempo",' +
         'email: "frank@gmail.com",' +
         'password: "normalUser",' +
         'new_password: "roles"' +
-        '}')
+        '}}')
     }
     then:
     resp.status == 200

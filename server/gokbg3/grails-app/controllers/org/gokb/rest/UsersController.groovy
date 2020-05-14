@@ -155,7 +155,7 @@ class UsersController {
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def create() {
-    def result = userProfileService.create(request.JSON)
+    def result = userProfileService.create(request.JSON.data)
     render result as JSON
   }
 
@@ -163,7 +163,7 @@ class UsersController {
   @Transactional
   def update() {
     def user = User.get(params.id)
-    def result = userProfileService.update(user, request.JSON, springSecurityService.currentUser)
+    def result = userProfileService.update(user, request.JSON.data, springSecurityService.currentUser)
     render result as JSON
   }
 
@@ -172,9 +172,9 @@ class UsersController {
   def patch() {
     def user = User.get(params.id)
     if (request.JSON.password){
-      user.password = request.JSON.password
+      user.password = request.JSON.data.password
     }
-    def result = userProfileService.update(user, request.JSON, springSecurityService.currentUser)
+    def result = userProfileService.update(user, request.JSON.data, springSecurityService.currentUser)
     render result as JSON
   }
 

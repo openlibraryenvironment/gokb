@@ -4,8 +4,11 @@ package org.gokb.rest
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.Role
 import org.gokb.cred.Source
 import org.gokb.cred.User
+import org.gokb.cred.UserRole
 
 import java.time.Duration
 import java.time.LocalDateTime
@@ -36,15 +39,10 @@ class SourcesController {
       def start_es = LocalDateTime.now()
       result = ESSearchService.find(params)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
-    }
-    else {
+    } else {
       def start_db = LocalDateTime.now()
       result = componentLookupService.restLookup(user, Source, params)
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
-    }
-
-    result.data?.each { obj ->
-      obj['_links'] << ['tipps': ['href': (base + "/sources/${obj.uuid}/tipps")]]
     }
 
     render result as JSON
@@ -70,21 +68,18 @@ class SourcesController {
 
         // result['_currentTipps'] = obj.currentTippCount
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
-      }
-      else if (!obj) {
+      } else if (!obj) {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
         result.result = 'ERROR'
-      }
-      else {
+      } else {
         result.message = "Access to object was denied!"
         response.setStatus(403)
         result.code = 403
         result.result = 'ERROR'
       }
-    }
-    else {
+    } else {
       result.result = 'ERROR'
       response.setStatus(400)
       result.code = 400
@@ -92,5 +87,31 @@ class SourcesController {
     }
 
     render result as JSON
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def create() {
+    Source source = new Source()
+    def result = [:]
+    def errors = [:]
+
+    reqBody.each { field, val ->
+      if (val && source.hasProperty(field)) {
+        source[field]=val
+      }
+      else {
+        errors.message="field $field is not applicable to sources"
+      }
+    }
+
+    if (errors.size() == 0) {
+      if (source.validate()) {
+        source.save(flush: true)
+        result.data = source
+      } else {
+        result.errors = errors
+      }
+    }
+    return result as JSON
   }
 }

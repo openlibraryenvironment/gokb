@@ -115,7 +115,7 @@ class UsersTestSpec extends AbstractAuthSpec {
   void "test PUT /rest/users/{id}"() {
     def urlPath = getUrlPath()
     // use the bearerToken to write to /rest/user
-    String bodyText = "{id: $altUser.id," +
+    String bodyText = "{data:{id: $altUser.id," +
       "username:\"$altUser.username\"," +
       'displayName:"DisplayName",' +
       'email:"nobody@localhost",' +
@@ -137,7 +137,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       '},' +
       '],' +
       'cake:"cherry"' +
-      '}'
+      '}}'
     when:
     String accessToken = getAccessToken()
     RestResponse resp = rest.put("${urlPath}/rest/users/$altUser.id") {
@@ -166,7 +166,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{displayName:"DisplayName",' +
+      body('{data:{displayName:"DisplayName",' +
         'enabled:false,' +
         'defaultPageSize:18,' +
         'roles:[' +
@@ -180,9 +180,10 @@ class UsersTestSpec extends AbstractAuthSpec {
         'authority:"ROLE_EDITOR",' +
         '},' +
         ']' +
-        '}')
+        '}}')
     }
     then:
+    System.out.println(resp)
     resp.status == 200
     resp.json.data.defaultPageSize == 18
     def checkUser = User.findById(altUser.id)
@@ -197,7 +198,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{"username":"newerUser","email":"nobody@localhost","password":"defaultPassword"}')
+      body('{data:{"username":"newerUser","email":"nobody@localhost","password":"defaultPassword"}}')
     }
     then:
     resp.status == 200
@@ -215,7 +216,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       // headers
       accept('application/json')
       contentType('application/json')
-      body('{"username":"newUser", "email":"nobody@localhost","password":"defaultPassword"}')
+      body('{data:{"username":"newUser", "email":"nobody@localhost","password":"defaultPassword"}}')
     }
     then:
     resp.status == 200

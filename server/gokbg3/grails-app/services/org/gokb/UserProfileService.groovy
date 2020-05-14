@@ -1,6 +1,7 @@
 package org.gokb
 
 import grails.gorm.transactions.Transactional
+import groovy.util.logging.Slf4j
 import org.gokb.cred.ComponentLike
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.DSAppliedCriterion
@@ -22,6 +23,7 @@ import org.gokb.rest.UsersController
 import org.springframework.beans.factory.annotation.Autowired
 
 @Transactional
+@Slf4j
 class UserProfileService {
 
   @Autowired
@@ -145,7 +147,7 @@ class UserProfileService {
           if (cg_obj) {
             curGroups.add(cg_obj)
           } else {
-            log.debug("CuratoryGroup ${cg} not found!")
+            log.debug("CuratoryGroup ${cg} not found!".toString())
             error.message = "unknown CuratoryGroup $cg"
             result.error = error
             return result
