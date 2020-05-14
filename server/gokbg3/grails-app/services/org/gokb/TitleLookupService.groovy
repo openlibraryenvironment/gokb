@@ -610,7 +610,12 @@ class TitleLookupService {
           the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
         }
 
-        the_title.save(flush:true)
+        if(title_created) {
+          the_title.save(flush:true)
+        }
+        else {
+          the_title.merge(flush:true)
+        }
       }
       else {
         log.error("title validation failed for ${the_title}!")
