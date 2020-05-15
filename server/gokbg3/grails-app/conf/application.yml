@@ -155,7 +155,7 @@ environments:
                 enabled: false
     test:
         dataSource:
-            dbCreate: drop-create
+            dbCreate: create-drop
             url: jdbc:postgresql://pghost:5432/gokbg3test
             username: knowint
             password: knowint

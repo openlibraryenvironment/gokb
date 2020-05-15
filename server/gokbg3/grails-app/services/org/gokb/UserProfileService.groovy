@@ -1,5 +1,6 @@
 package org.gokb
 
+import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
 import org.gokb.cred.ComponentLike

@@ -160,7 +160,7 @@ class UsersTestSpec extends AbstractAuthSpec {
   void "test PATCH /rest/users/{id}"() {
     // use the bearerToken to write to /rest/user
     when:
-    String accessToken = getAccessToken()
+    String accessToken = getAccessToken("admin", "admin")
     RestResponse resp = rest.patch("http://localhost:$serverPort/gokb/rest/users/$altUser.id") {
       // headers
       accept('application/json')
