@@ -136,7 +136,11 @@ class Platform extends KBComponent {
         if (shibbolethAuthentication) builder.'shibbolethAuthentication' (shibbolethAuthentication.value)
         if (passwordAuthentication) builder.'passwordAuthentication' (passwordAuthentication.value)
 
-        builder.'provider' (provider?.name)
+        if (provider) {
+          builder.'provider' ([id:provider.id, uuid:(provider.uuid)]) {
+            builder.'name' (provider.name)
+          }
+        }
         if ( roles ) {
           builder.'roles' {
             roles.each { role ->

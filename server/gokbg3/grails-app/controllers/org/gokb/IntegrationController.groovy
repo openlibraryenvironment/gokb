@@ -1222,6 +1222,7 @@ class IntegrationController {
   }
 
   @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  @Transactional
   def crossReferencePlatform() {
     def result = [ 'result' : 'OK' ]
     def created = false
@@ -1251,7 +1252,21 @@ class IntegrationController {
           ClassUtils.setRefdataIfPresent(platformJson.authentication, p, 'authentication', 'Platform.AuthMethod')
 
           if (platformJson.provider) {
-            def prov = Org.findByNormname( Org.generateNormname (platformJson.provider) )
+            def prov = null
+
+            if (platformJson.provider instanceof String) {
+              prov = Org.findByNormname( Org.generateNormname(platformJson.provider) )
+            }
+            else {
+              if (platformJson.provider.uuid) {
+                prov = Org.findByUuid(platformJson.provider.uuid)
+              }
+
+              if (!prov && platformJson.provider.name) {
+                prov = Org.findByNormname( Org.generateNormname(platformJson.provider.name) )
+              }
+            }
+
             if (prov) {
               log.debug("Adding Provider ${prov} to platform ${p}!")
               p.provider = prov
@@ -1260,7 +1275,6 @@ class IntegrationController {
               log.debug("No provider found for ${platformJson.provider}!")
             }
           }
-
           p.save(flush:true)
 
           // Add the core data.
