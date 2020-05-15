@@ -90,17 +90,18 @@ class SourcesController {
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
   def create() {
     Source source = new Source()
     def result = [:]
     def errors = [:]
 
-    reqBody.each { field, val ->
+    request.JSON.data.each { field, val ->
       if (val && source.hasProperty(field)) {
         source[field]=val
       }
       else {
-        errors.message="field $field is not applicable to sources"
+        errors.message+="field $field is not applicable to sources"
       }
     }
 
@@ -108,10 +109,12 @@ class SourcesController {
       if (source.validate()) {
         source.save(flush: true)
         result.data = source
-      } else {
-        result.errors = errors
+      } else {user
+        result.errors = [message: "new source data is not valid"]
       }
+    } else {
+      result.errors = errors
     }
-    return result as JSON
+    render restMappingService.mapObjectToJson(source, params) as JSON
   }
 }

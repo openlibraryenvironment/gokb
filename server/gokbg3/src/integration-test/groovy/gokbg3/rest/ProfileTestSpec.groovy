@@ -1,5 +1,6 @@
 package gokbg3.rest
 
+import grails.gorm.transactions.Transactional
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
@@ -17,6 +18,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
   private RestBuilder rest
   private User normalUser
 
+  @Transactional
   def setup() {
     if (!rest) {
       RestTemplate restTemp = new RestTemplate()
@@ -30,6 +32,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     }
   }
 
+  @Transactional
   def cleanup() {
     UserRole.findAllByUser(normalUser)?.each { ur ->
       ur.delete(flush: true)

@@ -70,7 +70,7 @@ class UrlMappings {
 
       get "/sources"(controller: 'sources', namespace: 'rest', action: 'index')
       get "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'show')
-      // post "/sources"(controller: 'sources', namespace: 'rest', action: 'create')
+      post "/sources"(controller: 'sources', namespace: 'rest', action: 'create')
 
       get "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'show')
       get "/curatoryGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'index')
