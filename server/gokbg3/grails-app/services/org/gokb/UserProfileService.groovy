@@ -149,14 +149,14 @@ class UserProfileService {
     return result
   }
 
-  def create(def data) {
+  def create(def json) {
     User user = new User()
     def result = [data  : [],
                   result: 'OK']
     def errors = []
     def skippedCG = false
 
-    data.each { field, val ->
+    json.data.each { field, val ->
       if (val && user.hasProperty(field)) {
         // roles have to be treated separately, as they're not a user property
         if (field != 'curatoryGroups') {

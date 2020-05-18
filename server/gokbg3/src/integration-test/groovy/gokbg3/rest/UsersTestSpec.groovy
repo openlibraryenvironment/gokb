@@ -167,7 +167,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{"username":"newerUser", "email":"nobody@localhost","password":"defaultPassword"}')
+      body([data:[username:"newerUser", email:"nobody@localhost",password:"defaultPassword"]] as JSON)
     }
     then:
     resp.status == 200
@@ -185,11 +185,11 @@ class UsersTestSpec extends AbstractAuthSpec {
       // headers
       accept('application/json')
       contentType('application/json')
-      body('{"username":"newUser", "email":"nobody@localhost","password":"defaultPassword"}')
+      body([data:[username:"newerUser", email:"nobody@localhost",password:"defaultPassword"]] as JSON)
     }
     then:
     resp.status == 200
-    User checkUser = User.findByUsername("newUser")
+    User checkUser = User.findByUsername("newerUser")
     checkUser != null
   }
 }
