@@ -5,14 +5,12 @@ import grails.core.GrailsApplication
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.*
 import org.gokb.refine.RefineProject
-import org.gokb.rest.UsersController
 import org.springframework.beans.factory.annotation.Autowired
 
 @Transactional
 class UserProfileService {
 
   @Autowired
-  UsersController usersController
   GrailsApplication grailsApplication
 
   def delete(User user) {
@@ -237,7 +235,7 @@ class UserProfileService {
   }
 
   def collectUserProps(User user, params = [:]) {
-    def base = grailsApplication.config.serverURL + "/" + usersController.namespace
+    def base = grailsApplication.config.serverURL + "/rest"
     def includes = [], excludes = [],
         newUserData = [
           'id'             : user.id,
