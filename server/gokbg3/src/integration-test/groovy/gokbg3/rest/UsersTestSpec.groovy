@@ -1,5 +1,6 @@
 package gokbg3.rest
 
+import grails.converters.JSON
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
@@ -100,33 +101,26 @@ class UsersTestSpec extends AbstractAuthSpec {
     // use the bearerToken to write to /rest/user
     when:
     String accessToken = getAccessToken()
+    Map bodyData = [data: [id             : altUser.id,
+                           username       : "OtherUser",
+                           displayName    : "DisplayName",
+                           email          : "nobody@localhost",
+                           curatoryGroups : [],
+                           enabled        : true,
+                           accountExpired : false,
+                           accountLocked  : false,
+                           passwordExpired: false,
+                           defaultPageSize: 15,
+                           roles          : [[authority: "ROLE_CONTRIBUTOR"],
+                                             [authority: "ROLE_USER"],
+                                             [authority: "ROLE_EDITOR"]
+                           ]]]
     RestResponse resp = rest.put("${urlPath}/rest/users/$altUser.id") {
       // headers
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{id: + altUser.id + ,' +
-        'username:"OtherUser",' +
-        'displayName:"DisplayName",' +
-        'email:"nobody@localhost",' +
-        'curatoryGroups:[],' +
-        'enabled:true,' +
-        'accountExpired:false,' +
-        'accountLocked:false,' +
-        'passwordExpired:false,' +
-        'defaultPageSize:15,' +
-        'roles:[' +
-        '{' +
-        'authority:"ROLE_CONTRIBUTOR",' +
-        '},' +
-        '{' +
-        'authority:"ROLE_USER",' +
-        '},' +
-        '{' +
-        'authority:"ROLE_EDITOR",' +
-        '},' +
-        ']' +
-        '}')
+      body(bodyData as JSON)
     }
     then:
     resp.status == 200
@@ -141,27 +135,22 @@ class UsersTestSpec extends AbstractAuthSpec {
   void "test PATCH /rest/users/{id}"() {
     // use the bearerToken to write to /rest/user
     when:
-    String accessToken = getAccessToken("admin", "admin")
+    String accessToken = getAccessToken()
+    Map bodyData = [data: [displayName    : "DisplayName",
+                           enabled        : false,
+                           defaultPageSize: 18,
+                           roles          : [[authority: "ROLE_CONTRIBUTOR"],
+                                             [authority: "ROLE_USER"],
+                                             [authority: "ROLE_EDITOR"]
+                           ]]]
+
+    def bodyText = bodyData as JSON
     RestResponse resp = rest.patch("http://localhost:$serverPort/gokb/rest/users/$altUser.id") {
       // headers
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{displayName:"DisplayName",' +
-        'enabled:false,' +
-        'defaultPageSize:18,' +
-        'roles:[' +
-        '{' +
-        'authority:"ROLE_CONTRIBUTOR",' +
-        '},' +
-        '{' +
-        'authority:"ROLE_USER",' +
-        '},' +
-        '{' +
-        'authority:"ROLE_EDITOR",' +
-        '},' +
-        ']' +
-        '}')
+      body(bodyData as JSON)
     }
     then:
     resp.status == 200

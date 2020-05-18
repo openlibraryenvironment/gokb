@@ -1,5 +1,6 @@
 package gokbg3.rest
 
+import grails.converters.JSON
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
@@ -100,12 +101,20 @@ class ProfileTestSpec extends AbstractAuthSpec {
     // use the bearerToken to write to /rest/profile/update
     when:
     String accessToken = getAccessToken("normalUser", "normalUser")
+    Map bodyData = [data: [displayName    : null,
+                           email          : "MrX@localhost",
+                           enabled        : true,
+                           accountExpired : false,
+                           accountLocked  : false,
+                           passwordExpired: false,
+                           defaultPageSize: 10
+    ]]
     RestResponse resp = rest.put("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{"displayName":null,"email":"MrX@localhost","enabled":true,"accountExpired":false,"accountLocked":false,"passwordExpired":false,"defaultPageSize":10}')
+      body(bodyData as JSON)
     }
     then:
     resp.status == 200
@@ -117,16 +126,18 @@ class ProfileTestSpec extends AbstractAuthSpec {
     // use the bearerToken to write to /rest/profile
     when:
     String accessToken = getAccessToken('normalUser', 'normalUser')
+    Map bodyData = [data: [
+      displayName : "tempo",
+      email       : "frank@gmail.com",
+      password    : "normalUser",
+      new_password: "roles"
+    ]]
     RestResponse resp = rest.patch("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body('{displayName:"tempo",' +
-        'email: "frank@gmail.com",' +
-        'password: "normalUser",' +
-        'new_password: "roles"' +
-        '}')
+      body(bodyData as JSON)
     }
     then:
     resp.status == 200
