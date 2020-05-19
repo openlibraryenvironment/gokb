@@ -60,6 +60,7 @@ class RestMappingService {
   def mapObjectToJson(obj, params, def user = null) {
     log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
     def result = [:]
+    def sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
     def embed_active = params['_embed']?.split(',') ?: []
     def include_list = params['_include']?.split(',') ?: null
     def base = grailsApplication.config.serverURL + "/rest"
@@ -133,7 +134,7 @@ class RestMappingService {
               break;
 
             case Date.class:
-              result[p.name] = obj[p.name] ? "${obj[p.name]}" : null
+              result[p.name] = obj[p.name] ? sdf.format(obj[p.name]) : null
               break;
             default:
               result[p.name] = obj[p.name]

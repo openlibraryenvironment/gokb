@@ -4,8 +4,11 @@ package org.gokb.rest
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.Role
 import org.gokb.cred.Source
 import org.gokb.cred.User
+import org.gokb.cred.UserRole
 
 import java.time.Duration
 import java.time.LocalDateTime
@@ -27,25 +30,10 @@ class SourcesController {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     User user = User.get(springSecurityService.principal.id)
-    def es_search = params.es ? true : false
 
-    params.componentType = "Source" // Tells ESSearchService what to look for
-
-    if (es_search) {
-      params.remove('es')
-      def start_es = LocalDateTime.now()
-      result = ESSearchService.find(params)
-      log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
-    }
-    else {
-      def start_db = LocalDateTime.now()
-      result = componentLookupService.restLookup(user, Source, params)
-      log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
-    }
-
-    result.data?.each { obj ->
-      obj['_links'] << ['tipps': ['href': (base + "/sources/${obj.uuid}/tipps")]]
-    }
+    def start_db = LocalDateTime.now()
+    result = componentLookupService.restLookup(user, Source, params)
+    log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
 
     render result as JSON
   }
@@ -70,27 +58,65 @@ class SourcesController {
 
         // result['_currentTipps'] = obj.currentTippCount
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
-      }
-      else if (!obj) {
+      } else if (!obj) {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
         result.result = 'ERROR'
-      }
-      else {
+      } else {
         result.message = "Access to object was denied!"
         response.setStatus(403)
         result.code = 403
         result.result = 'ERROR'
       }
-    }
-    else {
+    } else {
       result.result = 'ERROR'
       response.setStatus(400)
       result.code = 400
       result.message = 'No object id supplied!'
     }
 
+    render result as JSON
+  }
+
+  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def save() {
+    Source source = null
+    def result = [:]
+    def errors = [:]
+    User user = User.get(springSecurityService.principal.id)
+
+    if (request.JSON?.data?.name) {
+      try {
+        source = new Source(name: request.JSON.data.name)
+
+        def jsonMap = [:]
+
+        source = restMappingService.updateObject(source, jsonMap, request.JSON.data)
+      }
+      catch (grails.validation.ValidationException ve) {
+        errors = ve.errors
+      }
+    }
+    else {
+      errors = [result: 'ERROR', message:'Missing name for source!', badData:[request.JSON]]
+    }
+
+    if (!errors) {
+      if ( source.validate() ) {
+        source.save(flush: true)
+        result.data = restMappingService.mapObjectToJson(source, params, user)
+      } else {
+        result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
+        response.setStatus(409)
+        source?.discard()
+      }
+    } else {
+      response.setStatus(400)
+      result = errors
+      result.result = 'ERROR'
+    }
     render result as JSON
   }
 }
