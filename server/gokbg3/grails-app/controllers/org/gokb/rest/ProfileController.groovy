@@ -79,7 +79,7 @@ class ProfileController {
     }
     reqData.remove('new_password')
     reqData.remove('password')
-    render userProfileService.update(user, reqData, user) as JSON
+    render userProfileService.update(user, reqData, params, user) as JSON
   }
 
   @Transactional

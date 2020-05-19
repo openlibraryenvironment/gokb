@@ -1,9 +1,11 @@
 package org.gokb.rest
 
+import gokbg3.RegisterController
 import grails.converters.JSON
 import grails.core.GrailsApplication
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import grails.plugin.springsecurity.ui.strategy.RegistrationCodeStrategy
 import org.gokb.UserProfileService
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.User
@@ -27,7 +29,7 @@ class UsersController {
     def result = [data: [:]]
     def user = User.get(params.id as int)
     if (user) {
-      result.data = collectUserProps(user)
+      result.data = userProfileService.collectUserProps(user, params)
     }
     render result as JSON
   }
@@ -115,7 +117,7 @@ class UsersController {
     def users = User.executeQuery(sortQuery, hqlParams, metaParams)
     users.each {
       user ->
-        result.data.add(collectUserProps(user))
+        result.data.add(userProfileService.collectUserProps(user, params))
     }
     result += [
       _pagination: [
@@ -163,7 +165,7 @@ class UsersController {
   @Transactional
   def update() {
     def user = User.get(params.id)
-    def result = userProfileService.update(user, request.JSON.data, springSecurityService.currentUser)
+    def result = userProfileService.update(user, request.JSON, params, springSecurityService.currentUser)
     render result as JSON
   }
 
@@ -183,71 +185,5 @@ class UsersController {
   def delete() {
     def delUser = User.get(params.id)
     render userProfileService.delete(delUser) as JSON
-  }
-
-  def collectUserProps(User user) {
-    def base = grailsApplication.config.serverURL + "/" + namespace
-    def includes = [], excludes = [],
-        newUserData = [
-          'id'             : user.id,
-          'username'       : user.username,
-          'displayName'    : user.displayName,
-          'email'          : user.email,
-          'enabled'        : user.enabled,
-          'accountExpired' : user.accountExpired,
-          'accountLocked'  : user.accountLocked,
-          'passwordExpired': user.passwordExpired,
-          'status'         : user.enabled && !user.accountExpired && !user.accountLocked && !user.passwordExpired,
-          'defaultPageSize': user.defaultPageSize
-        ]
-    if (params._embed?.split(',')?.contains('curatoryGroups'))
-      newUserData.curatoryGroups = user.curatoryGroups
-    else {
-      newUserData.curatoryGroups = []
-      user.curatoryGroups.each { group ->
-        newUserData.curatoryGroups += [
-          id    : group.id,
-          name  : group.name,
-          _links: [
-            'self': [href: base + "/curatoryGroups/$group.id"]
-          ]
-        ]
-      }
-    }
-    if (params._embed?.split(',')?.contains('roles'))
-      newUserData.roles = user.authorities
-    else {
-      newUserData.roles = []
-      user.authorities.each { role ->
-        newUserData.roles += [
-          id       : role.id,
-          authority: role.authority,
-          _links   : [
-            'self': [href: base + "/roles/$role.id"]
-          ]
-        ]
-      }
-    }
-
-    if (params._include)
-      includes = params._include.split(',')
-    if (params._exclude) {
-      excludes = params._exclude.split(',')
-      includes.each { prop ->
-        excludes -= prop
-      }
-    }
-
-    newUserData = newUserData.findAll { k, v ->
-      (!excludes.contains(k) || (!includes.empty && includes.contains(k)))
-    }
-
-    newUserData._links = [
-      self  : [href: base + "/users/$user.id"],
-      update: [href: base + "/users/$user.id"],
-      delete: [href: base + "/users/$user.id"]
-    ]
-
-    return newUserData
   }
 }
