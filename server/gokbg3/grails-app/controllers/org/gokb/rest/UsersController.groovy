@@ -156,7 +156,7 @@ class UsersController {
 
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
-  def create() {
+  def save() {
     def result = userProfileService.create(request.JSON.data)
     render result as JSON
   }

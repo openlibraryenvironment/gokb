@@ -30,20 +30,10 @@ class SourcesController {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     User user = User.get(springSecurityService.principal.id)
-    def es_search = params.es ? true : false
 
-    params.componentType = "Source" // Tells ESSearchService what to look for
-
-    if (es_search) {
-      params.remove('es')
-      def start_es = LocalDateTime.now()
-      result = ESSearchService.find(params)
-      log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
-    } else {
-      def start_db = LocalDateTime.now()
-      result = componentLookupService.restLookup(user, Source, params)
-      log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
-    }
+    def start_db = LocalDateTime.now()
+    result = componentLookupService.restLookup(user, Source, params)
+    log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
 
     render result as JSON
   }
@@ -89,32 +79,44 @@ class SourcesController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
-  def create() {
-    Source source = new Source()
+  def save() {
+    Source source = null
     def result = [:]
     def errors = [:]
+    User user = User.get(springSecurityService.principal.id)
 
-    request.JSON.data.each { field, val ->
-      if (val && source.hasProperty(field)) {
-        source[field]=val
+    if (request.JSON?.data?.name) {
+      try {
+        source = new Source(name: request.JSON.data.name)
+
+        def jsonMap = [:]
+
+        source = restMappingService.updateObject(source, jsonMap, request.JSON.data)
       }
-      else {
-        errors.message+="field $field is not applicable to sources"
+      catch (grails.validation.ValidationException ve) {
+        errors = ve.errors
       }
     }
+    else {
+      errors = [result: 'ERROR', message:'Missing name for source!', badData:[request.JSON]]
+    }
 
-    if (errors.size() == 0) {
-      if (source.validate()) {
+    if (!errors) {
+      if ( source.validate() ) {
         source.save(flush: true)
-        result.data = source
-      } else {user
-        result.errors = [message: "new source data is not valid"]
+        result.data = restMappingService.mapObjectToJson(source, params, user)
+      } else {
+        result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
+        response.setStatus(409)
+        source?.discard()
       }
     } else {
-      result.errors = errors
+      response.setStatus(400)
+      result = errors
+      result.result = 'ERROR'
     }
-    render restMappingService.mapObjectToJson(source, params) as JSON
+    render result as JSON
   }
 }
