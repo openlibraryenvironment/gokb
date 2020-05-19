@@ -3,6 +3,7 @@ package gokbg3
 import com.k_int.ClassUtils
 import grails.core.GrailsClass
 
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 

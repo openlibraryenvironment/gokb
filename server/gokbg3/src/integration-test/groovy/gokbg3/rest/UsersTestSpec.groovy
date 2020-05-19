@@ -172,7 +172,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.data.defaultPageSize == 18
-    def checkUser = User.findById(altUser.id)
+    def checkUser = User.findById(altUser.id).refresh()
     checkUser.enabled == false
   }
 

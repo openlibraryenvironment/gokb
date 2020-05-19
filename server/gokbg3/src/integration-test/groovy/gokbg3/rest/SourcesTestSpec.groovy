@@ -58,6 +58,6 @@ class SourcesTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.name == "Quelle 1"
+    resp.json.data.name == "Quelle 1"
   }
 }
