@@ -1,10 +1,10 @@
 package org.gokb
 
-import grails.converters.JSON
+
+import grails.core.GrailsApplication
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.*
 import org.gokb.refine.RefineProject
-import org.gokb.rest.UsersController
 import org.springframework.beans.factory.annotation.Autowired
 
 @Transactional
@@ -60,11 +60,11 @@ class UserProfileService {
     return result
   }
 
-  def update(User user, def reqJson, params = [:], User adminUser) {
+  def update(User user, def data, params = [:], User adminUser) {
     def result = [:]
     def errors = []
     log.debug("Updating user ${user.id} ..")
-    def immutables = ['id', 'username', 'passwordExpired', 'last_alert_check']
+    def immutables = ['id', 'username', 'password', 'last_alert_check']
     def adminAttributes = ['roles', 'curatoryGroups', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
 
     if (!adminUser.isAdmin() && user != adminUser) {
@@ -75,7 +75,7 @@ class UserProfileService {
       return result
     }
     // apply changes
-    reqJson.data.each { field, value ->
+    data.each { field, value ->
       if (field != "roles" && field != "curatoryGroups" && value && !user.hasProperty(field)) {
         errors << [message: "$field is unknown", baddata: field]
         result.errors = errors
@@ -149,14 +149,14 @@ class UserProfileService {
     return result
   }
 
-  def create(def json) {
+  def create(def data) {
     User user = new User()
     def result = [data  : [],
                   result: 'OK']
     def errors = []
     def skippedCG = false
 
-    json.data.each { field, val ->
+    data.each { field, val ->
       if (val && user.hasProperty(field)) {
         // roles have to be treated separately, as they're not a user property
         if (field != 'curatoryGroups') {

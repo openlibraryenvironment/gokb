@@ -1,5 +1,6 @@
 package gokbg3.rest
 
+import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse

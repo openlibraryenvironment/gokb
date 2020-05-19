@@ -165,7 +165,7 @@ class UsersController {
   @Transactional
   def update() {
     def user = User.get(params.id)
-    def result = userProfileService.update(user, request.JSON, params, springSecurityService.currentUser)
+    def result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
     render result as JSON
   }
 
@@ -176,7 +176,7 @@ class UsersController {
     if (request.JSON.password){
       user.password = request.JSON.data.password
     }
-    def result = userProfileService.update(user, request.JSON.data, springSecurityService.currentUser)
+    def result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
     render result as JSON
   }
 

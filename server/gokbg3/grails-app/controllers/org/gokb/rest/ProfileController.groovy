@@ -58,7 +58,7 @@ class ProfileController {
   @Transactional
   def update() {
     User user = User.get(springSecurityService.principal.id)
-    render userProfileService.update(user, request.JSON.data, user) as JSON
+    render userProfileService.update(user, request.JSON.data, params, user) as JSON
   }
 
   @grails.plugin.springsecurity.annotation.Secured(value = ['IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
