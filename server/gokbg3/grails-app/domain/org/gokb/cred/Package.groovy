@@ -363,7 +363,7 @@ select tipp.id,
       def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
       def tipp_ids = tipps?.collect { it.id }
 
-      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdateComment = 'Deleted via Package delete', t.lastUpdated = :now where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids, now: now])
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdateComment = 'Deleted via Package delete', t.lastUpdated = :now where t.status != :del and t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids, now: now])
     }
   }
 
