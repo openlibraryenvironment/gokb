@@ -1,5 +1,6 @@
 package gokbg3.rest
 
+import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
@@ -15,7 +16,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
   private RestBuilder rest = new RestBuilder()
 
   @Transactional
-  def cleanup(){
+  def cleanup() {
     Source.findByName("Quelle 1")?.expunge()
   }
 
@@ -54,10 +55,10 @@ class SourcesTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body("{data:{shortcode: 'q1', name: 'Quelle 1'}}")
+      body([data: [shortcode: 'q1', name: 'Quelle 1']] as JSON)
     }
     then:
     resp.status == 200
-    resp.json.name == "Quelle 1"
+    resp.json.data.name == "Quelle 1"
   }
 }

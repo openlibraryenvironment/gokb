@@ -161,6 +161,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    User.findByUsername('normalUser') == null
+    User check = User.findByUsername('normalUser')
+    !check
   }
 }
