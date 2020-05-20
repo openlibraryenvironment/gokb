@@ -1157,9 +1157,10 @@ class IntegrationController {
                     job_result.result = 'OK'
                     job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Newly Retired/Deleted: ${num_removed_tipps})"
 
-                    if(the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+                    if ( the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted') ) {
                       the_pkg.lastUpdateComment = job_result.message
                     }
+                    
                     job_result.pkgId = the_pkg.id
                     job_result.uuid = the_pkg.uuid
                     log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
@@ -1222,6 +1223,7 @@ class IntegrationController {
   }
 
   @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  @Transactional
   def crossReferencePlatform() {
     def result = [ 'result' : 'OK' ]
     def created = false
@@ -1251,7 +1253,21 @@ class IntegrationController {
           ClassUtils.setRefdataIfPresent(platformJson.authentication, p, 'authentication', 'Platform.AuthMethod')
 
           if (platformJson.provider) {
-            def prov = Org.findByNormname( Org.generateNormname (platformJson.provider) )
+            def prov = null
+
+            if (platformJson.provider instanceof String) {
+              prov = Org.findByNormname( Org.generateNormname(platformJson.provider) )
+            }
+            else {
+              if (platformJson.provider.uuid) {
+                prov = Org.findByUuid(platformJson.provider.uuid)
+              }
+
+              if (!prov && platformJson.provider.name) {
+                prov = Org.findByNormname( Org.generateNormname(platformJson.provider.name) )
+              }
+            }
+
             if (prov) {
               log.debug("Adding Provider ${prov} to platform ${p}!")
               p.provider = prov
@@ -1260,7 +1276,6 @@ class IntegrationController {
               log.debug("No provider found for ${platformJson.provider}!")
             }
           }
-
           p.save(flush:true)
 
           // Add the core data.
@@ -1540,9 +1555,11 @@ class IntegrationController {
 
                       jhe.from.each { fhe ->
                         def p = null
+                        def setCore = true
 
                         if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
                           log.debug("Setting main title ${title} as participant")
+                          setCore = false
                           p = title
                         }
                         else {
@@ -1559,7 +1576,7 @@ class IntegrationController {
                         }
 
                         if ( p && !p.hasErrors() ) {
-                          if ( p != title ) {
+                          if ( setCore ) {
                             componentUpdateService.ensureCoreData(p, fhe, fullsync)
                           }
                           inlist.add(p);
@@ -1572,9 +1589,11 @@ class IntegrationController {
                       jhe.to.each { fhe ->
 
                         def p = null
+                        def setCore = true
 
                         if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
                           log.debug("Setting main title ${title} as participant")
+                          setCore = false
                           p = title
                         }
                         else {
@@ -1591,7 +1610,7 @@ class IntegrationController {
                         }
 
                         if ( p && !p.hasErrors() && !inlist.contains(p) ) {
-                          if ( p != title ) {
+                          if ( setCore ) {
                             componentUpdateService.ensureCoreData(p, fhe, fullsync)
                           }
                           outlist.add(p);

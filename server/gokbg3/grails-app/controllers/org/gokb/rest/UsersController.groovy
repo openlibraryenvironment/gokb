@@ -29,7 +29,7 @@ class UsersController {
     def result = [data: [:]]
     def user = User.get(params.id as int)
     if (user) {
-      result.data = collectUserProps(user)
+      result.data = userProfileService.collectUserProps(user, params)
     }
     render result as JSON
   }
@@ -65,25 +65,27 @@ class UsersController {
     }
 
     if (params.curatoryGroupId) {
+      String cgQuery = " ${params.roleId ? 'and' : ' where'} ("
       def cgIds = params.curatoryGroupId.split(',')
-      hqlQuery += " ${params.roleId ? 'and' : ' where'} ("
       cgIds.eachWithIndex { v, i ->
         CuratoryGroup cg = CuratoryGroup.findById(v as Long)
         if (cg) {
-          hqlQuery += "${i > 0 ? " or" : ""} :group$i in elements (u.curatoryGroups)"
+          cgQuery += "${i > 0 ? " or" : ""} :group$i in elements (u.curatoryGroups)"
           hqlParams += ["group$i": cg]
         } else {
           result += [error: [message: "curatoryGroupId $v is unknown",
                              code   : 1]]
         }
       }
-      hqlQuery += ')'
+      cgQuery += ')'
+      if (!result.error)
+        hqlQuery += cgQuery
     }
 
     if (params.name) {
-      hqlQuery += " ${params.roleId || params.curatoryGroupId ? 'and' : ' where'} (lower(u.username) like :name " +
+      hqlQuery += " ${params.roleId || params.curatoryGroupId ? 'and' : ' where'} (lower(u.username) like lower(:name) " +
         // displayName matching might get kicked out
-        "or lower(u.displayName) like :name" +
+        "or lower(u.displayName) like lower(:name)" +
         ")"
       hqlParams << ["name": "%$params.name%"]
     }
@@ -115,7 +117,7 @@ class UsersController {
     def users = User.executeQuery(sortQuery, hqlParams, metaParams)
     users.each {
       user ->
-        result.data.add(collectUserProps(user))
+        result.data.add(userProfileService.collectUserProps(user, params))
     }
     result += [
       _pagination: [
@@ -154,8 +156,8 @@ class UsersController {
 
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
-  def create() {
-    def result = userProfileService.create(request.JSON)
+  def save() {
+    def result = userProfileService.create(request.JSON.data)
     render result as JSON
   }
 
@@ -163,7 +165,18 @@ class UsersController {
   @Transactional
   def update() {
     def user = User.get(params.id)
-    def result = userProfileService.update(user, request.JSON, springSecurityService.currentUser)
+    def result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
+    render result as JSON
+  }
+
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def patch() {
+    def user = User.get(params.id)
+    if (request.JSON.password){
+      user.password = request.JSON.data.password
+    }
+    def result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
     render result as JSON
   }
 
@@ -172,71 +185,5 @@ class UsersController {
   def delete() {
     def delUser = User.get(params.id)
     render userProfileService.delete(delUser) as JSON
-  }
-
-  def collectUserProps(User user) {
-    def base = grailsApplication.config.serverURL + "/" + namespace
-    def includes = [], excludes = [],
-        newUserData = [
-          'id'             : user.id,
-          'username'       : user.username,
-          'displayName'    : user.displayName,
-          'email'          : user.email,
-          'enabled'        : user.enabled,
-          'accountExpired' : user.accountExpired,
-          'accountLocked'  : user.accountLocked,
-          'passwordExpired': user.passwordExpired,
-          'status'         : user.enabled && !user.accountExpired && !user.accountLocked && !user.passwordExpired,
-          'defaultPageSize': user.defaultPageSize
-        ]
-    if (params._embed?.split(',')?.contains('curatoryGroups'))
-      newUserData.curatoryGroups = user.curatoryGroups
-    else {
-      newUserData.curatoryGroups = []
-      user.curatoryGroups.each { group ->
-        newUserData.curatoryGroups += [
-          id    : group.id,
-          name  : group.name,
-          _links: [
-            'self': [href: base + "/curatoryGroups/$group.id"]
-          ]
-        ]
-      }
-    }
-    if (params._embed?.split(',')?.contains('roles'))
-      newUserData.roles = user.authorities
-    else {
-      newUserData.roles = []
-      user.authorities.each { role ->
-        newUserData.roles += [
-          id    : role.id,
-          authority  : role.authority,
-          _links: [
-            'self': [href: base + "/roles/$role.id"]
-          ]
-        ]
-      }
-    }
-
-    if (params._include)
-      includes = params._include.split(',')
-    if (params._exclude) {
-      excludes = params._exclude.split(',')
-      includes.each { prop ->
-        excludes -= prop
-      }
-    }
-
-    newUserData = newUserData.findAll { k, v ->
-      (!excludes.contains(k) || (!includes.empty && includes.contains(k)))
-    }
-
-    newUserData._links = [
-      self  : [href: base + "/users/$user.id"],
-      update: [href: base + "/users/$user.id"],
-      delete: [href: base + "/users/$user.id"]
-    ]
-
-    return newUserData
   }
 }

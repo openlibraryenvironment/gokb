@@ -31,10 +31,9 @@ class PackageTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
-    if (last) {
-      testPackage?.refresh().expunge()
-      testGroup?.refresh().expunge()
-    }
+    Package.findByName("TestPack")?.refresh()?.expunge()
+    Package.findByName("UpdPack")?.refresh()?.expunge()
+    CuratoryGroup.findByName("cgtest1")?.refresh()?.expunge()
   }
 
   void "test /rest/packages/<id> without token"() {

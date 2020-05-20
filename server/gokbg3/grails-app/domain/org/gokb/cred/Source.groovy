@@ -35,6 +35,20 @@ class Source extends KBComponent {
     defaultDataFormat(nullable:true, blank:true)
     responsibleParty(nullable:true, blank:true)
     ruleset(nullable:true, blank:true)
+    name(validator: { val, obj ->
+      if (obj.hasChanged('name')) {
+        if (val && val.trim()) {
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+          def dupes = Source.findByNameIlikeAndStatusNotEqual(val, status_deleted);
+          if (dupes && dupes != obj) {
+            return ['notUnique']
+          }
+        }
+        else {
+          return ['notNull']
+        }
+      }
+    })
   }
 
   public static final String restPath = "/sources"

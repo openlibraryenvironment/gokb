@@ -162,24 +162,30 @@ class ComponentUpdateService {
 
     // If this is a component that supports curatoryGroups we should check for them.
     if ( KBComponent.has(component, 'curatoryGroups') ) {
+      log.debug("Handling Curatory Groups ..")
       def groups = component.curatoryGroups.collect { [id: it.id, name: it.name] }
 
       data.curatoryGroups?.each { String name ->
         if (!groups.find {it.name.toLowerCase() == name.toLowerCase()}) {
 
           def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
+          def combo_type_cg = RefdataCategory.lookup('Combo.Type', component.getComboTypeValue('curatoryGroups'))
           // Only add if we have the group already in the system.
           if (group) {
-            component.addToCuratoryGroups ( group )
+            log.debug("Adding group ${name}..")
+            def new_combo = new Combo(fromComponent:component, toComponent:group, type:combo_type_cg, status:combo_active).save(flush:true, failOnError:true)
             hasChanged = true
-            groups << [id: it.id, name: it.name]
+            groups << [id: group.id, name: group.name]
+          }
+          else {
+            log.debug("Could not find linked group ${name}!")
           }
         }
       }
 
       if (sync) {
         groups.each { cg ->
-          if (!data.curatoryGroups || !data.curatoryGroups.contains(cg.name)) {
+          if (!data.curatoryGroups || !data.curatoryGroups.find {it.toLowerCase() == cg.name.toLowerCase()}) {
             log.debug("Removing deprecated CG ${cg.name}")
             Combo.executeUpdate("delete from Combo as c where c.fromComponent = ? and c.toComponent.id = ?", [component, cg.id])
             component.refresh()
@@ -212,7 +218,6 @@ class ComponentUpdateService {
             prop.propertyDefn = pType
             prop.apValue = it.value
             component.addToAdditionalProperties(prop)
-            component.save(failOnError: true)
             props << testKey
           }
         }
@@ -251,7 +256,7 @@ class ComponentUpdateService {
     if (hasChanged) {
       component.lastSeen = new Date().getTime()
     }
-    component.save()
+    component.merge(flush:true)
 
     hasChanged
   }
@@ -264,10 +269,11 @@ class ComponentUpdateService {
     changed
   }
 
-  private static def createOrUpdateSource( data ) {
+  private def createOrUpdateSource( data ) {
     log.debug("assertSource, data = ${data}");
     def result=[:]
     def source_data = data;
+    def changed = false
     result.status = true;
 
     try {
@@ -283,7 +289,7 @@ class ComponentUpdateService {
           ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
           ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
 
-          componentUpdateService.setAllRefdata ([
+          changed |= setAllRefdata ([
             'software', 'service'
           ], source_data, located_or_new_source)
 

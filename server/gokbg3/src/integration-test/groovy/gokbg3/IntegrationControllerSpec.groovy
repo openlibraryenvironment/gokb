@@ -105,6 +105,7 @@ class IntegrationControllerSpec extends Specification {
     when: "Caller asks for this record to be cross referenced"
       def json_record = [
         "platformName" : "pubs.acs.org",
+        "name" : "pubs.acs.org",
         "platformUrl" : "https://pubs.acs.org"
       ]
       RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePlatform") {
@@ -116,6 +117,7 @@ class IntegrationControllerSpec extends Specification {
       resp.json.message != null
       resp.json.result == "OK"
     expect: "Find item by name only returns one item"
+      sleep(500)
       def matching_platforms = Platform.executeQuery('select p from Platform as p where p.name = :n',[n:json_record.platformName]);
       matching_platforms.size() == 1
       matching_platforms[0].id == resp.json.platformId
