@@ -161,6 +161,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
+    sleep(500)
     User check = User.findByUsername('normalUser')
     !check
   }

@@ -682,38 +682,46 @@ class TitleInstance extends KBComponent {
   @Transient
   public static TitleInstance upsertDTO(titleLookupService,titleDTO,user=null) {
     def result = null;
-    def type = 'org.gokb.cred.JournalInstance'
+    def type = null
 
-    switch (titleDTO.type) {
-      case 'Serial':
-        log.debug("Type is ${titleDTO.type}")
-        break;
-      case 'Monograph':
-      case 'Book':
-        log.debug("type ${titleDTO.type} given")
-        type = 'org.gokb.cred.BookInstance'
-        break;
-      case 'Database':
-        log.debug("type ${titleDTO.type} given")
-        type = 'org.gokb.cred.DatabaseInstance'
-        break;
-      case 'Other':
-        log.debug("type ${titleDTO.type} given")
-        type = 'org.gokb.cred.OtherInstance'
-        break;
-      default:
-        log.warn("Unknown or missing type ${titleDTO.type}! Handling title as journal ..")
+    if (titleDTO.type) {
+      switch (titleDTO.type) {
+        case "serial":
+        case "Serial":
+        case "Journal":
+        case "journal":
+          type = "org.gokb.cred.JournalInstance"
+          break;
+        case "monograph":
+        case "Monograph":
+        case "Book":
+        case "book":
+          type = "org.gokb.cred.BookInstance"
+          break;
+        case "Database":
+        case "database":
+          type = "org.gokb.cred.DatabaseInstance"
+          break;
+        case "Other":
+          type = "org.gokb.cred.OtherInstance"
+          break;
+        default:
+          log.warn("Missing type for title!")
+          break;
+      }
     }
 
-    result = titleLookupService.find(titleDTO.name,
-                                     titleDTO.publisher,
-                                     titleDTO.identifiers,
-                                     user,
-                                     null,
-                                     type,
-                                     titleDTO.uuid
-                                )
-    log.debug("Result of upsertDTO: ${result}");
+    if (type) {
+      result = titleLookupService.find(titleDTO.name,
+                                      titleDTO.publisher,
+                                      titleDTO.identifiers,
+                                      user,
+                                      null,
+                                      type,
+                                      titleDTO.uuid
+                                  )
+      log.debug("Result of upsertDTO: ${result}");
+    }
     result;
   }
 

@@ -206,6 +206,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
+    sleep(500)
     User checkUser = User.findByUsername("newerUser")
     checkUser != null
   }
