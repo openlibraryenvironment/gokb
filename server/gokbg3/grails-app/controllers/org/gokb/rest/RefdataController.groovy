@@ -148,7 +148,7 @@ class RefdataController {
         val['value'] = v.value
         val['id'] = v.id
 
-        resultData << [val]
+        resultData << val
       }
     }
     result.data = resultData
