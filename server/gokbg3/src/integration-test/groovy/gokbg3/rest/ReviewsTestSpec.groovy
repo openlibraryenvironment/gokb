@@ -39,6 +39,6 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data.size() == 1
+    resp.json.data.size() >= 1
   }
 }
