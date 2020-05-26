@@ -41,6 +41,9 @@ class UsersTestSpec extends AbstractAuthSpec {
     UserRole.findAllByUser(delUser).each { ur ->
       ur.delete(flush: true)
     }
+    UserRole.findAllByUser(User.findByUsername("newerUser")).each { ur ->
+      ur.delete(flush: true)
+    }
     UserRole.findAllByUser(altUser).each { ur ->
       ur.delete(flush: true)
     }
@@ -131,7 +134,7 @@ class UsersTestSpec extends AbstractAuthSpec {
                            accountLocked   : false,
                            passwordExpired : false,
                            defaultPageSize : 15,
-                           roleIds         : [2,3,4,6,7]
+                           roleIds         : [2, 3, 4, 6, 7]
     ]]
     RestResponse resp = rest.put("${urlPath}/rest/users/$altUser.id") {
       // headers
@@ -201,8 +204,8 @@ class UsersTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.data.username == "newerUser"
-    User checkUser= User.findById(resp.json.data.id)
-    checkUser!=null
+    User checkUser = User.findById(resp.json.data.id)
+    checkUser != null
   }
 
   /*
