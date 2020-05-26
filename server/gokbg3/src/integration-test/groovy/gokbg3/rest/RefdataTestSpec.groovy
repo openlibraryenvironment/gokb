@@ -14,10 +14,10 @@ class RefdataTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest = new RestBuilder()
 
-  void "test GET /rest/package-scope"() {
+  void "test GET /rest/packages-scope"() {
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/package-scope") {
+    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/packages-scope") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")

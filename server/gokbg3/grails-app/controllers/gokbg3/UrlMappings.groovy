@@ -77,7 +77,7 @@ class UrlMappings {
 
       get "/roles"(controller: 'roles', namespace: 'rest', action: 'index')
 
-      get "/package-scope" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
+      get "/packages-scope" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
     }
     "/$controller/$action?/$id?" {
       constraints {
