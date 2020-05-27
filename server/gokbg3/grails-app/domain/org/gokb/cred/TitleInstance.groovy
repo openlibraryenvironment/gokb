@@ -785,17 +785,26 @@ class TitleInstance extends KBComponent {
   }
 
   def beforeUpdate() {
-    if (this.isDirty('status') && this.status == RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    if (this.isDirty('status') && this.status == deleted_status) {
       // Delete the tipps too as a TIPP should not exist without the associated
       // title.
       def tipps = getTipps()
+      def tipls = getTipls()
 
       if ( tipps?.size() > 0 ) {
-        def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def tipp_ids = tipps?.collect { it.id }
         Date now = new Date()
 
-        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids, now: now])
+        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd) and t.status != :del",[del: deleted_status, ttd:tipp_ids, now: now])
+      }
+
+      if ( tipps?.size() > 0 ) {
+        def tipl_ids = tipls?.collect { it.id }
+        Date now = new Date()
+
+        TitleInstancePlatform.executeUpdate("update TitleInstancePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd) and t.status != :del",[del: deleted_status, ttd:tipl_ids, now: now])
       }
 
       def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this])
