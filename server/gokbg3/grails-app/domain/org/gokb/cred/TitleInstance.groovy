@@ -679,38 +679,46 @@ class TitleInstance extends KBComponent {
   @Transient
   public static TitleInstance upsertDTO(titleLookupService,titleDTO,user=null) {
     def result = null;
-    def type = 'org.gokb.cred.JournalInstance'
+    def type = null
 
-    switch (titleDTO.type) {
-      case 'Serial':
-        log.debug("Type is ${titleDTO.type}")
-        break;
-      case 'Monograph':
-      case 'Book':
-        log.debug("type ${titleDTO.type} given")
-        type = 'org.gokb.cred.BookInstance'
-        break;
-      case 'Database':
-        log.debug("type ${titleDTO.type} given")
-        type = 'org.gokb.cred.DatabaseInstance'
-        break;
-      case 'Other':
-        log.debug("type ${titleDTO.type} given")
-        type = 'org.gokb.cred.OtherInstance'
-        break;
-      default:
-        log.warn("Unknown or missing type ${titleDTO.type}! Handling title as journal ..")
+    if (titleDTO.type) {
+      switch (titleDTO.type) {
+        case "serial":
+        case "Serial":
+        case "Journal":
+        case "journal":
+          type = "org.gokb.cred.JournalInstance"
+          break;
+        case "monograph":
+        case "Monograph":
+        case "Book":
+        case "book":
+          type = "org.gokb.cred.BookInstance"
+          break;
+        case "Database":
+        case "database":
+          type = "org.gokb.cred.DatabaseInstance"
+          break;
+        case "Other":
+          type = "org.gokb.cred.OtherInstance"
+          break;
+        default:
+          log.warn("Missing type for title!")
+          break;
+      }
     }
 
-    result = titleLookupService.find(titleDTO.name,
-                                     titleDTO.publisher,
-                                     titleDTO.identifiers,
-                                     user,
-                                     null,
-                                     type,
-                                     titleDTO.uuid
-                                )
-    log.debug("Result of upsertDTO: ${result}");
+    if (type) {
+      result = titleLookupService.find(titleDTO.name,
+                                      titleDTO.publisher,
+                                      titleDTO.identifiers,
+                                      user,
+                                      null,
+                                      type,
+                                      titleDTO.uuid
+                                  )
+      log.debug("Result of upsertDTO: ${result}");
+    }
     result;
   }
 
@@ -774,17 +782,26 @@ class TitleInstance extends KBComponent {
   }
 
   def beforeUpdate() {
-    if (this.isDirty('status') && this.status == RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    if (this.isDirty('status') && this.status == deleted_status) {
       // Delete the tipps too as a TIPP should not exist without the associated
       // title.
       def tipps = getTipps()
+      def tipls = getTipls()
 
       if ( tipps?.size() > 0 ) {
-        def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def tipp_ids = tipps?.collect { it.id }
         Date now = new Date()
 
-        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids, now: now])
+        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd) and t.status != :del",[del: deleted_status, ttd:tipp_ids, now: now])
+      }
+
+      if ( tipps?.size() > 0 ) {
+        def tipl_ids = tipls?.collect { it.id }
+        Date now = new Date()
+
+        TitleInstancePlatform.executeUpdate("update TitleInstancePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd) and t.status != :del",[del: deleted_status, ttd:tipl_ids, now: now])
       }
 
       def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this])

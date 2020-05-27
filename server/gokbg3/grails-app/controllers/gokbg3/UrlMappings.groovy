@@ -84,6 +84,8 @@ class UrlMappings {
       delete "/titles/$id" (controller: 'title', namespace: 'rest', action:'delete')
       post "/titles" (controller: 'title', namespace: 'rest', action:'save')
       get "/titles" (controller: 'title', namespace:'rest', action:'index')
+      
+      get "/package-scopes" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
     }
     "/$controller/$action?/$id?" {
       constraints {
