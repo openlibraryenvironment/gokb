@@ -60,21 +60,18 @@ class IdentifierController {
 
         // result['_currentTipps'] = obj.currentTippCount
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
-      }
-      else if (!obj) {
+      } else if (!obj) {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
         result.result = 'ERROR'
-      }
-      else {
+      } else {
         result.message = "Access to object was denied!"
         response.setStatus(403)
         result.code = 403
         result.result = 'ERROR'
       }
-    }
-    else {
+    } else {
       result.result = 'ERROR'
       response.setStatus(400)
       result.code = 400
@@ -85,79 +82,71 @@ class IdentifierController {
   }
 
   @Transactional
-  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  @Secured(value = ["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def save() {
     def result = [:]
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
 
-    if ( reqBody?.value && reqBody?.namespace && reqBody?.component ) {
-			def ns = null
+    if (reqBody?.value && reqBody?.namespace && reqBody?.component) {
+      def ns = null
 
-			if (reqBody.namespace instanceof Long) {
-				ns = IdentifierNamespace.get(reqBody.namespace)
-			}
-			else if (reqBody.namespace instanceof String) {
-				ns = IdentifierNamespace.findByValueIlike(reqBody.namespace)
-			}
+      if (reqBody.namespace instanceof Long) {
+        ns = IdentifierNamespace.get(reqBody.namespace)
+      } else if (reqBody.namespace instanceof String) {
+        ns = IdentifierNamespace.findByValueIlike(reqBody.namespace)
+      }
 
-			if (ns) {
+      if (ns) {
         Identifier obj = null
         try {
-				  obj = Identifier.lookupOrCreateCanonicalIdentifier(namespace, reqBody.value, false)
+          obj = Identifier.lookupOrCreateCanonicalIdentifier(namespace, reqBody.value, false)
         }
         catch (grails.validation.ValidationException ve) {
-          errors = [badData: reqBody, message: message(code:'identifier.value.IllegalIDForm')]
+          errors = [badData: reqBody, message: message(code: 'identifier.value.IllegalIDForm')]
         }
 
-				if (!obj) {
-					errors = [badData: reqBody, message: message(code: 'identifier.create.error')]
-				}
-				else if (obj?.errors) {
-					errors = messsageService.processValidationErrors(obj.errors, request.locale)
-				}
-        else {
+        if (!obj) {
+          errors = [badData: reqBody, message: message(code: 'identifier.create.error')]
+        } else if (obj?.errors) {
+          errors = messsageService.processValidationErrors(obj.errors, request.locale)
+        } else {
           KBComponent comp = null
 
-          if ( reqBody.component instanceof Long ) {
+          if (reqBody.component instanceof Long) {
             comp = KBComponent.get(reqBody.component)
-          }
-          else if ( reqBody.component instanceof String ) {
+          } else if (reqBody.component instanceof String) {
             comp = KBComponent.findByUuid(reqBody.component)
           }
 
           if (comp) {
-            if ( comp?.isEditable() ) {
+            if (comp?.isEditable()) {
               comp.ids.add(obj)
               comp.save()
 
               result = restMappingService.mapObjectToJson(obj, [:], user)
-            }
-            else {
+            } else {
               result.message = "Access to object was denied!"
               response.setStatus(403)
               result.code = 403
               result.result = 'ERROR'
             }
-          }
-          else {
+          } else {
             result.message = "Component could not be resolved!"
             response.setStatus(404)
             result.code = 404
             result.result = 'ERROR'
           }
         }
-			}
-			else {
+      } else {
         result.message = "Namespace could not be resolved!"
         response.setStatus(404)
         result.code = 404
         result.result = 'ERROR'
-			}
-    }
-    else {
-      errors = [badData: reqBody, message:"Unable to save identifier!"]
+      }
+    } else {
+      errors = [badData: reqBody, message: "Unable to save identifier!"]
     }
 
     if (errors) {
@@ -168,34 +157,53 @@ class IdentifierController {
     result
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
+  @Secured(value = ["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
-    def result = ['result':'OK', 'params': params]
+    def result = ['result': 'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
     def obj = Identifier.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
     def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
-    if ( obj && obj.isDeletable() ) {
-      if ( curator || user.isAdmin() ) {
+    if (obj && obj.isDeletable()) {
+      if (curator || user.isAdmin()) {
         obj.deleteSoft()
-      }
-      else {
+      } else {
         result.result = 'ERROR'
         response.setStatus(403)
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
-    }
-    else if (!obj) {
+    } else if (!obj) {
       result.result = 'ERROR'
       response.setStatus(404)
       result.message = "Package not found or empty request body!"
-    }
-    else {
+    } else {
       result.result = 'ERROR'
       response.setStatus(403)
       result.message = "User is not allowed to delete this component!"
     }
     result
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def namespace() {
+    def result = [_links:[:]]
+    def data = []
+    params << [_exclude:"_links"]
+    def user = User.get(springSecurityService.principal.id)
+    def base = grailsApplication.config.serverURL + "/rest"
+    List<IdentifierNamespace> nss = IdentifierNamespace.all
+    nss.each { ns ->
+      data << [
+        name:ns.value,
+        value:ns.value,
+        id: ns.id,
+        pattern: ns.pattern,
+        family: ns.family
+      ]
+    }
+    result.data=data
+    result['_links']['self'] = ['href': base + "/identifiers-namespace"]
+    render result as JSON
   }
 }

@@ -49,4 +49,21 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     resp.status == 200 // OK
     resp.json.value == "1234-4567"
   }
+
+  void "test /rest/identifiers-namespace"() {
+    def urlPath = getUrlPath()
+    // use the bearerToken to read /rest/profile
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.get("${urlPath}/rest/identifiers-namespace") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
+    then:
+    resp.status == 200 // OK
+    resp.json.data != null
+    resp.json._links.size() == 1
+    resp.json.data.size()==8
+  }
 }

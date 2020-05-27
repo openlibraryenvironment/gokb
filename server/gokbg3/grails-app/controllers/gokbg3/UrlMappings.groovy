@@ -53,6 +53,7 @@ class UrlMappings {
       get "/identifiers/$id"(controller: 'identifier', namespace: 'rest', action: 'show')
       post "/identifiers/$id"(controller: 'identifier', namespace: 'rest', action: 'save')
       get "/identifiers"(controller: 'identifier', namespace: 'rest', action: 'index')
+      get "/identifiers-namespace"(controller: 'identifier', namespace: 'rest', action: 'namespace')
 
       get "/profile"(controller: 'profile', namespace: 'rest', action: 'show')
       put "/profile"(controller: 'profile', namespace: 'rest', action: 'update')
