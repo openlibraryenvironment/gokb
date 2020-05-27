@@ -13,12 +13,12 @@ class IdentifierTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest = new RestBuilder()
 
-  def setupSpec(){
+  def setupSpec() {
   }
 
   def setup() {
     def ns_eissn = IdentifierNamespace.findByValue('eissn')
-    def test_id = Identifier.findByValue("1234-4567") ?: new Identifier(value: "1234-4567", namespace: ns_eissn).save(flush:true)
+    def test_id = Identifier.findByValue("1234-4567") ?: new Identifier(value: "1234-4567", namespace: ns_eissn).save(flush: true)
   }
 
   void "test /rest/identifiers/<id> without token"() {
@@ -64,6 +64,6 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     resp.status == 200 // OK
     resp.json.data != null
     resp.json._links.size() == 1
-    resp.json.data.size()==8
+    resp.json.data.size() >= 8
   }
 }
