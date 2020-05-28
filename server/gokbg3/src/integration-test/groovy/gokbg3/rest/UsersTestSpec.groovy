@@ -206,6 +206,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.data.username == "newerUser"
+    sleep(500)
     User checkUser = User.findById(resp.json.data.id)
     checkUser != null
   }

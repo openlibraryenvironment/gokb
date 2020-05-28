@@ -31,7 +31,9 @@ class Identifier extends KBComponent {
       'editStatus',
       'name',
       'status',
-      'lastUpdated'
+      'lastUpdated',
+      'description',
+      'source'
     ],
     'defaultLinks': [
       'namespace'
