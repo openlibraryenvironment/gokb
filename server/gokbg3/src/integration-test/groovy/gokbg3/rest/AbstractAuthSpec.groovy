@@ -6,10 +6,8 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.WebApplicationContext
-import groovy.util.logging.Slf4j
 import spock.lang.Specification
 
-@Slf4j
 class AbstractAuthSpec extends Specification {
 
   GrailsApplication grailsApplication

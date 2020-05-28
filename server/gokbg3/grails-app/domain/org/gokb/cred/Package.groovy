@@ -363,7 +363,7 @@ select tipp.id,
       def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
       def tipp_ids = tipps?.collect { it.id }
 
-      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdateComment = 'Deleted via Package delete', t.lastUpdated = :now where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids, now: now])
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdateComment = 'Deleted via Package delete', t.lastUpdated = :now where t.status != :del and t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids, now: now])
     }
   }
 
@@ -779,6 +779,8 @@ select tipp.id,
     // User userListVerifier
     changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate');
 
+    // ListVerifier
+
     if ( packageHeaderDTO.userListVerifier ) {
       def looked_up_user = User.findByUsername(packageHeaderDTO.userListVerifier)
       if ( looked_up_user && ( ( result.userListVerifier == null ) || ( result.userListVerifier?.id != looked_up_user?.id )  ) ) {
@@ -790,17 +792,28 @@ select tipp.id,
       }
     }
 
+    // Platform
+
     if ( packageHeaderDTO.nominalPlatform ) {
       def platformDTO = [:];
 
-      if (packageHeaderDTO.nominalPlatform instanceof String && packageHeaderDTO.nominalPlatform.trim().size() > 0){
+      if (packageHeaderDTO.nominalPlatform instanceof String && packageHeaderDTO.nominalPlatform.trim()){
         platformDTO['name'] = packageHeaderDTO.nominalPlatform
       }else if(packageHeaderDTO.nominalPlatform.name && packageHeaderDTO.nominalPlatform.name.trim().size() > 0){
         platformDTO = packageHeaderDTO.nominalPlatform
       }
 
       if(platformDTO){
-        def np = Platform.upsertDTO(platformDTO)
+        def np = null
+
+        if (platformDTO.uuid) {
+          np = Platform.findByUuid(platformDTO?.uuid)
+        }
+
+        if (!np) {
+          np = Platform.upsertDTO(platformDTO)
+        }
+
         if ( np ) {
           if ( result.nominalPlatform != np ) {
             result.nominalPlatform = np;
@@ -819,17 +832,20 @@ select tipp.id,
       }
     }
 
+    // Provider
+
     if ( packageHeaderDTO.nominalProvider ) {
 
       def providerDTO = [:]
 
-      if (packageHeaderDTO.nominalProvider instanceof String && packageHeaderDTO.nominalProvider.trim()){
+      if ( packageHeaderDTO.nominalProvider instanceof String && packageHeaderDTO.nominalProvider.trim() ){
         providerDTO['name'] = packageHeaderDTO.nominalProvider
-      }else if(packageHeaderDTO.nominalProvider.name && packageHeaderDTO.nominalProvider.name.trim()){
+      }
+      else if ( packageHeaderDTO.nominalProvider.name && packageHeaderDTO.nominalProvider.name.trim() ){
         providerDTO = packageHeaderDTO.nominalProvider
       }
 
-      log.debug("Trying to set package provider..")
+      log.debug("Trying to set package provider.. ${providerDTO}")
       def prov = null
 
       if (providerDTO?.uuid) {
@@ -841,42 +857,41 @@ select tipp.id,
 
         prov = Org.findByNormname(norm_prov_name)
 
-        if ( prov ) {
-          if ( result.provider != prov ) {
-            result.provider = prov;
-
-            log.debug("Provider ${prov.name} set.")
-            changed = true
-          }
-          else {
-            log.debug("No provider change")
-          }
-        }else{
+        if ( !prov ) {
+          log.debug("None found by Normname ${norm_prov_name}, trying variants")
           def variant_normname = GOKbTextUtils.normaliseString(providerDTO.name)
           def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status = ?",[variant_normname, status_deleted]);
 
           if ( candidate_orgs.size() == 1 ) {
-            if ( result.provider != candidate_orgs[0] ) {
-              result.provider = candidate_orgs[0]
-
-              log.debug("Provider ${candidate_orgs[0].name} set.")
-              changed = true
-            }
-            else {
-              log.debug("No provider change")
-            }
+            prov = candidate_orgs[0]
           }
           else if ( candidate_orgs.size() == 0 ) {
             log.debug("No org match for provider ${packageHeaderDTO.nominalProvider}. Creating new org..")
-            result.provider = new Org(name:providerDTO.name, normname:norm_prov_name, uuid: providerDTO.uuid ?: null).save(flush:true, failOnError:true);
-            changed = true
+            prov = new Org(name:providerDTO.name, normname:norm_prov_name, uuid: providerDTO.uuid ?: null).save(flush:true, failOnError:true);
           }
           else {
             log.warn("Multiple org matches for provider ${packageHeaderDTO.nominalProvider}. Skipping..");
           }
         }
       }
+
+      if (prov) {
+        if ( result.provider != prov ) {
+          result.provider = prov;
+
+          log.debug("Provider ${prov.name} set.")
+          changed = true
+        }
+        else {
+          log.debug("No provider change")
+        }
+      }
     }
+    else {
+      log.debug("No provider found!")
+    }
+
+    // Source
 
     if ( packageHeaderDTO.source?.url ) {
       def src = Source.findByUrl(packageHeaderDTO.source.url)
@@ -886,12 +901,15 @@ select tipp.id,
       }
     }
 
+    // variantNames are handled in ComponentUpdateService
     // packageHeaderDTO.variantNames?.each {
     //   if ( it.trim().size() > 0 ) {
     //     result.ensureVariantName(it)
     //     changed=true
     //   }
     // }
+
+    // CuratoryGroups
 
     packageHeaderDTO.curatoryGroups?.each {
 

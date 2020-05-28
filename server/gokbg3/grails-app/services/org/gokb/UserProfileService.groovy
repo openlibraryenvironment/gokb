@@ -1,33 +1,17 @@
 package org.gokb
 
-import grails.converters.JSON
+
+import grails.core.GrailsApplication
 import grails.gorm.transactions.Transactional
-import groovy.util.logging.Log
-import org.gokb.cred.ComponentLike
-import org.gokb.cred.CuratoryGroup
-import org.gokb.cred.DSAppliedCriterion
-import org.gokb.cred.Folder
-import org.gokb.cred.History
-import org.gokb.cred.KBComponent
-import org.gokb.cred.Note
-import org.gokb.cred.Package
-import org.gokb.cred.ReviewRequest
-import org.gokb.cred.Role
-import org.gokb.cred.SavedSearch
-import org.gokb.cred.User
-import org.gokb.cred.UserOrganisation
-import org.gokb.cred.UserOrganisationMembership
-import org.gokb.cred.UserRole
-import org.gokb.cred.WebHookEndpoint
+import org.gokb.cred.*
 import org.gokb.refine.RefineProject
-import org.gokb.rest.UsersController
 import org.springframework.beans.factory.annotation.Autowired
 
 @Transactional
 class UserProfileService {
 
   @Autowired
-  UsersController usersController
+  GrailsApplication grailsApplication
 
   def delete(User user) {
     def result = [:]
@@ -76,155 +60,70 @@ class UserProfileService {
     return result
   }
 
-  def update(User user, def data, User adminUser) {
+  def update(User user, def data, params = [:], User adminUser) {
     def result = [:]
-    def error = [:]
+    def errors = []
     log.debug("Updating user ${user.id} ..")
-    def immutables = ['id', 'username', 'passwordExpired', 'last_alert_check']
-    def adminAttributes = ['roles', 'curatoryGroups', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
+    def immutables = ['id', 'username', 'password', 'last_alert_check']
+    def adminAttributes = ['roleIds', 'curatoryGroupIds', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
 
-    def reqBody = data
     if (!adminUser.isAdmin() && user != adminUser) {
-      error.message = "$adminUser.username is not allowed to change $user.username"
-      result.error = error
-      response.setStatus(400)
+      errors << [message: "user $adminUser.username is not allowed to change properties of user $user.username",
+                 baddata: user.username]
+    }
+    data.each { field, value ->
+      if (field in immutables && (user[field] != value)) {
+        errors << [message: "property $field is immutable!",
+                   baddata: value]
+      }
+      if (field in adminAttributes && !adminUser.isAdmin()) {
+        errors << [message: "user $adminUser.username is not allowed to change property $field of user $user.username",
+                   baddata: field]
+      }
+    }
+    if (errors.size() > 0) {
+      result.errors = errors
       return result
     }
-    // apply changes
-    reqBody.each { field, value ->
-      if (field != "roles" && field != "curatoryGroups" && value && !user.hasProperty(field)) {
-        error.message = "$field is unknown"
-        result.error = error
-        return result
-      }
-      if (immutables.contains(field) && value != user[field]) {
-        error.message = "$field is immutable"
-        result.error = error
-        return result
-      }
-      if (adminAttributes.contains(field) && !adminUser.isAdmin()) {
-        error.message = "$adminUser.username is not allowed to change $field "
-        result.error = error
-        return result
-      }
-      if (field == "roles") {
-        // change roles
-        // scan data
-        Set<Role> newRoles = new HashSet<Role>()
-        value.each { role ->
-          Role newRole = Role.findById(role.id)
-          if (!newRole)
-            newRole = Role.findByAuthority(role.authority)
-          if (newRole) {
-            newRoles.add(newRole)
-          } else {
-            error.message = "Role Authority $field is unknown"
-            result.error = error
-            return result
-          }
-        }
-        // alter previous role set
-        Set<Role> previousRoles = user.getAuthorities()
-        Role.findAll().each { role ->
-          if (newRoles.contains(role)) {
-            if (!previousRoles.contains(role)) {
-              UserRole.create(user, role, true)
-            }
-          } else if (previousRoles.contains(role)) {
-            UserRole.remove(user, role, true)
-          }
-        }
-      } else if (field == "curatoryGroups") {
-        // change cGroups
-        def curGroups = []
-        value.each { cg ->
-          CuratoryGroup cg_obj = null
-          if (cg.uuid?.trim()) {
-            cg_obj = CuratoryGroup.findByUuid(cg.uuid)
-          }
-          if (!cg_obj && cg.id) {
-            cg_obj = cg.id instanceof String ? genericOIDService.resolveOID(cg.id) : CuratoryGroup.get(cg.id)
-          }
-          if (cg_obj) {
-            curGroups.add(cg_obj)
-          } else {
-            log.debug("CuratoryGroup ${cg} not found!")
-            error.message = "unknown CuratoryGroup $cg"
-            result.error = error
-            return result
-          }
-        }
-        user.curatoryGroups.addAll(curGroups)
-        user.curatoryGroups.retainAll(curGroups)
-      } else {
-        user[field] = value
-      }
-    }
-    user.save(flush: true)
-    result.data = usersController.collectUserProps(user)
-    return result
+    return modifyUser(user, data)
   }
 
   def create(def data) {
     User user = new User()
+    return modifyUser(user, data)
+  }
+
+  def modifyUser(User user, Map data) {
+    boolean newUser = user.username == null
     def result = [data  : [],
                   result: 'OK']
     def errors = []
-    def skippedCG = false
-    def reqBody = data
-
-    reqBody.each { field, val ->
-      if (val && user.hasProperty(field)) {
-        // roles have to be treated separately, as they're not a user property
-        if (field != 'curatoryGroups') {
-          user."${field}" = val
-        } else {
-          def curGroups = []
-          val.each { cg ->
-            def cg_obj = null
-            if (cg.uuid?.trim()) {
-              cg_obj = CuratoryGroup.findByUuid(cg.uuid)
-            }
-
-            if (!cg_obj && cg.id) {
-              cg_obj = cg.id instanceof String ? genericOIDService.resolveOID(cg.id) : CuratoryGroup.get(cg.id)
-            }
-
-            if (cg_obj) {
-              curGroups.add(cg_obj)
-            } else {
-              log.debug("CuratoryGroup ${cg} not found!")
-              errors << ['message': 'Could not find referenced curatory group!', 'baddata': cg]
-            }
-          }
-          log.debug("New CuratoryGroups: ${curGroups}")
-
-          if (errors.size() > 0) {
-            result.message = "There have been errors updating the users curatory groups."
-            result.errors = errors
-            response.setStatus(400)
-          } else {
-            user.curatoryGroups.addAll(curGroups)
-            user.curatoryGroups.retainAll(curGroups)
-          }
-        }
+    // apply changes
+    data.each { field, value ->
+      if (field != "roleIds" && field != "curatoryGroupIds" && value && !user.hasProperty(field)) {
+        log.error("property user.$field is unknown!")
+        errors << [message: "$field is unknown", baddata: field]
       }
-      if (field == "roles") {
+      if (field == "roleIds") {
+        // change roles
         // scan data
-        Set<Role> newRoles = new HashSet<Role>()
-        val.each { value ->
-          Role newRole = Role.findById(value.id)
-          if (!newRole)
-            newRole = Role.findByAuthority(value.authority)
+        Set<Role> newRoles = []
+        value.each { roleId ->
+          Role newRole = Role.findById(roleId)
           if (newRole) {
             newRoles.add(newRole)
           } else {
-            errors << ['message': 'Could not find referenced role!', 'baddata': value.authority]
-            log.error("Role Autority '$value.authority' is unknown!")
+            log.error("Role ID $roleId not found!")
+            errors << [message: "role ID $roleId is unknown", baddata: roleId]
           }
         }
-        // alter previous role set
-        Set<Role> previousRoles = user.getAuthorities()
+        // alter role set
+        Set<Role> previousRoles = []
+        if (!newUser) {
+          UserRole.findAllByUser(user).each { ur ->
+            previousRoles << ur.role
+          }
+        }
         Role.findAll().each { role ->
           if (newRoles.contains(role)) {
             if (!previousRoles.contains(role)) {
@@ -234,20 +133,116 @@ class UserProfileService {
             UserRole.remove(user, role, true)
           }
         }
+      } else if (field == "curatoryGroupIds") {
+        // change cGroups
+        Set<CuratoryGroup> curGroups = []
+        value.each { cgId ->
+          CuratoryGroup cg_obj = null
+          if (cgId) {
+            cg_obj = CuratoryGroup.findByUuid(cgId)
+          }
+          if (!cg_obj) {
+            cg_obj = CuratoryGroup.findById(cgId)
+          }
+          if (cg_obj) {
+            curGroups.add(cg_obj)
+          } else {
+            log.error("CuratoryGroup ID ${cgId} not found!")
+            errors << [message: "unknown CuratoryGroup ID $cgId", baddata: cgId]
+            result.errors = errors
+            return result
+          }
+        }
+        if (newUser) {
+          user.curatoryGroups = curGroups
+        } else {
+          user.curatoryGroups.addAll(curGroups)
+          user.curatoryGroups.retainAll(curGroups)
+        }
+      } else {
+        user[field] = value
       }
     }
 
     if (errors.size() == 0) {
       if (user.validate()) {
-        user.save(flush: true)
+        user.save(flush: true, failOnError: true)
         result.message = "User profile sucessfully created."
-        result.data = usersController.collectUserProps(user)
+        result.data = collectUserProps(user)
       } else {
-        result.result = "ERROR"
         result.message = "There have been errors saving the user object."
         result.errors = user.errors
       }
+    } else {
+      result.errors = errors
     }
     return result
   }
+
+  def collectUserProps(User user, params = [:]) {
+    def base = grailsApplication.config.serverURL + "/rest"
+    def includes = [], excludes = [],
+        newUserData = [
+          'id'             : user.id,
+          'username'       : user.username,
+          'displayName'    : user.displayName,
+          'email'          : user.email,
+          'enabled'        : user.enabled,
+          'accountExpired' : user.accountExpired,
+          'accountLocked'  : user.accountLocked,
+          'passwordExpired': user.passwordExpired,
+          'status'         : user.enabled && !user.accountExpired && !user.accountLocked && !user.passwordExpired,
+          'defaultPageSize': user.defaultPageSize
+        ]
+    if (params._embed?.split(',')?.contains('curatoryGroups'))
+      newUserData.curatoryGroups = user.curatoryGroups
+    else {
+      newUserData.curatoryGroups = []
+      user.curatoryGroups.each { group ->
+        newUserData.curatoryGroups += [
+          id    : group.id,
+          name  : group.name,
+          _links: [
+            'self': [href: base + "/curatoryGroups/$group.id"]
+          ]
+        ]
+      }
+    }
+    if (params._embed?.split(',')?.contains('roles'))
+      newUserData.roles = user.authorities
+    else {
+      newUserData.roles = []
+      user.authorities.each { role ->
+        newUserData.roles += [
+          id       : role.id,
+          authority: role.authority,
+          _links   : [
+            'self': [href: base + "/roles/$role.id"]
+          ]
+        ]
+      }
+    }
+
+    if (params._include)
+      includes = params._include.split(',')
+    if (params._exclude) {
+      excludes = params._exclude.split(',')
+      includes.each { prop ->
+        excludes -= prop
+      }
+    }
+
+    newUserData = newUserData.findAll { k, v ->
+      (!excludes.contains(k) || (!includes.empty && includes.contains(k)))
+    }
+
+    newUserData._links = [
+      self  : [href: base + "/users/$user.id"],
+      update: [href: base + "/users/$user.id"],
+      delete: [href: base + "/users/$user.id"]
+    ]
+
+    return newUserData
+  }
+
 }

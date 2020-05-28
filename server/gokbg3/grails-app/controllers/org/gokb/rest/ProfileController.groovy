@@ -58,14 +58,14 @@ class ProfileController {
   @Transactional
   def update() {
     User user = User.get(springSecurityService.principal.id)
-    render userProfileService.update(user, request.JSON, user) as JSON
+    render userProfileService.update(user, request.JSON.data, params, user) as JSON
   }
 
   @grails.plugin.springsecurity.annotation.Secured(value = ['IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
   @Transactional
   def patch() {
     def result = [:]
-    Map reqData = request.JSON
+    Map reqData = request.JSON.data
     User user = User.get(springSecurityService.principal.id)
     if (reqData.new_password && reqData.password) {
       if (passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
@@ -79,7 +79,7 @@ class ProfileController {
     }
     reqData.remove('new_password')
     reqData.remove('password')
-    render userProfileService.update(user, reqData, user) as JSON
+    render userProfileService.update(user, reqData, params, user) as JSON
   }
 
   @Transactional
