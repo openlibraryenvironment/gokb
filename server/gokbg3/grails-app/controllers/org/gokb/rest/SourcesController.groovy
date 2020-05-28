@@ -3,8 +3,11 @@ package org.gokb.rest
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.Role
 import org.gokb.cred.Source
 import org.gokb.cred.User
+import org.gokb.cred.UserRole
 
 import java.time.Duration
 import java.time.LocalDateTime

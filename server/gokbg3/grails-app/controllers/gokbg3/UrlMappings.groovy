@@ -53,7 +53,7 @@ class UrlMappings {
       get "/identifiers/$id"(controller: 'identifier', namespace: 'rest', action: 'show')
       post "/identifiers/$id"(controller: 'identifier', namespace: 'rest', action: 'save')
       get "/identifiers"(controller: 'identifier', namespace: 'rest', action: 'index')
-      get "/identifiers-namespace"(controller: 'identifier', namespace: 'rest', action: 'namespace')
+      get "/identifier-namespaces"(controller: 'identifier', namespace: 'rest', action: 'namespace')
 
       get "/profile"(controller: 'profile', namespace: 'rest', action: 'show')
       put "/profile"(controller: 'profile', namespace: 'rest', action: 'update')
@@ -80,6 +80,8 @@ class UrlMappings {
       get "/curatoryGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'index')
 
       get "/roles"(controller: 'roles', namespace: 'rest', action: 'index')
+
+      get "/package-scopes" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
     }
     "/$controller/$action?/$id?" {
       constraints {

@@ -41,6 +41,9 @@ class UsersTestSpec extends AbstractAuthSpec {
     UserRole.findAllByUser(delUser).each { ur ->
       ur.delete(flush: true)
     }
+    UserRole.findAllByUser(User.findByUsername("newerUser")).each { ur ->
+      ur.delete(flush: true)
+    }
     UserRole.findAllByUser(altUser).each { ur ->
       ur.delete(flush: true)
     }
@@ -50,6 +53,11 @@ class UsersTestSpec extends AbstractAuthSpec {
       user.delete(flush: true)
     }
     user = User.findByUsername(altUser.username)
+    if (user) {
+      user.curatoryGroups -= cg
+      user.delete(flush: true)
+    }
+    user = User.findByUsername("newerUser")
     if (user) {
       user.curatoryGroups -= cg
       user.delete(flush: true)
@@ -118,20 +126,16 @@ class UsersTestSpec extends AbstractAuthSpec {
     // use the bearerToken to write to /rest/user
     when:
     String accessToken = getAccessToken()
-    Map bodyData = [data: [id             : altUser.id,
-                           username       : "OtherUser",
-                           displayName    : "DisplayName",
-                           email          : "nobody@localhost",
-                           curatoryGroups : [],
-                           enabled        : true,
-                           accountExpired : false,
-                           accountLocked  : false,
-                           passwordExpired: false,
-                           defaultPageSize: 15,
-                           roles          : [[authority: "ROLE_CONTRIBUTOR"],
-                                             [authority: "ROLE_USER"],
-                                             [authority: "ROLE_EDITOR"]
-                           ]]]
+    Map bodyData = [data: [displayName     : "DisplayName",
+                           email           : "nobody@localhost",
+                           curatoryGroupIds: [cg.id],
+                           enabled         : true,
+                           accountExpired  : false,
+                           accountLocked   : false,
+                           passwordExpired : false,
+                           defaultPageSize : 15,
+                           roleIds         : [2, 3, 4, 6, 7]
+    ]]
     RestResponse resp = rest.put("${urlPath}/rest/users/$altUser.id") {
       // headers
       accept('application/json')
@@ -153,13 +157,13 @@ class UsersTestSpec extends AbstractAuthSpec {
     // use the bearerToken to write to /rest/user
     when:
     String accessToken = getAccessToken()
-    Map bodyData = [data: [displayName    : "DisplayName",
-                           enabled        : false,
-                           defaultPageSize: 18,
-                           roles          : [[authority: "ROLE_CONTRIBUTOR"],
-                                             [authority: "ROLE_USER"],
-                                             [authority: "ROLE_EDITOR"]
-                           ]]]
+    Map bodyData = [data: [
+      displayName     : "DisplayName",
+      enabled         : false,
+      defaultPageSize : 18,
+      roleIds         : [2, 3, 5],
+      curatoryGroupIds: []
+    ]]
 
     def bodyText = bodyData as JSON
     RestResponse resp = rest.patch("http://localhost:$serverPort/gokb/rest/users/$altUser.id") {
@@ -172,23 +176,36 @@ class UsersTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.data.defaultPageSize == 18
-    def checkUser = User.findById(altUser.id)
+    def checkUser = User.findById(altUser.id).refresh()
     checkUser.enabled == false
+    checkUser.curatoryGroups.size() == 0
   }
 
   void "test POST /rest/users"() {
     when:
     String accessToken = getAccessToken()
+    Map bodyData = [data: [
+      username        : "newerUser",
+      email           : "nobody@localhost",
+      password        : "defaultPassword",
+      displayName     : "DisplayName",
+      enabled         : false,
+      defaultPageSize : 18,
+      roleIds         : [],
+      curatoryGroupIds: [cg.id]
+    ]]
     RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/users") {
       // headers
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body([data:[username:"newerUser", email:"nobody@localhost",password:"defaultPassword"]] as JSON)
+      body(bodyData as JSON)
     }
     then:
     resp.status == 200
     resp.json.data.username == "newerUser"
+    User checkUser = User.findById(resp.json.data.id)
+    checkUser != null
   }
 
   /*
@@ -202,10 +219,11 @@ class UsersTestSpec extends AbstractAuthSpec {
       // headers
       accept('application/json')
       contentType('application/json')
-      body([data:[username:"newerUser", email:"nobody@localhost",password:"defaultPassword"]] as JSON)
+      body([data: [username: "newerUser", email: "nobody@localhost", password: "defaultPassword"]] as JSON)
     }
     then:
     resp.status == 200
+    sleep(500)
     User checkUser = User.findByUsername("newerUser")
     checkUser != null
   }

@@ -881,6 +881,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Combo.Type','Platform.Provider').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Office.Org').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Office.CuratoryGroups').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('Combo.Type','Org.Imprint').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Org.Previous').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Org.Parent').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Combo.Type','Org.OwnedImprints').save(flush:true, failOnError:true)

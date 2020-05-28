@@ -126,7 +126,7 @@ class ComponentLookupService {
     def result = [:]
     def hqlQry = "from ${cls.simpleName} as p".toString()
     def qryParams = [:]
-    def max = params.limit ? params.long('limit') : user.defaultPageSize ?: 10
+    def max = params.limit ? params.long('limit') : 10
     def offset = params.offset ? params.long('offset') : 0
     def first = true
     def comboProps = grailsApplication.getArtefact("Domain",cls.name).newInstance().allComboPropertyNames
