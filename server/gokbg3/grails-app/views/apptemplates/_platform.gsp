@@ -45,9 +45,9 @@
       <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}">
         <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       </g:if>
-      <li><a href="#review" data-toggle="tab">Review Tasks (Open/Total)<span
+      <li><a href="#review" data-toggle="tab">Review Tasks <span
           class="badge badge-warning">
-            ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()}
+            ${d.reviewRequests?.size() ?: '0'}
         </span></a></li>
     </g:if>
     <g:else>

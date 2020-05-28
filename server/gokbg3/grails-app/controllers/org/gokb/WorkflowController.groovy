@@ -1130,7 +1130,7 @@ class WorkflowController {
       log.debug("Process title_id ${title_id} and change publisher to ${publisher}");
       def title = TitleInstance.get(title_id);
       title.changePublisher(publisher)
-      title.save(flush:true)
+      title.save()
     }
 
     // Step two : Process TIPP adjustments
@@ -1599,29 +1599,6 @@ class WorkflowController {
 
     result.ref=params.from
     redirect(url: result.ref)
-  }
-
-  @Transactional
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def newRRLink() {
-    def new_rr = null
-    log.debug("newRRLink ${params}");
-
-    User user = springSecurityService.currentUser
-
-    if ( params.id ) {
-      def component = KBComponent.findByUuid(params.id)
-
-      if (!component) {
-        component = KBComponent.get(params.long('id'))
-      }
-
-      new_rr = ReviewRequest.raise(component, params.request, "Manual Request", null)
-      new_rr.raisedBy = user
-      new_rr.save(flush:true)
-    }
-
-    redirect(url: request.getHeader('referer')+'#review');
   }
 
   @Transactional

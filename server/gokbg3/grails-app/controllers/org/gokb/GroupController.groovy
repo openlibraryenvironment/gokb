@@ -45,13 +45,11 @@ class GroupController {
 
       def closedStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed')
       def delStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Deleted')
-      def all_components = KBComponent.executeQuery("select c from KBComponent as c where exists ( select oc from c.outgoingCombos as oc where oc.toComponent = :group )",[group:result.group])
    
-      log.debug("Got ${all_components.size()} connected components")
 
-      def cg_review_tasks_hql = " from ReviewRequest as rr where (rr.allocatedTo in ( select u from CuratoryGroup as cg join cg.users as u where cg = :group ) or rr.componentToReview in (:cgcomponents)) and rr.status!=:closed and rr.status!=:deleted "
-      result.rr_count = Package.executeQuery('select count(rr) '+cg_review_tasks_hql,[group:result.group,cgcomponents:all_components,closed:closedStat,deleted:delStat])[0];
-      result.rrs = Package.executeQuery('select rr '+cg_review_tasks_hql,[group:result.group,cgcomponents:all_components,closed:closedStat,deleted:delStat],[max:result.max,offset:result.rr_offset,sort:rr_sort,order:rr_sort_order]);
+      def cg_review_tasks_hql = " from ReviewRequest as rr where allocatedTo in ( select u from CuratoryGroup as cg join cg.users as u where cg = ? ) and rr.status!=? and rr.status!=? "
+      result.rr_count = Package.executeQuery('select count(rr) '+cg_review_tasks_hql,[result.group,closedStat,delStat])[0];
+      result.rrs = Package.executeQuery('select rr '+cg_review_tasks_hql,[result.group,closedStat,delStat],[max:result.max,offset:result.rr_offset,sort:rr_sort,order:rr_sort_order]);
 
 
       result.rr_page_max = (result.rr_count / result.max).toInteger() + (result.rr_count % result.max > 0 ? 1 : 0)
