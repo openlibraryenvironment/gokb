@@ -91,20 +91,20 @@ class IdentifierController {
     log.debug("Save new Identifier: ${reqBody}")
 
     if ( reqBody?.value && reqBody?.namespace ) {
-			def ns = null
+      def ns = null
 
-			if (reqBody.namespace instanceof Integer) {
-				ns = IdentifierNamespace.get(reqBody.namespace)
-			}
-			else if (reqBody.namespace instanceof String) {
-				ns = IdentifierNamespace.findByValueIlike(reqBody.namespace)
-			}
+      if (reqBody.namespace instanceof Integer) {
+        ns = IdentifierNamespace.get(reqBody.namespace)
+      }
+      else if (reqBody.namespace instanceof String) {
+        ns = IdentifierNamespace.findByValueIlike(reqBody.namespace)
+      }
 
       if (ns) {
         Identifier obj = null
 
         try {
-				  obj = Identifier.lookupOrCreateCanonicalIdentifier(ns, reqBody.value, false)
+          obj = Identifier.lookupOrCreateCanonicalIdentifier(ns, reqBody.value, false)
         }
         catch (grails.validation.ValidationException ve) {
           errors = [badData: reqBody, message: message(code: 'identifier.value.IllegalIDForm')]
@@ -112,12 +112,12 @@ class IdentifierController {
 
         log.debug("After Identifier lookup: ${obj}")
 
-				if (!obj) {
-					errors = [badData: reqBody, message: message(code: 'identifier.create.error')]
-				}
-				else if ( obj.hasErrors() ) {
-					errors = messageService.processValidationErrors(obj.errors, request.locale)
-				}
+        if (!obj) {
+          errors = [badData: reqBody, message: message(code: 'identifier.create.error')]
+        }
+        else if ( obj.hasErrors() ) {
+          errors = messageService.processValidationErrors(obj.errors, request.locale)
+        }
         else {
           if (reqBody.component) {
             KBComponent comp = null
