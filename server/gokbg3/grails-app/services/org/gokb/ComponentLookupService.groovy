@@ -132,7 +132,7 @@ class ComponentLookupService {
     def comboProps = grailsApplication.getArtefact("Domain",cls.name).newInstance().allComboPropertyNames
     def sort = null
     def sortField = null
-    def order = params['order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
+    def order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
 
     def comboJoinStr = ""
     def comboFilterStr = ""
@@ -141,7 +141,7 @@ class ComponentLookupService {
 
     comboProps.each { c ->
 
-      if (params[c] || params['sort'] == c) {
+      if (params[c] || params['_sort'] == c) {
         boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
         log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
 
@@ -295,7 +295,7 @@ class ComponentLookupService {
         }
       }
 
-      if (params['sort'] == p.name) {
+      if (params['_sort'] == p.name) {
         sortField = "p.${p.name}"
         sort = " order by ${p.name} ${order ?: ''}"
       }
@@ -388,36 +388,43 @@ class ComponentLookupService {
 
   private generateLinks(result, cls, context, params, max, offset, total) {
     def endpoint = cls.newInstance().hasProperty('restPath') ? cls.newInstance().restPath : ""
+    log.debug("Identified endpoint: ${endpoint}")
     def base = grailsApplication.config.serverURL + "/rest" + "${context ?: endpoint}"
 
     result['_links'] = [:]
 
     def selfLink = new URIBuilder(base)
-    selfLink.addQueryParams(params)
-    params.each { p, vals ->
-      log.debug("handling param ${p}: ${vals}")
-      if (vals instanceof String[]) {
-        selfLink.removeQueryParam(p)
-        vals.each { val ->
-          if (val.trim()) {
-            log.debug("Val: ${val} -- ${val.class.name}")
-            selfLink.addQueryParam(p, val)
+
+    if (selfLink) {
+      selfLink.addQueryParams(params)
+      params.each { p, vals ->
+        log.debug("handling param ${p}: ${vals}")
+        if (vals instanceof String[]) {
+          selfLink.removeQueryParam(p)
+          vals.each { val ->
+            if (val.trim()) {
+              log.debug("Val: ${val} -- ${val.class.name}")
+              selfLink.addQueryParam(p, val)
+            }
           }
+          log.debug("${selfLink.toString()}")
         }
-        log.debug("${selfLink.toString()}")
+        else if (!p.trim()) {
+          selfLink.removeQueryParam(p)
+        }
       }
-      else if (!p.trim()) {
-        selfLink.removeQueryParam(p)
+      if(params.controller) {
+        selfLink.removeQueryParam('controller')
+      }
+      if (params.action) {
+        selfLink.removeQueryParam('action')
+      }
+      if (params.componentType) {
+        selfLink.removeQueryParam('componentType')
       }
     }
-    if(params.controller) {
-      selfLink.removeQueryParam('controller')
-    }
-    if (params.action) {
-      selfLink.removeQueryParam('action')
-    }
-    if (params.componentType) {
-      selfLink.removeQueryParam('componentType')
+    else {
+      selfLink = new URIBuilder(grailsApplication.config.serverURL + "/rest")
     }
     result['_links']['self'] = [href: selfLink.toString()]
 

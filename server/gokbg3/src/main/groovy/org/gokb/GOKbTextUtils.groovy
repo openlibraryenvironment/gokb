@@ -206,7 +206,7 @@ class GOKbTextUtils {
   public static LocalDateTime completeDateString(String datepart, boolean start = true) {
     def result = null
     DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
-    DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']").withResolverStyle(ResolverStyle.STRICT)
+    DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd' 'HH:mm:ss.S]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']")
 
     if ( datepart?.trim() ) {
       try {

@@ -20,6 +20,10 @@ class Identifier extends KBComponent {
       "${this.class.name}:${id}"
   }
 
+  public String getRestPath() {
+    return "/identifiers"
+  }
+
   static jsonMapping = [
     'ignore': [
       'lastUpdatedBy',
@@ -27,7 +31,9 @@ class Identifier extends KBComponent {
       'editStatus',
       'name',
       'status',
-      'lastUpdated'
+      'lastUpdated',
+      'description',
+      'source'
     ],
     'defaultLinks': [
       'namespace'

@@ -139,13 +139,17 @@ class PackageController {
 
         updateCombos(obj, reqBody)
 
-        if (!obj.hasErrors()) {
-          result = restMappingService.mapObjectToJson(obj, params, user)
+        if( obj.validate() ) {
+          if(errors.size() == 0) {
+            log.debug("No errors.. saving")
+            obj.save(flush:true)
+            result = restMappingService.mapObjectToJson(obj, params, user)
+          }
         }
         else {
           result.result = 'ERROR'
           response.setStatus(422)
-          errors.addAll(messsageService.processValidationErrors(obj.errors, request.locale))
+          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
     }
@@ -214,7 +218,7 @@ class PackageController {
         else {
           result.result = 'ERROR'
           response.setStatus(422)
-          errors.addAll(messsageService.processValidationErrors(obj.errors, request.locale))
+          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
       else {
@@ -237,6 +241,11 @@ class PackageController {
 
   private void updateCombos(obj, reqBody) {
     log.debug("Updating package combos ..")
+
+    if (reqBody.ids || reqBody.identifiers) {
+      def idmap = reqBody.ids ?: reqBody.identifiers
+      restMappingService.updateIdentifiers(obj, idmap)
+    }
 
     if (reqBody.provider) {
       def prov = null

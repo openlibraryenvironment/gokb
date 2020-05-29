@@ -35,6 +35,8 @@ class IntegrationControllerSpec extends Specification {
   @Shared
   RestBuilder rest = new RestBuilder()
 
+  def last = false
+
   // extending IntegrationSpec means this works
   @Autowired
   TitleLookupService titleLookupService
@@ -43,7 +45,10 @@ class IntegrationControllerSpec extends Specification {
   }
 
   def cleanup() {
-    CuratoryGroup.findByName('TestGroup1')?.expunge()
+    if (last) {
+      CuratoryGroup.findByName('TestGroup1')?.refresh().expunge()
+      Org.findByName("American Chemical Society")?.refresh().expunge()
+    }
   }
 
   void "Test assertGroup"() {
@@ -118,7 +123,7 @@ class IntegrationControllerSpec extends Specification {
       matching_platforms[0].id == resp.json.platformId
   }
 
-  void "Test crossReferenceTitle (JOURNAL) Case 1"() {
+  void "Test crossReferenceTitle JOURNAL Case 1"() {
 
     when: "Caller asks for this record to be cross referenced"
       def json_record = [
@@ -590,10 +595,12 @@ class IntegrationControllerSpec extends Specification {
   }
 
   void "Test crossReferenceTitle multithreading"() {
-    when: "Caller asks for this list of titles to be cross referenced"
+    given:
+      last = true
       Resource journals = new ClassPathResource("/karger_journals_test.json")
       def jsonSlurper = new JsonSlurper()
       def journals_json = jsonSlurper.parse(journals.getFile())
+    when: "Caller asks for this list of titles to be cross referenced"
 
       RestResponse respOne = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle?async=true") {
         auth('admin', 'admin')

@@ -13,10 +13,9 @@ class UserProfileService {
   @Autowired
   GrailsApplication grailsApplication
 
-  def delete(User user) {
+  def delete(User user_to_delete) {
     def result = [:]
-    log.debug("Deleting user ${user.id} ..")
-    def user_to_delete = User.get(user.id)
+    log.debug("Deleting user ${user_to_delete.id} ..")
     def del_user = User.findByUsername('deleted')
 
     if (user_to_delete && del_user) {

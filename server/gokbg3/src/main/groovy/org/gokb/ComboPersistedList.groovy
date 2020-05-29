@@ -138,7 +138,7 @@ public class ComboPersistedList extends org.apache.commons.collections.list.Abst
       element = items.next();
       if (!coll.contains(element)) {
         // Remove.
-        items.remove();
+        this.remove(element);
       }
     }
 

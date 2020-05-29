@@ -73,8 +73,8 @@ class BookInstance extends TitleInstance {
   public String getNiceName() {
     return "Book";
   }
-
-  public static final String restPath = "/books"
+  
+  public static final String restPath = "/titles"
 
   /**
    * Auditable plugin, on change
