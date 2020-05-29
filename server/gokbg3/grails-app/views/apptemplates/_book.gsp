@@ -138,10 +138,11 @@
         class="badge badge-warning">
           ${d.additionalProperties?.size() ?: '0'}
       </span></a></li>
-      <li><a href="#review" data-toggle="tab">Review Tasks <span
-          class="badge badge-warning">
-            ${d.reviewRequests?.size() ?: '0'}
-        </span></a></li>
+      <li><a href="#review" data-toggle="tab">Review Tasks (Open/Total)
+        <span class="badge badge-warning"> 
+          ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()}
+        </span>
+      </a></li>
       <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}" >
         <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       </g:if>

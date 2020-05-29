@@ -4,7 +4,7 @@ import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.Role
 import org.gokb.cred.User
-import org.springframework.security.access.annotation.Secured
+import grails.plugin.springsecurity.annotation.Secured
 
 @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
 class ProfileController {
@@ -60,7 +60,7 @@ class ProfileController {
     render userProfileService.update(user, request.JSON.data, params, user) as JSON
   }
 
-  @grails.plugin.springsecurity.annotation.Secured(value = ['IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
+  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   @Transactional
   def patch() {
     def result = [:]
