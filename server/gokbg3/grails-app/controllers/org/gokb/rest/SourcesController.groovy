@@ -1,6 +1,5 @@
 package org.gokb.rest
 
-
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
@@ -21,7 +20,6 @@ class SourcesController {
   def genericOIDService
   def springSecurityService
   def ESSearchService
-  def messageService
   def restMappingService
   def componentLookupService
 

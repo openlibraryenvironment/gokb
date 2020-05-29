@@ -7,7 +7,6 @@ import org.gokb.cred.User
 import grails.plugin.springsecurity.annotation.Secured
 
 @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-@Transactional(readOnly = true)
 class ProfileController {
 
   static namespace = 'rest'

@@ -75,7 +75,7 @@ class UserProfileService {
         errors << [message: "property $field is immutable!",
                    baddata: value]
       }
-      if (field in adminAttributes && !adminUser.isAdmin()) {
+      if (field in adminAttributes && !adminUser.isAdmin() && (user[field] != value)) {
         errors << [message: "user $adminUser.username is not allowed to change property $field of user $user.username",
                    baddata: field]
       }
@@ -166,7 +166,7 @@ class UserProfileService {
     if (errors.size() == 0) {
       if (user.validate()) {
         user.save(flush: true, failOnError: true)
-        result.message = "User profile sucessfully created."
+        result.message = "User profile sucessfully ${newUser ? 'created' : 'changed'}."
         result.data = collectUserProps(user)
       } else {
         result.message = "There have been errors saving the user object."

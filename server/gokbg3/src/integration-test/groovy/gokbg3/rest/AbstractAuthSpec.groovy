@@ -15,7 +15,7 @@ class AbstractAuthSpec extends Specification {
   @Autowired
   WebApplicationContext ctx
 
-  private RestBuilder rest = new RestBuilder()
+  private RestBuilder authRest = new RestBuilder()
 
   private def accessToken = null
   private String refreshToken = null
@@ -40,9 +40,9 @@ class AbstractAuthSpec extends Specification {
   }
 
   private void login(username, password) {
-    // calling /rest/login to obtain a valid bearerToken
+    // calling /authRest/login to obtain a valid bearerToken
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login") {
+    RestResponse resp = authRest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login") {
       // headers
       accept('application/json')
       contentType('application/json')

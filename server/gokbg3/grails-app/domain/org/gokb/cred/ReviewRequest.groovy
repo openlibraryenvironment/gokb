@@ -10,6 +10,8 @@ class ReviewRequest implements Auditable {
   @Transient
   def springSecurityService
 
+  def allComboPropertyNames = []
+
   KBComponent componentToReview
   String descriptionOfCause
   String reviewRequest

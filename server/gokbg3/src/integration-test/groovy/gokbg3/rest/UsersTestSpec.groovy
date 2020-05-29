@@ -117,7 +117,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200 // OK
     sleep(500)
-    def checkUser = User.get(delUser.id)
+    def checkUser = User.findById(delUser.id)
     checkUser == null
   }
 
@@ -146,11 +146,10 @@ class UsersTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.data.defaultPageSize == 15
-    sleep(1000)
+    sleep(500)
     def checkUser = User.findById(altUser.id)
     !checkUser.authorities.contains(Role.findByAuthority("ROLE_ADMIN"))
     checkUser.authorities.contains(Role.findByAuthority("ROLE_USER"))
-    checkUser.username != "OtherUser"
     checkUser.email == "nobody@localhost"
   }
 

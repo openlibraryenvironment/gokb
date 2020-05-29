@@ -46,7 +46,7 @@ class PackageUploadSpec extends Specification {
       Resource jac_upload_file_resource = new ClassPathResource("/test_archival_format.tsv")
 
       when:
-        // RestResponse resp = rest.get("http://localhost:${serverPort}/search/search")
+        // RestResponse resp = authRest.get("http://localhost:${serverPort}/search/search")
         RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/packages/deposit") {
           auth 'admin', 'admin'
           contentType "multipart/form-data"

@@ -53,6 +53,7 @@ class UrlMappings {
       get "/identifiers/$id"(controller: 'identifier', namespace: 'rest', action: 'show')
       post "/identifiers"(controller: 'identifier', namespace: 'rest', action: 'save')
       get "/identifiers"(controller: 'identifier', namespace: 'rest', action: 'index')
+      get "/identifier-namespaces"(controller: 'identifier', namespace: 'rest', action: 'namespace')
 
       get "/profile"(controller: 'profile', namespace: 'rest', action: 'show')
       put "/profile"(controller: 'profile', namespace: 'rest', action: 'update')
@@ -71,6 +72,9 @@ class UrlMappings {
       get "/sources"(controller: 'sources', namespace: 'rest', action: 'index')
       get "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'show')
       post "/sources"(controller: 'sources', namespace: 'rest', action: 'save')
+
+      get "/reviews"(controller: 'reviews', namespace: 'rest', action: 'index')
+      get "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'index')
 
       get "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'show')
       get "/curatoryGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'index')
