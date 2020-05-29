@@ -32,10 +32,10 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
   private RestBuilder rest = new RestBuilder()
 
   void "test GET /rest/curatoryGroups/{id}"() {
-
+    def urlPath = getUrlPath()
     when:
     String token = getAccessToken("groupUser", "groupUser")
-      RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/curatoryGroups/${group1.id}") {
+      RestResponse resp = rest.get("${urlPath}/rest/curatoryGroups/${group1.id}") {
       // headers
       accept('application/json')
         auth("Bearer $token")
@@ -46,9 +46,10 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/curatoryGroups"() {
+    def urlPath = getUrlPath()
     when:
     String token = getAccessToken("groupUser", "groupUser")
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/curatoryGroups") {
+    RestResponse resp = rest.get("${urlPath}/rest/curatoryGroups?name=curatory") {
       // headers
       accept('application/json')
       auth("Bearer $token")
@@ -59,9 +60,10 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/curatoryGroups with inverse sorting by name"() {
+    def urlPath = getUrlPath()
     when:
     String token = getAccessToken("groupUser", "groupUser")
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/curatoryGroups?_sort=name&_order=desc") {
+    RestResponse resp = rest.get("${urlPath}/rest/curatoryGroups?_sort=name&_order=desc") {
       // headers
       accept('application/json')
       auth("Bearer $token")

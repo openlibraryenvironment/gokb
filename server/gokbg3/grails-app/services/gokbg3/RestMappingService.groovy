@@ -8,6 +8,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import org.gokb.cred.*
+import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -74,17 +75,16 @@ class RestMappingService {
 
     if (KBComponent.has(ClassUtils.deproxy(obj), "restPath")) {
       result['_links'] = [:]
-      result['_links']['self'] = ['href': base + obj.restPath + "/${obj.hasProperty('uuid') ? obj.uuid : obj.id}"]
+      result['_links']['self'] = ['href': base + obj.restPath + "/${obj.id}", 'method': "GET"]
 
       if (obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0) {
         is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
       }
 
       if (is_curator || user?.isAdmin()) {
-        def objID = (obj.hasProperty('uuid') && obj.uuid != null) ? obj.uuid : obj.id
-        result._links.update = ['href': base + obj.restPath + "/${objID}"]
-        result._links.delete = ['href': base + obj.restPath + "/${objID}"]
-        result._links.retire = ['href': base + obj.restPath + "/${objID}/retire"]
+        result._links.update = ['href': base + obj.restPath + "/${obj.id}", 'method': "PUT"]
+        result._links.delete = ['href': base + obj.restPath + "/${obj.id}", 'method': "DELETE"]
+        result._links.retire = ['href': base + obj.restPath + "/${obj.id}/retire"]
       }
     }
 
@@ -149,9 +149,12 @@ class RestMappingService {
       def combo_props = obj.allComboPropertyNames
 
       combo_props.each { cp ->
-        if (obj.getCardinalityFor(obj.class, cp) == 'hasByCombo') {
-          if ((include_list && include_list?.contains(cp)) || (!include_list && jsonMap?.defaultLinks?.contains(cp))) {
-            def cval = obj[cp]
+        if (obj.getCardinalityFor(obj.class,cp) == 'hasByCombo') {
+          def cval = null
+
+          if ( (include_list && include_list?.contains(cp)) || (!include_list && jsonMap?.defaultLinks?.contains(cp)) ) {
+
+            cval = obj[cp]
 
             if (cval == null) {
               result[cp] = null
@@ -159,10 +162,17 @@ class RestMappingService {
               result[cp] = ['id': cval.id, 'name': cval.name, 'uuid': cval.uuid]
             }
           }
-        } else {
-          if (embed_active.contains(cp)) {
+
+          if ( embed_active.contains(cp) ) {
+            cval = obj[cp]
+            result['_embedded'][cp] = getEmbeddedJson(cval, user)
+          }
+        }
+        else {
+          if( embed_active.contains(cp) ) {
             result['_embedded'][cp] = []
-            obj[cp].take(10).each {
+            log.debug("Mapping ManyByCombo ${cp} ${obj[cp]}")
+            obj[cp].each {
               result['_embedded'][cp] << getEmbeddedJson(it, user)
             }
           }
@@ -220,11 +230,6 @@ class RestMappingService {
       }
     }
 
-    if (reqBody.ids || reqBody.identifiers) {
-      def idmap = reqBody.ids ?: reqBody.identifiers
-      updateIdentifiers(obj, idmap)
-    }
-
     if (reqBody.groups || reqBody.curatoryGroups) {
       if (KBComponent.has(obj, 'curatoryGroups')) {
 
@@ -243,7 +248,7 @@ class RestMappingService {
       if (ptype == RefdataValue) {
         String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
 
-        if (catName) {
+        if (catName && catName != 'KBComponent.Status') {
           def cat = RefdataCategory.findByDesc(catName)
 
           if (linkObj in cat.values) {
@@ -279,22 +284,29 @@ class RestMappingService {
   }
 
   public def updateIdentifiers(obj, ids) {
+    log.debug("updating ids ${ids}")
+    def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    def combo_type_id = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
     Set new_ids = []
 
-    if (obj && ids instanceof List) {
+    if (obj && ids instanceof Collection) {
       ids.each { i ->
         Identifier id = null
 
-        if (i instanceof Long) {
+        if (i instanceof Integer) {
           id = Identifier.get(i)
-        } else if (i instanceof Map) {
-          if (i.value && i.namespace) {
+        }
+        else if (i instanceof Map) {
+          def ns_val = i.namespace ?: i.type
+
+          if (i.value && ns_val) {
             def ns = null
 
-            if (i.namespace instanceof Long) {
-              ns = IdentifierNamespace.get(i.namespace)?.value ?: null
-            } else {
-              ns = i.namespace
+            if (ns_val instanceof String) {
+              ns = ns_val
+            }
+            else if (ns_val) {
+              ns = IdentifierNamespace.get(ns_val)?.value ?: null
             }
 
             try {
@@ -303,9 +315,10 @@ class RestMappingService {
               }
             }
             catch (grails.validation.ValidationException ve) {
+              log.debug("Could not create ID ${ns}:${i.value}")
               obj.errors.reject(
                 'identifier.value.IllegalIDForm',
-                [i.value, ns] as Object[],
+                [i.value, ns_val] as Object[],
                 '[Value {0} is not valid for namespace {1}]'
               )
               obj.errors.rejectValue(
@@ -316,7 +329,7 @@ class RestMappingService {
           } else {
             obj.errors.reject(
               'identifier.value.IllegalIDForm',
-              [i.value, ns] as Object[],
+              [i.value, ns_val] as Object[],
               '[Value {0} is not valid for namespace {1}]'
             )
             obj.errors.rejectValue(
@@ -325,22 +338,23 @@ class RestMappingService {
             )
           }
         }
+        else {
+          log.error("Could not identify ID form!")
+        }
 
-        if (id && !obj.errors) {
+        if ( id && !obj.hasErrors() ) {
+          log.debug("Adding id ${id} to current set")
           new_ids << id
         }
-      }
-
-      if (!obj.hasErrors()) {
-        new_ids.each { ni ->
-          if (!obj.ids.contains(ni)) {
-            obj.ids.add(ni)
-          }
+        else {
+          log.debug("No Identifier found for ID ${i}, or errors on object ..")
         }
-        obj.ids.retainAll(new_ids)
       }
     }
-    obj
+    else {
+      log.error("Object ${obj} not found or illegal id format")
+    }
+    new_ids
   }
 
   public def updateCuratoryGroups(obj, cgs) {
@@ -513,7 +527,7 @@ class RestMappingService {
    */
 
   public def getEmbeddedJson(obj, user) {
-    def pars = [:]
+    def pars = ['_embed': ""]
     log.debug("Embedded object ${obj}")
     mapObjectToJson(obj, pars, user)
   }

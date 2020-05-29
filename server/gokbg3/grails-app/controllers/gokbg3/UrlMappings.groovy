@@ -51,7 +51,7 @@ class UrlMappings {
 
       get "/identifiers/$id/$action"(controller: 'identifier', namespace: 'rest')
       get "/identifiers/$id"(controller: 'identifier', namespace: 'rest', action: 'show')
-      post "/identifiers/$id"(controller: 'identifier', namespace: 'rest', action: 'save')
+      post "/identifiers"(controller: 'identifier', namespace: 'rest', action: 'save')
       get "/identifiers"(controller: 'identifier', namespace: 'rest', action: 'index')
 
       get "/profile"(controller: 'profile', namespace: 'rest', action: 'show')
@@ -77,6 +77,14 @@ class UrlMappings {
 
       get "/roles"(controller: 'roles', namespace: 'rest', action: 'index')
 
+      get "/titles/$id/history" (controller: 'title', namespace: 'rest', action:'getHistory')
+      "/titles/$id/$action" (controller: 'title', namespace:'rest')
+      get "/titles/$id" (controller: 'title', namespace: 'rest', action:'show')
+      put "/titles/$id" (controller: 'title', namespace: 'rest', action:'update')
+      delete "/titles/$id" (controller: 'title', namespace: 'rest', action:'delete')
+      post "/titles" (controller: 'title', namespace: 'rest', action:'save')
+      get "/titles" (controller: 'title', namespace:'rest', action:'index')
+      
       get "/package-scopes" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
     }
     "/$controller/$action?/$id?" {

@@ -91,11 +91,12 @@ class IdentifierController {
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
+    log.debug("Save new Identifier: ${reqBody}")
 
-    if ( reqBody?.value && reqBody?.namespace && reqBody?.component ) {
+    if ( reqBody?.value && reqBody?.namespace ) {
 			def ns = null
 
-			if (reqBody.namespace instanceof Long) {
+			if (reqBody.namespace instanceof Integer) {
 				ns = IdentifierNamespace.get(reqBody.namespace)
 			}
 			else if (reqBody.namespace instanceof String) {
@@ -104,59 +105,70 @@ class IdentifierController {
 
 			if (ns) {
         Identifier obj = null
+
         try {
-				  obj = Identifier.lookupOrCreateCanonicalIdentifier(namespace, reqBody.value, false)
+				  obj = Identifier.lookupOrCreateCanonicalIdentifier(ns, reqBody.value, false)
         }
         catch (grails.validation.ValidationException ve) {
           errors = [badData: reqBody, message: message(code:'identifier.value.IllegalIDForm')]
         }
 
+        log.debug("After Identifier lookup: ${obj}")
+
 				if (!obj) {
 					errors = [badData: reqBody, message: message(code: 'identifier.create.error')]
 				}
-				else if (obj?.errors) {
-					errors = messsageService.processValidationErrors(obj.errors, request.locale)
+				else if ( obj.hasErrors() ) {
+					errors = messageService.processValidationErrors(obj.errors, request.locale)
 				}
         else {
-          KBComponent comp = null
+          if (reqBody.component) {
+            KBComponent comp = null
 
-          if ( reqBody.component instanceof Long ) {
-            comp = KBComponent.get(reqBody.component)
-          }
-          else if ( reqBody.component instanceof String ) {
-            comp = KBComponent.findByUuid(reqBody.component)
-          }
+            if ( reqBody.component instanceof Integer ) {
+              comp = KBComponent.get(reqBody.component)
+            }
+            else if ( reqBody.component instanceof String ) {
+              comp = KBComponent.findByUuid(reqBody.component)
+            }
 
-          if (comp) {
-            if ( comp?.isEditable() ) {
-              comp.ids.add(obj)
-              comp.save()
+            if (comp) {
+              if ( comp?.isEditable() ) {
+                comp.ids.add(obj)
+                comp.save(flush:true)
 
-              result = restMappingService.mapObjectToJson(obj, [:], user)
+                result = restMappingService.mapObjectToJson(obj, params, user)
+                log.debug("Got mapped ID with component! ${result}")
+              }
+              else {
+                result.message = "Access to object was denied!"
+                response.setStatus(403)
+                result.code = 403
+                result.result = 'ERROR'
+              }
             }
             else {
-              result.message = "Access to object was denied!"
-              response.setStatus(403)
-              result.code = 403
+              result.message = "Component could not be resolved!"
+              result.badData = [component: reqBody.component]
+              result.code = 404
               result.result = 'ERROR'
             }
           }
           else {
-            result.message = "Component could not be resolved!"
-            response.setStatus(404)
-            result.code = 404
-            result.result = 'ERROR'
+            result = restMappingService.mapObjectToJson(obj, params, user)
+            log.debug("Got mapped ID without component! ${result}")
           }
         }
 			}
 			else {
         result.message = "Namespace could not be resolved!"
-        response.setStatus(404)
+        result.badData = [namespace: reqBody.namespace]
         result.code = 404
         result.result = 'ERROR'
 			}
     }
     else {
+      loge.debug("Missing value or namespace for save!")
       errors = [badData: reqBody, message:"Unable to save identifier!"]
     }
 
@@ -165,7 +177,7 @@ class IdentifierController {
       result.error = errors
     }
 
-    result
+    render result as JSON
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
@@ -188,7 +200,6 @@ class IdentifierController {
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
       result.message = "Package not found or empty request body!"
     }
     else {
@@ -196,6 +207,6 @@ class IdentifierController {
       response.setStatus(403)
       result.message = "User is not allowed to delete this component!"
     }
-    result
+    render result as JSON
   }
 }

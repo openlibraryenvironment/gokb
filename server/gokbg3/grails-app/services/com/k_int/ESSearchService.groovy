@@ -624,6 +624,7 @@ class ESSearchService{
     def domainMapping = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     def linkedObjects = [:]
+    Integer rec_id = genericOIDService.oidToId(record.id)
     def esMapping = [
       'lastUpdatedDisplay': 'lastUpdated',
       'sortname': false,
@@ -643,7 +644,7 @@ class ESSearchService{
       }
 
       if (obj_cls.hasProperty('restPath')) {
-        domainMapping['_links'] = ['self': ['href': base + obj_cls.restPath + "/${record.source.uuid}"]]
+        domainMapping['_links'] = ['self': ['href': base + obj_cls.restPath + "/${rec_id}"]]
       }
 
       domainMapping['_embedded'] = [:]

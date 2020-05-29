@@ -120,13 +120,17 @@ class PlatformController {
 
         updateCombos(obj, reqBody)
 
-        if (!obj.hasErrors()) {
-          result = restMappingService.mapObjectToJson(obj, params, user)
+        if( obj.validate() ) {
+          if(errors.size() == 0) {
+            log.debug("No errors.. saving")
+            obj.save(flush:true)
+            result = restMappingService.mapObjectToJson(obj, params, user)
+          }
         }
         else {
           result.result = 'ERROR'
           response.setStatus(422)
-          errors.addAll(messsageService.processValidationErrors(obj.errors, request.locale))
+          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
     }
@@ -139,7 +143,7 @@ class PlatformController {
       result.error = errors
     }
 
-    result
+    render result as JSON
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
@@ -173,28 +177,17 @@ class PlatformController {
 
         restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        if (reqBody.identifiers) {
-          restMappingService.updateIdentifiers(obj, reqBody.identifiers)
-        }
-
-        if ( reqBody.status ) {
-          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          RefdataValue newStatus = RefdataValue.get(reqBody.status)
-
-          if ( status_deleted != RefdataValue.get(reqBody.status) || obj.isDeletable() ) {
-            obj.status = newStatus
-          }
-        }
-
         if( obj.validate() ) {
           if(errors.size() == 0) {
+            log.debug("No errors.. saving")
             obj.save(flush:true)
+            result = restMappingService.mapObjectToJson(obj, params, user)
           }
         }
         else {
           result.result = 'ERROR'
           response.setStatus(422)
-          errors.addAll(messsageService.processValidationErrors(pkg.errors, request.locale))
+          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
       else {
@@ -217,6 +210,11 @@ class PlatformController {
 
   private void updateCombos(obj, reqBody) {
     log.debug("Updating platform combos ..")
+
+    if (reqBody.ids || reqBody.identifiers) {
+      def idmap = reqBody.ids ?: reqBody.identifiers
+      restMappingService.updateIdentifiers(obj, idmap)
+    }
 
     if (reqBody.provider) {
       def prov = null
@@ -256,7 +254,7 @@ class PlatformController {
     }
 
     if ( obj && obj.isDeletable() ) {
-      def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+      def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
@@ -277,7 +275,7 @@ class PlatformController {
       response.setStatus(403)
       result.message = "User is not allowed to delete this component!"
     }
-    result
+    render result as JSON
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
@@ -286,7 +284,7 @@ class PlatformController {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
     def obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+    def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
     if ( obj && obj.isEditable() ) {
       if ( curator || user.isAdmin() ) {
@@ -308,6 +306,6 @@ class PlatformController {
       response.setStatus(403)
       result.message = "User is not allowed to edit this component!"
     }
-    result
+    render result as JSON
   }
 }

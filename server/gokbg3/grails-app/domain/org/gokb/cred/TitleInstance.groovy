@@ -63,12 +63,10 @@ class TitleInstance extends KBComponent {
       'publisherName': "publisher.name",
       'publisher': "publisher.id"
     ],
-    'defaultLinks': [
-      'publisher'
-    ],
     'defaultEmbeds': [
       'ids',
-      'variantNames'
+      'variantNames',
+      'publisher'
     ]
   ]
 
@@ -250,8 +248,7 @@ class TitleInstance extends KBComponent {
           addToOutgoingCombos(combo)
         }
 
-        new_publisher.save()
-        save()
+        this.save()
 
         return true
         //        publisher.add(new_publisher)
