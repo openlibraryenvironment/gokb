@@ -88,6 +88,10 @@ class UrlMappings {
       delete "/titles/$id" (controller: 'title', namespace: 'rest', action:'delete')
       post "/titles" (controller: 'title', namespace: 'rest', action:'save')
       get "/titles" (controller: 'title', namespace:'rest', action:'index')
+
+      post "/journals" (controller: 'title', namespace: 'rest', action:'save') { type = 'journal' }
+      post "/books" (controller: 'title', namespace: 'rest', action:'save') { type = 'book' }
+      post "/databases" (controller: 'title', namespace: 'rest', action:'save') { type = 'database' }
       
       get "/package-scopes" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
     }

@@ -34,6 +34,9 @@ class IdentifierController {
     User user = User.get(springSecurityService.principal.id)
     def start_db = LocalDateTime.now()
 
+
+    params['_embed'] = params['_embed'] ?: 'identifiedComponents'
+
     result = componentLookupService.restLookup(user, Identifier, params)
     log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
 
@@ -56,6 +59,9 @@ class IdentifierController {
       }
 
       if (obj?.isReadable()) {
+
+        params['_embed'] = params['_embed'] ?: 'identifiedComponents'
+
         result = restMappingService.mapObjectToJson(obj, params, user)
 
         // result['_currentTipps'] = obj.currentTippCount
@@ -134,6 +140,8 @@ class IdentifierController {
                 comp.ids.add(obj)
                 comp.save(flush:true)
 
+                params['_embed'] = params['_embed'] ?: 'identifiedComponents'
+
                 result = restMappingService.mapObjectToJson(obj, params, user)
                 log.debug("Got mapped ID with component! ${result}")
               }
@@ -147,19 +155,22 @@ class IdentifierController {
             else {
               result.message = "Component could not be resolved!"
               result.badData = [component: reqBody.component]
-              result.code = 404
+              response.setStatus(400)
+              result.code = 400
               result.result = 'ERROR'
             }
           }
           else {
             result = restMappingService.mapObjectToJson(obj, params, user)
+            response.setStatus(201)
             log.debug("Got mapped ID without component! ${result}")
           }
         }
       } else {
         result.message = "Namespace could not be resolved!"
         result.badData = [namespace: reqBody.namespace]
-        result.code = 404
+        response.setStatus(400)
+        result.code = 400
         result.result = 'ERROR'
       }
     } else {
@@ -192,6 +203,7 @@ class IdentifierController {
       }
     } else if (!obj) {
       result.result = 'ERROR'
+      response.setStatus(400)
       result.message = "Package not found or empty request body!"
     } else {
       result.result = 'ERROR'
