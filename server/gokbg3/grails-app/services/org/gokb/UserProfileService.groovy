@@ -166,7 +166,7 @@ class UserProfileService {
 
     if (errors.size() == 0) {
       if (user.validate()) {
-        user.save(flush: true, failOnError: true)
+        user=user.merge(flush: true, failOnError: true)
         if (newUser) {
           // create & connect roles
           newRoles.each { role ->
