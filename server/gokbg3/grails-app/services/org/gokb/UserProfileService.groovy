@@ -97,16 +97,16 @@ class UserProfileService {
     def result = [data  : [],
                   result: 'OK']
     def errors = []
+    Set<Role> newRoles = []
     // apply changes
     data.each { field, value ->
-      if (field != "roleIds" && field != "curatoryGroupIds" && value && !user.hasProperty(field)) {
+      if (field != "roleIds" && field != "curatoryGroupIds" && !user.hasProperty(field)) {
         log.error("property user.$field is unknown!")
         errors << [message: "$field is unknown", baddata: field]
       }
       if (field == "roleIds") {
         // change roles
         // scan data
-        Set<Role> newRoles = []
         value.each { roleId ->
           Role newRole = Role.findById(roleId)
           if (newRole) {
@@ -122,14 +122,14 @@ class UserProfileService {
           UserRole.findAllByUser(user).each { ur ->
             previousRoles << ur.role
           }
-        }
-        Role.findAll().each { role ->
-          if (newRoles.contains(role)) {
-            if (!previousRoles.contains(role)) {
-              UserRole.create(user, role, true)
+          Role.findAll().each { role ->
+            if (newRoles.contains(role)) {
+              if (!previousRoles.contains(role)) {
+                UserRole.create(user, role, true)
+              }
+            } else if (previousRoles.contains(role)) {
+              UserRole.remove(user, role, true)
             }
-          } else if (previousRoles.contains(role)) {
-            UserRole.remove(user, role, true)
           }
         }
       } else if (field == "curatoryGroupIds") {
@@ -166,6 +166,12 @@ class UserProfileService {
     if (errors.size() == 0) {
       if (user.validate()) {
         user.save(flush: true, failOnError: true)
+        if (newUser) {
+          // create & connect roles
+          newRoles.each { role ->
+            UserRole.create(user, role).save(flush: true)
+          }
+        }
         result.message = "User profile sucessfully ${newUser ? 'created' : 'changed'}."
         result.data = collectUserProps(user)
       } else {
