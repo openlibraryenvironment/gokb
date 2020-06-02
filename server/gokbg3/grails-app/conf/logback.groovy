@@ -22,7 +22,8 @@ appender('STDOUT', ConsoleAppender) {
     }
 }
 
-if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST ) {
+if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST
+||Environment.current == Environment.PRODUCTION ) {
   logger ('com.k_int', DEBUG)
   logger ('org.gokb', DEBUG)
   logger ('gokbg3', DEBUG)
