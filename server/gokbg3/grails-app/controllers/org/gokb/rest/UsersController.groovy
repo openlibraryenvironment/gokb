@@ -157,7 +157,14 @@ class UsersController {
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def save() {
-    def result = userProfileService.create(request.JSON.data)
+    def result = [:]
+    if (request.JSON.data) {
+      result = userProfileService.create(request.JSON.data)
+    } else {
+      def errors = []
+      errors << [message: "no usable data found in the request", baddata: request.JSON]
+      result.errors = errors
+    }
     render result as JSON
   }
 
@@ -173,7 +180,7 @@ class UsersController {
   @Transactional
   def patch() {
     def user = User.get(params.id)
-    if (request.JSON.password){
+    if (request.JSON.password) {
       user.password = request.JSON.data.password
     }
     def result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)

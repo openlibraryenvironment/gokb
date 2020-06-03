@@ -190,9 +190,9 @@ class UsersTestSpec extends AbstractAuthSpec {
       email           : "nobody@localhost",
       password        : "defaultPassword",
       displayName     : "DisplayName",
-      enabled         : false,
+      enabled         : true,
       defaultPageSize : 18,
-      roleIds         : [],
+      roleIds         : [2, 3],
       curatoryGroupIds: [cg.id]
     ]]
     RestResponse resp = rest.post("${urlPath}/rest/users") {
