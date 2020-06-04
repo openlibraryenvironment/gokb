@@ -75,7 +75,7 @@ class UserProfileService {
         errors << [message: "property $field is immutable!",
                    baddata: value]
       }
-      if (field in adminAttributes && !adminUser.isAdmin()) {
+      if (field in adminAttributes && !adminUser.isAdmin() && (user[field] != value)) {
         errors << [message: "user $adminUser.username is not allowed to change property $field of user $user.username",
                    baddata: field]
       }
@@ -97,76 +97,83 @@ class UserProfileService {
     def result = [data  : [],
                   result: 'OK']
     def errors = []
+    Set<Role> newRoles = []
     // apply changes
     data.each { field, value ->
-      if (field != "roleIds" && field != "curatoryGroupIds" && value && !user.hasProperty(field)) {
+      if (field != "roleIds" && field != "curatoryGroupIds" && !user.hasProperty(field)) {
         log.error("property user.$field is unknown!")
         errors << [message: "$field is unknown", baddata: field]
-      }
-      if (field == "roleIds") {
-        // change roles
-        // scan data
-        Set<Role> newRoles = []
-        value.each { roleId ->
-          Role newRole = Role.findById(roleId)
-          if (newRole) {
-            newRoles.add(newRole)
-          } else {
-            log.error("Role ID $roleId not found!")
-            errors << [message: "role ID $roleId is unknown", baddata: roleId]
-          }
-        }
-        // alter role set
-        Set<Role> previousRoles = []
-        if (!newUser) {
-          UserRole.findAllByUser(user).each { ur ->
-            previousRoles << ur.role
-          }
-        }
-        Role.findAll().each { role ->
-          if (newRoles.contains(role)) {
-            if (!previousRoles.contains(role)) {
-              UserRole.create(user, role, true)
-            }
-          } else if (previousRoles.contains(role)) {
-            UserRole.remove(user, role, true)
-          }
-        }
-      } else if (field == "curatoryGroupIds") {
-        // change cGroups
-        Set<CuratoryGroup> curGroups = []
-        value.each { cgId ->
-          CuratoryGroup cg_obj = null
-          if (cgId) {
-            cg_obj = CuratoryGroup.findByUuid(cgId)
-          }
-          if (!cg_obj) {
-            cg_obj = CuratoryGroup.findById(cgId)
-          }
-          if (cg_obj) {
-            curGroups.add(cg_obj)
-          } else {
-            log.error("CuratoryGroup ID ${cgId} not found!")
-            errors << [message: "unknown CuratoryGroup ID $cgId", baddata: cgId]
-            result.errors = errors
-            return result
-          }
-        }
-        if (newUser) {
-          user.curatoryGroups = curGroups
-        } else {
-          user.curatoryGroups.addAll(curGroups)
-          user.curatoryGroups.retainAll(curGroups)
-        }
       } else {
-        user[field] = value
+        if (field == "roleIds") {
+          // change roles
+          // scan data
+          value.each { roleId ->
+            Role newRole = Role.findById(roleId)
+            if (newRole) {
+              newRoles.add(newRole)
+            } else {
+              log.error("Role ID $roleId not found!")
+              errors << [message: "role ID $roleId is unknown", baddata: roleId]
+            }
+          }
+          // alter role set
+          Set<Role> previousRoles = []
+          if (!newUser) {
+            UserRole.findAllByUser(user).each { ur ->
+              previousRoles << ur.role
+            }
+            Role.findAll().each { role ->
+              if (newRoles.contains(role)) {
+                if (!previousRoles.contains(role)) {
+                  UserRole.create(user, role, true)
+                }
+              } else if (previousRoles.contains(role)) {
+                UserRole.remove(user, role, true)
+              }
+            }
+          }
+        } else if (field == "curatoryGroupIds") {
+          // change cGroups
+          Set<CuratoryGroup> curGroups = []
+          value.each { cgId ->
+            CuratoryGroup cg_obj = null
+            if (cgId) {
+              cg_obj = CuratoryGroup.findByUuid(cgId)
+            }
+            if (!cg_obj) {
+              cg_obj = CuratoryGroup.findById(cgId)
+            }
+            if (cg_obj) {
+              curGroups.add(cg_obj)
+            } else {
+              log.error("CuratoryGroup ID ${cgId} not found!")
+              errors << [message: "unknown CuratoryGroup ID $cgId", baddata: cgId]
+              result.errors = errors
+              return result
+            }
+          }
+          if (newUser) {
+            user.curatoryGroups = curGroups
+          } else {
+            user.curatoryGroups.addAll(curGroups)
+            user.curatoryGroups.retainAll(curGroups)
+          }
+        } else {
+          user[field] = value
+        }
       }
     }
 
     if (errors.size() == 0) {
       if (user.validate()) {
-        user.save(flush: true, failOnError: true)
-        result.message = "User profile sucessfully created."
+        user=user.merge(flush: true, failOnError: true)
+        if (newUser) {
+          // create & connect roles
+          newRoles.each { role ->
+            UserRole.create(user, role).save(flush: true)
+          }
+        }
+        result.message = "User profile sucessfully ${newUser ? 'created' : 'changed'}."
         result.data = collectUserProps(user)
       } else {
         result.message = "There have been errors saving the user object."

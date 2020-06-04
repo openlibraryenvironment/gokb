@@ -34,6 +34,9 @@ class IdentifierController {
     User user = User.get(springSecurityService.principal.id)
     def start_db = LocalDateTime.now()
 
+
+    params['_embed'] = params['_embed'] ?: 'identifiedComponents'
+
     result = componentLookupService.restLookup(user, Identifier, params)
     log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
 
@@ -56,25 +59,25 @@ class IdentifierController {
       }
 
       if (obj?.isReadable()) {
+
+        params['_embed'] = params['_embed'] ?: 'identifiedComponents'
+
         result = restMappingService.mapObjectToJson(obj, params, user)
 
         // result['_currentTipps'] = obj.currentTippCount
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
-      }
-      else if (!obj) {
+      } else if (!obj) {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
         result.result = 'ERROR'
-      }
-      else {
+      } else {
         result.message = "Access to object was denied!"
         response.setStatus(403)
         result.code = 403
         result.result = 'ERROR'
       }
-    }
-    else {
+    } else {
       result.result = 'ERROR'
       response.setStatus(400)
       result.code = 400
@@ -85,7 +88,7 @@ class IdentifierController {
   }
 
   @Transactional
-  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  @Secured(value = ["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def save() {
     def result = [:]
     def reqBody = request.JSON
@@ -94,33 +97,33 @@ class IdentifierController {
     log.debug("Save new Identifier: ${reqBody}")
 
     if ( reqBody?.value && reqBody?.namespace ) {
-			def ns = null
+      def ns = null
 
-			if (reqBody.namespace instanceof Integer) {
-				ns = IdentifierNamespace.get(reqBody.namespace)
-			}
-			else if (reqBody.namespace instanceof String) {
-				ns = IdentifierNamespace.findByValueIlike(reqBody.namespace)
-			}
+      if (reqBody.namespace instanceof Integer) {
+        ns = IdentifierNamespace.get(reqBody.namespace)
+      }
+      else if (reqBody.namespace instanceof String) {
+        ns = IdentifierNamespace.findByValueIlike(reqBody.namespace)
+      }
 
-			if (ns) {
+      if (ns) {
         Identifier obj = null
 
         try {
-				  obj = Identifier.lookupOrCreateCanonicalIdentifier(ns, reqBody.value, false)
+          obj = Identifier.lookupOrCreateCanonicalIdentifier(ns, reqBody.value, false)
         }
         catch (grails.validation.ValidationException ve) {
-          errors = [badData: reqBody, message: message(code:'identifier.value.IllegalIDForm')]
+          errors = [badData: reqBody, message: message(code: 'identifier.value.IllegalIDForm')]
         }
 
         log.debug("After Identifier lookup: ${obj}")
 
-				if (!obj) {
-					errors = [badData: reqBody, message: message(code: 'identifier.create.error')]
-				}
-				else if ( obj.hasErrors() ) {
-					errors = messageService.processValidationErrors(obj.errors, request.locale)
-				}
+        if (!obj) {
+          errors = [badData: reqBody, message: message(code: 'identifier.create.error')]
+        }
+        else if ( obj.hasErrors() ) {
+          errors = messageService.processValidationErrors(obj.errors, request.locale)
+        }
         else {
           if (reqBody.component) {
             KBComponent comp = null
@@ -137,6 +140,8 @@ class IdentifierController {
                 comp.ids.add(obj)
                 comp.save(flush:true)
 
+                params['_embed'] = params['_embed'] ?: 'identifiedComponents'
+
                 result = restMappingService.mapObjectToJson(obj, params, user)
                 log.debug("Got mapped ID with component! ${result}")
               }
@@ -150,26 +155,26 @@ class IdentifierController {
             else {
               result.message = "Component could not be resolved!"
               result.badData = [component: reqBody.component]
-              result.code = 404
+              response.setStatus(400)
+              result.code = 400
               result.result = 'ERROR'
             }
           }
           else {
             result = restMappingService.mapObjectToJson(obj, params, user)
+            response.setStatus(201)
             log.debug("Got mapped ID without component! ${result}")
           }
         }
-			}
-			else {
+      } else {
         result.message = "Namespace could not be resolved!"
         result.badData = [namespace: reqBody.namespace]
-        result.code = 404
+        response.setStatus(400)
+        result.code = 400
         result.result = 'ERROR'
-			}
-    }
-    else {
-      loge.debug("Missing value or namespace for save!")
-      errors = [badData: reqBody, message:"Unable to save identifier!"]
+      }
+    } else {
+      errors = [badData: reqBody, message: "Unable to save identifier!"]
     }
 
     if (errors) {
@@ -180,33 +185,53 @@ class IdentifierController {
     render result as JSON
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
+  @Secured(value = ["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
-    def result = ['result':'OK', 'params': params]
+    def result = ['result': 'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
     def obj = Identifier.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
     def curator = obj.respondsTo('curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
-    if ( obj && obj.isDeletable() ) {
-      if ( curator || user.isAdmin() ) {
+    if (obj && obj.isDeletable()) {
+      if (curator || user.isAdmin()) {
         obj.deleteSoft()
-      }
-      else {
+      } else {
         result.result = 'ERROR'
         response.setStatus(403)
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
-    }
-    else if (!obj) {
+    } else if (!obj) {
       result.result = 'ERROR'
+      response.setStatus(400)
       result.message = "Package not found or empty request body!"
-    }
-    else {
+    } else {
       result.result = 'ERROR'
       response.setStatus(403)
       result.message = "User is not allowed to delete this component!"
     }
+    render result as JSON
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def namespace() {
+    def result = [_links:[:]]
+    def data = []
+    params << [_exclude:"_links"]
+    def user = User.get(springSecurityService.principal.id)
+    def base = grailsApplication.config.serverURL + "/rest"
+    List<IdentifierNamespace> nss = IdentifierNamespace.all
+    nss.each { ns ->
+      data << [
+        name:ns.value,
+        value:ns.value,
+        id: ns.id,
+        pattern: ns.pattern,
+        family: ns.family
+      ]
+    }
+    result.data=data
+    result['_links']['self'] = ['href': base + "/identifier-namespaces"]
     render result as JSON
   }
 }

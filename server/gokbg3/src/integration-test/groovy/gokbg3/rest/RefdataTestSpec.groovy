@@ -26,5 +26,4 @@ class RefdataTestSpec extends AbstractAuthSpec {
     resp.status == 200
     resp.json.data.size() >= 4
   }
-
 }

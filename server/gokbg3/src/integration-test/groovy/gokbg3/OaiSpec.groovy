@@ -53,7 +53,7 @@ class OaiSpec extends Specification {
     // This is a test REST call 
     void "test ListRecords response status"() {
       when:
-        // RestResponse resp = rest.get("http://localhost:${serverPort}/search/search")
+        // RestResponse resp = authRest.get("http://localhost:${serverPort}/search/search")
         RestResponse resp = rest.get("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/packages?verb=ListRecords&metadataPrefix=gokb")
 
       then:

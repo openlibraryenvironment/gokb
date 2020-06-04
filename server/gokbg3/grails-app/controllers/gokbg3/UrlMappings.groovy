@@ -53,6 +53,7 @@ class UrlMappings {
       get "/identifiers/$id"(controller: 'identifier', namespace: 'rest', action: 'show')
       post "/identifiers"(controller: 'identifier', namespace: 'rest', action: 'save')
       get "/identifiers"(controller: 'identifier', namespace: 'rest', action: 'index')
+      get "/identifier-namespaces"(controller: 'identifier', namespace: 'rest', action: 'namespace')
 
       get "/profile"(controller: 'profile', namespace: 'rest', action: 'show')
       put "/profile"(controller: 'profile', namespace: 'rest', action: 'update')
@@ -72,6 +73,9 @@ class UrlMappings {
       get "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'show')
       post "/sources"(controller: 'sources', namespace: 'rest', action: 'save')
 
+      get "/reviews"(controller: 'reviews', namespace: 'rest', action: 'index')
+      get "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'index')
+
       get "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'show')
       get "/curatoryGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'index')
 
@@ -84,6 +88,10 @@ class UrlMappings {
       delete "/titles/$id" (controller: 'title', namespace: 'rest', action:'delete')
       post "/titles" (controller: 'title', namespace: 'rest', action:'save')
       get "/titles" (controller: 'title', namespace:'rest', action:'index')
+
+      post "/journals" (controller: 'title', namespace: 'rest', action:'save') { type = 'journal' }
+      post "/books" (controller: 'title', namespace: 'rest', action:'save') { type = 'book' }
+      post "/databases" (controller: 'title', namespace: 'rest', action:'save') { type = 'database' }
       
       get "/package-scopes" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
     }

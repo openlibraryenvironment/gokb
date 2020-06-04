@@ -66,7 +66,7 @@ class TitleController {
     Class type = TitleInstance
 
     if (params.type) {
-      if (params.type == 'journal' || params ) {
+      if (params.type == 'journal' || params.type == 'serial' ) {
         type = JournalInstance
       }
       else if (params.type == 'book' || params.type == 'monograph') {
