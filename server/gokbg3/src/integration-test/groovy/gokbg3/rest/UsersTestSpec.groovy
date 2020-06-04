@@ -115,7 +115,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       auth("Bearer $accessToken")
     }
     then:
-    resp.status == 200 // OK
+    resp.status == 204 // OK
     sleep(500)
     def checkUser = User.findById(delUser.id)
     checkUser == null
@@ -205,7 +205,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       body(bodyData as JSON)
     }
     then:
-    resp.status == 200
+    resp.status == 201
     resp.json.data.username == "newerUser"
     sleep(500)
     User checkUser = User.findById(resp.json.data.id)

@@ -11,7 +11,6 @@ class ProfileController {
 
   static namespace = 'rest'
 
-  def genericOIDService
   def springSecurityService
   def userProfileService
   def passwordEncoder
@@ -57,34 +56,48 @@ class ProfileController {
   @Transactional
   def update() {
     User user = User.get(springSecurityService.principal.id)
-    render userProfileService.update(user, request.JSON.data, params, user) as JSON
+    if (request.JSON.data)
+      render userProfileService.update(user, request.JSON.data, params, user) as JSON
+    else {
+      response.status = 400
+      result = [errors: [[message: "no data", baddata: "none"]]]
+      render result as JSON
+    }
   }
 
-  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  @Secured(value = ['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   @Transactional
   def patch() {
     def result = [:]
     Map reqData = request.JSON.data
-    User user = User.get(springSecurityService.principal.id)
-    if (reqData.new_password && reqData.password) {
-      if (passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
-        user.password = reqData.new_password
-        user.save(flush: true, failOnError: true);
-      } else {
+    if (reqData) {
+      User user = User.get(springSecurityService.principal.id)
+      if (reqData.new_password && reqData.password) {
+        if (passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
+          user.password = reqData.new_password
+          user.save(flush: true, failOnError: true);
+        } else {
 //        result.data = user
-        result.error = [message: "wrong password - profile unchanged"]
-        render result as JSON
+          response.status=400
+          result.error = [message: "wrong password - profile unchanged"]
+          render result as JSON
+        }
       }
+      reqData.remove('new_password')
+      reqData.remove('password')
+      render userProfileService.update(user, reqData, params, user) as JSON
+    } else {
+      response.status = 400
+      result = [errors: [[message: "no data found in request body", baddata: "none"]]]
+      render result as JSON
     }
-    reqData.remove('new_password')
-    reqData.remove('password')
-    render userProfileService.update(user, reqData, params, user) as JSON
   }
 
   @Transactional
   def delete() {
     userProfileService.delete(User.get(springSecurityService.principal.id))
     def result = [:]
+    response.status=204
     render result as JSON
   }
 }

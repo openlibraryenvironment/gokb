@@ -160,9 +160,12 @@ class UsersController {
     def result = [:]
     if (request.JSON.data) {
       result = userProfileService.create(request.JSON.data)
+      if (!result.errors)
+        response.status = 201
     } else {
+      response.status = 400
       def errors = []
-      errors << [message: "no usable data found in the request", baddata: request.JSON]
+      errors << [message: "no data found in the request body", baddata: request.JSON]
       result.errors = errors
     }
     render result as JSON
@@ -172,7 +175,15 @@ class UsersController {
   @Transactional
   def update() {
     def user = User.get(params.id)
-    def result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
+    def result = [:]
+    if (user && request.JSON.data)
+      result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
+    else {
+      response.status = 400
+      def errors = []
+      errors << [message: "no data found in the request", baddata: request.JSON]
+      result.errors = errors
+    }
     render result as JSON
   }
 
@@ -180,10 +191,18 @@ class UsersController {
   @Transactional
   def patch() {
     def user = User.get(params.id)
-    if (request.JSON.password) {
-      user.password = request.JSON.data.password
+    def result = [:]
+    if (user && request.JSON.data) {
+      if (request.JSON.data.password) {
+        user.password = request.JSON.data.password
+      }
+      result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
+    } else {
+      response.status = 400
+      def errors = []
+      errors << [message: "no data found in the request", baddata: request.JSON]
+      result.errors = errors
     }
-    def result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
     render result as JSON
   }
 
@@ -191,6 +210,7 @@ class UsersController {
   @Transactional
   def delete() {
     def delUser = User.get(params.id)
+    response.status = 204
     render userProfileService.delete(delUser) as JSON
   }
 }

@@ -160,7 +160,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
       auth("Bearer $accessToken")
     }
     then:
-    resp.status == 200
+    resp.status == 204
     sleep(500)
     User check = User.findByUsername('normalUser')
     !check
