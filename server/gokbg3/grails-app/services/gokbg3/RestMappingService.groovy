@@ -183,9 +183,9 @@ class RestMappingService {
   }
 
   /**
-   *  updateObject : Maps an domain class object to JSON based on its jsonMapping config.
-   * @param obj : The object to be mapped
-   * @param params : The map of request parameters
+   *  updateObject : Updates an domain class object based on a provided object map.
+   * @param obj : The object to be updated
+   * @param reqBody : The map of properties to be updated
    */
 
   @Transactional
@@ -198,11 +198,13 @@ class RestMappingService {
 
     log.debug("Ignore: ${toIgnore}, Immutable: ${immutable}")
     pent.getPersistentProperties().each { p -> // list of PersistentProperties
+      def newVal = reqBody[p.name]
       if (!toIgnore.contains(p.name) && !immutable.contains(p.name) && reqBody[p.name]) {
         log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
+
         if (p instanceof Association) {
           if (p instanceof ManyToOne || p instanceof OneToOne) {
-            updateAssoc(obj, p.name, reqBody[p.name])
+            updateAssoc(obj, p.name, newVal)
           } else {
             // Add to collection
             log.debug("Skip generic handling of collections}");
@@ -212,18 +214,18 @@ class RestMappingService {
             }
           }
         } else {
-          log.debug("checking for type of property -> ${p.type}")
+          log.debug("checking for type of property ${p.name} -> ${p.type}")
           switch (p.type) {
             case Long.class:
-              updateLongField(obj, p.name, reqBody[p.name])
+              updateLongField(obj, p.name, newVal)
               break;
             case Date.class:
-              updateDateField(obj, p.name, reqBody[p.name])
+              updateDateField(obj, p.name, newVal)
               break;
             default:
               log.debug("Default for type ${p.type}")
-              log.debug("Set simple prop ${p.name} = ${reqBody[p.name]}");
-              obj[p.name] = reqBody[p.name]
+              log.debug("Set simple prop ${p.name} = ${newVal}");
+              obj[p.name] = newVal
               break;
           }
         }
@@ -242,44 +244,93 @@ class RestMappingService {
 
   public def updateAssoc(obj, prop, val) {
     def ptype = grailsApplication.mappingContext.getPersistentEntity(obj.class.name).getPropertyByName(prop).type
-    def linkObj = ptype.get(val)
 
-    if (linkObj) {
+    if ( val != null ) {
       if (ptype == RefdataValue) {
-        String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
+        def rdv = null
 
-        if (catName && catName != 'KBComponent.Status') {
-          def cat = RefdataCategory.findByDesc(catName)
-
-          if (linkObj in cat.values) {
-            obj[prop] = linkObj
-          } else {
-            obj.errors.reject(
-              'rdc.values.notFound',
-              [linkObj.id, catName] as Object[],
-              '[Value with ID {0} does not belong to category {1}!]'
-            )
-            obj.errors.rejectValue(
-              p.name,
-              'rdc.values.notFound'
-            )
-          }
+        if ( val == null ) {
+          obj[prop] = null
         } else {
-          log.error("Could not resolve category (${obj.niceName}.${p.name})!")
+          String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
+
+          if (catName && catName != 'KBComponent.Status') {
+            def cat = RefdataCategory.findByDesc(catName)
+
+            if (val instanceof Integer) {
+              rdv = RefdataValue.get(val)
+
+              if (rdv) {
+                if (rdv in cat.values) {
+                  obj[prop] = rdv
+                } else {
+                  obj.errors.reject(
+                    'rdc.values.notFound',
+                    [linkObj.id, cat] as Object[],
+                    '[Value {0} is not valid for category {1}!]'
+                  )
+                  obj.errors.rejectValue(
+                    prop,
+                    'rdc.values.notFound'
+                  )
+                }
+              }
+              else {
+                obj.errors.reject(
+                  'default.not.found.message',
+                  [ptype, val] as Object[],
+                  '[{0} not found with id {1}]'
+                )
+                obj.errors.rejectValue(
+                  prop,
+                  'default.not.found.message'
+                )
+              }
+            }
+            else {
+              rdv = RefdataCategory.lookup(catName, val)
+
+              if (!rdv) {
+                obj.errors.reject(
+                  'rdc.values.notFound',
+                  [val, prop] as Object[],
+                  '[{0} is not a valid value for property {1}!]'
+                )
+                obj.errors.rejectValue(
+                  prop,
+                  'rdc.values.notFound'
+                )
+              }
+              else {
+                obj[prop] = rdv
+              }
+            }
+          } else if (!catname) {
+            log.error("Could not resolve category (${obj.niceName}.${p.name})!")
+          } else {
+            log.debug("Status updating denied in general PUT/PATCH request!")
+          }
         }
       } else {
-        obj[p.name] = linkObj
+        def linkObj = ptype.get(val)
+
+        if (linkObj) {
+          obj[prop] = linkObj
+        } else {
+          obj.errors.reject(
+            'default.not.found.message',
+            [ptype, val] as Object[],
+            '[{0} not found with id {1}]'
+          )
+          obj.errors.rejectValue(
+            prop,
+            'default.not.found.message'
+          )
+        }
       }
-    } else {
-      obj.errors.reject(
-        'default.not.found.message',
-        [ptype, val] as Object[],
-        '[{0} not found with id {1}]'
-      )
-      obj.errors.rejectValue(
-        prop,
-        'default.not.found.message'
-      )
+    }
+    else {
+      obj[p.name] = null
     }
   }
 
@@ -378,10 +429,6 @@ class RestMappingService {
           ['curatoryGroups'] as Object[],
           '[Could not process list of items for property {0}]'
         )
-        obj.errors.rejectValue(
-          'curatoryGroups',
-          'component.addToList.denied.label'
-        )
       }
     }
 
@@ -430,7 +477,9 @@ class RestMappingService {
       }
 
       if (notFound.size() == 0) {
-        obj.variantNames.retainAll(remaining)
+        if (!obj.hasErrors()) {
+          obj.variantNames.retainAll(remaining)
+        }
       } else {
         obj.errors.reject(
           'component.addToList.denied.label',

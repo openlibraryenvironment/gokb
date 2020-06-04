@@ -16,7 +16,7 @@ import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 
 @Transactional(readOnly = true)
-class PlatformController {
+class TippController {
 
   static namespace = 'rest'
 
@@ -34,7 +34,7 @@ class PlatformController {
     User user = User.get(springSecurityService.principal.id)
     def es_search = params.es ? true : false
 
-    params.componentType = "Platform" // Tells ESSearchService what to look for
+    params.componentType = "TIPP" // Tells ESSearchService what to look for
 
     if (es_search) {
       params.remove('es')
@@ -44,7 +44,7 @@ class PlatformController {
     }
     else {
       def start_db = LocalDateTime.now()
-      result = componentLookupService.restLookup(user, Platform, params)
+      result = componentLookupService.restLookup(user, TitleInstancePackagePlatform, params)
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }
 
@@ -54,16 +54,16 @@ class PlatformController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def show() {
     def result = [:]
-    def obj = null
+    TitleInstancePackagePlatform obj = null
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
     User user = User.get(springSecurityService.principal.id)
 
     if (params.oid || params.id) {
-      obj = Platform.findByUuid(params.id)
+      obj = TitleInstancePackagePlatform.findByUuid(params.id)
 
       if (!obj) {
-        obj = Platform.get(genericOIDService.oidToId(params.id))
+        obj = TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
       }
 
       if (obj?.isReadable()) {
@@ -101,7 +101,7 @@ class PlatformController {
     def user = User.get(springSecurityService.principal.id)
 
     if (reqBody) {
-      Platform obj = Platform.upsertDTO(reqBody, user)
+      TitleInstancePackagePlatform obj = TitleInstancePackagePlatform.upsertDTO(reqBody, user)
 
       if (!obj) {
         log.debug("Could not upsert object!")
@@ -117,8 +117,6 @@ class PlatformController {
 
         log.debug("Updating ${obj}")
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
-
-        updateCombos(obj, reqBody)
 
         if( obj.validate() ) {
           if(errors.size() == 0) {
@@ -153,18 +151,18 @@ class PlatformController {
     def reqBody = request.JSON
     def errors = []
     def user = User.get(springSecurityService.principal.id)
-    def obj = Platform.findByUuid(params.id)
+    def obj = TitleInstancePackagePlatform.findByUuid(params.id)
 
     if (!obj) {
-      obj = Platform.get(genericOIDService.oidToId(params.id))
+      obj = TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
     }
     def editable = obj.isEditable()
 
-    if (obj && reqBody) {
+    if (obj?.pkg && reqBody) {
       obj.lock()
 
-      if ( editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
-        def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
+      if ( editable && obj.pkg.curatoryGroups?.size() > 0 ) {
+        def cur = user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id)
 
         if (!cur) {
           editable = false
@@ -208,53 +206,15 @@ class PlatformController {
     render result as JSON
   }
 
-  private void updateCombos(obj, reqBody) {
-    log.debug("Updating platform combos ..")
-
-    if (reqBody.ids || reqBody.identifiers) {
-      def idmap = reqBody.ids ?: reqBody.identifiers
-      restMappingService.updateIdentifiers(obj, idmap)
-    }
-
-    if (reqBody.provider) {
-      def prov = null
-
-      try {
-        prov = Org.get(reqBody.provider)
-      }
-      catch (Exception e) {
-      }
-
-      if (prov) {
-        obj.provider = prov
-      }
-      else {
-        obj.errors.reject(
-          'default.not.found.message',
-          ['Org', reqBody.provider] as Object[],
-          '[{0} not found with id {1}!]'
-        )
-        obj.errors.rejectValue(
-          'provider',
-          'default.not.found.message'
-        )
-      }
-    }
-  }
-
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
   @Transactional
   def delete() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Platform.findByUuid(params.id)
-
-    if (!obj) {
-      obj = Platform.get(genericOIDService.oidToId(params.id))
-    }
+    def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
 
     if ( obj && obj.isDeletable() ) {
-      def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id) : true
+      def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
@@ -283,10 +243,11 @@ class PlatformController {
   def retire() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = Platform.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id) : true
+    def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
 
-    if ( obj && obj.isEditable() ) {
+    if ( obj?.pkg && obj.isEditable() ) {
+      def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
+      
       if ( curator || user.isAdmin() ) {
         obj.retire()
       }
@@ -299,12 +260,31 @@ class PlatformController {
     else if (!obj) {
       result.result = 'ERROR'
       response.setStatus(404)
-      result.message = "Package not found or empty request body!"
+      result.message = "TIPP or connected Package not found!"
     }
     else {
       result.result = 'ERROR'
       response.setStatus(403)
       result.message = "User is not allowed to edit this component!"
+    }
+    render result as JSON
+  }
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
+  def getCoverage() {
+    def result = [:]
+    def user = User.get(springSecurityService.principal.id)
+    def context = "/tipps/" + params.id + "/coverage"
+    def tipp = TitleInstancePackagePlatform.get(params.id)
+
+    if (tipp) {
+      params.owner = tipp.id
+      result = componentLookupService.restLookup(user, TIPPCoverageStatement, params, context)
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(404)
+      result.message = "TIPP not found!"
     }
     render result as JSON
   }

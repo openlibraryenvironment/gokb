@@ -249,9 +249,13 @@ class TitleInstancePackagePlatform extends KBComponent {
   public static def validateDTO(tipp_dto) {
     def result = ['valid':true, 'errors':[]]
 
-    result.valid &= tipp_dto.package?.internalId != null
-    result.valid &= tipp_dto.platform?.internalId != null
-    result.valid &= tipp_dto.title?.internalId != null
+    result.valid &= (tipp_dto.pkg != null || tipp_dto.package != null)
+    result.valid &= (tipp_dto.hostPlatform != null || tipp_dto.platform != null)
+    result.valid &= tipp_dto.title != null
+
+    if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
+      tipp_dto.coverage = tipp_dto.coverageStatements
+    }
 
     for(def coverage : tipp_dto.coverage){
         LocalDateTime parsedStart = GOKbTextUtils.completeDateString(coverage.startDate)
@@ -292,14 +296,49 @@ class TitleInstancePackagePlatform extends KBComponent {
   static TitleInstancePackagePlatform upsertDTO(tipp_dto, def user = null) {
     def result = null
     log.debug("upsertDTO(${tipp_dto})");
-    def pkg = Package.get(tipp_dto.package?.internalId)
-    def plt = Platform.get(tipp_dto.platform?.internalId)
-    def ti = TitleInstance.get(tipp_dto.title?.internalId)
+    def pkg = null
+    def plt = null
+    def ti = null
+
+    if (tipp_dto.pkg || tipp_dto.package) {
+      def pkg_info = tipp_dto.package ?: tipp_dto.pkg
+
+      if (pkg_info instanceof Map) {
+        pkg = Package.get(pkg_info.id ?: pkg_info.internalId)
+      }
+      else {
+        pkg = Package.get(pkg_info)
+      }
+    }
+
+    if (tipp_dto.hostPlatform || tipp_dto.platform) {
+      def plt_info = tipp_dto.hostPlatform ?: tipp_dto.platform
+
+      if (plt_info instanceof Map) {
+        plt = Platform.get(plt_info.id ?: plt_info.internalId)
+      }
+      else {
+        plt = Platform.get(plt_info)
+      }
+    }
+    
+    if (tipp_dto.title) {
+      def title_info = tipp_dto.hostPlatform ?: tipp_dto.platform
+
+      if (title_info instanceof Map) {
+        ti = TitleInstance.get(title_info.id ?: title_info.internalId)
+      }
+      else {
+        ti = Platform.get(title_info)
+      }
+    }
+
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
     def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
+    def curator = pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
 
-    if ( pkg && plt && ti ) {
+    if ( pkg && plt && ti && curator ) {
       log.debug("See if we already have a tipp");
       def tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
                                            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?'+
@@ -437,6 +476,10 @@ class TitleInstancePackagePlatform extends KBComponent {
         changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', trimmed_url)
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessStartDate,tipp,'accessStartDate')
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate,tipp,'accessEndDate')
+
+        if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
+          tipp_dto.coverage = tipp_dto.coverageStatements
+        }
 
         tipp_dto.coverage.each { c ->
           def parsedStart = GOKbTextUtils.completeDateString(c.startDate)

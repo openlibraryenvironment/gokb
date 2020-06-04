@@ -257,17 +257,15 @@ class PackageController {
       }
 
       if (prov) {
-        obj.provider = prov
+        if (!obj.hasErrors()) {
+          obj.provider = prov
+        }
       }
       else {
         obj.errors.reject(
           'default.not.found.message',
           ['Org', reqBody.provider] as Object[],
           '[{0} not found with id {1}!]'
-        )
-        obj.errors.rejectValue(
-          'provider',
-          'default.not.found.message'
         )
       }
     }
@@ -283,17 +281,15 @@ class PackageController {
       }
 
       if (plt) {
-        obj.nominalPlatform = plt
+        if (!obj.hasErrors()) {
+          obj.nominalPlatform = plt
+        }
       }
       else {
         obj.errors.reject(
           'default.not.found.message',
           ['Platform', reqBody.nominalPlatform] as Object[],
           '[{0} not found with id {1}!]'
-        )
-        obj.errors.rejectValue(
-          'nominalPlatform',
-          'default.not.found.message'
         )
       }
     }
@@ -394,7 +390,7 @@ class PackageController {
       params.remove('id')
       params.remove('uuid')
       params.remove('es')
-      params.obj = obj.uuid
+      params.pkg = obj.id
 
       def esParams = new HashMap(params)
       esParams.remove('componentType')
@@ -418,6 +414,81 @@ class PackageController {
       result.result = 'ERROR'
       result.message = "Package id ${params.id} could not be resolved!"
       response.setStatus(404)
+    }
+
+    render result as JSON
+  }
+
+  @Transactional
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  def addTipps() {
+    def result = [:]
+    def errors = []
+    def user = User.get(springSecurityService.principal.id)
+    def context = "/packages/" + params.id + "/tipps"
+    log.debug("addTipps :: ${params}")
+    def obj = Package.findByUuid(params.id)
+    def reqBody = request.JSON
+
+    if (!obj) {
+      obj = Package.get(genericOIDService.oidToId(params.id))
+    }
+
+    if (obj && reqBody) {
+
+      def curator = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
+
+      params.pkg = params.id
+
+      if ( curator || user.isAdmin() ) {
+        if (reqBody instanceof List) {
+          def idx = 0
+
+          reqBody.each { tipp ->
+            def tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp)
+
+            if (tipp_validation.valid) {
+              def tipp_obj = TitleInstancePackagePlatform.upsertDTO(tipp)
+
+              if (!tipp_obj) {
+                errors.add(['code': 400, 'message': "TIPP could not be created!", baddata: tipp, idx: idx])
+              }
+            } else {
+              errors.add(['code': 400, 'message': "TIPP information is not valid!", baddata: tipp, idx: idx, errors:tipp_validation.errors])
+            }
+            idx++
+          }
+
+          if (errors.size() == 0) {
+            result = componentLookupService.restLookup(user, TitleInstancePackagePlatform, params, context)
+          }
+          else {
+            result.result = 'ERROR'
+            response.setStatus(400)
+            result.errors = errors
+            result.message = "There have been errors creating TIPPs!"
+          }
+        } else {
+          result.result = 'ERROR'
+          response.setStatus(400)
+          result.message = "Missing expected array of TIPPs!"
+        }
+      }
+      else {
+        result.result = 'ERROR'
+        response.setStatus(403)
+        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+      }
+    }
+    else if (!reqBody) {
+      result.result = 'ERROR'
+      response.setStatus(400)
+      result.message = "Missing JSON payload!"
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(400)
+      result.message = "Missing ID for connected package!"
     }
 
     render result as JSON
