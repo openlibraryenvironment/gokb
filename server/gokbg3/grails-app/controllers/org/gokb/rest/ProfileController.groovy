@@ -55,14 +55,15 @@ class ProfileController {
 
   @Transactional
   def update() {
+    def result = [:]
     User user = User.get(springSecurityService.principal.id)
     if (request.JSON.data)
-      render userProfileService.update(user, request.JSON.data, params, user) as JSON
+      result = userProfileService.update(user, request.JSON.data, params, user) as JSON
     else {
       response.status = 400
       result = [errors: [[message: "no data", baddata: "none"]]]
-      render result as JSON
     }
+    render result as JSON
   }
 
   @Secured(value = ['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
@@ -78,7 +79,7 @@ class ProfileController {
           user.save(flush: true, failOnError: true);
         } else {
 //        result.data = user
-          response.status=400
+          response.status = 400
           result.error = [message: "wrong password - profile unchanged"]
           render result as JSON
         }
@@ -97,7 +98,7 @@ class ProfileController {
   def delete() {
     userProfileService.delete(User.get(springSecurityService.principal.id))
     def result = [:]
-    response.status=204
+    response.status = 204
     render result as JSON
   }
 }
