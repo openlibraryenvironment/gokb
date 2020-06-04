@@ -127,6 +127,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     when:
     String accessToken = getAccessToken()
     Map bodyData = [data: [displayName     : "DisplayName",
+                           password        : "secr3t",
                            email           : "nobody@localhost",
                            curatoryGroupIds: [cg.id],
                            enabled         : true,
@@ -159,6 +160,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken()
     Map bodyData = [data: [
       displayName     : "DisplayName",
+      password        : "someOther",
       enabled         : false,
       defaultPageSize : 18,
       roleIds         : [2, 3, 5],
