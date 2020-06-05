@@ -89,6 +89,10 @@ class UserProfileService {
 
   def create(def data) {
     User user = new User()
+    Role roleUser = Role.findByAuthority("ROLE_USER")
+    if (!data.roleIds)
+      data.roleIds=[]
+    data.roleIds << roleUser.id
     return modifyUser(user, data)
   }
 
@@ -177,7 +181,7 @@ class UserProfileService {
         result.data = collectUserProps(user)
       } else {
         result.message = "There have been errors saving the user object."
-        result.errors = user.errors
+        result.errors = user.errors.allErrors
       }
     } else {
       result.errors = errors

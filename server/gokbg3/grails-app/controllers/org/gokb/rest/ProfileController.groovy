@@ -58,7 +58,7 @@ class ProfileController {
     def result = [:]
     User user = User.get(springSecurityService.principal.id)
     if (request.JSON.data)
-      result = userProfileService.update(user, request.JSON.data, params, user) as JSON
+      result = userProfileService.update(user, request.JSON.data, params, user)
     else {
       response.status = 400
       result = [errors: [[message: "no data", baddata: "none"]]]

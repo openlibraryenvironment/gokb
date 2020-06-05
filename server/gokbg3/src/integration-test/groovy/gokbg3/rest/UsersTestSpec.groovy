@@ -194,7 +194,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       displayName     : "DisplayName",
       enabled         : true,
       defaultPageSize : 18,
-      roleIds         : [2, 3],
+      roleIds         : [3,4],
       curatoryGroupIds: [cg.id]
     ]]
     RestResponse resp = rest.post("${urlPath}/rest/users") {
@@ -209,6 +209,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     resp.json.data.username == "newerUser"
     sleep(500)
     User checkUser = User.findById(resp.json.data.id)
+    checkUser.hasRole("ROLE_USER")
     checkUser != null
   }
 
