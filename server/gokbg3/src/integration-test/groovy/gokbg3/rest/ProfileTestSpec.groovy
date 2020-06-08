@@ -149,6 +149,28 @@ class ProfileTestSpec extends AbstractAuthSpec {
     user.email == 'frank@gmail.com'
   }
 
+  void "test PATCH /rest/profile with wrong data"() {
+    def urlPath = getUrlPath()
+    // use the bearerToken to write to /rest/profile
+    when:
+    String accessToken = getAccessToken('normalUser', 'normalUser')
+    Map bodyData = [auto: [
+      displayName : "tempo",
+      email       : "frank@gmail.com",
+      password    : "normalUser",
+      new_password: "roles"
+    ]]
+    RestResponse resp = rest.patch("${urlPath}/rest/profile") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      auth("Bearer $accessToken")
+      body(bodyData as JSON)
+    }
+    then:
+    resp.status == 400
+  }
+
   void "test DELETE /rest/profile/"() {
     def urlPath = getUrlPath()
     when:
