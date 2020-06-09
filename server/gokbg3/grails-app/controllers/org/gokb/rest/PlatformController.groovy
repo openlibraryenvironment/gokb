@@ -97,7 +97,7 @@ class PlatformController {
   def save() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
 
     if (reqBody) {
@@ -105,7 +105,7 @@ class PlatformController {
 
       if (!obj) {
         log.debug("Could not upsert object!")
-        errors = [badData: reqBody, message:"Unable to save object!"]
+        errors.object = [[badData: reqBody, message:"Unable to save object!"]]
       }
       else if (obj.hasErrors()) {
         log.debug("Object has errors!")
@@ -118,7 +118,7 @@ class PlatformController {
         log.debug("Updating ${obj}")
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        updateCombos(obj, reqBody)
+        errors << updateCombos(obj, reqBody)
 
         if( obj.validate() ) {
           if(errors.size() == 0) {
@@ -126,16 +126,20 @@ class PlatformController {
             obj.save(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
+          else {
+            response.setStatus(400)
+            result.message = message(code:"default.create.errors.message")
+          }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(422)
+          response.setStatus(400)
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
     }
     else {
-      errors = [badData: reqBody, message:"Unable to save platform!"]
+      errors.object = [[badData: reqBody, message:"Unable to save platform!"]]
     }
 
     if (errors) {
@@ -151,7 +155,7 @@ class PlatformController {
   def update() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def obj = Platform.findByUuid(params.id)
 
@@ -177,18 +181,22 @@ class PlatformController {
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        updateCombos(obj, reqBody)
+        errors << updateCombos(obj, reqBody)
 
         if( obj.validate() ) {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
-            obj.save(flush:true)
+            obj = obj.merge(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
+          }
+          else {
+            response.setStatus(400)
+            result.message = message(code:"default.update.errors.message")
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(422)
+          response.setStatus(400)
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
@@ -210,7 +218,8 @@ class PlatformController {
     render result as JSON
   }
 
-  private void updateCombos(obj, reqBody) {
+  private def updateCombos(obj, reqBody) {
+    def errors = [:]
     log.debug("Updating platform combos ..")
 
     if (reqBody.ids || reqBody.identifiers) {
@@ -231,17 +240,10 @@ class PlatformController {
         obj.provider = prov
       }
       else {
-        obj.errors.reject(
-          'default.not.found.message',
-          ['Org', reqBody.provider] as Object[],
-          '[{0} not found with id {1}!]'
-        )
-        obj.errors.rejectValue(
-          'provider',
-          'default.not.found.message'
-        )
+        errors.provider = [[message: "Unable to lookup provider with id ${reqBody.provider}", baddata: reqBody.provider, code: 404]]
       }
     }
+    errors
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')

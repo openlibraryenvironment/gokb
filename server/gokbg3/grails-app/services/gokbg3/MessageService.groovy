@@ -21,6 +21,8 @@ class MessageService {
           result[eo.field] = []
         }
         field = eo.field
+      } else if (!result['object']){
+        result.object = []
       }
 
       eo.getArguments().each { ma ->
@@ -62,11 +64,11 @@ class MessageService {
       }
 
       if (errorMessage) {
-        result[field].add([message: errorMessage, baddata: eo.rejectedValue])
+        result[field].add([message: errorMessage, baddata: (field == 'object' ? eo.objectName : eo.rejectedValue)])
       }else{
         log.debug("No message found for ${eo.codes}")
         log.debug("Default: ${MessageFormat.format(eo.defaultMessage, messageArgs)}")
-        result[field].add([message:"${MessageFormat.format(eo.defaultMessage, messageArgs)}", baddata: eo.rejectedValue])
+        result[field].add([message:"${MessageFormat.format(eo.defaultMessage, messageArgs)}", baddata: (field == 'object' ? eo.objectName : eo.rejectedValue)])
       }
     }
     result

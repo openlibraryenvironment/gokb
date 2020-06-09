@@ -104,7 +104,7 @@ class PackageController {
   def save() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
 
     if (reqBody) {
@@ -113,11 +113,11 @@ class PackageController {
 
       if (!obj) {
         log.debug("Could not upsert object!")
-        errors = [badData: reqBody, message:"Unable to save object!"]
+        errors.object = [[badData: reqBody, message:"Unable to save object!"]]
       }
       else if (obj.hasErrors()) {
         log.debug("Object has errors!")
-        errors = messageService.processValidationErrors(obj.errors, request.locale)
+        errors << messageService.processValidationErrors(obj.errors, request.locale)
         log.debug("${errors}")
       }
       else {
@@ -137,24 +137,32 @@ class PackageController {
         log.debug("Updating ${obj}")
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        updateCombos(obj, reqBody)
+        errors << updateCombos(obj, reqBody)
+
+        log.debug("Errors: ${obj.errors}")
 
         if( obj.validate() ) {
-          if(errors.size() == 0) {
+          if (errors.size() == 0) {
             log.debug("No errors.. saving")
             obj.save(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
+          else {
+            result.result = 'ERROR'
+            result.message = message(code:"default.create.errors.message")
+            response.setStatus(400)
+          }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(422)
-          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+          response.setStatus(400)
+          errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
       }
     }
     else {
-      errors = [badData: reqBody, message:"Unable to save package!"]
+      response.setStatus(400)
+      errors.object = [[baddata: reqBody, message:"Unable to save package!"]]
     }
 
     if (errors) {
@@ -170,7 +178,7 @@ class PackageController {
   def update() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def editable = true
     def obj = Package.findByUuid(params.id)
@@ -206,19 +214,24 @@ class PackageController {
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        updateCombos(obj, reqBody)
+        errors << updateCombos(obj, reqBody)
 
         if( obj.validate() ) {
-          if(errors.size() == 0) {
+          if (errors.size() == 0) {
             log.debug("No errors.. saving")
-            obj.save(flush:true)
+            obj = obj.merge(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
+          }
+          else {
+            result.result = 'ERROR'
+            result.message = message(code:"default.update.errors.message")
+            response.setStatus(400)
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(422)
-          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+          response.setStatus(400)
+          errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
       }
       else {
@@ -239,8 +252,9 @@ class PackageController {
     render result as JSON
   }
 
-  private void updateCombos(obj, reqBody) {
+  private def updateCombos(obj, reqBody) {
     log.debug("Updating package combos ..")
+    def errors = [:]
 
     if (reqBody.ids || reqBody.identifiers) {
       def idmap = reqBody.ids ?: reqBody.identifiers
@@ -257,16 +271,12 @@ class PackageController {
       }
 
       if (prov) {
-        if (!obj.hasErrors()) {
+        if (!obj.hasErrors() && errors.size() == 0) {
           obj.provider = prov
         }
       }
       else {
-        obj.errors.reject(
-          'default.not.found.message',
-          ['Org', reqBody.provider] as Object[],
-          '[{0} not found with id {1}!]'
-        )
+        errors.provider = [[message: "Could not find provider Org with id ${reqBody.provider}!", baddata: reqBody.provider]]
       }
     }
 
@@ -281,20 +291,47 @@ class PackageController {
       }
 
       if (plt) {
-        if (!obj.hasErrors()) {
+        if (!obj.hasErrors() && errors.size() == 0) {
           obj.nominalPlatform = plt
         }
       }
       else {
-        obj.errors.reject(
-          'default.not.found.message',
-          ['Platform', reqBody.nominalPlatform] as Object[],
-          '[{0} not found with id {1}!]'
-        )
+        errors.nominalPlatform = [[message: "Could not find platform with id ${reqBody.nominalPlatform}!", baddata: plt_id]]
       }
     }
 
-    log.debug("After update: ${obj}")
+    if (reqBody.tipps) {
+      reqBody.tipps.each { tipp_dto ->
+        tipp_dto.pkg = obj.id
+        def tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp_dto)
+
+        if (!tipp_validation.valid) {
+          if (!errors.tipps) {
+            errors.tipps = []
+          }
+
+          errors.tipps << tipp_validation.errors
+        }
+        else {
+          def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp_dto)
+
+          if (upserted_tipp) {
+            if (errors.size() == 0) {
+              upserted_tipp = upserted_tipp?.merge(flush: true)
+            }
+          }
+          else {
+            if (!errors.tipps) {
+              errors.tipps = []
+            }
+
+            error.tipps << [[message: "Unable to reference TIPP!", baddata: tipp_dto]]
+          }
+        }
+      }
+    }
+    log.debug("After update: ${obj.errors}")
+    errors
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])

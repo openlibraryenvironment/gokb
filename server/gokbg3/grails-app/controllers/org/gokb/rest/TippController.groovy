@@ -187,8 +187,12 @@ class TippController {
           if( obj?.validate() ) {
             if(errors.size() == 0) {
               log.debug("No errors.. saving")
-              obj.save(flush:true)
+              obj = obj.merge(flush:true)
               result = restMappingService.mapObjectToJson(obj, params, user)
+            }
+            else {
+              response.setStatus(400)
+              result.message = message(code:"default.update.errors.message")
             }
           }
           else {

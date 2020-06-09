@@ -252,15 +252,60 @@ class TitleInstancePackagePlatform extends KBComponent {
       result.valid = false
       result.errors.pkg = [[ message: "Missing package link!", baddata: pkgLink ]]
     }
+    else {
+      def pkg = null
+
+      if (pkgLink instanceof Map) {
+        pkg = Package.get(pkgLink.id ?: pkgLink.internalId)
+      }
+      else {
+        pkg = Package.get(pkgLink)
+      }
+
+      if (!pkg) {
+        result.valid = false
+        result.errors.pkg = [[ message: "Could not resolve package id!", baddata: pkgLink , code: 404]]
+      }
+    }
 
     if (!pltLink) {
       result.valid = false
       result.errors.hostPlatform = [[ message: "Missing platform link!", baddata: pltLink ]]
     }
+    else {
+      def plt = null
+
+      if (pltLink instanceof Map) {
+        plt = Platform.get(pltLink.id ?: pltLink.internalId)
+      }
+      else {
+        plt = Platform.get(pltLink)
+      }
+
+      if (!plt) {
+        result.valid = false
+        result.errors.hostPlatform = [[ message: "Could not resolve platform id!", baddata: pltLink, code: 404 ]]
+      }
+    }
 
     if (!tiLink) {
       result.valid = false
       result.errors.title = [[ message: "Missing title link!", baddata: tiLink ]]
+    }
+    else {
+      def ti = null
+
+      if (tiLink instanceof Map) {
+        ti = TitleInstance.get(tiLink.id ?: tiLink.internalId)
+      }
+      else {
+        ti = TitleInstance.get(tiLink)
+      }
+
+      if (!ti) {
+        result.valid = false
+        result.errors.title = [[message: "Could not resolve title id!", baddata: tiLink, code: 404]]
+      }
     }
 
     if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
@@ -293,7 +338,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
 
     if ( !result.valid )  {
-      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${tipp_dto.package?.internalId} plat:${tipp_dto.platform?.internalId} ti:${tipp_dto.title?.internalId} -- Errors: ${result.errors}");
+      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${pkgLink} plat:${pltLink} ti:${tiLink} -- Errors: ${result.errors}");
     }
 
     return result
@@ -352,7 +397,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
     def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
-    def curator = pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+    def curator = pkg?.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(pkg?.curatoryGroups?.id) : true
 
     if ( pkg && plt && ti && curator ) {
       log.debug("See if we already have a tipp");

@@ -144,6 +144,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
+    sleep(500)
     def user = User.findByUsername("normalUser").refresh()
     getAccessToken('normalUser', 'roles') != null
     user.email == 'frank@gmail.com'
