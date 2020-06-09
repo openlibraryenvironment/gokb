@@ -85,13 +85,13 @@ class SourcesController {
     def errors = [:]
     User user = User.get(springSecurityService.principal.id)
 
-    if (request.JSON?.data?.name) {
+    if (request.JSON?.name) {
       try {
-        source = new Source(name: request.JSON.data.name)
+        source = new Source(name: request.JSON.name)
 
         def jsonMap = [:]
 
-        source = restMappingService.updateObject(source, jsonMap, request.JSON.data)
+        source = restMappingService.updateObject(source, jsonMap, request.JSON)
       }
       catch (grails.validation.ValidationException ve) {
         errors = ve.errors

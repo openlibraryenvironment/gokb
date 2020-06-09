@@ -158,10 +158,12 @@ class UsersController {
   @Transactional
   def save() {
     def result = [:]
-    if (request.JSON.data) {
-      result = userProfileService.create(request.JSON.data)
+    if (request.JSON) {
+      result = userProfileService.create(request.JSON)
       if (!result.errors)
         response.status = 201
+      else
+        response.status = 400
     } else {
       response.status = 400
       def errors = []
@@ -192,9 +194,10 @@ class UsersController {
   def patch() {
     def user = User.get(params.id)
     def result = [:]
-    if (user && request.JSON.data) {
-      if (request.JSON.data.password) {
-        user.password = request.JSON.data.password
+    if (user && request.JSON) {
+      if (request.JSON.password) {
+        user.password = request.JSON.password
+        request.JSON.remove('password')
       }
       result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
     } else {

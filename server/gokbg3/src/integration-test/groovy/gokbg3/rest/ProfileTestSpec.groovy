@@ -104,14 +104,14 @@ class ProfileTestSpec extends AbstractAuthSpec {
     // use the bearerToken to write to /rest/profile/update
     when:
     String accessToken = getAccessToken("normalUser", "normalUser")
-    Map bodyData = [data: [displayName    : null,
-                           email          : "MrX@localhost",
-                           enabled        : true,
-                           accountExpired : false,
-                           accountLocked  : false,
-                           passwordExpired: false,
-                           defaultPageSize: 10
-    ]]
+    Map bodyData = [displayName    : null,
+                    email          : "MrX@localhost",
+                    enabled        : true,
+                    accountExpired : false,
+                    accountLocked  : false,
+                    passwordExpired: false,
+                    defaultPageSize: 10
+    ]
     RestResponse resp = rest.put("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
@@ -126,15 +126,15 @@ class ProfileTestSpec extends AbstractAuthSpec {
 
   void "test PATCH /rest/profile"() {
     def urlPath = getUrlPath()
-    // use the bearerToken to write to /rest/profile
+    def before = normalUser.password
     when:
     String accessToken = getAccessToken('normalUser', 'normalUser')
-    Map bodyData = [data: [
+    Map bodyData = [
       displayName : "tempo",
       email       : "frank@gmail.com",
       password    : "normalUser",
       new_password: "roles"
-    ]]
+    ]
     RestResponse resp = rest.patch("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
@@ -145,8 +145,30 @@ class ProfileTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     def user = User.findByUsername("normalUser").refresh()
-    getAccessToken('normalUser', 'roles') != null
+    user.password != before
     user.email == 'frank@gmail.com'
+  }
+
+  void "test PUT /rest/profile new_password without old password"() {
+    def urlPath = getUrlPath()
+    def before = normalUser.password
+    when:
+    String accessToken = getAccessToken('normalUser', 'normalUser')
+    Map bodyData = [
+      new_password: "secr3t"
+    ]
+    RestResponse resp = rest.put("${urlPath}/rest/profile") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      auth("Bearer $accessToken")
+      body(bodyData as JSON)
+    }
+    then:
+    resp.status == 200
+    def user = User.findByUsername("normalUser").refresh()
+    resp.json.data != null
+    user.password == before
   }
 
   void "test PATCH /rest/profile with wrong data"() {
@@ -154,12 +176,13 @@ class ProfileTestSpec extends AbstractAuthSpec {
     // use the bearerToken to write to /rest/profile
     when:
     String accessToken = getAccessToken('normalUser', 'normalUser')
-    Map bodyData = [auto: [
+    Map bodyData = [
+      username    : "sRsLy?",
       displayName : "tempo",
       email       : "frank@gmail.com",
       password    : "normalUser",
       new_password: "roles"
-    ]]
+    ]
     RestResponse resp = rest.patch("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
@@ -171,20 +194,23 @@ class ProfileTestSpec extends AbstractAuthSpec {
     resp.status == 400
   }
 
-  void "test DELETE /rest/profile/"() {
+  void "test POST /rest/profile/"() {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken('normalUser', 'normalUser')
-    RestResponse resp = rest.delete("${urlPath}/rest/profile/") {
+    RestResponse resp = rest.post("${urlPath}/rest/profile/") {
       // headers
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
+      body([
+        username   : "sRsLy?",
+        displayName: "tempo",
+        email      : "frank@gmail.com",
+        password   : "otherthan"
+      ] as JSON)
     }
     then:
-    resp.status == 204
-    sleep(500)
-    User check = User.findByUsername('normalUser')
-    !check
+    resp.status == 404
   }
 }

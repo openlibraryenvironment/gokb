@@ -187,16 +187,17 @@ class UsersTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    Map bodyData = [data: [
+    Map bodyData = [
       username        : "newerUser",
       email           : "nobody@localhost",
       password        : "defaultPassword",
       displayName     : "DisplayName",
       enabled         : true,
       defaultPageSize : 18,
-      roleIds         : [3,4],
+      roleIds         : [Role.findByAuthority("ROLE_CONTRIBUTOR").id,
+                         Role.findByAuthority("ROLE_EDITOR").id],
       curatoryGroupIds: [cg.id]
-    ]]
+    ]
     RestResponse resp = rest.post("${urlPath}/rest/users") {
       // headers
       accept('application/json')
@@ -224,7 +225,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       // headers
       accept('application/json')
       contentType('application/json')
-      body([data: [username: "newerUser", email: "nobody@localhost", password: "defaultPassword"]] as JSON)
+      body([username: "newerUser", email: "nobody@localhost", password: "defaultPassword"] as JSON)
     }
     then:
     resp.status == 200

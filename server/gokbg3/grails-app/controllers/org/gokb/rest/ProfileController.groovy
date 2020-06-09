@@ -1,5 +1,6 @@
 package org.gokb.rest
 
+import com.google.gson.annotations.JsonAdapter
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.Role
@@ -57,43 +58,38 @@ class ProfileController {
   def update() {
     def result = [:]
     User user = User.get(springSecurityService.principal.id)
-    if (request.JSON.data)
-      result = userProfileService.update(user, request.JSON.data, params, user)
-    else {
-      response.status = 400
-      result = [errors: [[message: "no data", baddata: "none"]]]
-    }
+    def reqData = request.JSON
+    reqData.remove('new_password')
+    reqData.remove('password')
+    result = userProfileService.update(user, reqData, params, user)
     render result as JSON
   }
 
-  @Secured(value = ['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
+  @Secured(value = ['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
   @Transactional
   def patch() {
-    def result = [:]
-    Map reqData = request.JSON.data
-    if (reqData) {
-      User user = User.get(springSecurityService.principal.id)
-      if (reqData.new_password && reqData.password) {
-        if (passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
-          user.password = reqData.new_password
-          user.save(flush: true, failOnError: true);
-        } else {
+    Map reqData = request.JSON
+    User user = User.get(springSecurityService.principal.id)
+    if (reqData.new_password && reqData.password) {
+      if (passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
+        user.password = reqData.new_password
+        user.save(flush: true, failOnError: true);
+      } else {
 //        result.data = user
-          response.status = 400
-          result.error = [message: "wrong password - profile unchanged"]
-          render result as JSON
-        }
+        response.status = 400
+        result.error = [message: "wrong password - profile unchanged"]
+        render result as JSON
       }
-      reqData.remove('new_password')
-      reqData.remove('password')
-      render userProfileService.update(user, reqData, params, user) as JSON
-    } else {
-      response.status = 400
-      result = [errors: [[message: "no data found in request body", baddata: "none"]]]
-      render result as JSON
     }
+    reqData.remove('new_password')
+    reqData.remove('password')
+    def result = userProfileService.update(user, reqData, params, user)
+    if (result.errors!=null)
+      response.status=400
+    render result as JSON
   }
 
+  @Secured(value = ['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
     userProfileService.delete(User.get(springSecurityService.principal.id))
