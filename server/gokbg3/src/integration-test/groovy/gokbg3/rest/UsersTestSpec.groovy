@@ -126,7 +126,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     // use the bearerToken to write to /rest/user
     when:
     String accessToken = getAccessToken()
-    Map bodyData = [data: [displayName     : "DisplayName",
+    Map bodyData = [displayName     : "DisplayName",
                            password        : "secr3t",
                            email           : "nobody@localhost",
                            curatoryGroupIds: [cg.id],
@@ -136,7 +136,7 @@ class UsersTestSpec extends AbstractAuthSpec {
                            passwordExpired : false,
                            defaultPageSize : 15,
                            roleIds         : [2, 3, 4, 6, 7]
-    ]]
+    ]
     RestResponse resp = rest.put("${urlPath}/rest/users/$altUser.id") {
       // headers
       accept('application/json')

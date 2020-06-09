@@ -178,8 +178,8 @@ class UsersController {
   def update() {
     def user = User.get(params.id)
     def result = [:]
-    if (user && request.JSON.data)
-      result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
+    if (user && request.JSON)
+      result = userProfileService.update(user, request.JSON, params, springSecurityService.currentUser)
     else {
       response.status = 400
       def errors = []
@@ -189,7 +189,7 @@ class UsersController {
     render result as JSON
   }
 
-  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
   @Transactional
   def patch() {
     def user = User.get(params.id)
@@ -201,11 +201,12 @@ class UsersController {
       }
       result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
     } else {
-      response.status = 400
       def errors = []
       errors << [message: "no data found in the request", baddata: request.JSON]
       result.errors = errors
     }
+    if (result.errors != null)
+      response.status = 400
     render result as JSON
   }
 
