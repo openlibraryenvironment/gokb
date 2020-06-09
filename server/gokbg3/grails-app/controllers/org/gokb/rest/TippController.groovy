@@ -10,8 +10,10 @@ import groovyx.net.http.URIBuilder
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.ZoneId
 
 import org.gokb.cred.*
+import org.gokb.GOKbTextUtils
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 
@@ -54,13 +56,12 @@ class TippController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def show() {
     def result = [:]
-    TitleInstancePackagePlatform obj = null
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
     User user = User.get(springSecurityService.principal.id)
 
     if (params.oid || params.id) {
-      obj = TitleInstancePackagePlatform.findByUuid(params.id)
+      def obj = TitleInstancePackagePlatform.findByUuid(params.id)
 
       if (!obj) {
         obj = TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
@@ -93,47 +94,54 @@ class TippController {
   }
 
   @Transactional
-  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  @Secured(value=["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def save() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
+    def pkg = null
 
-    if (reqBody) {
-      TitleInstancePackagePlatform obj = TitleInstancePackagePlatform.upsertDTO(reqBody, user)
+    if (reqBody?.pkg) {
+      pkg = Package.get(reqBody.pkg)
+    }
 
-      if (!obj) {
-        log.debug("Could not upsert object!")
-        errors = [badData: reqBody, message:"Unable to save object!"]
-      }
-      else if (obj.hasErrors()) {
-        log.debug("Object has errors!")
-        errors = messageService.processValidationErrors(obj.errors, request.locale)
-        log.debug("${errors}")
-      }
-      else {
-        def jsonMap = obj.jsonMapping
+    if (pkg) {
+      def curator = pkg?.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
-        log.debug("Updating ${obj}")
-        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+      if (curator) {
+        def tipp_validation = TitleInstancePackagePlatform.validateDTO(reqBody)
 
-        if( obj.validate() ) {
-          if(errors.size() == 0) {
-            log.debug("No errors.. saving")
-            obj.save(flush:true)
+        if (tipp_validation.valid) {
+          def obj = TitleInstancePackagePlatform.upsertDTO(reqBody, user)
+
+          if( obj?.validate() ) {
             result = restMappingService.mapObjectToJson(obj, params, user)
+          }
+          else {
+            result.result = 'ERROR'
+            result.message = "There have been validation errors while creating the object!"
+            response.setStatus(400)
+            errors = messageService.processValidationErrors(obj.errors, request.locale)
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(422)
-          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+          response.setStatus(400)
+          result.message = "There have been validation errors!"
+          errors = tipp_validation.errors
         }
+      }
+      else {
+        result.result = 'ERROR'
+        response.setStatus(403)
+        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else {
-      errors = [badData: reqBody, message:"Unable to save platform!"]
+      result.result = 'ERROR'
+      response.setStatus(400)
+      result.message = "Package not found or empty request body!"
     }
 
     if (errors) {
@@ -144,48 +152,56 @@ class TippController {
     render result as JSON
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
+  @Secured(value=["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
   @Transactional
   def update() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstancePackagePlatform.findByUuid(params.id)
 
     if (!obj) {
       obj = TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
     }
-    def editable = obj.isEditable()
 
     if (obj?.pkg && reqBody) {
       obj.lock()
 
-      if ( editable && obj.pkg.curatoryGroups?.size() > 0 ) {
-        def cur = user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id)
+      def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
-        if (!cur) {
-          editable = false
-        }
-      }
+      if (curator) {
+        reqBody.title = obj.title.id
+        reqBody.hostPlatform = obj.hostPlatform.id
+        reqBody.pkg = obj.pkg.id
 
-      if (editable) {
+        def tipp_validation = TitleInstancePackagePlatform.validateDTO(reqBody)
 
-        def jsonMap = obj.jsonMapping
+        if (tipp_validation.valid) {
+          def jsonMap = obj.jsonMapping
 
-        restMappingService.updateObject(obj, jsonMap, reqBody)
+          obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        if( obj.validate() ) {
-          if(errors.size() == 0) {
-            log.debug("No errors.. saving")
-            obj.save(flush:true)
-            result = restMappingService.mapObjectToJson(obj, params, user)
+          obj = updateCoverage(obj, reqBody)
+
+          if( obj?.validate() ) {
+            if(errors.size() == 0) {
+              log.debug("No errors.. saving")
+              obj.save(flush:true)
+              result = restMappingService.mapObjectToJson(obj, params, user)
+            }
+          }
+          else {
+            result.result = 'ERROR'
+            response.setStatus(400)
+            errors = messageService.processValidationErrors(obj.errors, request.locale)
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(422)
-          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+          response.setStatus(400)
+          result.message = "There have been validation errors!"
+          errors = tipp_validation.errors
         }
       }
       else {
@@ -206,14 +222,88 @@ class TippController {
     render result as JSON
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
+  private def updateCoverage(tipp, reqBody) {
+    def cov_list = reqBody.coverageStatements ?: reqBody.coverage
+    def missing = tipp.coverageStatements.collect { it.id }
+    def changed = false
+
+    cov_list?.each { c ->
+      def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+      def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
+      changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tipp,'startDate')
+      changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tipp,'endDate')
+
+      if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
+        changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
+      }
+
+      def cs_match = false
+
+      tipp.coverageStatements?.each { tcs ->
+
+        if ( !cs_match && (
+            (c.id && tcs.id == c.id) ||
+            (tcs.startVolume && tcs.startVolume == c.startVolume) ||
+            (tcs.startDate && tcs.startDate == parsedStart) ||
+            (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
+        ) {
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
+            changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tcs,'startDate')
+            changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tcs,'endDate')
+
+            cs_match = true
+            missing.remove(tcs.id)
+        }
+        else if (cs_match) {
+          log.debug("Matched new coverage ${c} on multiple existing coverages!")
+        }
+      }
+
+      if (!cs_match) {
+
+        def cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+
+        tipp.addToCoverageStatements('startVolume': c.startVolume, \
+          'startIssue':c.startIssue, \
+          'endVolume': c.endVolume, \
+          'endIssue': c.endIssue, \
+          'embargo':c.embargo, \
+          'coverageDepth': cov_depth, \
+          'coverageNote': c.coverageNote, \
+          'startDate': (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null), \
+          'endDate': (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+        )
+      }
+    }
+    if (cov_list) {
+      missing.each {
+        TIPPCoverageStatement.get(it)?.delete(flush:true)
+      }
+    }
+
+    tipp
+  }
+
+  @Secured(value=["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
   @Transactional
   def delete() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
 
-    if ( obj && obj.isDeletable() ) {
+    if ( obj?.pkg && obj.isDeletable() ) {
       def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
       if ( curator || user.isAdmin() ) {
@@ -225,7 +315,7 @@ class TippController {
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
-    else if (!obj) {
+    else if ( !obj || !obj.pkg ) {
       result.result = 'ERROR'
       response.setStatus(404)
       result.message = "Package not found or empty request body!"
@@ -238,7 +328,7 @@ class TippController {
     render result as JSON
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
+  @Secured(value=["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
   @Transactional
   def retire() {
     def result = ['result':'OK', 'params': params]

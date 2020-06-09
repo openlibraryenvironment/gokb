@@ -33,12 +33,11 @@ class Identifier extends KBComponent {
       'status',
       'lastUpdated',
       'description',
-      'source'
+      'source',
+      '_links'
     ],
     'defaultLinks': [
       'namespace'
-    ],
-    'defaultEmbeds': [
     ]
   ]
 

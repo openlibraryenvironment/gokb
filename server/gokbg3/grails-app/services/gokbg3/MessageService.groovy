@@ -62,7 +62,7 @@ class MessageService {
       }
 
       if (errorMessage) {
-        result[field].add(errorMessage)
+        result[field].add([message: errorMessage, baddata: eo.rejectedValue])
       }else{
         log.debug("No message found for ${eo.codes}")
         log.debug("Default: ${MessageFormat.format(eo.defaultMessage, messageArgs)}")

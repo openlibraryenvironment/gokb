@@ -65,6 +65,7 @@ class RestMappingService {
     def sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
     def embed_active = params['_embed']?.split(',') ?: []
     def include_list = params['_include']?.split(',') ?: null
+    def exclude_list = params['_exclude']?.split(',') ?: null
     def base = grailsApplication.config.serverURL + "/rest"
     def jsonMap = null
     def is_curator = true
@@ -73,7 +74,7 @@ class RestMappingService {
 
     jsonMap = KBComponent.has(ClassUtils.deproxy(obj), 'jsonMapping') ? obj.jsonMapping : null
 
-    if (KBComponent.has(ClassUtils.deproxy(obj), "restPath")) {
+    if (KBComponent.has(ClassUtils.deproxy(obj), "restPath") && !jsonMap?.ignore?.contains('_links')) {
       result['_links'] = [:]
       result['_links']['self'] = ['href': base + obj.restPath + "/${obj.id}", 'method': "GET"]
 
@@ -81,18 +82,25 @@ class RestMappingService {
         is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
       }
 
+      if (obj.class.simpleName == TitleInstancePackagePlatform) {
+        is_curator = obj.pkg.curatoryGroups?.size() > 0 ? user?.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
+      }
+
       if (is_curator || user?.isAdmin()) {
         result._links.update = ['href': base + obj.restPath + "/${obj.id}", 'method': "PUT"]
         result._links.delete = ['href': base + obj.restPath + "/${obj.id}", 'method': "DELETE"]
-        result._links.retire = ['href': base + obj.restPath + "/${obj.id}/retire"]
+
+        if (KBComponent.isAssignableFrom(obj.class)) {
+          result._links.retire = ['href': base + obj.restPath + "/${obj.id}/retire"]
+        }
       }
     }
 
-    if (embed_active.size() > 0 || jsonMap?.defaultEmbeds) {
+    if (embed_active.size() > 0 || jsonMap?.defaultEmbeds?.size() > 0) {
       result['_embedded'] = [:]
     }
 
-    if (embed_active.size() == 0 && jsonMap?.defaultEmbeds) {
+    if (embed_active.size() == 0 && jsonMap?.defaultEmbeds?.size() > 0) {
       embed_active = jsonMap.defaultEmbeds
     }
 
@@ -576,7 +584,7 @@ class RestMappingService {
    */
 
   public def getEmbeddedJson(obj, user) {
-    def pars = ['_embed': ""]
+    def pars = ['_embed': null]
     log.debug("Embedded object ${obj}")
     mapObjectToJson(obj, pars, user)
   }

@@ -150,11 +150,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     startDate (nullable:true, blank:true)
     startVolume (nullable:true, blank:true)
     startIssue (nullable:true, blank:true)
-    endDate (validator: { val, obj ->
-      if(obj.startDate && val && (obj.hasChanged('endDate') || obj.hasChanged('startDate')) && obj.startDate > val) {
-        return ['endDate.endPriorToStart']
-      }
-    })
+    endDate (nullable:true, blank:true)
     endVolume (nullable:true, blank:true)
     endIssue (nullable:true, blank:true)
     embargo (nullable:true, blank:true)
@@ -247,11 +243,25 @@ class TitleInstancePackagePlatform extends KBComponent {
    */
   @Transient
   public static def validateDTO(tipp_dto) {
-    def result = ['valid':true, 'errors':[]]
+    def result = ['valid':true, 'errors':[:]]
+    def pkgLink = tipp_dto.pkg ?: tipp_dto.package
+    def pltLink = tipp_dto.hostPlatform ?: tipp_dto.platform
+    def tiLink = tipp_dto.title
 
-    result.valid &= (tipp_dto.pkg != null || tipp_dto.package != null)
-    result.valid &= (tipp_dto.hostPlatform != null || tipp_dto.platform != null)
-    result.valid &= tipp_dto.title != null
+    if (!pkgLink) {
+      result.valid = false
+      result.errors.pkg = [[ message: "Missing package link!", baddata: pkgLink ]]
+    }
+
+    if (!pltLink) {
+      result.valid = false
+      result.errors.hostPlatform = [[ message: "Missing platform link!", baddata: pltLink ]]
+    }
+
+    if (!tiLink) {
+      result.valid = false
+      result.errors.title = [[ message: "Missing title link!", baddata: tiLink ]]
+    }
 
     if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
       tipp_dto.coverage = tipp_dto.coverageStatements
@@ -263,22 +273,22 @@ class TitleInstancePackagePlatform extends KBComponent {
 
         if (coverage.startDate && !parsedStart) {
           result.valid = false
-          result.errors.add("Unable to parse coverage start date ${coverage.startDate}!")
+          result.errors.startDate = [[message:"Unable to parse coverage start date ${coverage.startDate}!", baddata: coverage.startDate]]
         }
 
         if (coverage.endDate && !parsedEnd) {
           result.valid = false
-          result.errors.add("Unable to parse coverage end date ${coverage.endDate}!")
+          result.errors.endDate = [[message: "Unable to parse coverage end date ${coverage.endDate}!", baddata: coverage.endDate]]
         }
 
         if ( !['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase()) ) {
           result.valid = false
-          result.errors.add("Unrecognized value '${coverage.coverageDepth}' for coverage depth")
+          result.errors.coverageDepth = [[message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]]
         }
 
         if (parsedStart && parsedEnd && (parsedEnd < parsedStart)) {
           result.valid = false
-          result.errors.add("Coverage end date must not be prior to its start date!")
+          result.errors.endDate = [[message:"Coverage end date must not be prior to its start date!", baddata: coverage.endDate]]
         }
     }
 
@@ -309,6 +319,8 @@ class TitleInstancePackagePlatform extends KBComponent {
       else {
         pkg = Package.get(pkg_info)
       }
+
+      log.debug("Package lookup: ${pkg}")
     }
 
     if (tipp_dto.hostPlatform || tipp_dto.platform) {
@@ -320,17 +332,21 @@ class TitleInstancePackagePlatform extends KBComponent {
       else {
         plt = Platform.get(plt_info)
       }
+
+      log.debug("Platform lookup: ${plt}")
     }
     
     if (tipp_dto.title) {
-      def title_info = tipp_dto.hostPlatform ?: tipp_dto.platform
+      def title_info = tipp_dto.title
 
       if (title_info instanceof Map) {
         ti = TitleInstance.get(title_info.id ?: title_info.internalId)
       }
       else {
-        ti = Platform.get(title_info)
+        ti = TitleInstance.get(title_info)
       }
+
+      log.debug("Title lookup: ${ti}")
     }
 
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
@@ -503,6 +519,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           tipp.coverageStatements?.each { tcs ->
 
             if ( !cs_match && (
+                (c.id && tcs.id == c.id) ||
                 (tcs.startVolume && tcs.startVolume == c.startVolume) ||
                 (tcs.startDate && tcs.startDate == parsedStart) ||
                 (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
@@ -543,6 +560,9 @@ class TitleInstancePackagePlatform extends KBComponent {
 //         tipp.save(flush:true, failOnError:true);
       }
       result = tipp;
+    }
+    else {
+      log.debug("Not able to reference TIPP: ${tipp_dto}")
     }
 
     result;

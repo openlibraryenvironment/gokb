@@ -175,7 +175,9 @@ class PlatformController {
 
         def jsonMap = obj.jsonMapping
 
-        restMappingService.updateObject(obj, jsonMap, reqBody)
+        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+
+        updateCombos(obj, reqBody)
 
         if( obj.validate() ) {
           if(errors.size() == 0) {

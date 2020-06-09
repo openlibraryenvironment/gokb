@@ -605,23 +605,19 @@ class TitleInstance extends KBComponent {
    */
   @Transient
   public static def validateDTO(titleDTO) {
-    def result = ['valid':true, 'errors':[]]
+    def result = ['valid':true, 'errors':[:]]
 
-    if (titleDTO == null) {
+    if (titleDTO?.name?.trim() == false) {
       result.valid = false
-      result.errors.add("No title information given!")
+      result.errors.name =  [[message: "Missing title name!", baddata: titleDTO.name]]
       return result
     }
+    
+    def ids_list = titleDTO.identifiers ?: titleDTO.ids
 
-    if (titleDTO.name == null || !titleDTO.name.trim()) {
+    if (ids_list == null) {
       result.valid = false
-      result.errors.add("Missing title name!")
-      return result
-    }
-
-    if (titleDTO.identifiers == null ) {
-      result.valid = false
-      result.errors.add("Title has no identifiers!")
+      result.errors.ids = [[message: "Title has no identifiers!"]]
       return result
     }
 
@@ -630,20 +626,22 @@ class TitleInstance extends KBComponent {
 
     if ( titleDTO.publishedFrom && !startDate ) {
       result.valid = false
-      result.errors.add("Unable to parse publishing start date ${titleDTO.publishedFrom}!")
+      result.errors.publishedFrom = [[message:"Unable to parse publishing start date ${titleDTO.publishedFrom}!", baddata: titleDTO.publishedFrom]]
     }
 
     if ( titleDTO.publishedTo && !endDate ) {
       result.valid = false
-      result.errors.add("Unable to parse publishing end date ${titleDTO.publishedTo}!")
+      result.errors.publishedTo = [[message:"Unable to parse publishing end date ${titleDTO.publishedTo}!", baddata: titleDTO.publishedTo]]
     }
 
     if (startDate && endDate && (endDate < startDate)) {
       result.valid = false
-      result.errors.add("Publishing end date must not be prior to its start date!")
+      result.errors.publishedTo = [[message:"Publishing end date must not be prior to its start date!", baddata: titleDTO.publishedTo]]
     }
 
-    titleDTO.identifiers.each { idobj ->
+    def id_errors = []
+
+    ids_list.each { idobj ->
       if (idobj.type && idobj.value) {
         def found_ns = IdentifierNamespace.findByValue(idobj.type.toLowerCase())
         def final_val = idobj.value
@@ -656,7 +654,7 @@ class TitleInstance extends KBComponent {
           if (!Identifier.findByNamespaceAndNormname(found_ns, Identifier.normalizeIdentifier(final_val))) {
             if ( (Identifier.nameSpaceRules[found_ns.value] && !(final_val ==~ Identifier.nameSpaceRules[found_ns.value])) || (found_ns.pattern && !(final_val ==~ found_ns.pattern)) ) {
               log.warn("Validation for ${found_ns.value}:${final_val} failed!")
-              result.errors.add("Validation for identifier ${found_ns.value}:${final_val} failed!")
+              id_errors.add([message:"Validation for identifier ${found_ns.value}:${final_val} failed!", baddata: idobj])
               result.valid = false
             }
           }
@@ -664,9 +662,13 @@ class TitleInstance extends KBComponent {
       }
       else {
         log.warn("Missing information in id object ${idobj}")
-        result.errors.add("Missing information for identifier object ${idobj}!")
+        id_errors.add([message:"Missing information for identifier object!", baddata: idobj])
         result.valid = false
       }
+    }
+
+    if (id_errors.size() > 0) {
+      result.errors.ids = id_errors
     }
 
     if ( !result ) {
