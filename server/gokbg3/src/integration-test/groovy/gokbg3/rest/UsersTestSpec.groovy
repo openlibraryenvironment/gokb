@@ -158,14 +158,14 @@ class UsersTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    Map bodyData = [data: [
+    Map bodyData = [
       displayName     : "DisplayName",
       password        : "someOther",
       enabled         : false,
       defaultPageSize : 18,
       roleIds         : [2, 3, 5],
       curatoryGroupIds: []
-    ]]
+    ]
 
     def bodyText = bodyData as JSON
     RestResponse resp = rest.patch("${urlPath}/rest/users/$altUser.id") {
