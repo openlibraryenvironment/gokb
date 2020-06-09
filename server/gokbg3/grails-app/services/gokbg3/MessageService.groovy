@@ -66,7 +66,7 @@ class MessageService {
       }else{
         log.debug("No message found for ${eo.codes}")
         log.debug("Default: ${MessageFormat.format(eo.defaultMessage, messageArgs)}")
-        result[field].add("${MessageFormat.format(eo.defaultMessage, messageArgs)}")
+        result[field].add([message:"${MessageFormat.format(eo.defaultMessage, messageArgs)}", baddata: eo.rejectedValue])
       }
     }
     result
