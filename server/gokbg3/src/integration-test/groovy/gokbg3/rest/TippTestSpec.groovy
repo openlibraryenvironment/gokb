@@ -35,11 +35,12 @@ class TippTestSpec extends AbstractAuthSpec {
     testPackage = Package.findByName("TippTestPack") ?: new Package(name: "TippTestPack").save(flush: true)
     testPlatform = Platform.findByName("TippTestPlat") ?: new Platform(name: "TippTestPlat").save(flush: true)
     testTitle = JournalInstance.findByName("TippTestJournal") ?: new JournalInstance(name: "TippTestJournal").save(flush: true)
-    testGroup = CuratoryGroup.findByName("cgtipptest") ?: new CuratoryGroup(name: "cgtest1").save(flush: true)
+    testGroup = CuratoryGroup.findByName("cgtipptest") ?: new CuratoryGroup(name: "cgtipptest").save(flush: true)
   }
 
   def cleanup() {
     if (last) {
+      sleep(500)
       Package.findByName("TippTestPack")?.expunge()
       Platform.findByName("TippTestPlat")?.expunge()
       JournalInstance.findByName("TippTestJournal")?.expunge()
