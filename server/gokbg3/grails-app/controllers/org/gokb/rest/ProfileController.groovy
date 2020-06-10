@@ -56,7 +56,7 @@ class ProfileController {
 
   @Transactional
   def update() {
-    def result = [:]
+    Map result = [:]
     User user = User.get(springSecurityService.principal.id)
     def reqData = request.JSON
     reqData.remove('new_password')
@@ -68,6 +68,7 @@ class ProfileController {
   @Secured(value = ['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
   @Transactional
   def patch() {
+    Map result = [:]
     Map reqData = request.JSON
     User user = User.get(springSecurityService.principal.id)
     if (reqData.new_password && reqData.password) {
@@ -83,7 +84,7 @@ class ProfileController {
     }
     reqData.remove('new_password')
     reqData.remove('password')
-    def result = userProfileService.update(user, reqData, params, user)
+    result = userProfileService.update(user, reqData, params, user)
     if (result.errors!=null)
       response.status=400
     render result as JSON

@@ -75,7 +75,7 @@ class UserProfileService {
         errors << [message: "property $field is immutable!",
                    baddata: value]
       }
-      if (field in adminAttributes && !adminUser.isAdmin() && (user[field] != value)) {
+      if (field in adminAttributes && !adminUser.isAdmin()) {
         errors << [message: "user $adminUser.username is not allowed to change property $field of user $user.username",
                    baddata: field]
       }
