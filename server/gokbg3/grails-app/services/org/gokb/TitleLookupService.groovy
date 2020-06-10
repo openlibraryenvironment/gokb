@@ -20,7 +20,7 @@ class TitleLookupService {
     log.debug("Init");
   }
 
-  private Map class_one_match (def ids) {
+  private Map class_one_match (def ids, ti_class) {
 
     // Get the class 1 identifier namespaces.
     Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
@@ -94,7 +94,7 @@ class TitleLookupService {
           KBComponent dproxied = ClassUtils.deproxy(c);
 
           // Only add if it's a title.
-          if ( dproxied instanceof TitleInstance ) {
+          if ( dproxied instanceof ti_class ) {
             title_match = true
             TitleInstance the_ti = (dproxied as TitleInstance)
             // Don't add repeated matches
@@ -221,6 +221,7 @@ class TitleLookupService {
 
     // The TitleInstance
     TitleInstance the_title = null
+    Class ti_class = Class.forName(className)
     def title_created = false
 
     if (metadata.title == null) {
@@ -239,7 +240,7 @@ class TitleLookupService {
     }
 
     // Lookup any class 1 identifier matches
-    def results = class_one_match (metadata.identifiers)
+    def results = class_one_match (metadata.identifiers, ti_class)
 
     // The matches.
     List< KBComponent> matches = results['matches'] as List
@@ -260,8 +261,7 @@ class TitleLookupService {
             the_title.normname = KBComponent.generateNormname(metadata.title);
           }
           else {
-            def clazz = Class.forName(newTitleClassName)
-            the_title = clazz.newInstance()
+            the_title = ti_class.newInstance()
             the_title.name = metadata.title
             the_title.normname = KBComponent.generateNormname(metadata.title);
             // the_title.editStatus = 
@@ -321,8 +321,7 @@ class TitleLookupService {
               the_title = new TitleInstance(name:metadata.title, normname:KBComponent.generateNormname(metadata.title), ids:[])
             }
             else {
-              def clazz = Class.forName(newTitleClassName)
-              the_title = clazz.newInstance()
+              the_title = ti_class.newInstance()
               the_title.name = metadata.title
               the_title.normname = KBComponent.generateNormname(metadata.title)
               the_title.ids = []
@@ -447,8 +446,7 @@ class TitleLookupService {
                   the_title = new TitleInstance(name:metadata.title, normname:KBComponent.generateNormname(metadata.title), ids:[])
                 }
                 else {
-                  def clazz = Class.forName(newTitleClassName)
-                  the_title = clazz.newInstance()
+                  the_title = ti_class.newInstance()
                   the_title.name = metadata.title
                   the_title.normname = KBComponent.generateNormname(metadata.title)
                   the_title.ids = []
@@ -529,8 +527,7 @@ class TitleLookupService {
               the_title = new TitleInstance(name:metadata.title, normname:KBComponent.generateNormname(metadata.title), ids:[])
             }
             else {
-              def clazz = Class.forName(newTitleClassName)
-              the_title = clazz.newInstance()
+              the_title = ti_class.newInstance()
               the_title.name = metadata.title
               the_title.normname = KBComponent.generateNormname(metadata.title)
               the_title.ids = []

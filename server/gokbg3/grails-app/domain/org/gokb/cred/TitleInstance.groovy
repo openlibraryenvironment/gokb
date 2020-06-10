@@ -615,12 +615,6 @@ class TitleInstance extends KBComponent {
     
     def ids_list = titleDTO.identifiers ?: titleDTO.ids
 
-    if (ids_list == null) {
-      result.valid = false
-      result.errors.ids = [[message: "Title has no identifiers!"]]
-      return result
-    }
-
     LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
     LocalDateTime endDate = GOKbTextUtils.completeDateString(titleDTO.publishedTo, false)
 
@@ -641,7 +635,7 @@ class TitleInstance extends KBComponent {
 
     def id_errors = []
 
-    ids_list.each { idobj ->
+    ids_list?.each { idobj ->
       if (idobj.type && idobj.value) {
         def found_ns = IdentifierNamespace.findByValue(idobj.type.toLowerCase())
         def final_val = idobj.value
