@@ -33,6 +33,7 @@ class TitleLookupService {
       "class_one"         : false,
       "ids"               : [],
       "matches"           : [] as Set,
+      "other_matches"     : [] as Set,
       "x_check_matches"   : [] as Set,
       "other_identifiers" : [] as Set
     ]
@@ -66,7 +67,7 @@ class TitleLookupService {
       }
       
       // is a class 1 identifier.
-      if (id_def.type && id_def.value && class_one_ids.contains(id_def.type) ) {
+      if ( id_def.type && id_def.value ) {
 
         log.debug("Attempt match using component ${id_def}");
 
@@ -78,8 +79,13 @@ class TitleLookupService {
         // Add the id.
         result['ids'] << the_id
 
+        def match_type = "other_matches"
+
         // Flag class one is present.
-        result['class_one'] = true
+        if (class_one_ids.contains(id_def.type)) {
+          match_type = "matches"
+          result['class_one'] = true
+        }
 
         // Flag for title match
         boolean title_match = false
@@ -94,16 +100,16 @@ class TitleLookupService {
           KBComponent dproxied = ClassUtils.deproxy(c);
 
           // Only add if it's a title.
-          if ( dproxied instanceof ti_class ) {
+          if ( ti_class.isAssignableFrom(dproxied) ) {
             title_match = true
             TitleInstance the_ti = (dproxied as TitleInstance)
             // Don't add repeated matches
-            if ( result['matches'].contains(the_ti) ) {
+            if ( result[match_type].contains(the_ti) ) {
               log.debug("Not adding duplicate");
             }
             else {
               log.debug("Adding ${the_ti} (title_match = ${title_match})");
-              result['matches'] << the_ti
+              result[match_type] << the_ti
             }
           }
           else {
@@ -276,14 +282,19 @@ class TitleLookupService {
         } else {
 
           // No class 1s supplied we should try and find a match on the title string.
-          log.debug ("No class 1 ids supplied. attempting string match")
+          if (results['other_matches'].size() > 0){
 
-          // The hash we use is constructed differently based on the type of items.
-          // Serial hashes are based soley on the title, Monographs are based currently on title+primary author surname
-          def target_hash = null;
+          }
+          else {
+            log.debug ("No class 1 ids supplied. attempting string match")
 
-          // Lookup using title string match only.
-          the_title = attemptComponentMatch (metadata, newTitleClassName)
+            // The hash we use is constructed differently based on the type of items.
+            // Serial hashes are based soley on the title, Monographs are based currently on title+primary author surname
+            def target_hash = null;
+
+            // Lookup using title string match only.
+            the_title = attemptComponentMatch (metadata, newTitleClassName)
+          }
 
           if (the_title) {
             log.debug("TI ${the_title} matched by bucket.")
@@ -395,7 +406,7 @@ class TitleLookupService {
           if ( matches[0].name.startsWith("Unknown Title") || metadata.status == "Expected" ) {
             // If we have an unknown title in the db, and a real title, then take that
             // in preference
-            log.debug("Found new Title ${metadata.name} for previously unknown title ${matches[0]} (${matches[0].name})")
+            log.debug("Found new Title ${metadata.title} for previously unknown title ${matches[0]} (${matches[0].name})")
             the_title = matches[0]
             the_title.name = metadata.title
             the_title.status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
