@@ -76,26 +76,23 @@ class ProfileController {
         user.password = reqData.new_password
         user.save(flush: true, failOnError: true);
       } else {
-//        result.data = user
         response.status = 400
-        result.error = [message: "wrong password - profile unchanged"]
+        result.errors = [password: [message: "wrong password - profile unchanged", code: null]]
         render result as JSON
       }
     }
     reqData.remove('new_password')
     reqData.remove('password')
     result = userProfileService.update(user, reqData, params, user)
-    if (result.errors!=null)
-      response.status=400
+    if (result.errors != null)
+      response.status = 400
     render result as JSON
   }
 
   @Secured(value = ['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
-    userProfileService.delete(User.get(springSecurityService.principal.id))
-    def result = [:]
+    userProfileService.delete()
     response.status = 204
-    render result as JSON
   }
 }

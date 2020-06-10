@@ -6,6 +6,7 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import org.gokb.cred.UserRole
@@ -18,6 +19,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest
   private User normalUser
+  private CuratoryGroup cg
 
   @Transactional
   def setup() {
@@ -31,6 +33,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     if (!normalUser.hasRole('ROLE_USER')) {
       UserRole.create normalUser, roleUser
     }
+    cg = CuratoryGroup.findByName("UserTestGroup") ?: new CuratoryGroup(name: "UserTestGroup").save(flush: true)
   }
 
   @Transactional
@@ -39,6 +42,8 @@ class ProfileTestSpec extends AbstractAuthSpec {
       ur.delete(flush: true)
     }
     User.findByUsername("normalUser")?.delete(flush: true)
+    CuratoryGroup group = CuratoryGroup.findByName(cg.name)
+    group.expunge()
   }
 
   void "test GET /rest/profile without token"() {
@@ -101,15 +106,11 @@ class ProfileTestSpec extends AbstractAuthSpec {
 
   void "test PUT /rest/profile"() {
     def urlPath = getUrlPath()
-    // use the bearerToken to write to /rest/profile/update
     when:
     String accessToken = getAccessToken("normalUser", "normalUser")
     Map bodyData = [displayName    : null,
                     email          : "MrX@localhost",
-                    enabled        : true,
-                    accountExpired : false,
-                    accountLocked  : false,
-                    passwordExpired: false,
+       //             curatoryGroupIds: [cg.id],
                     defaultPageSize: 10
     ]
     RestResponse resp = rest.put("${urlPath}/rest/profile") {
@@ -132,6 +133,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     Map bodyData = [
       displayName : "tempo",
       email       : "frank@gmail.com",
+  //    curatoryGroupIds: [cg.id],
       password    : "normalUser",
       new_password: "roles"
     ]
@@ -177,11 +179,12 @@ class ProfileTestSpec extends AbstractAuthSpec {
     when:
     String accessToken = getAccessToken('normalUser', 'normalUser')
     Map bodyData = [
-      username    : "sRsLy?",
-      displayName : "tempo",
-      email       : "frank@gmail.com",
-      password    : "normalUser",
-      new_password: "roles"
+      username        : "sRsLy?",
+      displayName     : "tempo",
+      email           : "frank@gmail.com",
+      password        : "normalUser",
+      curatoryGroupIds: [cg.id],
+      new_password    : "roles"
     ]
     RestResponse resp = rest.patch("${urlPath}/rest/profile") {
       // headers

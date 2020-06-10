@@ -67,17 +67,17 @@ class UserProfileService {
     def adminAttributes = ['roleIds', 'password', 'curatoryGroupIds', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
 
     if (!adminUser.isAdmin() && user != adminUser) {
-      errors << [message: "user $adminUser.username is not allowed to change properties of user $user.username",
-                 baddata: user.username]
+      errors << [user: [message: "user $adminUser.username is not allowed to change properties of user $user.username",
+                        baddata: user.username, code: null]]
     }
     data.each { field, value ->
       if (field in immutables && (user[field] != value)) {
-        errors << [message: "property $field is immutable!",
-                   baddata: value]
+        errors << [$field: [message: "property is immutable!",
+                            baddata: value, code: null]]
       }
       if (field in adminAttributes && !adminUser.isAdmin()) {
-        errors << [message: "user $adminUser.username is not allowed to change property $field of user $user.username",
-                   baddata: field]
+        errors << [user: [message: "user $adminUser.username is not allowed to change property $field of user $user.username",
+                          baddata: field, code: null]]
       }
     }
     if (errors.size() > 0) {
@@ -91,7 +91,7 @@ class UserProfileService {
     User user = new User()
     Role roleUser = Role.findByAuthority("ROLE_USER")
     if (!data.roleIds)
-      data.roleIds=[]
+      data.roleIds = []
     data.roleIds << roleUser.id
     return modifyUser(user, data)
   }
@@ -106,7 +106,7 @@ class UserProfileService {
     data.each { field, value ->
       if (field != "roleIds" && field != "curatoryGroupIds" && !user.hasProperty(field)) {
         log.error("property user.$field is unknown!")
-        errors << [message: "$field is unknown", baddata: field]
+        errors << [$field: [message: "unknown", baddata: field, code: null]]
       } else {
         if (field == "roleIds") {
           // change roles
@@ -117,7 +117,7 @@ class UserProfileService {
               newRoles.add(newRole)
             } else {
               log.error("Role ID $roleId not found!")
-              errors << [message: "role ID $roleId is unknown", baddata: roleId]
+              errors << [role: [message: "role ID is unknown", baddata: roleId, code: null]]
             }
           }
           // alter role set
@@ -151,7 +151,7 @@ class UserProfileService {
               curGroups.add(cg_obj)
             } else {
               log.error("CuratoryGroup ID ${cgId} not found!")
-              errors << [message: "unknown CuratoryGroup ID $cgId", baddata: cgId]
+              errors << [curatoryGroup: [message: "unknown CuratoryGroup ID", baddata: cgId, code: null]]
               result.errors = errors
               return result
             }
@@ -170,17 +170,15 @@ class UserProfileService {
 
     if (errors.size() == 0) {
       if (user.validate()) {
-        user=user.merge(flush: true, failOnError: true)
+        user = user.merge(flush: true, failOnError: true)
         if (newUser) {
           // create & connect roles
           newRoles.each { role ->
             UserRole.create(user, role).save(flush: true)
           }
         }
-        result.message = "User profile sucessfully ${newUser ? 'created' : 'changed'}."
         result.data = collectUserProps(user)
       } else {
-        result.message = "There have been errors saving the user object."
         result.errors = user.errors.allErrors
       }
     } else {
