@@ -227,7 +227,7 @@ class TitleLookupService {
 
     // The TitleInstance
     TitleInstance the_title = null
-    Class ti_class = Class.forName(className)
+    Class ti_class = Class.forName(newTitleClassName)
     def title_created = false
 
     if (metadata.title == null) {
