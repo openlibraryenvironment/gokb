@@ -100,7 +100,7 @@ class TitleLookupService {
           KBComponent dproxied = ClassUtils.deproxy(c);
 
           // Only add if it's a title.
-          if ( ti_class.isAssignableFrom(dproxied) ) {
+          if ( ti_class.isInstance(dproxied) ) {
             title_match = true
             TitleInstance the_ti = (dproxied as TitleInstance)
             // Don't add repeated matches
