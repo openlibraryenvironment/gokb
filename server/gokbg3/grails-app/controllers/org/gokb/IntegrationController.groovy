@@ -927,28 +927,31 @@ class IntegrationController {
                     }
                     else {
                       def valid_ti = true
-                      def ti = null
 
-                      try {
-                        ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
+                      TitleInstance.withNewSession {
+                        def ti = null
 
-                        if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
+                        try {
+                          ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
-                          componentUpdateService.ensureCoreData(ti, tipp.title, fullsync)
-                          tipp.title.internalId = ti.id
-                        } else {
-                          if (ti != null)
-                            ti.discard()
+                          if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
+
+                            componentUpdateService.ensureCoreData(ti, tipp.title, fullsync)
+                            tipp.title.internalId = ti.id
+                          } else {
+                            if (ti != null)
+                              ti.discard()
+                            valid_ti = false
+                            valid = false
+                            errors.add(['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'baddata': tipp])
+                          }
+                        }
+                        catch (grails.validation.ValidationException ve) {
+                          log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
                           valid = false
-                          errors.add(['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'baddata': tipp])
+                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ti.errors)])
                         }
-                      }
-                      catch (grails.validation.ValidationException ve) {
-                        log.error("ValidationException attempting to cross reference title",ve);
-                        valid_ti = false
-                        valid = false
-                        errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ti.errors)])
                       }
 
                       if ( valid_ti && tipp.title.internalId == null ) {

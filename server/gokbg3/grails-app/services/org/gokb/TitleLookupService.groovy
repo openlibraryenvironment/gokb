@@ -622,7 +622,7 @@ class TitleLookupService {
           the_title.save(flush:true)
         }
         else {
-          the_title.merge(flush:true)
+          the_title = the_title.merge(flush:true)
         }
       }
       else {

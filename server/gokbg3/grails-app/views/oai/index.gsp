@@ -26,6 +26,9 @@
                         <li><g:link controller='oai' action='index' id='orgs' params="${[verb:'Identify']}">Identify Orgs</g:link></li>
                         <li><g:link controller='oai' action='index' id='orgs' params="${[verb:'ListRecords',metadataPrefix:'gokb']}">Get [full] Orgs</g:link></li>
                         <li><g:link controller='oai' action='index' id='orgs' params="${[verb:'ListRecords',metadataPrefix:'oai_dc']}">Get [oai_dc] Orgs</g:link></li>
+                        <li><g:link controller='oai' action='index' id='orgs' params="${[verb:'Identify']}">Identify Platforms</g:link></li>
+                        <li><g:link controller='oai' action='index' id='platforms' params="${[verb:'ListRecords',metadataPrefix:'gokb']}">Get [full] Platforms</g:link></li>
+                        <li><g:link controller='oai' action='index' id='platforms' params="${[verb:'ListRecords',metadataPrefix:'oai_dc']}">Get [oai_dc] Platforms</g:link></li>
                     </ul>
                 </div>
             </div>
