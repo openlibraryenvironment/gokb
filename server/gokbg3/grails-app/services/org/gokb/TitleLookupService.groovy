@@ -283,9 +283,16 @@ class TitleLookupService {
 
           // No class 1s supplied we should try and find a match on the title string.
           if (results['other_matches'].size() > 0){
-
+            if (results['other_matches'].size() == 1) {
+              log.debug("Matched item by secondary ID ..")
+              the_title = results['other_matches'][0]
+            }
+            else if (results['other_matches'].size() > 1) {
+              log.debug("Multiple matches by secondary ID!")
+            }
           }
-          else {
+
+          if (!the_title) {
             log.debug ("No class 1 ids supplied. attempting string match")
 
             // The hash we use is constructed differently based on the type of items.
