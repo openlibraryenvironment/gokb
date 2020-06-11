@@ -1117,7 +1117,7 @@ class IntegrationController {
                         upserted_tipp.retire()
                         num_removed_tipps++;
                       }
-                      else if ( upserted_tipp && upserted_tipp.status != status_current && tipp.status == "Current" ) {
+                      else if ( upserted_tipp && upserted_tipp.status != status_current && (!tipp.status || tipp.status == "Current") ) {
                         upserted_tipp.setActive()
                       }
                     } 
