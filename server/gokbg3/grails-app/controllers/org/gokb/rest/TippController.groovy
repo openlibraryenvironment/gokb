@@ -249,13 +249,15 @@ class TippController {
       }
 
       def cs_match = false
+      def startAsDate = (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      def endAsDate = (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
 
       tipp.coverageStatements?.each { tcs ->
 
         if ( !cs_match && (
             (c.id && tcs.id == c.id) ||
             (tcs.startVolume && tcs.startVolume == c.startVolume) ||
-            (tcs.startDate && tcs.startDate == parsedStart) ||
+            (tcs.startDate && tcs.startDate == startAsDate) ||
             (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
         ) {
             changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
@@ -286,14 +288,14 @@ class TippController {
           'embargo':c.embargo, \
           'coverageDepth': cov_depth, \
           'coverageNote': c.coverageNote, \
-          'startDate': (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null), \
-          'endDate': (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+          'startDate': startAsDate, \
+          'endDate': endAsDate
         )
       }
     }
     if (cov_list) {
       missing.each {
-        TIPPCoverageStatement.get(it)?.delete(flush:true)
+        tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(it))
       }
     }
 

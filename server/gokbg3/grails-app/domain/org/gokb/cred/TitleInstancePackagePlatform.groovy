@@ -560,13 +560,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           def cs_match = false
+          def startAsDate = (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+          def endAsDate = (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
 
           tipp.coverageStatements?.each { tcs ->
 
             if ( !cs_match && (
                 (c.id && tcs.id == c.id) ||
                 (tcs.startVolume && tcs.startVolume == c.startVolume) ||
-                (tcs.startDate && tcs.startDate == parsedStart) ||
+                (tcs.startDate && tcs.startDate == startAsDate) ||
                 (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
             ) {
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
@@ -596,8 +598,8 @@ class TitleInstancePackagePlatform extends KBComponent {
              'embargo':c.embargo, \
              'coverageDepth': cov_depth, \
              'coverageNote': c.coverageNote, \
-             'startDate': (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null), \
-             'endDate': (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+             'startDate': startAsDate, \
+             'endDate': endAsDate
             )
           }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
@@ -611,6 +613,108 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
 
     result;
+  }
+
+
+  @Transient
+  static def oaiConfig = [
+    id:'tipps',
+    textDescription:'TIPP repository for GOKb',
+    query:" from TitleInstancePackagePlatform as o ",
+    pageSize:10
+  ]
+
+  /**
+   *  Render this tipp as OAI_dc
+   */
+  @Transient
+  def toOaiDcXml(builder, attr) {
+    builder.'dc'(attr) {
+      'dc:title' (title.name)
+    }
+  }
+
+  /**
+   *  Render this TIPP as GoKBXML
+   */
+  @Transient
+  def toGoKBXml(builder, attr) {
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    def linked_pkg = getPkg()
+    def ti = getTitle()
+
+    builder.'gokb' (attr) {
+      builder.'tipp' ([id:(id), uuid:(uuid)]) {
+        builder.'status' (status?.value)
+        builder.'lastUpdated' (lastUpdated?sdf.format(lastUpdated):null)
+        builder.'format' (format?.value)
+        builder.'url'(url?:"")
+        builder.'title' ([id:ti.id, uuid:ti.uuid]) {
+          builder.'name' (ti.name?.trim())
+          builder.'type' (titleClass)
+          builder.'status' (ti.status?.value)
+          builder.'identifiers' {
+            titleIds.each { tid ->
+              builder.'identifier'([namespace:tid[0], value:tid[1], type:tid[2]])
+            }
+          }
+        }
+        builder.'package'([id:linked_pkg.id, uuid: linked_pkg.uuid]) {
+          'name' (linked_pkg.name)
+          'status' (linked_pkg.status?.value)
+          'editStatus' (linked_pkg.editStatus?.value)
+          'listStatus' (linked_pkg.listStatus?.value)
+          'listVerifiedDate' (linked_pkg.listVerifiedDate?sdf.format(linked_pkg.listVerifiedDate):null)
+          'lastUpdated' (linked_pkg.lastUpdated?sdf.format(linked_pkg.lastUpdated):null)
+          'contentType' (linked_pkg.contentType?.value)
+          if (linked_pkg.provider) {
+            builder.'provider' ([id:linked_pkg.provider?.id, uuid:linked_pkg.provider?.uuid]) {
+              'name' (linked_pkg.provider?.name)
+              'mision' (linked_pkg.provider?.mission?.value)
+            }
+          }
+          else {
+            builder.'provider' ()
+          }
+        }
+        builder.'platform'([id:hostPlatform.id, uuid:hostPlatform.uuid]) {
+          'primaryUrl' (hostPlatform.primaryUrl?.trim())
+          'name' (hostPlatform.name?.trim())
+        }
+        'access'([start:(accessStartDate ? sdf.format(accessStartDate):null), end:(accessEndDate?sdf.format(accessEndDate):null)])
+        def cov_statements = getCoverageStatements()
+        if(cov_statements?.size() > 0){
+          cov_statements.each { tcs ->
+            'coverage'(
+              startDate:(tcs.startDate?sdf.format(tcs.startDate):null),
+              startVolume:(tcs.startVolume),
+              startIssue:(tcs.startIssue),
+              endDate:(tcs.endDate?sdf.format(tcs.endDate):null),
+              endVolume:(tcs.endVolume),
+              endIssue:(tcs.endIssue),
+              coverageDepth:(tcs.coverageDepth?.value?:null),
+              coverageNote:(tcs.coverageNote),
+              embargo: (tcs.embargo)
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Transient
+  public getTitleIds() {
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[title,refdata_ids,status_active],[readOnly:true]);
+    result
+  }
+
+  @Transient
+  public getTitleClass() {
+    def result = KBComponent.get(title.id)?.class.getSimpleName();
+
+    result
   }
 
 }
