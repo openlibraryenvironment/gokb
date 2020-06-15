@@ -37,12 +37,15 @@ class PackageTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
-    Package.findByName("TestPack")?.refresh()?.expunge()
-    Package.findByName("UpdPack")?.refresh()?.expunge()
-    Package.findByName("TestPackageWithTipps")?.refresh()?.expunge()
-    CuratoryGroup.findByName("cgtest1")?.refresh()?.expunge()
-    JournalInstance.findByName("PackTestTitle")?.refresh()?.expunge()
-    Platform.findByName("PackTestPlt")?.refresh()?.expunge()
+    if (last) {
+      sleep(500)
+      Package.findByName("TestPack")?.refresh()?.expunge()
+      Package.findByName("UpdPack")?.refresh()?.expunge()
+      Package.findByName("TestPackageWithTipps")?.refresh()?.expunge()
+      CuratoryGroup.findByName("cgtest1")?.refresh()?.expunge()
+      JournalInstance.findByName("PackTestTitle")?.refresh()?.expunge()
+      Platform.findByName("PackTestPlt")?.refresh()?.expunge()
+    }
   }
 
   void "test /rest/packages/<id> without token"() {

@@ -28,6 +28,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
+    sleep(500)
     test_id?.refresh().expunge()
     test_journal?.refresh().expunge()
   }

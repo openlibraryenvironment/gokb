@@ -35,6 +35,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
 
   @Transactional
   def cleanup() {
+    sleep(200)
     UserRole.findAllByUser(normalUser)?.each { ur ->
       ur.delete(flush: true)
     }

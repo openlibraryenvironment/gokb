@@ -782,7 +782,7 @@ class AjaxSupportController {
       }
       else {
         def binding_properties = [:]
-        binding_properties[ params.name ] = params.value
+        binding_properties[ params.name ] = params.value?.trim() ?: null
         bindData(target_object, binding_properties)
       }
 

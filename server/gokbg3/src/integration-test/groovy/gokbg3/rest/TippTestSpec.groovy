@@ -107,6 +107,7 @@ class TippTestSpec extends AbstractAuthSpec {
 
   void "test /rest/tipps/<id> PUT"() {
     given:
+    sleep(200)
     def tipp = TitleInstancePackagePlatform.findByUrl("http://host-url.test/old")
     def upd_body = [
       pkg: testPackage.id,
