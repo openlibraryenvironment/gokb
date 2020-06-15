@@ -6,6 +6,7 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import org.gokb.cred.UserRole
@@ -18,6 +19,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest
   private User normalUser
+  private CuratoryGroup cg
 
   @Transactional
   def setup() {
@@ -31,6 +33,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     if (!normalUser.hasRole('ROLE_USER')) {
       UserRole.create normalUser, roleUser
     }
+    cg = CuratoryGroup.findByName("UserTestGroup") ?: new CuratoryGroup(name: "UserTestGroup").save(flush: true)
   }
 
   @Transactional
@@ -40,6 +43,8 @@ class ProfileTestSpec extends AbstractAuthSpec {
       ur.delete(flush: true)
     }
     User.findByUsername("normalUser")?.delete(flush: true)
+    CuratoryGroup group = CuratoryGroup.findByName(cg.name)
+    group.expunge()
   }
 
   void "test GET /rest/profile without token"() {
@@ -102,17 +107,13 @@ class ProfileTestSpec extends AbstractAuthSpec {
 
   void "test PUT /rest/profile"() {
     def urlPath = getUrlPath()
-    // use the bearerToken to write to /rest/profile/update
     when:
     String accessToken = getAccessToken("normalUser", "normalUser")
-    Map bodyData = [data: [displayName    : null,
-                           email          : "MrX@localhost",
-                           enabled        : true,
-                           accountExpired : false,
-                           accountLocked  : false,
-                           passwordExpired: false,
-                           defaultPageSize: 10
-    ]]
+    Map bodyData = [displayName    : null,
+                    email          : "MrX@localhost",
+       //             curatoryGroupIds: [cg.id],
+                    defaultPageSize: 10
+    ]
     RestResponse resp = rest.put("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
@@ -127,15 +128,16 @@ class ProfileTestSpec extends AbstractAuthSpec {
 
   void "test PATCH /rest/profile"() {
     def urlPath = getUrlPath()
-    // use the bearerToken to write to /rest/profile
+    def before = normalUser.password
     when:
     String accessToken = getAccessToken('normalUser', 'normalUser')
-    Map bodyData = [data: [
+    Map bodyData = [
       displayName : "tempo",
       email       : "frank@gmail.com",
+  //    curatoryGroupIds: [cg.id],
       password    : "normalUser",
       new_password: "roles"
-    ]]
+    ]
     RestResponse resp = rest.patch("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
@@ -147,24 +149,73 @@ class ProfileTestSpec extends AbstractAuthSpec {
     resp.status == 200
     sleep(500)
     def user = User.findByUsername("normalUser").refresh()
-    getAccessToken('normalUser', 'roles') != null
+    user.password != before
     user.email == 'frank@gmail.com'
   }
 
-  void "test DELETE /rest/profile/"() {
+  void "test PUT /rest/profile new_password without old password"() {
     def urlPath = getUrlPath()
+    def before = normalUser.password
     when:
     String accessToken = getAccessToken('normalUser', 'normalUser')
-    RestResponse resp = rest.delete("${urlPath}/rest/profile/") {
+    Map bodyData = [
+      new_password: "secr3t"
+    ]
+    RestResponse resp = rest.put("${urlPath}/rest/profile") {
       // headers
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
+      body(bodyData as JSON)
     }
     then:
     resp.status == 200
-    sleep(500)
-    User check = User.findByUsername('normalUser')
-    !check
+    def user = User.findByUsername("normalUser").refresh()
+    resp.json.data != null
+    user.password == before
+  }
+
+  void "test PATCH /rest/profile with wrong data"() {
+    def urlPath = getUrlPath()
+    // use the bearerToken to write to /rest/profile
+    when:
+    String accessToken = getAccessToken('normalUser', 'normalUser')
+    Map bodyData = [
+      username        : "sRsLy?",
+      displayName     : "tempo",
+      email           : "frank@gmail.com",
+      password        : "normalUser",
+      curatoryGroupIds: [cg.id],
+      new_password    : "roles"
+    ]
+    RestResponse resp = rest.patch("${urlPath}/rest/profile") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      auth("Bearer $accessToken")
+      body(bodyData as JSON)
+    }
+    then:
+    resp.status == 400
+  }
+
+  void "test POST /rest/profile/"() {
+    def urlPath = getUrlPath()
+    when:
+    String accessToken = getAccessToken('normalUser', 'normalUser')
+    RestResponse resp = rest.post("${urlPath}/rest/profile/") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      auth("Bearer $accessToken")
+      body([
+        username   : "sRsLy?",
+        displayName: "tempo",
+        email      : "frank@gmail.com",
+        password   : "otherthan"
+      ] as JSON)
+    }
+    then:
+    resp.status == 404
   }
 }

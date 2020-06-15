@@ -55,7 +55,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body([data: [shortcode: 'q1', name: 'Quelle 1']] as JSON)
+      body([shortcode: 'q1', name: 'Quelle 1'] as JSON)
     }
     then:
     resp.status == 200

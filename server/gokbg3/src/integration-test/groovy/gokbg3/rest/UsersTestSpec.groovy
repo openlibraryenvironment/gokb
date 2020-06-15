@@ -116,7 +116,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       auth("Bearer $accessToken")
     }
     then:
-    resp.status == 200 // OK
+    resp.status == 204 // OK
     sleep(500)
     def checkUser = User.findById(delUser.id)
     checkUser == null
@@ -127,7 +127,8 @@ class UsersTestSpec extends AbstractAuthSpec {
     // use the bearerToken to write to /rest/user
     when:
     String accessToken = getAccessToken()
-    Map bodyData = [data: [displayName     : "DisplayName",
+    Map bodyData = [displayName     : "DisplayName",
+                           password        : "secr3t",
                            email           : "nobody@localhost",
                            curatoryGroupIds: [cg.id],
                            enabled         : true,
@@ -136,7 +137,7 @@ class UsersTestSpec extends AbstractAuthSpec {
                            passwordExpired : false,
                            defaultPageSize : 15,
                            roleIds         : [2, 3, 4, 6, 7]
-    ]]
+    ]
     RestResponse resp = rest.put("${urlPath}/rest/users/$altUser.id") {
       // headers
       accept('application/json')
@@ -158,13 +159,14 @@ class UsersTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    Map bodyData = [data: [
+    Map bodyData = [
       displayName     : "DisplayName",
+      password        : "someOther",
       enabled         : false,
       defaultPageSize : 18,
       roleIds         : [2, 3, 5],
       curatoryGroupIds: []
-    ]]
+    ]
 
     def bodyText = bodyData as JSON
     RestResponse resp = rest.patch("${urlPath}/rest/users/$altUser.id") {
@@ -187,16 +189,17 @@ class UsersTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    Map bodyData = [data: [
+    Map bodyData = [
       username        : "newerUser",
       email           : "nobody@localhost",
       password        : "defaultPassword",
       displayName     : "DisplayName",
       enabled         : true,
       defaultPageSize : 18,
-      roleIds         : [2, 3],
+      roleIds         : [Role.findByAuthority("ROLE_CONTRIBUTOR").id,
+                         Role.findByAuthority("ROLE_EDITOR").id],
       curatoryGroupIds: [cg.id]
-    ]]
+    ]
     RestResponse resp = rest.post("${urlPath}/rest/users") {
       // headers
       accept('application/json')
@@ -205,10 +208,11 @@ class UsersTestSpec extends AbstractAuthSpec {
       body(bodyData as JSON)
     }
     then:
-    resp.status == 200
+    resp.status == 201
     resp.json.data.username == "newerUser"
     sleep(500)
     User checkUser = User.findById(resp.json.data.id)
+    checkUser.hasRole("ROLE_USER")
     checkUser != null
   }
 
@@ -223,7 +227,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       // headers
       accept('application/json')
       contentType('application/json')
-      body([data: [username: "newerUser", email: "nobody@localhost", password: "defaultPassword"]] as JSON)
+      body([username: "newerUser", email: "nobody@localhost", password: "defaultPassword"] as JSON)
     }
     then:
     resp.status == 200
