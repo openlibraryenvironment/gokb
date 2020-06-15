@@ -226,17 +226,21 @@ class Platform extends KBComponent {
 
 
   @Transient
-  public static boolean validateDTO(platformDTO) {
-    def result = true;
-    result &= platformDTO != null
-    result &= platformDTO.name != null
-    result &= platformDTO.name?.trim()?.size() > 0
+  public static def validateDTO(platformDTO) {
+    def result = ['valid':true, 'errors':[:]]
 
-    if ( !result ) {
+    if (platformDTO?.name?.trim()) {
+    }
+    else {
+      result.valid = false
+      result.errors.name = [[message: "Platform name is missing!", baddata: platformDTO.name]]
+    }
+
+    if ( !result.valid ) {
       log.error("platform failed validation ${platformDTO}");
     }
 
-    result;
+    result
   }
 
   @Transient

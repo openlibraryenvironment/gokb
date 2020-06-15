@@ -28,6 +28,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
+    sleep(500)
     test_id?.refresh().expunge()
     test_journal?.refresh().expunge()
   }
@@ -96,7 +97,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
       body(obj_map as JSON)
     }
     then:
-    resp.status == 200 // OK
+    resp.status == 201 // Created
     resp.json.value == "6644-2231"
   }
 

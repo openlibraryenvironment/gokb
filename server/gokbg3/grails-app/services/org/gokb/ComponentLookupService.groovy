@@ -129,95 +129,98 @@ class ComponentLookupService {
     def max = params.limit ? params.long('limit') : 10
     def offset = params.offset ? params.long('offset') : 0
     def first = true
-    def comboProps = grailsApplication.getArtefact("Domain",cls.name).newInstance().allComboPropertyNames
+    def cls_obj = grailsApplication.getArtefact("Domain",cls.name).newInstance()
     def sort = null
     def sortField = null
     def order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
 
-    def comboJoinStr = ""
-    def comboFilterStr = ""
 
-    // Check params for known combo properties
+    if ( KBComponent.isAssignableFrom(cls) ) {
+      def comboProps = cls_obj.allComboPropertyNames
+      def comboJoinStr = ""
+      def comboFilterStr = ""
 
-    comboProps.each { c ->
+      // Check params for known combo properties
 
-      if (params[c] || params['_sort'] == c) {
-        boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
-        log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
+      comboProps.each { c ->
 
-        if (incoming) {
-          comboJoinStr += " join p.incomingCombos as ${c}_combo"
-          comboJoinStr += " join ${c}_combo.fromComponent as ${c}"
-        }
-        else {
-          comboJoinStr += " join p.outgoingCombos as ${c}_combo"
-          comboJoinStr += " join ${c}_combo.toComponent as ${c}"
-        }
+        if (params[c] || params['_sort'] == c) {
+          boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
+          log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
 
-        if (first) {
-          comboFilterStr += " WHERE "
-          first = false
-        }
-        else {
-          comboFilterStr += " AND "
-        }
-
-        comboFilterStr += "${c}_combo.type = :${c}type AND "
-        qryParams["${c}type"] = RefdataCategory.lookupOrCreate ( "Combo.Type", cls.getComboTypeValueFor(cls, c))
-        comboFilterStr += "${c}_combo.status = :${c}status "
-        qryParams["${c}status"] = RefdataCategory.lookup("Combo.Status", "Active")
-
-        def validLong = []
-        def validStr = []
-        def paramStr = ""
-
-        if (params[c]) {
-          params.list(c)?.each { a ->
-            def addedLong = false
-
-            try {
-              validLong.add(Long.valueOf(a))
-              addedLong = true
-            }
-            catch (java.lang.NumberFormatException nfe) {
-            }
-
-            if (!addedLong && a instanceof String && a?.trim() ) {
-              validStr.add(a)
-            }
+          if (incoming) {
+            comboJoinStr += " join p.incomingCombos as ${c}_combo"
+            comboJoinStr += " join ${c}_combo.fromComponent as ${c}"
+          }
+          else {
+            comboJoinStr += " join p.outgoingCombos as ${c}_combo"
+            comboJoinStr += " join ${c}_combo.toComponent as ${c}"
           }
 
-          if (validStr.size() > 0 || validLong.size() > 0) {
-            paramStr += " AND ("
+          if (first) {
+            comboFilterStr += " WHERE "
+            first = false
+          }
+          else {
+            comboFilterStr += " AND "
+          }
 
-            if (validLong.size() > 0) {
-              paramStr += "${c}.id IN :${c}"
-              qryParams["${c}"] = validLong
-            }
-            if (validStr.size() > 0) {
-              if (validLong.size() > 0) {
-                paramStr += " OR "
+          comboFilterStr += "${c}_combo.type = :${c}type AND "
+          qryParams["${c}type"] = RefdataCategory.lookupOrCreate ( "Combo.Type", cls.getComboTypeValueFor(cls, c))
+          comboFilterStr += "${c}_combo.status = :${c}status "
+          qryParams["${c}status"] = RefdataCategory.lookup("Combo.Status", "Active")
+
+          def validLong = []
+          def validStr = []
+          def paramStr = ""
+
+          if (params[c]) {
+            params.list(c)?.each { a ->
+              def addedLong = false
+
+              try {
+                validLong.add(Long.valueOf(a))
+                addedLong = true
               }
-              paramStr += "${c}.uuid IN :${c}_str OR "
-              paramStr += "${c}.${c == 'ids' ? 'value' : 'name'} IN :${c}_str"
-              qryParams["${c}_str"] = validStr
+              catch (java.lang.NumberFormatException nfe) {
+              }
+
+              if (!addedLong && a instanceof String && a?.trim() ) {
+                validStr.add(a)
+              }
             }
-            paramStr += ")"
-            comboFilterStr += paramStr
+
+            if (validStr.size() > 0 || validLong.size() > 0) {
+              paramStr += " AND ("
+
+              if (validLong.size() > 0) {
+                paramStr += "${c}.id IN :${c}"
+                qryParams["${c}"] = validLong
+              }
+              if (validStr.size() > 0) {
+                if (validLong.size() > 0) {
+                  paramStr += " OR "
+                }
+                paramStr += "${c}.uuid IN :${c}_str OR "
+                paramStr += "${c}.${c == 'ids' ? 'value' : 'name'} IN :${c}_str"
+                qryParams["${c}_str"] = validStr
+              }
+              paramStr += ")"
+              comboFilterStr += paramStr
+            }
           }
-        }
-        else {
-          sortField = "${c}.name"
-          sort = " order by ${c}.name ${order ?: ''}"
+          else {
+            sortField = "${c}.name"
+            sort = " order by ${c}.name ${order ?: ''}"
+          }
         }
       }
+
+      hqlQry += comboJoinStr + comboFilterStr
     }
 
-    hqlQry += comboJoinStr + comboFilterStr
-
-    PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(cls.name)
-
     // Check params for persistent properties
+    PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(cls.name)
 
     pent.getPersistentProperties().each { p ->
       if (params[p.name]) {
@@ -303,7 +306,7 @@ class ComponentLookupService {
 
     // Filter out deleted records by default.
 
-    if (!params['status']) {
+    if (KBComponent.isAssignableFrom(cls) && !params['status']) {
       if (first) {
         hqlQry += " WHERE "
         first = false
