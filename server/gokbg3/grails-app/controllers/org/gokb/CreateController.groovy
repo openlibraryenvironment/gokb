@@ -115,7 +115,7 @@ class CreateController {
               else {
                 log.debug("Scalar property");
                 if ( pprop.getType().name == 'java.lang.String' ) {
-                  result.newobj[p.key] = p.value
+                  result.newobj[p.key] = p.value?.trim() ?: null
                 }
                 else if ( pprop.getType().name == 'java.lang.Date' ) {
                   def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");

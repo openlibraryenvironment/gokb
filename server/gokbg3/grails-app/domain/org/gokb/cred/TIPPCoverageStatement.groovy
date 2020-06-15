@@ -49,7 +49,7 @@ class TIPPCoverageStatement {
   }
 
   def afterUpdate() {
-    this.owner.lastUpdateComment = "Coverage Statement ${this.id} updated"
+    this.owner?.lastUpdateComment = "Coverage Statement ${this.id} updated"
 
     if (!coverageDepth) {
       coverageDepth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', 'Fulltext')
@@ -57,7 +57,7 @@ class TIPPCoverageStatement {
   }
 
   def afterInsert() {
-    this.owner.lastUpdateComment = "Coverage Statement ${this.id} created"
+    this.owner?.lastUpdateComment = "Coverage Statement ${this.id} created"
 
     if (!coverageDepth) {
       coverageDepth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', 'Fulltext')

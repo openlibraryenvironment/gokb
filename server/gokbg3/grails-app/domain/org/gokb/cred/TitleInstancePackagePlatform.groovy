@@ -150,11 +150,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     startDate (nullable:true, blank:true)
     startVolume (nullable:true, blank:true)
     startIssue (nullable:true, blank:true)
-    endDate (validator: { val, obj ->
-      if(obj.startDate && val && (obj.hasChanged('endDate') || obj.hasChanged('startDate')) && obj.startDate > val) {
-        return ['endDate.endPriorToStart']
-      }
-    })
+    endDate (nullable:true, blank:true)
     endVolume (nullable:true, blank:true)
     endIssue (nullable:true, blank:true)
     embargo (nullable:true, blank:true)
@@ -247,11 +243,74 @@ class TitleInstancePackagePlatform extends KBComponent {
    */
   @Transient
   public static def validateDTO(tipp_dto) {
-    def result = ['valid':true, 'errors':[]]
+    def result = ['valid':true, 'errors':[:]]
+    def pkgLink = tipp_dto.pkg ?: tipp_dto.package
+    def pltLink = tipp_dto.hostPlatform ?: tipp_dto.platform
+    def tiLink = tipp_dto.title
 
-    result.valid &= tipp_dto.package?.internalId != null
-    result.valid &= tipp_dto.platform?.internalId != null
-    result.valid &= tipp_dto.title?.internalId != null
+    if (!pkgLink) {
+      result.valid = false
+      result.errors.pkg = [[ message: "Missing package link!", baddata: pkgLink ]]
+    }
+    else {
+      def pkg = null
+
+      if (pkgLink instanceof Map) {
+        pkg = Package.get(pkgLink.id ?: pkgLink.internalId)
+      }
+      else {
+        pkg = Package.get(pkgLink)
+      }
+
+      if (!pkg) {
+        result.valid = false
+        result.errors.pkg = [[ message: "Could not resolve package id!", baddata: pkgLink , code: 404]]
+      }
+    }
+
+    if (!pltLink) {
+      result.valid = false
+      result.errors.hostPlatform = [[ message: "Missing platform link!", baddata: pltLink ]]
+    }
+    else {
+      def plt = null
+
+      if (pltLink instanceof Map) {
+        plt = Platform.get(pltLink.id ?: pltLink.internalId)
+      }
+      else {
+        plt = Platform.get(pltLink)
+      }
+
+      if (!plt) {
+        result.valid = false
+        result.errors.hostPlatform = [[ message: "Could not resolve platform id!", baddata: pltLink, code: 404 ]]
+      }
+    }
+
+    if (!tiLink) {
+      result.valid = false
+      result.errors.title = [[ message: "Missing title link!", baddata: tiLink ]]
+    }
+    else {
+      def ti = null
+
+      if (tiLink instanceof Map) {
+        ti = TitleInstance.get(tiLink.id ?: tiLink.internalId)
+      }
+      else {
+        ti = TitleInstance.get(tiLink)
+      }
+
+      if (!ti) {
+        result.valid = false
+        result.errors.title = [[message: "Could not resolve title id!", baddata: tiLink, code: 404]]
+      }
+    }
+
+    if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
+      tipp_dto.coverage = tipp_dto.coverageStatements
+    }
 
     for(def coverage : tipp_dto.coverage){
         LocalDateTime parsedStart = GOKbTextUtils.completeDateString(coverage.startDate)
@@ -259,27 +318,27 @@ class TitleInstancePackagePlatform extends KBComponent {
 
         if (coverage.startDate && !parsedStart) {
           result.valid = false
-          result.errors.add("Unable to parse coverage start date ${coverage.startDate}!")
+          result.errors.startDate = [[message:"Unable to parse coverage start date ${coverage.startDate}!", baddata: coverage.startDate]]
         }
 
         if (coverage.endDate && !parsedEnd) {
           result.valid = false
-          result.errors.add("Unable to parse coverage end date ${coverage.endDate}!")
+          result.errors.endDate = [[message: "Unable to parse coverage end date ${coverage.endDate}!", baddata: coverage.endDate]]
         }
 
         if ( !['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase()) ) {
           result.valid = false
-          result.errors.add("Unrecognized value '${coverage.coverageDepth}' for coverage depth")
+          result.errors.coverageDepth = [[message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]]
         }
 
         if (parsedStart && parsedEnd && (parsedEnd < parsedStart)) {
           result.valid = false
-          result.errors.add("Coverage end date must not be prior to its start date!")
+          result.errors.endDate = [[message:"Coverage end date must not be prior to its start date!", baddata: coverage.endDate]]
         }
     }
 
     if ( !result.valid )  {
-      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${tipp_dto.package?.internalId} plat:${tipp_dto.platform?.internalId} ti:${tipp_dto.title?.internalId} -- Errors: ${result.errors}");
+      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${pkgLink} plat:${pltLink} ti:${tiLink} -- Errors: ${result.errors}");
     }
 
     return result
@@ -292,14 +351,55 @@ class TitleInstancePackagePlatform extends KBComponent {
   static TitleInstancePackagePlatform upsertDTO(tipp_dto, def user = null) {
     def result = null
     log.debug("upsertDTO(${tipp_dto})");
-    def pkg = Package.get(tipp_dto.package?.internalId)
-    def plt = Platform.get(tipp_dto.platform?.internalId)
-    def ti = TitleInstance.get(tipp_dto.title?.internalId)
+    def pkg = null
+    def plt = null
+    def ti = null
+
+    if (tipp_dto.pkg || tipp_dto.package) {
+      def pkg_info = tipp_dto.package ?: tipp_dto.pkg
+
+      if (pkg_info instanceof Map) {
+        pkg = Package.get(pkg_info.id ?: pkg_info.internalId)
+      }
+      else {
+        pkg = Package.get(pkg_info)
+      }
+
+      log.debug("Package lookup: ${pkg}")
+    }
+
+    if (tipp_dto.hostPlatform || tipp_dto.platform) {
+      def plt_info = tipp_dto.hostPlatform ?: tipp_dto.platform
+
+      if (plt_info instanceof Map) {
+        plt = Platform.get(plt_info.id ?: plt_info.internalId)
+      }
+      else {
+        plt = Platform.get(plt_info)
+      }
+
+      log.debug("Platform lookup: ${plt}")
+    }
+    
+    if (tipp_dto.title) {
+      def title_info = tipp_dto.title
+
+      if (title_info instanceof Map) {
+        ti = TitleInstance.get(title_info.id ?: title_info.internalId)
+      }
+      else {
+        ti = TitleInstance.get(title_info)
+      }
+
+      log.debug("Title lookup: ${ti}")
+    }
+
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
     def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
+    def curator = pkg?.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(pkg?.curatoryGroups?.id) : true
 
-    if ( pkg && plt && ti ) {
+    if ( pkg && plt && ti && curator ) {
       log.debug("See if we already have a tipp");
       def tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
                                            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?'+
@@ -438,6 +538,10 @@ class TitleInstancePackagePlatform extends KBComponent {
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessStartDate,tipp,'accessStartDate')
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate,tipp,'accessEndDate')
 
+        if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
+          tipp_dto.coverage = tipp_dto.coverageStatements
+        }
+
         tipp_dto.coverage.each { c ->
           def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
           def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
@@ -456,12 +560,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           def cs_match = false
+          def startAsDate = (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+          def endAsDate = (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
 
           tipp.coverageStatements?.each { tcs ->
 
             if ( !cs_match && (
+                (c.id && tcs.id == c.id) ||
                 (tcs.startVolume && tcs.startVolume == c.startVolume) ||
-                (tcs.startDate && tcs.startDate == parsedStart) ||
+                (tcs.startDate && tcs.startDate == startAsDate) ||
                 (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
             ) {
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
@@ -491,8 +598,8 @@ class TitleInstancePackagePlatform extends KBComponent {
              'embargo':c.embargo, \
              'coverageDepth': cov_depth, \
              'coverageNote': c.coverageNote, \
-             'startDate': (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null), \
-             'endDate': (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+             'startDate': startAsDate, \
+             'endDate': endAsDate
             )
           }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
@@ -501,8 +608,113 @@ class TitleInstancePackagePlatform extends KBComponent {
       }
       result = tipp;
     }
+    else {
+      log.debug("Not able to reference TIPP: ${tipp_dto}")
+    }
 
     result;
+  }
+
+
+  @Transient
+  static def oaiConfig = [
+    id:'tipps',
+    textDescription:'TIPP repository for GOKb',
+    query:" from TitleInstancePackagePlatform as o ",
+    pageSize:10
+  ]
+
+  /**
+   *  Render this tipp as OAI_dc
+   */
+  @Transient
+  def toOaiDcXml(builder, attr) {
+    builder.'dc'(attr) {
+      'dc:title' (title.name)
+    }
+  }
+
+  /**
+   *  Render this TIPP as GoKBXML
+   */
+  @Transient
+  def toGoKBXml(builder, attr) {
+    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    def linked_pkg = getPkg()
+    def ti = getTitle()
+
+    builder.'gokb' (attr) {
+      builder.'tipp' ([id:(id), uuid:(uuid)]) {
+        builder.'status' (status?.value)
+        builder.'lastUpdated' (lastUpdated?sdf.format(lastUpdated):null)
+        builder.'format' (format?.value)
+        builder.'url'(url?:"")
+        builder.'title' ([id:ti.id, uuid:ti.uuid]) {
+          builder.'name' (ti.name?.trim())
+          builder.'type' (titleClass)
+          builder.'status' (ti.status?.value)
+          builder.'identifiers' {
+            titleIds.each { tid ->
+              builder.'identifier'([namespace:tid[0], value:tid[1], type:tid[2]])
+            }
+          }
+        }
+        builder.'package'([id:linked_pkg.id, uuid: linked_pkg.uuid]) {
+          'name' (linked_pkg.name)
+          'status' (linked_pkg.status?.value)
+          'editStatus' (linked_pkg.editStatus?.value)
+          'listStatus' (linked_pkg.listStatus?.value)
+          'listVerifiedDate' (linked_pkg.listVerifiedDate?sdf.format(linked_pkg.listVerifiedDate):null)
+          'lastUpdated' (linked_pkg.lastUpdated?sdf.format(linked_pkg.lastUpdated):null)
+          'contentType' (linked_pkg.contentType?.value)
+          if (linked_pkg.provider) {
+            builder.'provider' ([id:linked_pkg.provider?.id, uuid:linked_pkg.provider?.uuid]) {
+              'name' (linked_pkg.provider?.name)
+              'mision' (linked_pkg.provider?.mission?.value)
+            }
+          }
+          else {
+            builder.'provider' ()
+          }
+        }
+        builder.'platform'([id:hostPlatform.id, uuid:hostPlatform.uuid]) {
+          'primaryUrl' (hostPlatform.primaryUrl?.trim())
+          'name' (hostPlatform.name?.trim())
+        }
+        'access'([start:(accessStartDate ? sdf.format(accessStartDate):null), end:(accessEndDate?sdf.format(accessEndDate):null)])
+        def cov_statements = getCoverageStatements()
+        if(cov_statements?.size() > 0){
+          cov_statements.each { tcs ->
+            'coverage'(
+              startDate:(tcs.startDate?sdf.format(tcs.startDate):null),
+              startVolume:(tcs.startVolume),
+              startIssue:(tcs.startIssue),
+              endDate:(tcs.endDate?sdf.format(tcs.endDate):null),
+              endVolume:(tcs.endVolume),
+              endIssue:(tcs.endIssue),
+              coverageDepth:(tcs.coverageDepth?.value?:null),
+              coverageNote:(tcs.coverageNote),
+              embargo: (tcs.embargo)
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Transient
+  public getTitleIds() {
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[title,refdata_ids,status_active],[readOnly:true]);
+    result
+  }
+
+  @Transient
+  public getTitleClass() {
+    def result = KBComponent.get(title.id)?.class.getSimpleName();
+
+    result
   }
 
 }

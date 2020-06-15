@@ -38,6 +38,7 @@ class UsersTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
+    sleep(500)
     UserRole.findAllByUser(delUser).each { ur ->
       ur.delete(flush: true)
     }
@@ -178,6 +179,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.data.defaultPageSize == 18
+    sleep(500)
     def checkUser = User.findById(altUser.id).refresh()
     checkUser.enabled == false
     checkUser.curatoryGroups.size() == 0

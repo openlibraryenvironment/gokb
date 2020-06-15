@@ -38,6 +38,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
 
   @Transactional
   def cleanup() {
+    sleep(200)
     UserRole.findAllByUser(normalUser)?.each { ur ->
       ur.delete(flush: true)
     }
@@ -146,6 +147,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
+    sleep(500)
     def user = User.findByUsername("normalUser").refresh()
     user.password != before
     user.email == 'frank@gmail.com'

@@ -139,14 +139,14 @@ class TitleController {
   def save() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
     Class type = setType(params)
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
 
     def publisher_name = null
 
-    if (reqBody.publisher) {
+    if (reqBody?.publisher) {
       if (reqBody.publisher instanceof Collection) {
         log.debug("Skipping publisher list")
       }
@@ -170,20 +170,23 @@ class TitleController {
 
       if (!obj) {
         log.debug("Could not upsert object!")
-        errors = [badData: reqBody, message:"Unable to save object!"]
+        errors.object = [[badData: reqBody, message:"Unable to save object!"]]
       }
       else if (obj.hasErrors()) {
         log.debug("Object has errors!")
         errors = messageService.processValidationErrors(obj.errors, request.locale)
-        log.debug("${errors}")
       }
       else {
-        def jsonMap = obj.jsonMapping
-        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+        obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
-        if ( !obj.hasErrors() && errors.size() == 0 ) {
-          obj.save(flush:true)
-          result = restMappingService.mapObjectToJson(obj, params, user)
+        if ( obj.validate() ) {
+          if (errors.size() == 0 ) {
+            obj.save(flush:true)
+            result = restMappingService.mapObjectToJson(obj, params, user)
+          }
+          else {
+            result.message = message(code: 'default.create.errors.message')
+          }
         }
         else {
           result.result = 'ERROR'
@@ -192,13 +195,17 @@ class TitleController {
       }
     }
     else if (!type) {
-      errors = [badData: reqBody, message:"Unrecognized title type!"]
+      response.setStatus(400)
+      result.result = 'ERROR'
+      result.message = "Unrecognized title type!"
     }
     else if (type == TitleInstance) {
-      errors = [badData: reqBody, message:"Specific title type required!"]
+      response.setStatus(400)
+      result.result = 'ERROR'
+      result.message = "Specific title type required!"
     }
     else {
-      errors = [badData: reqBody, message:"Missing name for the title!"]
+      errors.name = [[baddata: reqBody?.name, message:"Request is missing a title name!"]]
     }
 
     if (errors) {
@@ -280,7 +287,7 @@ class TitleController {
   def update() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstance.findByUuid(params.id)
 
@@ -300,10 +307,7 @@ class TitleController {
       }
 
       if (editable) {
-
-        def jsonMap = obj.jsonMapping
-
-        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+        obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
         if ( reqBody.status ) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -315,25 +319,22 @@ class TitleController {
         }
 
         if ( obj.validate() ) {
+          log.debug("No errors.. updating combos..")
+
+          errors << updateCombos(obj, reqBody)
+
           if ( errors.size() == 0 ) {
-            log.debug("No errors.. updating combos..")
-
-            obj = updateCombos(obj, reqBody)
-
-            if (obj.validate()) {
-              obj = obj.merge(flush:true)
-              result = restMappingService.mapObjectToJson(obj, params, user)
-            }
-            else {
-              result.result = 'ERROR'
-              response.setStatus(422)
-              errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
-            }
+            obj = obj.merge(flush:true)
+            result = restMappingService.mapObjectToJson(obj, params, user)
+          }
+          else {
+            result.message = message(code:'default.update.errors.message')
+            response.setStatus(400)
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(422)
+          response.setStatus(400)
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
@@ -350,6 +351,7 @@ class TitleController {
     }
 
     if(errors.size() > 0) {
+      result.result = 'ERROR'
       result.error = errors
     }
     render result as JSON
@@ -357,6 +359,7 @@ class TitleController {
 
   private def updateCombos(obj, reqBody) {
     log.debug("Updating title combos ..")
+    def errors = [:]
 
     def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
@@ -374,7 +377,7 @@ class TitleController {
 
         if (dupe.size() == 0) {
           log.debug("No combo found, adding ID ..")
-          def newc = new Combo(fromComponent: obj, toComponent: i, status: combo_active, type: combo_id_type).save(flush:true)
+          def new_combo = new Combo(fromComponent: obj, toComponent: i, status: combo_active, type: combo_id_type).save(flush:true)
         }
         else if (dupe.size() == 1 ) {
           if (dupe[0].status == combo_deleted) {
@@ -385,6 +388,11 @@ class TitleController {
           }
         }
         else {
+          if (!errors.ids) {
+            errors.ids = []
+          }
+
+          errors.ids << [message: "There seem to be duplicate links for an identifier against this title!", baddata: i]
           log.error("Multiple ID combos for ${obj} -- ${i}!")
         }
       }
@@ -469,6 +477,11 @@ class TitleController {
               (combo.endDate ? ' to ' + combo.endDate : '')
           } else {
             log.error("Could not create publisher Combo..")
+            if (!errors.publisher) {
+              errors.publisher = []
+            }
+
+            errors.publisher << [message: "Unable to add publisher ${publisher.name} to title!", baddata: publisher.id]
           }
 
         } else {
@@ -487,7 +500,7 @@ class TitleController {
       }
     }
 
-    return obj
+    errors
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')

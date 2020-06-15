@@ -102,7 +102,7 @@ class OrgController {
   def save() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
 
     if (reqBody) {
@@ -111,7 +111,7 @@ class OrgController {
 
       if (!obj) {
         log.debug("Could not upsert object!")
-        errors = [badData: reqBody, message:"Unable to save object!"]
+        errors.object = [[badData: reqBody, message:"Unable to save object!"]]
       }
       else if (obj.hasErrors()) {
         log.debug("Object has errors!")
@@ -130,10 +130,14 @@ class OrgController {
             obj.save(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
+          else {
+            response.setStatus(400)
+            result.message = message(code:"default.create.errors.message")
+          }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(422)
+          response.setStatus(400)
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
@@ -187,10 +191,14 @@ class OrgController {
             obj.save(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
+          else {
+            response.setStatus(400)
+            result.message = message(code:"default.update.errors.message")
+          }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(422)
+          response.setStatus(400)
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
       }
