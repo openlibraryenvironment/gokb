@@ -14,6 +14,7 @@ class UrlMappings {
     "/package"(controller: 'packages')
 
     group "/rest", {
+      post "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'addTipps')
       "/packages/$id/$action"(controller: 'package', namespace: 'rest')
       get "/packages/$id"(controller: 'package', namespace: 'rest', action: 'show')
       put "/packages/$id"(controller: 'package', namespace: 'rest', action: 'update')
@@ -92,6 +93,13 @@ class UrlMappings {
       post "/journals" (controller: 'title', namespace: 'rest', action:'save') { type = 'journal' }
       post "/books" (controller: 'title', namespace: 'rest', action:'save') { type = 'book' }
       post "/databases" (controller: 'title', namespace: 'rest', action:'save') { type = 'database' }
+
+      get "/tipps/$id/coverage"(controller: 'tipp', namespace: 'rest', action: 'getCoverage')
+      get "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'show')
+      put "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'update')
+      delete "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'delete')
+      post "/tipps"(controller: 'tipp', namespace: 'rest', action: 'save')
+      get "/tipps"(controller: 'tipp', namespace: 'rest', action: 'index')
       
       get "/package-scopes" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
     }

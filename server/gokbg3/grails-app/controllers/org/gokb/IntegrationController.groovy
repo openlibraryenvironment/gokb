@@ -928,26 +928,30 @@ class IntegrationController {
                     else {
                       def valid_ti = true
 
-                      try {
-                        def ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
+                      TitleInstance.withNewSession {
+                        def ti = null
 
-                        if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
+                        try {
+                          ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
 
-                          componentUpdateService.ensureCoreData(ti, tipp.title, fullsync)
-                          tipp.title.internalId = ti.id;
-                        } else {
-                          if (ti != null)
-                            ti.discard()
+                          if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
+
+                            componentUpdateService.ensureCoreData(ti, tipp.title, fullsync)
+                            tipp.title.internalId = ti.id
+                          } else {
+                            if (ti != null)
+                              ti.discard()
+                            valid_ti = false
+                            valid = false
+                            errors.add(['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'baddata': tipp])
+                          }
+                        }
+                        catch (grails.validation.ValidationException ve) {
+                          log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
                           valid = false
-                          errors.add(['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'data': tipp])
+                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ti.errors)])
                         }
-                      }
-                      catch (grails.validation.ValidationException ve) {
-                        log.error("ValidationException attempting to cross reference title",ve);
-                        valid_ti = false
-                        valid = false
-                        errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'data': tipp, idx: idx, errors: ve.errors])
                       }
 
                       if ( valid_ti && tipp.title.internalId == null ) {
@@ -958,11 +962,11 @@ class IntegrationController {
                     }
 
                     def valid_plt = Platform.validateDTO(tipp.platform);
-                    valid &= valid_plt;
+                    valid &= valid_plt?.valid
 
-                    if ( !valid_plt ) {
+                    if ( !valid_plt.valid ) {
                       log.warn("Not valid after platform validation ${tipp.platform}");
-                      errors.add(['code': 400, idx: idx, 'message': "Platform ${tipp.platform.name} is not valid!"])
+                      errors.add(['code': 400, idx: idx, 'message': "Platform ${tipp.platform.name} is not valid!", 'baddata': tipp.platform, errors: valid_plt.errors])
                     }
 
                     if ( valid ) {
@@ -973,16 +977,24 @@ class IntegrationController {
                         pl = Platform.get(pl_id)
                       } else {
                         // Not in cache.
-                        pl = Platform.upsertDTO(tipp.platform, user);
+                        try {
+                          pl = Platform.upsertDTO(tipp.platform, user);
 
-                        if(pl){
-                          platform_cache[tipp.platform.name] = pl.id
+                          if(pl){
+                            platform_cache[tipp.platform.name] = pl.id
 
-                          componentUpdateService.ensureCoreData(pl, tipp.platform, fullsync)
-                        }else{
-                          log.error("Could not find/create ${tipp.platform}")
-                          errors.add(['code': 400, idx: idx, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                            componentUpdateService.ensureCoreData(pl, tipp.platform, fullsync)
+                          }else{
+                            log.error("Could not find/create ${tipp.platform}")
+                            errors.add(['code': 400, idx: idx, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                            valid = false
+                          }
+                        }
+                        catch (grails.validation.ValidationException ve) {
+                          log.error("ValidationException attempting to cross reference title",ve);
+                          valid_ti = false
                           valid = false
+                          errors.add(['code': 400, 'message': "Platform validation failed for ${tipp.platform}!", 'baddata': tipp.platform, idx: idx, errors: messageService.processValidationErrors(pl.errors)])
                         }
                       }
 
@@ -1069,14 +1081,14 @@ class IntegrationController {
 
                     try {
                       upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
-                      log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp.url}")
-                      upserted_tipp = upserted_tipp.merge(flush: true)
+                      log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp?.url}")
+                      upserted_tipp = upserted_tipp?.merge(flush: true)
                     }
                     catch (grails.validation.ValidationException ve) {
                       log.error("ValidationException attempting to cross reference TIPP",ve);
                       valid = false
                       tipp_fails++
-                      errors.add(['code': 400, idx: idx, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'data': tipp, errors: ve.errors])
+                      errors.add(['code': 400, idx: idx, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'baddata': tipp, errors: messageService.processValidationErrors(upserted_tipp.errors)])
 
                       if (upserted_tipp)
                         upserted_tipp.discard()
@@ -1085,27 +1097,35 @@ class IntegrationController {
                       log.error("Exception attempting to cross reference TIPP:", ge)
                       valid = false
                       tipp_fails++
-                      errors.add(['code': 500, idx: idx, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'data': tipp])
+                      errors.add(['code': 500, idx: idx, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'baddata': tipp])
 
                       if (upserted_tipp)
                         upserted_tipp.discard()
                     }
 
-                    if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
-                      log.debug("Existing TIPP matched!")
-                      tipps_to_delete.remove(upserted_tipp.id)
-                    }
+                    if (upserted_tipp) {
+                      if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
+                        log.debug("Existing TIPP matched!")
+                        tipps_to_delete.remove(upserted_tipp.id)
+                      }
 
-                    if ( upserted_tipp && upserted_tipp?.status != status_deleted && tipp.status == "Deleted" ) {
-                      upserted_tipp.deleteSoft()
-                      num_removed_tipps++;
-                    }
-                    else if ( upserted_tipp && upserted_tipp?.status != status_retired && tipp.status == "Retired" ) {
-                      upserted_tipp.retire()
-                      num_removed_tipps++;
-                    }
-                    else if ( upserted_tipp && upserted_tipp.status != status_current && tipp.status == "Current" ) {
-                      upserted_tipp.setActive()
+                      if ( upserted_tipp && upserted_tipp?.status != status_deleted && tipp.status == "Deleted" ) {
+                        upserted_tipp.deleteSoft()
+                        num_removed_tipps++;
+                      }
+                      else if ( upserted_tipp && upserted_tipp?.status != status_retired && tipp.status == "Retired" ) {
+                        upserted_tipp.retire()
+                        num_removed_tipps++;
+                      }
+                      else if ( upserted_tipp && upserted_tipp.status != status_current && (!tipp.status || tipp.status == "Current") ) {
+                        upserted_tipp.setActive()
+                      }
+                    } 
+                    else {
+                      log.debug("Could not reference TIPP")
+                      valid = false
+                      tipp_fails++
+                      errors.add(['code': 500, idx: idx, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'baddata': tipp])
                     }
 
                     if (idx % 50 == 0) {

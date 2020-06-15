@@ -100,7 +100,7 @@ class GOKbTextUtils {
 
     // If something has gone cataclysmically wrong (Like, for example, a title consisting of only wide utf-8 characters, or a title like "/." which appears
     // in the askews file, then we fall back on the string we were originally given.
-    if ( normstring == '' )
+    if ( !normstring?.trim() )
       normstring = s
 
     normstring
