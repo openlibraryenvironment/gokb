@@ -71,14 +71,16 @@ class ProfileController {
     Map result = [:]
     Map reqData = request.JSON
     User user = User.get(springSecurityService.principal.id)
-    if (reqData.new_password && reqData.password) {
-      if (passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
+    if (reqData.new_password) {
+      if (reqData.password && passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
         user.password = reqData.new_password
         user.save(flush: true, failOnError: true);
+
       } else {
         response.status = 400
-        result.errors = [password: [message: "wrong password - profile unchanged", code: null]]
+        result.errors = [password: [message: "password wrong or missing", code: null, baddata: reqData.password]]
         render result as JSON
+        return
       }
     }
     reqData.remove('new_password')

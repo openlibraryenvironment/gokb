@@ -54,7 +54,7 @@ class UserProfileService {
     } else {
       log.error("Could not find either the user object for deletion (${params.id}) or the placeholder user")
       result.result = "ERROR"
-      result.errors = user_to_delete?.errors
+      result.errors << user_to_delete?.errors
     }
     return result
   }
@@ -81,7 +81,7 @@ class UserProfileService {
       }
     }
     if (errors.size() > 0) {
-      result.errors = errors
+      result.errors << errors
       return result
     }
     return modifyUser(user, data)
@@ -179,12 +179,12 @@ class UserProfileService {
         }
         result.data = collectUserProps(user)
       } else {
-        result.errors = user.errors.allErrors
+        result.errors << user.errors.allErrors
       }
     } else {
-      result.errors = errors
+      result.errors << errors
     }
-    return result
+  return result
   }
 
   def collectUserProps(User user, params = [:]) {

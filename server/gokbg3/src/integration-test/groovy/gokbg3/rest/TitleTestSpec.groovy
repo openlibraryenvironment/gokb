@@ -5,15 +5,12 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
-import org.gokb.cred.BookInstance
-import org.gokb.cred.Combo
-import org.gokb.cred.DatabaseInstance
+import org.gokb.TitleLookupService
 import org.gokb.cred.Identifier
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.JournalInstance
 import org.gokb.cred.Org
-import org.gokb.cred.RefdataCategory
-import org.gokb.TitleLookupService
+import org.springframework.beans.factory.annotation.Autowired
 
 @Integration
 @Rollback

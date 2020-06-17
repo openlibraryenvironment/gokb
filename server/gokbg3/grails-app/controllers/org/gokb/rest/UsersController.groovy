@@ -183,8 +183,11 @@ class UsersController {
     else {
       response.status = 400
       def errors = []
-      errors << [message: "no data found in the request", baddata: request.JSON]
-      result.errors = errors
+      errors << [json: [message: "no JSON data found in the request", baddata: request.JSON]]
+      result.errors << errors
+    }
+    if (result.errors) {
+      response.status = 400
     }
     render result as JSON
   }
@@ -202,18 +205,26 @@ class UsersController {
       result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
     } else {
       def errors = []
-      errors << [message: "no data found in the request", baddata: request.JSON]
-      result.errors = errors
+      errors << [json: [message: "no data found in the request", baddata: request.JSON, code: null]]
+      result.errors << errors
     }
-    if (result.errors != null)
+    if (result.errors) {
       response.status = 400
+    }
     render result as JSON
   }
 
   @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
+    def result = [:]
     def delUser = User.get(params.id)
+    if (!delUser) {
+      response.status = 400
+      result.errors << [id: [message: "userID unknown", baddata: params.id, code: null]]
+      render result as JSON
+      return
+    }
     response.status = 204
     render userProfileService.delete(delUser) as JSON
   }
