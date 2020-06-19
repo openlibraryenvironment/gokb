@@ -133,6 +133,7 @@ class ComponentLookupService {
     def sort = null
     def sortField = null
     def order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
+    def genericTerm = params.q ?: null
 
 
     if ( KBComponent.isAssignableFrom(cls) ) {
@@ -214,6 +215,29 @@ class ComponentLookupService {
             sort = " order by ${c}.name ${order ?: ''}"
           }
         }
+      }
+
+      if (genericTerm?.trim()) {
+        comboJoinStr += " join p.outgoingCombos as idq_combo"
+        comboJoinStr += " join idq_combo.toComponent as idq"
+
+        if (first) {
+          comboFilterStr += " WHERE "
+          first = false
+        }
+        else {
+          comboFilterStr += " AND "
+        }
+
+        comboFilterStr += "(lower(p.name) like :qname OR ("
+        qryParams['qname'] = "${genericTerm.toLowerCase()}%"
+        comboFilterStr += "idq_combo.type = :idqtype AND "
+        qryParams["idqtype"] = RefdataCategory.lookupOrCreate ( "Combo.Type", 'KBComponent.Ids')
+        comboFilterStr += "idq_combo.status = :idqstatus AND "
+        qryParams["idqstatus"] = RefdataCategory.lookup("Combo.Status", "Active")
+        comboFilterStr += "idq.value = :idqval"
+        qryParams["idqval"] = genericTerm
+        comboFilterStr += "))"
       }
 
       hqlQry += comboJoinStr + comboFilterStr

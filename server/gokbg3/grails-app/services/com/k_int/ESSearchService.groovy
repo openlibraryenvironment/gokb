@@ -325,13 +325,24 @@ class ESSearchService{
 
   private void addIdentifierQuery(query,errors, qpars) {
     def id_params = [:]
+    def val = null
 
     if (qpars.identifier) {
-      if (v.contains(',')) {
-        id_params['identifiers.namespace'] = v.split(',')[0]
-        id_params['identifiers.value'] = v.split(',')[1]
+      val = qpars.identifier
+    }
+    else if (qpars.ids) {
+      val = qpars.ids
+    }
+    else if (qpars.identifiers) {
+      val = qpars.identifiers
+    }
+
+    if ( val?.trim() ) {
+      if (val.contains(',')) {
+        id_params['identifiers.namespace'] = val.split(',')[0]
+        id_params['identifiers.value'] = val.split(',')[1]
       }else{
-        id_params['identifiers.value'] = v
+        id_params['identifiers.value'] = val
       }
       query.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
     }
@@ -351,14 +362,25 @@ class ESSearchService{
     else if (qpars.name) {
       query.must(QueryBuilders.matchQuery('name',qpars.name))
     }
-    else if (qpars.q) {
-      query.must(QueryBuilders.matchQuery('name',qpars.q))
-    }
     else if (qpars.altname) {
       query.must(QueryBuilders.matchQuery('altname',qpars.altname))
     }
     else if (qpars.suggest) {
       query.must(QueryBuilders.matchQuery('suggest',qpars.suggest))
+    }
+  }
+
+  private void processGenericFields(query, errors, qpars) {
+    if (qpars.q?.trim()) {
+      QueryBuilder genericQuery = QueryBuilders.boolQuery()
+      def id_params = ['identifiers.value': qpars.q]
+
+      genericQuery.should(QueryBuilders.matchQuery('name',qpars.q))
+      genericQuery.should(QueryBuilders.matchQuery('altname',qpars.q))
+      // genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.None))
+      genericQuery.minimumNumberShouldMatch(1)
+
+      query.must(genericQuery)
     }
   }
 
@@ -451,6 +473,8 @@ class ESSearchService{
       addStatusQuery(exactQuery, errors, params)
       addDateQueries(exactQuery, errors, params)
       processNameFields(exactQuery, errors, params)
+      processGenericFields(exactQuery, errors, params)
+      addIdentifierQuery(exactQuery,errors, params)
 
       params.each { k, v ->
         if (requestMapping.generic && k in requestMapping.generic) {
