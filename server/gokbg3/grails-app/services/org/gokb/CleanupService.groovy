@@ -407,33 +407,44 @@ class CleanupService {
   def housekeeping(Job j = null) {
     log.debug("Housekeeping")
 
-    try {
-      def ctr = 0
-      def start_time = System.currentTimeMillis()
-      log.debug("Remove any ISSN identifiers where an eISSN with the same value is also present")
-      // Find all identifier occurrences where the component attached also has an issn with the same value.
-      // select combo from Combo as combo where combo.toComponent in (select identifier from Identifier as identifier where identifier.ns.ns = 'eissn' )
-      //    and exists (
-      def ns_issn = IdentifierNamespace.findByValue('issn')
-      def ns_eissn = IdentifierNamespace.findByValue('eissn')
-      log.debug("Query")
-      def q1 = Identifier.executeQuery('select i1 from Identifier as i1 where i1.namespace = :n1 and exists ( select i2 from Identifier as i2 where i2.namespace=:n2 and i2.value = i1.value )',
-                                       [n1:ns_issn, n2:ns_eissn])
-      log.debug("Query complete, elapsed = ${System.currentTimeMillis() - start_time}")
-      def id_combo_type = RefdataValue.findByValue('KBComponent.Ids')
-      q1.each { issn ->
-        log.debug("cleaning up ${issn.namespace.value}:${issn.value}")
-        Combo.executeUpdate('delete from Combo c where c.type=:tp and ( c.fromComponent = :f or c.toComponent=:t )',[f:issn, t:issn, tp:id_combo_type])
-        ctr++
+    Identifier.withNewSession {
+      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+      try {
+
+        def unused = Identifier.executeQuery("select i.id from Identifier as i where not exists (select c from Combo as c where c.toComponent = i)")
+
+        def rem_unused = KBComponent.expungeAll(unused)
+
+        log.debug("Removed ${rem_unused.num_expunged} unused identifiers")
+        j?.message("Removed ${rem_unused.num_expunged} unused identifiers".toString())
+
+        def dupes_vals = Identifier.executeQuery("select count(*), i.value, i.namespace.id from Identifier as i group by i.value, i.namespace.id having count(*) > 1")
+        def dupes_to_remove = []
+
+        dupes_vals?.each { d ->
+          def duplicates = Identifier.executeQuery("from Identifier as i where i.value = :val and i.namespace.id = :ns", [val: d[1], ns: d[2]])
+          def first = duplicates[0]
+
+          duplicates.eachWithIndex { dui, idx ->
+            if (idx > 0) {
+              Combo.executeUpdate("update Combo as c set c.toComponent = :firstID where c.toComponent = :idc and not exists (select ci from Combo as ci where ci.toComponent.id = :firstID and ci.fromComponent = c.fromComponent)", [firstID: first, idc: dui])
+              dupes_to_remove.add(dui.id)
+            }
+          }
+        }
+
+        def rem_dupes = KBComponent.expungeAll(dupes_to_remove)
+
+        log.debug("Removed ${rem_dupes.num_expunged} linked identifiers")
+        j?.message("Removed ${rem_dupes.num_expunged} linked identifiers".toString())
+        // Cleanup duplicate identifiers too.
+        duplicateIdentifierCleanup()
       }
-      log.debug("ISSN/eISSN cleanup complete ctr=${ctr}, elapsed = ${System.currentTimeMillis() - start_time}")
-    
-      // Cleanup duplicate identifiers too.
-      duplicateIdentifierCleanup()
-    }
-    catch ( Exception e ) {
-      e.printStackTrace()
-      j?.message = 'Housekeeping was aborted due to errors.'
+      catch ( Exception e ) {
+        e.printStackTrace()
+        j?.message('Housekeeping was aborted due to errors.')
+      }
     }
 
     j?.endTime = new Date()
@@ -443,7 +454,7 @@ class CleanupService {
     log.debug("Beginning duplicate identifier tidyup.")
     
     // Lookup the Ids refdata element name.
-    final long id_combo_type_id = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids').id
+    final long id_combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids').id
     
     def start_time = System.currentTimeMillis()
     

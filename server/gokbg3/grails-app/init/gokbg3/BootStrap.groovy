@@ -24,6 +24,7 @@ import org.gokb.refine.RefineProject
 import org.gokb.validation.types.*
 
 import com.k_int.apis.A_Api;
+import com.k_int.ConcurrencyManagerService.Job
 
 import static org.springframework.security.acls.domain.BasePermission.ADMINISTRATION
 import static org.springframework.security.acls.domain.BasePermission.DELETE
@@ -55,7 +56,9 @@ class BootStrap {
   GrailsApplication grailsApplication
   def aclUtilService
   def gokbAclService
+  def cleanupService
   def ComponentStatisticService
+  def concurrencyManagerService
   def ESWrapperService
   //def titleLookupService
 
@@ -218,7 +221,7 @@ class BootStrap {
       log.debug("${num_c} combos updated");
 
     log.info("GoKB defaultSortKeys()");
-    defaultSortKeys ()
+    defaultSortKeys()
 
     log.info("GoKB sourceObjects()");
     sourceObjects()
@@ -240,6 +243,14 @@ class BootStrap {
     
     log.debug("Ensuring ElasticSearch index")
     ensureESIndex()
+
+
+    Job hk_job = concurrencyManagerService.createJob  {
+      cleanupService.housekeeping()
+    }.startOrQueue()
+
+    hk_job.description = "Bootstrap Identifier Cleanup"
+    hk_job.startTime = new Date()
 
     log.debug("Checking for missing component statistics")
     ComponentStatisticService.updateCompStats()
