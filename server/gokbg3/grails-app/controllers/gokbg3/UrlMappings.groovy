@@ -82,6 +82,7 @@ class UrlMappings {
 
       get "/roles"(controller: 'roles', namespace: 'rest', action: 'index')
 
+      delete "/titles/$tid/history/$id" (controller: 'title', namespace: 'rest', action:'deleteHistoryEvent')
       get "/titles/$id/history" (controller: 'title', namespace: 'rest', action:'getHistory')
       "/titles/$id/$action" (controller: 'title', namespace:'rest')
       get "/titles/$id" (controller: 'title', namespace: 'rest', action:'show')
@@ -90,8 +91,10 @@ class UrlMappings {
       post "/titles" (controller: 'title', namespace: 'rest', action:'save')
       get "/titles" (controller: 'title', namespace:'rest', action:'index')
 
-      post "/journals" (controller: 'title', namespace: 'rest', action:'save') { type = 'journal' }
-      post "/books" (controller: 'title', namespace: 'rest', action:'save') { type = 'book' }
+      get "title-types" (controller: 'title', namespace:'rest', action:'getTypes')
+
+      post "/journals" (controller: 'title', namespace: 'rest', action:'save') { type = 'serial' }
+      post "/books" (controller: 'title', namespace: 'rest', action:'save') { type = 'monograph' }
       post "/databases" (controller: 'title', namespace: 'rest', action:'save') { type = 'database' }
 
       get "/tipps/$id/coverage"(controller: 'tipp', namespace: 'rest', action: 'getCoverage')

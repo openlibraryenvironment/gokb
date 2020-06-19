@@ -27,7 +27,15 @@ class TitleController {
   def messageService
   def restMappingService
   def titleLookupService
+  def titleHistoryService
   def componentLookupService
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def getTypes() {
+    def result = ["serial","monograph","database"]
+
+    return result as JSON
+  }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -217,7 +225,7 @@ class TitleController {
     render result as JSON
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
+  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
   def getHistory() {
     def result = [:]
     def user = User.get(springSecurityService.principal.id)
@@ -243,6 +251,65 @@ class TitleController {
     }
 
     render result as JSON
+  }
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  def addHistory() {
+    def result = [:]
+    def errors = [:]
+    def reqBody = request.JSON
+    def ti = null
+
+    if (params.id) {
+      ti = TitleInstance.findByUuid(params.id)
+
+      if (!ti) {
+        ti = TitleInstance.get(genericOIDService.oidToId(params.id))
+      }
+    }
+
+    if ( ti && (reqBody.from || reqBody.to) && reqBody.date) {
+      errors << titleHistoryService.addNewEvent(ti, reqBody)
+    }
+    else if (!ti) {
+      result.result = "ERROR"
+      response.status = 404
+      result.message = "Unable to look up title with ID ${params.id}!"
+    }
+    else if (!reqBody.date) {
+      result.result = "ERROR"
+      response.status = 400
+      result.message = "Missing event date!"
+    }
+    else {
+      result.result = "ERROR"
+      response.status = 400
+      result.message = "Missing history partner!"
+    }
+
+    if (errors.size() > 0) {
+      result.result = "ERROR"
+      response.status = 400
+    }
+    else {
+      result.data = getDirectHistory(ti, [:])
+    }
+
+    render result as JSON
+  }
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
+  def setHistory() {
+
+  }
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
+  def deleteHistoryEvent() {
+    def event = ComponentHistoryEvent.get(params.id)
+
+    if (event) {
+      titleHistoryService.deleteEvent(event)
+    }
   }
 
   private def getDirectHistory(obj, params, user) {

@@ -303,6 +303,17 @@ class PackageController {
     if (reqBody.tipps) {
       reqBody.tipps.each { tipp_dto ->
         tipp_dto.pkg = obj.id
+
+        if (tipp_dto.title && tipp_dto.title instanceof Map) {
+          if (!tipp_dto.id) {
+            def ti = TitleInstance.upsertDTO(tipp_dto.title)
+
+            if (ti) {
+              tipp_dto.title = ti.id
+            }
+          }
+        }
+
         def tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp_dto)
 
         if (!tipp_validation.valid) {
