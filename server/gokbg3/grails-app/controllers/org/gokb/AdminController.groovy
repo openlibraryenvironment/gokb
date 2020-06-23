@@ -341,7 +341,7 @@ class AdminController {
     def maxId = jobs.max { it.key }.key
 
     jobs.each { k, j ->
-      if (k < maxId - 5 && j.isDone()) {
+      if (j.isDone()) {
         jobs.remove(k)
       }
     }
@@ -355,7 +355,6 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
-  @Deprecated
   def housekeeping() {
     Job j = concurrencyManagerService.createJob { Job j ->
       cleanupService.housekeeping(j)
