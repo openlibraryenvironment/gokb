@@ -397,7 +397,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
     def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
-    def curator = pkg?.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(pkg?.curatoryGroups?.id) : true
+    def curator = pkg?.curatoryGroups?.size() > 0 ? (user.adminStatus || user.curatoryGroups?.id.intersect(pkg?.curatoryGroups?.id)) : true
 
     if ( pkg && plt && ti && curator ) {
       log.debug("See if we already have a tipp");
