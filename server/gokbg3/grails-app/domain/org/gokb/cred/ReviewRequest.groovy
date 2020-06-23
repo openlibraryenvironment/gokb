@@ -19,73 +19,77 @@ class ReviewRequest implements Auditable {
   RefdataValue stdDesc
   User raisedBy
   User allocatedTo
+  CuratoryGroup allocatedToGroup
   User closedBy
   User reviewedBy
   Boolean needsNotify
   RefineProject refineProject
   String additionalInfo
+  int intervalInDays
 
   // Timestamps
   Date dateCreated
   Date lastUpdated
+  Date dueDate
 
   static mapping = {
-    id column:'rr_id'
-    descriptionOfCause column:'rr_cause_txt', type:'text'
-    reviewRequest column:'rr_req_txt', type:'text'
-    additionalInfo column:'rr_additional_info', type:'text'
+    id column: 'rr_id'
+    descriptionOfCause column: 'rr_cause_txt', type: 'text'
+    reviewRequest column: 'rr_req_txt', type: 'text'
+    additionalInfo column: 'rr_additional_info', type: 'text'
   }
 
   transient public postCreateClosure = { ctx ->
     log.debug("postCreateClosure(${ctx})");
-    if ( ctx.user != null ) {
-      if ( raisedBy == null )
+    if (ctx.user != null) {
+      if (raisedBy == null)
         raisedBy = ctx.user;
-      if ( allocatedTo == null )
+      if (allocatedTo == null)
         allocatedTo = ctx.user;
     }
   }
 
   static constraints = {
-    componentToReview(nullable:false, blank:false)
-    descriptionOfCause(nullable:true, blank:true)
-    reviewRequest(nullable:false, blank:false)
-    status(nullable:false, blank:false)
-    stdDesc(nullable:true, blank:false)
-    raisedBy(nullable:true, blank:false)
-    reviewedBy(nullable:true, blank:false)
-    allocatedTo(nullable:true, blank:false)
-    closedBy(nullable:true, blank:false)
-    dateCreated(nullable:true, blank:true)
-    lastUpdated(nullable:true, blank:true)
-    needsNotify(nullable:true, blank:true)
-    refineProject(nullable:true, blank:true)
-    additionalInfo(nullable:true, blank:true)
+    componentToReview(nullable: false, blank: false)
+    descriptionOfCause(nullable: true, blank: true)
+    reviewRequest(nullable: false, blank: false)
+    status(nullable: false, blank: false)
+    stdDesc(nullable: true, blank: false)
+    raisedBy(nullable: true, blank: false)
+    reviewedBy(nullable: true, blank: false)
+    allocatedTo(nullable: true, blank: false)
+    allocatedToGroup(nullable: true, blank: false)
+    closedBy(nullable: true, blank: false)
+    dateCreated(nullable: true, blank: true)
+    lastUpdated(nullable: true, blank: true)
+    needsNotify(nullable: true, blank: true)
+    refineProject(nullable: true, blank: true)
+    additionalInfo(nullable: true, blank: true)
   }
 
-  public static ReviewRequest raise (KBComponent forComponent,
-                                     String actionRequired,
-                                     String cause = null,
-                                     User raisedBy = null,
-                                     refineProject = null,
-                                     additionalInfo = null) {
+  public static ReviewRequest raise(KBComponent forComponent,
+                                    String actionRequired,
+                                    String cause = null,
+                                    User raisedBy = null,
+                                    refineProject = null,
+                                    additionalInfo = null) {
 
     // Create a request.
-    ReviewRequest req = new ReviewRequest (
-        status : RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
-        raisedBy : (raisedBy),
-        allocatedTo : (raisedBy),
-        descriptionOfCause : (cause),
-        reviewRequest : (actionRequired),
-        refineProject : (refineProject),
-        additionalInfo : (additionalInfo),
-        componentToReview : (forComponent)
-        ).save(failOnError:true);
+    ReviewRequest req = new ReviewRequest(
+      status: RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
+      raisedBy: (raisedBy),
+      allocatedTo: (raisedBy),
+      descriptionOfCause: (cause),
+      reviewRequest: (actionRequired),
+      refineProject: (refineProject),
+      additionalInfo: (additionalInfo),
+      componentToReview: (forComponent)
+    ).save(failOnError: true);
 
     // Just return the request.
 
-    if ( req && raisedBy ) {
-      new ReviewRequestAllocationLog(allocatedTo:raisedBy, rr:req).save(failOnError:true)
+    if (req && raisedBy) {
+      new ReviewRequestAllocationLog(allocatedTo: raisedBy, rr: req).save(failOnError: true)
     }
 
     req
@@ -94,22 +98,22 @@ class ReviewRequest implements Auditable {
   public static final String restPath = "/reviews"
 
   String getLogEntityId() {
-      "${this.class.name}:${id}"
+    "${this.class.name}:${id}"
   }
 
   @Transient
   def availableActions() {
     [
-      [code:'method::RRTransfer', label:'Transfer To...'],
-      [code:'method::RRClose', label:'Close']
+      [code: 'method::RRTransfer', label: 'Transfer To...'],
+      [code: 'method::RRClose', label: 'Close']
     ]
   }
 
   @Transient
   static def globalActions() {
     [
-      [code:'method::RRTransfer', label:'Transfer To...'],
-      [code:'method::RRClose', label:'Close']
+      [code: 'method::RRTransfer', label: 'Transfer To...'],
+      [code: 'method::RRClose', label: 'Close']
     ]
   }
 
@@ -119,7 +123,7 @@ class ReviewRequest implements Auditable {
 
     setStatus(RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed'))
     setClosedBy(rrcontext.user)
-    save(failOnError:true)
+    save(failOnError: true)
     log.debug("Changed status - ${status} ${closedBy}")
   }
 
@@ -128,28 +132,28 @@ class ReviewRequest implements Auditable {
   }
 
   def beforeUpdate() {
-    if ( isDirty('status') ) {
+    if (isDirty('status')) {
       log.debug("RR Status changed > ${this.status}")
       reviewedBy = springSecurityService.currentUser
     }
   }
 
   def beforeValidate() {
-    if ( this.id == null && !isDirty('status') ) {
+    if (this.id == null && !isDirty('status')) {
       setStatus(RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'))
     }
   }
 
   def getAdditional() {
     def result = null
-    if (additionalInfo && additionalInfo.length() > 0 ) {
+    if (additionalInfo && additionalInfo.length() > 0) {
       result = JSON.parse(additionalInfo);
     }
     result;
   }
 
   def getAllocationLog() {
-    def result = ReviewRequestAllocationLog.executeQuery("from ReviewRequestAllocationLog where rr = ?",[this])
+    def result = ReviewRequestAllocationLog.executeQuery("from ReviewRequestAllocationLog where rr = ?", [this])
     result
   }
 
@@ -164,10 +168,8 @@ class ReviewRequest implements Auditable {
 
       allActions.each { ao ->
         if (ao.perm == "delete" && !this.isDeletable()) {
-        }
-        else if (ao.perm == "admin" && !this.isAdministerable()) {
-        }
-        else {
+        } else if (ao.perm == "admin" && !this.isAdministerable()) {
+        } else {
           result.add(ao)
         }
       }
