@@ -622,8 +622,8 @@ select tipp.id,
    * fixed:'Unknown',
    * paymentType:'Unknown',
    * global:'Global',
-   * nominalPlatform:'Content Select'
-   * nominalProvider:'Preselect.media'
+   * nominalPlatform:'Content Select' or ID
+   * nominalProvider:'Preselect.media' or ID
    * listVerifier:'',
    * userListVerifier:'benjamin_ahlborn'
    * listVerifierDate:'2015-06-19T00:00:00Z'
@@ -637,6 +637,7 @@ select tipp.id,
    *   defaultSupplyMethod:'Other'
    *   defaultDataFormat:'Other'
    *   responsibleParty:''
+   *   id: 12
    * ]
    * name:'Campus: All Journals'
    * curatoryGroups:[
