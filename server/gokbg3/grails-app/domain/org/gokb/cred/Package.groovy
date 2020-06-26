@@ -622,8 +622,8 @@ select tipp.id,
    * fixed:'Unknown',
    * paymentType:'Unknown',
    * global:'Global',
-   * nominalPlatform:'Content Select' or ID
-   * nominalProvider:'Preselect.media' or ID
+   * nominalPlatform:'Content Select' or [id: ID, name:'name']
+   * nominalProvider:'Preselect.media' or [id: ID, name:'name']
    * listVerifier:'',
    * userListVerifier:'benjamin_ahlborn'
    * listVerifierDate:'2015-06-19T00:00:00Z'
@@ -657,7 +657,7 @@ select tipp.id,
     def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ?", [pkg_normname, status_deleted])
     def full_matches = []
     def created = false
-    def result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null;
+    Package result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null;
     boolean changed = false;
 
     if (!result && name_candidates.size() > 0 && packageHeaderDTO.identifiers?.size() > 0) {
@@ -789,18 +789,17 @@ select tipp.id,
 
       if (packageHeaderDTO.nominalPlatform instanceof String && packageHeaderDTO.nominalPlatform.trim()) {
         platformDTO['name'] = packageHeaderDTO.nominalPlatform
-      } else if (packageHeaderDTO.nominalPlatform instanceof Integer) {
-        platformDTO['id'] = packageHeaderDTO.nominalPlatform
-      } else if ((packageHeaderDTO.nominalPlatform.name && packageHeaderDTO.nominalPlatform.name.trim().size() > 0) || packageHeaderDTO.nominalPlatform.id) {
+      } else if (packageHeaderDTO.nominalPlatform['id']
+        || packageHeaderDTO.nominalPlatform['name']
+        || packageHeaderDTO.nominalPlatform['uuid']) {
         platformDTO = packageHeaderDTO.nominalPlatform
       }
 
-      if (platformDTO) {
+      if (!platformDTO.isEmpty()) {
         def np = null
-
-        if (platformDTO.uuid) {
-          np = Platform.findByUuid(platformDTO?.uuid)
-        }
+        if (platformDTO.id)
+          platformDTO.id = new Long(platformDTO.id)
+        np = Platform.findWhere(platformDTO)
 
         if (!np) {
           np = Platform.upsertDTO(platformDTO)
@@ -824,23 +823,22 @@ select tipp.id,
     // Provider
 
     if (packageHeaderDTO.nominalProvider) {
-
       def providerDTO = [:]
-
       if (packageHeaderDTO.nominalProvider instanceof String && packageHeaderDTO.nominalProvider.trim()) {
         providerDTO['name'] = packageHeaderDTO.nominalProvider
-      } else if (packageHeaderDTO.nominalProvider instanceof Integer) {
-        providerDTO['id'] = packageHeaderDTO.nominalProvider
-      } else if ((packageHeaderDTO.nominalProvider.name && packageHeaderDTO.nominalProvider.name.trim()) || packageHeaderDTO.nominalProvider.id) {
+      } else if (packageHeaderDTO.nominalProvider['id']
+        || packageHeaderDTO.nominalProvider['name']
+        || packageHeaderDTO.nominalProvider['uuid']) {
         providerDTO = packageHeaderDTO.nominalProvider
       }
       log.debug("Trying to set package provider.. ${providerDTO}")
       def prov = null
 
-      if (providerDTO?.uuid) {
-        prov = Org.findByUuid(providerDTO.uuid)
+      if (!providerDTO.isEmpty()) {
+        if (providerDTO.id)
+        providerDTO.id = new Long(providerDTO.id)
+        prov = Org.findWhere(providerDTO)
       }
-
       if (providerDTO && !prov) {
         def norm_prov_name = KBComponent.generateNormname(providerDTO.name)
 
@@ -879,10 +877,10 @@ select tipp.id,
     // Source
     if (packageHeaderDTO.source) {
       def src
-      if (packageHeaderDTO.source.url) {
-        src = Source.findByUrl(packageHeaderDTO.source.url)
-      } else if (packageHeaderDTO.source.id) {
-        src = Source.findById(packageHeaderDTO.source.id)
+      if (packageHeaderDTO.source) {
+        if (packageHeaderDTO.source.id)
+          packageHeaderDTO.source.id = new Long(packageHeaderDTO.source.id)
+        src = Source.findWhere(packageHeaderDTO.source)
       }
       if (src) {
         result.source = src
@@ -937,4 +935,5 @@ select tipp.id,
       curatoryGroups.add(cg);
     }
   }
+
 }
