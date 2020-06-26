@@ -269,7 +269,7 @@ class Package extends KBComponent {
             TitleInstance as title,
             Combo as pkgCombo,
             Combo as titleCombo,
-            TitleI802nstancePackagePlatform as tipp
+            TitleInstancePackagePlatform as tipp
           where pkgCombo.toComponent=tipp
             and pkgCombo.fromComponent=?
             and titleCombo.toComponent=tipp
@@ -622,8 +622,8 @@ select tipp.id,
    * fixed:'Unknown',
    * paymentType:'Unknown',
    * global:'Global',
-   * nominalPlatform:'Content Select' or [id: ID, name:'name']
-   * nominalProvider:'Preselect.media' or [id: ID, name:'name']
+   * nominalPlatform:54678
+   * provider:4325
    * listVerifier:'',
    * userListVerifier:'benjamin_ahlborn'
    * listVerifierDate:'2015-06-19T00:00:00Z'
@@ -637,7 +637,6 @@ select tipp.id,
    *   defaultSupplyMethod:'Other'
    *   defaultDataFormat:'Other'
    *   responsibleParty:''
-   *   id: 12
    * ]
    * name:'Campus: All Journals'
    * curatoryGroups:[
@@ -657,7 +656,7 @@ select tipp.id,
     def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ?", [pkg_normname, status_deleted])
     def full_matches = []
     def created = false
-    Package result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null;
+    def result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null;
     boolean changed = false;
 
     if (!result && name_candidates.size() > 0 && packageHeaderDTO.identifiers?.size() > 0) {
@@ -789,17 +788,22 @@ select tipp.id,
 
       if (packageHeaderDTO.nominalPlatform instanceof String && packageHeaderDTO.nominalPlatform.trim()) {
         platformDTO['name'] = packageHeaderDTO.nominalPlatform
-      } else if (packageHeaderDTO.nominalPlatform['id']
-        || packageHeaderDTO.nominalPlatform['name']
-        || packageHeaderDTO.nominalPlatform['uuid']) {
+      } else if (packageHeaderDTO.nominalPlatform instanceof Integer) {
+        platformDTO['id'] = (Long) packageHeaderDTO.nominalPlatform
+      } else if (packageHeaderDTO.nominalPlatform.name && packageHeaderDTO.nominalPlatform.name.trim().size() > 0) {
         platformDTO = packageHeaderDTO.nominalPlatform
       }
 
-      if (!platformDTO.isEmpty()) {
+      if (platformDTO) {
         def np = null
-        if (platformDTO.id)
-          platformDTO.id = new Long(platformDTO.id)
-        np = Platform.findWhere(platformDTO)
+
+        if (platformDTO.uuid) {
+          np = Platform.findByUuid(platformDTO.uuid)
+        } else if (platformDTO.id) {
+          np = Platform.get(platformDTO.id)
+        } else if (platformDTO.name) {
+          np = Platform.findByName(platformDTO.name)
+        }
 
         if (!np) {
           np = Platform.upsertDTO(platformDTO)
@@ -823,22 +827,22 @@ select tipp.id,
     // Provider
 
     if (packageHeaderDTO.nominalProvider) {
+
       def providerDTO = [:]
+
       if (packageHeaderDTO.nominalProvider instanceof String && packageHeaderDTO.nominalProvider.trim()) {
         providerDTO['name'] = packageHeaderDTO.nominalProvider
-      } else if (packageHeaderDTO.nominalProvider['id']
-        || packageHeaderDTO.nominalProvider['name']
-        || packageHeaderDTO.nominalProvider['uuid']) {
+      } else if (packageHeaderDTO.nominalProvider.name && packageHeaderDTO.nominalProvider.name.trim()) {
         providerDTO = packageHeaderDTO.nominalProvider
       }
+
       log.debug("Trying to set package provider.. ${providerDTO}")
       def prov = null
 
-      if (!providerDTO.isEmpty()) {
-        if (providerDTO.id)
-        providerDTO.id = new Long(providerDTO.id)
-        prov = Org.findWhere(providerDTO)
+      if (providerDTO?.uuid) {
+        prov = Org.findByUuid(providerDTO.uuid)
       }
+
       if (providerDTO && !prov) {
         def norm_prov_name = KBComponent.generateNormname(providerDTO.name)
 
@@ -875,13 +879,9 @@ select tipp.id,
     }
 
     // Source
-    if (packageHeaderDTO.source) {
-      def src
-      if (packageHeaderDTO.source) {
-        if (packageHeaderDTO.source.id)
-          packageHeaderDTO.source.id = new Long(packageHeaderDTO.source.id)
-        src = Source.findWhere(packageHeaderDTO.source)
-      }
+
+    if (packageHeaderDTO.source?.url) {
+      def src = Source.findByUrl(packageHeaderDTO.source.url)
       if (src) {
         result.source = src
         changed = true
@@ -920,6 +920,7 @@ select tipp.id,
 
     result.save(flush: true, failOnError: true);
 
+
     result
   }
 
@@ -935,5 +936,4 @@ select tipp.id,
       curatoryGroups.add(cg);
     }
   }
-
 }

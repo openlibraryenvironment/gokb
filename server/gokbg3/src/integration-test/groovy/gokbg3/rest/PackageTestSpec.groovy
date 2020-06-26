@@ -164,10 +164,10 @@ class PackageTestSpec extends AbstractAuthSpec {
           "namespace": "issn"
         ]
       ],
-      nominalProvider: [id:testOrg.id],
-      nominalPlatform: [id:testPlt.id],
+      provider       : testOrg.id,
+      nominalPlatform: testPlt.id,
       source         : [id: testSource.id],
-      scope          : [name:"Front File"]
+      scope          : [name: "Front File"]
     ]
     def urlPath = getUrlPath()
     last = true
@@ -180,6 +180,7 @@ class PackageTestSpec extends AbstractAuthSpec {
       body(new_body as JSON)
     }
     then:
+    resp.json.errors == null
     resp.status == 200 // OK
     resp.json.source != null
     resp.json.provider != null

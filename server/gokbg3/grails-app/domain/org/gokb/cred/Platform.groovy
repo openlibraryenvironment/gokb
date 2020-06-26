@@ -254,8 +254,6 @@ class Platform extends KBComponent {
 
     if (platformDTO.uuid) {
       result = Platform.findByUuid(platformDTO.uuid)
-    } else if (platformDTO.id) {
-      result = Platform.findById(platformDTO.id)
     }
     if (result) {
       changed |= com.k_int.ClassUtils.setStringIfDifferent(result, 'name', platformDTO.name)
