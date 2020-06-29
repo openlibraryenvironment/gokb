@@ -251,6 +251,7 @@ class RestMappingService {
   }
 
   public def updateAssoc(obj, prop, val) {
+    log.debug("Update association $obj - $prop: $val")
     def ptype = grailsApplication.mappingContext.getPersistentEntity(obj.class.name).getPropertyByName(prop).type
 
     if ( val != null ) {

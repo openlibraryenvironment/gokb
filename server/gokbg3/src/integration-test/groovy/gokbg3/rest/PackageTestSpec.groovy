@@ -4,11 +4,13 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
+import org.gokb.cred.Org
 import org.gokb.cred.Package
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.JournalInstance
 import org.gokb.cred.Platform
 import grails.converters.JSON
+import org.gokb.cred.Source
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.WebApplicationContext
 
@@ -24,6 +26,8 @@ class PackageTestSpec extends AbstractAuthSpec {
   def testGroup
   def testTitle
   def testPlt
+  def testOrg
+  def testSource
   def last = false
 
   def setupSpec() {
@@ -32,8 +36,10 @@ class PackageTestSpec extends AbstractAuthSpec {
   def setup() {
     testPackage = Package.findByName("TestPack") ?: new Package(name: "TestPack").save(flush: true)
     testGroup = CuratoryGroup.findByName("cgtest1") ?: new CuratoryGroup(name: "cgtest1").save(flush: true)
-    testTitle = JournalInstance.findByName("PackTestTitle") ?: new JournalInstance(name: "PackTestTitle").save(flush:true)
-    testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush:true)
+    testTitle = JournalInstance.findByName("PackTestTitle") ?: new JournalInstance(name: "PackTestTitle").save(flush: true)
+    testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
+    testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
+    testSource = Source.findByName("PackTestSource") ?: new Source(name: "PackTestSource").save(flush: true)
   }
 
   def cleanup() {
@@ -42,9 +48,12 @@ class PackageTestSpec extends AbstractAuthSpec {
       Package.findByName("TestPack")?.refresh()?.expunge()
       Package.findByName("UpdPack")?.refresh()?.expunge()
       Package.findByName("TestPackageWithTipps")?.refresh()?.expunge()
+      Package.findByName("TestPackageWithProviderAndPlatform")?.refresh()?.expunge()
       CuratoryGroup.findByName("cgtest1")?.refresh()?.expunge()
       JournalInstance.findByName("PackTestTitle")?.refresh()?.expunge()
       Platform.findByName("PackTestPlt")?.refresh()?.expunge()
+      Org.findByName("PackTestOrg")?.refresh()?.expunge()
+      Source.findByName("PackTestSource")?.refresh()?.expunge()
     }
   }
 
@@ -114,12 +123,12 @@ class PackageTestSpec extends AbstractAuthSpec {
   void "test /rest/packages post with new tipps"() {
     given:
     def upd_body = [
-      name: "TestPackageWithTipps",
+      name : "TestPackageWithTipps",
       tipps: [
         [
-          title: testTitle.id,
+          title       : testTitle.id,
           hostPlatform: testPlt.id,
-          url: "http://testpkgwithtipp.test"
+          url         : "http://testpkgwithtipp.test"
         ]
       ]
     ]
@@ -137,5 +146,45 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.status == 200 // OK
     resp.json._embedded.tipps.size() == 1
     resp.json._embedded.tipps[0].url == upd_body.tipps[0].url
+  }
+
+  void "test /rest/packages post with provider and platform"() {
+    given:
+    def new_body = [
+      name           : "TestPackageWithProviderAndPlatform",
+      breakable      : "Yes",
+      consistent     : "Yes",
+      description    : "kjkljslkdfsdf",
+      descriptionURL : "https://heise.de",
+      fixed          : "Yes",
+      global         : "Consortium",
+      ids            : [
+        [
+          "value"    : "1213-123X",
+          "namespace": "issn"
+        ]
+      ],
+      provider       : testOrg.id,
+      nominalPlatform: testPlt.id,
+      source         : [id: testSource.id],
+      scope          : [name: "Front File"]
+    ]
+    def urlPath = getUrlPath()
+    last = true
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("${urlPath}/rest/packages?_embed=tipps") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(new_body as JSON)
+    }
+    then:
+    resp.json.errors == null
+    resp.status == 200 // OK
+    resp.json.source != null
+    resp.json.provider != null
+    resp.json.nominalPlatform != null
+    resp.json.scope.name == "Front File"
   }
 }
