@@ -13,6 +13,7 @@ import grails.converters.JSON
 import grails.core.GrailsClass
 import groovyx.net.http.URIBuilder
 
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -32,6 +33,7 @@ class PackagesController {
   def springSecurityService
   def concurrencyManagerService
   def TSVIngestionService
+  def packageService
   def ESWrapperService
   def ESSearchService
   def sessionFactory
@@ -53,6 +55,24 @@ class PackagesController {
       log.debug("Tipp qry done ${result.tipps?.size()}");
     }
     result
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def compareContents() {
+    log.debug("compareContents")
+    def sdf = new SimpleDateFormat("yyyy-MM-dd")
+    def result = [:]
+
+    if (params.one && params.two) {
+      def date = params.date ? sdf.parse(params.date) : null
+      def full = params.full ? params.boolean('full') : false
+      result = packageService.compareLists(params.list('one'),params.list('two'),full,date)
+    }
+    else {
+      log.debug("Missing info..")
+    }
+
+    render result as JSON
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])

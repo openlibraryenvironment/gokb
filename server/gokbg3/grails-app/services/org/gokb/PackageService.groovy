@@ -2,6 +2,7 @@ package org.gokb
 
 import com.k_int.ConcurrencyManagerService.Job
 import grails.gorm.transactions.Transactional
+import java.text.SimpleDateFormat
 
 import org.gokb.cred.*
 import org.hibernate.Session
@@ -36,6 +37,8 @@ class PackageService {
   */
 
   def sessionFactory
+  def genericOIDService
+  def restMappingService
   ComponentLookupService componentLookupService
   
   /**
@@ -422,6 +425,156 @@ class PackageService {
 
       j.endTime = new Date()
     }
+  }
+
+  def compareLists(listOne, listTwo, def full = true, Date date = null, Job j = null) {
+    def result = [:]
+    def sdf = new SimpleDateFormat("yyyy-MM-dd")
+    def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def tipp_status = [status_current]
+    Date checkDate = date ?: new Date()
+    def tipp_params = [:]
+    def num1 = 0
+    def tnum1 = 0
+    def num2 = 0
+    def tnum2 = 0
+    def titlesOne = [:]
+    def titlesTwo = [:]
+
+    if (date) {
+      if (date.before(new Date())) {
+        tipp_status << status_retired
+      }
+    }
+
+    if (full) {
+      result = ['new': [], 'both':[], 'missing':[]]
+    }
+    else {
+      result = ['new': 0, 'both': 0, 'missing': 0]
+    }
+
+    log.debug("Building titles map 1 ..")
+
+    Package.withNewSession {
+
+      listOne.each { p1 ->
+        def pkg = Package.get(genericOIDService.oidToId(p1))
+
+        if (pkg) {
+          def tipps = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])
+          
+          tipps.eachWithIndex { tipp, idx ->
+            def inRange = true
+
+            if (tipp.accessEndDate && tipp.accessEndDate.before(checkDate)) {
+              inRange = false
+            }
+            else if (tipp.accessStartDate && tipp.accessStartDate.after(checkDate)) {
+              inRange = false
+            }
+            else if (tipp.status == status_retired) {
+              if (date && tipp.lastUpdated?.before(checkDate)) {
+                inRange = false
+              }
+            }
+
+            if (inRange) {
+              if (!titlesOne[tipp.title.id]){
+                titlesOne[tipp.title.id] = [id: tipp.title.id, name: tipp.title.name, tipps: []]
+                num1++
+              }
+
+              tnum1++
+              titlesOne[tipp.title.id]['tipps'] << restMappingService.mapObjectToJson(tipp, tipp_params)
+            }
+          }
+        }
+        else {
+          log.debug("Unable to resolve Package with id ${p1}")
+        }
+        cleanUpGorm()
+      }
+
+      log.debug("Added ${num1} titles with ${tnum1} TIPPs!")
+
+      log.debug("Building titles map 2 ..")
+
+      listTwo.each { p2 ->
+        def pkg = Package.get(genericOIDService.oidToId(p2))
+
+        if (pkg) {
+          def tipps = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])
+          
+          tipps.eachWithIndex { tipp, idx ->
+            def inRange = true
+
+            if (tipp.accessEndDate && tipp.accessEndDate.before(checkDate)) {
+              inRange = false
+            }
+            else if (tipp.accessStartDate && tipp.accessStartDate.after(checkDate)) {
+              inRange = false
+            }
+            else if (tipp.status == status_retired) {
+              if (date && tipp.lastUpdated.before(checkDate)) {
+                inRange = false
+              }
+            }
+
+            if (inRange) {
+              if (!titlesTwo[tipp.title.id]){
+                titlesTwo[tipp.title.id] = [id: tipp.title.id, name: tipp.title.name, tipps: []]
+                num2++
+              }
+
+              tnum2++
+              titlesTwo[tipp.title.id]['tipps'] << restMappingService.mapObjectToJson(tipp, tipp_params)
+
+              if (!titlesOne[tipp.title.id]) {
+                if (full) {
+                  result['new'] << restMappingService.mapObjectToJson(tipp, tipp_params)
+                }
+                else {
+                  result['new']++
+                }
+              }
+            }
+          }
+          cleanUpGorm()
+        }
+      }
+    }
+
+    titlesOne.each { id, val ->
+      if (!titlesTwo[id]) {
+        if (full) {
+          result['missing'] << val
+        }
+        else {
+          result['missing']++
+        }
+      }
+      else {
+        result['both'] << ['id': val.id, 'name': val.name, 'old': val.tipps, 'new': titlesTwo[id].tipps]
+      }
+    }
+
+    titlesTwo.each { id, val ->
+      if (!titlesOne[id]) {
+        if (full) {
+          result['new'] << val
+        }
+        else {
+          result['new']++
+        }
+      }
+    }
+
+    log.debug("Added ${num2} titles with ${tnum2} TIPPs!")
+    result
   }
 
   @javax.annotation.PreDestroy
