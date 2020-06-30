@@ -129,14 +129,13 @@ class ComponentLookupService {
     def max = params.limit ? params.long('limit') : 10
     def offset = params.offset ? params.long('offset') : 0
     def first = true
-    def cls_obj = grailsApplication.getArtefact("Domain",cls.name).newInstance()
+    def cls_obj = (cls == KBComponent) ?: grailsApplication.getArtefact("Domain",cls.name).newInstance()
     def sort = null
     def sortField = null
     def order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
     def genericTerm = params.q ?: null
 
-
-    if ( KBComponent.isAssignableFrom(cls) ) {
+    if ( cls != KBComponent && KBComponent.isAssignableFrom(cls) ) {
       def comboProps = cls_obj.allComboPropertyNames
       def comboJoinStr = ""
       def comboFilterStr = ""
@@ -414,7 +413,15 @@ class ComponentLookupService {
    */
 
   private generateLinks(result, cls, context, params, max, offset, total) {
-    def endpoint = cls.newInstance().hasProperty('restPath') ? cls.newInstance().restPath : ""
+    def endpoint = ""
+
+    if (cls == KBComponent) {
+      endpoint = "/entities"
+    }
+    else if (cls.newInstance().hasProperty('restPath')) {
+      endpoint = cls.newInstance().restPath
+    }
+
     log.debug("Identified endpoint: ${endpoint}")
     def base = grailsApplication.config.serverURL + "/rest" + "${context ?: endpoint}"
 
