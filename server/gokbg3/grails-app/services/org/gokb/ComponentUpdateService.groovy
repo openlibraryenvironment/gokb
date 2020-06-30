@@ -31,7 +31,7 @@ class ComponentUpdateService {
     
     component.refresh()
 
-    if ( data.name?.trim() && ((sync && component.name != data.name) || !component.name) ) {
+    if ( data.name?.trim() && (!component.name || (sync && component.name != data.name)) ) {
       component.name = data.name
       hasChanged = true
     }
