@@ -465,7 +465,7 @@ class IntegrationControllerSpec extends Specification {
         "identifiers" : [
           [
             "type" : "isbn",
-            "value" : "987-13-12232-23-X"
+            "value" : "978-13-12232-23-5"
           ],
           [
             "type" : "doi",
@@ -488,7 +488,7 @@ class IntegrationControllerSpec extends Specification {
       resp.json.message != null
       resp.json.message.startsWith('Created')
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
-      def ids = [ ['ns':'isbn', 'value':'987-13-12232-23-X']  ]
+      def ids = [ ['ns':'isbn', 'value':'978-13-12232-23-5']  ]
       def obj = TitleInstance.get(resp.json.titleId)
       obj?.ids?.collect { it.value == ids[0].value }
   }
@@ -500,7 +500,7 @@ class IntegrationControllerSpec extends Specification {
           "identifiers" : [
             [
               "type" : "isbn",
-              "value" : "987-13-12232-23-9"
+              "value" : "978-13-12232-23-9"
             ]
           ],
           "type" : "Monograph",
@@ -514,7 +514,7 @@ class IntegrationControllerSpec extends Specification {
           "identifiers" : [
             [
               "type" : "isbn",
-              "value" : "987-13-12232-23-9"
+              "value" : "978-13-12232-23-9"
             ]
           ],
           "name" : "Test Book 1",
@@ -533,7 +533,7 @@ class IntegrationControllerSpec extends Specification {
     then: "Item is created in the database"
       resp.json.results?.size() == 2
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
-      def ids = [ ['ns':'isbn', 'value':'987-13-12232-23-9']  ]
+      def ids = [ ['ns':'isbn', 'value':'978-13-12232-23-9']  ]
       resp.json.results[0].titleId == resp.json.results[1].titleId
   }
 
@@ -543,11 +543,11 @@ class IntegrationControllerSpec extends Specification {
         "identifiers" : [
           [
             "type" : "isbn",
-            "value" : "987-13-12232-23-8"
+            "value" : "978-13-12232-23-8"
           ],
           [
             "type" : "isbn",
-            "value" : "987-13-12232-23-8"
+            "value" : "978-13-12232-23-8"
           ]
         ],
         "type" : "Monograph",
@@ -565,9 +565,9 @@ class IntegrationControllerSpec extends Specification {
     then: "Item is created in the database"
       resp.json.message.startsWith('Created')
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
-      def ids = [ ['ns':'isbn', 'value':'987-13-12232-23-8']  ]
+      def ids = [ ['ns':'isbn', 'value':'978-13-12232-23-8']  ]
       def ns = IdentifierNamespace.findByValueIlike('isbn')
-      def id_num = Identifier.findAllByValueAndNamespace('987-13-12232-23-8', ns)
+      def id_num = Identifier.findAllByValueAndNamespace('978-13-12232-23-8', ns)
       def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
       id_num.size() == 1
       matching_with_class_one_ids?.size() == 1
@@ -579,7 +579,7 @@ class IntegrationControllerSpec extends Specification {
         "identifiers" : [
           [
             "type" : "isbn",
-            "value" : "987-13-12324-23-8"
+            "value" : "978-13-12324-23-8"
           ]
         ],
         "name" : "Test Book Missing Type"

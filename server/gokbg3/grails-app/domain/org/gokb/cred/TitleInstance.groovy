@@ -646,7 +646,7 @@ class TitleInstance extends KBComponent {
           }
 
           if (!Identifier.findByNamespaceAndNormname(found_ns, Identifier.normalizeIdentifier(final_val))) {
-            if ( (Identifier.nameSpaceRules[found_ns.value] && !(final_val ==~ Identifier.nameSpaceRules[found_ns.value])) || (found_ns.pattern && !(final_val ==~ found_ns.pattern)) ) {
+            if ( found_ns.pattern && !(final_val ==~ found_ns.pattern) ) {
               log.warn("Validation for ${found_ns.value}:${final_val} failed!")
               id_errors.add([message:"Validation for identifier ${found_ns.value}:${final_val} failed!", baddata: idobj])
               result.valid = false

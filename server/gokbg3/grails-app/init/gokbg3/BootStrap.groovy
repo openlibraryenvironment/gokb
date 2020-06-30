@@ -226,14 +226,34 @@ class BootStrap {
     log.info("GoKB sourceObjects()");
     sourceObjects()
 
-    def isbn_ns = IdentifierNamespace.findByValue('isbn') ?: new IdentifierNamespace(value:'isbn', family:'isxn').save(flush:true, failOnError:true);
-    def pisbn_ns = IdentifierNamespace.findByValue('pisbn') ?: new IdentifierNamespace(value:'pisbn', family:'isxn').save(flush:true, failOnError:true);
-    def issn_ns = IdentifierNamespace.findByValue('issn') ?: new IdentifierNamespace(value:'issn', family:'isxn').save(flush:true, failOnError:true);
-    def eissn_ns = IdentifierNamespace.findByValue('eissn') ?: new IdentifierNamespace(value:'eissn', family:'isxn').save(flush:true, failOnError:true);
-    def issnl_ns = IdentifierNamespace.findByValue('issnl') ?: new IdentifierNamespace(value:'issnl', family:'isxn').save(flush:true, failOnError:true);
-    def doi_ns = IdentifierNamespace.findByValue('doi') ?: new IdentifierNamespace(value:'doi').save(flush:true, failOnError:true);
-    def zdb_ns = IdentifierNamespace.findByValue('zdb') ?: new IdentifierNamespace(value:'zdb').save(flush:true, failOnError:true);
-    def isil_ns = IdentifierNamespace.findByValue('isil') ?: new IdentifierNamespace(value:'isil').save(flush:true, failOnError:true);
+    log.info("Ensure default Identifier namespaces")
+    def namespaces = [
+      [value:'isbn', family:'isxn', pattern:"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
+      [value:'pisbn', family:'isxn', pattern:"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
+      [value:'issn', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
+      [value:'eissn', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
+      [value:'issnl', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
+      [value:'doi'],
+      [value:'zdb', pattern:"^\\d+-[\\dxX]\$"],
+      [value:'isil', pattern:"^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
+    ]
+
+    namespaces.each { ns ->
+      def ns_obj = IdentifierNamespace.findByValue(ns.value)
+
+      if (ns_obj) {
+        if (ns.pattern && !ns_obj.pattern) {
+          ns_obj.pattern = ns.pattern
+          ns_obj.save(flush:true)
+        }
+      }
+      else {
+        ns_obj = new IdentifierNamespace(ns).save(flush:true, failOnError:true)
+      }
+
+      log.info("Ensured ${ns_obj}!")
+    }
+
 
     // log.info("Default batch loader config");
     // defaultBulkLoaderConfig();
