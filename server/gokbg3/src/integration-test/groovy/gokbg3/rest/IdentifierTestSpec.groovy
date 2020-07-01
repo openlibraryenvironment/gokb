@@ -101,6 +101,26 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     resp.json.value == "6644-2231"
   }
 
+  void "test identifier namespace validation"() {
+    given:
+    def urlPath = getUrlPath()
+    def obj_map = [
+      value: "6644-223",
+      namespace: ns_eissn.id
+    ]
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("${urlPath}/rest/identifiers") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(obj_map as JSON)
+    }
+    then:
+    resp.status == 400 // Created
+    resp.json.message == "Identifier format check failed!"
+  }
+
   void "test identifier create with connected component"() {
     given:
     def urlPath = getUrlPath()

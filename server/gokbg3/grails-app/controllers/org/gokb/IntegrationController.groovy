@@ -950,7 +950,7 @@ class IntegrationController {
                           log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
                           valid = false
-                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ti.errors)])
+                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ve.errors)])
                         }
                       }
 
@@ -1762,7 +1762,7 @@ class IntegrationController {
               log.error("ValidationException attempting to cross reference title",ve);
               result.result="ERROR"
               result.message="Validation of title '${titleObj.name}' failed."
-              result.errors= ve.errors
+              result.errors= messageService.processsValidationErrors(ve.errors)
               result.baddata=titleObj
               log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
             }

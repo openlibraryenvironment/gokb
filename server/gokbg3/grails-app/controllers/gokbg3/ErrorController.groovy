@@ -30,7 +30,7 @@ class ErrorController {
     else {
       withFormat {
         html {
-          redirect (uri:'/error')
+          forward (uri:'/error')
         }
         json {
           response.setStatus(500)
