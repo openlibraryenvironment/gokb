@@ -75,7 +75,10 @@ class ESSearchService{
       "from",
       "skipDomainMapping",
       "sort",
-      "order"
+      "order",
+      "_embed",
+      "_include",
+      "_exclude"
     ]
   ]
 
@@ -592,7 +595,7 @@ class ESSearchService{
           def response_record = [:]
 
           if (!params.skipDomainMapping) {
-            response_record = mapEsToDomain(r)
+            response_record = mapEsToDomain(r, params)
           }
           else {
             response_record.id = r.id
@@ -610,7 +613,7 @@ class ESSearchService{
         }
 
         if (!params.skipDomainMapping) {
-          def contextPath = "/components"
+          def contextPath = "/entities"
 
           if(context) {
             contextPath = context
@@ -642,17 +645,25 @@ class ESSearchService{
   /**
    *  mapEsToDomain : Maps an ES record to its final REST serialization.
    * @param record : An ES record map
+   * @param params : Request params
    */
 
-  private Map mapEsToDomain(record) {
+  private Map mapEsToDomain(record, params) {
     def domainMapping = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     def linkedObjects = [:]
+    def embed_active = params['_embed']?.split(',') ?: []
+    def include_list = params['_include']?.split(',') ?: null
+    def exclude_list = params['_exclude']?.split(',') ?: null
     Integer rec_id = genericOIDService.oidToId(record.id)
     def esMapping = [
       'lastUpdatedDisplay': 'lastUpdated',
       'sortname': false,
       'updater': false,
+      'identifiers': false,
+      'altname': false,
+      'roles': false,
+      'curatoryGroups': false
     ]
 
     def obj_cls = Class.forName("org.gokb.cred.${record.source.componentType}").newInstance()
@@ -671,25 +682,33 @@ class ESSearchService{
         domainMapping['_links'] = ['self': ['href': base + obj_cls.restPath + "/${rec_id}"]]
       }
 
-      domainMapping['_embedded'] = [:]
+      if (embed_active.size() > 0) {
+        domainMapping['_embedded'] = [:]
+      }
+
+      if (!exclude_list || exclude_list.contains('id')) {
+        domainMapping['id'] = rec_id
+      }
 
       record.source.each { field, val ->
-        if (field == "curatoryGroups") {
+        def toSkip = (include_list && !include_list.contains(field)) || (exclude_list?.contains(field))
+
+        if (field == "curatoryGroups" && embed_active.contains('curatoryGroups')) {
           mapCuratoryGroups(domainMapping, val)
         }
-        else if (field == "altname") {
+        else if (field == "altname" && embed_active.contains('variantNames')) {
           domainMapping['_embedded']['variantNames'] = val
         }
-        else if (field == "identifiers") {
+        else if (field == "identifiers" && embed_active.contains('ids')) {
           domainMapping['_embedded']['ids'] = mapIdentifiers(val)
         }
-        else if (field == "status" || field == "editStatus") {
+        else if (!toSkip && (field == "status" || field == "editStatus")) {
           domainMapping[field] = [id: RefdataCategory.lookup("KBComponent.${field}", val).id, name: val]
         }
         else if (esMapping[field] == false) {
           log.debug("Skipping field ${field}!")
         }
-        else if (esMapping[field] == "refdata") {
+        else if (esMapping[field] == "refdata" && !toSkip) {
           if (val) {
             def cat = classExaminationService.deriveCategoryForProperty("org.gokb.cred.${record.source.componentType}", field)
             def rdv = RefdataCategory.lookup(cat, val)
@@ -699,9 +718,10 @@ class ESSearchService{
             domainMapping[field] = null
           }
         }
-        else if (esMapping[field]) {
+        else if ( esMapping[field] && !toSkip ) {
           log.debug("Field ${esMapping[field]}")
           def fieldPath = esMapping[field].split("\\.")
+          def isNull = false
           log.debug("FieldPath: ${fieldPath}")
 
           if (fieldPath.size() == 2) {
@@ -709,7 +729,14 @@ class ESSearchService{
               linkedObjects[fieldPath[0]] = [:]
             }
             if (fieldPath[1] == 'id') {
-              linkedObjects[fieldPath[0]][fieldPath[1]] = genericOIDService.oidToId(val)
+              def id_val = genericOIDService.oidToId(val)
+
+              if (id_val) {
+                linkedObjects[fieldPath[0]][fieldPath[1]] = genericOIDService.oidToId(val)
+              }
+              else {
+                isNull = true
+              }
             }
             else {
               linkedObjects[fieldPath[0]][fieldPath[1]] = val
@@ -718,14 +745,19 @@ class ESSearchService{
             domainMapping[fieldPath[0]] = val
           }
         }
-        else {
+        else if (!toSkip) {
           log.debug("Transfering unmapped field ${field}:${val}")
           domainMapping[field] = val
         }
       }
 
       linkedObjects.each { field, val ->
-        domainMapping[field] = val
+        if (val.id) {
+          domainMapping[field] = val
+        }
+        else {
+          domainMapping[field] = null
+        }
       }
     }
 

@@ -32,10 +32,19 @@ class GlobalController {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     User user = User.get(springSecurityService.principal.id)
+    def es_search = params.es ? true : false
 
-    def start_es = LocalDateTime.now()
-    result = ESSearchService.find(params, null, user)
-    log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+    if (es_search) {
+      params.remove('es')
+      def start_es = LocalDateTime.now()
+      result = ESSearchService.find(params)
+      log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+    }
+    else {
+      def start_db = LocalDateTime.now()
+      result = componentLookupService.restLookup(user, KBComponent, params)
+      log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+    }
 
     render result as JSON
   }
