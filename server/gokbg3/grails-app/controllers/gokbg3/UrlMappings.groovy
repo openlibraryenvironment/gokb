@@ -26,6 +26,12 @@ class UrlMappings {
       get "/refdata/values/$id"(controller: 'refdata', namespace: 'rest', action: 'showValue')
       get "/refdata"(controller: 'refdata', namespace: 'rest', action: 'index')
 
+      get "/organizations/$id/$action"(controller: 'org', namespace: 'rest')
+      get "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'show')
+      put "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'update')
+      delete "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'delete')
+      get "/organizations"(controller: 'org', namespace: 'rest', action: 'index')
+
       get "/orgs/$id/$action"(controller: 'org', namespace: 'rest')
       get "/orgs/$id"(controller: 'org', namespace: 'rest', action: 'show')
       put "/orgs/$id"(controller: 'org', namespace: 'rest', action: 'update')
