@@ -321,7 +321,7 @@ class RestMappingService {
           }
         }
       } else {
-        def linkObj = ptype.get(val)
+        def linkObj = ptype.get(val.id?val.id:val)
 
         if (linkObj) {
           obj[prop] = linkObj
