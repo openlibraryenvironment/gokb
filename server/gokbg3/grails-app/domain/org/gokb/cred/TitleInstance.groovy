@@ -19,9 +19,8 @@ class TitleInstance extends KBComponent {
   Date publishedFrom
   Date publishedTo
   String coverImage
-  ComponentPrice listPrice
   String series
-  String subjectArea
+  String subjectGroup
 
   private static refdataDefaults = [
     "medium" : "Journal",
