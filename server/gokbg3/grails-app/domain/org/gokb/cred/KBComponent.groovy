@@ -1200,7 +1200,7 @@ where cp.owner = :c
         // Make sure not already a variant name
         def existing_variants = KBComponentVariantName.findAllByNormVariantName(normname)
         if ( existing_variants.size() == 0 ) {
-          result = new KBComponentVariantName( owner:this, variantName:name ).save()
+          result = new KBComponentVariantName( owner:this, variantName:name ).save(flush:true)
         }
         else {
           log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");

@@ -11,19 +11,19 @@ class PackageService {
   /*
   public static String missingTIPs = '''
     select distinct title, platform
-    from TitleInstancePackagePlatform as tipp, 
+    from TitleInstancePackagePlatform as tipp,
          Combo as title_combo,
          TitleInstance as title,
          Combo as platform_combo,
          Platform as plaform
-     where title_combo.fromComponent=tipp 
-       and title_combo.toComponent=title 
+     where title_combo.fromComponent=tipp
+       and title_combo.toComponent=title
        and title_combo.type.value='Title'
        and platform_combo.fromComponent=tipp
        and platform_combo.toComponent=platform
        and platform_combo.type.value='Platform'
-       and not exists ( 
-             select tip 
+       and not exists (
+             select tip
              from TitleInstancePlatform as tip,
                   Combo as tip_title_combo,
                   Combo as tip_platform_combo
@@ -37,7 +37,7 @@ class PackageService {
 
   def sessionFactory
   ComponentLookupService componentLookupService
-  
+
   /**
    * @return The scope value to be used by "Master Packages"
    */
@@ -141,7 +141,7 @@ class PackageService {
    * provided by the supplied Org.
    */
   def updateMasterFor (long provider_id, delta = true) {
-      
+
     // Read in a provider.
     Org provider = Org.get(provider_id)
 
@@ -162,28 +162,28 @@ class PackageService {
             provider)
         }
       }
-  
+
       // Update or create?
       if (master) {
-  
+
         // Update...
         log.debug ("Found package ${master.id} for ${provider.name}")
-  
+
         delta = delta ? master.lastUpdated : false
       } else {
-  
+
         // Set delta to false...
         delta = false
-  
+
         master = new Package()
-  
+
         // Need to pass the system_save parameter to flag as systemComponent.
         master.save(failOnError:true)
-  
+
         // Create new...
         log.debug ("Created Master Package ${master.id} for ${provider.name}.")
       }
-  
+
       master.setName("${provider.name}: Master List")
       master.setScope(getMasterScope())
       master.setProvider(provider)
@@ -192,7 +192,7 @@ class PackageService {
       // Save.
       master.save(failOnError:true)
       provider.save(failOnError:true, flush:true)
-      
+
       log.debug("Saved Master package ${master.id}")
 
       // Now query for all packages for the modified since the delta.
@@ -203,12 +203,12 @@ class PackageService {
             "id",
             "ne",
             master.id)
-  
+
           c.add(
             "provider.id",
             "eq",
             provider_id)
-  
+
           if (delta) {
             c.add(
               "lastUpdated",
@@ -217,29 +217,29 @@ class PackageService {
           }
         }
       } as Set
-  
+
       log.debug ("${pkgs.size() ?: 'No'} packages have been updated since the last time this master was updated.")
-  
-      
+
+
       for (Package pkg in pkgs) {
-  
+
         // We should now have a definitive list of tipps that have been changed since the last update.
-        
+
         // Go through the tipps in chunks.
         //def tipps = pkg.tipps.collect { it.id }
 
         def tipps = TitleInstancePackagePlatform.executeQuery('select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp',[pkg]);
-        
+
         log.debug("Query returns ${tipps.size()} tipps");
 
         TitleInstancePackagePlatform.withNewSession {
-         
+
           int counter = 1
-  
+
           for (def t in tipps) {
-            
+
             TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(t)
-              
+
             // Do we need to update this tipp.
             if (!delta || (delta && tipp.lastUpdated > delta)) {
               TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor (tipp.id, master.id)
@@ -255,17 +255,17 @@ class PackageService {
       log.debug("Finished updating master package ${master.id}")
     }
   }
-  
+
   /**
    * @param tipp the tipp to base the master tipp on.
    * @param master the master package
    * @return the master tipp
    */
   public TitleInstancePackagePlatform setOrUpdateMasterTippFor (long tipp_id, long master_id) {
-    
+
     Package master = Package.get(master_id)
     TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
-    
+
     // Check the tipp isn't already a master.
     Package pkg = tipp.pkg
     if (pkg.status == getMasterScope()) {
@@ -273,14 +273,14 @@ class PackageService {
       log.debug ("getMasterTipp called for TIPP {tipp.id} that is already a master. Returning supplied tipp.")
       return tipp
     }
-    
+
     // Master TIPP
     TitleInstancePackagePlatform master_tipp = tipp.masterTipp
-    
+
     if (!master_tipp) {
-      
+
       log.debug ("No master TIPP associated with this TIPP directly. We should query for one.")
-      
+
       // Now let's try and read an existing tipp from the master package.
       def mtp = master.getTipps().find {
         (it.title == tipp.getTitle()) &&
@@ -288,38 +288,38 @@ class PackageService {
       }
       master_tipp = (mtp ? KBComponent.deproxy( mtp ) : null)
     }
-    
+
     if (!master_tipp) {
       // Create a new master tipp.
       master_tipp = tipp.clone().save(failOnError:true)
       log.debug("Added master tipp ${master_tipp.id} to tipp ${tipp.id}")
     } else {
-      
+
       log.debug("Found master tipp ${master_tipp.id} to tipp ${tipp.id}")
       master_tipp = tipp.sync(master_tipp)
     }
-    
+
     // Ensure certain values are correct.
     master_tipp.with {
       setName(null)
       setPkg (master)
       setSystemComponent(true)
     }
-    
-    
+
+
     // Save the master tipp.
     master_tipp.save(failOnError:true)
     master.save(failOnError:true)
     tipp.save(failOnError:true, flush:true)
-    
+
     // Set as master for faster lookup.
     tipp.setMasterTipp(master_tipp)
     tipp.save(failOnError:true, flush:true)
-    
+
     // Return the TIPP.
     master_tipp
   }
-  
+
   /**
    * Get the Set of Orgs currently acting as a provider.
    */
@@ -329,7 +329,7 @@ class PackageService {
 
     // The results set.
     LinkedHashSet results = []
-    
+
     // Create the criteria.
     ComboCriteria c = ComboCriteria.createFor( Package.createCriteria() )
 
@@ -342,12 +342,12 @@ class PackageService {
           RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT))
       }
     }.each {
-    
+
       // Add any provider that is set.
       if (it?.provider) {
         results << (it.provider)
       }
-    } 
+    }
 
     log.debug("Found ${results.size()} providers.")
     results
@@ -427,5 +427,115 @@ class PackageService {
   @javax.annotation.PreDestroy
   def destroy() {
     log.debug("Destroy");
+  }
+
+  def restLookup(packageHeaderDTO, def user = null) {
+    log.info("Upsert org with header ${packageHeaderDTO}");
+    def result = [to_create: true];
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status','Deleted')
+    def normname = Package.generateNormname(packageHeaderDTO.name)
+
+    log.debug("Checking by normname ${normname} ..")
+    def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ?",[normname, status_deleted])
+    def ids_list = packageHeaderDTO.identifiers ?: packageHeaderDTO.ids
+    def matches = [:]
+    def created = false
+    boolean changed = false;
+
+    if(name_candidates.size() > 0) {
+      name_candidates.each { nc ->
+        if (!matches["${nc.id}"])
+          matches["${nc.id}"] = []
+
+        matches["${nc.id}"] << [field: 'name', value: packageHeaderDTO.name, message: "Another package with this name already exists!"]
+      }
+    }
+
+    if(packageHeaderDTO.ids?.size() > 0) {
+      ids_list.each { rid ->
+        Identifier the_id = null
+
+        if (rid instanceof Integer) {
+          the_id = Identifier.get(rid)
+        }
+        else {
+          def ns_field = rid.type ?: rid.namespace
+          def ns = null
+
+          if (ns_field) {
+            if (ns_field instanceof Integer) {
+              ns = IdentifierNamespace.get(ns_field)
+            }
+            else {
+              ns = IdentifierNamespace.findByValueIlike(ns_field)
+            }
+
+            if (ns) {
+              def match = Package.lookupByIO(ns.value, rid.value)
+
+              if (match) {
+                if (!matches["${nc.id}"])
+                  matches["${nc.id}"] = []
+                
+                matches["${nc.id}"] << [field:'ids', value: rid.value, message: "An existing package was matched by a supplied identifier!"]
+              }
+            }
+          }
+        }
+      }
+    }
+
+    def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
+    def variant_matches = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ",[variant_normname, status_deleted]);
+
+    variant_matches.each { vm ->
+      if (!matches["${vm.id}"])
+        matches["${vm.id}"] = []
+
+      matches["${vm.id}"] << ['field': 'name', value: packageHeaderDTO.name, message:"Provided name matched a variant of an existing package!"]
+    }
+
+    if( packageHeaderDTO.variantNames?.size() > 0 ){
+      log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
+      packageHeaderDTO.variantNames.each {
+        def variant = null
+
+        if (it instanceof String) {
+          variant = it.trim()
+        }
+        else if (it instanceof Map) {
+          variant = it.variantName?.trim() ?: null
+        }
+
+        if(variant){
+          def name_matches = Package.findAllByName(variant)
+
+          name_matches.each { nm ->
+            if (!matches["${nm.id}"])
+              matches["${nm.id}"] = []
+
+            matches["${nm.id}"] << [field: 'variantNames', value: variant, message:"Provided variant matched the title of an existing package!"]
+          }
+
+          def variant_nn = GOKbTextUtils.normaliseString(variant)
+          def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ",[variant_nn, status_deleted]);
+
+          variant_candidates.each { vc ->
+            log.debug("Found existing package variant name for variantName ${variant}")
+            if (!matches["${vc.id}"])
+              matches["${vc.id}"] = []
+
+            matches["${vc.id}"] << ['field': 'variantNames', value: variant, message:"Provided variant matched that of an existing package!"]
+          }
+        }
+      }
+    }
+    
+    if (matches.size() > 0) {
+      result.to_create = false
+      result.matches = matches
+    }
+
+    result
   }
 }

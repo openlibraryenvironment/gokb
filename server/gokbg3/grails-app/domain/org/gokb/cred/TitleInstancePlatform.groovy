@@ -61,13 +61,11 @@ class TitleInstancePlatform extends KBComponent {
       if ( r.size() == 0 ) {
         def tipl = new TitleInstancePlatform(url:url).save(flush:true, failOnError:true)
 
-        def combo_status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-
         def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTitles')
-        def plt_combo = new Combo(toComponent:tipl, fromComponent:platform, type:plt_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+        def plt_combo = new Combo(toComponent:tipl, fromComponent:platform, type:plt_combo_type).save(flush:true, failOnError:true);
 
         def ti_combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipls')
-        def ti_combo = new Combo(toComponent:tipl, fromComponent:title, type:ti_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+        def ti_combo = new Combo(toComponent:tipl, fromComponent:title, type:ti_combo_type).save(flush:true, failOnError:true);
 
         return tipl
 

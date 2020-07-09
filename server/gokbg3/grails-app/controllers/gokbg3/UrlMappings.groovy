@@ -106,6 +106,13 @@ class UrlMappings {
       delete "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'delete')
       post "/tipps"(controller: 'tipp', namespace: 'rest', action: 'save')
       get "/tipps"(controller: 'tipp', namespace: 'rest', action: 'index')
+
+      get "/package-titles/$id/coverage"(controller: 'tipp', namespace: 'rest', action: 'getCoverage')
+      get "/package-titles/$id"(controller: 'tipp', namespace: 'rest', action: 'show')
+      put "/package-titles/$id"(controller: 'tipp', namespace: 'rest', action: 'update')
+      delete "/package-titles/$id"(controller: 'tipp', namespace: 'rest', action: 'delete')
+      post "/package-titles"(controller: 'tipp', namespace: 'rest', action: 'save')
+      get "/package-titles"(controller: 'tipp', namespace: 'rest', action: 'index')
       
       get "/package-scopes" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
     }
