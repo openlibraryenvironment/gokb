@@ -4,6 +4,7 @@ import grails.util.GrailsNameUtils
 import groovyx.net.http.URIBuilder
 
 import org.gokb.cred.*
+import org.gokb.rest.RefdataController
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 import groovy.transform.Synchronized
@@ -12,26 +13,28 @@ import grails.util.Holders
 
 import groovy.util.logging.*
 
+import java.text.SimpleDateFormat
+
 @Slf4j
 class ComponentUpdateService {
   def grailsApplication
   def restMappingService
 
-  public boolean ensureCoreData ( KBComponent component, data, boolean sync = false ) {
-    return ensureSync (component, data, sync)
+  public boolean ensureCoreData(KBComponent component, data, boolean sync = false) {
+    return ensureSync(component, data, sync)
   }
 
   private final findLock = new Object()
 
   @Synchronized("findLock")
-  private boolean ensureSync ( KBComponent component, data, boolean sync = false ) {
+  private boolean ensureSync(KBComponent component, data, boolean sync = false) {
 
     // Set the name.
     def hasChanged = false
-    
+
     component.refresh()
 
-    if ( data.name?.trim() && (!component.name || (sync && component.name != data.name)) ) {
+    if (data.name?.trim() && (!component.name || (sync && component.name != data.name))) {
       component.name = data.name
       hasChanged = true
     }
@@ -41,7 +44,7 @@ class ComponentUpdateService {
     }
 
     // Core refdata.
-    hasChanged |= setAllRefdata ([
+    hasChanged |= setAllRefdata([
       'status', 'editStatus',
     ], data, component)
 
@@ -50,20 +53,19 @@ class ComponentUpdateService {
     Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
     RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
+    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
     data.identifiers.each { ci ->
       String testKey = "${ci.type}|${ci.value}".toString()
 
-      if ( ci.type && ci.value && ci.type.toLowerCase() != "originediturl") {
+      if (ci.type && ci.value && ci.type.toLowerCase() != "originediturl") {
 
         if (!ids.contains(testKey)) {
-          def canonical_identifier = null 
+          def canonical_identifier = null
 
-          if ( !KBComponent.has(component, 'publisher') ) {
+          if (!KBComponent.has(component, 'publisher')) {
             canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type, ci.value)
-          }
-          else {
+          } else {
             def norm_id = Identifier.normalizeIdentifier(ci.value)
             def ns = IdentifierNamespace.findByValueIlike(ci.type)
             canonical_identifier = Identifier.findByNamespaceAndNormnameIlike(ns, norm_id)
@@ -71,14 +73,13 @@ class ComponentUpdateService {
 
           log.debug("Checking identifiers of component ${component.id}")
           if (canonical_identifier) {
-            def duplicate = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?",[canonical_identifier,component])
+            def duplicate = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [canonical_identifier, component])
 
-            if(duplicate.size() == 0){
+            if (duplicate.size() == 0) {
               log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
-              def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush:true, failOnError:true)
+              def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
               hasChanged = true
-            }
-            else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
+            } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
               ReviewRequest.raise(
@@ -87,15 +88,13 @@ class ComponentUpdateService {
                 "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
                 user
               )
-            }
-            else {
+            } else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")
             }
 
             // Add the value for comparison.
             ids << testKey
-          }
-          else {
+          } else {
             log.debug("Could not find or create Identifier!")
           }
         }
@@ -105,10 +104,10 @@ class ComponentUpdateService {
     if (sync) {
       log.debug("Cleaning up deprecated IDs ..")
       component.ids.each { cid ->
-        if (!data.identifiers.collect {"${it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString()}.contains("${cid.namespace?.value}|${Identifier.normalizeIdentifier(cid.value)}".toString())) {
-          def ctr = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [cid,component])
+        if (!data.identifiers.collect { "${it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString() }.contains("${cid.namespace?.value}|${Identifier.normalizeIdentifier(cid.value)}".toString())) {
+          def ctr = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [cid, component])
 
-          if(ctr.size() == 1) {
+          if (ctr.size() == 1) {
             ctr[0].delete()
             hasChanged = true
           }
@@ -129,7 +128,7 @@ class ComponentUpdateService {
 
     // handle the source.
     if (!component.source && data.source && data.source?.size() > 0) {
-      component.source = createOrUpdateSource (data.source)?.get('component')
+      component.source = createOrUpdateSource(data.source)?.get('component')
     }
 
     // Add each file upload too!
@@ -137,7 +136,7 @@ class ComponentUpdateService {
 
       if (fa?.md5) {
 
-        DataFile file = DataFile.findByMd5(fa.md5) ?: new DataFile( guid: fa.guid, md5: fa.md5 )
+        DataFile file = DataFile.findByMd5(fa.md5) ?: new DataFile(guid: fa.guid, md5: fa.md5)
 
         // Single properties.
         file.with {
@@ -165,23 +164,22 @@ class ComponentUpdateService {
     }
 
     // If this is a component that supports curatoryGroups we should check for them.
-    if ( KBComponent.has(component, 'curatoryGroups') ) {
+    if (KBComponent.has(component, 'curatoryGroups')) {
       log.debug("Handling Curatory Groups ..")
       def groups = component.curatoryGroups.collect { [id: it.id, name: it.name] }
 
       data.curatoryGroups?.each { String name ->
-        if (!groups.find {it.name.toLowerCase() == name.toLowerCase()}) {
+        if (!groups.find { it.name.toLowerCase() == name.toLowerCase() }) {
 
           def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
           def combo_type_cg = RefdataCategory.lookup('Combo.Type', component.getComboTypeValue('curatoryGroups'))
           // Only add if we have the group already in the system.
           if (group) {
             log.debug("Adding group ${name}..")
-            def new_combo = new Combo(fromComponent:component, toComponent:group, type:combo_type_cg, status:combo_active).save(flush:true, failOnError:true)
+            def new_combo = new Combo(fromComponent: component, toComponent: group, type: combo_type_cg, status: combo_active).save(flush: true, failOnError: true)
             hasChanged = true
             groups << [id: group.id, name: group.name]
-          }
-          else {
+          } else {
             log.debug("Could not find linked group ${name}!")
           }
         }
@@ -189,7 +187,7 @@ class ComponentUpdateService {
 
       if (sync) {
         groups.each { cg ->
-          if (!data.curatoryGroups || !data.curatoryGroups.find {it.toLowerCase() == cg.name.toLowerCase()}) {
+          if (!data.curatoryGroups || !data.curatoryGroups.find { it.toLowerCase() == cg.name.toLowerCase() }) {
             log.debug("Removing deprecated CG ${cg.name}")
             Combo.executeUpdate("delete from Combo as c where c.fromComponent = ? and c.toComponent.id = ?", [component, cg.id])
             component.refresh()
@@ -197,8 +195,7 @@ class ComponentUpdateService {
           }
         }
       }
-    }
-    else {
+    } else {
       log.debug("Skipping CG handling ..")
     }
 
@@ -210,15 +207,15 @@ class ComponentUpdateService {
           String testKey = "${it.name}|${it.value}".toString()
 
           if (!props.contains(testKey)) {
-            def pType = AdditionalPropertyDefinition.findByPropertyName (it.name)
+            def pType = AdditionalPropertyDefinition.findByPropertyName(it.name)
             if (!pType) {
-              pType = new AdditionalPropertyDefinition ()
+              pType = new AdditionalPropertyDefinition()
               pType.propertyName = it.name
               pType.save(failOnError: true)
             }
 
             component.refresh()
-            def prop = new KBComponentAdditionalProperty ()
+            def prop = new KBComponentAdditionalProperty()
             prop.propertyDefn = pType
             prop.apValue = it.value
             component.addToAdditionalProperties(prop)
@@ -232,14 +229,14 @@ class ComponentUpdateService {
     // Variant names.
     if (data.variantNames) {
       for (String name : data.variantNames) {
-        if (name?.trim().size() > 0 && !variants.find {it.variantName == name}) {
+        if (name?.trim().size() > 0 && !variants.find { it.variantName == name }) {
           // Add the variant name.
           log.debug("Adding variantName ${name} to ${component} ..")
 
           def new_variant_name = component.ensureVariantName(name)
 
           // Add to collection.
-          if(new_variant_name) {
+          if (new_variant_name) {
             variants << [id: new_variant_name.id, variantName: new_variant_name.variantName]
           }
         }
@@ -257,15 +254,37 @@ class ComponentUpdateService {
       }
     }
 
+    // Prices.
+    def presentPrices = component.prices ? component.prices : []
+    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
+    if (data.prices) {
+      for (def priceData : data.prices) {
+        ComponentPrice newPrice = new ComponentPrice(
+          owner: component,
+          priceType: RefdataCategory.lookup('Price.type', priceData.priceType),
+          price: priceData.price ?: null,
+          currency: RefdataCategory.lookup('Currency', priceData.currency),
+          startDate: df.parse(priceData.startDate),
+          endDate: priceData.endDate ? df.parse(priceData.endDate) : null
+        )
+        if (!presentPrices.contains(newPrice)) {
+          newPrice.save(flush: true)
+          presentPrices << newPrice
+          component.prices = presentPrices
+          hasChanged = true
+        }
+      }
+    }
+
     if (hasChanged) {
       component.lastSeen = new Date().getTime()
     }
-    component.merge(flush:true)
+    component.merge(flush: true)
 
     hasChanged
   }
 
-  public boolean setAllRefdata (propNames, data, target, boolean createNew = false) {
+  public boolean setAllRefdata(propNames, data, target, boolean createNew = false) {
     boolean changed = false
     propNames.each { String prop ->
       changed |= ClassUtils.setRefdataIfPresent(data[prop], target, prop, createNew)
@@ -273,27 +292,27 @@ class ComponentUpdateService {
     changed
   }
 
-  private def createOrUpdateSource( data ) {
+  private def createOrUpdateSource(data) {
     log.debug("assertSource, data = ${data}");
-    def result=[:]
+    def result = [:]
     def source_data = data;
     def changed = false
     result.status = true;
 
     try {
-      if ( data.name ) {
+      if (data.name) {
 
         Source.withNewSession {
-          def located_or_new_source = Source.findByNormname( Source.generateNormname(data.name) ) ?: new Source(name:data.name).save(flush:true, failOnError:true)
+          def located_or_new_source = Source.findByNormname(Source.generateNormname(data.name)) ?: new Source(name: data.name).save(flush: true, failOnError: true)
 
-          ClassUtils.setStringIfDifferent(located_or_new_source,'url',data.url)
-          ClassUtils.setStringIfDifferent(located_or_new_source,'defaultAccessURL',data.defaultAccessURL)
-          ClassUtils.setStringIfDifferent(located_or_new_source,'explanationAtSource',data.explanationAtSource)
-          ClassUtils.setStringIfDifferent(located_or_new_source,'contextualNotes',data.contextualNotes)
-          ClassUtils.setStringIfDifferent(located_or_new_source,'frequency',data.frequency)
-          ClassUtils.setStringIfDifferent(located_or_new_source,'ruleset',data.ruleset)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'url', data.url)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'defaultAccessURL', data.defaultAccessURL)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'explanationAtSource', data.explanationAtSource)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'contextualNotes', data.contextualNotes)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'frequency', data.frequency)
+          ClassUtils.setStringIfDifferent(located_or_new_source, 'ruleset', data.ruleset)
 
-          changed |= setAllRefdata ([
+          changed |= setAllRefdata([
             'software', 'service'
           ], source_data, located_or_new_source)
 
@@ -311,7 +330,7 @@ class ComponentUpdateService {
         }
       }
     }
-    catch ( Exception e ) {
+    catch (Exception e) {
       e.printStackTrace()
     }
     result

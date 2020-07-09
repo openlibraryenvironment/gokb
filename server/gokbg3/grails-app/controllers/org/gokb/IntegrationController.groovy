@@ -1393,6 +1393,17 @@ class IntegrationController {
    *    'editStatus':'the_publisher',
    *    'status':'the_publisher',
    *    'historyEvents':[
+   *    ],
+   *    'series':'the_publisher',
+   *    'subjectGroup':'the_publisher',
+   *    'prices':[
+   *      {
+   *       'priceType':'list',
+   *       'currency':'EUR',
+   *       'startDate':'yyyy-MM-dd',
+   *       'endDate':'yyyy-MM-dd',
+   *       'price':12.89
+   *      }
    *    ]
    *  }
    */

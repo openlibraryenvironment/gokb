@@ -51,8 +51,6 @@
               <input type="hidden" name="__newObjectClass"
                      value="org.gokb.cred.ComponentPrice"/>
               <input type="hidden" name="__recip" value="owner"/>
-              <!--<input type="hidden" name="startDate"
-                     value='<g:formatDate format="yyyy-MM-dd" date="${java.util.Calendar.instance.time}"/>'/>-->
               <dt class="dt-label">Price Type</dt>
               <dd>
                 <g:simpleReferenceTypedown class="form-control"

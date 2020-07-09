@@ -1,0 +1,67 @@
+[
+   {
+      "OAStatus": "",
+      "volumeNumber": "null",
+      "historyEvents": [],
+      "imprint": "",
+      "editionStatement": "null",
+      "editStatus": "In Progress",
+      "defaultAccessURL": "",
+      "dateFirstOnline": "",
+      "medium": "Journal",
+      "type": "Serial",
+      "shortcode": "",
+      "issuer": "",
+      "publisher_history": [{
+         "endDate": "",
+         "name": "S. Karger",
+         "startDate": "",
+         "status": "Active"
+      }],
+      "firstEditor": "null",
+      "firstAuthor": "null",
+      "dateFirstInPrint": "",
+      "identifiers": [
+         {
+            "type": "zdb",
+            "value": "2256676-4"
+         },
+         {
+            "type": "issn",
+            "value": "0001-5547"
+         },
+         {
+            "type": "eissn",
+            "value": "1938-2650"
+         },
+         {
+            "type": "ezb",
+            "value": "150346"
+         }
+      ],
+      "monographEdition": "null",
+      "editionDifferentiator": "null",
+      "publishedTo": "",
+      "editionNumber": "",
+      "publishedFrom": "1996-01-01 00:00:00.000",
+      "name": "Acta cytologica",
+      "continuingSeries": "",
+      "status": "Current",
+      "series": "Mystery Cloud",
+      "subjectGroup": "Fringe",
+      "prices": [
+         {
+            "priceType": "list",
+            "currency": "EUR",
+            "price": 123.45,
+            "startDate": "2010-01-31"
+         },
+         {
+            "priceType": "topup",
+            "currency": "USD",
+            "price": 43.12,
+            "startDate": "2020-01-01"
+         }
+      ]
+   }
+]
