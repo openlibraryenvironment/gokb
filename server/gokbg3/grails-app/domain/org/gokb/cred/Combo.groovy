@@ -1,6 +1,7 @@
 package org.gokb.cred
 import grails.plugins.orm.auditable.Auditable
 import javax.persistence.Transient
+import org.gokb.DomainClassExtender
 
 /**
  * @author sosguthorpe
@@ -65,15 +66,21 @@ class Combo implements Auditable {
   String getLogEntityId() {
       "${this.class.name}:${id}"
   }
+
+  def afterInsert() {
+    if (!status) {
+      status = DomainClassExtender.getComboStatusActive()
+    }
+  }
   
   public Date expire (Date endDate = null, boolean replaced = false) {
 
-	if (endDate == null) endDate = new Date ()
+    if (endDate == null) endDate = new Date ()
 
-	// Expire this combo...
-	setStatus (RefdataCategory.lookupOrCreate(Combo.RD_STATUS, (replaced ? Combo.STATUS_SUPERSEDED : Combo.STATUS_EXPIRED)))
-	setEndDate(endDate)
-	save()
-	endDate
+    // Expire this combo...
+    setStatus (RefdataCategory.lookupOrCreate(Combo.RD_STATUS, (replaced ? Combo.STATUS_SUPERSEDED : Combo.STATUS_EXPIRED)))
+    setEndDate(endDate)
+    save()
+    endDate
   }
 }

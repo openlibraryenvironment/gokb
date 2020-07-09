@@ -26,6 +26,7 @@ class PlatformController {
   def messageService
   def restMappingService
   def componentLookupService
+  def platformService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -101,18 +102,36 @@ class PlatformController {
     def user = User.get(springSecurityService.principal.id)
 
     if (reqBody) {
-      Platform obj = Platform.upsertDTO(reqBody, user)
 
-      if (!obj) {
-        log.debug("Could not upsert object!")
-        errors.object = [[badData: reqBody, message:"Unable to save object!"]]
+      def obj = null
+      def lookup_result = platformService.restLookup(reqBody)
+
+      if (lookup_result.to_create) {
+        def normname = Platform.generateNormname(reqBody.name)
+        obj = new Platform(name: reqBody.name, normname: normname).save(flush:true)
+        log.debug("New Object ${obj}")
       }
-      else if (obj.hasErrors()) {
+      else {
+        lookup_result.matches.each { id, errs ->
+          errs.each { e ->
+            if (!errors[e.field])
+              errors[e.field] = []
+
+            errors[e.field] << [message: e.message, baddata: e.value, matches: id]
+          }
+        }
+      }
+
+      if (lookup_result.to_create && !obj) {
+        log.debug("Could not upsert object!")
+        errors.object = [[baddata: reqBody, message:"Unable to save object!"]]
+      }
+      else if (obj?.hasErrors()) {
         log.debug("Object has errors!")
         errors = messageService.processValidationErrors(obj.errors, request.locale)
         log.debug("${errors}")
       }
-      else {
+      else if (obj) {
         def jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
@@ -218,13 +237,13 @@ class PlatformController {
     render result as JSON
   }
 
-  private def updateCombos(obj, reqBody) {
+  private def updateCombos(obj, reqBody, boolean remove = true) {
     def errors = [:]
     log.debug("Updating platform combos ..")
 
     if (reqBody.ids || reqBody.identifiers) {
       def idmap = reqBody.ids ?: reqBody.identifiers
-      restMappingService.updateIdentifiers(obj, idmap)
+      restMappingService.updateIdentifiers(obj, idmap, remove)
     }
 
     if (reqBody.provider) {

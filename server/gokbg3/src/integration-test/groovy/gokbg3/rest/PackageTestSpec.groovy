@@ -116,6 +116,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200 // OK
+    sleep(500)
     resp.json._embedded?.curatoryGroups?.size() == 1
     resp.json._embedded?.curatoryGroups[0].id == testGroup.id
   }
