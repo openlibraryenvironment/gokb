@@ -193,7 +193,8 @@ window.gokb = {
       if (me.is(".date")) {
         // This is a date element. We should add the date functionality.
         me.on('shown', function(e, editable) {
-          editable.input.$input.mask(
+          console.log(editable);
+          $('.form-date').mask(
             '0000-M0-D0',
             {
               'translation': {
