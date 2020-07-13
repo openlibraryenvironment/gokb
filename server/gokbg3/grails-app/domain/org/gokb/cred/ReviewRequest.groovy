@@ -41,8 +41,12 @@ class ReviewRequest implements Auditable {
     if ( ctx.user != null ) {
       if ( raisedBy == null )
         raisedBy = ctx.user;
-      if ( allocatedTo == null )
-        allocatedTo = ctx.user;
+    }
+
+    if (KBComponent.has('curatoryGroups', componentToReview)) {
+      componentToReview.curatoryGroups?.each { cg ->
+        AllocatedReviewGroup.create(cg, this)
+      }
     }
   }
 
@@ -55,6 +59,7 @@ class ReviewRequest implements Auditable {
     raisedBy(nullable:true, blank:false)
     reviewedBy(nullable:true, blank:false)
     allocatedTo(nullable:true, blank:false)
+    allocatedToGroup(nullable:true, blank:false)
     closedBy(nullable:true, blank:false)
     dateCreated(nullable:true, blank:true)
     lastUpdated(nullable:true, blank:true)
@@ -68,13 +73,14 @@ class ReviewRequest implements Auditable {
                                      String cause = null,
                                      User raisedBy = null,
                                      refineProject = null,
-                                     additionalInfo = null) {
+                                     additionalInfo = null,
+                                     allocatedToGroup = null) {
 
     // Create a request.
     ReviewRequest req = new ReviewRequest (
         status : RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
         raisedBy : (raisedBy),
-        allocatedTo : (raisedBy),
+        allocatedToGroup : (allocatedToGroup),
         descriptionOfCause : (cause),
         reviewRequest : (actionRequired),
         refineProject : (refineProject),

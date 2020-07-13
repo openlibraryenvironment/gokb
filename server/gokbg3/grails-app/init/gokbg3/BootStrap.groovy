@@ -860,6 +860,9 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Deleted').save(flush:true, failOnError:true)
 
+    RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Claimed').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'In Progress').save(flush:true, failOnError:true)
+
     RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'RR Standard Desc 1').save(flush:true, failOnError:true)
 
 

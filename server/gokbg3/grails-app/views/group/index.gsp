@@ -21,7 +21,6 @@
               
           </th>
           <th>Status</th>
-          <th>List verified by</th>
           <th>List verified date</th>
           <th>
             <g:link params="${params+[pkg_sort:'lastUpdated',pkg_sort_order:('desc'== params.pkg_sort_order?'asc':'desc')]}">
@@ -44,16 +43,6 @@
               </g:link>
             </td>
             <td>${pkg.status?.value}</td>
-            <td>
-              <g:if test="${pkg?.userListVerifier}">
-                <g:if test="${org.gokb.cred.User.isTypeReadable()}">
-                  <g:link controller="resource" action="show" id="${pkg.userListVerifier.getClassName()+':'+pkg.userListVerifier.id}">${pkg.userListVerifier.displayName ?: pkg.userListVerifier.username} </g:link>
-                </g:if>
-                <g:else>
-                  ${pkg.userListVerifier.displayName ?: pkg.userListVerifier.username}
-                </g:else>
-              </g:if>
-            </td>
             <td>${pkg.listVerifiedDate}</td>
             <td>${pkg.lastUpdated}</td>
             <td style="white-space:nowrap;">${pkg.scope?.value}</td>
@@ -72,12 +61,6 @@
     <table class="table table-striped table-condensed table-bordered">
       <thead>
         <tr>
-          <th>
-            <g:link params="${params+[rr_sort:'displayName',rr_sort_order:('desc'== params.rr_sort_order?'asc':'desc')]}">
-              Allocated To
-              <i class="fas fa-sort"></i>
-            </g:link>
-          </th>
           <th>Component</th>
           <th>Cause</th>
           <th>Review Request</th>
@@ -88,16 +71,6 @@
       <tbody>
         <g:each in="${rrs}" var="rr">
             <tr>
-              <td>
-                <g:if test="${rr.allocatedTo?.isReadable()}">
-                  <g:link controller="resource" action="show" id="${rr.allocatedTo?.getClassName()+':'+rr.allocatedTo.id}">
-                    ${rr.allocatedTo?.displayName ?: rr.allocatedTo.username }
-                  </g:link>
-                </g:if>
-                <g:else>
-                  ${rr.allocatedTo?.displayName ?: rr.allocatedTo.username }
-                </g:else>
-              </td>
               <td>
                 <g:link controller="resource" action="show" id="${rr.componentToReview?.getClassName()+':'+rr.componentToReview?.id}">${rr.componentToReview}</g:link>
               </td>
