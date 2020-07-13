@@ -20,6 +20,17 @@ class FTUpdateService {
 
   public static boolean running = false;
 
+  final static def components = [
+    'org.gokb.cred.Package',
+    'org.gokb.cred.Org',
+    'org.gokb.cred.Platform',
+    'org.gokb.cred.JournalInstance',
+    'org.gokb.cred.DatabaseInstance',
+    'org.gokb.cred.BookInstance',
+    'org.gokb.cred.OtherInstance',
+    'org.gokb.cred.TitleInstancePackagePlatform'
+  ]
+
 
   /**
    * Update ES.
@@ -29,6 +40,7 @@ class FTUpdateService {
    */
   def synchronized updateFTIndexes(Job j = null) {
     log.debug("updateFTIndexes");
+    def endTime = null
 
     if ( running == false ) {
       running = true;
@@ -37,8 +49,8 @@ class FTUpdateService {
     }
     else {
       log.info("FTUpdate already running")
+      j?.endTime = new Date()
     }
-    j?.endTime = new Date()
   }
 
   def doFTUpdate(Job j = null) {
@@ -46,16 +58,6 @@ class FTUpdateService {
 
     log.debug("Execute IndexUpdateJob starting at ${new Date()}");
     def start_time = System.currentTimeMillis();
-    def components = [
-      'org.gokb.cred.Package',
-      'org.gokb.cred.Org',
-      'org.gokb.cred.Platform',
-      'org.gokb.cred.JournalInstance',
-      'org.gokb.cred.DatabaseInstance',
-      'org.gokb.cred.BookInstance',
-      'org.gokb.cred.OtherInstance',
-      'org.gokb.cred.TitleInstancePackagePlatform'
-    ]
     def esclient = ESWrapperService.getClient()
     int total = 0
     int startc = 0
@@ -412,6 +414,7 @@ class FTUpdateService {
     }
 
     running = false;
+    j.endTime = new Date()
   }
 
   private def getControlRecord(domainName) {
@@ -492,30 +495,24 @@ class FTUpdateService {
           bulkRequest = esclient.prepareBulk();
           log.debug("BulkResponse: ${bulkResponse}")
 
-          latest_ft_record = FTControl.get(latest_ft_record.id);
+          FTControl.withNewTransaction {
+            latest_ft_record = FTControl.get(latest_ft_record.id);
 
-          log.debug("Got lastest FT: ${latest_ft_record}")
-          log.debug("TS: ${latest_ft_record.lastTimestamp} - ID: ${latest_ft_record.lastId}")
+            log.debug("Got lastest FT: ${latest_ft_record}")
+            log.debug("TS: ${latest_ft_record.lastTimestamp} - ID: ${latest_ft_record.lastId}")
 
-          if ( latest_ft_record ) {
-            latest_ft_record.lastTimestamp = highest_timestamp
-            latest_ft_record.lastId = highest_id
-            log.debug("Saving..")
-
-            if (latest_ft_record.validate()) {
-              log.debug("Validated OK")
-              latest_ft_record = latest_ft_record.merge();
+            if ( latest_ft_record ) {
+              latest_ft_record.lastTimestamp = highest_timestamp
+              latest_ft_record.lastId = highest_id
+              latest_ft_record = latest_ft_record.merge(flush:true);
             }
             else {
-              log.error("Unable to save FT record for ${domain.class}")
+              log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update");
             }
-          }
-          else {
-            log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update");
           }
 
           log.debug("Updated FTControl ..")
-          // cleanUpGorm();
+          cleanUpGorm();
           synchronized(this) {
             Thread.yield()
           }
@@ -537,9 +534,11 @@ class FTUpdateService {
         latest_ft_record = FTControl.get(latest_ft_record.id);
         latest_ft_record.lastTimestamp = highest_timestamp
         latest_ft_record.lastId = highest_id
-        latest_ft_record = latest_ft_record.merge();
+        latest_ft_record = latest_ft_record.merge(flush:true);
+
+        log.debug("Merged ..")
+        cleanUpGorm();
       }
-      // cleanUpGorm();
 
       log.info("final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}");
     }
@@ -563,18 +562,30 @@ class FTUpdateService {
   }
 
   def clearDownAndInitES(Job j = null) {
+    def endTime = null
     if ( running == false ) {
       log.debug("Remove existing FTControl ..")
-      FTControl.withTransaction {
-        FTControl.executeUpdate("delete FTControl c");
+      components.each {
+        log.debug("${it} ..")
+        def result = FTControl.findByDomainClassName(it);
+
+        if (result) {
+          result.delete(flush:true)
+          log.debug("Deleted control for ${it}")
+        }
+        else {
+          log.debug("Control not found!")
+        }
       }
+      log.debug("Done..")
       updateFTIndexes(j);
     }
     else {
       log.info("FTUpdate already running")
       j?.message("Skipped - FTUpdate was alreay running")
+      j.endTime = new Date()
     }
-    j?.endTime = new Date()
+    return endTime
   }
 
   @javax.annotation.PreDestroy

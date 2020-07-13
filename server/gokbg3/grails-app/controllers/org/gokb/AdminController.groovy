@@ -11,6 +11,8 @@ import org.springframework.security.acls.domain.BasePermission
 import org.springframework.security.acls.model.ObjectIdentity
 import org.springframework.security.acls.model.Permission
 
+
+import grails.gorm.transactions.Transactional
 import java.util.concurrent.CancellationException
 
 class AdminController {
@@ -225,6 +227,7 @@ class AdminController {
     }
   }
 
+  @Transactional
   def updateTextIndexes() {
     log.debug("Call to update indexe");
 
@@ -238,6 +241,7 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  @Transactional
   def resetTextIndexes() {
     log.debug("Call to reset indexe")
     Job j = concurrencyManagerService.createJob { Job j ->
