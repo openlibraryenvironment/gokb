@@ -228,8 +228,8 @@ class AdminController {
   def updateTextIndexes() {
     log.debug("Call to update indexe");
 
-    Job j = concurrencyManagerService.createJob {
-      FTUpdateService.updateFTIndexes();
+    Job j = concurrencyManagerService.createJob { Job j ->
+      FTUpdateService.updateFTIndexes(j);
     }.startOrQueue()
 
     j.description = "Update Free Text Indexes"
@@ -239,9 +239,9 @@ class AdminController {
   }
 
   def resetTextIndexes() {
-    log.debug("Call to update indexe")
-    Job j = concurrencyManagerService.createJob {
-      FTUpdateService.clearDownAndInitES()
+    log.debug("Call to reset indexe")
+    Job j = concurrencyManagerService.createJob { Job j ->
+      FTUpdateService.clearDownAndInitES(j)
     }.startOrQueue()
 
     j.description = "Reset Free Text Indexes"
@@ -316,7 +316,7 @@ class AdminController {
           log.debug("Cancelled")
         }
         catch (Exception e) {
-          log.debug("${e}")
+          log.debug("${Exception}", e)
 
           if (j.messages?.size() == 0) {
             j.message("There has been an exception processing this job! Please check the logs!")

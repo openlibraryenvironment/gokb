@@ -42,6 +42,9 @@ class UsersController {
     // parse params
     int offset = params.offset ? params.offset as int : 0
     int limit = params.limit ? params.limit as int : (pageSize > 0 ? pageSize : 10)
+    def roleIds = params.roleId ? params.roleId.split(',') : (params.roles ? params.roles.split(',') : null)
+    def cgIds = params.curatoryGroupId ? params.curatoryGroupId.split(',') : (params.curatoryGroups ? params.curatoryGroups.split(',') : null)
+    def errors = [:]
     String[] sortFields = null, sortOrders = null
     if (params['_sort']) {
       sortFields = params['_sort'].split(',')
@@ -53,9 +56,8 @@ class UsersController {
     def hqlParams = [:]
     def hqlQuery = "select distinct u from User u"
 
-    if (params.roleId) {
+    if (roleIds) {
       hqlQuery += ", UserRole ur, Role r where u = ur.user and ur.role=r "
-      def roleIds = params.roleId.split(',')
       hqlQuery += ' and ('
       roleIds.eachWithIndex { v, i ->
         hqlQuery += "${i > 0 ? " or" : ""} r.id = :roleId$i"
@@ -64,17 +66,20 @@ class UsersController {
       hqlQuery += ")"
     }
 
-    if (params.curatoryGroupId) {
-      String cgQuery = " ${params.roleId ? 'and' : ' where'} ("
-      def cgIds = params.curatoryGroupId.split(',')
+    if (cgIds) {
+      String cgQuery = " ${roleId ? 'and' : ' where'} ("
+
       cgIds.eachWithIndex { v, i ->
         CuratoryGroup cg = CuratoryGroup.findById(v as Long)
         if (cg) {
           cgQuery += "${i > 0 ? " or" : ""} :group$i in elements (u.curatoryGroups)"
           hqlParams += ["group$i": cg]
         } else {
-          result += [error: [message: "curatoryGroupId $v is unknown",
-                             code   : 1]]
+          if (!errors.curatoryGroups) {
+            errors.curatoryGroups = []
+          }
+
+          errors.curatoryGroups << [message: "No curatoryGroup found for ID $v!", baddata: $v, code: 1]
         }
       }
       cgQuery += ')'
@@ -83,7 +88,7 @@ class UsersController {
     }
 
     if (params.name) {
-      hqlQuery += " ${params.roleId || params.curatoryGroupId ? 'and' : ' where'} (lower(u.username) like lower(:name) " +
+      hqlQuery += " ${roleIds || cgIds ? 'and' : ' where'} (lower(u.username) like lower(:name) " +
         // displayName matching might get kicked out
         "or lower(u.displayName) like lower(:name)" +
         ")"
@@ -91,7 +96,7 @@ class UsersController {
     }
 
     if (params.containsKey("status")) {
-      hqlQuery += "${params.roleId || params.curatoryGroupId || params.name ? 'and' : ' where'}"
+      hqlQuery += "${roleIds || cgIds || params.name ? 'and' : ' where'}"
       if (params.status == "true") {
         hqlQuery += " u.enabled = true and u.accountLocked = false and u.accountExpired = false and u.passwordExpired = false"
       } else {
@@ -194,6 +199,7 @@ class UsersController {
   def patch() {
     def user = User.get(params.id)
     def result = [:]
+    def errors = []
     if (user && request.JSON) {
       if (request.JSON.password) {
         user.password = request.JSON.password
@@ -201,12 +207,13 @@ class UsersController {
       }
       result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
     } else {
-      def errors = []
       errors << [message: "no data found in the request", baddata: request.JSON]
       result.errors = errors
     }
-    if (result.errors != null)
+
+    if (result.errors)
       response.status = 400
+      
     render result as JSON
   }
 

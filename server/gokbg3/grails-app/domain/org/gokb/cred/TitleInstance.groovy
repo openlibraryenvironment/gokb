@@ -703,7 +703,7 @@ class TitleInstance extends KBComponent {
   }
 
   @Transient
-  public static TitleInstance upsertDTO(titleLookupService,titleDTO,user=null) {
+  public static TitleInstance upsertDTO(titleLookupService,titleDTO,user=null,fullsync=false) {
     def result = null;
     def type = null
 
@@ -742,7 +742,8 @@ class TitleInstance extends KBComponent {
                                       user,
                                       null,
                                       type,
-                                      titleDTO.uuid
+                                      titleDTO.uuid,
+                                      fullsync
                                   )
       log.debug("Result of upsertDTO: ${result}");
     }

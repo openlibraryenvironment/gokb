@@ -3,6 +3,7 @@ package org.gokb
 
 import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.bulk.BulkRequestBuilder
+import com.k_int.ConcurrencyManagerService.Job
 import org.gokb.FTControl
 import org.hibernate.ScrollMode
 import java.nio.charset.Charset
@@ -26,32 +27,54 @@ class FTUpdateService {
    * is responsible for ensuring only 1 FT index task runs at a time. It's a simple mutex.
    * see https://async.grails.org/latest/guide/index.html
    */
-  def synchronized updateFTIndexes() {
+  def synchronized updateFTIndexes(Job j = null) {
     log.debug("updateFTIndexes");
 
     if ( running == false ) {
       running = true;
-      doFTUpdate()
+      doFTUpdate(j)
       log.info("FTUpdate done.")
-      return new Date();
     }
     else {
       log.info("FTUpdate already running")
-      return "Job cancelled – FTUpdate was already running!";
     }
+    j?.endTime = new Date()
   }
 
-  def doFTUpdate() {
+  def doFTUpdate(Job j = null) {
     log.debug("doFTUpdate");
 
     log.debug("Execute IndexUpdateJob starting at ${new Date()}");
     def start_time = System.currentTimeMillis();
-
+    def components = [
+      'org.gokb.cred.Package',
+      'org.gokb.cred.Org',
+      'org.gokb.cred.Platform',
+      'org.gokb.cred.JournalInstance',
+      'org.gokb.cred.DatabaseInstance',
+      'org.gokb.cred.BookInstance',
+      'org.gokb.cred.OtherInstance',
+      'org.gokb.cred.TitleInstancePackagePlatform'
+    ]
     def esclient = ESWrapperService.getClient()
+    int total = 0
+    int startc = 0
+
+    log.debug("calculating count ..")
+
+    components.each { c ->
+      def ft_record = getControlRecord(c)
+      Date from = new Date(ft_record.lastTimestamp);
+
+      def countq = KBComponent.executeQuery("select count(o.id) from "+c+" as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ",[ts: from], [readonly:true])[0];
+      log.debug("Will process ${countq} records");
+
+      total += countq
+    }
 
     try {
 
-      updateES(esclient, org.gokb.cred.Package.class) { kbc ->
+      startc += updateES(esclient, org.gokb.cred.Package.class, j, startc, total) { kbc ->
 
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
@@ -103,7 +126,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.Org.class) { kbc ->
+      startc += updateES(esclient, org.gokb.cred.Org.class, j, startc, total) { kbc ->
         def result = [:]
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         result._id = "${kbc.class.name}:${kbc.id}"
@@ -139,7 +162,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.Platform.class) { kbc ->
+      startc += updateES(esclient, org.gokb.cred.Platform.class, j, startc, total) { kbc ->
         def result = [:]
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         result._id = "${kbc.class.name}:${kbc.id}"
@@ -177,7 +200,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.JournalInstance.class) { kbc ->
+      startc += updateES(esclient, org.gokb.cred.JournalInstance.class, j, startc, total) { kbc ->
 
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
@@ -212,7 +235,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.DatabaseInstance.class) { kbc ->
+      startc += updateES(esclient, org.gokb.cred.DatabaseInstance.class, j, startc, total) { kbc ->
 
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
@@ -247,7 +270,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.BookInstance.class) { kbc ->
+      startc += updateES(esclient, org.gokb.cred.BookInstance.class, j, startc, total) { kbc ->
 
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
@@ -282,7 +305,42 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class) { kbc ->
+      startc += updateES(esclient, org.gokb.cred.OtherInstance.class, j, startc, total) { kbc ->
+
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
+        def result = null
+        def current_pub = kbc.currentPublisher
+
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
+        result.name = kbc.name
+        result.sortname = kbc.name
+        result.updater='journal'
+        // result.publisher = kbc.currentPublisher?.name
+        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
+        result.publisherName = current_pub?.name
+        result.publisherUuid = current_pub?.uuid ?: ""
+        result.altname = []
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+        result.status = kbc.status?.value
+
+        result.identifiers = []
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        }
+
+        result.componentType=kbc.class.simpleName
+
+        // log.debug("process ${result}");
+        result
+      }
+
+      startc += updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class, j, startc, total) { kbc ->
 
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
@@ -356,39 +414,36 @@ class FTUpdateService {
     running = false;
   }
 
+  private def getControlRecord(domainName) {
+    def latest_ft_record = null
+    FTControl.withNewTransaction {
+      latest_ft_record = FTControl.findByDomainClassNameAndActivity(domainName,'ESIndex')
 
-  def updateES(esclient, domain, recgen_closure) {
+      log.debug("result of findByDomain: ${domainName} ${latest_ft_record}");
+      if ( !latest_ft_record) {
+        latest_ft_record=new FTControl(domainClassName:domainName,activity:'ESIndex',lastTimestamp:0,lastId:0).save(flush:true, failOnError:true)
+        log.debug("Create new FT control record, as none available for ${domainName}");
+      }
+    }
+    return latest_ft_record
+  }
+
+  def updateES(esclient, domain, j, startc, total, recgen_closure) {
 
     log.info("updateES(${domain}...)");
     cleanUpGorm();
+    int ctotal = 0
+    int count = 0;
 
-    def count = 0;
     try {
       log.debug("updateES - ${domain.name}");
-
-
-      def latest_ft_record = null;
-      def highest_timestamp = 0;
-      def highest_id = 0;
-      FTControl.withNewTransaction {
-        latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name,'ESIndex')
-
-        log.debug("result of findByDomain: ${domain} ${latest_ft_record}");
-        if ( !latest_ft_record) {
-          latest_ft_record=new FTControl(domainClassName:domain.name,activity:'ESIndex',lastTimestamp:0,lastId:0).save(flush:true, failOnError:true)
-          log.debug("Create new FT control record, as none available for ${domain.name}");
-        }
-        else {
-          highest_timestamp = latest_ft_record.lastTimestamp
-          log.debug("Got existing ftcontrol record for ${domain.name} max timestamp is ${highest_timestamp} which is ${new Date(highest_timestamp)}");
-        }
-      }
+      def latest_ft_record = getControlRecord(domain.name);
+      def highest_timestamp = latest_ft_record.lastTimestamp;
+      Long highest_id = 0;
       def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
       def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
 
-      log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}");
-
-      def total = 0;
+      log.debug("updateES ${domain.name} since ${highest_timestamp}");
       Date from = new Date(latest_ft_record.lastTimestamp);
 
       def countq = domain.executeQuery("select count(o.id) from "+domain.name+" as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ",[ts: from], [readonly:true])[0];
@@ -427,54 +482,76 @@ class FTUpdateService {
         highest_id=r.id
 
         count++
-        total++
+        ctotal++
 
         if ( count > 250 ) {
           count = 0;
-          log.debug("interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
+          log.debug("interim:: processed ${ctotal} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
+          j?.setProgress(startc+ctotal,total)
           def bulkResponse = bulkRequest.get()
           bulkRequest = esclient.prepareBulk();
           log.debug("BulkResponse: ${bulkResponse}")
-          FTControl.withNewTransaction {
-            latest_ft_record = FTControl.get(latest_ft_record.id);
-            if ( latest_ft_record ) {
-              latest_ft_record.lastTimestamp = highest_timestamp
-              latest_ft_record.lastId = highest_id
-              latest_ft_record.save(flush:true, failOnError:true);
+
+          latest_ft_record = FTControl.get(latest_ft_record.id);
+
+          log.debug("Got lastest FT: ${latest_ft_record}")
+          log.debug("TS: ${latest_ft_record.lastTimestamp} - ID: ${latest_ft_record.lastId}")
+
+          if ( latest_ft_record ) {
+            latest_ft_record.lastTimestamp = highest_timestamp
+            latest_ft_record.lastId = highest_id
+            log.debug("Saving..")
+
+            if (latest_ft_record.validate()) {
+              log.debug("Validated OK")
+              latest_ft_record = latest_ft_record.merge();
             }
             else {
-              log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update");
+              log.error("Unable to save FT record for ${domain.class}")
             }
           }
-          cleanUpGorm();
+          else {
+            log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update");
+          }
+
+          log.debug("Updated FTControl ..")
+          // cleanUpGorm();
           synchronized(this) {
             Thread.yield()
           }
         }
       }
 
+      log.debug("Processed ${ctotal} records of type ${domain.name}")
+
       if (count > 0) {
         def bulkFinalResponse = bulkRequest.get()
+        j?.setProgress(startc+ctotal,total)
         log.debug("Final BulkResponse: ${bulkFinalResponse}")
       }
+
+      j?.message("Processed ${ctotal} records of type ${domain.name}".toString())
 
       // update timestamp
       FTControl.withNewTransaction {
         latest_ft_record = FTControl.get(latest_ft_record.id);
         latest_ft_record.lastTimestamp = highest_timestamp
         latest_ft_record.lastId = highest_id
-        latest_ft_record.save(flush:true, failOnError:true);
+        latest_ft_record = latest_ft_record.merge();
       }
-      cleanUpGorm();
+      // cleanUpGorm();
 
       log.info("final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}");
     }
     catch ( Exception e ) {
+      j?.message("Failed processing records of type ${domain.name}!".toString())
       log.error("Problem with FT index",e);
     }
     finally {
       log.debug("Completed processing on ${domain.name} - saved ${count} records");
     }
+
+    return ctotal
   }
 
   def cleanUpGorm() {
@@ -482,20 +559,22 @@ class FTUpdateService {
     def session = sessionFactory.currentSession
     session.flush()
     session.clear()
+    log.debug("Done..")
   }
 
-  def clearDownAndInitES() {
+  def clearDownAndInitES(Job j = null) {
     if ( running == false ) {
       log.debug("Remove existing FTControl ..")
       FTControl.withTransaction {
         FTControl.executeUpdate("delete FTControl c");
       }
-      updateFTIndexes();
+      updateFTIndexes(j);
     }
     else {
       log.info("FTUpdate already running")
-      return "Job cancelled – FTUpdate was already running!";
+      j?.message("Skipped - FTUpdate was alreay running")
     }
+    j?.endTime = new Date()
   }
 
   @javax.annotation.PreDestroy

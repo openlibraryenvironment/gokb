@@ -20,7 +20,7 @@ class TitleLookupService {
     log.debug("Init");
   }
 
-  private Map class_one_match (def ids, ti_class) {
+  private Map class_one_match (def ids, ti_class, def fullsync = false) {
 
     // Get the class 1 identifier namespaces.
     Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
@@ -100,21 +100,26 @@ class TitleLookupService {
           // Ensure we're not looking at a Hibernate Proxy class representation of the class
           KBComponent dproxied = ClassUtils.deproxy(c);
 
-          // Only add if it's a title.
-          if ( ti_class.isInstance(dproxied) ) {
-            title_match = true
-            TitleInstance the_ti = (dproxied as TitleInstance)
-            // Don't add repeated matches
-            if ( result[match_type].contains(the_ti) ) {
-              log.debug("Not adding duplicate");
+          if (!fullsync || dproxied.status != status_deleted) {
+            // Only add if it's a title.
+            if ( ti_class.isInstance(dproxied) ) {
+              title_match = true
+              TitleInstance the_ti = (dproxied as TitleInstance)
+              // Don't add repeated matches
+              if ( result[match_type].contains(the_ti) ) {
+                log.debug("Not adding duplicate");
+              }
+              else {
+                log.debug("Adding ${the_ti} (title_match = ${title_match})");
+                result[match_type] << the_ti
+              }
             }
             else {
-              log.debug("Adding ${the_ti} (title_match = ${title_match})");
-              result[match_type] << the_ti
+              log.debug("ID doesn't point at an item of the correct type, skipping");
             }
           }
           else {
-            log.debug("ID Doesn't point at a title, skipping");
+            log.debug("Ignoring deleted item ..")
           }
         }
 
@@ -452,8 +457,9 @@ class TitleLookupService {
             def user = null,
             def project = null,
             def newTitleClassName = 'org.gokb.cred.JournalInstance',
-            def uuid = null) {
-    return findOrCreateTitle([title:title, publisher_name:publisher_name,identifiers:identifiers,uuid:uuid],user,project,newTitleClassName)
+            def uuid = null,
+            def fullsync = false) {
+    return findOrCreateTitle([title:title, publisher_name:publisher_name,identifiers:identifiers,uuid:uuid,fullsync:fullsync],user,project,newTitleClassName)
   }
 
   private final findLock = new Object()
@@ -486,7 +492,7 @@ class TitleLookupService {
     }
 
     // Lookup any class 1 identifier matches
-    def results = class_one_match (metadata.identifiers, ti_class)
+    def results = class_one_match (metadata.identifiers, ti_class, fullsync)
 
     // The matches.
     List< KBComponent> matches = results['matches'] as List
@@ -867,9 +873,9 @@ class TitleLookupService {
       // Make sure we're all saved before looking up the publisher
       if(the_title.validate()) {
 
-        addIdentifiers(results.ids, the_title)
+        // addIdentifiers(results.ids, the_title)
 
-        addPublisher(metadata.publisher_name, the_title)
+        // addPublisher(metadata.publisher_name, the_title)
 
         if(the_title.name.startsWith("Unknown Title")){
           the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')

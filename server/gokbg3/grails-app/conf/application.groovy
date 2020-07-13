@@ -605,22 +605,6 @@ globalSearchTemplates = [
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status']
         ],
         [
-          type:'lookup',
-          baseClass:'org.gokb.cred.User',
-          prompt:'Raised By',
-          qparam:'qp_raisedby',
-          placeholder:'Raised By',
-          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'raisedBy']
-        ],
-        [
-          type:'lookup',
-          baseClass:'org.gokb.cred.User',
-          prompt:'Allocated To',
-          qparam:'qp_allocatedto',
-          placeholder:'Allocated To',
-          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'allocatedTo']
-        ],
-        [
           prompt:'Cause',
           qparam:'qp_cause',
           placeholder:'Cause',

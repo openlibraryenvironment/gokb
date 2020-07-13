@@ -1298,10 +1298,10 @@ class WorkflowController {
     def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     def user = springSecurityService.currentUser
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
-    def new_package = genericOIDService.resolveOID2(params.newpackage)
-    def new_platform = genericOIDService.resolveOID2(params.newplatform)
+    def new_package = params.newpackage ? genericOIDService.resolveOID2(params.newpackage) : null
+    def new_platform = params.newplatform ? genericOIDService.resolveOID2(params.newplatform) : null
     def tipps_to_action = params.list('beforeTipps')
-    def new_title = genericOIDService.resolveOID2(params.newtitle)
+    def new_title = params.newtitle ? genericOIDService.resolveOID2(params.newtitle) : null
 
     params.list('beforeTipps').each { tipp_oid ->
       log.debug("process ${tipp_oid}")

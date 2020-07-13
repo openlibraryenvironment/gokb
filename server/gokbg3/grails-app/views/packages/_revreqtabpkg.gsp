@@ -7,9 +7,7 @@
       <th>Request</th>
       <th>Component</th>
       <th>Status</th>
-      <th>Raised By</th>
       <th>Date Created</th>
-      <th>Reviewed By</th>
     </tr>
   </thead>
   <tbody>
@@ -28,13 +26,7 @@
           <g:xEditableRefData owner="${rr}" field="status" config='ReviewRequest.Status' />
         </td>
         <td>
-          ${rr.raisedBy?.displayName?:rr.raisedBy?.username}
-        </td>
-        <td>
           ${rr.dateCreated}
-        </td>
-        <td>
-          ${rr.reviewedBy?.displayName?:rr.reviewedBy?.username}
         </td>
       </tr>
     </g:each>
