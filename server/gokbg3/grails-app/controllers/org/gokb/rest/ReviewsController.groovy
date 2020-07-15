@@ -169,6 +169,14 @@ class ReviewsController {
           }
         }
 
+        if (reqBody.reviewRequest?.trim()) {
+          obj.reviewRequest = reqBody.reviewRequest.trim()
+        }
+
+        if (reqBody.descriptionOfCause?.trim()) {
+          obj.reviewRequest = reqBody.reviewRequest.trim()
+        }
+
         immutable.each {
           if (reqBody[it] && reqBody[it] != obj[it]?.id ) {
             errors[it] = [[message: "Property ${it} is immutable", baddata: reqBody[it]]]
