@@ -91,6 +91,7 @@ class UrlMappings {
       put "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
       patch "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
 
+      get "/curatoryGroups/$id/reviews"(controller: 'curatoryGroups', namespace: 'rest', action: 'getReviews')
       get "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'show')
       get "/curatoryGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'index')
 

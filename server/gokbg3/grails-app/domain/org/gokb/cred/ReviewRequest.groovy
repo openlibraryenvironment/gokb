@@ -36,24 +36,6 @@ class ReviewRequest implements Auditable {
     additionalInfo column:'rr_additional_info', type:'text'
   }
 
-  transient public postCreateClosure = { ctx ->
-    log.debug("postCreateClosure(${ctx})");
-    if ( ctx.user != null ) {
-      if ( raisedBy == null )
-        raisedBy = ctx.user;
-    }
-
-    if (KBComponent.has('curatoryGroups', componentToReview)) {
-      componentToReview.curatoryGroups?.each { cg ->
-        AllocatedReviewGroup.create(cg, ctx)
-      }
-    } else if (ctx.user?.curatoryGroups?.size() > 0) {
-      ctx.user.curatoryGroups.each { cg ->
-        AllocatedReviewGroup.create(cg, ctx)
-      }
-    }
-  }
-
   static constraints = {
     componentToReview(nullable:false, blank:false)
     descriptionOfCause(nullable:true, blank:true)
@@ -63,7 +45,6 @@ class ReviewRequest implements Auditable {
     raisedBy(nullable:true, blank:false)
     reviewedBy(nullable:true, blank:false)
     allocatedTo(nullable:true, blank:false)
-    allocatedToGroup(nullable:true, blank:false)
     closedBy(nullable:true, blank:false)
     dateCreated(nullable:true, blank:true)
     lastUpdated(nullable:true, blank:true)
@@ -77,7 +58,8 @@ class ReviewRequest implements Auditable {
                                      String cause = null,
                                      User raisedBy = null,
                                      refineProject = null,
-                                     additionalInfo = null) {
+                                     additionalInfo = null,
+                                     RefdataValue stdDesc = null) {
 
     // Create a request.
     ReviewRequest req = new ReviewRequest (
@@ -86,6 +68,7 @@ class ReviewRequest implements Auditable {
         descriptionOfCause : (cause),
         reviewRequest : (actionRequired),
         refineProject : (refineProject),
+        stdDesc : (stdDesc),
         additionalInfo : (additionalInfo),
         componentToReview : (forComponent)
         ).save(failOnError:true);
@@ -145,6 +128,44 @@ class ReviewRequest implements Auditable {
 
   def getAllocatedGroups() {
     return AllocatedReviewGroup.findAllByReview(this)
+  }
+
+  def allocateGroup(group) {
+    def result = false
+    def existing = AllocatedReviewGroup.findAllByReviewAndGroup(this, group)
+
+    if (!existing) {
+      AllocatedReviewGroup.create(group, this)
+      result = true
+    }
+
+    result
+  }
+
+  def claim(group) {
+    def result = true
+    def existing = this.allocatedGroups
+
+    if (existing.collect {it.group == group}?.size() > 0) {
+      existing.each { eg ->
+        if (eg.group != group && eg.status != null) {
+          result = false
+        }
+      }
+    }
+    else {
+      result = false
+    }
+
+    result
+  }
+
+  def afterInsert() {
+    def user = springSecurityService?.currentUser
+    if ( user != null ) {
+      if ( raisedBy == null )
+        raisedBy = user
+    }
   }
 
   def beforeUpdate() {

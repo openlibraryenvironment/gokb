@@ -341,6 +341,18 @@ class ComponentLookupService {
       qryParams['status'] = RefdataCategory.lookup("KBComponent.Status", "Deleted")
     }
 
+    if (cls == ReviewRequest && !params['status']) {
+      if (first) {
+        hqlQry += " WHERE "
+        first = false
+      }
+      else {
+        hqlQry += " AND "
+      }
+      hqlQry += "p.status != :status"
+      qryParams['status'] = RefdataCategory.lookup("ReviewRequest.Status", "Deleted")
+    }
+
     def hqlCount = "select count(p.id) ${hqlQry}".toString()
     def hqlFinal = "select p ${sort ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
@@ -412,7 +424,7 @@ class ComponentLookupService {
    * @param total : Number of total results
    */
 
-  private generateLinks(result, cls, context, params, max, offset, total) {
+  def generateLinks(result, cls, context, params, max, offset, total) {
     def endpoint = ""
 
     if (cls == KBComponent) {
@@ -447,6 +459,9 @@ class ComponentLookupService {
           selfLink.removeQueryParam(p)
         }
       }
+      if(params.id) {
+        selfLink.removeQueryParam('id')
+      }
       if(params.controller) {
         selfLink.removeQueryParam('controller')
       }
@@ -480,5 +495,7 @@ class ComponentLookupService {
       prevLink.addQueryParam('offset', "${(offset - max) > 0 ? offset - max : 0}")
       result['_links']['prev'] = ['href': prevLink.toString()]
     }
+
+    return result
   }
 }
