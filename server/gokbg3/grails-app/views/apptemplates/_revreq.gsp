@@ -103,6 +103,15 @@
           </g:if>
         </sec:ifAnyGranted>
 
+        <dt>
+          <g:annotatedLabel owner="${d}" property="allocatedTo">Allocated Groups</g:annotatedLabel>
+        </dt>
+        <dd>
+          <g:each in="${d.allocatedGroups}" var="ag">
+            <g:link controller="resource" class="badge badge-primary" action="show" id="${ag.group.uuid}">${ag.group.name}</g:link>
+          </g:each>
+        </dd>
+
         <g:if test="${d.additional?.problems}">
           <g:form name="AddRules" controller="workflow" action="addToRulebase">
             <input type="hidden" name="sourceName" value="${d.additional.sourceName}"/>

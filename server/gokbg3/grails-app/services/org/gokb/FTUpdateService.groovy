@@ -488,7 +488,9 @@ class FTUpdateService {
     if ( running == false ) {
       log.debug("Remove existing FTControl ..")
       FTControl.withTransaction {
-        FTControl.executeUpdate("delete FTControl c");
+        def res = FTControl.executeUpdate("delete FTControl c");
+
+        log.debug("Result: ${res}")
       }
       updateFTIndexes();
     }

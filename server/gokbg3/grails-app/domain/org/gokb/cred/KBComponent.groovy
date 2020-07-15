@@ -98,20 +98,17 @@ where cp.owner = :c
 
     // The update closure.
     def doUpdate = { obj, Date stamp ->
-
       try {
-
         def saveParams = [failOnError:true]
 
         obj.lastSeen = stamp.getTime()
         obj.save(saveParams)
 
       } catch (Throwable t) {
-
-       // Suppress but log.
-      log.error("${t}")
+        // Suppress but log.
+        log.error("${t}")
+      }
     }
-  }
 
     if (hasProperty("touchOnUpdate")) {
 

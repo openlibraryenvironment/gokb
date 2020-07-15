@@ -321,7 +321,7 @@ class TitleController {
     result
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
     def result = ['result':'OK', 'params': params]
@@ -335,15 +335,7 @@ class TitleController {
     }
 
     if (obj && reqBody) {
-      def editable = obj.isEditable()
-
-      if ( editable && KBComponent.has(obj, 'curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
-        def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
-
-        if (!cur) {
-          editable = false
-        }
-      }
+      def editable = isUserCurator(obj,user) || user.isAdmin()
 
       if (editable) {
         obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
@@ -384,7 +376,7 @@ class TitleController {
       else {
         result.result = 'ERROR'
         response.setStatus(403)
-        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+        result.message = "User must belong to at least one curatory group of the title to make changes!"
       }
     }
     else {
@@ -436,7 +428,7 @@ class TitleController {
     }
 
     if ( obj && obj.isDeletable() ) {
-      def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+      def curator = isUserCurator(obj, user)
 
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
@@ -460,15 +452,31 @@ class TitleController {
     result
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
+  def isUserCurator(obj, user) {
+    def curator = true
+
+    if (KBComponent.has(obj, 'curatoryGroups')) {
+
+      if (obj.curatoryGroups.size() > 0) {
+        if (!user.curatoryGroups?.id.intersect(obj.curatoryGroups.id)) {
+          curator = false
+        }
+      }
+    }
+
+    return curator
+  }
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def retire() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = TitleInstance.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+    def obj = TitleInstance.findByUuid(params.id) ?: TitleInstance.get(genericOIDService.oidToId(params.id))
 
     if ( obj && obj.isEditable() ) {
+      def curator = isUserCurator(obj, user)
+
       if ( curator || user.isAdmin() ) {
         obj.retire()
       }
