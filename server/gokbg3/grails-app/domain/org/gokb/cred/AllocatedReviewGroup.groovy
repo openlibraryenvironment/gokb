@@ -4,8 +4,8 @@ import org.apache.commons.lang.builder.HashCodeBuilder
 
 class AllocatedReviewGroup implements Serializable {
 
-	CuratoryGroup group
-	ReviewRequest review
+  CuratoryGroup group
+  ReviewRequest review
   RefdataValue status
 
 	boolean equals(other) {
@@ -30,7 +30,7 @@ class AllocatedReviewGroup implements Serializable {
 	}
 
 	static AllocatedReviewGroup create(CuratoryGroup group, ReviewRequest review, boolean flush = false) {
-		new AllocatedReviewGroup(user: user, role: role).save(flush: flush, insert: true)
+		new AllocatedReviewGroup(group: group, review: review).save(flush: flush, insert: true)
 	}
 
 	static boolean remove(CuratoryGroup group, ReviewRequest review, boolean flush = false) {

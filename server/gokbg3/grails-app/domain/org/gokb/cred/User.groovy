@@ -132,6 +132,19 @@ class User extends Party {
     false
   }
 
+  transient boolean getSuperUserStatus() {
+    Role role = Role.findByAuthority("ROLE_SUPERUSER")
+
+    if (role != null) {
+      return getAuthorities().contains(role)
+    } else {
+      log.error( "Error loading admin role (ROLE_SUPERUSER)" )
+    }
+
+    role.save()
+    false
+  }
+
   transient boolean getEditorStatus() {
     Role role = Role.findByAuthority("ROLE_EDITOR")
 

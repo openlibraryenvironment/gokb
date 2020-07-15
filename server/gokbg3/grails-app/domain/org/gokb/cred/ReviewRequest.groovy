@@ -45,7 +45,11 @@ class ReviewRequest implements Auditable {
 
     if (KBComponent.has('curatoryGroups', componentToReview)) {
       componentToReview.curatoryGroups?.each { cg ->
-        AllocatedReviewGroup.create(cg, this)
+        AllocatedReviewGroup.create(cg, ctx)
+      }
+    } else if (ctx.user?.curatoryGroups?.size() > 0) {
+      ctx.user.curatoryGroups.each { cg ->
+        AllocatedReviewGroup.create(cg, ctx)
       }
     }
   }
@@ -73,14 +77,12 @@ class ReviewRequest implements Auditable {
                                      String cause = null,
                                      User raisedBy = null,
                                      refineProject = null,
-                                     additionalInfo = null,
-                                     allocatedToGroup = null) {
+                                     additionalInfo = null) {
 
     // Create a request.
     ReviewRequest req = new ReviewRequest (
         status : RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
         raisedBy : (raisedBy),
-        allocatedToGroup : (allocatedToGroup),
         descriptionOfCause : (cause),
         reviewRequest : (actionRequired),
         refineProject : (refineProject),
@@ -98,6 +100,14 @@ class ReviewRequest implements Auditable {
   }
 
   public static final String restPath = "/reviews"
+
+  static jsonMapping = [
+    'ignore'       : [
+      'refineProject',
+      'additionalInfo',
+      'needsNotify'
+    ]
+  ]
 
   String getLogEntityId() {
       "${this.class.name}:${id}"
@@ -131,6 +141,10 @@ class ReviewRequest implements Auditable {
 
   public String getNiceName() {
     return "Review Request";
+  }
+
+  def getAllocatedGroups() {
+    return AllocatedReviewGroup.findAllByReview(this)
   }
 
   def beforeUpdate() {
