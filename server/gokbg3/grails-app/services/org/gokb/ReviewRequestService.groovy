@@ -44,8 +44,4 @@ class ReviewRequestService {
 
     req
   }
-
-  def allocateGroups(rr, user) {
-
-  }
 }

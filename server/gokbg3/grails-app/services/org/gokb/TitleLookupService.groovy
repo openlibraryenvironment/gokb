@@ -565,7 +565,7 @@ class TitleLookupService {
               // Raise a review request
 
               if (added) {
-                def rr = reviewRequestService.raise(
+                reviewRequestService.raise(
                   the_title,
                   "'${metadata.title}' added as a variant of '${the_title.name}'.",
                   "Title was matched via secondary id, but had a different name.",
@@ -616,7 +616,7 @@ class TitleLookupService {
 
               additionalInfo.cstring = combo_ids.sort().join('_')
 
-              def rr = reviewRequestService.raise(
+              reviewRequestService.raise(
                 the_title,
                 "New TI created.",
                 "No matched components via IDs, but a title with a similar name already exists.",
@@ -640,7 +640,7 @@ class TitleLookupService {
           def data = results['x_check_matches'][0]
 
           // Fire the review request.
-          def rr = reviewRequestService.raise(
+          reviewRequestService.raise(
             matches[0],
             "Identifier type mismatch.",
             "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
@@ -708,7 +708,7 @@ class TitleLookupService {
 
                 additionalInfo.cstring = combo_ids.sort().join('_')
 
-                def rr = reviewRequestService.raise(
+                reviewRequestService.raise(
                   matches[0],
                   "Identifier mismatch.",
                   "Title ${matches[0]} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
@@ -752,7 +752,7 @@ class TitleLookupService {
                 additionalInfo.cstring = combo_ids.sort().join('_')
 
 
-                def rr = reviewRequestService.raise(
+                reviewRequestService.raise(
                   the_title,
                   "New TI created.",
                   "TitleInstance ${matches[0].id} ${matches[0].name ? '('+ matches[0].name +')' : ''} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
@@ -833,7 +833,7 @@ class TitleLookupService {
 
             additionalInfo.cstring = combo_ids.sort().join('_')
 
-            def rr = reviewRequestService.raise(
+            reviewRequestService.raise(
               the_title,
               "New TI created.",
               "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
@@ -915,7 +915,7 @@ class TitleLookupService {
 
           additionalInfo.cstring = combo_ids.sort().join('_')
 
-          def rr = reviewRequestService.raise(
+          reviewRequestService.raise(
             the_title,
             "Identifier match.",
             "A provided identifier matched an existing component of another type!",
@@ -1287,9 +1287,5 @@ class TitleLookupService {
       }
     }
     result
-  }
-
-  def allocateReviewGroups(title, user) {
-
   }
 }

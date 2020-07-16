@@ -374,6 +374,7 @@ class Platform extends KBComponent {
           "New platform created",
           user,
           project,
+          null,
           RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'New Platform')
         )
       }

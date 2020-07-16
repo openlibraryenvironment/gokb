@@ -44,7 +44,7 @@ class AllocatedReviewGroup implements Serializable {
 	}
 
 	static void removeAll(CuratoryGroup group) {
-		executeUpdate 'DELETE FROM AllocatedReviewGroup WHERE user=:user', [group: group]
+		executeUpdate 'DELETE FROM AllocatedReviewGroup WHERE group:group', [group: group]
 	}
 
 	static void removeAll(ReviewRequest review) {

@@ -28,7 +28,6 @@ class ReviewsController {
     def base = grailsApplication.config.serverURL + "/rest"
     User user = User.get(springSecurityService.principal.id)
     result = componentLookupService.restLookup(user, ReviewRequest, params)
-    result._links = generateLinks(obj, user)
 
     render result as JSON
   }
@@ -220,7 +219,109 @@ class ReviewsController {
     render result as JSON
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def save() {
+    def result = ['result':'OK', 'params': params]
+    def reqBody = request.JSON
+    def errors = [:]
+    def user = User.get(springSecurityService.principal.id)
+
+    if ( ReviewRequest.isTypeCreatable() ) {
+      def obj = null
+      def pars = [
+        componentToReview: null,
+        reviewRequest: null,
+        descriptionOfCause: null,
+        additionalInfo: null,
+        stdDesc: null
+      ]
+
+      if (reqBody.reviewRequest?.trim())
+        pars.reviewRequest = reqBody.reviewRequest
+      
+      if (reqBody.descriptionOfCause?.trim())
+        pars.descriptionOfCause = reqBody.descriptionOfCause
+
+      if (reqBody.componentToReview instanceof Integer) {
+        def comp = KBComponent.get(reqBody.componentToReview)
+
+        if (comp) {
+          pars.componentToReview = comp
+        }
+        else {
+          errors.componentToReview = [[message: "Unable to lookup component to be reviewed!", baddata: reqBody.componentToReview]]
+        }
+      }
+      else {
+        errors.componentToReview = [[message: "Missing component to be reviewed!"]]
+        result.message = "Request payload must contain the component to be reviewed"
+        response.setStatus(400)
+      }
+
+      if (reqBody.additionalInfo) {
+        try {
+          pars.additionalInfo = JsonOutput.toJson(reqBody.additionalInfo)
+        }
+        catch (Exception e) {
+          errors.additionalInfo = [[message: "Unable to save additional Info", baddata: reqBody.additionalInfo]]
+        }
+      }
+
+      if (reqBody.stdDesc) {
+        def desc = null
+        def cat = RefdataCategory.findByLabel('ReviewRequest.StdDesc')
+
+        if (reqBody.stdDesc instanceof Integer) {
+          def rdv = RefdataValue.get(reqBody.stdDesc)
+
+          if (rdv && rdv in cat.values) {
+            desc = rdv
+          }
+        }
+        else {
+          desc = RefdataCategory.lookup('ReviewRequest.StdDesc', reqBody.stdDesc)
+        }
+
+        if (desc) {
+          pars.stdDesc = desc
+        }
+        else {
+          errors.stdDesc = [[message: "Illegal value for standard description provided!", baddata: reqBody.stdDesc]]
+        }
+      }
+
+      if (errors.size() == 0) {
+        try {
+          obj = reviewRequestService.raise(pars.componentToReview, pars.reviewRequest, pars.descriptionOfCause, user, pars.additionalInfo, stdDesc)
+
+          if (obj) {
+            result = restMappingService.mapObjectToJson(obj, user)
+
+            result._links = generateLinks(obj, user)
+          }
+          else {
+            response.setStatus(500)
+            result.result = 'ERROR'
+            result.message = "Unable to create request for review!"
+          }
+        }
+        catch (Exception e) {
+          response.setStatus(500)
+          result.result = 'ERROR'
+          response.message = "There was an error creating the request."
+        }
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(403)
+      result.message = "User is not allowed to delete this component!"
+    }
+    render result as JSON
+  } 
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def delete() {
     def result = ['result':'OK', 'params': params]
@@ -267,7 +368,7 @@ class ReviewsController {
 
   private def generateLinks(obj,user) {
     def base = grailsApplication.config.serverURL + "/rest" + obj.restPath + "/${obj.id}"
-    def linksObj = [self:[href:base, method:'GET']]
+    def linksObj = [self:[href:base]]
     def curator = isUserCurator(obj,user)
 
     if (curator || user.isAdmin()) {
