@@ -39,8 +39,9 @@ class Source extends KBComponent {
       if (obj.hasChanged('name')) {
         if (val && val.trim()) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          def dupes = Source.findByNameIlikeAndStatusNotEqual(val, status_deleted);
-          if (dupes && dupes != obj) {
+          def dupes = Source.findAllByNameIlikeAndStatusNotEqual(val, status_deleted);
+          
+          if (dupes.size() > 0 && dupes.any {it != obj}) {
             return ['notUnique']
           }
         }

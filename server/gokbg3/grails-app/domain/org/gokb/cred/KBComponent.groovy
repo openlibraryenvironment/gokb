@@ -98,20 +98,17 @@ where cp.owner = :c
 
     // The update closure.
     def doUpdate = { obj, Date stamp ->
-
       try {
-
         def saveParams = [failOnError:true]
 
         obj.lastSeen = stamp.getTime()
         obj.save(saveParams)
 
       } catch (Throwable t) {
-
-       // Suppress but log.
-      log.error("${t}")
+        // Suppress but log.
+        log.error("${t}")
+      }
     }
-  }
 
     if (hasProperty("touchOnUpdate")) {
 
@@ -1416,6 +1413,7 @@ where cp.owner = :c
     }
 //     ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this]);
 
+    AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup as c where c.group=:component",[component:this]);
     ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview=:component",[component:this]);
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component",[component:this]);
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component",[component:this]);
@@ -1423,6 +1421,41 @@ where cp.owner = :c
     KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component",[component:this])
 
     this.delete(flush:true, failOnError:true)
+    result;
+  }
+
+  static def expungeAll(List components) {
+    log.debug("Component bulk expunge");
+    def result = [num_requested: components.size(), num_expunged: 0]
+    log.debug("Expunging ${result.num_requested} components")
+    def remaining = components
+
+    while (remaining.size() > 0) {
+      def batch = remaining.take(50)
+      remaining = remaining.drop(50)
+
+      Combo.executeUpdate("delete from Combo as c where c.fromComponent.id IN (:component) or c.toComponent.id IN (:component)",[component:batch])
+      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)",[component:batch])
+      KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)",[component:batch]);
+      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)",[component:batch]);
+
+      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))",[component:batch]);
+      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant.id IN (:component)",[component:batch])
+
+      events_to_delete.each {
+        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = ?",[it])
+        ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
+      }
+
+      AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup as c where c.group IN (:component)",[component:batch]);
+      ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)",[component:batch]);
+      ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)",[component:batch]);
+      ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)",[component:batch]);
+      ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)",[component:batch]);
+      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)",[component:batch])
+
+      result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)",[component:batch])
+    }
     result;
   }
 

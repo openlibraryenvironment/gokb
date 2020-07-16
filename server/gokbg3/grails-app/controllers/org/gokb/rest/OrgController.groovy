@@ -27,6 +27,7 @@ class OrgController {
   def restMappingService
   def componentLookupService
   def componentUpdateService
+  def orgService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -106,19 +107,35 @@ class OrgController {
     def user = User.get(springSecurityService.principal.id)
 
     if (reqBody) {
-      Org obj = Org.upsertDTO(reqBody, user)
+      def obj = null
+      def lookup_result = orgService.restLookup(reqBody)
 
+      if (lookup_result.to_create) {
+        def normname = Org.generateNormname(reqBody.name)
+        obj = new Org(name: reqBody.name, normname: normname).save(flush:true)
+        log.debug("New Object ${obj}")
+      }
+      else {
+        lookup_result.matches.each { id, errs ->
+          errs.each { e ->
+            if (!errors[e.field])
+              errors[e.field] = []
 
-      if (!obj) {
+            errors[e.field] << [message: e.message, baddata: e.value, matches: id]
+          }
+        }
+      }
+
+      if (lookup_result.to_create && !obj) {
         log.debug("Could not upsert object!")
         errors.object = [[badData: reqBody, message:"Unable to save object!"]]
       }
-      else if (obj.hasErrors()) {
+      else if (obj?.hasErrors()) {
         log.debug("Object has errors!")
         errors = messageService.processValidationErrors(obj.errors, request.locale)
         log.debug("${errors}")
       }
-      else {
+      else if (obj) {
         def jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
@@ -128,6 +145,13 @@ class OrgController {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
             obj.save(flush:true)
+
+            if (reqBody.variantNames) {
+              obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+            }
+
+            errors = updateCombos(obj, reqBody)
+
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -154,7 +178,7 @@ class OrgController {
     render result as JSON
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
     def result = ['result':'OK', 'params': params]
@@ -220,15 +244,19 @@ class OrgController {
     render result as JSON
   }
 
-  private void updateCombos(obj, reqBody) {
+  private def updateCombos(obj, reqBody, boolean remove = true) {
     log.debug("Updating package combos ..")
+    def errors = [:]
 
     if (reqBody.ids || reqBody.identifiers) {
       def idmap = reqBody.ids ?: reqBody.identifiers
-      restMappingService.updateIdentifiers(obj, idmap)
+      def id_errors = restMappingService.updateIdentifiers(obj, idmap)
+
+      if (id_errors.size > 0)
+        errors['ids'] = id_errors
     }
 
-    if (reqBody.providedPlatforms || reqBody.platforms) {
+    if (reqBody.providedPlatforms) {
       def plt_list = reqBody.providedPlatforms ?: reqBody.platforms
       Set new_plts = []
 
@@ -238,27 +266,26 @@ class OrgController {
         if (plt instanceof String) {
           plt_obj = Platform.findByNameIlike(plt)
         }
-        else {
+        else if (obj instanceof Integer){
           plt_obj = Platform.get(plt)
         }
 
-        if (pub_obj) {
+        else if (obj instanceof Map && obj.id) {
+          plt_obj = Platform.get(plt.id)
+        }
+
+        if (plt_obj) {
           new_plts << plt_obj
         }
         else {
-          obj.errors.reject(
-            'component.addToList.denied.label',
-            ['providedPlatforms'] as Object[],
-            '[Could not process list of items for property {0}]'
-          )
-          obj.errors.rejectValue(
-            'providedPlatforms',
-            'component.addToList.denied.label'
-          )
+          if (!errors.providedPlatforms) {
+            errors.providedPlatforms = []
+          }
+          errors.providedPlatforms << [message: "Unable to lookup platform!", baddata: plt]
         }
       }
 
-      if (!obj.hasErrors()) {
+      if (!obj.hasErrors() || errors.size() > 0) {
         new_plts.each { c ->
           if (!obj.providedPlatforms.contains(c)) {
             log.debug("Adding new platform ${c}..")
@@ -268,7 +295,10 @@ class OrgController {
             log.debug("Existing platform ${c}..")
           }
         }
-        obj.providedPlatforms.retainAll(new_plts)
+
+        if (remove) {
+          obj.providedPlatforms.retainAll(new_plts)
+        }
       }
       log.debug("New cgs: ${obj.providedPlatforms}")
     }
@@ -288,7 +318,7 @@ class OrgController {
     }
 
     if ( obj && obj.isDeletable() ) {
-      def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+      def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id) : true
 
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()

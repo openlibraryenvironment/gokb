@@ -887,15 +887,16 @@ class IntegrationController {
 
         job_result.results = []
 
-        def valid = Package.validateDTO(json.packageHeader)
+        Package.withNewSession {
+          def user = User.get(request_user.id)
 
-        if ( valid ) {
-          Package.withNewSession {
-            def user = User.get(request_user.id)
+          def pkg_validation = Package.validateDTO(json.packageHeader)
 
+          if ( pkg_validation.valid ) {
             try {
               def the_pkg = Package.upsertDTO(json.packageHeader, user)
               def existing_tipps = []
+              def valid = true
               Boolean curated_pkg = false;
               def is_curator = null;
               if (the_pkg) {
@@ -932,7 +933,7 @@ class IntegrationController {
                         def ti = null
 
                         try {
-                          ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
+                          ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user, fullsync);
 
                           if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
 
@@ -950,7 +951,7 @@ class IntegrationController {
                           log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
                           valid = false
-                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ti.errors)])
+                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ve.errors)])
                         }
                       }
 
@@ -1005,8 +1006,7 @@ class IntegrationController {
                         log.warn("No platform arising from ${tipp.platform}");
                       }
                     }
-        //
-        //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
+
                     if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
                       tipp.package = [ internalId: the_pkg.id ]
                     }
@@ -1030,7 +1030,6 @@ class IntegrationController {
                   return job_result
                 }
 
-        //        cleanUpGorm()
 
                 int tippctr=0;
                 if ( valid ) {
@@ -1201,15 +1200,16 @@ class IntegrationController {
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
               job_result.code = 500
-              errors.add([code:500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
+              errors.add([code: 500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
             }
             cleanUpGorm()
           }
-        }
-        else {
-          log.debug("Package validation failed!")
-          job_result.result = 'ERROR'
-          job_result.message = "Package validation failed!"
+          else {
+            log.debug("Package validation failed!")
+            job_result.result = 'ERROR'
+            errors.add([message: "Unable to validate Package info", baddata: json.packageHeader, errors: pkg_validation.errors])
+            job_result.message = "Package validation failed!"
+          }
         }
 
         job.message(job_result.message.toString())
@@ -1498,6 +1498,10 @@ class IntegrationController {
                 case "database":
                   title_class_name = "org.gokb.cred.DatabaseInstance"
                   break;
+                case "Other":
+                case "other":
+                  title_class_name = "org.gokb.cred.OtherInstance"
+                  break;
                 default:
                   log.warn("Missing type for title!")
                   break;
@@ -1514,7 +1518,7 @@ class IntegrationController {
             }
 
             try {
-              def title = titleLookupService.find(
+              def title = titleLookupService.findOrCreate(
                 titleObj.name,
                 titleObj.publisher,
                 titleObj.identifiers,
@@ -1522,7 +1526,7 @@ class IntegrationController {
                 null,
                 title_class_name,
                 titleObj.uuid
-              );  // project
+              )
 
               if ( title && !title.hasErrors() ) {
 
@@ -1584,7 +1588,7 @@ class IntegrationController {
                         }
                         else {
                           log.debug("Looking up connected title ${fhe} as participant")
-                          p = titleLookupService.find(
+                          p = titleLookupService.findOrCreate(
                             fhe.title,
                             null,
                             fhe.identifiers,
@@ -1618,7 +1622,7 @@ class IntegrationController {
                         }
                         else {
                           log.debug("Looking up connected title ${fhe} as participant")
-                          p = titleLookupService.find(
+                          p = titleLookupService.findOrCreate(
                             fhe.title,
                             null,
                             fhe.identifiers,
@@ -1726,7 +1730,7 @@ class IntegrationController {
                 addPublisherHistory(title, titleObj.publisher_history)
 
                 if (!result.message) {
-                  result.message = "Created/looked up title ${title.id}"
+                  result.message = "Created/Looked up title ${title.id}"
                 }
                 result.cls = title.class.name
                 result.titleId = title.id
@@ -1747,10 +1751,6 @@ class IntegrationController {
                 else {
                   result.message = "Cross Reference of title ${titleObj.name} failed";
                 }
-                // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
-        //         event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
-        //               // Event callback closure
-        //         }
               }
               else {
                 result.result="ERROR"
@@ -1762,7 +1762,7 @@ class IntegrationController {
               log.error("ValidationException attempting to cross reference title",ve);
               result.result="ERROR"
               result.message="Validation of title '${titleObj.name}' failed."
-              result.errors= ve.errors
+              result.errors= messageService.processsValidationErrors(ve.errors)
               result.baddata=titleObj
               log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
             }

@@ -25,5 +25,6 @@ class RefdataTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.data.size() >= 4
+    resp.json._links.self.href.contains ("/rest/package-scopes")
   }
 }

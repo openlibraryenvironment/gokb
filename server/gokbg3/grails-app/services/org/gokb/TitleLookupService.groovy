@@ -13,14 +13,15 @@ class TitleLookupService {
   def grailsApplication
   def componentLookupService
   def genericOIDService
-  
+  def reviewRequestService
+
 
   @javax.annotation.PostConstruct
   def init() {
     log.debug("Init");
   }
 
-  private Map class_one_match (def ids, ti_class) {
+  private Map class_one_match (def ids, ti_class, def fullsync = false) {
 
     // Get the class 1 identifier namespaces.
     Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
@@ -34,6 +35,7 @@ class TitleLookupService {
       "ids"               : [],
       "matches"           : [] as Set,
       "other_matches"     : [] as Set,
+      "other_types"       : [] as Set,
       "x_check_matches"   : [] as Set,
       "other_identifiers" : [] as Set
     ]
@@ -65,7 +67,7 @@ class TitleLookupService {
         id_def.value = the_id.value
         id_def.type = the_id.namespace.value
       }
-      
+
       // is a class 1 identifier.
       if ( id_def.type && id_def.value ) {
 
@@ -89,7 +91,7 @@ class TitleLookupService {
 
         // Flag for title match
         boolean title_match = false
-        
+
         // If we find an ID then lookup the components.
         Set<KBComponent> comp = getComponentsForIdentifier(the_id)
 
@@ -99,71 +101,77 @@ class TitleLookupService {
           // Ensure we're not looking at a Hibernate Proxy class representation of the class
           KBComponent dproxied = ClassUtils.deproxy(c);
 
-          // Only add if it's a title.
-          if ( ti_class.isInstance(dproxied) ) {
-            title_match = true
-            TitleInstance the_ti = (dproxied as TitleInstance)
-            // Don't add repeated matches
-            if ( result[match_type].contains(the_ti) ) {
-              log.debug("Not adding duplicate");
+          if (!fullsync || dproxied.status != status_deleted) {
+            // Only add if it's a title.
+            if ( ti_class.isInstance(dproxied) ) {
+              title_match = true
+              TitleInstance the_ti = (dproxied as TitleInstance)
+              // Don't add repeated matches
+              if ( result[match_type].contains(the_ti) ) {
+                log.debug("Not adding duplicate");
+              }
+              else {
+                log.debug("Adding ${the_ti} (title_match = ${title_match})");
+                result[match_type] << the_ti
+              }
             }
             else {
-              log.debug("Adding ${the_ti} (title_match = ${title_match})");
-              result[match_type] << the_ti
+              log.debug("ID doesn't point at an item of the correct type, skipping");
             }
           }
           else {
-            log.debug("ID Doesn't point at a title, skipping");
+            log.debug("Ignoring deleted item ..")
           }
         }
-        
+
         // Did the ID yield a Title match?
         log.debug("After class one matches (${id_def.type}:${id_def.value}, ${the_id.id}, title_match=${title_match}");
 
         if (!title_match) {
-          
+
           // We should see if the current ID namespace should be cross checked with another.
           def other_ns = null
           for (int i=0; i<xcheck.size() && (!(other_ns)); i++) {
             Set<String> test = xcheck[i]
-            
+
             if (test.contains(id_def.type)) {
-              
+
               // Create the set then remove the matched instance to test teh remaining ones.
               other_ns = new HashSet<String>(test)
-              
+
               // Remove the current namespace.
               other_ns.remove(id_def.type)
               log.debug ("Cross checking for ${id_def.type} in ${other_ns.join(", ")}")
-              
+
               Identifier xc_id = null
               for (int j=0; j<other_ns.size() && !(xc_id); j++) {
-                
+
                 String ns = other_ns[j]
-                
+
                 IdentifierNamespace namespace = IdentifierNamespace.findByValue(ns)
-                
+
                 if (namespace) {
                   // Lookup the identifier namespace.
-                  xc_id = Identifier.findByNamespaceAndValue(namespace, id_def.value)                  
+                  xc_id = Identifier.findByNamespaceAndValue(namespace, id_def.value)
                   log.debug ("Looking up ${ns}:${id_def.value} returned Identifier ${xc_id}");
-                  
+
                   comp = xc_id?.identifiedComponents
-                  
+
                   comp?.each { KBComponent c ->
-        
+
                     // Ensure we're not looking at a Hibernate Proxy class representation of the class
-                    KBComponent dproxied = ClassUtils.deproxy(c);
-        
+                    def dproxied = ClassUtils.deproxy(c);
+
                     // Only add if it's a title.
-                    if ( dproxied instanceof TitleInstance ) {
-                      
+                    if ( dproxied.class.name == ti_class.name ) {
+
                       log.debug ("Found ${id_def.value} in ${ns} namespace.")
-                      
+
                       // Save details here so we can raise a review request, only if a single title was matched.
                       result['x_check_matches'] << [
                         "suppliedNS"  : id_def.type,
-                        "foundNS"     : ns
+                        "foundNS"     : ns,
+                        "value"       : id_def.value
                       ]
 
                       TitleInstance the_ti = (dproxied as TitleInstance)
@@ -179,6 +187,16 @@ class TitleLookupService {
                       else {
                         result['matches'] << the_ti
                         log.debug("Adding cross check title to matches (Now ${result['matches'].size()} items)");
+                      }
+                    }
+                    else {
+                      log.debug("Found other linked component type: ${c} (${dproxied.class.name})")
+
+                      if (result['other_types'].contains(c)) {
+                        log.debug("Component already in list of matched instances")
+                      }
+                      else {
+                        result['other_types'].add(c)
                       }
                     }
                   }
@@ -200,6 +218,233 @@ class TitleLookupService {
     result
   }
 
+  def find(String title,
+            def publisher,
+            def identifiers,
+            def newTitleClassName
+          ) {
+    def result = [to_create: false, matches: []]
+    TitleInstance the_title = null
+    Class ti_class = Class.forName(newTitleClassName)
+
+    // Lookup any class 1 identifier matches
+    def results = class_one_match (identifiers, ti_class)
+
+    // The matches.
+    List< KBComponent> matches = results['matches'] as List
+
+    switch (matches.size()) {
+      case 0 :
+        // No match behaviour.
+        log.debug ("Title class one identifier lookup yielded no matches.")
+
+
+        // Check for presence of class one ID
+        if (results['class_one']) {
+          result.to_create = true
+        } else {
+
+          // No class 1s supplied we should try and find a match on the title string.
+          if (results['other_matches'].size() > 0){
+            if (results['other_matches'].size() == 1) {
+              log.debug("Matched item by secondary ID ..")
+              the_title = results['other_matches'][0]
+              result.matches.add([object:the_title, conflicts:[], warnings:['secondary']])
+            }
+            else if (results['other_matches'].size() > 1) {
+              log.debug("Multiple matches by secondary ID!")
+              results.other_matches.each { om
+                result.matches.add([object:om, conflicts:[], warnings:['secondary','other_matches']])
+              }
+            }
+          }
+
+          if (!the_title) {
+            log.debug ("No class 1 ids supplied. attempting string match")
+
+            // The hash we use is constructed differently based on the type of items.
+            // Serial hashes are based soley on the title, Monographs are based currently on title+primary author surname
+            def target_hash = null;
+
+            // Lookup using title string match only.
+            def string_matched = attemptComponentMatch ([title:title], newTitleClassName)
+
+            if (string_matched) {
+              log.debug("TI matched by bucket.")
+              def title_match = [object:the_title, warnings:['bucket']]
+
+              if ( title != the_title.name ) {
+                title_match.conflicts.add([message: "Found a title with a different primary name!", field: "name", value: title, matched: the_title.name])
+              }
+
+              result.matches.add(title_match)
+            }
+
+            result.to_create = true
+          }
+        }
+        break;
+      case 1 :
+        // Single component match.
+        log.debug ("Title class one identifier lookup yielded a single match.")
+        def title_match = [object: matches[0], conflicts:[], warnings:[]]
+
+        // We should raise a review request here if the match was made by cross checking
+        // different identifier namespaces.
+        if (results['x_check_matches'].size() == 1 && results['x_check_matches'][0]['suppliedNS'] != 'issnl') {
+
+          def data = results['x_check_matches'][0]
+
+          title_match.conflicts << [
+            message: "Title ${data['suppliedNS']} value ${data['value']} matched an existing ${data['foundNS']}",
+            field: "identifier.namespace",
+            value: "${data['suppliedNS']}:${data['value']}",
+            matched: "${data['foundNS']}:${data['value']}"
+          ]
+        }
+
+        // If one identifier matches, but all other class ones are different, it is probably not a real match.
+
+        def id_mismatches = []
+
+        results['ids'].each { rid ->
+          matches[0].ids.each { mid ->
+            if ( rid.namespace == mid.namespace && rid.value != mid.value ) {
+              if ( !matches[0].ids.contains(rid) ) {
+                id_mismatches.add([incoming:rid, matched:mid])
+              }
+            }
+          }
+        }
+
+
+        // Take whatever we can get if what we have is an unknown title
+        if ( title.startsWith("Unknown Title") ) {
+          // Don't go through title matching if we don't have a real title
+          title_match.warnings.add('title_ignored')
+        }
+        else {
+          if ( matches[0].name.startsWith("Unknown Title") ) {
+            // If we have an unknown title in the db, and a real title, then take that
+            // in preference
+            log.debug("Found new Title ${metadata.title} for previously unknown title ${matches[0]} (${matches[0].name})")
+            title_match.warnings.add('title_placeholder')
+          }
+          else {
+            if ( matches[0].name.equals(title) || matches[0].normname?.equals(KBComponent.generateNormname(title)) ) {
+
+            }
+            else {
+              title_match.conflicts << [
+                message: "Ingest name differs from that of the matched title!",
+                field: "name",
+                value: title,
+                matched: matches[0].name
+              ]
+
+              if (id_mismatches.size() > 0) {
+                result.to_create = true
+              }
+            }
+
+            if( id_mismatches.size() > 0 ){
+              id_mismatches.each {
+                title_match.conflicts << [
+                  message: "Value ${it.incoming.value} for namespace ${it.incoming.namespace.value} conflicts with existing value ${it.matched.value}",
+                  field: "identifier.value",
+                  value: it.incoming.value,
+                  matched: it.matched.value
+                ]
+              }
+            }
+          }
+        }
+        result.matches << title_match
+        break;
+
+      default :
+        // Multiple matches.
+        log.debug ("Title class one identifier lookup yielded ${matches.size()} matches - ${matches}.")
+        def all_matched = []
+        def partial = []
+        RefdataValue status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+
+        matches.each { mti ->
+
+          def full_match = true
+          def id_conflicts = []
+
+          results['ids'].each { rid ->
+            mti.ids.each { mid ->
+              if ( rid.namespace == mid.namespace && rid.value != mid.value ) {
+                if ( !mti.ids.contains(rid) ) {
+                  full_match = false
+                  id_conflicts.add([message: "Value ${rid.value} for namespace ${rid.namespace.value} conflicts with existing value ${mid.value}", field: "identifier.value", value:rid.value, matched:mid.value])
+                }
+              }
+            }
+          }
+
+          if ( full_match ) {
+            if ( mti.status != status_deleted ) {
+              all_matched.add(mti)
+            }
+            else {
+              log.debug("Skipping matched TI with status 'Deleted'!")
+            }
+          } else if ( mti.status != status_deleted ) {
+            partial.add([object:mti, conflicts: id_conflicts, warnings:['other_matches']])
+          }
+
+        }
+
+        switch ( all_matched.size() ) {
+          case 0 :
+            log.debug("Multiple matches for a single identifier. No matches for all class ones. Creating new TI!")
+            result.to_create = true
+            result.matches = partial
+            break;
+
+          case 1 :
+            log.debug("One match for all identifiers")
+            def title_match = [object: all_matched[0], conflicts:[], warnings:['other_matches']]
+
+            if(!all_matched[0].name.equals(title)){
+              title_match.conflicts << [message: "Title name differs from matched value ${all_matched[0].name}", field: "name", value: title, matched: all_matched[0].name]
+            }
+
+            result.matches << title_match
+            break;
+
+          default :
+            log.debug("Multiple matches for given ingest identifiers. Trying to match by name..")
+
+            def matched_with_name = []
+
+            all_matched.each { mti ->
+              if ( mti.name.equals(title) || mti.normname?.equals(KBComponent.generateNormname(title)) ) {
+                matched_with_name.add(mti)
+              }
+            }
+
+            if ( matched_with_name.size() == 1 ){
+              log.debug("Only one matched TI (${matched_with_name[0]}) has the same name!")
+              result.matches << [object: matched_with_name[0], conflicts:[], warnings:['other_matches']]
+            }
+            else {
+              log.debug("Could not match a specific title. Skipping..")
+
+              all_matched.each {
+                result.matches << [object: it, conflicts:[], warnings:['duplicate']]
+              }
+            }
+            break;
+        }
+        break;
+    }
+    result
+  }
+
 
   /**
    * @param title
@@ -207,23 +452,26 @@ class TitleLookupService {
    * @param identifiers : map [ [ type: 'idtype', value:'idvalue' ], [ type:'idtype', value:'idvalue' ] ]
    */
 
-  def find (String title,
-            String publisher_name, 
-            def identifiers, 
-            def user = null, 
+  def findOrCreate (String title,
+            String publisher_name,
+            def identifiers,
+            def user = null,
             def project = null,
             def newTitleClassName = 'org.gokb.cred.JournalInstance',
-            def uuid = null) {
-    return findTitle([title:title, publisher_name:publisher_name,identifiers:identifiers,uuid:uuid],user,project,newTitleClassName)
+            def uuid = null,
+            def fullsync = false) {
+    return findOrCreateTitle([title:title, publisher_name:publisher_name,identifiers:identifiers,uuid:uuid,fullsync:fullsync],user,project,newTitleClassName,fullsync)
   }
 
   private final findLock = new Object()
 
   @Synchronized("findLock")
-  private def findTitle (Map metadata,
-            def user = null, 
+  private def findOrCreateTitle (Map metadata,
+            def user = null,
             def project = null,
-            def newTitleClassName = 'org.gokb.cred.JournalInstance') {
+            def newTitleClassName = 'org.gokb.cred.JournalInstance',
+            def fullsync = false
+  ) {
 
     // The TitleInstance
     TitleInstance the_title = null
@@ -246,7 +494,7 @@ class TitleLookupService {
     }
 
     // Lookup any class 1 identifier matches
-    def results = class_one_match (metadata.identifiers, ti_class)
+    def results = class_one_match (metadata.identifiers, ti_class, fullsync)
 
     // The matches.
     List< KBComponent> matches = results['matches'] as List
@@ -256,7 +504,7 @@ class TitleLookupService {
         // No match behaviour.
         log.debug ("Title class one identifier lookup yielded no matches.")
 
-     
+
         // Check for presence of class one ID
         if (results['class_one']) {
           log.debug ("One or more class 1 IDs supplied so must be a new TI.")
@@ -270,7 +518,7 @@ class TitleLookupService {
             the_title = ti_class.newInstance()
             the_title.name = metadata.title
             the_title.normname = KBComponent.generateNormname(metadata.title);
-            // the_title.editStatus = 
+            // the_title.editStatus =
             the_title.ids = []
           }
 
@@ -292,6 +540,8 @@ class TitleLookupService {
             }
           }
 
+          def string_match = null
+
           if (!the_title) {
             log.debug ("No class 1 ids supplied. attempting string match")
 
@@ -300,11 +550,11 @@ class TitleLookupService {
             def target_hash = null;
 
             // Lookup using title string match only.
-            the_title = attemptComponentMatch (metadata, newTitleClassName)
+            string_match = attemptComponentMatch (metadata, newTitleClassName)
           }
 
           if (the_title) {
-            log.debug("TI ${the_title} matched by bucket.")
+            log.debug("TI ${the_title} matched by secondary ID.")
 
             if ( metadata.title != the_title.name ) {
               log.debug("bucket match but \"${metadata.title}\" != \"${the_title.name}\" so add as a variant");
@@ -314,13 +564,16 @@ class TitleLookupService {
 
               // Raise a review request
 
-              if(added) {
-                ReviewRequest.raise(
-                    the_title,
-                    "'${metadata.title}' added as a variant of '${the_title.name}'.",
-                    "No 1st class ID supplied but reasonable match was made on the title name.",
-                    user, project
-                    )
+              if (added) {
+                reviewRequestService.raise(
+                  the_title,
+                  "'${metadata.title}' added as a variant of '${the_title.name}'.",
+                  "Title was matched via secondary id, but had a different name.",
+                  user,
+                  project,
+                  null,
+                  RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Mismatch')
+                )
               }
 
               if(the_title.validate()) {
@@ -329,7 +582,6 @@ class TitleLookupService {
             }
 
           } else {
-
             log.debug("No TI could be matched by name. New TI, flag for review.")
 
             // Could not match on title either.
@@ -351,32 +603,51 @@ class TitleLookupService {
 
             title_created = true
 
-            ReviewRequest.raise(
+            if (string_match) {
+              def additionalInfo = [:]
+              def combo_ids = [the_title]
+
+              additionalInfo.otherComponents = []
+
+              matches.each { tlm ->
+                additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
+                combo_ids.add(tlm.id)
+              }
+
+              additionalInfo.cstring = combo_ids.sort().join('_')
+
+              reviewRequestService.raise(
                 the_title,
                 "New TI created.",
-                "No 1st class ID supplied and no match could be made on title name.",
-                user, project
-                )
+                "No matched components via IDs, but a title with a similar name already exists.",
+                user,
+                project,
+                (additionalInfo as JSON).toString(),
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Similarity')
+              )
+            }
           }
         }
         break;
       case 1 :
         // Single component match.
         log.debug ("Title class one identifier lookup yielded a single match.")
-        
+
         // We should raise a review request here if the match was made by cross checking
         // different identifier namespaces.
         if (results['x_check_matches'].size() == 1 && results['x_check_matches'][0]['suppliedNS'] != 'issnl') {
-          
+
           def data = results['x_check_matches'][0]
-          
+
           // Fire the review request.
-          ReviewRequest.raise(
+          reviewRequestService.raise(
             matches[0],
             "Identifier type mismatch.",
             "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
             user,
-            project
+            project,
+            null,
+            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Mismatch')
           )
         }
 
@@ -394,16 +665,7 @@ class TitleLookupService {
           }
         }
 
-//         if( id_mismatches > 0 ) {
-//           ReviewRequest.raise(
-//             matches[0],
-//             "Identifier mismatch.",
-//             "Ingest identifier differs from existing one in the same namespace.",
-//             user,
-//             project
-//           )
-//         }
-        
+
         // Take whatever we can get if what we have is an unknown title
         if ( metadata.title.startsWith("Unknown Title") || metadata.status == "Expected" ) {
           // Don't go through title matching if we don't have a real title
@@ -419,7 +681,7 @@ class TitleLookupService {
             the_title.status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
           }
           else {
-            if ( matches[0].name.equals(metadata.title) || matches[0].normname?.equals(KBComponent.generateNormname(metadata.title)) ) { 
+            if ( matches[0].name.equals(metadata.title) || matches[0].normname?.equals(KBComponent.generateNormname(metadata.title)) ) {
               // Perfect match - do nothing
               the_title = matches[0]
 
@@ -446,13 +708,14 @@ class TitleLookupService {
 
                 additionalInfo.cstring = combo_ids.sort().join('_')
 
-                ReviewRequest.raise(
+                reviewRequestService.raise(
                   matches[0],
                   "Identifier mismatch.",
                   "Title ${matches[0]} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
                   user,
                   project,
-                  (additionalInfo as JSON).toString()
+                  (additionalInfo as JSON).toString(),
+                  RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Minor Identifier Mismatch')
                 )
               }
             }
@@ -489,13 +752,14 @@ class TitleLookupService {
                 additionalInfo.cstring = combo_ids.sort().join('_')
 
 
-                ReviewRequest.raise(
+                reviewRequestService.raise(
                   the_title,
                   "New TI created.",
                   "TitleInstance ${matches[0].id} ${matches[0].name ? '('+ matches[0].name +')' : ''} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
                   user,
                   project,
-                  (additionalInfo as JSON).toString()
+                  (additionalInfo as JSON).toString(),
+                  RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Major Identifier Mismatch')
                 )
               }else{
                 // Now we can examine the text of the title.
@@ -569,13 +833,14 @@ class TitleLookupService {
 
             additionalInfo.cstring = combo_ids.sort().join('_')
 
-            ReviewRequest.raise(
+            reviewRequestService.raise(
               the_title,
               "New TI created.",
               "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
               user,
               project,
-              (additionalInfo as JSON).toString()
+              (additionalInfo as JSON).toString(),
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Multiple Matches')
             )
             break;
 
@@ -605,6 +870,8 @@ class TitleLookupService {
             }
             else {
               log.debug("Could not match a specific title. Skipping..")
+              def matched_ids = matched_with_name.collect {it.id}
+              throw new org.gokb.exceptions.MultipleComponentsMatchedException("Could not match a specific title!", metadata.title, metadata.identifiers, matched_ids)
             }
             break;
         }
@@ -617,19 +884,46 @@ class TitleLookupService {
       // Make sure we're all saved before looking up the publisher
       if(the_title.validate()) {
 
-        addIdentifiers(results.ids, the_title)
+        // addIdentifiers(results.ids, the_title)
 
-        addPublisher(metadata.publisher_name, the_title)
+        // addPublisher(metadata.publisher_name, the_title)
 
         if(the_title.name.startsWith("Unknown Title")){
           the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
         }
 
-        if(title_created) {
+        log.debug("${the_title.ids}")
+
+        if (title_created) {
           the_title.save(flush:true)
         }
         else {
           the_title = the_title.merge(flush:true)
+        }
+
+        if (results.other_matches.size() > 0) {
+
+          def additionalInfo = [:]
+          def combo_ids = [the_title]
+
+          additionalInfo.otherComponents = []
+
+          results.other_matches.each { tlm ->
+            additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
+            combo_ids.add(tlm.id)
+          }
+
+          additionalInfo.cstring = combo_ids.sort().join('_')
+
+          reviewRequestService.raise(
+            the_title,
+            "Identifier match.",
+            "A provided identifier matched an existing component of another type!",
+            user,
+            project,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Type Mismatch')
+          )
         }
       }
       else {
@@ -643,20 +937,20 @@ class TitleLookupService {
   private TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
 
 
-    if ( ( publisher_name != null ) && 
+    if ( ( publisher_name != null ) &&
          ( publisher_name.trim().length() > 0 ) ) {
-         
+
       log.debug("Add publisher \"${publisher_name}\"")
       Org publisher = Org.findByName(publisher_name)
       def norm_pub_name = Org.generateNormname(publisher_name);
       def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
-      
+
       if ( !publisher ) {
         // Lookup using norm name.
-        
+
         log.debug("Using normname \"${norm_pub_name}\" for lookup")
         publisher = Org.findByNormname(norm_pub_name)
-      }      
+      }
 
       if ( !publisher || publisher.status == status_deleted) {
         def variant_normname = GOKbTextUtils.normaliseString(publisher_name)
@@ -702,6 +996,7 @@ class TitleLookupService {
         log.debug("Not adding duplicate ID ${new_id}..")
       }
     }
+    ti.save(flush:true)
     ti
   }
 
@@ -709,7 +1004,7 @@ class TitleLookupService {
     def t = null;
     if ( title && ( title.length() > 0 ) ) {
       def nname = GOKbTextUtils.norm2(title);
-      
+
       def bucket_hash = GOKbTextUtils.generateComponentHash([nname]);
 
       // def component_hash = GOKbTextUtils.generateComponentHash([nname, componentDiscriminator]);
@@ -761,7 +1056,7 @@ class TitleLookupService {
     log.debug("singleTIMatch");
 
     String comparable_title = GOKbTextUtils.generateComparableKey(title)
-    
+
     // The threshold for a good match.
     double threshold = grailsApplication.config.cosine.good_threshold
 
@@ -799,7 +1094,7 @@ class TitleLookupService {
 
         // Raise a review request
         if(added) {
-          ReviewRequest.raise(
+          reviewRequestService.raise(
               ti,
               "'${title}' added as a variant of '${ti.name}'.",
               "Match was made on 1st class identifier but title name seems to be very different.",
@@ -812,36 +1107,36 @@ class TitleLookupService {
     ti
   }
 
-  
+
   /**
-   * @param ids should be a list of maps containing at least an ns and value key. 
+   * @param ids should be a list of maps containing at least an ns and value key.
    * @return
    */
   public def matchClassOnes (def ids) {
     def result = [] as Set
-    
+
     // Get the class 1 identifier namespaces.
     Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
 
     def start_time = System.currentTimeMillis();
-    
+
     ids.each { def id_def ->
 
       log.debug("Consider ${id_def}");
 
       // Class ones only.
-      if ( id_def.value && 
-           id_def.ns && 
+      if ( id_def.value &&
+           id_def.ns &&
            class_one_ids.contains(id_def.ns) ) {
 
         log.debug("looking up ${id_def}");
-      
+
         def identifiers = Identifier.createCriteria().list(max: 5) {
-          and { 
+          and {
             namespace {
               inList "value", id_def.ns
             }
-            
+
             eq "value", id_def.value
           }
         }
@@ -851,7 +1146,7 @@ class TitleLookupService {
         if ( identifiers.size() > 4 ) {
           log.warn("matchClassOne for ${id_def} returned a high number of candidate records. This shouldn't be the case");
         }
-        
+
         // Examine the identified components.
         identifiers?.each {
           log.debug("Handle ${it?.identifiedComponents.size()} components");
@@ -870,7 +1165,7 @@ class TitleLookupService {
     if ( elapsed > 2000 ) {
       log.warn("matchClassOnes took much longer than expected to complete when processing ${ids}. Needs investigation");
     }
-    
+
     result
   }
 
@@ -882,29 +1177,29 @@ class TitleLookupService {
     try {
       // Get the class 1 identifier namespaces.
       Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
-  
+
       def start_time = System.currentTimeMillis();
       def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
       def combo_id_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
-  
+
       def bindvars = []
       StringWriter sw = new StringWriter()
       sw.write("select DISTINCT c.fromComponent.id from Combo as c where ( ")
-  
-  
+
+
       def ctr = 0;
       ids.each { def id_def ->
         // Class ones only.
-        if ( id_def.value && id_def.ns && class_one_ids.contains(id_def.ns) ) { 
+        if ( id_def.value && id_def.ns && class_one_ids.contains(id_def.ns) ) {
           def ns = IdentifierNamespace.findByValue(id_def.ns)
           if ( ns ) {
-  
+
             def the_id = Identifier.executeQuery('select i from Identifier as i where i.value = ? and i.namespace = ?',[id_def.value, ns])
             if ( the_id.size() == 1 ) {
               if ( ctr++ ) {
                 sw.write(" or ");
               }
-  
+
               sw.write( "( c.toComponent = ? )" )
               bindvars.add(the_id[0])
             }
@@ -915,8 +1210,8 @@ class TitleLookupService {
           }
         }
       }
-  
-  
+
+
       if ( ctr > 0 ) {
         sw.write(" ) and c.type=? and c.fromComponent.status != ?");
         bindvars.add(combo_id_type);
@@ -950,7 +1245,7 @@ class TitleLookupService {
     }
     log.debug("getTitleFieldForIdentifier(${ids},${field_name} : ${result}");
     return result
-  } 
+  }
 
   // A task will be created to remap a title instance by an update to that title which touches
   // any field that might change the Instance -> Work mapping. We have to wait for that update to
@@ -975,7 +1270,7 @@ class TitleLookupService {
   }
 
   def getComponentsForIdentifier(identifier) {
-    
+
     def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     // was identifier.identifiedComponents
     KBComponent.executeQuery('select DISTINCT c.fromComponent from Combo as c where c.toComponent = :id and c.type.value = :tp and c.fromComponent.status <> :del',[id:identifier,tp:'KBComponent.Ids', del: status_deleted]);

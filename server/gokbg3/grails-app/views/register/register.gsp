@@ -62,7 +62,7 @@
                   <g:if test="${errors?.username?.size() > 0}">
                     <ul>
                       <g:each var="e" in="${errors.username}">
-                        <li>${e}</li>
+                        <li>${e.message}</li>
                       </g:each>
                     </ul>
                   </g:if>
@@ -73,7 +73,7 @@
                   <g:if test="${errors?.email?.size() > 0}">
                     <ul>
                       <g:each var="e" in="${errors.email}">
-                        <li>${e}</li>
+                        <li>${e.message}</li>
                       </g:each>
                     </ul>
                   </g:if>
@@ -84,7 +84,7 @@
                   <g:if test="${errors?.password?.size() > 0}">
                     <ul>
                       <g:each var="e" in="${errors.password}">
-                        <li>${e}</li>
+                        <li>${e.message}</li>
                       </g:each>
                     </ul>
                   </g:if>
@@ -95,7 +95,7 @@
                   <g:if test="${errors?.password2?.size() > 0}">
                     <ul>
                       <g:each var="e" in="${errors.password2}">
-                        <li>${e}</li>
+                        <li>${e.message}</li>
                       </g:each>
                     </ul>
                   </g:if>

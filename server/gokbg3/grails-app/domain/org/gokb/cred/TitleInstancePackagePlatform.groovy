@@ -172,7 +172,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     url (nullable:true, blank:true)
   }
 
-  public static final String restPath = "/tipps"
+  public static final String restPath = "/package-titles"
 
   def availableActions() {
     [ [code:'setStatus::Retired', label:'Retire'],
@@ -209,16 +209,15 @@ class TitleInstancePackagePlatform extends KBComponent {
     def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid, status: tipp_status, editStatus: tipp_editstatus).save(failOnError: true)
 
     if ( result ) {
-      def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
 
       def pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
-      def pkg_combo = new Combo(toComponent:result, fromComponent:tipp_fields.pkg, type:pkg_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+      def pkg_combo = new Combo(toComponent:result, fromComponent:tipp_fields.pkg, type:pkg_combo_type).save(flush:true, failOnError:true);
 
       def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
-      def plt_combo = new Combo(toComponent:result, fromComponent:tipp_fields.hostPlatform, type:plt_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+      def plt_combo = new Combo(toComponent:result, fromComponent:tipp_fields.hostPlatform, type:plt_combo_type).save(flush:true, failOnError:true);
 
       def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-      def ti_combo = new Combo(toComponent:result, fromComponent:tipp_fields.title, type:ti_combo_type, status:combo_status_active).save(flush:true, failOnError:true);
+      def ti_combo = new Combo(toComponent:result, fromComponent:tipp_fields.title, type:ti_combo_type).save(flush:true, failOnError:true);
 
       def tipl = TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
     }
@@ -397,7 +396,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
     def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
-    def curator = pkg?.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(pkg?.curatoryGroups?.id) : true
+    def curator = pkg?.curatoryGroups?.size() > 0 ? (user.adminStatus || user.curatoryGroups?.id.intersect(pkg?.curatoryGroups?.id)) : true
 
     if ( pkg && plt && ti && curator ) {
       log.debug("See if we already have a tipp");
@@ -486,7 +485,9 @@ class TitleInstancePackagePlatform extends KBComponent {
             tipp,
             "The existing platform matched for this TIPP (${plt}) is marked as ${plt.status?.value}! Please review the URL/Platform for validity.",
             "Platform not marked as current.",
-            user
+            user,
+            null,
+            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent')
           )
         }
 

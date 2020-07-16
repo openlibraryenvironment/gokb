@@ -129,13 +129,13 @@ class ComponentLookupService {
     def max = params.limit ? params.long('limit') : 10
     def offset = params.offset ? params.long('offset') : 0
     def first = true
-    def cls_obj = grailsApplication.getArtefact("Domain",cls.name).newInstance()
+    def cls_obj = (cls == KBComponent) ?: grailsApplication.getArtefact("Domain",cls.name).newInstance()
     def sort = null
     def sortField = null
     def order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
+    def genericTerm = params.q ?: null
 
-
-    if ( KBComponent.isAssignableFrom(cls) ) {
+    if ( cls != KBComponent && KBComponent.isAssignableFrom(cls) ) {
       def comboProps = cls_obj.allComboPropertyNames
       def comboJoinStr = ""
       def comboFilterStr = ""
@@ -214,6 +214,29 @@ class ComponentLookupService {
             sort = " order by ${c}.name ${order ?: ''}"
           }
         }
+      }
+
+      if (genericTerm?.trim()) {
+        comboJoinStr += " join p.outgoingCombos as idq_combo"
+        comboJoinStr += " join idq_combo.toComponent as idq"
+
+        if (first) {
+          comboFilterStr += " WHERE "
+          first = false
+        }
+        else {
+          comboFilterStr += " AND "
+        }
+
+        comboFilterStr += "(lower(p.name) like :qname OR ("
+        qryParams['qname'] = "${genericTerm.toLowerCase()}%"
+        comboFilterStr += "idq_combo.type = :idqtype AND "
+        qryParams["idqtype"] = RefdataCategory.lookupOrCreate ( "Combo.Type", 'KBComponent.Ids')
+        comboFilterStr += "idq_combo.status = :idqstatus AND "
+        qryParams["idqstatus"] = RefdataCategory.lookup("Combo.Status", "Active")
+        comboFilterStr += "idq.value = :idqval"
+        qryParams["idqval"] = genericTerm
+        comboFilterStr += "))"
       }
 
       hqlQry += comboJoinStr + comboFilterStr
@@ -318,6 +341,18 @@ class ComponentLookupService {
       qryParams['status'] = RefdataCategory.lookup("KBComponent.Status", "Deleted")
     }
 
+    if (cls == ReviewRequest && !params['status']) {
+      if (first) {
+        hqlQry += " WHERE "
+        first = false
+      }
+      else {
+        hqlQry += " AND "
+      }
+      hqlQry += "p.status != :status"
+      qryParams['status'] = RefdataCategory.lookup("ReviewRequest.Status", "Deleted")
+    }
+
     def hqlCount = "select count(p.id) ${hqlQry}".toString()
     def hqlFinal = "select p ${sort ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
@@ -389,8 +424,16 @@ class ComponentLookupService {
    * @param total : Number of total results
    */
 
-  private generateLinks(result, cls, context, params, max, offset, total) {
-    def endpoint = cls.newInstance().hasProperty('restPath') ? cls.newInstance().restPath : ""
+  def generateLinks(result, cls, context, params, max, offset, total) {
+    def endpoint = ""
+
+    if (cls == KBComponent) {
+      endpoint = "/entities"
+    }
+    else if (cls.newInstance().hasProperty('restPath')) {
+      endpoint = cls.newInstance().restPath
+    }
+
     log.debug("Identified endpoint: ${endpoint}")
     def base = grailsApplication.config.serverURL + "/rest" + "${context ?: endpoint}"
 
@@ -415,6 +458,9 @@ class ComponentLookupService {
         else if (!p.trim()) {
           selfLink.removeQueryParam(p)
         }
+      }
+      if(params.id) {
+        selfLink.removeQueryParam('id')
       }
       if(params.controller) {
         selfLink.removeQueryParam('controller')
@@ -449,5 +495,7 @@ class ComponentLookupService {
       prevLink.addQueryParam('offset', "${(offset - max) > 0 ? offset - max : 0}")
       result['_links']['prev'] = ['href': prevLink.toString()]
     }
+
+    return result
   }
 }

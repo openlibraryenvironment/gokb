@@ -130,12 +130,12 @@ class RefdataController {
     def result = [:]
     def resultData = []
     def cat = null
-    def base = grailsApplication.config.serverURL + namespace
+    def base = grailsApplication.config.serverURL + '/'+namespace
 
     cat = RefdataCategory.findByLabel("Package.Scope")
 
     if (cat) {
-      result['_links'] = ['self': ['href': base + "/package-scope"]]
+      result['_links'] = ['self': ['href': base + "/package-scopes"]]
       result['label'] = cat.label
 
       cat.values.each { v ->
