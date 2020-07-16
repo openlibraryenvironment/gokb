@@ -860,7 +860,21 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Deleted').save(flush:true, failOnError:true)
 
-    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'RR Standard Desc 1').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Claimed').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'In Progress').save(flush:true, failOnError:true)
+
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Minor Identifier Mismatch').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Major Identifier Mismatch').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Multiple Matches').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Type Mismatch').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Mismatch').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Similarity').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Mismatch').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'New Platform').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'New Org').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Status Deleted').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Status Retired').save(flush:true, failOnError:true)
 
 
     RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save(flush:true, failOnError:true)

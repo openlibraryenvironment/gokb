@@ -49,7 +49,7 @@ class GroupController {
    
       log.debug("Got ${all_components.size()} connected components")
 
-      def cg_review_tasks_hql = " from ReviewRequest as rr where (rr.allocatedTo in ( select u from CuratoryGroup as cg join cg.users as u where cg = :group ) or rr.componentToReview in (:cgcomponents)) and rr.status!=:closed and rr.status!=:deleted "
+      def cg_review_tasks_hql = " from ReviewRequest as rr where (rr.allocatedTo in ( select u from CuratoryGroup as cg join cg.users as u where cg = :group ) or rr.componentToReview in (:cgcomponents)) or exists (select arc from AllocatedReviewGroup as arc where arc.review = rr and arc.group = :group) and rr.status!=:closed and rr.status!=:deleted "
       result.rr_count = Package.executeQuery('select count(rr) '+cg_review_tasks_hql,[group:result.group,cgcomponents:all_components,closed:closedStat,deleted:delStat])[0];
       result.rrs = Package.executeQuery('select rr '+cg_review_tasks_hql,[group:result.group,cgcomponents:all_components,closed:closedStat,deleted:delStat],[max:result.max,offset:result.rr_offset,sort:rr_sort,order:rr_sort_order]);
 

@@ -485,7 +485,9 @@ class TitleInstancePackagePlatform extends KBComponent {
             tipp,
             "The existing platform matched for this TIPP (${plt}) is marked as ${plt.status?.value}! Please review the URL/Platform for validity.",
             "Platform not marked as current.",
-            user
+            user,
+            null,
+            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent')
           )
         }
 

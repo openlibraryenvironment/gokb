@@ -39,7 +39,7 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#platformdetails" data-toggle="tab">Platform Details</a></li>
     <g:if test="${d.id}">
-      <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs <span class="badge badge-warning"> ${d.hostedTipps?.findAll{ it.status.value == 'Current'}?.size() ?: '0'}</span> </a></li>
+      <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs</span> </a></li>
       <li><a href="#packages" data-toggle="tab">Packages</a></li>
       <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
       <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}">

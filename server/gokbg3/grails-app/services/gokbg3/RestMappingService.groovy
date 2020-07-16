@@ -77,7 +77,7 @@ class RestMappingService {
 
     if (KBComponent.has(ClassUtils.deproxy(obj), "restPath") && !jsonMap?.ignore?.contains('_links')) {
       result['_links'] = [:]
-      result['_links']['self'] = ['href': base + obj.restPath + "/${obj.id}", 'method': "GET"]
+      result['_links']['self'] = ['href': base + obj.restPath + "/${obj.id}"]
 
       if (obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0) {
         is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
@@ -88,8 +88,8 @@ class RestMappingService {
       }
 
       if (is_curator || user?.isAdmin()) {
-        result._links.update = ['href': base + obj.restPath + "/${obj.id}", 'method': "PUT"]
-        result._links.delete = ['href': base + obj.restPath + "/${obj.id}", 'method': "DELETE"]
+        result._links.update = ['href': base + obj.restPath + "/${obj.id}"]
+        result._links.delete = ['href': base + obj.restPath + "/${obj.id}"]
 
         if (KBComponent.isAssignableFrom(obj.class)) {
           result._links.retire = ['href': base + obj.restPath + "/${obj.id}/retire"]

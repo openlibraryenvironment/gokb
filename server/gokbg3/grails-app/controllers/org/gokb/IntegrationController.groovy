@@ -933,7 +933,7 @@ class IntegrationController {
                         def ti = null
 
                         try {
-                          ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
+                          ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user, fullsync);
 
                           if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
 

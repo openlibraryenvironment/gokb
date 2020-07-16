@@ -18,6 +18,7 @@ class UrlMappings {
       "/packages/$id/$action"(controller: 'package', namespace: 'rest')
       get "/packages/$id"(controller: 'package', namespace: 'rest', action: 'show')
       put "/packages/$id"(controller: 'package', namespace: 'rest', action: 'update')
+      patch "/packages/$id"(controller: 'package', namespace: 'rest', action: 'update')
       delete "/packages/$id"(controller: 'package', namespace: 'rest', action: 'delete')
       post "/packages"(controller: 'package', namespace: 'rest', action: 'save')
       get "/packages"(controller: 'package', namespace: 'rest', action: 'index')
@@ -29,30 +30,35 @@ class UrlMappings {
       get "/organizations/$id/$action"(controller: 'org', namespace: 'rest')
       get "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'show')
       put "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'update')
+      patch "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'update')
       delete "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'delete')
       get "/organizations"(controller: 'org', namespace: 'rest', action: 'index')
 
       get "/orgs/$id/$action"(controller: 'org', namespace: 'rest')
       get "/orgs/$id"(controller: 'org', namespace: 'rest', action: 'show')
       put "/orgs/$id"(controller: 'org', namespace: 'rest', action: 'update')
+      patch "/orgs/$id"(controller: 'org', namespace: 'rest', action: 'update')
       delete "/orgs/$id"(controller: 'org', namespace: 'rest', action: 'delete')
       get "/orgs"(controller: 'org', namespace: 'rest', action: 'index')
 
       get "/provider/$id/$action"(controller: 'org', namespace: 'rest')
       get "/provider/$id"(controller: 'org', namespace: 'rest', action: 'show')
       put "/provider/$id"(controller: 'org', namespace: 'rest', action: 'update')
+      patch "/provider/$id"(controller: 'org', namespace: 'rest', action: 'update')
       delete "/provider/$id"(controller: 'org', namespace: 'rest', action: 'delete')
       get "/provider"(controller: 'org', namespace: 'rest', action: 'index')
 
       get "/publisher/$id/$action"(controller: 'org', namespace: 'rest')
       get "/publisher/$id"(controller: 'org', namespace: 'rest', action: 'show')
       put "/publisher/$id"(controller: 'org', namespace: 'rest', action: 'update')
+      patch "/publisher/$id"(controller: 'org', namespace: 'rest', action: 'update')
       delete "/publisher/$id"(controller: 'org', namespace: 'rest', action: 'delete')
       get "/publisher"(controller: 'org', namespace: 'rest', action: 'index')
 
       get "/platforms/$id/$action"(controller: 'platform', namespace: 'rest')
       get "/platforms/$id"(controller: 'platform', namespace: 'rest', action: 'show')
       put "/platforms/$id"(controller: 'platform', namespace: 'rest', action: 'update')
+      patch "/platforms/$id"(controller: 'platform', namespace: 'rest', action: 'update')
       delete "/platforms/$id"(controller: 'platform', namespace: 'rest', action: 'delete')
       get "/platforms"(controller: 'platform', namespace: 'rest', action: 'index')
 
@@ -81,8 +87,11 @@ class UrlMappings {
       post "/sources"(controller: 'sources', namespace: 'rest', action: 'save')
 
       get "/reviews"(controller: 'reviews', namespace: 'rest', action: 'index')
-      get "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'index')
+      get "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'show')
+      put "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
+      patch "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
 
+      get "/curatoryGroups/$id/reviews"(controller: 'curatoryGroups', namespace: 'rest', action: 'getReviews')
       get "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'show')
       get "/curatoryGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'index')
 

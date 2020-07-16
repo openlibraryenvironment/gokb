@@ -98,20 +98,17 @@ where cp.owner = :c
 
     // The update closure.
     def doUpdate = { obj, Date stamp ->
-
       try {
-
         def saveParams = [failOnError:true]
 
         obj.lastSeen = stamp.getTime()
         obj.save(saveParams)
 
       } catch (Throwable t) {
-
-       // Suppress but log.
-      log.error("${t}")
+        // Suppress but log.
+        log.error("${t}")
+      }
     }
-  }
 
     if (hasProperty("touchOnUpdate")) {
 
@@ -1200,7 +1197,7 @@ where cp.owner = :c
         // Make sure not already a variant name
         def existing_variants = KBComponentVariantName.findAllByNormVariantName(normname)
         if ( existing_variants.size() == 0 ) {
-          result = new KBComponentVariantName( owner:this, variantName:name ).save(flush:true)
+          result = new KBComponentVariantName( owner:this, variantName:name ).save()
         }
         else {
           log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
@@ -1416,6 +1413,7 @@ where cp.owner = :c
     }
 //     ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this]);
 
+    AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup as c where c.group=:component",[component:this]);
     ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview=:component",[component:this]);
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component",[component:this]);
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component",[component:this]);
@@ -1449,6 +1447,7 @@ where cp.owner = :c
         ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
       }
 
+      AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup as c where c.group IN (:component)",[component:batch]);
       ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)",[component:batch]);
       ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)",[component:batch]);
       ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)",[component:batch]);
