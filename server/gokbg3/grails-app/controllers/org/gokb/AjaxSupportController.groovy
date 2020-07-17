@@ -575,7 +575,7 @@ class AjaxSupportController {
         log.debug("remove successful?: ${remove_result}")
         log.debug("child ${item_to_remove} removed: "+ contextObj[params.__property]);
 
-        if ( params.propagate == "true") {
+        if ( params.propagate == "true" && KBComponent.isAssignableFrom(contextObj.class)) {
           contextObj.lastSeen = new Date().getTime()
         }
 
