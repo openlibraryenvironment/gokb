@@ -1087,7 +1087,7 @@ class IntegrationController {
                       log.error("ValidationException attempting to cross reference TIPP",ve);
                       valid = false
                       tipp_fails++
-                      errors.add(['code': 400, idx: idx, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'baddata': tipp, errors: messageService.processValidationErrors(upserted_tipp.errors)])
+                      errors.add(['code': 400, idx: idx, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'baddata': tipp, errors: messageService.processValidationErrors(ve.errors)])
 
                       if (upserted_tipp)
                         upserted_tipp.discard()

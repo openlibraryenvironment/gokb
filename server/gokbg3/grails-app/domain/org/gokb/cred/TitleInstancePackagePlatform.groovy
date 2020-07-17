@@ -487,6 +487,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             "Platform not marked as current.",
             user,
             null,
+            null,
             RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent')
           )
         }
