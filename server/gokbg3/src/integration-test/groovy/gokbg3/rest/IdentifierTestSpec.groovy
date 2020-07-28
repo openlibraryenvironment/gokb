@@ -119,6 +119,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 400 // Created
+    resp.json.message == "Identifier has failed validation!"
     resp.json.error.value.message == "Identifier format check failed!"
   }
 

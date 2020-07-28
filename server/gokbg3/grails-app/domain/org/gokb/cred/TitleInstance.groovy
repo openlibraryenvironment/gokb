@@ -614,7 +614,7 @@ class TitleInstance extends KBComponent {
       result.errors.name =  [[message: "Missing title name!", baddata: titleDTO.name]]
       return result
     }
-    
+
     def ids_list = titleDTO.identifiers ?: titleDTO.ids
 
     LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
@@ -638,28 +638,58 @@ class TitleInstance extends KBComponent {
     def id_errors = []
 
     ids_list?.each { idobj ->
-      if (idobj.type && idobj.value) {
-        def found_ns = IdentifierNamespace.findByValue(idobj.type.toLowerCase())
-        def final_val = idobj.value
+      def id_def = [:]
+      def ns_obj = null
 
-        if (found_ns) {
-          if (found_ns.family == 'isxn') {
-            final_val = final_val.replaceAll("x","X")
-          }
+      if (idobj instanceof Map) {
+        def id_ns = idobj.type ?: (idobj.namespace ?: null)
 
-          if (!Identifier.findByNamespaceAndNormname(found_ns, Identifier.normalizeIdentifier(final_val))) {
-            if ( found_ns.pattern && !(final_val ==~ found_ns.pattern) ) {
-              log.warn("Validation for ${found_ns.value}:${final_val} failed!")
-              id_errors.add([message:"Validation for identifier ${found_ns.value}:${final_val} failed!", baddata: idobj])
-              result.valid = false
-            }
-          }
+        id_def.value = idobj.value
+
+        if (id_ns instanceof String) {
+          log.debug("Default namespace handling for ${id_ns}..")
+          ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
+        }
+        else if (id_ns) {
+          log.debug("Handling namespace def ${id_ns}")
+          ns_obj = IdentifierNamespace.get(id_ns)
+        }
+
+        if (!ns_obj) {
+          id_errors.add([message: "Unable to lookup identifier namespace ${id_ns}!", baddata: id_ns, code: 404])
+        }
+        else {
+          id_def.type = ns_obj.value
+        }
+      }
+      else if (idobj instanceof Integer){
+        Identifier the_id = Identifier.get(id_inc)
+
+        if (!the_id) {
+          id_errors.add([message:"Unable to lookup identifier object by ID!", baddata: idobj])
+          result.valid = false
         }
       }
       else {
         log.warn("Missing information in id object ${idobj}")
         id_errors.add([message:"Missing information for identifier object!", baddata: idobj])
         result.valid = false
+      }
+
+      if (ns_obj && id_def.size() > 0) {
+        if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
+          if ( ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern) ) {
+            log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
+            id_errors.add([message:"Validation for identifier ${id_def.type}:${id_def.value} failed!", baddata: idobj])
+            result.valid = false
+          }
+          else {
+            log.debug("New identifier ..")
+          }
+        }
+        else {
+          log.debug("Found existing identifier ..")
+        }
       }
     }
 
@@ -675,7 +705,7 @@ class TitleInstance extends KBComponent {
   }
 
   @Transient
-  public static TitleInstance upsertDTO(titleLookupService,titleDTO,user=null) {
+  public static TitleInstance upsertDTO(titleLookupService,titleDTO,user=null,fullsync=false) {
     def result = null;
     def type = null
 
@@ -698,6 +728,7 @@ class TitleInstance extends KBComponent {
           type = "org.gokb.cred.DatabaseInstance"
           break;
         case "Other":
+        case "other":
           type = "org.gokb.cred.OtherInstance"
           break;
         default:
@@ -707,13 +738,14 @@ class TitleInstance extends KBComponent {
     }
 
     if (type) {
-      result = titleLookupService.find(titleDTO.name,
+      result = titleLookupService.findOrCreate(titleDTO.name,
                                       titleDTO.publisher,
                                       titleDTO.identifiers,
                                       user,
                                       null,
                                       type,
-                                      titleDTO.uuid
+                                      titleDTO.uuid,
+                                      fullsync
                                   )
       log.debug("Result of upsertDTO: ${result}");
     }
@@ -758,7 +790,7 @@ class TitleInstance extends KBComponent {
   @Override
   @Transient
   def ensureVariantName(String name) {
-
+    def result = null
     if (name.trim().size() != 0) {
 
       // Variant names use different normalisation method.
@@ -767,7 +799,7 @@ class TitleInstance extends KBComponent {
       // not already a name
       // Make sure not already a variant name
       if ( !KBComponentVariantName.findByOwnerAndNormVariantName(this, variant_normname) ) {
-        KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
+        result = new KBComponentVariantName( owner:this, variantName:name ).save(flush:true)
       }
       else {
         log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
@@ -776,7 +808,7 @@ class TitleInstance extends KBComponent {
     else {
       log.error("No viable variant name supplied!")
     }
-
+    result
   }
 
   def beforeUpdate() {

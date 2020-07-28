@@ -8,7 +8,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import org.gokb.cred.*
-import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -20,6 +19,8 @@ class RestMappingService {
   def genericOIDService
   def classExaminationService
   def componentLookupService
+  def messageSource
+  def messageService
 
   def defaultIgnore = [
     'bucketHash',
@@ -76,7 +77,7 @@ class RestMappingService {
 
     if (KBComponent.has(ClassUtils.deproxy(obj), "restPath") && !jsonMap?.ignore?.contains('_links')) {
       result['_links'] = [:]
-      result['_links']['self'] = ['href': base + obj.restPath + "/${obj.id}", 'method': "GET"]
+      result['_links']['self'] = ['href': base + obj.restPath + "/${obj.id}"]
 
       if (obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0) {
         is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
@@ -87,8 +88,8 @@ class RestMappingService {
       }
 
       if (is_curator || user?.isAdmin()) {
-        result._links.update = ['href': base + obj.restPath + "/${obj.id}", 'method': "PUT"]
-        result._links.delete = ['href': base + obj.restPath + "/${obj.id}", 'method': "DELETE"]
+        result._links.update = ['href': base + obj.restPath + "/${obj.id}"]
+        result._links.delete = ['href': base + obj.restPath + "/${obj.id}"]
 
         if (KBComponent.isAssignableFrom(obj.class)) {
           result._links.retire = ['href': base + obj.restPath + "/${obj.id}/retire"]
@@ -217,7 +218,7 @@ class RestMappingService {
             // Add to collection
             log.debug("Skip generic handling of collections}");
 
-            if (p.name == "variantNames") {
+            if (p.name == "variantNames" && obj.id) {
               updateVariantNames(obj, reqBody.variantNames)
             }
           }
@@ -237,14 +238,6 @@ class RestMappingService {
               break;
           }
         }
-      }
-    }
-
-    if (reqBody.groups || reqBody.curatoryGroups) {
-      if (KBComponent.has(obj, 'curatoryGroups')) {
-
-        def cgs = reqBody.groups ?: reqBody.curatoryGroups
-        updateCuratoryGroups(obj, cgs)
       }
     }
     obj
@@ -321,7 +314,14 @@ class RestMappingService {
           }
         }
       } else {
-        def linkObj = ptype.get(val)
+        def linkObj = null
+
+        if (val instanceof Integer) {
+          linkObj = ptype.get(val)
+        }
+        else if (val instanceof Map) {
+          linkObj = val.id ? ptype.get(val.id) : null
+        }
 
         if (linkObj) {
           obj[prop] = linkObj
@@ -343,15 +343,20 @@ class RestMappingService {
     }
   }
 
-  public def updateIdentifiers(obj, ids) {
+  @Transactional
+  public def updateIdentifiers(obj, ids, boolean remove = true) {
     log.debug("updating ids ${ids}")
-    def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    def combo_type_id = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
+    RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    RefdataValue combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
+    RefdataValue combo_expired = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_EXPIRED)
+    def id_combos = obj.getCombosByPropertyName('ids')
+    def errors = []
     Set new_ids = []
 
     if (obj && ids instanceof Collection) {
       ids.each { i ->
         Identifier id = null
+        def valid = true
 
         if (i instanceof Integer) {
           id = Identifier.get(i)
@@ -376,87 +381,128 @@ class RestMappingService {
             }
             catch (grails.validation.ValidationException ve) {
               log.debug("Could not create ID ${ns}:${i.value}")
-              obj.errors.reject(
-                'identifier.value.IllegalIDForm',
-                [i.value, ns_val] as Object[],
-                '[Value {0} is not valid for namespace {1}]'
-              )
-              obj.errors.rejectValue(
-                'ids',
-                'identifier.value.IllegalIDForm'
-              )
+
+              errors << messageService.processValidationErrors(ve)
             }
           } else {
-            obj.errors.reject(
-              'identifier.value.IllegalIDForm',
-              [i.value, ns_val] as Object[],
-              '[Value {0} is not valid for namespace {1}]'
-            )
-            obj.errors.rejectValue(
-              'ids',
-              'identifier.value.IllegalIDForm'
-            )
+            errors << [message: message(code:'identifier.value.IllegalIDForm'), baddata: i]
+            valid = false
           }
         }
         else {
+          errors << [message: "Could not identify ID form!", baddata: i]
+          valid = false
           log.error("Could not identify ID form!")
         }
 
-        if ( id && !obj.hasErrors() ) {
+        if (id && !obj.hasErrors() && valid) {
           log.debug("Adding id ${id} to current set")
           new_ids << id
         }
-        else {
+        else if (!id) {
           log.debug("No Identifier found for ID ${i}, or errors on object ..")
+        }
+      }
+
+      if (errors.size() == 0) {
+        new_ids.each { i ->
+
+          def dupe = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?",[combo_id_type, obj, i])
+
+          if (dupe.size() == 0) {
+            obj.ids.add(i)
+          }
+          else if (dupe.size() == 1 ) {
+            if (dupe[0].status == combo_deleted) {
+              log.debug("Matched ID combo was marked as deleted!")
+            }
+            else {
+              log.debug("Not adding duplicate ..")
+            }
+          }
+          else {
+            if (!errors.ids) {
+              errors.ids = []
+            }
+
+            errors.ids << [message: "There seem to be duplicate links for an identifier against this title!", baddata: i]
+            log.error("Multiple ID combos for ${obj} -- ${i}!")
+          }
+        }
+
+        if (remove) {
+          Iterator items = id_combos.iterator();
+          Object element;
+          while (items.hasNext()) {
+            element = items.next();
+            if (!new_ids.contains(element.toComponent)) {
+              // Remove.
+              element.status = combo_deleted
+            }
+          }
         }
       }
     }
     else {
       log.error("Object ${obj} not found or illegal id format")
+      errors << [message: "Expected an Array to process!", baddata: ids]
     }
-    new_ids
+
+    errors
   }
 
-  public def updateCuratoryGroups(obj, cgs) {
+  @Transactional
+  public def updateCuratoryGroups(obj, cgs, boolean remove = true) {
     log.debug("Update curatory Groups ${cgs}")
     Set new_cgs = []
+    def errors = []
+    def current_cgs = obj.getCombosByPropertyName('curatoryGroups')
+    RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', obj.getComboTypeValue('curatoryGroups'))
 
     cgs.each { cg ->
       def cg_obj = null
 
       if (cg instanceof String) {
         cg_obj = CuratoryGroup.findByNameIlike(cg)
-      } else {
+      } else if (cg instanceof Integer){
         cg_obj = CuratoryGroup.get(cg)
       }
 
       if (cg_obj) {
         new_cgs << cg_obj
       } else {
-        obj.errors.reject(
-          'component.addToList.denied.label',
-          ['curatoryGroups'] as Object[],
-          '[Could not process list of items for property {0}]'
-        )
+        errors << [message: "Unable to lookup curatory group!", baddata: cg]
       }
     }
 
-    if (!obj.hasErrors()) {
+    if (errors.size() == 0) {
       new_cgs.each { c ->
         if (!obj.curatoryGroups.contains(c)) {
-          log.debug("Adding new cg ${c}..")
           obj.curatoryGroups.add(c)
         } else {
           log.debug("Existing cg ${c}..")
         }
       }
-      obj.curatoryGroups.retainAll(new_cgs)
+      
+      if (remove) {
+        Iterator items = current_cgs.iterator();
+        Object element;
+        while (items.hasNext()) {
+          element = items.next();
+          if (!new_cgs.contains(element.toComponent)) {
+            // Remove.
+            element.delete()
+          }
+        }
+      }
     }
     log.debug("New cgs: ${obj.curatoryGroups}")
-    obj
+    errors
   }
 
-  public def updateVariantNames(obj, vals) {
+  @Transactional
+  public def updateVariantNames(obj, vals, boolean remove = true) {
+    log.debug("Update Variants ..")
     def remaining = []
     def notFound = []
 
@@ -471,8 +517,28 @@ class RestMappingService {
             if (dupes) {
               log.debug("Not adding duplicate variant")
             } else {
-              obj.addToVariantNames(variantName: it)
+              newVariant = obj.ensureVariantName(it)
+
+              if (newVariant) {
+                log.debug("Added variant ${newVariant}")
+                remaining << newVariant
+              }
+              else {
+                log.debug("Could not add variant ${it}!")
+                obj.errors.reject(
+                  'component.addToList.denied.label',
+                  ['variantNames'] as Object[],
+                  '[Could not process list of items for property {0}]'
+                )
+                obj.errors.rejectValue(
+                  'variantNames',
+                  'component.addToList.denied.label'
+                )
+              }
             }
+          }
+          else {
+            log.debug("Ignoring empty variant")
           }
         } else {
           newVariant = KBComponentVariantName.get(it)
@@ -486,10 +552,11 @@ class RestMappingService {
       }
 
       if (notFound.size() == 0) {
-        if (!obj.hasErrors()) {
+        if (!obj.hasErrors() && remove) {
           obj.variantNames.retainAll(remaining)
         }
       } else {
+        log.debug("Unable to look up variants ..")
         obj.errors.reject(
           'component.addToList.denied.label',
           ['variantNames'] as Object[],
@@ -502,6 +569,7 @@ class RestMappingService {
       }
     }
     catch (Exception e) {
+      log.debug("Unable to process variants:", e)
       obj.errors.reject(
         'component.addToList.denied.label',
         ['variantNames'] as Object[],
@@ -513,6 +581,66 @@ class RestMappingService {
       )
     }
     obj
+  }
+
+  @Transactional
+  public def updatePublisher(obj, new_pubs, boolean remove = true) {
+    def errors = []
+    def publisher_combos = obj.getCombosByPropertyName('publisher')
+
+    String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
+    String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+    def pubs_to_add = []
+
+    if (new_pubs instanceof Collection) {
+      new_pubs.each { pub ->
+        if (!pubs_to_add.collect { it.id == pub}) {
+          pubs_to_add << Org.get(pub)
+        }
+        else {
+          log.warn("Duplicate for incoming publisher ${pub}!")
+        }
+      }
+    }
+    else {
+        if (!pubs_to_add.collect { it.id == new_pubs}) {
+          pubs_to_add << Org.get(new_pubs)
+        }
+        else {
+          log.warn("Duplicate for incoming publisher ${new_pubs}!")
+        }
+    }
+
+    pubs_to_add.each { publisher ->
+      boolean found = false
+      for ( int i=0; !found && i<publisher_combos.size(); i++) {
+        Combo pc = publisher_combos[i]
+        def idMatch = pc."${propName}".id == publisher.id
+
+        if (idMatch) {
+          found = true
+        }
+      }
+
+      if (!found) {
+        obj.publisher.add(publisher)
+      } else {
+        log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
+      }
+    }
+
+    if (remove) {
+      Iterator items = publisher_combos.iterator();
+      Object element;
+      while (items.hasNext()) {
+        element = items.next();
+        if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
+          // Remove.
+          element.delete()
+        }
+      }
+    }
+    errors
   }
 
   public def updateLongField(obj, prop, val) {

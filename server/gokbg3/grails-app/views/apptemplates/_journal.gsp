@@ -252,7 +252,7 @@
             </dd>
             <dt class="dt-label" style="width:100px;">Event Date</dt>
             <dd>
-              <input type="date" class="form-control" name="EventDate" required/>
+              <input type="date" format="yyyy-mm-dd" class="form-control" name="EventDate" required />
             </dd>
             <dt style="width:100px;"></dt>
             <dd>
