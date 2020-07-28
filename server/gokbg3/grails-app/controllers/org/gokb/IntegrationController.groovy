@@ -1400,8 +1400,6 @@ class IntegrationController {
    *      {
    *       'type':'list',
    *       'currency':'EUR',
-   *       'startDate':'yyyy-MM-dd',
-   *       'endDate':'yyyy-MM-dd',
    *       'amount':12.89
    *      }
    *    ]
