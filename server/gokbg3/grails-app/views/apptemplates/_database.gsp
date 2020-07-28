@@ -115,7 +115,7 @@
           ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()} 
         </span>
       </a></li>
-      <li><a href="#subjectgroup" data-toggle="tab">Subject Group </a></li>
+      <li><a href="#subjectarea" data-toggle="tab">Subject Area </a></li>
       <li><a href="#series" data-toggle="tab">Series </a></li>
       <li><a href="#prices" data-toggle="tab">Prices
         <span class="badge badge-warning">${d?.prices?.size()?: '0'}</span>
@@ -273,15 +273,15 @@
         model="${[d:d]}" />
     </div>
 
-    <div class="tab-pane" id="subjectgroup">
+    <div class="tab-pane" id="subjectarea">
 
       <dl class="dl-horizontal">
         <dt>
-          <g:annotatedLabel owner="${d}" property="subjectGroup">Subject Group</g:annotatedLabel>
+          <g:annotatedLabel owner="${d}" property="subjectArea">Subject Area</g:annotatedLabel>
         </dt>
         <dd>
-          <g:xEditable owner="${d}" field="subjectGroup"
-                       config='TitleInstance.subjectGroup'/>
+          <g:xEditable owner="${d}" field="subjectArea"
+                       config='TitleInstance.subjectArea'/>
         </dd>
       </dl>
     </div>

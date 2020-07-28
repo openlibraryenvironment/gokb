@@ -51,15 +51,15 @@
       "subjectGroup": "Fringe",
       "prices": [
          {
-            "priceType": "list",
+            "type": "list",
             "currency": "EUR",
-            "price": 123.45,
+            "amount": 123.45,
             "startDate": "2010-01-31"
          },
          {
-            "priceType": "topup",
+            "typeype": "topup",
             "currency": "USD",
-            "price": 43.12,
+            "amount": 43.12,
             "startDate": "2020-01-01"
          }
       ]

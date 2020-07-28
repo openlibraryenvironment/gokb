@@ -255,24 +255,11 @@ class ComponentUpdateService {
     }
 
     // Prices.
-    def presentPrices = component.prices ? component.prices : []
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
     if (data.prices) {
       for (def priceData : data.prices) {
-        ComponentPrice newPrice = new ComponentPrice(
-          owner: component,
-          priceType: RefdataCategory.lookup('Price.type', priceData.priceType),
-          price: priceData.price ?: null,
-          currency: RefdataCategory.lookup('Currency', priceData.currency),
-          startDate: df.parse(priceData.startDate),
-          endDate: priceData.endDate ? df.parse(priceData.endDate) : null
-        )
-        if (!presentPrices.contains(newPrice)) {
-          newPrice.save(flush: true)
-          presentPrices << newPrice
-          component.prices = presentPrices
-          hasChanged = true
-        }
+        component.setPrice(priceData.type, "${priceData.amount} $priceData.currency")
+        hasChanged = true
       }
     }
 
