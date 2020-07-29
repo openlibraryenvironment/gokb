@@ -27,4 +27,18 @@ class RefdataTestSpec extends AbstractAuthSpec {
     resp.json.data.size() >= 4
     resp.json._links.self.href.contains ("/rest/package-scopes")
   }
+
+  void "test GET /rest/coverage-depth"() {
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/coverage-depth") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
+    then:
+    resp.status == 200
+    resp.json.data.size() == 3
+    resp.json._links.self.href.contains ("/rest/coverage-depth")
+  }
 }

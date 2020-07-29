@@ -122,8 +122,9 @@ class UrlMappings {
       delete "/package-titles/$id"(controller: 'tipp', namespace: 'rest', action: 'delete')
       post "/package-titles"(controller: 'tipp', namespace: 'rest', action: 'save')
       get "/package-titles"(controller: 'tipp', namespace: 'rest', action: 'index')
-      
+
       get "/package-scopes" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
+      get "/coverage-depth" (controller: 'refdata', namespace: 'rest', action: 'coverageDepth')
     }
     "/$controller/$action?/$id?" {
       constraints {
