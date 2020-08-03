@@ -1568,13 +1568,13 @@ class IntegrationController {
                       'reasonRetired'
                 ], titleObj, title)
 
-                if (titleObj.type == 'Serial') {
-                  def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
-                  def pubTo = GOKbTextUtils.completeDateString(titleObj.publishedTo, false)
+                def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
+                def pubTo = GOKbTextUtils.completeDateString(titleObj.publishedTo, false)
 
-                  title_changed |= ClassUtils.setDateIfPresent(pubFrom, title, 'publishedFrom')
-                  title_changed |= ClassUtils.setDateIfPresent(pubTo, title, 'publishedTo')
-                }
+                log.debug("Completed date publishedFrom ${titleObj.publishedFrom} -> ${pubFrom}")
+
+                title_changed |= ClassUtils.setDateIfPresent(pubFrom, title, 'publishedFrom')
+                title_changed |= ClassUtils.setDateIfPresent(pubTo, title, 'publishedTo')
 
                 if ( titleObj.historyEvents?.size() > 0 ) {
 
@@ -1737,6 +1737,8 @@ class IntegrationController {
                 }
 
                 addPublisherHistory(title, titleObj.publisher_history)
+
+                title.save(flush:true)
 
                 if (!result.message) {
                   result.message = "Created/Looked up title ${title.id}"
