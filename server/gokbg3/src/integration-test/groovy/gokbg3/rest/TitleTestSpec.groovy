@@ -80,7 +80,7 @@ class TitleTestSpec extends AbstractAuthSpec {
       body(json_record as JSON)
     }
     then:
-    resp.status == 200 // OK
+    resp.status == 201 // Created
     expect:
     resp.json._embedded?.ids?.size() == 3
     resp.json._embedded?.publisher?.size() == 1

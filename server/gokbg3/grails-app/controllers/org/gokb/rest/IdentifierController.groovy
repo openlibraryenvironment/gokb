@@ -148,6 +148,7 @@ class IdentifierController {
                 comp.save(flush:true)
 
                 params['_embed'] = params['_embed'] ?: 'identifiedComponents'
+                response.setStatus(201)
 
                 result = restMappingService.mapObjectToJson(obj, params, user)
                 log.debug("Got mapped ID with component! ${result}")

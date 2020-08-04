@@ -28,6 +28,7 @@ class UrlMappings {
       get "/refdata"(controller: 'refdata', namespace: 'rest', action: 'index')
 
       get "/organizations/$id/$action"(controller: 'org', namespace: 'rest')
+      post "/organizations"(controller: 'org', namespace: 'rest', action: 'save')
       get "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'show')
       put "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'update')
       patch "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'update')
@@ -35,6 +36,7 @@ class UrlMappings {
       get "/organizations"(controller: 'org', namespace: 'rest', action: 'index')
 
       get "/orgs/$id/$action"(controller: 'org', namespace: 'rest')
+      post "/orgs"(controller: 'org', namespace: 'rest', action: 'save')
       get "/orgs/$id"(controller: 'org', namespace: 'rest', action: 'show')
       put "/orgs/$id"(controller: 'org', namespace: 'rest', action: 'update')
       patch "/orgs/$id"(controller: 'org', namespace: 'rest', action: 'update')
@@ -42,6 +44,7 @@ class UrlMappings {
       get "/orgs"(controller: 'org', namespace: 'rest', action: 'index')
 
       get "/provider/$id/$action"(controller: 'org', namespace: 'rest')
+      post "provider"(controller: 'org', namespace: 'rest', action: 'save')
       get "/provider/$id"(controller: 'org', namespace: 'rest', action: 'show')
       put "/provider/$id"(controller: 'org', namespace: 'rest', action: 'update')
       patch "/provider/$id"(controller: 'org', namespace: 'rest', action: 'update')
@@ -49,6 +52,7 @@ class UrlMappings {
       get "/provider"(controller: 'org', namespace: 'rest', action: 'index')
 
       get "/publisher/$id/$action"(controller: 'org', namespace: 'rest')
+      post "/publisher"(controller: 'org', namespace: 'rest', action: 'save')
       get "/publisher/$id"(controller: 'org', namespace: 'rest', action: 'show')
       put "/publisher/$id"(controller: 'org', namespace: 'rest', action: 'update')
       patch "/publisher/$id"(controller: 'org', namespace: 'rest', action: 'update')
@@ -56,6 +60,7 @@ class UrlMappings {
       get "/publisher"(controller: 'org', namespace: 'rest', action: 'index')
 
       get "/platforms/$id/$action"(controller: 'platform', namespace: 'rest')
+      post "/platforms"(controller: 'platform', namespace: 'rest', action: 'save')
       get "/platforms/$id"(controller: 'platform', namespace: 'rest', action: 'show')
       put "/platforms/$id"(controller: 'platform', namespace: 'rest', action: 'update')
       patch "/platforms/$id"(controller: 'platform', namespace: 'rest', action: 'update')

@@ -171,6 +171,7 @@ class PackageController {
               if (errors.size() == 0) {
                 log.debug("No errors: ${errors}")
                 obj.save(flush:true)
+                response.status = 201
                 result = restMappingService.mapObjectToJson(obj, params, user)
               }
               else {

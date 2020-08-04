@@ -208,7 +208,13 @@ class TitleController {
 
               errors << updateCombos(obj, reqBody)
 
-              result = restMappingService.mapObjectToJson(obj, params, user)
+              if (errors.size() == 0) {
+                response.setStatus(201)
+                result = restMappingService.mapObjectToJson(obj, params, user)
+              }
+              else {
+                result.message = message(code: 'default.create.errors.message')
+              }
             }
             else {
               result.message = message(code: 'default.create.errors.message')
@@ -247,7 +253,7 @@ class TitleController {
       errors.name = [[baddata: reqBody?.name, message:"Request is missing a title name!"]]
     }
 
-    if (errors) {
+    if (errors.size() > 0) {
       result.result = 'ERROR'
       response.setStatus(400)
       result.error = errors

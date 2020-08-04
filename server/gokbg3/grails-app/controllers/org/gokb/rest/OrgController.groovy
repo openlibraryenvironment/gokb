@@ -144,15 +144,26 @@ class OrgController {
         if( obj.validate() ) {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
-            obj.save(flush:true)
+            obj.save()
 
             if (reqBody.variantNames) {
               obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
             }
 
-            errors = updateCombos(obj, reqBody)
+            errors << updateCombos(obj, reqBody)
 
-            result = restMappingService.mapObjectToJson(obj, params, user)
+            if (errors.size() == 0) {
+              log.debug("No errors: ${errors}")
+              obj.save(flush:true)
+              response.status = 201
+              result = restMappingService.mapObjectToJson(obj, params, user)
+            }
+            else {
+              result.result = 'ERROR'
+              log.debug("There were errors setting combo props!")
+              obj.discard()
+              result.error = errors
+            }
           }
           else {
             response.setStatus(400)
@@ -209,10 +220,12 @@ class OrgController {
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
+        errors << updateCombos(obj, reqBody)
+
         if( obj.validate() ) {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
-            obj.save(flush:true)
+            obj = obj.merge(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -304,6 +317,7 @@ class OrgController {
     }
 
     log.debug("After update: ${obj}")
+    errors
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
@@ -362,13 +376,13 @@ class OrgController {
       else {
         result.result = 'ERROR'
         response.setStatus(403)
-        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+        result.message = "User must belong to at least one curatory group of an existing organization to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
       response.setStatus(404)
-      result.message = "Package not found or empty request body!"
+      result.message = "Organization not found or empty request body!"
     }
     else {
       result.result = 'ERROR'

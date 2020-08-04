@@ -1068,6 +1068,7 @@ class IntegrationController {
                   def tipp_fails = 0
 
                   if ( json.tipps?.size() > 0 ) {
+                    the_pkg.refresh()
                     the_pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
                   }
 
@@ -1390,9 +1391,18 @@ class IntegrationController {
    *    'imprint':'the_publisher',
    *    'publishedFrom':'yyyy-MM-dd' 'HH:mm:ss.SSS',
    *    'publishedTo':'yyyy-MM-dd' 'HH:mm:ss.SSS',
-   *    'editStatus':'the_publisher',
-   *    'status':'the_publisher',
+   *    'editStatus':'edit_status_value',
+   *    'status':'status_value',
    *    'historyEvents':[
+   *    ],
+   *    'series':'series_name',
+   *    'subjectArea':'subject_area_name',
+   *    'prices':[
+   *      {
+   *       'type':'list',
+   *       'currency':'EUR',
+   *       'amount':12.89
+   *      }
    *    ]
    *  }
    */
@@ -1408,7 +1418,7 @@ class IntegrationController {
       fullsync = true
     }
 
-    if(org.grails.web.json.JSONArray != rjson.getClass()){
+    if (org.grails.web.json.JSONArray != rjson.getClass()) {
 
       result = crossReferenceSingleTitle(rjson, user.id, fullsync)
 
@@ -1559,13 +1569,13 @@ class IntegrationController {
                       'reasonRetired'
                 ], titleObj, title)
 
-                if (titleObj.type == 'Serial') {
-                  def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
-                  def pubTo = GOKbTextUtils.completeDateString(titleObj.publishedTo, false)
+                def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
+                def pubTo = GOKbTextUtils.completeDateString(titleObj.publishedTo, false)
 
-                  title_changed |= ClassUtils.setDateIfPresent(pubFrom, title, 'publishedFrom')
-                  title_changed |= ClassUtils.setDateIfPresent(pubTo, title, 'publishedTo')
-                }
+                log.debug("Completed date publishedFrom ${titleObj.publishedFrom} -> ${pubFrom}")
+
+                title_changed |= ClassUtils.setDateIfPresent(pubFrom, title, 'publishedFrom')
+                title_changed |= ClassUtils.setDateIfPresent(pubTo, title, 'publishedTo')
 
                 if ( titleObj.historyEvents?.size() > 0 ) {
 
@@ -1729,6 +1739,8 @@ class IntegrationController {
 
                 addPublisherHistory(title, titleObj.publisher_history)
 
+                title.save(flush:true)
+
                 if (!result.message) {
                   result.message = "Created/Looked up title ${title.id}"
                 }
@@ -1786,6 +1798,7 @@ class IntegrationController {
 
   private static addPublisherHistory ( TitleInstance ti, publishers) {
     if (publishers && ti) {
+      log.debug("Handling publisher history ..")
 
       def publisher_combos = []
       publisher_combos.addAll( ti.getCombosByPropertyName('publisher') )

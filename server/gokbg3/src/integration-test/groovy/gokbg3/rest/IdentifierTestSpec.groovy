@@ -117,7 +117,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
       body(obj_map as JSON)
     }
     then:
-    resp.status == 400 // Created
+    resp.status == 400 // ERROR
     resp.json.message == "Identifier has failed validation!"
   }
 
@@ -139,7 +139,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
       body(obj_map as JSON)
     }
     then:
-    resp.status == 200 // OK
+    resp.status == 201 // OK
     resp.json.value == "6644-2284"
     resp.json._embedded?.identifiedComponents.size() == 1
     resp.json._embedded?.identifiedComponents[0].id == test_journal.id

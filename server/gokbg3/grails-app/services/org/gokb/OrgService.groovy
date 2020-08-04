@@ -16,8 +16,8 @@ class OrgService {
     def result = [to_create:true]
     def normname = Org.generateNormname(orgDTO.name)
 
-    log.debug("Checking by normname ${org_normname} ..")
-    def name_candidates = Org.executeQuery("from Org as p where p.normname = ? and p.status <> ?",[org_normname, status_deleted])
+    log.debug("Checking by normname ${normname} ..")
+    def name_candidates = Org.executeQuery("from Org as p where p.normname = ? and p.status <> ?",[normname, status_deleted])
     def ids_list = orgDTO.identifiers ?: orgDTO.ids
     def matches = [:]
     def created = false

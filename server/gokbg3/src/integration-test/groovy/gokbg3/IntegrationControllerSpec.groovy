@@ -42,20 +42,20 @@ class IntegrationControllerSpec extends Specification {
   TitleLookupService titleLookupService
 
   def setup() {
+    def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1")
+    def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society")
   }
 
   def cleanup() {
-    if (last) {
-      CuratoryGroup.findByName('TestGroup1')?.refresh().expunge()
-      Org.findByName("American Chemical Society")?.refresh().expunge()
-    }
+    CuratoryGroup.findByName('TestGroup1')?.refresh().expunge()
+    Org.findByName("American Chemical Society")?.refresh().expunge()
   }
 
   void "Test assertGroup"() {
 
     when: "Caller asks for this record to be cross referenced"
       def json_record = [
-        "name" : "TestGroup1",
+        "name" : "TestGroup2",
         "owner": "admin"
       ]
 
@@ -81,10 +81,10 @@ class IntegrationControllerSpec extends Specification {
         "identifiers" : [
           [
               "type" : "global",
-              "value" : "http://d-nb.info/gnd/853-9"
+              "value" : "org-test-id-acs"
           ]
         ],
-        "name" : "American Chemical Society"
+        "name" : "TestOrgAcs"
       ]
       RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertOrg") {
         auth('admin', 'admin')
@@ -95,18 +95,19 @@ class IntegrationControllerSpec extends Specification {
       resp.json.message != null
       resp.json.message.startsWith('Added')
     expect: "Find item by name only returns one item"
-      def matching_platforms = Org.executeQuery('select o from Org as o where o.name = :n',[n:json_record.name]);
-      matching_platforms.size() == 1
-      matching_platforms[0].id == resp.json.orgId
+      def matching_orgs = Org.executeQuery('select o from Org as o where o.name = :n',[n:json_record.name]);
+      matching_orgs.size() == 1
+      matching_orgs[0].id == resp.json.orgId
+      matching_orgs[0].ids?.size() == 1
   }
 
   void "Test crossReferencePlatform :: Import new Platform"() {
 
     when: "Caller asks for this record to be cross referenced"
       def json_record = [
-        "platformName" : "pubs.acs.org",
-        "name" : "pubs.acs.org",
-        "platformUrl" : "https://pubs.acs.org"
+        "platformName" : "TestPlt1",
+        "name" : "TestPlt1",
+        "platformUrl" : "https://acstest.url"
       ]
       RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePlatform") {
         auth('admin', 'admin')
@@ -387,7 +388,6 @@ class IntegrationControllerSpec extends Specification {
               "value" : "ZDB-1-ACS"
             ]
           ],
-          "listStatus" : "In Progress",
           "name" : "American Chemical Society: ACS Legacy Archives: CompleteDates",
           "nominalPlatform" : [
             "name" : "ACS Publications",
@@ -596,7 +596,6 @@ class IntegrationControllerSpec extends Specification {
 
   void "Test crossReferenceTitle multithreading"() {
     given:
-      last = true
       Resource journals = new ClassPathResource("/karger_journals_test.json")
       def jsonSlurper = new JsonSlurper()
       def journals_json = jsonSlurper.parse(journals.getFile())
@@ -626,5 +625,94 @@ class IntegrationControllerSpec extends Specification {
         def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
         matching_with_class_one_ids?.size() == 1
       }
+  }
+
+  void "Test package update"() {
+    given:
+      def json_record = [
+        "packageHeader" : [
+          "breakable" : "No",
+          "consistent" : "Yes",
+          "editStatus" : "In Progress",
+          "listStatus": "Checked",
+          "fixed" : "No",
+          "global" : "Consortium",
+          "identifiers" : [
+            [
+              "type" : "isil",
+              "value" : "ZDB-1-ACS"
+            ]
+          ],
+          "name" : "American Chemical Society: ACS Legacy Archives: CompleteDates",
+          "nominalPlatform" : [
+            "name" : "ACS Publications",
+            "primaryUrl" : "https://pubs.acs.org"
+          ],
+          "nominalProvider" : "American Chemical Society"
+        ],
+        "tipps" : [
+          [
+            "accessEnd" : "",
+            "accessStart" : "",
+            "coverage" : [
+                [
+                  "coverageDepth" : "Fulltext",
+                  "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                  "embargo" : "",
+                  "endDate" : "1995",
+                  "endIssue" : "",
+                  "endVolume" : "43",
+                  "startDate" : "1953-01",
+                  "startIssue" : "",
+                  "startVolume" : "1"
+                ]
+            ],
+            "medium" : "Electronic",
+            "platform" : [
+              "name" : "pubs.acs.org",
+              "primaryUrl" : "http://pubs.acs.org"
+            ],
+            "status" : "Current",
+            "title" : [
+                "identifiers" : [
+                  [
+                      "type" : "zdb",
+                      "value" : "1483109-0"
+                  ],
+                  [
+                      "type" : "eissn",
+                      "value" : "1520-5118"
+                  ],
+                  [
+                      "type" : "issn",
+                      "value" : "0021-8561"
+                  ]
+                ],
+                "name" : "Journal of agricultural and food chemistry",
+                "type" : "Serial"
+            ],
+            "url" : "http://pubs.acs.org/journal/jafcau"
+          ]
+        ]
+      ]
+    when: "Caller asks for this record to be cross referenced"
+
+      RestResponse resp1 = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
+        auth('admin', 'admin')
+        body(json_record as JSON)
+      }
+
+      RestResponse resp2 = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
+        auth('admin', 'admin')
+        body(json_record as JSON)
+      }
+
+    then: "The item is created in the database because it does not exist"
+      resp1.json?.message?.startsWith('Created')
+      resp2.json?.message?.startsWith('Created')
+    expect: "The TIPP coverage dates are correctly set"
+      def pkg = Package.get(resp1.json.pkgId)
+      pkg.tipps?.size() == 1
+      pkg.listStatus?.value == "In Progress"
   }
 }
