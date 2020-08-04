@@ -280,8 +280,7 @@
           <g:annotatedLabel owner="${d}" property="subjectArea">Subject Area</g:annotatedLabel>
         </dt>
         <dd>
-          <g:xEditable owner="${d}" field="subjectArea"
-                       config='TitleInstance.subjectArea'/>
+          <g:xEditable owner="${d}" field="subjectArea"/>
         </dd>
       </dl>
     </div>
@@ -293,8 +292,7 @@
           <g:annotatedLabel owner="${d}" property="series">Series</g:annotatedLabel>
         </dt>
         <dd>
-          <g:xEditable owner="${d}" field="series"
-                       config='TitleInstance.series'/>
+          <g:xEditable owner="${d}" field="series"/>
         </dd>
       </dl>
     </div>
