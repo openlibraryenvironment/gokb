@@ -351,6 +351,8 @@ class TitleInstance extends KBComponent {
           builder.'type' (this.class.simpleName)
           builder.'OAStatus' (OAStatus?.value)
           builder.'continuingSeries' (continuingSeries?.value)
+          builder.'subjectArea' (subjectArea)
+          builder.'series' (series)
           builder.'publishedFrom' (publishedFrom)
           builder.'publishedTo' (publishedTo)
 
