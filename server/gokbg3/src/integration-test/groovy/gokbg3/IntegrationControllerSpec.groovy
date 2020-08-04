@@ -36,6 +36,8 @@ class IntegrationControllerSpec extends Specification {
   @Shared
   RestBuilder rest = new RestBuilder()
 
+  def last = false
+
   // extending IntegrationSpec means this works
   @Autowired
   TitleLookupService titleLookupService
@@ -44,10 +46,10 @@ class IntegrationControllerSpec extends Specification {
   }
 
   def cleanup() {
-    if (CuratoryGroup.findByName('TestGroup1'))
-      CuratoryGroup.findByName('TestGroup1').refresh().expunge()
-    if (Org.findByName("American Chemical Society"))
-      Org.findByName("American Chemical Society").refresh().expunge()
+    if (last) {
+      CuratoryGroup.findByName('TestGroup1')?.refresh().expunge()
+      Org.findByName("American Chemical Society")?.refresh().expunge()
+    }
   }
 
   void "Test assertGroup"() {
@@ -200,12 +202,11 @@ class IntegrationControllerSpec extends Specification {
     resp.json.message != null
     resp.json.message.startsWith('Created')
     expect: "Find item by ID can now locate that item"
-    def title = TitleInstance.get(resp.json.titleId)
+    def title = TitleInstance.findById(resp.json.titleId)
     title != null
-    title.publishedFrom == Date.from(LocalDate.of(1953, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant())
-    title.publishedTo == Date.from(LocalDate.of(2001, 12, 31).atStartOfDay(ZoneId.systemDefault()).toInstant())
-    title.publishedFrom.toString() == "1953-01-01 00:00:00.0"
-    title.getCombosByPropertyName('publisher')[0].startDate == Date.from(LocalDate.of(1953, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant())
+    title.publishedFrom?.toString() == "1953-01-01 00:00:00.0"
+    title.publishedTo?.toString() == "2001-12-31 00:00:00.0"
+    title.getCombosByPropertyName('publisher')[0].startDate?.toString() == "1953-01-01 00:00:00.0"
   }
 
   void "Test crossReferenceTitle :: Journal with history"() {
@@ -628,6 +629,7 @@ class IntegrationControllerSpec extends Specification {
 
   void "Test crossReferenceTitle with prices"() {
     given:
+    last = true
     Resource journal = new ClassPathResource("/journal_prices_test.json")
     def jsonSlurper = new JsonSlurper()
     def journal_json = jsonSlurper.parse(journal.getFile())
@@ -642,7 +644,7 @@ class IntegrationControllerSpec extends Specification {
     resp.status == 200
 
     expect: "prices are set correctly"
-    def title = TitleInstance.get(resp.json.results.titleId)
+    def title = TitleInstance.findById(resp.json.results.titleId)
     title.prices.size() == 2
   }
 }

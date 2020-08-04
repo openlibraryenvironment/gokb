@@ -128,15 +128,15 @@ class UsersTestSpec extends AbstractAuthSpec {
     when:
     String accessToken = getAccessToken()
     Map bodyData = [displayName     : "DisplayName",
-                           password        : "secr3t",
-                           email           : "nobody@localhost",
-                           curatoryGroupIds: [cg.id],
-                           enabled         : true,
-                           accountExpired  : false,
-                           accountLocked   : false,
-                           passwordExpired : false,
-                           defaultPageSize : 15,
-                           roleIds         : [2, 3, 4, 6, 7]
+                    password        : "secr3t",
+                    email           : "nobody@localhost",
+                    curatoryGroupIds: [cg.id],
+                    enabled         : true,
+                    accountExpired  : false,
+                    accountLocked   : false,
+                    passwordExpired : false,
+                    defaultPageSize : 15,
+                    roleIds         : [2, 3, 4, 6, 7]
     ]
     RestResponse resp = rest.put("${urlPath}/rest/users/$altUser.id") {
       // headers
@@ -183,6 +183,37 @@ class UsersTestSpec extends AbstractAuthSpec {
     def checkUser = User.findById(altUser.id).refresh()
     checkUser.enabled == false
     checkUser.curatoryGroups.size() == 0
+  }
+
+  void "test PATCH /rest/users/{id} with invalid data"() {
+    def urlPath = getUrlPath()
+    when:
+    String accessToken = getAccessToken()
+    Map bodyData = [
+      displayName     : "DisplayName",
+      password        : "someOther",
+      enabled         : false,
+      defaultPageSize : 18,
+      roleIds         : [2, 3, 5],
+      curatoryGroupIds: [],
+      organisation    : 666
+    ]
+
+    def bodyText = bodyData as JSON
+    RestResponse resp = rest.patch("${urlPath}/rest/users/$altUser.id") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      auth("Bearer $accessToken")
+      body(bodyData as JSON)
+    }
+    then:
+    resp.status == 400
+    resp.json.data == null
+    sleep(500)
+    def checkUser = User.findById(altUser.id).refresh()
+    checkUser.enabled == true
+    checkUser.curatoryGroups.size() == 1
   }
 
   void "test POST /rest/users"() {

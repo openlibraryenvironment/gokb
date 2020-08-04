@@ -98,15 +98,14 @@ class UserProfileService {
 
   def modifyUser(User user, Map data) {
     boolean newUser = user.username == null
-    def result = [data  : [],
-                  result: 'OK']
+    def result = [:]
     def errors = []
     Set<Role> newRoles = []
     // apply changes
     data.each { field, value ->
       if (field != "roleIds" && field != "curatoryGroupIds" && !user.hasProperty(field)) {
         log.error("property user.$field is unknown!")
-        errors << [$field: [message: "unknown", baddata: field, code: null]]
+        errors << [$field: [message: "unknown property", baddata: field, code: null]]
       } else {
         if (field == "roleIds") {
           // change roles
@@ -179,9 +178,11 @@ class UserProfileService {
         }
         result.data = collectUserProps(user)
       } else {
+        user.refresh()
         result.errors = user.errors.allErrors
       }
     } else {
+      user.refresh()
       result.errors = errors
     }
     return result
