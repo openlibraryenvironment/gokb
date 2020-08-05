@@ -19,7 +19,9 @@ class OrgTestSpec extends AbstractAuthSpec {
   }
 
   def setup() {
-    def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name:"TestOrgPlt")
+    def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush:true)
+    def new_plt_upd = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate").save(flush:true)
+    def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch").save(flush:true)
   }
 
   def cleanup() {
@@ -27,72 +29,123 @@ class OrgTestSpec extends AbstractAuthSpec {
 
   void "test /rest/orgs without token"() {
     given:
-      def urlPath = getUrlPath()
+
+    def urlPath = getUrlPath()
+
     when:
 
-      RestResponse resp = rest.get("${urlPath}/rest/orgs") {
-        accept('application/json')
-      }
+    RestResponse resp = rest.get("${urlPath}/rest/orgs") {
+      accept('application/json')
+    }
 
     then:
-      resp.status == 401 // Unauthorized
+
+    resp.status == 401 // Unauthorized
   }
 
   void "test /rest/orgs/<id> with valid token"() {
     given:
-      def urlPath = getUrlPath()
-      String accessToken = getAccessToken()
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+
     when:
 
-      RestResponse resp = rest.get("${urlPath}/rest/orgs") {
-        accept('application/json')
-        auth("Bearer $accessToken")
-      }
+    RestResponse resp = rest.get("${urlPath}/rest/orgs") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
 
     then:
-      resp.status == 200 // OK
+
+    resp.status == 200 // OK
   }
 
   void "test insert new org"() {
     given:
-      def urlPath = getUrlPath()
-      String accessToken = getAccessToken()
-      def json_record = [
-        name: "TestOrgPost",
-        ids: [
-          [namespace: "global", value: "test-org-id-val"]
-        ],
-        providedPlatforms: ["TestOrgPlt"]
-      ]
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+    def json_record = [
+      name: "TestOrgPost",
+      ids: [
+        [namespace: "global", value: "test-org-id-val"]
+      ],
+      providedPlatforms: ["TestOrgPlt"]
+    ]
+
     when:
 
-      RestResponse resp = rest.post("${urlPath}/rest/orgs") {
-        accept('application/json')
-        auth("Bearer $accessToken")
-        body(json_record as JSON)
-      }
+    RestResponse resp = rest.post("${urlPath}/rest/orgs") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(json_record as JSON)
+    }
 
     then:
-      resp.status == 201 // Created
+
+    resp.status == 201 // Created
+
     expect:
-      resp.json?.name == "TestOrgPost"
-      resp.json?._embedded?.ids?.size() == 1
+
+    resp.json?.name == "TestOrgPost"
+    resp.json?._embedded?.ids?.size() == 1
   }
 
   void "test org index"() {
     given:
-      def urlPath = getUrlPath()
-      String accessToken = getAccessToken()
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+
     when:
 
-      RestResponse resp = rest.get("${urlPath}/rest/orgs") {
-        accept('application/json')
-        auth("Bearer $accessToken")
-      }
+    RestResponse resp = rest.get("${urlPath}/rest/orgs") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
 
     then:
-      resp.status == 200 // OK
+
+    resp.status == 200 // OK
+
     expect:
-      resp.json?.data?.size() > 0
+
+    resp.json?.data?.size() > 0
+  }
+
+  void "test org update"() {
+    given:
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+    def updated_plt = Platform.findByName("TestOrgPltUpdate")
+    def id = Org.findByName("TestOrgPatch")?.id
+
+    def update_record = [
+      name: "TestOrgUpdateNew",
+      ids: [
+        [namespace: "global", value: "test-org-id-val-new"]
+      ],
+      providedPlatforms: [updated_plt.id]
+    ]
+
+    when:
+
+    RestResponse resp = rest.put("${urlPath}/rest/orgs/$id?_embed=providedPlatforms,ids") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(update_record as JSON)
+    }
+
+    then:
+
+    resp.status == 200 // OK
+
+    expect:
+
+    resp.json.name == "TestOrgUpdateNew"
+    resp.json._embedded?.ids?.size() == 1
+    resp.json._embedded?.providedPlatforms?.size() == 1
   }
 }

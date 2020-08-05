@@ -19,7 +19,9 @@ class PlatformTestSpec extends AbstractAuthSpec {
   }
 
   def setup() {
-    def new_plt = Org.findByName("TestPltProvider") ?: new Org(name:"TestPltProvider")
+    def new_prov = Org.findByName("TestPltProvider") ?: new Org(name: "TestPltProvider").save(flush:true)
+    def upd_prov = Org.findByName("TestPltProviderUpd") ?: new Org(name: "TestPltProviderUpd").save(flush:true)
+    def upd_plt = Platform.findByName("TestPltUpd") ?: new Platform(name: "TestPltUpd").save(flush:true)
   }
 
   def cleanup() {
@@ -27,71 +29,120 @@ class PlatformTestSpec extends AbstractAuthSpec {
 
   void "test /rest/platforms without token"() {
     given:
-      def urlPath = getUrlPath()
+
+    def urlPath = getUrlPath()
+
     when:
 
-      RestResponse resp = rest.get("${urlPath}/rest/platforms") {
-        accept('application/json')
-      }
+    RestResponse resp = rest.get("${urlPath}/rest/platforms") {
+      accept('application/json')
+    }
 
     then:
-      resp.status == 401 // Unauthorized
+
+    resp.status == 401 // Unauthorized
   }
 
   void "test /rest/platforms/<id> with valid token"() {
     given:
-      def urlPath = getUrlPath()
-      String accessToken = getAccessToken()
+  
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+
     when:
 
-      RestResponse resp = rest.get("${urlPath}/rest/platforms") {
-        accept('application/json')
-        auth("Bearer $accessToken")
-      }
+    RestResponse resp = rest.get("${urlPath}/rest/platforms") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
 
     then:
-      resp.status == 200 // OK
+
+    resp.status == 200 // OK
   }
 
   void "test insert new platform"() {
     given:
-      def urlPath = getUrlPath()
-      String accessToken = getAccessToken()
-      def provider = Org.findByName("TestPltProvider")
-      def json_record = [
-        name: "TestPltPost",
-        primaryUrl: "http://newplt.com",
-        provider: provider.id
-      ]
-    when:
 
-      RestResponse resp = rest.post("${urlPath}/rest/platforms") {
-        accept('application/json')
-        auth("Bearer $accessToken")
-        body(json_record as JSON)
-      }
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+    def provider = Org.findByName("TestPltProvider")
+    def json_record = [
+      name: "TestPltPost",
+      primaryUrl: "http://newplt.com",
+      provider: provider.id
+    ]
+
+    when:
+    
+    RestResponse resp = rest.post("${urlPath}/rest/platforms") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(json_record as JSON)
+    }
 
     then:
-      resp.status == 201 // Created
+
+    resp.status == 201 // Created
+
     expect:
-      resp.json?.name == "TestPltPost"
-      resp.json?.provider?.name == "TestPltProvider"
+
+    resp.json?.name == "TestPltPost"
+    resp.json?.provider?.name == "TestPltProvider"
   }
 
   void "test platform index"() {
     given:
-      def urlPath = getUrlPath()
-      String accessToken = getAccessToken()
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+
     when:
 
-      RestResponse resp = rest.get("${urlPath}/rest/platforms") {
-        accept('application/json')
-        auth("Bearer $accessToken")
-      }
+    RestResponse resp = rest.get("${urlPath}/rest/platforms") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
 
     then:
-      resp.status == 200 // OK
+
+    resp.status == 200 // OK
+
     expect:
-      resp.json?.data?.size() > 0
+
+    resp.json?.data?.size() > 0
+  }
+
+  void "test platform update"() {
+    given:
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+    def id = Platform.findByName("TestPltUpd").id
+    def new_prov = Org.findByName("TestPltProviderUpd")
+
+    def json_record = [
+      name: "TestPltUpdate",
+      primaryUrl: "http://updatedplt.com",
+      provider: new_prov.id
+    ]
+
+    when:
+
+    RestResponse resp = rest.put("${urlPath}/rest/platforms/$id") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(json_record as JSON)
+    }
+
+    then:
+
+    resp.status == 200
+
+    expect:
+
+    resp.json.name == "TestPltUpdate"
+    resp.json.primaryUrl == "http://updatedplt.com"
+    resp.json.provider?.name == "TestPltProviderUpd"
   }
 }

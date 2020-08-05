@@ -217,7 +217,7 @@ class PlatformController {
         else {
           result.result = 'ERROR'
           response.setStatus(400)
-          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+          errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
       }
       else {
@@ -232,9 +232,10 @@ class PlatformController {
       result.message = "Package not found or empty request body!"
     }
 
-    if(errors.size() > 0) {
+    if (errors.size() > 0) {
       result.error = errors
     }
+    
     render result as JSON
   }
 

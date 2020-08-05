@@ -194,7 +194,7 @@ class OrgController {
   def update() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def obj = Org.findByUuid(params.id)
 
@@ -236,7 +236,7 @@ class OrgController {
         else {
           result.result = 'ERROR'
           response.setStatus(400)
-          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+          errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
       }
       else {
@@ -251,9 +251,11 @@ class OrgController {
       result.message = "Package not found or empty request body!"
     }
 
-    if(errors.size() > 0) {
+    if (errors.size() > 0) {
+      log.debug("Errors: ${errors}")
       result.error = errors
     }
+
     render result as JSON
   }
 
@@ -279,12 +281,14 @@ class OrgController {
         if (plt instanceof String) {
           plt_obj = Platform.findByNameIlike(plt)
         }
-        else if (obj instanceof Integer){
-          plt_obj = Platform.get(plt)
+        else if (plt instanceof Integer){
+          plt_obj = Platform.findById(plt)
         }
-
-        else if (obj instanceof Map && obj.id) {
-          plt_obj = Platform.get(plt.id)
+        else if (plt instanceof Map && plt.id) {
+          plt_obj = Platform.findById(plt.id)
+        }
+        else {
+          log.debug("Not processing value of type ${plt.class.name}")
         }
 
         if (plt_obj) {
