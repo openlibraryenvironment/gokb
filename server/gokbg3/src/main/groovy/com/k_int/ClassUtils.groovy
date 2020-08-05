@@ -25,8 +25,8 @@ class ClassUtils {
     if (entity instanceof HibernateProxy) {
       Hibernate.initialize(entity);
       entity = (T) ((HibernateProxy) entity)
-                  .getHibernateLazyInitializer()
-                  .getImplementation();
+        .getHibernateLazyInitializer()
+        .getImplementation();
     }
 
     return entity;
@@ -36,12 +36,11 @@ class ClassUtils {
    * Attempt automatic parsing.
    */
   public static boolean setDateIfPresent(def value, obj, prop) {
-    boolean result = false
     LocalDateTime ldt = null
     DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
     DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']").withResolverStyle(ResolverStyle.STRICT)
 
-    if ( value && value.toString().trim() ) {
+    if (value && value.toString().trim()) {
       if (value instanceof LocalDateTime) {
         ldt = value
       }
@@ -51,36 +50,36 @@ class ClassUtils {
       else {
         try {
           ldt = LocalDateTime.parse(value, datetimeformatter)
-          result = true
         }
-        catch ( Exception e ) {
+        catch (Exception e) {
         }
 
         if (!ldt) {
           try {
             ldt = LocalDate.parse(value, dateformatter).atStartOfDay()
-            result = true
           }
-          catch ( Exception e ) {
+          catch (Exception e) {
           }
         }
       }
 
       if (ldt) {
-        obj[prop] = Date.from( ldt.atZone(ZoneId.systemDefault()).toInstant())
+        Date instant = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant())
+        if (instant != obj[prop]) {
+          obj[prop] = instant
+          return true
+        }
       }
     }
-
-    return result
+    return false
   }
 
   public static boolean updateDateField(def value, obj, prop) {
-    boolean result = false
     LocalDateTime ldt = null
     DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
     DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']").withResolverStyle(ResolverStyle.STRICT)
 
-    if ( value && value.toString().trim() ) {
+    if (value && value.toString().trim()) {
       if (value instanceof LocalDateTime) {
         ldt = value
       }
@@ -90,47 +89,50 @@ class ClassUtils {
       else {
         try {
           ldt = LocalDateTime.parse(value, datetimeformatter)
-          result = true
         }
-        catch ( Exception e ) {
+        catch (Exception e) {
         }
 
         if (!ldt) {
           try {
             ldt = LocalDate.parse(value, dateformatter).atStartOfDay()
-            result = true
           }
-          catch ( Exception e ) {
+          catch (Exception e) {
           }
         }
       }
 
       if (ldt) {
-        obj[prop] = Date.from( ldt.atZone(ZoneId.systemDefault()).toInstant())
+        Date instant = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant())
+        if (instant != obj[prop]) {
+          obj[prop] = instant
+          return true
+        }
       }
     }
     else if (!value) {
+      boolean result = obj[prop] != null
       obj[prop] = null
+      return result
     }
-
-    return result
+    return false
   }
 
   public static boolean setDateIfPresent(String value, obj, prop, SimpleDateFormat sdf) {
     //request.JSON.title.publishedFrom, title, 'publishedFrom', sdf)
     boolean result = false;
-    if ( value && value.toString().trim() ) {
+    if (value && value.toString().trim()) {
       try {
-        def pd = sdf.parse(value);
+        def pd = sdf.parse(value)
         if (pd) {
-          obj[prop]=pd;
-          result=true;
+          result = obj[prop] != pd
+          obj[prop] = pd
         }
       }
-      catch(Exception e) {
+      catch (Exception e) {
       }
     }
-    result;
+    result
   }
 
   public static boolean setRefdataIfPresent(value, kbc, prop, cat = null, boolean create = false) {
@@ -142,9 +144,9 @@ class ClassUtils {
       cat = classExaminationService.deriveCategoryForProperty(kbc.class.name, prop)
     }
 
-    if ( value instanceof String && value.trim() && cat ) {
+    if (value instanceof String && value.trim() && cat) {
       if (create) {
-        v = RefdataCategory.lookupOrCreate(cat,value)
+        v = RefdataCategory.lookupOrCreate(cat, value)
       }
       else {
         v = RefdataCategory.lookup(cat, value)
@@ -154,7 +156,7 @@ class ClassUtils {
       try {
         def candidate = RefdataValue.get(value)
 
-        if ( candidate && candidate.owner == cat ) {
+        if (candidate && candidate.owner == cat) {
           v = candidate
         }
       }
@@ -164,28 +166,18 @@ class ClassUtils {
     }
 
     if (v) {
+      result = kbc[prop] != v
       kbc[prop] = v
-      result = true
     }
-
     result
   }
 
   public static boolean setStringIfDifferent(obj, prop, value) {
-    boolean result = false;
-
-    if ( ( obj != null ) && ( prop != null ) && ( value ) && ( value.toString().length() > 0 ) ) {
-
-      if ( obj[prop] == value ) {
-      }
-      else {
-        result = true
+    if ((obj != null) && (prop != null) && (value) && (value.toString().length() > 0))
+      if (obj[prop] != value) {
         obj[prop] = value
+        return true
       }
-
-    }
-
-    result
+    return false
   }
-
 }
