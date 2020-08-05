@@ -297,6 +297,7 @@ class ReviewsController {
 
           if (obj) {
             result = restMappingService.mapObjectToJson(obj, user)
+            response.status = 201
 
             result._links = generateLinks(obj, user)
           }

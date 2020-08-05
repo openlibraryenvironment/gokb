@@ -229,7 +229,7 @@ class Platform extends KBComponent {
     if (platformDTO?.name?.trim()) {
     } else {
       result.valid = false
-      result.errors.name = [[message: "Platform name is missing!", baddata: platformDTO.name]]
+      result.errors.name = [[message: "Platform name is missing!", baddata: (platformDTO?.name ?: null)]]
     }
 
     if (!result.valid) {

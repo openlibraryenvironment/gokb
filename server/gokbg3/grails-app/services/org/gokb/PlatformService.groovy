@@ -42,7 +42,15 @@ class PlatformService {
       }
     }
 
-    name_candidates << Platform.executeQuery("from Platform where name = ? and status != ? ", [platformDTO.name, status_deleted]);
+    def name_candidates = Platform.executeQuery("from Platform where name = ? and status != ? ", [platformDTO.name, status_deleted]);
+
+    name_candidates.each {
+      if (!matches["${it.id}"]) {
+        matches["${it.id}"] = []
+      }
+
+      matches["${it.id}"] << ['field': 'name', value: platformDTO.name, message:"The provided name matched an existing platform!"]
+    }
 
     if (platformDTO.primaryUrl && platformDTO.primaryUrl.trim().size() > 0) {
       try {
@@ -59,7 +67,7 @@ class PlatformService {
 
           def platform_crit = Platform.createCriteria()
 
-          url_candidates = platform_crit.list {
+          def url_candidates = platform_crit.list {
             or {
               like("name", "${urlHost}")
               like("primaryUrl", "%${urlHost}%")
