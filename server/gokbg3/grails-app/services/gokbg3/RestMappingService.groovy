@@ -536,8 +536,7 @@ class RestMappingService {
                 )
               }
             }
-          }
-          else {
+          } else {
             log.debug("Ignoring empty variant")
           }
         } else if (it instanceof Integer) {
@@ -571,20 +570,18 @@ class RestMappingService {
                 log.debug("Added variant ${newVariant}")
                 if (it.locale) {
                   newVariant = updateAssoc(newVariant, 'locale', it.locale)
-                else {
+                } else {
                   newVariant.locale = null
                 }
 
                 if (it.variantType) {
                   newVariant = updateAssoc(newVariant, 'variantType', it.variantType)
-                }
-                else {
+                } else {
                   newVal.variantType = null
                 }
 
                 remaining << newVariant
-              }
-              else {
+              } else {
                 log.debug("Could not add variant ${it}!")
                 obj.errors.reject(
                   'component.addToList.denied.label',
