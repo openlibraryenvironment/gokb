@@ -162,7 +162,7 @@ class RefdataController {
     def cat = null
     def base = grailsApplication.config.serverURL + '/'+namespace
 
-    cat = RefdataCategory.findByLabel("TitleInstancePackagePlatform.CoverageDepth")
+    cat = RefdataCategory.findByLabel("TIPPCoverageStatement.CoverageDepth")
 
     if (cat) {
       result['_links'] = ['self': ['href': base + "/coverage-depth"]]
