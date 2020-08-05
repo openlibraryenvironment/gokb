@@ -137,14 +137,29 @@ class PlatformController {
         log.debug("Updating ${obj}")
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        errors << updateCombos(obj, reqBody)
-
         if( obj.validate() ) {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
-            obj.save(flush:true)
-            response.status = 201
-            result = restMappingService.mapObjectToJson(obj, params, user)
+            obj.save()
+
+            if (reqBody.variantNames) {
+              obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+            }
+
+            errors << updateCombos(obj, reqBody)
+
+            if (errors.size() == 0) {
+              log.debug("No errors: ${errors}")
+              obj.save(flush:true)
+              response.status = 201
+              result = restMappingService.mapObjectToJson(obj, params, user)
+            }
+            else {
+              result.result = 'ERROR'
+              log.debug("There were errors setting combo props!")
+              obj.discard()
+              result.error = errors
+            }
           }
           else {
             response.setStatus(400)
@@ -201,6 +216,10 @@ class PlatformController {
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
+        if (reqBody.variantNames) {
+          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+        }
+
         errors << updateCombos(obj, reqBody)
 
         if( obj.validate() ) {
@@ -235,7 +254,7 @@ class PlatformController {
     if (errors.size() > 0) {
       result.error = errors
     }
-    
+
     render result as JSON
   }
 

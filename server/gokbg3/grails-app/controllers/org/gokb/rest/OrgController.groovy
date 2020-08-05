@@ -220,6 +220,11 @@ class OrgController {
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
+
+        if (reqBody.variantNames) {
+          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+        }
+
         errors << updateCombos(obj, reqBody)
 
         if( obj.validate() ) {
