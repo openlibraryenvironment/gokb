@@ -108,18 +108,23 @@ class UrlMappings {
 
       get "/roles"(controller: 'roles', namespace: 'rest', action: 'index')
 
-      get "/titles/$id/history" (controller: 'title', namespace: 'rest', action:'getHistory')
-      "/titles/$id/$action" (controller: 'title', namespace:'rest')
-      get "/titles/$id" (controller: 'title', namespace: 'rest', action:'show')
-      put "/titles/$id" (controller: 'title', namespace: 'rest', action:'update')
-      delete "/titles/$id" (controller: 'title', namespace: 'rest', action:'delete')
-      post "/titles" (controller: 'title', namespace: 'rest', action:'save')
-      get "/titles" (controller: 'title', namespace:'rest', action:'index')
+      post "/titles/$id/retire"(controller: 'title', namespace: 'rest', action:'retire')
+      get "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'getHistory')
+      "/titles/$id/$action"(controller: 'title', namespace:'rest')
+      get "/titles/$id"(controller: 'title', namespace: 'rest', action:'show')
+      put "/titles/$id"(controller: 'title', namespace: 'rest', action:'update')
+      delete "/titles/$id"(controller: 'title', namespace: 'rest', action:'delete')
+      post "/titles"(controller: 'title', namespace: 'rest', action:'save')
+      get "/titles"(controller: 'title', namespace:'rest', action:'index')
 
-      post "/journals" (controller: 'title', namespace: 'rest', action:'save') { type = 'journal' }
-      post "/books" (controller: 'title', namespace: 'rest', action:'save') { type = 'book' }
-      post "/databases" (controller: 'title', namespace: 'rest', action:'save') { type = 'database' }
+      post "/journals"(controller: 'title', namespace: 'rest', action:'save') { type = 'journal' }
+      get "/journals"(controller: 'title', namespace: 'rest', action:'index') { type = 'journal' }
+      post "/books"(controller: 'title', namespace: 'rest', action:'save') { type = 'book' }
+      get "/books"(controller: 'title', namespace: 'rest', action:'index') { type = 'book' }
+      post "/databases"(controller: 'title', namespace: 'rest', action:'save') { type = 'database' }
+      get "/databases"(controller: 'title', namespace: 'rest', action:'index') { type = 'database' }
 
+      post "/tipps/$id/retire"(controller: 'org', namespace: 'rest', action:'retire')
       get "/tipps/$id/coverage"(controller: 'tipp', namespace: 'rest', action: 'getCoverage')
       get "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'show')
       put "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'update')
