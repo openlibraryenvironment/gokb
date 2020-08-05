@@ -1554,6 +1554,15 @@ where cp.owner = :c
         }
       }
     }
+    // Prices
+    ComponentPrice[] cps = ComponentPrice.findAllByOwner(this)
+    if (cps) {
+      builder.'prices' {
+        cps.each { cp ->
+          builder.'price'(type:cp.priceType, amount:cp.price, currency:cp.currency, startDate: cp.startDate, endDate: cp.endDate)
+        }
+      }
+    }
   }
 
   // Given the type return a string such as "1.23 GBP" which represents the CURRENT

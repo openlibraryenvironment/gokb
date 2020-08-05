@@ -44,6 +44,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
       accept('application/json')
     }
     then:
+//    resp.status == 200 // WRONG!
     resp.status == 401 // Unauthorized
   }
 
