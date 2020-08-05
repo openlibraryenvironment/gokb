@@ -25,6 +25,15 @@ class PlatformTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
+    if (Org.findByName("TestPltProvider")) {
+      Org.findByName("TestPltProvider")?.expunge()
+    }
+    if (Org.findByName("TestPltProviderUpd")) {
+      Org.findByName("TestPltProviderUpd")?.expunge()
+    }
+    if (Platform.findByName("TestPltUpd")) {
+      Platform.findByName("TestPltUpd")?.expunge()
+    }
   }
 
   void "test /rest/platforms without token"() {
@@ -74,7 +83,7 @@ class PlatformTestSpec extends AbstractAuthSpec {
     ]
 
     when:
-    
+
     RestResponse resp = rest.post("${urlPath}/rest/platforms") {
       accept('application/json')
       auth("Bearer $accessToken")
