@@ -14,6 +14,7 @@ class UrlMappings {
     "/package"(controller: 'packages')
 
     group "/rest", {
+      post "/packages/$id/retire"(controller: 'package', namespace: 'rest', action:'retire')
       post "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'addTipps')
       "/packages/$id/$action"(controller: 'package', namespace: 'rest')
       get "/packages/$id"(controller: 'package', namespace: 'rest', action: 'show')
@@ -27,6 +28,7 @@ class UrlMappings {
       get "/refdata/values/$id"(controller: 'refdata', namespace: 'rest', action: 'showValue')
       get "/refdata"(controller: 'refdata', namespace: 'rest', action: 'index')
 
+      post "/organizations/$id/retire"(controller: 'org', namespace: 'rest', action:'retire')
       get "/organizations/$id/$action"(controller: 'org', namespace: 'rest')
       post "/organizations"(controller: 'org', namespace: 'rest', action: 'save')
       get "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'show')
@@ -35,6 +37,7 @@ class UrlMappings {
       delete "/organizations/$id"(controller: 'org', namespace: 'rest', action: 'delete')
       get "/organizations"(controller: 'org', namespace: 'rest', action: 'index')
 
+      post "/orgs/$id/retire"(controller: 'org', namespace: 'rest', action:'retire')
       get "/orgs/$id/$action"(controller: 'org', namespace: 'rest')
       post "/orgs"(controller: 'org', namespace: 'rest', action: 'save')
       get "/orgs/$id"(controller: 'org', namespace: 'rest', action: 'show')
@@ -43,6 +46,7 @@ class UrlMappings {
       delete "/orgs/$id"(controller: 'org', namespace: 'rest', action: 'delete')
       get "/orgs"(controller: 'org', namespace: 'rest', action: 'index')
 
+      post "/provider/$id/retire"(controller: 'org', namespace: 'rest', action:'retire')
       get "/provider/$id/$action"(controller: 'org', namespace: 'rest')
       post "provider"(controller: 'org', namespace: 'rest', action: 'save')
       get "/provider/$id"(controller: 'org', namespace: 'rest', action: 'show')
@@ -51,6 +55,7 @@ class UrlMappings {
       delete "/provider/$id"(controller: 'org', namespace: 'rest', action: 'delete')
       get "/provider"(controller: 'org', namespace: 'rest', action: 'index')
 
+      post "/publisher/$id/retire"(controller: 'org', namespace: 'rest', action:'retire')
       get "/publisher/$id/$action"(controller: 'org', namespace: 'rest')
       post "/publisher"(controller: 'org', namespace: 'rest', action: 'save')
       get "/publisher/$id"(controller: 'org', namespace: 'rest', action: 'show')
@@ -59,6 +64,7 @@ class UrlMappings {
       delete "/publisher/$id"(controller: 'org', namespace: 'rest', action: 'delete')
       get "/publisher"(controller: 'org', namespace: 'rest', action: 'index')
 
+      post "/platforms/$id/retire"(controller: 'platform', namespace: 'rest', action:'retire')
       get "/platforms/$id/$action"(controller: 'platform', namespace: 'rest')
       post "/platforms"(controller: 'platform', namespace: 'rest', action: 'save')
       get "/platforms/$id"(controller: 'platform', namespace: 'rest', action: 'show')
