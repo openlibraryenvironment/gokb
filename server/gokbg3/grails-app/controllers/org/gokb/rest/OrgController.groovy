@@ -308,6 +308,14 @@ class OrgController {
         }
       }
 
+      if (reqBody.curatoryGroups) {
+        def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+
+        if (cg_errors.size() > 0) {
+          errors['curatoryGroups'] = cg_errors
+        }
+      }
+
       if (!obj.hasErrors() || errors.size() > 0) {
         new_plts.each { c ->
           if (!obj.providedPlatforms.contains(c)) {

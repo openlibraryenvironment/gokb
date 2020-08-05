@@ -214,10 +214,6 @@ class RestMappingService {
           } else {
             // Add to collection
             log.debug("Skip generic handling of collections}");
-
-            if (p.name == "variantNames" && obj.id) {
-              updateVariantNames(obj, reqBody.variantNames)
-            }
           }
         } else {
           log.debug("checking for type of property ${p.name} -> ${p.type}")

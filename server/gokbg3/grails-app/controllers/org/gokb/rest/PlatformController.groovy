@@ -268,6 +268,14 @@ class PlatformController {
       restMappingService.updateIdentifiers(obj, idmap, remove)
     }
 
+    if (reqBody.curatoryGroups) {
+      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+
+      if (cg_errors.size() > 0) {
+        errors['curatoryGroups'] = cg_errors
+      }
+    }
+
     if (reqBody.provider) {
       def prov = null
 
