@@ -191,6 +191,7 @@ class PlatformController {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
     def errors = [:]
+    def remove = (request.method == 'PUT')
     def user = User.get(springSecurityService.principal.id)
     def obj = Platform.findByUuid(params.id)
 
@@ -217,10 +218,10 @@ class PlatformController {
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
         if (reqBody.variantNames) {
-          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
         }
 
-        errors << updateCombos(obj, reqBody)
+        errors << updateCombos(obj, reqBody, remove)
 
         if( obj.validate() ) {
           if(errors.size() == 0) {

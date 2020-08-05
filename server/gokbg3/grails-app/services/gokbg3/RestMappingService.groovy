@@ -540,13 +540,63 @@ class RestMappingService {
           else {
             log.debug("Ignoring empty variant")
           }
-        } else {
+        } else if (it instanceof Integer) {
           newVariant = KBComponentVariantName.get(it)
 
           if (newVariant && newVariant.owner == obj) {
             remaining << newVariant
           } else {
             notFound << it
+          }
+        } else if (it instanceof Map) {
+          if (it.id && it.id instanceof Integer) {
+            newVariant = KBComponentVariantName.get(it)
+
+            if (newVariant && newVariant.owner == obj) {
+              remaining << newVariant
+            } else {
+              notFound << it
+            }
+          }
+          else if (it.variantName) {
+            def nvn = GOKbTextUtils.normaliseString(it.variantName)
+            def dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj)
+
+            if (dupes) {
+              log.debug("Not adding duplicate variant")
+            } else {
+              newVariant = obj.ensureVariantName(it)
+
+              if (newVariant) {
+                log.debug("Added variant ${newVariant}")
+                if (it.locale) {
+                  newVariant = updateAssoc(newVariant, 'locale', it.locale)
+                else {
+                  newVariant.locale = null
+                }
+
+                if (it.variantType) {
+                  newVariant = updateAssoc(newVariant, 'variantType', it.variantType)
+                }
+                else {
+                  newVal.variantType = null
+                }
+
+                remaining << newVariant
+              }
+              else {
+                log.debug("Could not add variant ${it}!")
+                obj.errors.reject(
+                  'component.addToList.denied.label',
+                  ['variantNames'] as Object[],
+                  '[Could not process list of items for property {0}]'
+                )
+                obj.errors.rejectValue(
+                  'variantNames',
+                  'component.addToList.denied.label'
+                )
+              }
+            }
           }
         }
       }

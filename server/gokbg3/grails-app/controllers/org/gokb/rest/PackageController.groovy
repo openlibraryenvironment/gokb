@@ -223,6 +223,7 @@ class PackageController {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
     def errors = [:]
+    def remove = (request.method == 'PUT')
     def user = User.get(springSecurityService.principal.id)
     def editable = true
     def obj = Package.findByUuid(params.id)
@@ -258,18 +259,21 @@ class PackageController {
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        errors << updateCombos(obj, reqBody)
+        if (reqBody.variantNames) {
+          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+        }
+
+        errors << updateCombos(obj, reqBody, remove)
 
         if( obj.validate() ) {
-          if (errors.size() == 0) {
+          if(errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
-            result.result = 'ERROR'
-            result.message = message(code:"default.update.errors.message")
             response.setStatus(400)
+            result.message = message(code:"default.update.errors.message")
           }
         }
         else {
