@@ -1576,6 +1576,8 @@ class IntegrationController {
 
                 title_changed |= ClassUtils.setDateIfPresent(pubFrom, title, 'publishedFrom')
                 title_changed |= ClassUtils.setDateIfPresent(pubTo, title, 'publishedTo')
+                title_changed |= ClassUtils.setStringIfDifferent(title, 'series', titleObj.series)
+                title_changed |= ClassUtils.setStringIfDifferent(title, 'subjectArea', titleObj.subjectArea)
 
                 if ( titleObj.historyEvents?.size() > 0 ) {
 

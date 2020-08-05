@@ -19,6 +19,8 @@ class TitleInstance extends KBComponent {
   Date publishedFrom
   Date publishedTo
   String coverImage
+  String series
+  String subjectArea
 
   private static refdataDefaults = [
     "medium" : "Journal",
@@ -349,6 +351,8 @@ class TitleInstance extends KBComponent {
           builder.'type' (this.class.simpleName)
           builder.'OAStatus' (OAStatus?.value)
           builder.'continuingSeries' (continuingSeries?.value)
+          builder.'subjectArea' (subjectArea)
+          builder.'series' (series)
           builder.'publishedFrom' (publishedFrom)
           builder.'publishedTo' (publishedTo)
 
