@@ -920,6 +920,7 @@ class IntegrationController {
                   json.tipps.eachWithIndex { tipp, idx ->
 
                     def title_validation = TitleInstance.validateDTO(tipp.title);
+                    def tipp_plt_dto = tipp.hostPlatform ?: tipp.platform
                     valid &= title_validation.valid
 
                     if ( title_validation && !title_validation.valid ) {
@@ -951,43 +952,43 @@ class IntegrationController {
                           log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
                           valid = false
-                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ve.errors)])
+                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp?.title?.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ve.errors)])
                         }
                       }
 
                       if ( valid_ti && tipp.title.internalId == null ) {
-                        log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
+                        log.error("Failed to locate a title for ${tipp?.title} when attempting to create TIPP");
                         valid = false
-                        errors.add(['code': 400, idx: idx, 'message': "Title ${tipp.title.name} could not be located or created!"])
+                        errors.add(['code': 400, idx: idx, 'message': "Title ${tipp?.title?.name} could not be located or created!"])
                       }
                     }
 
-                    def valid_plt = Platform.validateDTO(tipp.platform);
+                    def valid_plt = Platform.validateDTO(tipp_plt_dto);
                     valid &= valid_plt?.valid
 
                     if ( !valid_plt.valid ) {
-                      log.warn("Not valid after platform validation ${tipp.platform}");
-                      errors.add(['code': 400, idx: idx, 'message': "Platform ${tipp.platform.name} is not valid!", 'baddata': tipp.platform, errors: valid_plt.errors])
+                      log.warn("Not valid after platform validation ${tipp_plt_dto}");
+                      errors.add(['code': 400, idx: idx, 'message': "Platform ${tipp_plt_dto?.name} is not valid!", 'baddata': tipp_plt_dto, errors: valid_plt.errors])
                     }
 
                     if ( valid ) {
 
                       def pl = null
                       def pl_id
-                      if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
+                      if (platform_cache.containsKey(tipp_plt_dto.name) && (pl_id = platform_cache[tipp_plt_dto.name]) != null) {
                         pl = Platform.get(pl_id)
                       } else {
                         // Not in cache.
                         try {
-                          pl = Platform.upsertDTO(tipp.platform, user);
+                          pl = Platform.upsertDTO(tipp_plt_dto, user);
 
                           if(pl){
-                            platform_cache[tipp.platform.name] = pl.id
+                            platform_cache[tipp_plt_dto.name] = pl.id
 
-                            componentUpdateService.ensureCoreData(pl, tipp.platform, fullsync)
+                            componentUpdateService.ensureCoreData(pl, tipp_plt_dto, fullsync)
                           }else{
-                            log.error("Could not find/create ${tipp.platform}")
-                            errors.add(['code': 400, idx: idx, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                            log.error("Could not find/create ${tipp_plt_dto}")
+                            errors.add(['code': 400, idx: idx, 'message': "TIPP platform ${tipp_plt_dto.name} could not be matched/created! Please check for duplicates in GOKb!"])
                             valid = false
                           }
                         }
@@ -995,15 +996,15 @@ class IntegrationController {
                           log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
                           valid = false
-                          errors.add(['code': 400, 'message': "Platform validation failed for ${tipp.platform}!", 'baddata': tipp.platform, idx: idx, errors: messageService.processValidationErrors(pl.errors)])
+                          errors.add(['code': 400, 'message': "Platform validation failed for ${tipp_plt_dto}!", 'baddata': tipp_plt_dto, idx: idx, errors: messageService.processValidationErrors(pl.errors)])
                         }
                       }
 
-                      if ( pl && ( tipp.platform.internalId == null ) ) {
-                        tipp.platform.internalId = pl.id;
+                      if ( pl && ( tipp_plt_dto.internalId == null ) ) {
+                        tipp_plt_dto.internalId = pl.id;
                       }
                       else {
-                        log.warn("No platform arising from ${tipp.platform}");
+                        log.warn("No platform arising from ${tipp_plt_dto}");
                       }
                     }
 

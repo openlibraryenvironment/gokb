@@ -43,11 +43,13 @@ class IntegrationControllerSpec extends Specification {
   def setup() {
     def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1")
     def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society")
+    def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org')
   }
 
   def cleanup() {
     CuratoryGroup.findByName('TestGroup1')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
+    Platform.findByName('ACS Publications')?.expunge()
     TitleInstance.findAllByName("Acta cytologica")?.each { title ->
       ComponentPrice.findAllByOwner(title)?.each { price ->
         price?.delete()
@@ -338,8 +340,8 @@ class IntegrationControllerSpec extends Specification {
           ],
           "medium"     : "Electronic",
           "platform"   : [
-            "name"      : "pubs.acs.org",
-            "primaryUrl": "http://pubs.acs.org"
+            "name"      : "ACS Publications",
+            "primaryUrl": "https://pubs.acs.org"
           ],
           "status"     : "Current",
           "title"      : [
@@ -422,8 +424,7 @@ class IntegrationControllerSpec extends Specification {
               "startVolume"  : "1"
             ]
           ],
-          "name" : "American Chemical Society: ACS Legacy Archives: CompleteDates",
-          "nominalPlatform" : [
+          "hostPlatform" : [
             "name" : "ACS Publications",
             "primaryUrl" : "https://pubs.acs.org"
           ],
@@ -675,7 +676,7 @@ class IntegrationControllerSpec extends Specification {
             "value" : "ZDB-1-ACS"
           ]
         ],
-        "name" : "American Chemical Society: ACS Legacy Archives: CompleteDates",
+        "name" : "American Chemical Society: ACS Legacy Archives: UpdateListStatus",
         "nominalPlatform" : [
           "name" : "ACS Publications",
           "primaryUrl" : "https://pubs.acs.org"
@@ -701,8 +702,8 @@ class IntegrationControllerSpec extends Specification {
           ],
           "medium" : "Electronic",
           "platform" : [
-            "name" : "pubs.acs.org",
-            "primaryUrl" : "http://pubs.acs.org"
+            "name" : "ACS Publications",
+            "primaryUrl" : "https://pubs.acs.org"
           ],
           "status" : "Current",
           "title" : [
