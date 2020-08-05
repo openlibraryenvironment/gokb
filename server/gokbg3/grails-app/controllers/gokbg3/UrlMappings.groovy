@@ -124,7 +124,7 @@ class UrlMappings {
       post "/databases"(controller: 'title', namespace: 'rest', action:'save') { type = 'database' }
       get "/databases"(controller: 'title', namespace: 'rest', action:'index') { type = 'database' }
 
-      post "/tipps/$id/retire"(controller: 'org', namespace: 'rest', action:'retire')
+      post "/tipps/$id/retire"(controller: 'tipp', namespace: 'rest', action:'retire')
       get "/tipps/$id/coverage"(controller: 'tipp', namespace: 'rest', action: 'getCoverage')
       get "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'show')
       put "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'update')
