@@ -1412,8 +1412,9 @@ where cp.owner = :c
       ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
     }
 //     ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this]);
-
-    AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup as c where c.group=:component",[component:this]);
+    if (this?.class == CuratoryGroup) {
+      AllocatedReviewGroup.removeAll(this)
+    }
     ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview=:component",[component:this]);
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component",[component:this]);
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component",[component:this]);
@@ -1447,7 +1448,6 @@ where cp.owner = :c
         ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
       }
 
-      AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup as c where c.group IN (:component)",[component:batch]);
       ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)",[component:batch]);
       ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)",[component:batch]);
       ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)",[component:batch]);
@@ -1551,6 +1551,15 @@ where cp.owner = :c
               builder.'name' (responsibleParty.name)
             }
           }
+        }
+      }
+    }
+    // Prices
+    ComponentPrice[] cps = ComponentPrice.findAllByOwner(this)
+    if (cps) {
+      builder.'prices' {
+        cps.each { cp ->
+          builder.'price'(type:cp.priceType, amount:cp.price, currency:cp.currency, startDate: cp.startDate, endDate: cp.endDate)
         }
       }
     }

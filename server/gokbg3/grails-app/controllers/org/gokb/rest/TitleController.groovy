@@ -216,7 +216,13 @@ class TitleController {
 
               errors << updateCombos(obj, reqBody)
 
-              result = restMappingService.mapObjectToJson(obj, params, user)
+              if (errors.size() == 0) {
+                response.setStatus(201)
+                result = restMappingService.mapObjectToJson(obj, params, user)
+              }
+              else {
+                result.message = message(code: 'default.create.errors.message')
+              }
             }
             else {
               result.message = message(code: 'default.create.errors.message')
@@ -255,7 +261,7 @@ class TitleController {
       errors.name = [[baddata: reqBody?.name, message:"Request is missing a title name!"]]
     }
 
-    if (errors) {
+    if (errors.size() > 0) {
       result.result = 'ERROR'
       response.setStatus(400)
       result.error = errors
@@ -393,6 +399,7 @@ class TitleController {
   def update() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
+    def remove = (request.method == 'PUT')
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstance.findByUuid(params.id)
@@ -420,10 +427,10 @@ class TitleController {
           log.debug("No errors.. updating combos..")
 
           if (reqBody.variantNames) {
-            obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+            obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
           }
 
-          errors << updateCombos(obj, reqBody)
+          errors << updateCombos(obj, reqBody, remove)
 
           if ( errors.size() == 0 ) {
             obj = obj.save(flush:true)

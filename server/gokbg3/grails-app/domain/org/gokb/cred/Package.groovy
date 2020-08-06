@@ -890,7 +890,7 @@ select tipp.id,
           np = Platform.findByName(platformDTO.name)
         }
 
-        if (!np) {
+        if (!np && platformDTO.name) {
           np = Platform.upsertDTO(platformDTO)
         }
 

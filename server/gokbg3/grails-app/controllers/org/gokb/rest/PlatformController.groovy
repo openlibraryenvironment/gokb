@@ -137,13 +137,29 @@ class PlatformController {
         log.debug("Updating ${obj}")
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        errors << updateCombos(obj, reqBody)
-
         if( obj.validate() ) {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
-            obj.save(flush:true)
-            result = restMappingService.mapObjectToJson(obj, params, user)
+            obj.save()
+
+            if (reqBody.variantNames) {
+              obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+            }
+
+            errors << updateCombos(obj, reqBody)
+
+            if (errors.size() == 0) {
+              log.debug("No errors: ${errors}")
+              obj.save(flush:true)
+              response.status = 201
+              result = restMappingService.mapObjectToJson(obj, params, user)
+            }
+            else {
+              result.result = 'ERROR'
+              log.debug("There were errors setting combo props!")
+              obj.discard()
+              result.error = errors
+            }
           }
           else {
             response.setStatus(400)
@@ -175,6 +191,7 @@ class PlatformController {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
     def errors = [:]
+    def remove = (request.method == 'PUT')
     def user = User.get(springSecurityService.principal.id)
     def obj = Platform.findByUuid(params.id)
 
@@ -200,7 +217,11 @@ class PlatformController {
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        errors << updateCombos(obj, reqBody)
+        if (reqBody.variantNames) {
+          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+        }
+
+        errors << updateCombos(obj, reqBody, remove)
 
         if( obj.validate() ) {
           if(errors.size() == 0) {
@@ -216,7 +237,7 @@ class PlatformController {
         else {
           result.result = 'ERROR'
           response.setStatus(400)
-          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+          errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
       }
       else {
@@ -231,9 +252,10 @@ class PlatformController {
       result.message = "Package not found or empty request body!"
     }
 
-    if(errors.size() > 0) {
+    if (errors.size() > 0) {
       result.error = errors
     }
+
     render result as JSON
   }
 
@@ -244,6 +266,14 @@ class PlatformController {
     if (reqBody.ids || reqBody.identifiers) {
       def idmap = reqBody.ids ?: reqBody.identifiers
       restMappingService.updateIdentifiers(obj, idmap, remove)
+    }
+
+    if (reqBody.curatoryGroups) {
+      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+
+      if (cg_errors.size() > 0) {
+        errors['curatoryGroups'] = cg_errors
+      }
     }
 
     if (reqBody.provider) {

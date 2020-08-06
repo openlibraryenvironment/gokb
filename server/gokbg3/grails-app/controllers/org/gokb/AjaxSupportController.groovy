@@ -335,6 +335,12 @@ class AjaxSupportController {
                     new_obj[p.name] = dateObj
                     log.debug("Set simple prop ${p.name} = ${params[p.name]} (as date ${dateObj}))");
                     break;
+
+                  case Float.class:
+                    log.debug("Set simple prop ${p.name} = ${params[p.name]} (as float=${Float.valueOf(params[p.name])})");
+                    new_obj[p.name] = Float.valueOf(params[p.name]);
+                    break;
+
                   default:
                     log.debug("Default for type ${p.type}")
                     log.debug("Set simple prop ${p.name} = ${params[p.name]}");
@@ -575,7 +581,7 @@ class AjaxSupportController {
         log.debug("remove successful?: ${remove_result}")
         log.debug("child ${item_to_remove} removed: "+ contextObj[params.__property]);
 
-        if ( params.propagate == "true") {
+        if ( params.propagate == "true" && KBComponent.isAssignableFrom(contextObj.class)) {
           contextObj.lastSeen = new Date().getTime()
         }
 
@@ -1362,6 +1368,40 @@ class AjaxSupportController {
       result.result = 'ERROR'
       flash.error = message(code:'combo.fromComponent.denied.label', args:[fcomp])
       log.debug("Not deleting combo.. no edit permissions on fromComponent!")
+    }
+
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+
+        redirect(url: redirect_to);
+      }
+      json {
+        render result as JSON
+      }
+    }
+  }
+
+  /**
+   *  deletePrice : Used to delete a ComponentPrice from a TitleInstance.
+   * @param id : The id of the ComponentPrice
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def deletePrice() {
+    def result = ['result': "OK", 'params': params]
+    ComponentPrice c = ComponentPrice.get(params.id);
+    if (c) {
+      log.debug("Delete Price..")
+      c.delete(flush: true);
     }
 
     withFormat {

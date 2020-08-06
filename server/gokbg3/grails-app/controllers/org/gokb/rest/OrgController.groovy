@@ -144,15 +144,26 @@ class OrgController {
         if( obj.validate() ) {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
-            obj.save(flush:true)
+            obj.save()
 
             if (reqBody.variantNames) {
               obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
             }
 
-            errors = updateCombos(obj, reqBody)
+            errors << updateCombos(obj, reqBody)
 
-            result = restMappingService.mapObjectToJson(obj, params, user)
+            if (errors.size() == 0) {
+              log.debug("No errors: ${errors}")
+              obj.save(flush:true)
+              response.status = 201
+              result = restMappingService.mapObjectToJson(obj, params, user)
+            }
+            else {
+              result.result = 'ERROR'
+              log.debug("There were errors setting combo props!")
+              obj.discard()
+              result.error = errors
+            }
           }
           else {
             response.setStatus(400)
@@ -183,7 +194,8 @@ class OrgController {
   def update() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
+    def remove = (request.method == 'PUT')
     def user = User.get(springSecurityService.principal.id)
     def obj = Org.findByUuid(params.id)
 
@@ -209,10 +221,17 @@ class OrgController {
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
+
+        if (reqBody.variantNames) {
+          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+        }
+
+        errors << updateCombos(obj, reqBody, remove)
+
         if( obj.validate() ) {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
-            obj.save(flush:true)
+            obj = obj.merge(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -223,7 +242,7 @@ class OrgController {
         else {
           result.result = 'ERROR'
           response.setStatus(400)
-          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+          errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
       }
       else {
@@ -238,9 +257,11 @@ class OrgController {
       result.message = "Package not found or empty request body!"
     }
 
-    if(errors.size() > 0) {
+    if (errors.size() > 0) {
+      log.debug("Errors: ${errors}")
       result.error = errors
     }
+
     render result as JSON
   }
 
@@ -266,12 +287,14 @@ class OrgController {
         if (plt instanceof String) {
           plt_obj = Platform.findByNameIlike(plt)
         }
-        else if (obj instanceof Integer){
-          plt_obj = Platform.get(plt)
+        else if (plt instanceof Integer){
+          plt_obj = Platform.findById(plt)
         }
-
-        else if (obj instanceof Map && obj.id) {
-          plt_obj = Platform.get(plt.id)
+        else if (plt instanceof Map && plt.id) {
+          plt_obj = Platform.findById(plt.id)
+        }
+        else {
+          log.debug("Not processing value of type ${plt.class.name}")
         }
 
         if (plt_obj) {
@@ -282,6 +305,14 @@ class OrgController {
             errors.providedPlatforms = []
           }
           errors.providedPlatforms << [message: "Unable to lookup platform!", baddata: plt]
+        }
+      }
+
+      if (reqBody.curatoryGroups) {
+        def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+
+        if (cg_errors.size() > 0) {
+          errors['curatoryGroups'] = cg_errors
         }
       }
 
@@ -304,6 +335,7 @@ class OrgController {
     }
 
     log.debug("After update: ${obj}")
+    errors
   }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
@@ -362,13 +394,13 @@ class OrgController {
       else {
         result.result = 'ERROR'
         response.setStatus(403)
-        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+        result.message = "User must belong to at least one curatory group of an existing organization to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
       response.setStatus(404)
-      result.message = "Package not found or empty request body!"
+      result.message = "Organization not found or empty request body!"
     }
     else {
       result.result = 'ERROR'

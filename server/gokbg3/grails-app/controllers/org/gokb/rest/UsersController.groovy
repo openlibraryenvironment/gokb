@@ -186,27 +186,9 @@ class UsersController {
       errors << [message: "no data found in the request", baddata: request.JSON]
       result.errors = errors
     }
-    render result as JSON
-  }
-
-  @Secured(value = ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
-  @Transactional
-  def patch() {
-    def user = User.get(params.id)
-    def result = [:]
-    if (user && request.JSON) {
-      if (request.JSON.password) {
-        user.password = request.JSON.password
-        request.JSON.remove('password')
-      }
-      result = userProfileService.update(user, request.JSON.data, params, springSecurityService.currentUser)
-    } else {
-      def errors = []
-      errors << [message: "no data found in the request", baddata: request.JSON]
-      result.errors = errors
-    }
-    if (result.errors != null)
+    if (result.errors?.size() >0){
       response.status = 400
+    }
     render result as JSON
   }
 
