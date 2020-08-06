@@ -558,7 +558,12 @@ class PackageService {
         }
       }
       else {
-        result['both'] << ['id': val.id, 'name': val.name, 'old': val.tipps, 'new': titlesTwo[id].tipps]
+        if (full) {
+          result['both'] << ['id': val.id, 'name': val.name, 'old': val.tipps, 'new': titlesTwo[id].tipps]
+        }
+        else {
+          result['both']++
+        }
       }
     }
 
