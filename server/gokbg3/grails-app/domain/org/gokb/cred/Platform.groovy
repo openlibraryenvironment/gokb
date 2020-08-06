@@ -60,8 +60,8 @@ class Platform extends KBComponent {
       if (obj.hasChanged('name')) {
         if (val && val.trim()) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          def dupes = Platform.findByNameIlikeAndStatusNotEqual(val, status_deleted);
-          if (dupes && dupes != obj) {
+          def dupes = Platform.findAllByNameIlikeAndStatusNotEqual(val, status_deleted);
+          if (dupes?.size() > 0 && dupes.any {it != obj}) {
             return ['notUnique']
           }
         } else {
@@ -229,7 +229,7 @@ class Platform extends KBComponent {
     if (platformDTO?.name?.trim()) {
     } else {
       result.valid = false
-      result.errors.name = [[message: "Platform name is missing!", baddata: platformDTO.name]]
+      result.errors.name = [[message: "Platform name is missing!", baddata: (platformDTO?.name ?: null)]]
     }
 
     if (!result.valid) {
@@ -372,7 +372,10 @@ class Platform extends KBComponent {
           result,
           "The platform ${result} did not exist and was newly created.",
           "New platform created",
-          user, project
+          user,
+          project,
+          null,
+          RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'New Platform')
         )
       }
     }

@@ -17,6 +17,7 @@ class WorkflowController {
   def genericOIDService
   def springSecurityService
   def sessionFactory
+  def reviewRequestService
 
   def actionConfig = [
     'method::deleteSoft':[actionType:'simple'],
@@ -872,7 +873,7 @@ class WorkflowController {
                                 ], user).save(flush:true, failOnError:true)
 
         if ( newtipp.review == 'on' ) {
-          ReviewRequest.raise(new_tipp, 'New tipp - please review' , 'A Title change cause this new tipp to be created', request.user)
+          reviewRequestService.raise(new_tipp, 'New tipp - please review' , 'A Title change cause this new tipp to be created', request.user)
         }
       }
 
@@ -904,12 +905,12 @@ class WorkflowController {
         log.debug("Retiring old tipp");
         current_tipp.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
         if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
-          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title change has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
+          reviewRequestService.raise(current_tipp, 'please review TIPP record' , 'A Title change has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
         }
       }
       else {
         if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
-          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title change has affected this tipp [new tipps have been generated]. The user did not retire this tipp', request.user)
+          reviewRequestService.raise(current_tipp, 'please review TIPP record' , 'A Title change has affected this tipp [new tipps have been generated]. The user did not retire this tipp', request.user)
         }
       }
     }
@@ -1187,7 +1188,7 @@ class WorkflowController {
 
         if ( newtipp.review == 'on' ) {
           log.debug("User requested a review request be generated for this new tipp");
-          ReviewRequest.raise(new_tipp, 'New tipp - please review' , 'A Title transfer cause this new tipp to be created', request.user)
+          reviewRequestService.raise(new_tipp, 'New tipp - please review' , 'A Title transfer cause this new tipp to be created', request.user)
         }
       }
 
@@ -1198,12 +1199,12 @@ class WorkflowController {
         log.debug("Retiring old tipp");
         current_tipp.status = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
         if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
-          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title transfer has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
+          reviewRequestService.raise(current_tipp, 'please review TIPP record' , 'A Title transfer has affected this tipp [new tipps have been generated]. The user chose to retire this tipp', request.user)
         }
       }
       else {
         if ( params["oldtipp_review:${tipp_map_entry.key}"] == 'on' ) {
-          ReviewRequest.raise(current_tipp, 'please review TIPP record' , 'A Title transfer has affected this tipp [new tipps have been generated]. The user did not retire this tipp', request.user)
+          reviewRequestService.raise(current_tipp, 'please review TIPP record' , 'A Title transfer has affected this tipp [new tipps have been generated]. The user did not retire this tipp', request.user)
         }
       }
 
@@ -1298,10 +1299,10 @@ class WorkflowController {
     def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     def user = springSecurityService.currentUser
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
-    def new_package = genericOIDService.resolveOID2(params.newpackage)
-    def new_platform = genericOIDService.resolveOID2(params.newplatform)
+    def new_package = params.newpackage ? genericOIDService.resolveOID2(params.newpackage) : null
+    def new_platform = params.newplatform ? genericOIDService.resolveOID2(params.newplatform) : null
     def tipps_to_action = params.list('beforeTipps')
-    def new_title = genericOIDService.resolveOID2(params.newtitle)
+    def new_title = params.newtitle ? genericOIDService.resolveOID2(params.newtitle) : null
 
     params.list('beforeTipps').each { tipp_oid ->
       log.debug("process ${tipp_oid}")
@@ -1608,6 +1609,7 @@ class WorkflowController {
     log.debug("newRRLink ${params}");
 
     User user = springSecurityService.currentUser
+    def stdDesc = params.stdDesc ?: null
 
     if ( params.id ) {
       def component = KBComponent.findByUuid(params.id)
@@ -1616,9 +1618,7 @@ class WorkflowController {
         component = KBComponent.get(params.long('id'))
       }
 
-      new_rr = ReviewRequest.raise(component, params.request, "Manual Request", null)
-      new_rr.raisedBy = user
-      new_rr.save(flush:true)
+      new_rr = reviewRequestService.raise(component, params.request, "Manual Request", user, null, null, stdDesc)
     }
 
     redirect(url: request.getHeader('referer')+'#review');

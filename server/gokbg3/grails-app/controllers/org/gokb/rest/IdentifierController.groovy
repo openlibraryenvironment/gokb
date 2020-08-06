@@ -92,7 +92,7 @@ class IdentifierController {
   def save() {
     def result = [:]
     def reqBody = request.JSON
-    def errors = []
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     log.debug("Save new Identifier: ${reqBody}")
 
@@ -113,16 +113,23 @@ class IdentifierController {
           obj = Identifier.lookupOrCreateCanonicalIdentifier(ns, reqBody.value, false)
         }
         catch (grails.validation.ValidationException ve) {
-          errors = [badData: reqBody, message: message(code: 'identifier.value.IllegalIDForm')]
+          log.debug("Identifier ${reqBody} has failed validation!")
+          result.message = "Identifier has failed validation!"
+          errors = messageService.processValidationErrors(ve.errors, request.locale)
+        }
+        catch (Exception e) {
+          result.message = "Unable to create Identifier: ${e.cause}"
+          response.setStatus(500)
         }
 
         log.debug("After Identifier lookup: ${obj}")
 
         if (!obj) {
-          errors = [badData: reqBody, message: message(code: 'identifier.create.error')]
+          log.debug("Could not create identifier!")
         }
         else if ( obj.hasErrors() ) {
           errors = messageService.processValidationErrors(obj.errors, request.locale)
+          result.message = "Identifier failed validation!"
         }
         else {
           if (reqBody.component) {
@@ -141,6 +148,7 @@ class IdentifierController {
                 comp.save(flush:true)
 
                 params['_embed'] = params['_embed'] ?: 'identifiedComponents'
+                response.setStatus(201)
 
                 result = restMappingService.mapObjectToJson(obj, params, user)
                 log.debug("Got mapped ID with component! ${result}")
@@ -179,6 +187,9 @@ class IdentifierController {
 
     if (errors) {
       result.result = 'ERROR'
+      if (response.status == 200) {
+        response.setStatus(400)
+      }
       result.error = errors
     }
 

@@ -25,6 +25,7 @@ class PackageController {
   def ESSearchService
   def messageService
   def restMappingService
+  def packageService
   def componentLookupService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -109,55 +110,94 @@ class PackageController {
 
     if (reqBody) {
       log.debug("Save package ${reqBody}")
-      def obj = Package.upsertDTO(reqBody, user)
+      def pkg_validation = Package.validateDTO(reqBody)
+      def obj = null
 
-      if (!obj) {
-        log.debug("Could not upsert object!")
-        errors.object = [[badData: reqBody, message:"Unable to save object!"]]
-      }
-      else if (obj.hasErrors()) {
-        log.debug("Object has errors!")
-        errors << messageService.processValidationErrors(obj.errors, request.locale)
-        log.debug("${errors}")
-      }
-      else {
-        def jsonMap = obj.jsonMapping
+      if (pkg_validation.valid) {
+        def lookup_result = packageService.restLookup(reqBody)
 
-        jsonMap.ignore = [
-          'lastProject',
-          'status'
-        ]
+        if (lookup_result.to_create) {
+          def normname = Package.generateNormname(reqBody.name)
+          obj = new Package(name: reqBody.name, normname: normname).save(flush:true)
+          log.debug("New Object ${obj}")
+        }
+        else {
+          lookup_result.matches.each { id, errs ->
+            errs.each { e ->
+              if (!errors[e.field])
+                errors[e.field] = []
 
-        jsonMap.immutable = [
-          'userListVerifier',
-          'listVerifiedDate',
-          'listStatus'
-        ]
+              errors[e.field] << [message: e.message, baddata: e.value, matches: id]
+            }
+          }
+        }
 
-        log.debug("Updating ${obj}")
-        obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+        if (lookup_result.to_create && !obj) {
+          log.debug("Could not upsert object!")
+          errors.object = [[baddata: reqBody, message:"Unable to save object!"]]
+        }
+        else if (obj?.hasErrors()) {
+          log.debug("Object has errors!")
+          errors << messageService.processValidationErrors(obj.errors, request.locale)
+        }
+        else if (obj) {
+          def jsonMap = obj.jsonMapping
 
-        errors << updateCombos(obj, reqBody)
+          jsonMap.ignore = [
+            'lastProject',
+            'status'
+          ]
 
-        log.debug("Errors: ${obj.errors}")
+          jsonMap.immutable = [
+            'userListVerifier',
+            'listVerifiedDate',
+            'listStatus'
+          ]
 
-        if( obj.validate() ) {
-          if (errors.size() == 0) {
-            log.debug("No errors.. saving")
-            obj.save(flush:true)
-            result = restMappingService.mapObjectToJson(obj, params, user)
+          log.debug("Updating ${obj}")
+          obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+
+          if( obj.validate() ) {
+            if (errors.size() == 0) {
+              log.debug("No errors.. saving")
+              obj.save()
+
+              if (reqBody.variantNames) {
+                obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+              }
+
+              errors << updateCombos(obj, reqBody)
+
+              if (errors.size() == 0) {
+                log.debug("No errors: ${errors}")
+                obj.save(flush:true)
+                response.status = 201
+                result = restMappingService.mapObjectToJson(obj, params, user)
+              }
+              else {
+                result.result = 'ERROR'
+                log.debug("There were errors setting combo props!")
+                obj.discard()
+                result.error = errors
+              }
+            }
+            else {
+              result.result = 'ERROR'
+              obj.discard()
+              result.message = message(code:"default.create.errors.message")
+              response.setStatus(400)
+            }
           }
           else {
             result.result = 'ERROR'
-            result.message = message(code:"default.create.errors.message")
+            obj.discard()
             response.setStatus(400)
+            errors << messageService.processValidationErrors(obj.errors, request.locale)
           }
         }
-        else {
-          result.result = 'ERROR'
-          response.setStatus(400)
-          errors << messageService.processValidationErrors(obj.errors, request.locale)
-        }
+      }
+      else {
+        errors << pkg_validation.errors
       }
     }
     else {
@@ -165,20 +205,25 @@ class PackageController {
       errors.object = [[baddata: reqBody, message:"Unable to save package!"]]
     }
 
-    if (errors) {
+    if (errors.size() > 0) {
       result.result = 'ERROR'
       result.errors = errors
+
+      if (response.status == 200) {
+        response.setStatus(400)
+      }
     }
 
     render result as JSON
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
     def errors = [:]
+    def remove = (request.method == 'PUT')
     def user = User.get(springSecurityService.principal.id)
     def editable = true
     def obj = Package.findByUuid(params.id)
@@ -214,18 +259,21 @@ class PackageController {
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        errors << updateCombos(obj, reqBody)
+        if (reqBody.variantNames) {
+          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+        }
+
+        errors << updateCombos(obj, reqBody, remove)
 
         if( obj.validate() ) {
-          if (errors.size() == 0) {
+          if(errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
-            result.result = 'ERROR'
-            result.message = message(code:"default.update.errors.message")
             response.setStatus(400)
+            result.message = message(code:"default.update.errors.message")
           }
         }
         else {
@@ -252,13 +300,25 @@ class PackageController {
     render result as JSON
   }
 
-  private def updateCombos(obj, reqBody) {
+  private def updateCombos(obj, reqBody, boolean remove = true) {
     log.debug("Updating package combos ..")
     def errors = [:]
 
     if (reqBody.ids || reqBody.identifiers) {
-      def idmap = reqBody.ids ?: reqBody.identifiers
-      restMappingService.updateIdentifiers(obj, idmap)
+      def ids = reqBody.ids ?: reqBody.identifiers
+      def id_errors = restMappingService.updateIdentifiers(obj, ids, remove)
+
+      if (id_errors.size > 0) {
+        errors['ids'] = id_errors
+      }
+    }
+
+    if (reqBody.curatoryGroups) {
+      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+
+      if (cg_errors.size() > 0) {
+        errors['curatoryGroups'] = cg_errors
+      }
     }
 
     if (reqBody.provider) {
@@ -317,7 +377,7 @@ class PackageController {
 
           if (upserted_tipp) {
             if (errors.size() == 0) {
-              upserted_tipp = upserted_tipp?.merge(flush: true)
+              upserted_tipp = upserted_tipp?.save(flush: true)
             }
           }
           else {
@@ -330,7 +390,6 @@ class PackageController {
         }
       }
     }
-    log.debug("After update: ${obj.errors}")
     errors
   }
 

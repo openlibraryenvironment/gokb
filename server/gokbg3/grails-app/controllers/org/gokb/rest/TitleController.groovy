@@ -141,8 +141,10 @@ class TitleController {
     def reqBody = request.JSON
     def errors = [:]
     Class type = setType(params)
+    def obj = null
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
+    def base = grailsApplication.config.serverURL + "/rest"
 
     def publisher_name = null
 
@@ -159,39 +161,82 @@ class TitleController {
     }
 
     if ( reqBody?.name?.trim() && type && type != TitleInstance ) {
-      def obj = titleLookupService.find(
-        reqBody.name,
-        publisher_name,
-        ids,
-        user,
-        null,
-        type.name
-      )
+      try {
+        def title_lookup = titleLookupService.find(
+          reqBody.name,
+          publisher_name,
+          ids,
+          type.name
+        )
 
-      if (!obj) {
-        log.debug("Could not upsert object!")
-        errors.object = [[badData: reqBody, message:"Unable to save object!"]]
-      }
-      else if (obj.hasErrors()) {
-        log.debug("Object has errors!")
-        errors = messageService.processValidationErrors(obj.errors, request.locale)
-      }
-      else {
-        obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+        if (title_lookup.to_create) {
+          obj = type.newInstance()
+          obj.name = reqBody.name.trim()
 
-        if ( obj.validate() ) {
-          if (errors.size() == 0 ) {
-            obj.save(flush:true)
-            result = restMappingService.mapObjectToJson(obj, params, user)
+          obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+
+          if ( obj.validate() ) {
+            if (errors.size() == 0 ) {
+              obj.save(flush:true)
+
+              if (title_lookup.matches.size() > 0) {
+                def additionalInfo = [:]
+                def combo_ids = [obj.id]
+
+                additionalInfo.otherComponents = []
+
+                title_lookup.matches.each { tlm ->
+                  additionalInfo.otherComponents.add([oid:"${tlm.object.id}", name:"${tlm.object.name}"])
+                  combo_ids.add(tlm.obect.id)
+                }
+
+                additionalInfo.cstring = combo_ids.sort().join('_')
+
+                ReviewRequest.raise(
+                  obj,
+                  "New TI created.",
+                  "There have been possible conflicts with other existing titles.",
+                  user, 
+                  null,
+                  (additionalInfo as JSON).toString()
+                )
+              }
+
+              if (reqBody.variantNames) {
+                obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+              }
+
+              errors << updateCombos(obj, reqBody)
+
+              if (errors.size() == 0) {
+                response.setStatus(201)
+                result = restMappingService.mapObjectToJson(obj, params, user)
+              }
+              else {
+                result.message = message(code: 'default.create.errors.message')
+              }
+            }
+            else {
+              result.message = message(code: 'default.create.errors.message')
+            }
           }
           else {
-            result.message = message(code: 'default.create.errors.message')
+            result.result = 'ERROR'
+            errors << messageService.processValidationErrors(obj.errors, request.locale)
           }
         }
         else {
-          result.result = 'ERROR'
-          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+          title_lookup.matches.each { tlm ->
+            if (!errors.ids) {
+              errors.ids = []
+            }
+
+            errors.ids << [message:"There has been an identifier conflict with another title!", baddata: reqBody.ids, item: [id: tlm.object.id, name: tlm.object.name, href: (base + "/titles/" + tlm.object.id)]]
+          }
         }
+      }
+      catch (grails.validation.ValidationException ve) {
+        errors.ids = messageService.processValidationErrors(ve.errors, request.locale)
       }
     }
     else if (!type) {
@@ -208,7 +253,7 @@ class TitleController {
       errors.name = [[baddata: reqBody?.name, message:"Request is missing a title name!"]]
     }
 
-    if (errors) {
+    if (errors.size() > 0) {
       result.result = 'ERROR'
       response.setStatus(400)
       result.error = errors
@@ -282,11 +327,12 @@ class TitleController {
     result
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='PUT')
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
+    def remove = (request.method == 'PUT')
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstance.findByUuid(params.id)
@@ -296,15 +342,7 @@ class TitleController {
     }
 
     if (obj && reqBody) {
-      def editable = obj.isEditable()
-
-      if ( editable && KBComponent.has(obj, 'curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
-        def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
-
-        if (!cur) {
-          editable = false
-        }
-      }
+      def editable = isUserCurator(obj,user) || user.isAdmin()
 
       if (editable) {
         obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
@@ -321,10 +359,14 @@ class TitleController {
         if ( obj.validate() ) {
           log.debug("No errors.. updating combos..")
 
-          errors << updateCombos(obj, reqBody)
+          if (reqBody.variantNames) {
+            obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+          }
+
+          errors << updateCombos(obj, reqBody, remove)
 
           if ( errors.size() == 0 ) {
-            obj = obj.merge(flush:true)
+            obj = obj.save(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -341,7 +383,7 @@ class TitleController {
       else {
         result.result = 'ERROR'
         response.setStatus(403)
-        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+        result.message = "User must belong to at least one curatory group of the title to make changes!"
       }
     }
     else {
@@ -357,147 +399,25 @@ class TitleController {
     render result as JSON
   }
 
-  private def updateCombos(obj, reqBody) {
+  @Transactional
+  private def updateCombos(obj, reqBody, boolean remove = true) {
     log.debug("Updating title combos ..")
     def errors = [:]
 
-    def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    def combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
-    def combo_expired = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_EXPIRED)
-
     if (reqBody.ids || reqBody.identifiers) {
-      def id_combos = []
-      id_combos.addAll( obj.getCombosByPropertyName('ids') )
-      def new_ids = restMappingService.updateIdentifiers(obj, reqBody.ids ?: reqBody.identifiers)
+      def id_map = reqBody.ids ?: reqBody.identifiers
+      def id_errors = restMappingService.updateIdentifiers(obj, id_map, remove)
 
-      new_ids.each { i ->
-
-        def dupe = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?",[combo_id_type, obj, i])
-
-        if (dupe.size() == 0) {
-          log.debug("No combo found, adding ID ..")
-          def new_combo = new Combo(fromComponent: obj, toComponent: i, status: combo_active, type: combo_id_type).save(flush:true)
-        }
-        else if (dupe.size() == 1 ) {
-          if (dupe[0].status == combo_deleted) {
-            log.debug("Matched ID combo was marked as deleted!")
-          }
-          else {
-            log.debug("Not adding duplicate ..")
-          }
-        }
-        else {
-          if (!errors.ids) {
-            errors.ids = []
-          }
-
-          errors.ids << [message: "There seem to be duplicate links for an identifier against this title!", baddata: i]
-          log.error("Multiple ID combos for ${obj} -- ${i}!")
-        }
-      }
-
-      Iterator items = id_combos.iterator();
-      Object element;
-      while (items.hasNext()) {
-        element = items.next();
-        if (!new_ids.contains(element.toComponent)) {
-          // Remove.
-          element.status = combo_deleted
-        }
+      if (id_errors.size() > 0) {
+        errors.ids = id_errors
       }
     }
 
     if (reqBody.publisher) {
-      def publisher_combos = []
-      publisher_combos.addAll( obj.getCombosByPropertyName('publisher') )
-      String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
-      String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
-      def pubs_to_add = []
+      def pub_errors = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
 
-      if (reqBody.publisher instanceof Collection) {
-        reqBody.publisher.each { pub ->
-          if (!pubs_to_add.collect { it.id == pub}) {
-            pubs_to_add << Org.get(pub)
-          }
-          else {
-            log.warn("Duplicate for incoming publisher ${pub}!")
-          }
-        }
-      }
-      else {
-          if (!pubs_to_add.collect { it.id == reqBody.publisher}) {
-            pubs_to_add << Org.get(reqBody.publisher)
-          }
-          else {
-            log.warn("Duplicate for incoming publisher ${reqBody.publisher}!")
-          }
-      }
-
-      pubs_to_add.each { publisher ->
-        boolean found = false
-        for ( int i=0; !found && i<publisher_combos.size(); i++) {
-          Combo pc = publisher_combos[i]
-          def idMatch = pc."${propName}".id == publisher.id
-
-          if (idMatch) {
-            found = true
-          }
-        }
-
-        if (!found) {
-
-          log.debug("Adding new combo for publisher ${publisher} (${propName}) to title ${obj} (${tiPropName})")
-
-          RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, obj.getComboTypeValue('publisher'))
-
-          def combo = null
-
-          if (propName == "toComponent") {
-            combo = new Combo(
-              type            : (type),
-              status          : combo_active,
-              toComponent     : publisher,
-              fromComponent   : obj
-            )
-          } else {
-            combo = new Combo(
-              type            : (type),
-              status          : combo_active,
-              fromComponent   : publisher,
-              toComponent     : obj
-            )
-          }
-
-          if (combo) {
-            combo.save(flush:true, failOnError:true)
-
-            log.debug "Added publisher ${publisher.name} for '${obj.name}'" +
-              (combo.startDate ? ' from ' + combo.startDate : '') +
-              (combo.endDate ? ' to ' + combo.endDate : '')
-          } else {
-            log.error("Could not create publisher Combo..")
-            if (!errors.publisher) {
-              errors.publisher = []
-            }
-
-            errors.publisher << [message: "Unable to add publisher ${publisher.name} to title!", baddata: publisher.id]
-          }
-
-        } else {
-          log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
-        }
-      }
-
-      Iterator items = publisher_combos.iterator();
-      Object element;
-      while (items.hasNext()) {
-        element = items.next();
-        if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
-          // Remove.
-          element.delete()
-        }
-      }
+      if (pub_errors.size() > 0)
+        errors.publisher = pub_errors
     }
 
     errors
@@ -515,7 +435,7 @@ class TitleController {
     }
 
     if ( obj && obj.isDeletable() ) {
-      def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+      def curator = isUserCurator(obj, user)
 
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
@@ -539,15 +459,31 @@ class TitleController {
     result
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
+  def isUserCurator(obj, user) {
+    def curator = true
+
+    if (KBComponent.has(obj, 'curatoryGroups')) {
+
+      if (obj.curatoryGroups.size() > 0) {
+        if (!user.curatoryGroups?.id.intersect(obj.curatoryGroups.id)) {
+          curator = false
+        }
+      }
+    }
+
+    return curator
+  }
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def retire() {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
-    def obj = TitleInstance.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
-    def curator = KBComponent.has(obj, 'curatoryGroups') ? user.curatoryGroups?.id.intersect(pkg.curatoryGroups?.id) : true
+    def obj = TitleInstance.findByUuid(params.id) ?: TitleInstance.get(genericOIDService.oidToId(params.id))
 
     if ( obj && obj.isEditable() ) {
+      def curator = isUserCurator(obj, user)
+
       if ( curator || user.isAdmin() ) {
         obj.retire()
       }

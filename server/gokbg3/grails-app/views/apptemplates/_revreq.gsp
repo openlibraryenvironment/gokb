@@ -18,7 +18,7 @@
           <g:xEditable class="ipe" owner="${d}" field="reviewRequest" />
         </dd>
         <g:if test="${d.id}">
-          <sec:ifAnyGranted roles="ROLE_ADMIN">
+          <sec:ifAnyGranted roles="ROLE_SUPERUSER">
             <dt>
               <g:annotatedLabel owner="${d}" property="allocationLog">Allocation Log</g:annotatedLabel>
             </dt>
@@ -85,21 +85,32 @@
             </ul>
           <dd>
         </g:if>
-        <dt>
-          <g:annotatedLabel owner="${d}" property="allocatedTo">Allocated To</g:annotatedLabel>
-        </dt>
-        <dd>
-          ${d.allocatedTo ? d.allocatedTo.displayName ?: d.allocatedTo.username : 'N/A'}
-        </dd>
-
-        <g:if test="${d.id != null}">
+        <sec:ifAnyGranted roles="ROLE_SUPERUSER">
           <dt>
-            <g:annotatedLabel owner="${d}" property="dateCreated">Request Timestamp</g:annotatedLabel>
+            <g:annotatedLabel owner="${d}" property="allocatedTo">Allocated To</g:annotatedLabel>
           </dt>
           <dd>
-            ${d.dateCreated}&nbsp;
+            ${d.allocatedTo ? d.allocatedTo.displayName ?: d.allocatedTo.username : 'N/A'}
           </dd>
-        </g:if>
+
+          <g:if test="${d.id != null}">
+            <dt>
+              <g:annotatedLabel owner="${d}" property="dateCreated">Request Timestamp</g:annotatedLabel>
+            </dt>
+            <dd>
+              ${d.dateCreated}&nbsp;
+            </dd>
+          </g:if>
+        </sec:ifAnyGranted>
+
+        <dt>
+          <g:annotatedLabel owner="${d}" property="allocatedTo">Allocated Groups</g:annotatedLabel>
+        </dt>
+        <dd>
+          <g:each in="${d.allocatedGroups}" var="ag">
+            <g:link controller="resource" class="badge badge-primary" action="show" id="${ag.group.uuid}">${ag.group.name}</g:link>
+          </g:each>
+        </dd>
 
         <g:if test="${d.additional?.problems}">
           <g:form name="AddRules" controller="workflow" action="addToRulebase">

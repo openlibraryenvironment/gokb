@@ -887,15 +887,16 @@ class IntegrationController {
 
         job_result.results = []
 
-        def valid = Package.validateDTO(json.packageHeader)
+        Package.withNewSession {
+          def user = User.get(request_user.id)
 
-        if ( valid ) {
-          Package.withNewSession {
-            def user = User.get(request_user.id)
+          def pkg_validation = Package.validateDTO(json.packageHeader)
 
+          if ( pkg_validation.valid ) {
             try {
               def the_pkg = Package.upsertDTO(json.packageHeader, user)
               def existing_tipps = []
+              def valid = true
               Boolean curated_pkg = false;
               def is_curator = null;
               if (the_pkg) {
@@ -919,6 +920,7 @@ class IntegrationController {
                   json.tipps.eachWithIndex { tipp, idx ->
 
                     def title_validation = TitleInstance.validateDTO(tipp.title);
+                    def tipp_plt_dto = tipp.hostPlatform ?: tipp.platform
                     valid &= title_validation.valid
 
                     if ( title_validation && !title_validation.valid ) {
@@ -932,7 +934,7 @@ class IntegrationController {
                         def ti = null
 
                         try {
-                          ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user);
+                          ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user, fullsync);
 
                           if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
 
@@ -950,43 +952,43 @@ class IntegrationController {
                           log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
                           valid = false
-                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp.title.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ti.errors)])
+                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp?.title?.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ve.errors)])
                         }
                       }
 
                       if ( valid_ti && tipp.title.internalId == null ) {
-                        log.error("Failed to locate a title for ${tipp.title} when attempting to create TIPP");
+                        log.error("Failed to locate a title for ${tipp?.title} when attempting to create TIPP");
                         valid = false
-                        errors.add(['code': 400, idx: idx, 'message': "Title ${tipp.title.name} could not be located or created!"])
+                        errors.add(['code': 400, idx: idx, 'message': "Title ${tipp?.title?.name} could not be located or created!"])
                       }
                     }
 
-                    def valid_plt = Platform.validateDTO(tipp.platform);
+                    def valid_plt = Platform.validateDTO(tipp_plt_dto);
                     valid &= valid_plt?.valid
 
                     if ( !valid_plt.valid ) {
-                      log.warn("Not valid after platform validation ${tipp.platform}");
-                      errors.add(['code': 400, idx: idx, 'message': "Platform ${tipp.platform.name} is not valid!", 'baddata': tipp.platform, errors: valid_plt.errors])
+                      log.warn("Not valid after platform validation ${tipp_plt_dto}");
+                      errors.add(['code': 400, idx: idx, 'message': "Platform ${tipp_plt_dto?.name} is not valid!", 'baddata': tipp_plt_dto, errors: valid_plt.errors])
                     }
 
                     if ( valid ) {
 
                       def pl = null
                       def pl_id
-                      if (platform_cache.containsKey(tipp.platform.name) && (pl_id = platform_cache[tipp.platform.name]) != null) {
+                      if (platform_cache.containsKey(tipp_plt_dto.name) && (pl_id = platform_cache[tipp_plt_dto.name]) != null) {
                         pl = Platform.get(pl_id)
                       } else {
                         // Not in cache.
                         try {
-                          pl = Platform.upsertDTO(tipp.platform, user);
+                          pl = Platform.upsertDTO(tipp_plt_dto, user);
 
                           if(pl){
-                            platform_cache[tipp.platform.name] = pl.id
+                            platform_cache[tipp_plt_dto.name] = pl.id
 
-                            componentUpdateService.ensureCoreData(pl, tipp.platform, fullsync)
+                            componentUpdateService.ensureCoreData(pl, tipp_plt_dto, fullsync)
                           }else{
-                            log.error("Could not find/create ${tipp.platform}")
-                            errors.add(['code': 400, idx: idx, 'message': "TIPP platform ${tipp.platform.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                            log.error("Could not find/create ${tipp_plt_dto}")
+                            errors.add(['code': 400, idx: idx, 'message': "TIPP platform ${tipp_plt_dto.name} could not be matched/created! Please check for duplicates in GOKb!"])
                             valid = false
                           }
                         }
@@ -994,19 +996,18 @@ class IntegrationController {
                           log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
                           valid = false
-                          errors.add(['code': 400, 'message': "Platform validation failed for ${tipp.platform}!", 'baddata': tipp.platform, idx: idx, errors: messageService.processValidationErrors(pl.errors)])
+                          errors.add(['code': 400, 'message': "Platform validation failed for ${tipp_plt_dto}!", 'baddata': tipp_plt_dto, idx: idx, errors: messageService.processValidationErrors(pl.errors)])
                         }
                       }
 
-                      if ( pl && ( tipp.platform.internalId == null ) ) {
-                        tipp.platform.internalId = pl.id;
+                      if ( pl && ( tipp_plt_dto.internalId == null ) ) {
+                        tipp_plt_dto.internalId = pl.id;
                       }
                       else {
-                        log.warn("No platform arising from ${tipp.platform}");
+                        log.warn("No platform arising from ${tipp_plt_dto}");
                       }
                     }
-        //
-        //            def pkg = the_pkg.id != null ? Package.get(the_pkg.id) : null
+
                     if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
                       tipp.package = [ internalId: the_pkg.id ]
                     }
@@ -1030,7 +1031,6 @@ class IntegrationController {
                   return job_result
                 }
 
-        //        cleanUpGorm()
 
                 int tippctr=0;
                 if ( valid ) {
@@ -1069,6 +1069,7 @@ class IntegrationController {
                   def tipp_fails = 0
 
                   if ( json.tipps?.size() > 0 ) {
+                    the_pkg.refresh()
                     the_pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
                   }
 
@@ -1088,7 +1089,7 @@ class IntegrationController {
                       log.error("ValidationException attempting to cross reference TIPP",ve);
                       valid = false
                       tipp_fails++
-                      errors.add(['code': 400, idx: idx, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'baddata': tipp, errors: messageService.processValidationErrors(upserted_tipp.errors)])
+                      errors.add(['code': 400, idx: idx, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'baddata': tipp, errors: messageService.processValidationErrors(ve.errors)])
 
                       if (upserted_tipp)
                         upserted_tipp.discard()
@@ -1201,15 +1202,16 @@ class IntegrationController {
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
               job_result.code = 500
-              errors.add([code:500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
+              errors.add([code: 500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
             }
             cleanUpGorm()
           }
-        }
-        else {
-          log.debug("Package validation failed!")
-          job_result.result = 'ERROR'
-          job_result.message = "Package validation failed!"
+          else {
+            log.debug("Package validation failed!")
+            job_result.result = 'ERROR'
+            errors.add([message: "Unable to validate Package info", baddata: json.packageHeader, errors: pkg_validation.errors])
+            job_result.message = "Package validation failed!"
+          }
         }
 
         job.message(job_result.message.toString())
@@ -1390,9 +1392,18 @@ class IntegrationController {
    *    'imprint':'the_publisher',
    *    'publishedFrom':'yyyy-MM-dd' 'HH:mm:ss.SSS',
    *    'publishedTo':'yyyy-MM-dd' 'HH:mm:ss.SSS',
-   *    'editStatus':'the_publisher',
-   *    'status':'the_publisher',
+   *    'editStatus':'edit_status_value',
+   *    'status':'status_value',
    *    'historyEvents':[
+   *    ],
+   *    'series':'series_name',
+   *    'subjectArea':'subject_area_name',
+   *    'prices':[
+   *      {
+   *       'type':'list',
+   *       'currency':'EUR',
+   *       'amount':12.89
+   *      }
    *    ]
    *  }
    */
@@ -1408,7 +1419,7 @@ class IntegrationController {
       fullsync = true
     }
 
-    if(org.grails.web.json.JSONArray != rjson.getClass()){
+    if (org.grails.web.json.JSONArray != rjson.getClass()) {
 
       result = crossReferenceSingleTitle(rjson, user.id, fullsync)
 
@@ -1498,6 +1509,10 @@ class IntegrationController {
                 case "database":
                   title_class_name = "org.gokb.cred.DatabaseInstance"
                   break;
+                case "Other":
+                case "other":
+                  title_class_name = "org.gokb.cred.OtherInstance"
+                  break;
                 default:
                   log.warn("Missing type for title!")
                   break;
@@ -1514,7 +1529,7 @@ class IntegrationController {
             }
 
             try {
-              def title = titleLookupService.find(
+              def title = titleLookupService.findOrCreate(
                 titleObj.name,
                 titleObj.publisher,
                 titleObj.identifiers,
@@ -1522,7 +1537,7 @@ class IntegrationController {
                 null,
                 title_class_name,
                 titleObj.uuid
-              );  // project
+              )
 
               if ( title && !title.hasErrors() ) {
 
@@ -1555,13 +1570,15 @@ class IntegrationController {
                       'reasonRetired'
                 ], titleObj, title)
 
-                if (titleObj.type == 'Serial') {
-                  def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
-                  def pubTo = GOKbTextUtils.completeDateString(titleObj.publishedTo, false)
+                def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
+                def pubTo = GOKbTextUtils.completeDateString(titleObj.publishedTo, false)
 
-                  title_changed |= ClassUtils.setDateIfPresent(pubFrom, title, 'publishedFrom')
-                  title_changed |= ClassUtils.setDateIfPresent(pubTo, title, 'publishedTo')
-                }
+                log.debug("Completed date publishedFrom ${titleObj.publishedFrom} -> ${pubFrom}")
+
+                title_changed |= ClassUtils.setDateIfPresent(pubFrom, title, 'publishedFrom')
+                title_changed |= ClassUtils.setDateIfPresent(pubTo, title, 'publishedTo')
+                title_changed |= ClassUtils.setStringIfDifferent(title, 'series', titleObj.series)
+                title_changed |= ClassUtils.setStringIfDifferent(title, 'subjectArea', titleObj.subjectArea)
 
                 if ( titleObj.historyEvents?.size() > 0 ) {
 
@@ -1584,7 +1601,7 @@ class IntegrationController {
                         }
                         else {
                           log.debug("Looking up connected title ${fhe} as participant")
-                          p = titleLookupService.find(
+                          p = titleLookupService.findOrCreate(
                             fhe.title,
                             null,
                             fhe.identifiers,
@@ -1618,7 +1635,7 @@ class IntegrationController {
                         }
                         else {
                           log.debug("Looking up connected title ${fhe} as participant")
-                          p = titleLookupService.find(
+                          p = titleLookupService.findOrCreate(
                             fhe.title,
                             null,
                             fhe.identifiers,
@@ -1725,8 +1742,10 @@ class IntegrationController {
 
                 addPublisherHistory(title, titleObj.publisher_history)
 
+                title.save(flush:true)
+
                 if (!result.message) {
-                  result.message = "Created/looked up title ${title.id}"
+                  result.message = "Created/Looked up title ${title.id}"
                 }
                 result.cls = title.class.name
                 result.titleId = title.id
@@ -1747,10 +1766,6 @@ class IntegrationController {
                 else {
                   result.message = "Cross Reference of title ${titleObj.name} failed";
                 }
-                // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Cross Reference Title failed :${titleObj}"])
-        //         event ( topic:'IntegrationDataError', data:[description:"Cross Reference Title failed :${titleObj}"], params:[:]) {
-        //               // Event callback closure
-        //         }
               }
               else {
                 result.result="ERROR"
@@ -1762,7 +1777,7 @@ class IntegrationController {
               log.error("ValidationException attempting to cross reference title",ve);
               result.result="ERROR"
               result.message="Validation of title '${titleObj.name}' failed."
-              result.errors= ve.errors
+              result.errors= messageService.processsValidationErrors(ve.errors)
               result.baddata=titleObj
               log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
             }
@@ -1786,6 +1801,7 @@ class IntegrationController {
 
   private static addPublisherHistory ( TitleInstance ti, publishers) {
     if (publishers && ti) {
+      log.debug("Handling publisher history ..")
 
       def publisher_combos = []
       publisher_combos.addAll( ti.getCombosByPropertyName('publisher') )

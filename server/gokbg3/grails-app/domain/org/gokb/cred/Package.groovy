@@ -99,8 +99,9 @@ class Package extends KBComponent {
       if (obj.hasChanged('name')) {
         if (val && val.trim()) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          def dupes = Package.findByNameIlikeAndStatusNotEqual(val, status_deleted);
-          if (dupes && dupes != obj) {
+          def dupes = Package.findAllByNameIlikeAndStatusNotEqual(val, status_deleted);
+
+          if (dupes?.size() > 0 && dupes.any { it != obj }) {
             return ['notUnique']
           }
         } else {
@@ -604,12 +605,96 @@ select tipp.id,
    * Definitive rules for a valid package header
    */
   @Transient
-  public static boolean validateDTO(packageHeaderDTO) {
-    def result = true;
-    result &= (packageHeaderDTO != null)
-    result &= (packageHeaderDTO.name != null)
-    result &= (packageHeaderDTO.name.trim().length() > 0)
-    result;
+  public static def validateDTO(packageHeaderDTO) {
+    def result = [valid: true, errors:[:]]
+
+    if (!packageHeaderDTO.name?.trim()) {
+      result.valid = false
+      result.errors.name = [[message: "Missing package name!", baddata: packageHeaderDTO.name]]
+    }
+
+    def ids_list = packageHeaderDTO.identifiers ?: packageHeaderDTO.ids
+    def id_errors = []
+
+    ids_list?.each { idobj ->
+      def id_def = [:]
+      def ns_obj = null
+
+      if (idobj instanceof Map) {
+        def id_ns = idobj.type ?: (idobj.namespace ?: null)
+
+        id_def.value = idobj.value
+
+        if (id_ns instanceof String) {
+          log.debug("Default namespace handling for ${id_ns}..")
+          ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
+        }
+        else if (id_ns) {
+          log.debug("Handling namespace def ${id_ns}")
+          ns_obj = IdentifierNamespace.get(id_ns)
+        }
+
+        if (!ns_obj) {
+          id_errors.add([message: message(code: 'default.not.found.message', args: ["Namespace", id_ns], default:"unable to lookup identifier namespace ${id_ns}!")])
+        }
+        else {
+          id_def.type = ns_obj.value
+        }
+      }
+      else if (idobj instanceof Integer){
+        Identifier the_id = Identifier.get(id_inc)
+
+        if (!the_id) {
+          id_errors.add([message:"Unable to lookup identifier object by ID!", baddata: idobj])
+          result.valid = false
+        }
+      }
+      else {
+        log.warn("Missing information in id object ${idobj}")
+        id_errors.add([message:"Missing information for identifier object!", baddata: idobj])
+        result.valid = false
+      }
+
+      if (ns_obj && id_def.size() > 0) {
+        if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
+          if ( ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern) ) {
+            log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
+            id_errors.add([message:"Validation for identifier ${id_def.type}:${id_def.value} failed!", baddata: idobj])
+            result.valid = false
+          }
+          else {
+            log.debug("New identifier ..")
+          }
+        }
+        else {
+          log.debug("Found existing identifier ..")
+        }
+      }
+    }
+
+    if (id_errors.size() > 0) {
+      result.errors.ids = id_errors
+    }
+
+    if (packageHeaderDTO.provider && packageHeaderDTO.provider instanceof Integer) {
+      def prov = Org.get(packageHeaderDTO.provider)
+
+      if (!prov) {
+        result.errors.provider = [[message: "Unable to find provider via ID", baddata: packageHeaderDTO.provider]]
+        result.valid =false
+      }
+    }
+
+    if (packageHeaderDTO.nominalPlatform && packageHeaderDTO.nominalPlatform instanceof Integer) {
+      def prov = Platform.get(packageHeaderDTO.nominalPlatform)
+
+      if (!prov) {
+        result.errors.nominalPlatform = [[message: "Unable to find platform via ID", baddata: packageHeaderDTO.nominalPlatform]]
+        result.valid = false
+      }
+    }
+
+    result
   }
 
   /**
@@ -805,7 +890,7 @@ select tipp.id,
           np = Platform.findByName(platformDTO.name)
         }
 
-        if (!np) {
+        if (!np && platformDTO.name) {
           np = Platform.upsertDTO(platformDTO)
         }
 
@@ -880,9 +965,20 @@ select tipp.id,
 
     // Source
 
-    if (packageHeaderDTO.source?.url) {
-      def src = Source.findByUrl(packageHeaderDTO.source.url)
-      if (src) {
+    if (packageHeaderDTO.source) {
+      def src = null
+
+      if (packageHeaderDTO.source instanceof Integer) {
+        src = Source.get(packageHeaderDTO.source)
+      }
+      else if (packageHeaderDTO.source.id) {
+        src = Source.get(packageHeaderDTO.source.id)
+      }
+      else if (packageHeaderDTO.source.url) {
+        src = Source.findByUrl(packageHeaderDTO.source.url)
+      }
+
+      if (src && result.source != src) {
         result.source = src
         changed = true
       }
@@ -899,10 +995,27 @@ select tipp.id,
     // CuratoryGroups
 
     packageHeaderDTO.curatoryGroups?.each {
+      def cg = null
+      def cgname = null
 
-      String normname = CuratoryGroup.generateNormname(it)
+      if (it instanceof Integer) {
+        cg = CuratoryGroup.get(it)
+      }
+      else if (it instanceof String) {
+        String normname = CuratoryGroup.generateNormname(it)
+        cgname = it
 
-      def cg = CuratoryGroup.findByNormname(normname)
+        cg = CuratoryGroup.findByNormname(normname)
+      }
+      else if (it.id){
+        cg = CuratoryGroup.get(it.id)
+      }
+      else if (it.name) {
+        String normname = CuratoryGroup.generateNormname(it.name)
+        cgname = it.name
+
+        cg = CuratoryGroup.findByNormname(normname)
+      }
 
       if (cg) {
         if (result.curatoryGroups.find { it.name == cg.name }) {
@@ -911,14 +1024,14 @@ select tipp.id,
           result.curatoryGroups.add(cg)
           changed = true;
         }
-      } else {
-        def new_cg = new CuratoryGroup(name: it).save(flush: true, failOnError: true)
+      } else if (cgname) {
+        def new_cg = new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
         result.curatoryGroups.add(new_cg)
         changed = true
       }
     }
 
-    result.save(flush: true, failOnError: true);
+    result.save(flush:true)
 
 
     result

@@ -44,6 +44,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
       accept('application/json')
     }
     then:
+//    resp.status == 200 // WRONG!
     resp.status == 401 // Unauthorized
   }
 
@@ -101,6 +102,26 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     resp.json.value == "6644-2231"
   }
 
+  void "test identifier namespace validation"() {
+    given:
+    def urlPath = getUrlPath()
+    def obj_map = [
+      value: "6644-223",
+      namespace: ns_eissn.id
+    ]
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("${urlPath}/rest/identifiers") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(obj_map as JSON)
+    }
+    then:
+    resp.status == 400 // ERROR
+    resp.json.message == "Identifier has failed validation!"
+  }
+
   void "test identifier create with connected component"() {
     given:
     def urlPath = getUrlPath()
@@ -119,7 +140,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
       body(obj_map as JSON)
     }
     then:
-    resp.status == 200 // OK
+    resp.status == 201 // OK
     resp.json.value == "6644-2284"
     resp.json._embedded?.identifiedComponents.size() == 1
     resp.json._embedded?.identifiedComponents[0].id == test_journal.id

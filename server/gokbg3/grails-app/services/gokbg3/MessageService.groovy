@@ -12,9 +12,12 @@ class MessageService {
     def result = [:]
 
     errors.allErrors.each { eo ->
+      log.debug("Processing ${eo} (${eo.class.name})")
       def field = 'object'
       def resolvedArgs = []
       def errorMessage = null
+      
+      locale = locale ?: new Locale('en')
 
       if ( eo instanceof FieldError ){
         if (!result[eo.field]) {

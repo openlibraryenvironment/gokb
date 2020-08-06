@@ -335,6 +335,12 @@ class AjaxSupportController {
                     new_obj[p.name] = dateObj
                     log.debug("Set simple prop ${p.name} = ${params[p.name]} (as date ${dateObj}))");
                     break;
+
+                  case Float.class:
+                    log.debug("Set simple prop ${p.name} = ${params[p.name]} (as float=${Float.valueOf(params[p.name])})");
+                    new_obj[p.name] = Float.valueOf(params[p.name]);
+                    break;
+
                   default:
                     log.debug("Default for type ${p.type}")
                     log.debug("Set simple prop ${p.name} = ${params[p.name]}");
@@ -575,7 +581,7 @@ class AjaxSupportController {
         log.debug("remove successful?: ${remove_result}")
         log.debug("child ${item_to_remove} removed: "+ contextObj[params.__property]);
 
-        if ( params.propagate == "true") {
+        if ( params.propagate == "true" && KBComponent.isAssignableFrom(contextObj.class)) {
           contextObj.lastSeen = new Date().getTime()
         }
 
@@ -796,11 +802,11 @@ class AjaxSupportController {
       }
     }
     else if (target_object){
-      errors['global'] = ["Object ${target_object} is not editable.".toString()]
+      errors['global'] = [[message:"Object ${target_object} is not editable.".toString()]]
       log.debug("Object ${target_object} is not editable.");
     }
     else {
-      errors['global'] = ["Not able to resolve object from ${params.pk}.".toString()]
+      errors['global'] = [[message:"Not able to resolve object from ${params.pk}.".toString()]]
       log.debug("Object ${target_object} could not be resolved.");
     }
 
@@ -811,18 +817,18 @@ class AjaxSupportController {
           resp = params.value
         }
         else {
-          def error_message = errors[params.name] ? errors[params.name][0].toString() : errors['global'][0]
-          log.debug("Error msg: ${error_message}")
+          def error_obj = errors[params.name] ? errors[params.name][0] : errors['global'][0]
+          log.debug("Error msg: ${error_obj} (${error_obj.message})")
 
-          resp = error_message
+          resp = error_obj.message
           response.setContentType('text/plain;charset=UTF-8')
           response.status = 400
           render resp
         }
       }
       json {
-        if (errors) {
-          result.errors = errors[params.name] ?: errors['global']
+        if (errors.size() > 0) {
+          result.errors = errors
           result.result = 'ERROR'
         }
 
@@ -954,14 +960,19 @@ class AjaxSupportController {
 
               log.debug("Got ID: ${identifier_instance}")
               // Link if not existing
-              owner.ids.add(identifier_instance)
-              owner.save()
+              if (!owner.ids.contains(identifier_instance)) {
+                owner.ids.add(identifier_instance)
+                owner.save()
+              }
+              else {
+                flash.error = message(code:'identifier.link.unique')
+              }
             }
         }
         catch (grails.validation.ValidationException ve) {
 
           log.debug("${ve}")
-          flash.error = message(code:'identifier.value.IllegalIDForm')
+          flash.error = message(code:'identifier.value.illegalIdForm')
         }
       }else{
         flash.error = message(code:'identifier.create.error')
@@ -1357,6 +1368,40 @@ class AjaxSupportController {
       result.result = 'ERROR'
       flash.error = message(code:'combo.fromComponent.denied.label', args:[fcomp])
       log.debug("Not deleting combo.. no edit permissions on fromComponent!")
+    }
+
+    withFormat {
+      html {
+        def redirect_to = request.getHeader('referer')
+
+        if ( params.redirect ) {
+          redirect_to = params.redirect
+        }
+        else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+          redirect_to = "${redirect_to}#${params.fragment}"
+        }
+
+        redirect(url: redirect_to);
+      }
+      json {
+        render result as JSON
+      }
+    }
+  }
+
+  /**
+   *  deletePrice : Used to delete a ComponentPrice from a TitleInstance.
+   * @param id : The id of the ComponentPrice
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def deletePrice() {
+    def result = ['result': "OK", 'params': params]
+    ComponentPrice c = ComponentPrice.get(params.id);
+    if (c) {
+      log.debug("Delete Price..")
+      c.delete(flush: true);
     }
 
     withFormat {

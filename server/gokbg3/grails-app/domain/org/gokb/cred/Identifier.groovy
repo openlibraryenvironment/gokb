@@ -2,6 +2,7 @@ package org.gokb.cred
 import groovy.transform.Synchronized
 import java.util.regex.Pattern
 import groovy.util.logging.*
+import grails.validation.ValidationException
 
 
 @Slf4j
@@ -41,13 +42,6 @@ class Identifier extends KBComponent {
     ]
   ]
 
-  private static nameSpaceRules = [
-    "issn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
-    "issnl" : "^\\d{4}\\-\\d{3}[\\dX]\$",
-    "eissn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
-    "zdb" : "^\\d+\\-[\\dxX]\$"
-  ]
-
   static constraints = {
     namespace (nullable:false, blank:false)
     value (validator: { val, obj ->
@@ -69,8 +63,8 @@ class Identifier extends KBComponent {
         return ['notUnique']
       }
 
-      if ( (nameSpaceRules[obj.namespace.value] && !(val ==~ nameSpaceRules[obj.namespace.value])) || (pattern && !(val ==~ pattern)) )  {
-        return ['illegalIdForm.' + obj.namespace.value ]
+      if ( pattern && !(val ==~ pattern) )  {
+        return ['illegalIdForm']
       }
     })
   }
@@ -155,16 +149,23 @@ class Identifier extends KBComponent {
             final_val = final_val.replaceAll("x","X")
           }
           log.debug("Creating new Identifier ${namespace}:${value} ..")
+
           try {
             identifier = new Identifier(namespace:namespace, value:final_val, normname: norm_id).save(flush:true, failOnError:true)
           }
-          catch (Exception e) {
-            def dupe = Identifier.executeQuery("from Identifier where normname = ? and namespace = ?",[norm_id, namespace])
+          catch (ValidationException ve) {
+            log.debug("Caught validation exception: ${ve.message}")
+            if (ve.message.contains('already exists')) {
+              def dupe = Identifier.executeQuery("from Identifier where normname = ? and namespace = ?",[norm_id, namespace])
 
-            if (dupe.size() == 1) {
-              identifier = dupe[0]
+              if (dupe.size() == 1) {
+                identifier = dupe[0]
+              }
+              log.error("Thread synchronization failed for ID ${dupe} ...")
             }
-            log.error("Thread synchronization failed for ID ${dupe} ...")
+            else {
+              throw new ValidationException(ve.message, ve.errors)
+            }
           }
         }
       }

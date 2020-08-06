@@ -98,20 +98,17 @@ where cp.owner = :c
 
     // The update closure.
     def doUpdate = { obj, Date stamp ->
-
       try {
-
         def saveParams = [failOnError:true]
 
         obj.lastSeen = stamp.getTime()
         obj.save(saveParams)
 
       } catch (Throwable t) {
-
-       // Suppress but log.
-      log.error("${t}")
+        // Suppress but log.
+        log.error("${t}")
+      }
     }
-  }
 
     if (hasProperty("touchOnUpdate")) {
 
@@ -1415,7 +1412,9 @@ where cp.owner = :c
       ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
     }
 //     ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this]);
-
+    if (this?.class == CuratoryGroup) {
+      AllocatedReviewGroup.removeAll(this)
+    }
     ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview=:component",[component:this]);
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component",[component:this]);
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component",[component:this]);
@@ -1552,6 +1551,15 @@ where cp.owner = :c
               builder.'name' (responsibleParty.name)
             }
           }
+        }
+      }
+    }
+    // Prices
+    ComponentPrice[] cps = ComponentPrice.findAllByOwner(this)
+    if (cps) {
+      builder.'prices' {
+        cps.each { cp ->
+          builder.'price'(type:cp.priceType, amount:cp.price, currency:cp.currency, startDate: cp.startDate, endDate: cp.endDate)
         }
       }
     }
