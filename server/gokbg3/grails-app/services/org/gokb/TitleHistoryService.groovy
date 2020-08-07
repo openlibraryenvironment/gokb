@@ -1,6 +1,6 @@
 package org.gokb
 
-
+import com.k_int.ClassUtils
 import grails.gorm.transactions.Transactional
 import org.gokb.FTControl
 import org.hibernate.ScrollMode
@@ -8,6 +8,7 @@ import java.nio.charset.Charset
 import java.util.GregorianCalendar
 import org.gokb.cred.ComponentHistoryEventParticipant
 import org.gokb.cred.ComponentHistoryEvent
+import org.gokb.cred.TitleInstance
 
 
 @Transactional
@@ -67,10 +68,13 @@ class TitleHistoryService {
   def addNewEvent(ti, reqBody) {
     Set inlist = []
     Set outlist = []
+    def errors = [:]
+    def result = [result:'OK', new_events: []]
     def date = GOKbTextUtils.completeDateString(reqBody.date)
 
     if (!date) {
       errors.date << [message:"Unable to parse event date ${reqBody.date}", code: 404, baddata: reqBody.date]
+      result.result = 'ERROR'
     }
 
     if ( reqBody.from instanceof Collection ) {
@@ -87,6 +91,7 @@ class TitleHistoryService {
             }
 
             errors.from << [message:"Unable to lookup history participant", code: 404, baddata: hep]
+            result.result = 'ERROR'
           }
         }
       }
@@ -106,6 +111,7 @@ class TitleHistoryService {
             }
 
             errors.to << [message:"Unable to lookup history participant", code: 404, baddata: hep]
+            result.result = 'ERROR'
           }
           else {
             if ( !errors.to ) {
@@ -132,9 +138,9 @@ class TitleHistoryService {
 
           def tip = new ComponentHistoryEventParticipant(event:he, participant:ti, participantRole:'out');
           tip.save(flush:true, failOnError:true);
+
+          result.new_events.add(he.id)
         }
-
-
       } 
       else if ( outlist?.size() > 0 && inlist.size() == 0 ) {
         outlist.each {
@@ -149,13 +155,20 @@ class TitleHistoryService {
 
           def tip = new ComponentHistoryEventParticipant(event:he, participant:ti, participantRole:'in');
           tip.save(flush:true, failOnError:true);
+
+          result.new_events.add(he.id)
         }
       } 
       else {
         errors.general = [[message: "Request contains multiple events, but must only contain one (from OR to)!", code:400, baddata: reqBody]]
       }
     }
-    errors
+
+    if (errors.size() > 0) {
+      result.errors = errors
+      result.result = 'ERROR'
+    }
+    result
   }
 
   def deleteEvent(event) {
