@@ -158,7 +158,7 @@ class TitleHistoryService {
 
           result.new_events.add(he.id)
         }
-      } 
+      }
       else {
         errors.general = [[message: "Request contains multiple events, but must only contain one (from OR to)!", code:400, baddata: reqBody]]
       }

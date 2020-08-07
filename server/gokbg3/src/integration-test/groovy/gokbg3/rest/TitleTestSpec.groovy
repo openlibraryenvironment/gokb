@@ -33,6 +33,7 @@ class TitleTestSpec extends AbstractAuthSpec {
     def new_org = Org.findByName('TestOrg') ?: new Org(name: 'TestOrg').save(flush:true)
     def test_ti = JournalInstance.findByName("TestJournal") ?: new JournalInstance(name: "TestJournal").save(flush:true)
     def test_prev = JournalInstance.findByName("TestPrevJournal") ?: new JournalInstance(name: "TestPrevJournal").save(flush:true)
+    def test_next = JournalInstance.findByName("TestNextJournal") ?: new JournalInstance(name: "TestNextJournal").save(flush:true)
   }
 
   void "test /rest/titles without token"() {
@@ -122,5 +123,34 @@ class TitleTestSpec extends AbstractAuthSpec {
     resp.status == 200 // OK
     expect:
     resp.json.size() == 1
+  }
+
+  void "test update title history events"() {
+    def urlPath = getUrlPath()
+    def id = JournalInstance.findByName("TestJournal").id
+    def prev_id = JournalInstance.findByName("TestPrevJournal").id
+    def next_id = JournalInstance.findByName("TestNextJournal").id
+
+    when:
+    def json_record = [
+      [
+        date: "1990-01-01",
+        from: [prev_id]
+      ],
+      [
+        date: "2010-01-01",
+        to: [next_id]
+      ]
+    ]
+
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.put("${urlPath}/rest/titles/$id/history") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(json_record as JSON)
+    }
+    then:
+    // resp.status == 200 // OK
+    resp.json?.size() == 2
   }
 }

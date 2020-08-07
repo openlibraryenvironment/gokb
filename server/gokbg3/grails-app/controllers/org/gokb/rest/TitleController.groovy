@@ -356,10 +356,6 @@ class TitleController {
     def errors = [:]
     def remove = (request.method == 'PUT')
     def reqBody = request.JSON
-    def dupe_hql = '''from ComponentHistoryEvent as che where exists
-    (select pf.id from ComponentHistoryEventParticipant as pf where pf.participant = :from and pf.participantRole = 'in')
-    AND exists (select pt.id from ComponentHistoryEventParticipant as pt where pt.participant = :to and pt.participantRole = 'out)
-    '''
     def ti = null
 
     if (params.id) {
@@ -532,16 +528,17 @@ class TitleController {
       response.status = 404
     }
 
-    result
+    render result as JSON
   }
 
   @Transactional
   private ensureSingleParticipant(ti, type, participant, date) {
     def result = [:]
-    def dupe_hql = '''from ComponentHistoryEvent as che where exists
-    (select pf.id from ComponentHistoryEventParticipant as pf where pf.participant = :from and pf.participantRole = 'in')
-    AND exists (select pt.id from ComponentHistoryEventParticipant as pt where pt.participant = :to and pt.participantRole = 'out)
-    '''
+    def dupe_hql = '''select che from ComponentHistoryEvent as che where exists 
+    (select pf.id from ComponentHistoryEventParticipant as pf where pf.participant = :from and pf.participantRole = 'in') 
+    AND exists (select pt.id from ComponentHistoryEventParticipant as pt where pt.participant = :to and pt.participantRole = 'out')'''
+
+    def pars = [:]
 
     if (type == 'from') {
       pars = [from: participant, to: ti]
@@ -552,23 +549,21 @@ class TitleController {
     def dupe = ComponentHistoryEvent.executeQuery(dupe_hql, pars)
 
     if (!dupe) {
-      if (errors.size() == 0) {
-        def req = [date: event.date]
+      def req = [date: date]
 
-        if (type == 'from') {
-          req.from = participant.id
-        } else {
-          req.to = participant.id
-        }
+      if (type == 'from') {
+        req.from = [participant.id]
+      } else {
+        req.to = [participant.id]
+      }
 
-        def add_result = titleHistoryService.addNewEvent(ti, req)
+      def add_result = titleHistoryService.addNewEvent(ti, req)
 
-        if (add_result.errors) {
-          result.errors = add_result.errors
-        }
-        else {
-          result.id = add_result.new_events[0]
-        }
+      if (add_result.errors) {
+        result.errors = add_result.errors
+      }
+      else {
+        result.id = add_result.new_events[0]
       }
     }
     else {
