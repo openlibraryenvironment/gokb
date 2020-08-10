@@ -352,6 +352,7 @@ class TitleController {
   @Transactional
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   def updateHistory() {
+    log.debug("Updating history ..")
     def result = [:]
     def errors = [:]
     def remove = (request.method == 'PUT')
@@ -371,8 +372,13 @@ class TitleController {
       def sdf = new SimpleDateFormat("yyyy-MM-dd")
       def events = []
 
+      log.debug("Current history: ${current_history}")
+
       if (reqBody instanceof List) {
+        log.debug("Got list of events")
+
         reqBody.each { event ->
+          log.debug("Event ${event}")
           def parts = [from: [], to: []]
 
           if (event.id) {
@@ -404,6 +410,7 @@ class TitleController {
                 events.add(he_obj.id)
               }
               else {
+                log.debug("Unable to lookup event by id!")
                 if (!errors.id)
                   errors.id = []
 
@@ -423,6 +430,7 @@ class TitleController {
                     errors << addResult.errors
                   }
                   else {
+                    log.debug("New event ${addResult}")
                     events.add(addResult.id)
                   }
                 }
@@ -446,6 +454,7 @@ class TitleController {
                     errors << addResult.errors
                   }
                   else {
+                    log.debug("New event ${addResult}")
                     events.add(addResult.id)
                   }
                 }
@@ -468,6 +477,7 @@ class TitleController {
                   errors << addResult.errors
                 }
                 else {
+                  log.debug("New event ${addResult}")
                   events.add(addResult.id)
                 }
               }
@@ -487,6 +497,7 @@ class TitleController {
                   errors << addResult.errors
                 }
                 else {
+                  log.debug("New event ${addResult}")
                   events.add(addResult.id)
                 }
               }
@@ -509,7 +520,8 @@ class TitleController {
         else if (remove) {
           current_history.each { ce ->
             if (!events.contains(ce.id)) {
-              titleHistoryService.deleteEvent(ComponentHistoryEvent.get(ce.id))
+              def event = ComponentHistoryEvent.get(ce.id)
+              event.delete(flush:true, failOnError:true)
             }
           }
         }
@@ -534,9 +546,9 @@ class TitleController {
   @Transactional
   private ensureSingleParticipant(ti, type, participant, date) {
     def result = [:]
-    def dupe_hql = '''select che from ComponentHistoryEvent as che where exists 
-    (select pf.id from ComponentHistoryEventParticipant as pf where pf.participant = :from and pf.participantRole = 'in') 
-    AND exists (select pt.id from ComponentHistoryEventParticipant as pt where pt.participant = :to and pt.participantRole = 'out')'''
+    def dupe_hql = '''select che from ComponentHistoryEvent as che where exists
+    (select pf.id from ComponentHistoryEventParticipant as pf where pf.participant = :from and pf.participantRole = 'in' and pf.event = che)
+    AND exists (select pt.id from ComponentHistoryEventParticipant as pt where pt.participant = :to and pt.participantRole = 'out' and pt.event = che)'''
 
     def pars = [:]
 
@@ -567,7 +579,12 @@ class TitleController {
       }
     }
     else {
-      result.id = dupe.id
+      if (dupe.size() == 1) {
+        result.id = dupe[0].id
+      }
+      else {
+        log.error("Got multiple history events between two titles ${dupe}!")
+      }
     }
 
     result
@@ -579,7 +596,10 @@ class TitleController {
     def event = ComponentHistoryEvent.get(params.id)
 
     if (event) {
-      titleHistoryService.deleteEvent(event)
+      event.delete(flush:true, failOnError:true)
+    }
+    else {
+      response.status = 404
     }
   }
 

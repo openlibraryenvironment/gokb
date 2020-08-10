@@ -170,9 +170,4 @@ class TitleHistoryService {
     }
     result
   }
-
-  def deleteEvent(event) {
-    def deleted_parts = ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant where event = :event", [event:event])
-    event.delete(flush:true, failOnError:true)
-  }
 }
