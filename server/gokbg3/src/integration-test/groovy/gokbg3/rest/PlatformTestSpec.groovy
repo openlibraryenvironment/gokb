@@ -26,13 +26,13 @@ class PlatformTestSpec extends AbstractAuthSpec {
 
   def cleanup() {
     if (Org.findByName("TestPltProvider")) {
-      Org.findByName("TestPltProvider")?.expunge()
+      Org.findByName("TestPltProvider")?.refresh().expunge()
     }
     if (Org.findByName("TestPltProviderUpd")) {
-      Org.findByName("TestPltProviderUpd")?.expunge()
+      Org.findByName("TestPltProviderUpd")?.refresh().expunge()
     }
     if (Platform.findByName("TestPltUpd")) {
-      Platform.findByName("TestPltUpd")?.expunge()
+      Platform.findByName("TestPltUpd")?.refresh().expunge()
     }
   }
 

@@ -32,6 +32,9 @@ class TitleTestSpec extends AbstractAuthSpec {
     def new_id = Identifier.findByValue('2345-2334') ?: new Identifier(value: '2345-2334', namespace: ns_eissn).save(flush:true)
     def new_org = Org.findByName('TestOrg') ?: new Org(name: 'TestOrg').save(flush:true)
     def test_ti = JournalInstance.findByName("TestJournal") ?: new JournalInstance(name: "TestJournal").save(flush:true)
+    def test_prev = JournalInstance.findByName("TestPrevJournal") ?: new JournalInstance(name: "TestPrevJournal").save(flush:true)
+    def test_next = JournalInstance.findByName("TestNextJournal") ?: new JournalInstance(name: "TestNextJournal").save(flush:true)
+    def test_upd_history = JournalInstance.findByName("TestUpdateJournalHistory") ?: new JournalInstance(name: "TestUpdateJournalHistory").save(flush:true)
   }
 
   void "test /rest/titles without token"() {
@@ -98,5 +101,98 @@ class TitleTestSpec extends AbstractAuthSpec {
     resp.status == 200 // OK
     expect:
     resp.json.data?.size() == 1
+  }
+
+  void "test add title history event"() {
+    def urlPath = getUrlPath()
+    def id = JournalInstance.findByName("TestJournal").id
+    def prev_id = JournalInstance.findByName("TestPrevJournal").id
+
+    when:
+    def json_record = [
+      date: "2010-01-01",
+      from: [prev_id]
+    ]
+
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("${urlPath}/rest/titles/$id/history") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(json_record as JSON)
+    }
+    then:
+    resp.status == 200 // OK
+    expect:
+    resp.json.size() == 1
+  }
+
+  void "test update title history events"() {
+    def urlPath = getUrlPath()
+    def id = JournalInstance.findByName("TestUpdateJournalHistory").id
+    def prev_id = JournalInstance.findByName("TestPrevJournal").id
+    def next_id = JournalInstance.findByName("TestNextJournal").id
+
+    when:
+    def json_record = [
+      [
+        date: "1990-01-01",
+        from: [prev_id]
+      ],
+      [
+        date: "2010-01-01",
+        to: [next_id]
+      ]
+    ]
+
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.put("${urlPath}/rest/titles/$id/history") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(json_record as JSON)
+    }
+    then:
+    // resp.status == 200 // OK
+    resp.json?.data?.size() == 2
+  }
+
+  void "test get title history event"() {
+    given:
+    def urlPath = getUrlPath()
+    def id = JournalInstance.findByName("TestJournal").id
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.get("${urlPath}/rest/titles/$id/history") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
+    then:
+    resp.status == 200 // OK
+    expect:
+    resp.json?.data?.size() == 1
+  }
+
+  void "test remove title history event by update"() {
+    def urlPath = getUrlPath()
+    def id = JournalInstance.findByName("TestUpdateJournalHistory").id
+    def prev_id = JournalInstance.findByName("TestPrevJournal").id
+    def next_id = JournalInstance.findByName("TestNextJournal").id
+
+    when:
+    def json_record = [
+      [
+        date: "1990-01-01",
+        from: [prev_id]
+      ]
+    ]
+
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.put("${urlPath}/rest/titles/$id/history") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(json_record as JSON)
+    }
+    then:
+    // resp.status == 200 // OK
+    resp.json?.data?.size() == 1
   }
 }

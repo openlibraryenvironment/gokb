@@ -110,12 +110,18 @@ class UrlMappings {
 
       post "/titles/$id/retire"(controller: 'title', namespace: 'rest', action:'retire')
       get "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'getHistory')
+      delete "/titles/$tid/history/$id" (controller: 'title', namespace: 'rest', action:'deleteHistoryEvent')
+      post "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'addHistory')
+      put "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'updateHistory')
+      patch "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'updateHistory')
       "/titles/$id/$action"(controller: 'title', namespace:'rest')
       get "/titles/$id"(controller: 'title', namespace: 'rest', action:'show')
       put "/titles/$id"(controller: 'title', namespace: 'rest', action:'update')
       delete "/titles/$id"(controller: 'title', namespace: 'rest', action:'delete')
       post "/titles"(controller: 'title', namespace: 'rest', action:'save')
       get "/titles"(controller: 'title', namespace:'rest', action:'index')
+
+      get "title-types" (controller: 'title', namespace:'rest', action:'getTypes')
 
       post "/journals"(controller: 'title', namespace: 'rest', action:'save') { type = 'journal' }
       get "/journals"(controller: 'title', namespace: 'rest', action:'index') { type = 'journal' }
