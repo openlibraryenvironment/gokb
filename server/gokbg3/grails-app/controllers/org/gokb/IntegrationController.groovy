@@ -1005,7 +1005,7 @@ class IntegrationController {
                             title_changed |= ClassUtils.setStringIfDifferent(ti, 'subjectArea', titleObj.subjectArea)
 
                             if ( titleObj.historyEvents?.size() > 0 ) {
-                              def he_result = processHistoryEvents(ti, titleObj, title_class_name, user)
+                              def he_result = processHistoryEvents(ti, titleObj, title_class_name, user, fullsync)
 
                               if (he_result.errors) {
                                 result.errors = he_result.errors
