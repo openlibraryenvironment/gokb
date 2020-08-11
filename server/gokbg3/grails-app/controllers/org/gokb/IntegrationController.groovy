@@ -865,30 +865,56 @@ class IntegrationController {
     component.ensureVariantName(variant_name)
   }
 
-  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferencePackage() {
     def result = [ 'result' : 'OK' ]
     def async = params.async ? params.boolean('async') : false
     def update = params.addOnly ? params.boolean('addOnly') : false
     def rjson = request.JSON
+    UpdateToken updateToken = null
+    User request_user = null
     def fullsync = false
-    User request_user = springSecurityService.currentUser
 
-    if (params.fullsync == "true" && request_user.adminStatus) {
+    if (springSecurityService.isLoggedIn()) {
+      request_user = springSecurityService.currentUser
+    }
+    else if (params.updateToken?.trim() || rjson.updateToken?.trim()) {
+      def token = params.updateToken ?: rjson.updateToken
+      updateToken = UpdateToken.findByValue(token)
+
+      if (updateToken) {
+        request_user = updateToken.updateUser
+
+        if (rjson.packageHeader) {
+          rjson.packageHeader.uuid = updateToken.pkg.uuid
+        }
+      }
+      else {
+        log.error("Unable to reference update token!")
+        result.message = "Unable to reference update token!"
+        response.setStatus(400)
+        result.result = "ERROR"
+      }
+    }
+    else {
+      response.setStatus(401)
+    }
+
+    if (params.fullsync == "true" && request_user?.adminStatus) {
       fullsync = true
     }
 
-    if ( rjson?.packageHeader?.name ) {
+    if ( rjson?.packageHeader?.name && request_user ) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
         def json = rjson
         def job_result = [:]
         def ctr = 0
-        def errors = []
+        def errors = [global:[], tipps:[]]
 
         job_result.results = []
 
         Package.withNewSession {
           def user = User.get(request_user.id)
+          springSecurityService.reauthenticate(request_user.username)
 
           def pkg_validation = Package.validateDTO(json.packageHeader)
 
@@ -925,41 +951,103 @@ class IntegrationController {
 
                     if ( title_validation && !title_validation.valid ) {
                       log.warn("Not valid after title validation ${tipp.title}");
-                      errors.add(['code': 400, 'message': "Title information for ${tipp.title.name} is not valid: " + "${title_validation.errors}", baddata: tipp.title, idx: idx, errors:title_validation.errors])
+                      errors.tipps.add(['code': 400, 'message': "Title information for ${tipp.title.name} is not valid: " + "${title_validation.errors}", baddata: tipp.title, idx: idx, errors:title_validation.errors])
                     }
                     else {
                       def valid_ti = true
 
                       TitleInstance.withNewSession {
                         def ti = null
+                        def titleObj = tipp.title
+                        def title_changed = false
+                        def title_class_name = determineTitleClass(titleObj)
 
                         try {
-                          ti = TitleInstance.upsertDTO(titleLookupService, tipp.title, user, fullsync);
+                          ti = titleLookupService.findOrCreate(
+                            titleObj.name,
+                            titleObj.publisher,
+                            titleObj.identifiers,
+                            user,
+                            null,
+                            title_class_name,
+                            titleObj.uuid
+                          )
 
-                          if ( ti?.id && !ti.hasErrors() && ( tipp.title.internalId == null ) ) {
+                          if ( ti?.id && !ti.hasErrors() ) {
+                            if ( titleObj.imprint ) {
+                              if ( title.imprint?.name == titleObj.imprint ) {
+                                // Imprint already set
+                              }
+                              else {
+                                def imprint = Imprint.findByName(titleObj.imprint) ?: new Imprint(name:titleObj.imprint).save(flush:true, failOnError:true);
+                                title.imprint = imprint;
+                                title_changed = true
+                              }
+                            }
 
-                            componentUpdateService.ensureCoreData(ti, tipp.title, fullsync)
+                            // Add the core data.
+                            componentUpdateService.ensureCoreData(ti, titleObj, fullsync)
+
+                            title_changed |= componentUpdateService.setAllRefdata ([
+                                  'OAStatus', 'medium',
+                                  'pureOA', 'continuingSeries',
+                                  'reasonRetired'
+                            ], titleObj, ti)
+
+                            def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
+                            def pubTo = GOKbTextUtils.completeDateString(titleObj.publishedTo, false)
+
+                            log.debug("Completed date publishedFrom ${titleObj.publishedFrom} -> ${pubFrom}")
+
+                            title_changed |= ClassUtils.setDateIfPresent(pubFrom, ti, 'publishedFrom')
+                            title_changed |= ClassUtils.setDateIfPresent(pubTo, ti, 'publishedTo')
+                            title_changed |= ClassUtils.setStringIfDifferent(ti, 'series', titleObj.series)
+                            title_changed |= ClassUtils.setStringIfDifferent(ti, 'subjectArea', titleObj.subjectArea)
+
+                            if ( titleObj.historyEvents?.size() > 0 ) {
+                              def he_result = processHistoryEvents(ti, titleObj, title_class_name, user)
+
+                              if (he_result.errors) {
+                                result.errors = he_result.errors
+                              }
+                            }
+
+                            if( title_class_name == 'org.gokb.cred.BookInstance' ){
+
+                              log.debug("Adding Monograph fields for ${title.class.name}: ${title}")
+                              def mg_change = addMonographFields(ti, titleObj)
+
+                              // TODO: Here we will have to add authors and editors, like addPerson() in TSVIngestionService
+                              if(mg_change){
+                                title_changed = true
+                              }
+                            }
+
+                            addPublisherHistory(ti, titleObj.publisher_history)
                             tipp.title.internalId = ti.id
                           } else {
-                            if (ti != null)
+                            def errorObj = ['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'baddata': tipp.title]
+                            if (ti != null) {
+                              errorObj.errors = messageService.processValidationErrors(ti.errors)
+                              errors.tipps.add(errorObj)
                               ti.discard()
+                            }
                             valid_ti = false
                             valid = false
-                            errors.add(['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'baddata': tipp])
                           }
                         }
                         catch (grails.validation.ValidationException ve) {
                           log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
                           valid = false
-                          errors.add(['code': 400, 'message': "Title validation failed for title ${tipp?.title?.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ve.errors)])
+                          errors.tipps.add(['code': 400, 'message': "Title validation failed for title ${tipp?.title?.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ve.errors)])
                         }
                       }
 
                       if ( valid_ti && tipp.title.internalId == null ) {
                         log.error("Failed to locate a title for ${tipp?.title} when attempting to create TIPP");
                         valid = false
-                        errors.add(['code': 400, idx: idx, 'message': "Title ${tipp?.title?.name} could not be located or created!"])
+                        errors.tipps.add(['code': 400, idx: idx, 'message': "Title ${tipp?.title?.name} could not be located or created!"])
                       }
                     }
 
@@ -968,7 +1056,7 @@ class IntegrationController {
 
                     if ( !valid_plt.valid ) {
                       log.warn("Not valid after platform validation ${tipp_plt_dto}");
-                      errors.add(['code': 400, idx: idx, 'message': "Platform ${tipp_plt_dto?.name} is not valid!", 'baddata': tipp_plt_dto, errors: valid_plt.errors])
+                      errors.tipps.add(['code': 400, idx: idx, 'message': "Platform ${tipp_plt_dto?.name} is not valid!", 'baddata': tipp_plt_dto, errors: valid_plt.errors])
                     }
 
                     if ( valid ) {
@@ -988,7 +1076,7 @@ class IntegrationController {
                             componentUpdateService.ensureCoreData(pl, tipp_plt_dto, fullsync)
                           }else{
                             log.error("Could not find/create ${tipp_plt_dto}")
-                            errors.add(['code': 400, idx: idx, 'message': "TIPP platform ${tipp_plt_dto.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                            errors.tipps.add(['code': 400, idx: idx, 'message': "TIPP platform ${tipp_plt_dto.name} could not be matched/created! Please check for duplicates in GOKb!"])
                             valid = false
                           }
                         }
@@ -996,7 +1084,7 @@ class IntegrationController {
                           log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
                           valid = false
-                          errors.add(['code': 400, 'message': "Platform validation failed for ${tipp_plt_dto}!", 'baddata': tipp_plt_dto, idx: idx, errors: messageService.processValidationErrors(pl.errors)])
+                          errors.tipps.add(['code': 400, 'message': "Platform validation failed for ${tipp_plt_dto}!", 'baddata': tipp_plt_dto, idx: idx, errors: messageService.processValidationErrors(pl.errors)])
                         }
                       }
 
@@ -1013,7 +1101,7 @@ class IntegrationController {
                     }
                     else {
                       log.warn("No package");
-                      errors.add(['code': 400, idx: idx, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
+                      errors.tipps.add(['code': 400, idx: idx, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
                       valid = false
                     }
 
@@ -1042,7 +1130,7 @@ class IntegrationController {
                     if ( validation_result && !validation_result.valid ) {
                       log.debug("TIPP Validation failed on ${tipp}")
                       valid = false
-                      errors.add(['code': 400, idx: idx, message: "TIPP Validation for title ${tipp.title.name} failed: " + "${validation_result.errors}", baddata: tipp, errors: validation_result.errors])
+                      errors.tipps.add(['code': 400, idx: idx, message: "TIPP Validation for title ${tipp.title.name} failed: " + "${validation_result.errors}", baddata: tipp, errors: validation_result.errors])
                     }
 
                     if (idx % 50 == 0) {
@@ -1089,7 +1177,7 @@ class IntegrationController {
                       log.error("ValidationException attempting to cross reference TIPP",ve);
                       valid = false
                       tipp_fails++
-                      errors.add(['code': 400, idx: idx, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'baddata': tipp, errors: messageService.processValidationErrors(ve.errors)])
+                      errors.tipps.add(['code': 400, idx: idx, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'baddata': tipp, errors: messageService.processValidationErrors(ve.errors)])
 
                       if (upserted_tipp)
                         upserted_tipp.discard()
@@ -1098,7 +1186,7 @@ class IntegrationController {
                       log.error("Exception attempting to cross reference TIPP:", ge)
                       valid = false
                       tipp_fails++
-                      errors.add(['code': 500, idx: idx, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'baddata': tipp])
+                      errors.tipps.add(['code': 500, idx: idx, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'baddata': tipp])
 
                       if (upserted_tipp)
                         upserted_tipp.discard()
@@ -1126,7 +1214,7 @@ class IntegrationController {
                       log.debug("Could not reference TIPP")
                       valid = false
                       tipp_fails++
-                      errors.add(['code': 500, idx: idx, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'baddata': tipp])
+                      errors.tipps.add(['code': 500, idx: idx, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'baddata': tipp])
                     }
 
                     if (idx % 50 == 0) {
@@ -1194,7 +1282,7 @@ class IntegrationController {
                 }
               }else{
                 job_result.result = 'ERROR'
-                errors.add(['code': 400, 'message': "Package could not be matched/created!"])
+                errors.global.add(['code': 400, 'message': "Package could not be matched/created!"])
               }
             }
             catch (Exception e) {
@@ -1202,21 +1290,24 @@ class IntegrationController {
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
               job_result.code = 500
-              errors.add([code: 500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
+              errors.global.add([code: 500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
             }
             cleanUpGorm()
           }
           else {
             log.debug("Package validation failed!")
             job_result.result = 'ERROR'
-            errors.add([message: "Unable to validate Package info", baddata: json.packageHeader, errors: pkg_validation.errors])
+            errors.global.add([message: message(code:'crossRef.package.error.validation.global'), baddata: json.packageHeader, errors: pkg_validation.errors])
             job_result.message = "Package validation failed!"
           }
         }
 
         job.message(job_result.message.toString())
         job.endTime = new Date()
-        job_result.errors = errors
+
+        if (errors.size() > 0) {
+          job_result.errors = errors
+        }
 
         return job_result
       }
@@ -1233,10 +1324,11 @@ class IntegrationController {
         result.job_id = background_job.id
       }
     }
-    else {
+    else if (request_user) {
       log.debug("Not ingesting package without name!")
       result.result = "ERROR"
-      result.message = "The provided package has no name!"
+      result.message = message(code:'crossRef.package.error.name')
+      result.errors = [name: [[message: message(code:'crossRef.package.error.name'), baddata: null]]]
       response.setStatus(400)
     }
     cleanUpGorm()
@@ -1484,46 +1576,18 @@ class IntegrationController {
           if ( title_validation && !title_validation.valid ) {
             log.warn("Not valid after title validation ${titleObj}")
             result.result = 'ERROR'
-            result.message = "Title information for ${titleObj.name} is not valid: " + "${title_validation.errors}"
+            result.message = message(code:'crossRef.title.error.validation', args:[titleObj.name])
             result.baddata = titleObj
             result.errors = title_validation.errors
           }
           else {
-            def title_class_name = null
-
-            if (titleObj.type) {
-              switch (titleObj.type) {
-                case "serial":
-                case "Serial":
-                case "Journal":
-                case "journal":
-                  title_class_name = "org.gokb.cred.JournalInstance"
-                  break;
-                case "monograph":
-                case "Monograph":
-                case "Book":
-                case "book":
-                  title_class_name = "org.gokb.cred.BookInstance"
-                  break;
-                case "Database":
-                case "database":
-                  title_class_name = "org.gokb.cred.DatabaseInstance"
-                  break;
-                case "Other":
-                case "other":
-                  title_class_name = "org.gokb.cred.OtherInstance"
-                  break;
-                default:
-                  log.warn("Missing type for title!")
-                  break;
-              }
-            }
+            def title_class_name = determineTitleClass(titleObj)
 
             if (!title_class_name) {
               log.error("Missing or unknown publication type: ${titleObj.type}")
-              result.result="ERROR"
-              result.message="Could not identify the publication type (serial or monograph) of title ${titleObj.name}."
-              result.baddata=titleObj
+              result.result = "ERROR"
+              result.message = message(code:'crossRef.title.error.type', args:[titleObj.name])
+              result.errors = [type: [message: message(code:'crossRef.title.error.type.local'), baddata: titleObj.type]]
 
               return result
             }
@@ -1540,14 +1604,6 @@ class IntegrationController {
               )
 
               if ( title && !title.hasErrors() ) {
-
-        //        if ( titleObj.variantNames?.size() > 0 ) {
-        //          titleObj.variantNames.each { vn ->
-        //            log.debug("Ensure variant name ${vn}");
-        //            title.addVariantTitle(vn);
-        //          }
-        //        }
-
                 def title_changed = false;
 
                 if ( titleObj.imprint ) {
@@ -1581,154 +1637,13 @@ class IntegrationController {
                 title_changed |= ClassUtils.setStringIfDifferent(title, 'subjectArea', titleObj.subjectArea)
 
                 if ( titleObj.historyEvents?.size() > 0 ) {
+                  def he_result = processHistoryEvents(title, titleObj, title_class_name, user, fullsync)
 
-                  titleObj.historyEvents.each { jhe ->
-                        // 1971-01-01 00:00:00.0
-                    log.debug("Handling title history");
-                    try {
-                      def inlist = []
-                      def outlist = []
-                      def cont = true
-
-                      jhe.from.each { fhe ->
-                        def p = null
-                        def setCore = true
-
-                        if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
-                          log.debug("Setting main title ${title} as participant")
-                          setCore = false
-                          p = title
-                        }
-                        else {
-                          log.debug("Looking up connected title ${fhe} as participant")
-                          p = titleLookupService.findOrCreate(
-                            fhe.title,
-                            null,
-                            fhe.identifiers,
-                            user,
-                            null,
-                            title_class_name,
-                            fhe.uuid
-                          );
-                        }
-
-                        if ( p && !p.hasErrors() ) {
-                          if ( setCore ) {
-                            componentUpdateService.ensureCoreData(p, fhe, fullsync)
-                          }
-                          inlist.add(p);
-                        }
-                        else {
-                          cont = false;
-                        }
-                      }
-
-                      jhe.to.each { fhe ->
-
-                        def p = null
-                        def setCore = true
-
-                        if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
-                          log.debug("Setting main title ${title} as participant")
-                          setCore = false
-                          p = title
-                        }
-                        else {
-                          log.debug("Looking up connected title ${fhe} as participant")
-                          p = titleLookupService.findOrCreate(
-                            fhe.title,
-                            null,
-                            fhe.identifiers,
-                            user,
-                            null,
-                            title_class_name,
-                            fhe.uuid
-                          );
-                        }
-
-                        if ( p && !p.hasErrors() && !inlist.contains(p) ) {
-                          if ( setCore ) {
-                            componentUpdateService.ensureCoreData(p, fhe, fullsync)
-                          }
-                          outlist.add(p);
-                        }
-                        else {
-                          cont = false;
-                        }
-                      }
-
-                      def first = true;
-                      // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
-                      def che_check_qry_sw  = new StringWriter();
-                      def qparams = []
-
-                      che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
-
-                      inlist.each { fhe ->
-                        if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-
-                        che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
-                        qparams.add(fhe)
-                      }
-
-                      outlist.each { fhe ->
-                        if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
-
-                        che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
-                        qparams.add(fhe)
-                      }
-
-                      def che_check_qry = che_check_qry_sw.toString()
-
-                      log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
-
-                      def qr = []
-                      if (qparams.size() > 0) {
-                        qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams)
-                      }
-
-                      if ( qr.size() > 0 || inlist.size() == 0 || outlist.size() == 0 )
-                        cont = false;
-
-                      if ( cont ) {
-
-                        def he = new ComponentHistoryEvent()
-
-                        if ( jhe.date ) {
-                          ClassUtils.setDateIfPresent(jhe.date, he, 'eventDate');
-                        }
-
-                        he.save(flush:true, failOnError:true);
-
-                        inlist.each {
-                          def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
-                          hep.save(flush:true, failOnError:true);
-                        }
-
-                        outlist.each {
-                          def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
-                          hep.save(flush:true, failOnError:true);
-                        }
-                      }
-                      else {
-                        // Matched an existing TH event, not creating a duplicate
-                      }
-                    }
-                    catch ( grails.validation.ValidationException veh ) {
-                          log.error("Problem processing title history",veh);
-                          result.result="ERROR"
-                          result.errors=veh.errors
-                          result.message="The title was created, but there was an error processing the title history of '${title.name}'."
-                          result.baddata=titleObj
-                    }
-                    catch ( Exception eh ) {
-                          log.error("Problem processing title history",eh);
-                          result.result="ERROR"
-                          result.message="The title was created, but there was an error processing the title history of '${title.name}'."
-                          result.baddata=titleObj
-                    }
+                  if (he_result.errors) {
+                    result.errors = he_result.errors
                   }
                 }
+
                 if( title_class_name == 'org.gokb.cred.BookInstance' ){
 
                   log.debug("Adding Monograph fields for ${title.class.name}: ${title}")
@@ -1752,15 +1667,15 @@ class IntegrationController {
                 result.uuid = title.uuid
               }
               else if (title){
-                result.result="ERROR"
-                result.baddata=titleObj
+                result.result = "ERROR"
+                result.baddata = titleObj
                 log.error("Cross Reference Title failed: ${titleObj}");
-                result.errors=title.errors
+                result.errors = messageService.processValidationErrors(title.errors)
 
                 if ( title?.id ) {
-                  result.titleId=title.id
-                  result.uuid=title.uuid
-                  result.message="Title ${title.id} was matched, but could not be updated due to existing errors"
+                  result.titleId = title.id
+                  result.uuid = title.uuid
+                  result.message = message(code:'crossRef.title.error.existing', args:[title.name, title.id])
                   log.error("CrossReference Matched existing title (${title.id}) with errors: ${title.errors}")
                 }
                 else {
@@ -1768,25 +1683,25 @@ class IntegrationController {
                 }
               }
               else {
-                result.result="ERROR"
-                result.baddata=titleObj
-                result.message = "There was an error while looking up title ${titleObj.name}. Please check the database for title IDs.";
+                result.result = "ERROR"
+                result.baddata = titleObj.identifiers
+                result.message = message(code:'crossRef.title.error.dupes', args:[title.name]);
               }
             }
             catch (grails.validation.ValidationException ve) {
-              log.error("ValidationException attempting to cross reference title",ve);
-              result.result="ERROR"
-              result.message="Validation of title '${titleObj.name}' failed."
-              result.errors= messageService.processsValidationErrors(ve.errors)
-              result.baddata=titleObj
-              log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
+              log.debug("ValidationException attempting to cross reference title",ve);
+              result.result = "ERROR"
+              result.message = "Validation of title '${titleObj.name}' failed."
+              result.errors = messageService.processValidationErrors(ve.errors)
+              result.baddata = titleObj
             }
             catch ( Exception e ) {
               log.error("Exception attempting to cross reference title",e);
+
               if (result.result != 'ERROR') {
-                result.result="ERROR"
-                result.message="There was an error trying to reference title '${titleObj.name}'"
-                result.baddata=titleObj
+                result.result = "ERROR"
+                result.message = message(code:'crossRef.title.error.unknown', args:[titleObj.name])
+                result.baddata = titleObj
                 log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
               }
             }
@@ -1795,6 +1710,197 @@ class IntegrationController {
             }
           }
         }
+
+    result
+  }
+
+  private static determineTitleClass(titleObj) {
+    if (titleObj.type) {
+      switch (titleObj.type) {
+        case "serial":
+        case "Serial":
+        case "Journal":
+        case "journal":
+          return "org.gokb.cred.JournalInstance"
+          break;
+        case "monograph":
+        case "Monograph":
+        case "Book":
+        case "book":
+          return "org.gokb.cred.BookInstance"
+          break;
+        case "Database":
+        case "database":
+          return "org.gokb.cred.DatabaseInstance"
+          break;
+        case "Other":
+        case "other":
+          return "org.gokb.cred.OtherInstance"
+          break;
+        default:
+          return null
+          break;
+      }
+    } else {
+      return null
+    }
+  }
+
+  private def processHistoryEvents(TitleInstance ti, titleObj, title_class_name, user, fullsync) {
+    def result = [result:'OK']
+    def errors = [:]
+
+    titleObj.historyEvents.each { jhe ->
+        // 1971-01-01 00:00:00.0
+      log.debug("Handling title history");
+      try {
+        def inlist = []
+        def outlist = []
+        def cont = true
+
+        jhe.from.each { fhe ->
+          def p = null
+          def setCore = true
+
+          if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
+            log.debug("Setting main title ${title} as participant")
+            setCore = false
+            p = ti
+          }
+          else {
+            log.debug("Looking up connected title ${fhe} as participant")
+            p = titleLookupService.findOrCreate(
+              fhe.title,
+              null,
+              fhe.identifiers,
+              user,
+              null,
+              title_class_name,
+              fhe.uuid
+            );
+          }
+
+          if ( p && !p.hasErrors() ) {
+            if ( setCore ) {
+              componentUpdateService.ensureCoreData(p, fhe, fullsync)
+            }
+            inlist.add(p);
+          }
+          else {
+            cont = false;
+          }
+        }
+
+        jhe.to.each { fhe ->
+
+          def p = null
+          def setCore = true
+
+          if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
+            log.debug("Setting main title ${ti} as participant")
+            setCore = false
+            p = ti
+          }
+          else {
+            log.debug("Looking up connected title ${fhe} as participant")
+            p = titleLookupService.findOrCreate(
+              fhe.title,
+              null,
+              fhe.identifiers,
+              user,
+              null,
+              title_class_name,
+              fhe.uuid
+            );
+          }
+
+          if ( p && !p.hasErrors() && !inlist.contains(p) ) {
+            if ( setCore ) {
+              componentUpdateService.ensureCoreData(p, fhe, fullsync)
+            }
+            outlist.add(p);
+          }
+          else {
+            cont = false;
+          }
+        }
+
+        def first = true;
+        // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
+        def che_check_qry_sw  = new StringWriter();
+        def qparams = []
+
+        che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
+
+        inlist.each { fhe ->
+          if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
+
+          che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+          qparams.add(fhe)
+        }
+
+        outlist.each { fhe ->
+          if ( first ) { first = false; } else { che_check_qry_sw.write(' AND ') }
+
+          che_check_qry_sw.write(' exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = ?) ')
+          qparams.add(fhe)
+        }
+
+        def che_check_qry = che_check_qry_sw.toString()
+
+        log.debug("Search for existing history event:: ${che_check_qry} ${qparams}");
+
+        def qr = []
+        if (qparams.size() > 0) {
+          qr = ComponentHistoryEvent.executeQuery(che_check_qry, qparams)
+        }
+
+        if ( qr.size() > 0 || inlist.size() == 0 || outlist.size() == 0 )
+          cont = false;
+
+        if ( cont ) {
+
+          def he = new ComponentHistoryEvent()
+
+          if ( jhe.date ) {
+            ClassUtils.setDateIfPresent(jhe.date, he, 'eventDate');
+          }
+
+          he.save(flush:true, failOnError:true);
+
+          inlist.each {
+            def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'in');
+            hep.save(flush:true, failOnError:true);
+          }
+
+          outlist.each {
+            def hep = new ComponentHistoryEventParticipant(event:he, participant:it, participantRole:'out');
+            hep.save(flush:true, failOnError:true);
+          }
+        }
+        else {
+          // Matched an existing TH event, not creating a duplicate
+        }
+      }
+      catch ( grails.validation.ValidationException veh ) {
+        if (!errors.historyEvents) {
+          errors.historyEvents = []
+        }
+
+        log.error("Problem processing title history",veh);
+        result.result="ERROR"
+        errors.historyEvents << messageService.processValidationErrors(veh.errors)
+      }
+      catch ( Exception eh ) {
+        log.error("Problem processing title history",eh);
+        result.result="ERROR"
+        errors.historyEvents << [message: "Unable to process history event", baddata: jhe]
+      }
+    }
+
+    if (errors.size() > 0) {
+      result.errors = errors
+    }
 
     result
   }

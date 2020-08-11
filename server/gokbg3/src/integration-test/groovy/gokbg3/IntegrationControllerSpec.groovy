@@ -41,9 +41,12 @@ class IntegrationControllerSpec extends Specification {
   TitleLookupService titleLookupService
 
   def setup() {
-    def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1")
-    def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society")
-    def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org')
+    def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush:true)
+    def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush:true)
+    def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush:true)
+    def test_upd_pkg = Package.findByName('TestTokenPackage') ?: new Package(name: 'TestTokenPackage').save(flush:true)
+    def user = User.findByUsername('ingestAgent')
+    def pkg_token = UpdateToken.findByValue('TestUpdateToken') ?: new UpdateToken(value: 'TestUpdateToken', pkg: test_upd_pkg, updateUser: user).save(flush:true)
   }
 
   def cleanup() {
@@ -747,5 +750,88 @@ class IntegrationControllerSpec extends Specification {
     def pkg = Package.get(resp1.json.pkgId)
     pkg.tipps?.size() == 1
     pkg.listStatus?.value == "In Progress"
+  }
+
+  void "test update package via token"() {
+    given:
+    def json_record = [
+      "packageHeader" : [
+        "breakable" : "No",
+        "consistent" : "Yes",
+        "editStatus" : "In Progress",
+        "listStatus": "Checked",
+        "fixed" : "No",
+        "global" : "Consortium",
+        "identifiers" : [
+          [
+            "type" : "isil",
+            "value" : "ZDB-1-ACS"
+          ]
+        ],
+        "name" : "TestTokenPackageUpdate",
+        "nominalPlatform" : [
+          "name" : "ACS Publications",
+          "primaryUrl" : "https://pubs.acs.org"
+        ],
+        "nominalProvider" : "American Chemical Society"
+      ],
+      "tipps" : [
+        [
+          "accessEnd" : "",
+          "accessStart" : "",
+          "coverage" : [
+              [
+                "coverageDepth" : "Fulltext",
+                "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                "embargo" : "",
+                "endDate" : "1995",
+                "endIssue" : "",
+                "endVolume" : "43",
+                "startDate" : "1953-01",
+                "startIssue" : "",
+                "startVolume" : "1"
+              ]
+          ],
+          "medium" : "Electronic",
+          "platform" : [
+            "name" : "ACS Publications",
+            "primaryUrl" : "https://pubs.acs.org"
+          ],
+          "status" : "Current",
+          "title" : [
+              "identifiers" : [
+                [
+                    "type" : "zdb",
+                    "value" : "1483109-0"
+                ],
+                [
+                    "type" : "eissn",
+                    "value" : "1520-5118"
+                ],
+                [
+                    "type" : "issn",
+                    "value" : "0021-8561"
+                ]
+              ],
+              "name" : "Journal of agricultural and food chemistry",
+              "type" : "Serial"
+          ],
+          "url" : "http://pubs.acs.org/journal/jafcau"
+        ]
+      ]
+    ]
+    when: "Caller asks for this record to be cross referenced"
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage?updateToken=TestUpdateToken") {
+      body(json_record as JSON)
+    }
+
+    then: "The request is sucessfully processed"
+    resp.json?.message?.startsWith('Created')
+    expect: "The Package updater is set correctly"
+    def pkg = Package.get(resp.json.pkgId)
+    pkg.tipps?.size() == 1
+    pkg.lastUpdatedBy == User.findByUsername('ingestAgent')
+    pkg.name == "TestTokenPackageUpdate"
   }
 }

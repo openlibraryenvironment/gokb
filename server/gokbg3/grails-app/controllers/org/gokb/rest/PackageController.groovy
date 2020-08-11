@@ -11,6 +11,7 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -105,6 +106,8 @@ class PackageController {
   def save() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
+    def generateToken = params.generateToken ? params.boolean('generateToken') : (reqBody.generateToken ? true : false)
+    UpdateToken update_token = null
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
 
@@ -143,11 +146,6 @@ class PackageController {
         else if (obj) {
           def jsonMap = obj.jsonMapping
 
-          jsonMap.ignore = [
-            'lastProject',
-            'status'
-          ]
-
           jsonMap.immutable = [
             'userListVerifier',
             'listVerifiedDate',
@@ -166,6 +164,12 @@ class PackageController {
                 obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
               }
 
+              if (generateToken) {
+                String charset = (('a'..'z') + ('0'..'9')).join()
+                result.updateToken = RandomStringUtils.random(255, charset.toCharArray())
+                update_token = new UpdateToken(pkg: obj, updateUser: user, value: result.updateToken).save(flush:true)
+              }
+
               errors << updateCombos(obj, reqBody)
 
               if (errors.size() == 0) {
@@ -173,6 +177,10 @@ class PackageController {
                 obj.save(flush:true)
                 response.status = 201
                 result = restMappingService.mapObjectToJson(obj, params, user)
+
+                if (update_token) {
+                  result.updateToken = update_token.value
+                }
               }
               else {
                 result.result = 'ERROR'
