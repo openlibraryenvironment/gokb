@@ -3,6 +3,7 @@ package org.gokb
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import org.springframework.web.servlet.support.RequestContextUtils
 import org.gokb.cred.*
 import au.com.bytecode.opencsv.CSVReader
 import com.k_int.ClassUtils
@@ -869,10 +870,13 @@ class IntegrationController {
     def result = [ 'result' : 'OK' ]
     def async = params.async ? params.boolean('async') : false
     def update = params.addOnly ? params.boolean('addOnly') : false
+    def request_locale = RequestContextUtils.getLocale(request)
     def rjson = request.JSON
     UpdateToken updateToken = null
     User request_user = null
     def fullsync = false
+
+    log.debug("crossReferencePackage (${request_locale})")
 
     if (springSecurityService.isLoggedIn()) {
       request_user = springSecurityService.currentUser
@@ -914,6 +918,7 @@ class IntegrationController {
 
         Package.withNewSession {
           def user = User.get(request_user.id)
+          def locale = request_locale
           springSecurityService.reauthenticate(request_user.username)
 
           def pkg_validation = Package.validateDTO(json.packageHeader)
@@ -951,7 +956,14 @@ class IntegrationController {
 
                     if ( title_validation && !title_validation.valid ) {
                       log.warn("Not valid after title validation ${tipp.title}");
-                      errors.tipps.add(['code': 400, 'message': "Title information for ${tipp.title.name} is not valid: " + "${title_validation.errors}", baddata: tipp.title, idx: idx, errors:title_validation.errors])
+                      def preval_errors = [
+                        code: 400,
+                        message: messageService.resolveCode('crossRef.package.tipps.error.title.preValidation', [tipp.title.name, title_validation.errors], locale),
+                        baddata: tipp.title,
+                        idx: idx,
+                        errors: title_validation.errors
+                      ]
+                      errors.tipps.add(preval_errors)
                     }
                     else {
                       def valid_ti = true
@@ -1005,7 +1017,7 @@ class IntegrationController {
                             title_changed |= ClassUtils.setStringIfDifferent(ti, 'subjectArea', titleObj.subjectArea)
 
                             if ( titleObj.historyEvents?.size() > 0 ) {
-                              def he_result = processHistoryEvents(ti, titleObj, title_class_name, user, fullsync)
+                              def he_result = processHistoryEvents(ti, titleObj, title_class_name, user, fullsync, locale)
 
                               if (he_result.errors) {
                                 result.errors = he_result.errors
@@ -1026,7 +1038,7 @@ class IntegrationController {
                             addPublisherHistory(ti, titleObj.publisher_history)
                             tipp.title.internalId = ti.id
                           } else {
-                            def errorObj = ['code': 400, 'message': "Title processing failed for title ${tipp.title.name}!", 'baddata': tipp.title]
+                            def errorObj = ['code': 400, 'message': messageService.resolveCode('crossRef.package.tipps.error.title', tipp.title.name, locale), 'baddata': tipp.title]
                             if (ti != null) {
                               errorObj.errors = messageService.processValidationErrors(ti.errors)
                               errors.tipps.add(errorObj)
@@ -1040,14 +1052,21 @@ class IntegrationController {
                           log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
                           valid = false
-                          errors.tipps.add(['code': 400, 'message': "Title validation failed for title ${tipp?.title?.name}!", 'baddata': tipp, idx: idx, errors: messageService.processValidationErrors(ve.errors)])
+                          def validation_errors = [
+                            code: 400,
+                            message: messageService.resolveCode('crossRef.package.tipps.error.title.validation', [tipp?.title?.name], locale),
+                            baddata: tipp,
+                            idx: idx,
+                            errors: messageService.processValidationErrors(ve.errors)
+                          ]
+                          errors.tipps.add(validation_errors)
                         }
                       }
 
                       if ( valid_ti && tipp.title.internalId == null ) {
                         log.error("Failed to locate a title for ${tipp?.title} when attempting to create TIPP");
                         valid = false
-                        errors.tipps.add(['code': 400, idx: idx, 'message': "Title ${tipp?.title?.name} could not be located or created!"])
+                        errors.tipps.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.title', [tipp?.title?.name], locale)])
                       }
                     }
 
@@ -1056,7 +1075,15 @@ class IntegrationController {
 
                     if ( !valid_plt.valid ) {
                       log.warn("Not valid after platform validation ${tipp_plt_dto}");
-                      errors.tipps.add(['code': 400, idx: idx, 'message': "Platform ${tipp_plt_dto?.name} is not valid!", 'baddata': tipp_plt_dto, errors: valid_plt.errors])
+
+                      def plt_errors = [
+                        code: 400,
+                        idx: idx,
+                        message: messageService.resolveCode('crossRef.package.tipps.error.platform.preValidation', [tipp_plt_dto?.name], locale),
+                        baddata: tipp_plt_dto,
+                        errors: valid_plt.errors
+                      ]
+                      errors.tipps.add([])
                     }
 
                     if ( valid ) {
@@ -1076,15 +1103,23 @@ class IntegrationController {
                             componentUpdateService.ensureCoreData(pl, tipp_plt_dto, fullsync)
                           }else{
                             log.error("Could not find/create ${tipp_plt_dto}")
-                            errors.tipps.add(['code': 400, idx: idx, 'message': "TIPP platform ${tipp_plt_dto.name} could not be matched/created! Please check for duplicates in GOKb!"])
+                            errors.tipps.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.platform', [tipp_plt_dto.name], locale)])
                             valid = false
                           }
                         }
                         catch (grails.validation.ValidationException ve) {
                           log.error("ValidationException attempting to cross reference title",ve);
-                          valid_ti = false
+                          valid_plt = false
                           valid = false
-                          errors.tipps.add(['code': 400, 'message': "Platform validation failed for ${tipp_plt_dto}!", 'baddata': tipp_plt_dto, idx: idx, errors: messageService.processValidationErrors(pl.errors)])
+
+                          def plt_errors = [
+                            code: 400,
+                            message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tipp_plt_dto], locale),
+                            baddata: tipp_plt_dto,
+                            idx: idx,
+                            errors: messageService.processValidationErrors(ve.errors)
+                          ]
+                          errors.tipps.add(plt_errors)
                         }
                       }
 
@@ -1101,7 +1136,7 @@ class IntegrationController {
                     }
                     else {
                       log.warn("No package");
-                      errors.tipps.add(['code': 400, idx: idx, 'message': "Problem creating TIPP for title ${tipp.title.name}: Duplicate TIPP or failed Package creation"])
+                      errors.tipps.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [tipp.title.name], locale)])
                       valid = false
                     }
 
@@ -1115,7 +1150,7 @@ class IntegrationController {
                   valid = false
                   log.warn("Package update denied!")
                   job_result.result = 'ERROR'
-                  job_result.message = "Insufficient permissions to edit matched Package ${the_pkg}. You have to belong to a connected CuratoryGroup to edit Packages."
+                  job_result.message = messageService.resolveCode('crossRef.package.error.denied', [the_pkg.name], locale)
                   return job_result
                 }
 
@@ -1130,7 +1165,14 @@ class IntegrationController {
                     if ( validation_result && !validation_result.valid ) {
                       log.debug("TIPP Validation failed on ${tipp}")
                       valid = false
-                      errors.tipps.add(['code': 400, idx: idx, message: "TIPP Validation for title ${tipp.title.name} failed: " + "${validation_result.errors}", baddata: tipp, errors: validation_result.errors])
+                      def tipp_errors = [
+                        'code': 400,
+                        idx: idx,
+                        message: messageService.resolveCode('crossRef.package.tipps.error.preValidation', [tipp.title.name, validation_result.errors], locale),
+                        baddata: tipp,
+                        errors: validation_result.errors
+                      ]
+                      errors.tipps.add(tipp_errors)
                     }
 
                     if (idx % 50 == 0) {
@@ -1177,7 +1219,14 @@ class IntegrationController {
                       log.error("ValidationException attempting to cross reference TIPP",ve);
                       valid = false
                       tipp_fails++
-                      errors.tipps.add(['code': 400, idx: idx, 'message': "TIPP Validation failed for title ${tipp.title.name}!", 'baddata': tipp, errors: messageService.processValidationErrors(ve.errors)])
+                      def tipp_errors = [
+                        code: 400,
+                        idx: idx,
+                        message: messageService.resolveCode('crossRef.package.tipps.error.validation', [tipp.title.name], locale),
+                        baddata: tipp,
+                        errors: messageService.processValidationErrors(ve.errors)
+                      ]
+                      errors.tipps.add(tipp_errors)
 
                       if (upserted_tipp)
                         upserted_tipp.discard()
@@ -1186,7 +1235,13 @@ class IntegrationController {
                       log.error("Exception attempting to cross reference TIPP:", ge)
                       valid = false
                       tipp_fails++
-                      errors.tipps.add(['code': 500, idx: idx, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'baddata': tipp])
+                      def tipp_errors = [
+                        code: 500,
+                        idx: idx,
+                        message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
+                        baddata: tipp
+                      ]
+                      errors.tipps.add(tipp_errors)
 
                       if (upserted_tipp)
                         upserted_tipp.discard()
@@ -1214,7 +1269,13 @@ class IntegrationController {
                       log.debug("Could not reference TIPP")
                       valid = false
                       tipp_fails++
-                      errors.tipps.add(['code': 500, idx: idx, 'message': "TIPP creation failed for title ${tipp.title.name}!", 'baddata': tipp])
+                      def tipp_errors = [
+                        code: 500,
+                        idx: idx,
+                        message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
+                        baddata: tipp
+                      ]
+                      errors.tipps.add(tipp_errors)
                     }
 
                     if (idx % 50 == 0) {
@@ -1264,7 +1325,7 @@ class IntegrationController {
                     }
                     log.debug("Found ${num_removed_tipps} TIPPS to delete/retire from the matched package!")
                     job_result.result = 'OK'
-                    job_result.message = "Created/Updated package ${json.packageHeader.name} with ${tippctr} TIPPs. (Previously: ${existing_tipps.size()}, Newly Retired/Deleted: ${num_removed_tipps})"
+                    job_result.message = messageService.resolveCode('crossRef.package.success', [json.packageHeader.name, tippctr, existing_tipps.size(), num_removed_tipps], locale)
 
                     if ( the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted') ) {
                       the_pkg.lastUpdateComment = job_result.message
@@ -1277,12 +1338,12 @@ class IntegrationController {
                 }
                 else {
                   job_result.result = 'ERROR'
-                  job_result.message = "Package ${json.packageHeader.name} was created, but tipps have not been loaded because of validation errors!"
+                  job_result.message = messageService.resolveCode('crossRef.package.error.tipps', [json.packageHeader.name], locale)
                   log.warn("Not loading tipps - failed validation")
                 }
               }else{
                 job_result.result = 'ERROR'
-                errors.global.add(['code': 400, 'message': "Package could not be matched/created!"])
+                errors.global.add(['code': 400, 'message': message.resolveCode('crossRef.package.error', [], locale)])
               }
             }
             catch (Exception e) {
@@ -1290,14 +1351,14 @@ class IntegrationController {
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
               job_result.code = 500
-              errors.global.add([code: 500, message: "There was an exception while trying to referencing the Package", data: json.packageHeader])
+              errors.global.add([code: 500, message: messageService.resolveCode('crossRef.package.error.unknown', [], locale), data: json.packageHeader])
             }
             cleanUpGorm()
           }
           else {
             log.debug("Package validation failed!")
             job_result.result = 'ERROR'
-            errors.global.add([message: message(code:'crossRef.package.error.validation.global'), baddata: json.packageHeader, errors: pkg_validation.errors])
+            errors.global.add([message: messageService.resolveCode('crossRef.package.error.validation.global', [], locale), baddata: json.packageHeader, errors: pkg_validation.errors])
             job_result.message = "Package validation failed!"
           }
         }
@@ -1327,8 +1388,8 @@ class IntegrationController {
     else if (request_user) {
       log.debug("Not ingesting package without name!")
       result.result = "ERROR"
-      result.message = message(code:'crossRef.package.error.name')
-      result.errors = [name: [[message: message(code:'crossRef.package.error.name'), baddata: null]]]
+      result.message = messageService.resolveCode('crossRef.package.error.name', [], request_locale)
+      result.errors = [name: [[message: messageService.resolveCode('crossRef.package.error.name', [], request_locale), baddata: null]]]
       response.setStatus(400)
     }
     cleanUpGorm()
@@ -1504,6 +1565,7 @@ class IntegrationController {
     User user = springSecurityService.currentUser
     def rjson = request.JSON
     def async = params.async ? params.boolean('async') : false
+    def request_locale = RequestContextUtils.getLocale(request)
     def fullsync = false
     def result
 
@@ -1513,7 +1575,7 @@ class IntegrationController {
 
     if (org.grails.web.json.JSONArray != rjson.getClass()) {
 
-      result = crossReferenceSingleTitle(rjson, user.id, fullsync)
+      result = crossReferenceSingleTitle(rjson, user.id, fullsync, request_locale)
 
       cleanUpGorm()
     }
@@ -1521,6 +1583,7 @@ class IntegrationController {
       log.debug("Starting crossReferenceTitle Job")
       Job background_job = concurrencyManagerService.createJob { Job job ->
         def json = rjson
+        def locale = request_locale
         def job_result = [:]
         def ctr = 0
 
@@ -1534,7 +1597,7 @@ class IntegrationController {
             break;
           }
 
-          job_result.results <<  crossReferenceSingleTitle(e, user.id, fullsync)
+          job_result.results <<  crossReferenceSingleTitle(e, user.id, fullsync, locale)
 
           ctr++
           job.setProgress(ctr, json.size())
@@ -1562,7 +1625,7 @@ class IntegrationController {
     render result as JSON
   }
 
-  private crossReferenceSingleTitle(Object titleObj, userid, fullsync) {
+  private crossReferenceSingleTitle(Object titleObj, userid, fullsync, locale) {
 
     def result = [ 'result' : 'OK' ]
 
@@ -1576,7 +1639,7 @@ class IntegrationController {
           if ( title_validation && !title_validation.valid ) {
             log.warn("Not valid after title validation ${titleObj}")
             result.result = 'ERROR'
-            result.message = message(code:'crossRef.title.error.validation', args:[titleObj.name])
+            result.message = messageService.resolveCode('crossRef.title.error.preValidation', [titleObj.name], locale)
             result.baddata = titleObj
             result.errors = title_validation.errors
           }
@@ -1586,8 +1649,8 @@ class IntegrationController {
             if (!title_class_name) {
               log.error("Missing or unknown publication type: ${titleObj.type}")
               result.result = "ERROR"
-              result.message = message(code:'crossRef.title.error.type', args:[titleObj.name])
-              result.errors = [type: [message: message(code:'crossRef.title.error.type.local'), baddata: titleObj.type]]
+              result.message = messageService.resolveCode('crossRef.title.error.type', [titleObj.name], locale)
+              result.errors = [type: [message: messageService.resolveCode('crossRef.title.error.type.local', null, locale), baddata: titleObj.type]]
 
               return result
             }
@@ -1637,7 +1700,7 @@ class IntegrationController {
                 title_changed |= ClassUtils.setStringIfDifferent(title, 'subjectArea', titleObj.subjectArea)
 
                 if ( titleObj.historyEvents?.size() > 0 ) {
-                  def he_result = processHistoryEvents(title, titleObj, title_class_name, user, fullsync)
+                  def he_result = processHistoryEvents(title, titleObj, title_class_name, user, fullsync, locale)
 
                   if (he_result.errors) {
                     result.errors = he_result.errors
@@ -1660,7 +1723,7 @@ class IntegrationController {
                 title.save(flush:true)
 
                 if (!result.message) {
-                  result.message = "Created/Looked up title ${title.id}"
+                  result.message = messageService.resolveCode('crossRef.title.success', null, locale)
                 }
                 result.cls = title.class.name
                 result.titleId = title.id
@@ -1675,7 +1738,7 @@ class IntegrationController {
                 if ( title?.id ) {
                   result.titleId = title.id
                   result.uuid = title.uuid
-                  result.message = message(code:'crossRef.title.error.existing', args:[title.name, title.id])
+                  result.message = messageService.resolveCode('crossRef.title.error.existing', [title.name, title.id], locale)
                   log.error("CrossReference Matched existing title (${title.id}) with errors: ${title.errors}")
                 }
                 else {
@@ -1685,13 +1748,13 @@ class IntegrationController {
               else {
                 result.result = "ERROR"
                 result.baddata = titleObj.identifiers
-                result.message = message(code:'crossRef.title.error.dupes', args:[title.name]);
+                result.message = messageService.resolveCode('crossRef.title.error.dupes', [title.name], locale)
               }
             }
             catch (grails.validation.ValidationException ve) {
               log.debug("ValidationException attempting to cross reference title",ve);
               result.result = "ERROR"
-              result.message = "Validation of title '${titleObj.name}' failed."
+              result.message = messageService.resolveCode('crossRef.title.error.validation', [titleObj.name], locale)
               result.errors = messageService.processValidationErrors(ve.errors)
               result.baddata = titleObj
             }
@@ -1700,7 +1763,7 @@ class IntegrationController {
 
               if (result.result != 'ERROR') {
                 result.result = "ERROR"
-                result.message = message(code:'crossRef.title.error.unknown', args:[titleObj.name])
+                result.message = messageService.resolveCode('crossRef.title.error.unknown', [titleObj.name], locale)
                 result.baddata = titleObj
                 log.error("Source message causing error (ADD_TO_TEST_CASES): ${titleObj}");
               }
@@ -1746,7 +1809,7 @@ class IntegrationController {
     }
   }
 
-  private def processHistoryEvents(TitleInstance ti, titleObj, title_class_name, user, fullsync) {
+  private def processHistoryEvents(TitleInstance ti, titleObj, title_class_name, user, fullsync, locale) {
     def result = [result:'OK']
     def errors = [:]
 
@@ -1894,7 +1957,7 @@ class IntegrationController {
       catch ( Exception eh ) {
         log.error("Problem processing title history",eh);
         result.result="ERROR"
-        errors.historyEvents << [message: "Unable to process history event", baddata: jhe]
+        errors.historyEvents << [message: messageService.resolveCode('crossRef.title.error.historyEvent', null, locale), baddata: jhe]
       }
     }
 

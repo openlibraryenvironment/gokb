@@ -11,6 +11,7 @@ beans = {
     defaultEncoding = "UTF-8"
     cacheSeconds = 10
     fileCacheSeconds = 10
+    fallbackToSystemLocale = false
   }
 
   messageSource(DatabaseMessageSource) {
