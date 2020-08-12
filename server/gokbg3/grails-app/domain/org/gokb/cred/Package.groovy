@@ -780,9 +780,11 @@ select tipp.id,
       result = name_candidates[0]
     } else if (result && result.name != packageHeaderDTO.name) {
       def current_name = result.name
+
       changed |= ClassUtils.setStringIfDifferent(result, 'name', packageHeaderDTO.name)
+
       if (!result.variantNames.find { it.variantName == current_name }) {
-        def new_variant = new KBComponentVariantName(owner: result, variantName: current_name).save(flush: true, failOnError: true)
+        result.ensureVariantName(current_name)
       }
     }
 
