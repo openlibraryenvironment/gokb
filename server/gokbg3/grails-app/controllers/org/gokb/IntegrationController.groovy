@@ -1036,6 +1036,9 @@ class IntegrationController {
                             }
 
                             addPublisherHistory(ti, titleObj.publisher_history)
+
+                            ti.save(flush:true)
+
                             tipp.title.internalId = ti.id
                           } else {
                             def errorObj = ['code': 400, 'message': messageService.resolveCode('crossRef.package.tipps.error.title', tipp.title.name, locale), 'baddata': tipp.title]
@@ -1264,7 +1267,7 @@ class IntegrationController {
                       else if ( upserted_tipp && upserted_tipp.status != status_current && (!tipp.status || tipp.status == "Current") ) {
                         upserted_tipp.setActive()
                       }
-                    } 
+                    }
                     else {
                       log.debug("Could not reference TIPP")
                       valid = false
@@ -1330,7 +1333,7 @@ class IntegrationController {
                     if ( the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted') ) {
                       the_pkg.lastUpdateComment = job_result.message
                     }
-                    
+
                     job_result.pkgId = the_pkg.id
                     job_result.uuid = the_pkg.uuid
                     log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")

@@ -82,22 +82,27 @@ class MessageService {
     def result = null
     String[] messageArgs = []
 
-    if (args && args.size() > 0) {
-      messageArgs = args
-      result = messageSource.resolveCode(code, locale)?.format(messageArgs)
+    try {
+      if (args && args.size() > 0) {
+        messageArgs = args
+        result = messageSource.resolveCode(code, locale)?.format(messageArgs)
 
-      if (!result) {
-        log.error("Unable to resolve code ${code} for ${locale}!")
-        result = messageSource.resolveCode(code, Locale.ENGLISH)?.format(messageArgs)
+        if (!result) {
+          log.error("Unable to resolve code ${code} for ${locale}!")
+          result = messageSource.resolveCode(code, Locale.ENGLISH)?.format(messageArgs)
+        }
+      }
+      else {
+        result = messageSource.resolveCodeWithoutArguments(code, locale)
+
+        if (!result) {
+          log.error("Unable to resolve code ${code} for ${locale}!")
+          result = messageSource.resolveCodeWithoutArguments(code, Locale.ENGLISH)
+        }
       }
     }
-    else {
-      result = messageSource.resolveCodeWithoutArguments(code, locale)
-
-      if (!result) {
-        log.error("Unable to resolve code ${code} for ${locale}!")
-        result = messageSource.resolveCodeWithoutArguments(code, Locale.ENGLISH)
-      }
+    catch (Exception e) {
+      log.error("Exception resolving code!", e)
     }
 
     return result

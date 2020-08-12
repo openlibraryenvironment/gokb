@@ -44,6 +44,7 @@ class IntegrationControllerSpec extends Specification {
     def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush:true)
     def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush:true)
     def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush:true)
+    def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush:true)
     def test_upd_pkg = Package.findByName('TestTokenPackage') ?: new Package(name: 'TestTokenPackage').save(flush:true)
     def user = User.findByUsername('ingestAgent')
     def pkg_token = UpdateToken.findByValue('TestUpdateToken') ?: new UpdateToken(value: 'TestUpdateToken', pkg: test_upd_pkg, updateUser: user).save(flush:true)
@@ -219,8 +220,8 @@ class IntegrationControllerSpec extends Specification {
     title != null
     title.publishedFrom?.toString() == "1953-01-01 00:00:00.0"
     title.publishedTo?.toString() == "2001-12-31 00:00:00.0"
-    def pub = title.getCombosByPropertyName('publisher')
-    pub[0].startDate?.toString() == "1953-01-01 00:00:00.0"
+    title.getCombosByPropertyName('publisher')?.size() == 1
+    title.getCombosByPropertyName('publisher')[0].startDate?.toString() == "1953-01-01 00:00:00.0"
   }
 
   void "Test crossReferenceTitle :: Journal with history"() {
@@ -656,6 +657,7 @@ class IntegrationControllerSpec extends Specification {
     resp.status == 200
 
     expect: "prices are set correctly"
+    sleep(200)
     def title = TitleInstance.findById(resp.json.results.titleId)
     title.prices.size() == 2
     title.subjectArea
@@ -812,6 +814,14 @@ class IntegrationControllerSpec extends Specification {
                     "value" : "0021-8561"
                 ]
               ],
+              "publisher_history": [
+                [
+                  "endDate"  : "",
+                  "name"     : "ACS TestOrg",
+                  "startDate": "1990",
+                  "status"   : ""
+                ]
+              ],
               "name" : "Journal of agricultural and food chemistry",
               "type" : "Serial"
           ],
@@ -828,9 +838,13 @@ class IntegrationControllerSpec extends Specification {
     then: "The request is sucessfully processed"
     resp.json?.message?.startsWith('Created')
     expect: "The Package updater is set correctly"
+    sleep(200)
     def pkg = Package.get(resp.json.pkgId)
     pkg.tipps?.size() == 1
     pkg.lastUpdatedBy == User.findByUsername('ingestAgent')
     pkg.name == "TestTokenPackageUpdate"
+    def title = JournalInstance.findByName("Journal of agricultural and food chemistry")
+    title.publisher?.size() == 1
+    title.publisher[0].name == "ACS TestOrg"
   }
 }
