@@ -220,8 +220,7 @@ class IntegrationControllerSpec extends Specification {
     title.publishedFrom?.toString() == "1953-01-01 00:00:00.0"
     title.publishedTo?.toString() == "2001-12-31 00:00:00.0"
     def pub = title.getCombosByPropertyName('publisher')
-    if (pub.size>0)
-      pub[0].startDate?.toString() == "1953-01-01 00:00:00.0"
+    pub[0].startDate?.toString() == "1953-01-01 00:00:00.0"
   }
 
   void "Test crossReferenceTitle :: Journal with history"() {

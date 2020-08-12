@@ -1720,7 +1720,7 @@ class IntegrationController {
 
                 addPublisherHistory(title, titleObj.publisher_history)
 
-                title.save(flush:true)
+                title.save()
 
                 if (!result.message) {
                   result.message = messageService.resolveCode('crossRef.title.success', null, locale)
