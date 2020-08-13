@@ -69,6 +69,8 @@ class Package extends KBComponent {
     successor: 'previous',
   ]
 
+  static hasOne = [updateToken: UpdateToken]
+
   static mapping = {
     includes KBComponent.mapping
     listStatus column: 'pkg_list_status_rv_fk'
@@ -117,7 +119,8 @@ class Package extends KBComponent {
 
   static jsonMapping = [
     'ignore'       : [
-      'lastProject'
+      'lastProject',
+      'updateToken'
     ],
     'es'           : [
       'nominalPlatformUuid': "nominalPlatform.uuid",

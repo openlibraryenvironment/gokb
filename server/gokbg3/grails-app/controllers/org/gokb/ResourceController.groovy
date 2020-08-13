@@ -128,6 +128,10 @@ class ResourceController {
             result.resource = displayobj.getAllPropertiesWithLinks(params.withCombos ? true : false)
 
             result.resource.combo_props = displayobj.allComboPropertyNames
+
+            if (displayobj.class == Package) {
+              result.resource.remove('updateToken')
+            }
           }
           else if (displayobj.class.name == 'org.gokb.cred.User'){
 

@@ -53,7 +53,10 @@ class IntegrationControllerSpec extends Specification {
   def cleanup() {
     CuratoryGroup.findByName('TestGroup1')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
+    Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
+    Package.findByName('TestTokenPackage')?.expunge()
+    UpdateToken.findByValue('TestUpdateToken')?.delete()
     TitleInstance.findAllByName("Acta cytologica")?.each { title ->
       ComponentPrice.findAllByOwner(title)?.each { price ->
         price?.delete()
