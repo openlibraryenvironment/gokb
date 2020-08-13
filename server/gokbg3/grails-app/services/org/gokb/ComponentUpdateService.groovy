@@ -19,15 +19,16 @@ import java.text.SimpleDateFormat
 class ComponentUpdateService {
   def grailsApplication
   def restMappingService
+  def reviewRequestService
 
-  public boolean ensureCoreData(KBComponent component, data, boolean sync = false) {
-    return ensureSync(component, data, sync)
+  public boolean ensureCoreData(KBComponent component, data, boolean sync = false, user) {
+    return ensureSync(component, data, sync, user)
   }
 
   private final findLock = new Object()
 
   @Synchronized("findLock")
-  private boolean ensureSync(KBComponent component, data, boolean sync = false) {
+  private boolean ensureSync(KBComponent component, data, boolean sync = false, user) {
 
     // Set the name.
     def hasChanged = false
@@ -83,7 +84,7 @@ class ComponentUpdateService {
             } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
-              ReviewRequest.raise(
+              reviewRequestService.raise(
                 component,
                 "Review ID status.",
                 "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",

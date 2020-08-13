@@ -756,6 +756,7 @@ class IntegrationControllerSpec extends Specification {
   void "test update package via token"() {
     given:
     def json_record = [
+      "updateToken":"TestUpdateToken",
       "packageHeader" : [
         "breakable" : "No",
         "consistent" : "Yes",
@@ -831,7 +832,7 @@ class IntegrationControllerSpec extends Specification {
     ]
     when: "Caller asks for this record to be cross referenced"
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage?updateToken=TestUpdateToken") {
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
       body(json_record as JSON)
     }
 

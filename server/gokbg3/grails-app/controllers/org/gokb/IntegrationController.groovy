@@ -23,6 +23,7 @@ class IntegrationController {
   def componentUpdateService
   def titleLookupService
   def applicationEventService
+  def reviewRequestService
   def sessionFactory
   def packageService
   def messageService
@@ -55,6 +56,7 @@ class IntegrationController {
     def result = [result:'OK']
     def name = request.JSON.name
     def normname = CuratoryGroup.generateNormname(name)
+    def user = springSecurityService.currentUser
     def uuid = request.JSON.uuid
     def group = uuid ? CuratoryGroup.findByUuid(uuid) : null
     def status = request.JSON.status
@@ -86,7 +88,7 @@ class IntegrationController {
     }
 
     // Defaults first.
-    componentUpdateService.ensureCoreData(group, request.JSON)
+    componentUpdateService.ensureCoreData(group, request.JSON, false, user)
 
     // Find by username but do not create missing entries.
     def owner = request.JSON.owner
@@ -122,6 +124,7 @@ class IntegrationController {
   def assertJsonldOrg() {
     // log.debug("assertOrg, request.json = ${request.JSON}");
     def result=[:]
+    def user = springSecurityService.currentUser
     result.status = true;
 
     try {
@@ -288,6 +291,7 @@ class IntegrationController {
   def assertOrg() {
     log.debug("assertOrg, request.json = ${request.JSON}");
     def result=[result: 'OK']
+    def user = springSecurityService.currentUser
     def assert_errors = false;
     def jsonOrg = request.JSON
 
@@ -423,7 +427,7 @@ class IntegrationController {
       }
 
       // Core data...
-      componentUpdateService.ensureCoreData(located_or_new_org, jsonOrg)
+      componentUpdateService.ensureCoreData(located_or_new_org, jsonOrg, false, user)
 
       log.debug("Attempt to save - validate: ${located_or_new_org}");
 
@@ -643,7 +647,7 @@ class IntegrationController {
     render addVariantNameToComponent (org_to_update, request.JSON.name)
   }
 
-  private static def ensureCoreData ( KBComponent component, data, boolean sync = false ) {
+  private static def ensureCoreData ( KBComponent component, data, boolean sync = false, user) {
 
     // Set the name.
     def hasChanged = false
@@ -687,7 +691,7 @@ class IntegrationController {
           else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
             log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
-            ReviewRequest.raise(
+            reviewRequestService.raise(
               component,
               "Review ID status.",
               "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
@@ -914,8 +918,6 @@ class IntegrationController {
         def ctr = 0
         def errors = [global:[], tipps:[]]
 
-        job_result.results = []
-
         Package.withNewSession {
           def user = User.get(request_user.id)
           def locale = request_locale
@@ -937,7 +939,7 @@ class IntegrationController {
                 }
 
                 if ( is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
-                  componentUpdateService.ensureCoreData(the_pkg, json.packageHeader, fullsync)
+                  componentUpdateService.ensureCoreData(the_pkg, json.packageHeader, fullsync, user)
 
                   if ( the_pkg.tipps?.size() > 0 ) {
                     existing_tipps = the_pkg.tipps*.id
@@ -998,7 +1000,7 @@ class IntegrationController {
                             }
 
                             // Add the core data.
-                            componentUpdateService.ensureCoreData(ti, titleObj, fullsync)
+                            componentUpdateService.ensureCoreData(ti, titleObj, fullsync, user)
 
                             title_changed |= componentUpdateService.setAllRefdata ([
                                   'OAStatus', 'medium',
@@ -1318,9 +1320,9 @@ class IntegrationController {
                         }
                       }
                       if( num_removed_tipps > 0 ) {
-                        ReviewRequest.raise(
+                        reviewRequestService.raise(
                             the_pkg,
-                            "TIPPs retired.",
+                            "Invalid TIPPs.",
                             "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
                             user
                         )
@@ -1331,6 +1333,7 @@ class IntegrationController {
                     job_result.message = messageService.resolveCode('crossRef.package.success', [json.packageHeader.name, tippctr, existing_tipps.size(), num_removed_tipps], locale)
 
                     if ( the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted') ) {
+                      the_pkg.refresh()
                       the_pkg.lastUpdateComment = job_result.message
                     }
 
@@ -1343,10 +1346,27 @@ class IntegrationController {
                   job_result.result = 'ERROR'
                   job_result.message = messageService.resolveCode('crossRef.package.error.tipps', [json.packageHeader.name], locale)
                   log.warn("Not loading tipps - failed validation")
+
+                  if (the_pkg) {
+                    def additionalInfo = [:]
+
+                    if (errors.global.size() > 0 || errors.tipps.size() > 0) {
+                      additionalInfo.errorObjects = errors
+                    }
+
+                    reviewRequestService.raise(
+                      the_pkg,
+                      "TIPPs retired.",
+                      "An update for this package failed because of invalid TIPP information (JOB ${job.id}).",
+                      user,
+                      null,
+                      (additionalInfo as JSON).toString()
+                    )
+                  }
                 }
               }else{
                 job_result.result = 'ERROR'
-                errors.global.add(['code': 400, 'message': message.resolveCode('crossRef.package.error', [], locale)])
+                errors.global.add(['code': 400, 'message': message.resolveCode('crossRef.package.error', null, locale)])
               }
             }
             catch (Exception e) {
@@ -1354,14 +1374,14 @@ class IntegrationController {
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
               job_result.code = 500
-              errors.global.add([code: 500, message: messageService.resolveCode('crossRef.package.error.unknown', [], locale), data: json.packageHeader])
+              errors.global.add([code: 500, message: messageService.resolveCode('crossRef.package.error.unknown', null, locale), data: json.packageHeader])
             }
             cleanUpGorm()
           }
           else {
             log.debug("Package validation failed!")
             job_result.result = 'ERROR'
-            errors.global.add([message: messageService.resolveCode('crossRef.package.error.validation.global', [], locale), baddata: json.packageHeader, errors: pkg_validation.errors])
+            errors.global.add([message: messageService.resolveCode('crossRef.package.error.validation.global', null, locale), baddata: json.packageHeader, errors: pkg_validation.errors])
             job_result.message = "Package validation failed!"
           }
         }
@@ -1369,7 +1389,7 @@ class IntegrationController {
         job.message(job_result.message.toString())
         job.endTime = new Date()
 
-        if (errors.size() > 0) {
+        if (errors.global.size() > 0 || errors.tipps.size() > 0) {
           job_result.errors = errors
         }
 
@@ -1392,7 +1412,7 @@ class IntegrationController {
       log.debug("Not ingesting package without name!")
       result.result = "ERROR"
       result.message = messageService.resolveCode('crossRef.package.error.name', [], request_locale)
-      result.errors = [name: [[message: messageService.resolveCode('crossRef.package.error.name', [], request_locale), baddata: null]]]
+      result.errors = [name: [[message: messageService.resolveCode('crossRef.package.error.name', null, request_locale), baddata: null]]]
       response.setStatus(400)
     }
     cleanUpGorm()
@@ -1457,7 +1477,7 @@ class IntegrationController {
           p.save(flush:true)
 
           // Add the core data.
-          componentUpdateService.ensureCoreData(p, platformJson, fullsync)
+          componentUpdateService.ensureCoreData(p, platformJson, fullsync, user)
 
     //      if ( changed ) {
     //        p.save(flush:true, failOnError:true);
@@ -1500,6 +1520,7 @@ class IntegrationController {
   @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferenceLicense() {
     def result = [ 'result' : 'OK' ]
+    def user = springSecurityService.currentUser
 
     // Add the license.
     def data = request.JSON
@@ -1520,7 +1541,7 @@ class IntegrationController {
 
 
       // Add the core data.
-      componentUpdateService.ensureCoreData(l, data)
+      componentUpdateService.ensureCoreData(l, data, false, user)
 
 //      l.save(flush:true, failOnError:true)
     }
@@ -1684,7 +1705,7 @@ class IntegrationController {
                 }
 
                 // Add the core data.
-                componentUpdateService.ensureCoreData(title, titleObj, fullsync)
+                componentUpdateService.ensureCoreData(title, titleObj, fullsync, user)
 
                 title_changed |= componentUpdateService.setAllRefdata ([
                       'OAStatus', 'medium',
@@ -1848,7 +1869,7 @@ class IntegrationController {
 
           if ( p && !p.hasErrors() ) {
             if ( setCore ) {
-              componentUpdateService.ensureCoreData(p, fhe, fullsync)
+              componentUpdateService.ensureCoreData(p, fhe, fullsync, user)
             }
             inlist.add(p);
           }
@@ -1882,7 +1903,7 @@ class IntegrationController {
 
           if ( p && !p.hasErrors() && !inlist.contains(p) ) {
             if ( setCore ) {
-              componentUpdateService.ensureCoreData(p, fhe, fullsync)
+              componentUpdateService.ensureCoreData(p, fhe, fullsync, user)
             }
             outlist.add(p);
           }
