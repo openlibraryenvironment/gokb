@@ -88,7 +88,10 @@ class ComponentUpdateService {
                 component,
                 "Review ID status.",
                 "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
-                user
+                user,
+                null,
+                null,
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
               )
             } else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")

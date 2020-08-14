@@ -695,7 +695,10 @@ class IntegrationController {
               component,
               "Review ID status.",
               "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
-              user
+              user,
+              null,
+              null,
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
             )
           }
           else {
@@ -1324,7 +1327,10 @@ class IntegrationController {
                             the_pkg,
                             "Invalid TIPPs.",
                             "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
-                            user
+                            user,
+                            null,
+                            null,
+                            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
                         )
                       }
                     }
@@ -1356,11 +1362,12 @@ class IntegrationController {
 
                     reviewRequestService.raise(
                       the_pkg,
-                      "TIPPs retired.",
+                      "Package update failed.",
                       "An update for this package failed because of invalid TIPP information (JOB ${job.id}).",
                       user,
                       null,
-                      (additionalInfo as JSON).toString()
+                      (additionalInfo as JSON).toString(),
+                      RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs')
                     )
                   }
                 }
