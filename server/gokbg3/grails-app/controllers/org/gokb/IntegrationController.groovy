@@ -1325,7 +1325,7 @@ class IntegrationController {
                       if( num_removed_tipps > 0 ) {
                         reviewRequestService.raise(
                             the_pkg,
-                            "Invalid TIPPs.",
+                            "TIPPs retired.",
                             "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
                             user,
                             null,
@@ -1362,7 +1362,7 @@ class IntegrationController {
 
                     reviewRequestService.raise(
                       the_pkg,
-                      "Package update failed.",
+                      "Invalid TIPPs.",
                       "An update for this package failed because of invalid TIPP information (JOB ${job.id}).",
                       user,
                       null,
