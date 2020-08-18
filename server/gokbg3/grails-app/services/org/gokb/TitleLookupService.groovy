@@ -901,14 +901,14 @@ class TitleLookupService {
           the_title = the_title.merge(flush:true)
         }
 
-        if (results.other_matches.size() > 0) {
+        if (results.other_types.size() > 0) {
 
           def additionalInfo = [:]
           def combo_ids = [the_title]
 
           additionalInfo.otherComponents = []
 
-          results.other_matches.each { tlm ->
+          results.other_types.each { tlm ->
             additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
             combo_ids.add(tlm.id)
           }

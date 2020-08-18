@@ -184,4 +184,34 @@ class RefdataController {
     result.data = resultData
     render result as JSON
   }
+
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+  def reviewType() {
+    def result = [:]
+    def resultData = []
+    def cat = null
+    def base = grailsApplication.config.serverURL + '/'+namespace
+
+    cat = RefdataCategory.findByLabel("ReviewRequest.StdDesc")
+
+    if (cat) {
+      result['_links'] = ['self': ['href': base + "/review-types"]]
+      result['label'] = cat.label
+
+      cat.values.each { v ->
+        def val = [:]
+        val['_links'] = [
+          ['self': ['href': base + "/refdata/values/${v.id}"]],
+          ['owner': ['href': base + "/refdata/categories/${cat.id}"]]
+        ]
+
+        val['value'] = v.value
+        val['id'] = v.id
+
+        resultData << val
+      }
+    }
+    result.data = resultData
+    render result as JSON
+  }
 }
