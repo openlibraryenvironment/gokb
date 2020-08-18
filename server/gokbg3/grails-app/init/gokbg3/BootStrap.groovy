@@ -21,7 +21,7 @@ import org.gokb.ESWrapperService
 import org.gokb.ComponentStatisticService
 import org.gokb.cred.*
 import org.gokb.refine.RefineProject
-import org.gokb.validation.types.*
+//import org.gokb.validation.types.*
 
 import com.k_int.apis.A_Api;
 import com.k_int.ConcurrencyManagerService.Job
@@ -573,6 +573,13 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('UserOrganisation.Mission','Commercial').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('UserOrganisation.Mission','Community Agency').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('UserOrganisation.Mission','Consortium').save(flush:true, failOnError:true)
+
+    RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Org').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Package').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Book').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Journal').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Database').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Other').save(flush:true, failOnError:true)
 
     RefdataCategory.lookupOrCreate('Org.Role','Licensor').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('Org.Role','Licensee').save(flush:true, failOnError:true)

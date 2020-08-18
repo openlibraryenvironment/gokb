@@ -231,8 +231,13 @@ class IdentifierController {
     params << [_exclude:"_links"]
     def user = User.get(springSecurityService.principal.id)
     def base = grailsApplication.config.serverURL + "/rest"
-    List<IdentifierNamespace> nss = IdentifierNamespace.all
-    nss.each { ns ->
+    List<IdentifierNamespace> nss = []
+    if (params.targetType != null){
+      nss = IdentifierNamespace.findAllByTargetType(RefdataCategory.lookup('IdentifierNamespace.TargetType', params.targetType))
+    } else {
+      nss = IdentifierNamespace.all
+    }
+      nss.each { ns ->
       data << [
         name:ns.value,
         value:ns.value,
