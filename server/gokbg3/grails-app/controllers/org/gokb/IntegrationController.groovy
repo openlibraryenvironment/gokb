@@ -890,6 +890,8 @@ class IntegrationController {
         Package.withNewSession {
           def user = User.get(request_user.id)
 
+          job.ownerId = user.id
+
           def pkg_validation = Package.validateDTO(json.packageHeader)
 
           if ( pkg_validation.valid ) {
@@ -902,6 +904,15 @@ class IntegrationController {
               if (the_pkg) {
                 if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
                   is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
+
+                  if (is_curator?.size() == 1) {
+                    job.groupId = is_curator[0]
+                  }
+                  else if (is_curator?.size() > 1) {
+                    log.debug("Got more than one cg candidate!")
+                    job.groupId = is_curator[0]
+                  }
+
                   curated_pkg = true;
                 }
 
@@ -1069,8 +1080,12 @@ class IntegrationController {
                   def tipp_fails = 0
 
                   if ( json.tipps?.size() > 0 ) {
-                    the_pkg.refresh()
-                    the_pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+                    def pkg_new = Package.get(the_pkg.id)
+                    def status_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+
+                    if (pkg_new.status == status_current && pkg_new?.listStatus != status_ip) {
+                      pkg_new.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+                    }
                   }
 
                   // If valid, upsert tipps
@@ -1215,6 +1230,7 @@ class IntegrationController {
         }
 
         job.message(job_result.message.toString())
+        job.setProgress(100)
         job.endTime = new Date()
         job_result.errors = errors
 
@@ -1449,6 +1465,7 @@ class IntegrationController {
         }
 
         job.endTime = new Date()
+        job.setProgress(100)
         job.message("Finished processing ${job_result?.results?.size()} titles.".toString())
 
         return job_result

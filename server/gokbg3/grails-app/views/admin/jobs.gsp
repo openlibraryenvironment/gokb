@@ -21,6 +21,7 @@
         <th>Description</th>
         <th>Has Started</th>
         <th>Start Time</th>
+        <th>Group</th>
         <th>Status</th>
         <th>End Time</th>
         <th>Actions</th>
@@ -33,6 +34,7 @@
           <td>${v.description}</td>
           <td>${v.begun}</td>
           <td>${v.startTime}</td>
+          <th>${v.groupId}</th>
           <td>
             <g:if test="${v.isCancelled()}">
               Cancelled

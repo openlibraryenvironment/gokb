@@ -47,6 +47,8 @@ class ConcurrencyManagerService {
     boolean begun = false;
     String description
     List messages = []
+    int ownerId
+    int groupId
 
     public message(String message) {
       log.debug(message);
@@ -242,7 +244,7 @@ class ConcurrencyManagerService {
    * @param job_id
    * @return the Job
    */
-  public Job getJob(int job_id){
+  public Job getJob(int job_id) {
     if (job_id == null || !this.map.containsKey(job_id)) {
       return null
     }
@@ -258,5 +260,89 @@ class ConcurrencyManagerService {
 
     // Return the job.
     j
+  }
+
+  /**
+   * Gets all Jobs for the supplied User id.
+   * @param user_id
+   * @param max
+   * @param offset
+   * @return List of Jobs
+   */
+  public List getUserJobs(int user_id, int max, int offset) {
+    def allJobs = getJobs()
+    def selected = []
+    def result = []
+
+    if (user_id == null) {
+      return null
+    }
+
+    // Get the jobs.
+    allJobs.each { k, v ->
+      if (v.ownerId == user_id) {
+        selected << [
+          id: v.id,
+          progress: v.progress,
+          messages: v.messages,
+          description: v.description,
+          begun: v.begun,
+          startTime: v.startTime,
+          endTime: v.endTime
+        ]
+      }
+    }
+
+    if (offset > 0) {
+      selected = selected.drop(offset)
+    }
+
+    result = selected.take(max)
+
+    // Return the jobs.
+    result
+  }
+
+  /**
+   * Gets all Jobs for the supplied CuratoryGroup id.
+   * @param group_id
+   * @param max
+   * @param offset
+   * @return List of Jobs
+   */
+  public List getGroupJobs(int group_id, int max = 10, int offset = 0) {
+    def allJobs = getJobs()
+    def selected = []
+    def result = []
+
+    if (group_id == null) {
+      return null
+    }
+
+    log.debug("Getting jobs for group ${group_id}")
+
+    // Get the jobs.
+    allJobs.each { k, v ->
+      if (v.groupId == group_id) {
+        selected << [
+          id: v.id,
+          progress: v.progress,
+          messages: v.messages,
+          description: v.description,
+          begun: v.begun,
+          startTime: v.startTime,
+          endTime: v.endTime
+        ]
+      }
+    }
+
+    if (offset > 0) {
+      selected = selected.drop(offset)
+    }
+
+    result = selected.take(max)
+
+    // Return the jobs.
+    result
   }
 }

@@ -68,8 +68,9 @@ class Combo implements Auditable {
   }
 
   def afterInsert() {
-    if (!status) {
-      status = DomainClassExtender.getComboStatusActive()
+    if (this.status == null) {
+      this.status = DomainClassExtender.getComboStatusActive()
+      this.save()
     }
   }
   
