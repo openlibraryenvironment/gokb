@@ -1857,7 +1857,7 @@ class IntegrationController {
           def setCore = true
 
           if ( titleLookupService.compareIdentifierMaps(fhe.identifiers, titleObj.identifiers) && fhe.title == titleObj.name ) {
-            log.debug("Setting main title ${title} as participant")
+            log.debug("Setting main title ${ti} as participant")
             setCore = false
             p = ti
           }
@@ -1987,6 +1987,9 @@ class IntegrationController {
       }
       catch ( Exception eh ) {
         log.error("Problem processing title history",eh);
+        if (!errors.historyEvents) {
+          errors.historyEvents = []
+        }
         result.result="ERROR"
         errors.historyEvents << [message: messageService.resolveCode('crossRef.title.error.historyEvent', null, locale), baddata: jhe]
       }
