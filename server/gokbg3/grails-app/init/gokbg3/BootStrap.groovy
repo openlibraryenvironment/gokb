@@ -576,6 +576,7 @@ class BootStrap {
 
     RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Org').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Package').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Title').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Book').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Journal').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('IdentifierNamespace.TargetType','Database').save(flush:true, failOnError:true)
