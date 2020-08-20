@@ -1210,7 +1210,11 @@ class IntegrationController {
                   if ( json.tipps?.size() > 0 ) {
                     Package.withNewSession {
                       def ptu = Package.get(the_pkg.id)
-                      ptu.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+
+                      if (ptu.status != status_deleted) {
+                        ptu.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+                        ptu.save(flush:true)
+                      }
                     }
                   }
 
