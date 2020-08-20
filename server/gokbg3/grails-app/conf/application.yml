@@ -5,6 +5,10 @@ grails:
             - ~/.grails/gokb-config.groovy
             - ~/.grails/gokb-config.yml
             - ~/.grails/gokb-config.properties
+    cors:
+      enabled: true
+      mappings:
+        /rest/**: inherit
 
     profile: web
     codegen:
