@@ -908,6 +908,7 @@ class IntegrationController {
     }
     else {
       response.setStatus(401)
+      response.setHeader('WWW-Authenticate', 'Basic realm="gokb"')
     }
 
     if (params.fullsync == "true" && request_user?.adminStatus) {
@@ -1207,8 +1208,10 @@ class IntegrationController {
                   def tipp_fails = 0
 
                   if ( json.tipps?.size() > 0 ) {
-                    the_pkg.refresh()
-                    the_pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+                    Package.withNewSession {
+                      def ptu = Package.get(the_pkg.id)
+                      ptu.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+                    }
                   }
 
                   // If valid, upsert tipps
@@ -1421,6 +1424,9 @@ class IntegrationController {
       result.message = messageService.resolveCode('crossRef.package.error.name', [], request_locale)
       result.errors = [name: [[message: messageService.resolveCode('crossRef.package.error.name', null, request_locale), baddata: null]]]
       response.setStatus(400)
+    }
+    else {
+      log.debug("Unable to reference user!")
     }
     cleanUpGorm()
 
