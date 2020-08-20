@@ -6,9 +6,9 @@ grails:
             - ~/.grails/gokb-config.yml
             - ~/.grails/gokb-config.properties
     cors:
-      enabled: true
-      mappings:
-        /rest/**: inherit
+        enabled: true
+        mappings:
+            /rest/**: inherit
 
     profile: web
     codegen:
