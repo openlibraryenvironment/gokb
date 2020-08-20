@@ -149,6 +149,7 @@ class UrlMappings {
 
       get "/package-scopes" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
       get "/coverage-depth" (controller: 'refdata', namespace: 'rest', action: 'coverageDepth')
+      get "/review-types" (controller: 'refdata', namespace: 'rest', action: 'reviewType')
     }
     "/$controller/$action?/$id?" {
       constraints {

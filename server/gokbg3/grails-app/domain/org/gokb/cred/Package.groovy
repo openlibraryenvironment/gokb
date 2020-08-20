@@ -69,6 +69,8 @@ class Package extends KBComponent {
     successor: 'previous',
   ]
 
+  static hasOne = [updateToken: UpdateToken]
+
   static mapping = {
     includes KBComponent.mapping
     listStatus column: 'pkg_list_status_rv_fk'
@@ -117,7 +119,8 @@ class Package extends KBComponent {
 
   static jsonMapping = [
     'ignore'       : [
-      'lastProject'
+      'lastProject',
+      'updateToken'
     ],
     'es'           : [
       'nominalPlatformUuid': "nominalPlatform.uuid",
@@ -780,9 +783,11 @@ select tipp.id,
       result = name_candidates[0]
     } else if (result && result.name != packageHeaderDTO.name) {
       def current_name = result.name
+
       changed |= ClassUtils.setStringIfDifferent(result, 'name', packageHeaderDTO.name)
+
       if (!result.variantNames.find { it.variantName == current_name }) {
-        def new_variant = new KBComponentVariantName(owner: result, variantName: current_name).save(flush: true, failOnError: true)
+        result.ensureVariantName(current_name)
       }
     }
 

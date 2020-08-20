@@ -268,11 +268,12 @@ class ReviewsController {
         }
       }
 
-      if (reqBody.stdDesc) {
+      if (reqBody.stdDesc || reqBody.type) {
         def desc = null
+        def reqDesc = reqBody?.stdDesc ?: reqBody.type
         def cat = RefdataCategory.findByLabel('ReviewRequest.StdDesc')
 
-        if (reqBody.stdDesc instanceof Integer) {
+        if (reqDesc instanceof Integer) {
           def rdv = RefdataValue.get(reqBody.stdDesc)
 
           if (rdv && rdv in cat.values) {
@@ -280,14 +281,14 @@ class ReviewsController {
           }
         }
         else {
-          desc = RefdataCategory.lookup('ReviewRequest.StdDesc', reqBody.stdDesc)
+          desc = RefdataCategory.lookup('ReviewRequest.StdDesc', reqDesc)
         }
 
         if (desc) {
           pars.stdDesc = desc
         }
         else {
-          errors.stdDesc = [[message: "Illegal value for standard description provided!", baddata: reqBody.stdDesc]]
+          errors.stdDesc = [[message: "Illegal value for standard description provided!", baddata: reqDesc]]
         }
       }
 
