@@ -3,6 +3,7 @@ package org.gokb
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import org.apache.commons.lang.RandomStringUtils
 import org.springframework.web.servlet.support.RequestContextUtils
 import org.gokb.cred.*
 import au.com.bytecode.opencsv.CSVReader
@@ -955,6 +956,13 @@ class IntegrationController {
 
                 if ( is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
                   componentUpdateService.ensureCoreData(the_pkg, json.packageHeader, fullsync, user)
+
+                  if (!pkg_validation.match && json.packageHeader.generateToken) {
+                    String charset = (('a'..'z') + ('0'..'9')).join()
+                    def tokenValue = RandomStringUtils.random(255, charset.toCharArray())
+                    def update_token = new UpdateToken(pkg: the_pkg, updateUser: user, value: tokenValue).save(flush:true)
+                    job_result.updateToken = update_token.value
+                  }
 
                   if ( the_pkg.tipps?.size() > 0 ) {
                     existing_tipps = the_pkg.tipps*.id
@@ -2175,6 +2183,7 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def getJobInfo() {
     def result = [ 'result' : 'OK', 'params' : params ]
+    User user = springSecurityService.currentUser
     Integer id = params.int('id')
 
     if (id == null){
@@ -2186,21 +2195,30 @@ class IntegrationController {
 
       if ( job ) {
         log.debug("${job}")
-        result.description = job.description
-        result.startTime = job.startTime
 
-        if ( job.endTime ) {
-          result.finished = true
-          result.endTime = job.endTime
-          result.job_result = job.get()
+        if (user.superUserStatus || (job.ownerId && job.ownerId == user.id)) {
+          result.description = job.description
+          result.startTime = job.startTime
+
+          if ( job.endTime ) {
+            result.finished = true
+            result.endTime = job.endTime
+            result.job_result = job.get()
+          }
+          else {
+            result.finished = false
+            result.progress = job.progress
+          }
         }
         else {
-          result.finished = false
-          result.progress = job.progress
+          result.result = "ERROR"
+          response.setStatus(403)
+          result.message = "No permission to view job with ID ${id}."
         }
       }
       else {
         result.result = "ERROR"
+        response.setStatus(404)
         result.message = "Could not find job with ID ${id}."
       }
     }
