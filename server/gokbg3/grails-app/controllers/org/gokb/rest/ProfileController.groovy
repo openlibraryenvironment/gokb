@@ -1,6 +1,8 @@
 package org.gokb.rest
 
-import com.google.gson.annotations.JsonAdapter
+import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.Role
@@ -15,6 +17,7 @@ class ProfileController {
   def springSecurityService
   def userProfileService
   def passwordEncoder
+  ConcurrencyManagerService concurrencyManagerService
 
   def show() {
     def user = User.get(springSecurityService.principal.id)
@@ -94,5 +97,21 @@ class ProfileController {
   def delete() {
     userProfileService.delete()
     response.status = 204
+  }
+
+  @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
+  def getJobs() {
+    def result = [:]
+    def max = params.limit ? params.long('limit') : 10
+    def offset = params.offset ? params.long('offset') : 0
+    def base = grailsApplication.config.serverURL + "/rest"
+    def sort = params._sort ?: null
+    def order = params._order ?: null
+    User user = User.get(springSecurityService.principal.id)
+    def errors = [:]
+
+    result.data = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+
+    render result as JSON
   }
 }

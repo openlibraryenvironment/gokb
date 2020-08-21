@@ -609,7 +609,7 @@ select tipp.id,
    */
   @Transient
   public static def validateDTO(packageHeaderDTO) {
-    def result = [valid: true, errors:[:]]
+    def result = [valid: true, errors:[:], match:false]
 
     if (!packageHeaderDTO.name?.trim()) {
       result.valid = false
@@ -677,6 +677,55 @@ select tipp.id,
 
     if (id_errors.size() > 0) {
       result.errors.ids = id_errors
+    }
+
+    if (result.valid) {
+      def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+      def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
+
+      def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ?", [pkg_normname, status_deleted])
+      def full_matches = []
+
+      if (packageHeaderDTO.uuid) {
+        result.match = Package.findByUuid(packageHeaderDTO.uuid) ? true : false
+      }
+
+      if (!result.match && name_candidates.size() == 1) {
+        result.match = true
+      }
+
+      if (!result.match) {
+        def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
+        def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
+
+        if (variant_candidates.size() == 1) {
+          result.match = true
+          log.debug("Package matched via existing variantName.")
+        }
+      }
+
+      if (!result.match) {
+        log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
+        packageHeaderDTO.variantNames.each {
+
+          if (it.trim().size() > 0) {
+            def var_pkg = Package.findByName(it)
+
+            if (var_pkg) {
+              log.debug("Found existing package name for variantName ${it}")
+            } else {
+
+              def variant_normname = GOKbTextUtils.normaliseString(it)
+              def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
+
+              if (variant_candidates.size() == 1) {
+                log.debug("Found existing package variant name for variantName ${it}")
+                result.match = true
+              }
+            }
+          }
+        }
+      }
     }
 
     if (packageHeaderDTO.provider && packageHeaderDTO.provider instanceof Integer) {

@@ -80,6 +80,7 @@ class UrlMappings {
       get "/identifier-namespaces"(controller: 'identifier', namespace: 'rest', action: 'namespace')
 
       get "/profile"(controller: 'profile', namespace: 'rest', action: 'show')
+      get "/profile/jobs/"(controller: 'profile', namespace: 'rest', action: 'getJobs')
       put "/profile"(controller: 'profile', namespace: 'rest', action: 'update')
       patch "/profile"(controller: 'profile', namespace: 'rest', action: 'patch')
       delete "/profile"(controller: 'profile', namespace: 'rest', action: 'delete')
@@ -103,6 +104,7 @@ class UrlMappings {
       patch "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
 
       get "/curatoryGroups/$id/reviews"(controller: 'curatoryGroups', namespace: 'rest', action: 'getReviews')
+      get "/curatoryGroups/$id/jobs"(controller: 'curatoryGroups', namespace: 'rest', action: 'getJobs') 
       get "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'show')
       get "/curatoryGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'index')
 

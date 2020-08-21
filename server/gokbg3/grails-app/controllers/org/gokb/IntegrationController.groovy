@@ -3,6 +3,7 @@ package org.gokb
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import org.apache.commons.lang.RandomStringUtils
 import org.springframework.web.servlet.support.RequestContextUtils
 import org.gokb.cred.*
 import au.com.bytecode.opencsv.CSVReader
@@ -927,6 +928,8 @@ class IntegrationController {
           def locale = request_locale
           springSecurityService.reauthenticate(request_user.username)
 
+          job.ownerId = user.id
+
           def pkg_validation = Package.validateDTO(json.packageHeader)
 
           if ( pkg_validation.valid ) {
@@ -939,11 +942,27 @@ class IntegrationController {
               if (the_pkg) {
                 if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
                   is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
+
+                  if (is_curator?.size() == 1) {
+                    job.groupId = is_curator[0]
+                  }
+                  else if (is_curator?.size() > 1) {
+                    log.debug("Got more than one cg candidate!")
+                    job.groupId = is_curator[0]
+                  }
+
                   curated_pkg = true;
                 }
 
                 if ( is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
                   componentUpdateService.ensureCoreData(the_pkg, json.packageHeader, fullsync, user)
+
+                  if (!pkg_validation.match && json.packageHeader.generateToken) {
+                    String charset = (('a'..'z') + ('0'..'9')).join()
+                    def tokenValue = RandomStringUtils.random(255, charset.toCharArray())
+                    def update_token = new UpdateToken(pkg: the_pkg, updateUser: user, value: tokenValue).save(flush:true)
+                    job_result.updateToken = update_token.value
+                  }
 
                   if ( the_pkg.tipps?.size() > 0 ) {
                     existing_tipps = the_pkg.tipps*.id
@@ -1209,11 +1228,12 @@ class IntegrationController {
 
                   if ( json.tipps?.size() > 0 ) {
                     Package.withNewSession {
-                      def ptu = Package.get(the_pkg.id)
+                      def pkg_new = Package.get(the_pkg.id)
+                      def status_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
 
-                      if (ptu.status != status_deleted) {
-                        ptu.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
-                        ptu.save(flush:true)
+                      if (pkg_new.status == status_current && pkg_new?.listStatus != status_ip) {
+                        pkg_new.listStatus = status_ip
+                        pkg_new.save(flush:true)
                       }
                     }
                   }
@@ -1401,6 +1421,7 @@ class IntegrationController {
         }
 
         job.message(job_result.message.toString())
+        job.setProgress(100)
         job.endTime = new Date()
 
         if (errors.global.size() > 0 || errors.tipps.size() > 0) {
@@ -1645,6 +1666,7 @@ class IntegrationController {
         }
 
         job.endTime = new Date()
+        job.setProgress(100)
         job.message("Finished processing ${job_result?.results?.size()} titles.".toString())
 
         return job_result
@@ -2161,6 +2183,7 @@ class IntegrationController {
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def getJobInfo() {
     def result = [ 'result' : 'OK', 'params' : params ]
+    User user = springSecurityService.currentUser
     Integer id = params.int('id')
 
     if (id == null){
@@ -2172,21 +2195,30 @@ class IntegrationController {
 
       if ( job ) {
         log.debug("${job}")
-        result.description = job.description
-        result.startTime = job.startTime
 
-        if ( job.endTime ) {
-          result.finished = true
-          result.endTime = job.endTime
-          result.job_result = job.get()
+        if (user.superUserStatus || (job.ownerId && job.ownerId == user.id)) {
+          result.description = job.description
+          result.startTime = job.startTime
+
+          if ( job.endTime ) {
+            result.finished = true
+            result.endTime = job.endTime
+            result.job_result = job.get()
+          }
+          else {
+            result.finished = false
+            result.progress = job.progress
+          }
         }
         else {
-          result.finished = false
-          result.progress = job.progress
+          result.result = "ERROR"
+          response.setStatus(403)
+          result.message = "No permission to view job with ID ${id}."
         }
       }
       else {
         result.result = "ERROR"
+        response.setStatus(404)
         result.message = "Could not find job with ID ${id}."
       }
     }
