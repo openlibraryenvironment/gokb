@@ -8,6 +8,7 @@ import org.gokb.cred.Identifier
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.JournalInstance
 import grails.converters.JSON
+import org.gokb.cred.RefdataCategory
 
 @Integration
 @Rollback
@@ -17,13 +18,19 @@ class IdentifierTestSpec extends AbstractAuthSpec {
   def ns_eissn
   def test_id
   def test_journal
+  def ns_typeBook
+  def ns_typeOther
+  def ns_typeTitle
 
   def setupSpec() {
   }
 
   def setup() {
+    ns_typeBook = ns_typeBook ?: new IdentifierNamespace(value: 'test_NS_book', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Book')).save(flush: true)
+    ns_typeOther = ns_typeOther ?: new IdentifierNamespace(value: 'test_NS_other', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Other')).save(flush: true)
+    ns_typeTitle = ns_typeTitle ?: new IdentifierNamespace(value: 'test_NS_title', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title')).save(flush: true)
     ns_eissn = ns_eissn ?: IdentifierNamespace.findByValue('eissn')
-    test_id = test_id ?: (Identifier.findByValue("1234-4567") ?: new Identifier(value: "1234-4567", namespace: ns_eissn).save(flush:true))
+    test_id = test_id ?: (Identifier.findByValue("1234-4567") ?: new Identifier(value: "1234-4567", namespace: ns_eissn).save(flush: true))
     test_journal = test_journal ?: new JournalInstance(name: "IdTestJournal")
   }
 
@@ -31,6 +38,9 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     sleep(500)
     test_id?.refresh().expunge()
     test_journal?.refresh().expunge()
+    ns_typeBook?.refresh().delete()
+    ns_typeOther?.refresh().delete()
+    ns_typeTitle?.refresh().delete()
   }
 
   void "test /rest/identifiers/<id> without token"() {
@@ -81,12 +91,38 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     resp.json._links.size() == 1
     resp.json.data.size() >= 8
   }
-    
+
+  void "test /rest/identifier-namespaces?targetType"() {
+    def urlPath = getUrlPath()
+    // use the bearerToken to read /rest/profile
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp1 = rest.get("${urlPath}/rest/identifier-namespaces?targetType=Book") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
+    RestResponse resp2 = rest.get("${urlPath}/rest/identifier-namespaces?targetType=Title") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
+    then:
+    resp1.status == 200 // OK
+    resp1.json.data != null
+    resp1.json._links.size() == 1
+    resp1.json.data.size() == 2
+    resp2.status == 200 // OK
+    resp2.json.data != null
+    resp2.json._links.size() == 1
+    resp2.json.data.size() == 3
+  }
+
   void "test identifier create"() {
     given:
     def urlPath = getUrlPath()
     def obj_map = [
-      value: "6644-2231",
+      value    : "6644-2231",
       namespace: ns_eissn.id
     ]
     when:
@@ -106,7 +142,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     given:
     def urlPath = getUrlPath()
     def obj_map = [
-      value: "6644-223",
+      value    : "6644-223",
       namespace: ns_eissn.id
     ]
     when:
@@ -127,7 +163,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     test_journal = test_journal ?: new JournalInstance(name: "IdTestJournal")
     def obj_map = [
-      value: "6644-2284",
+      value    : "6644-2284",
       namespace: ns_eissn.id,
       component: test_journal.id
     ]

@@ -26,6 +26,7 @@ class IdentifierController {
   def messageService
   def restMappingService
   def componentLookupService
+  def targetTypeMap = [:]
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -226,12 +227,27 @@ class IdentifierController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def namespace() {
-    def result = [_links:[:]]
+    if (targetTypeMap.size() == 0) {
+      fillTargetMap()
+    }
+    def result = [_links: [:]]
     def data = []
     params << [_exclude:"_links"]
     def user = User.get(springSecurityService.principal.id)
     def base = grailsApplication.config.serverURL + "/rest"
-    List<IdentifierNamespace> nss = IdentifierNamespace.all
+    List<IdentifierNamespace> nss = []
+    if (params.targetType != null) {
+      nss = IdentifierNamespace.findAllByTargetType(targetTypeMap[params.targetType])
+      if (params.targetType in ['Book', 'Journal', 'Database', 'Other']) {
+        IdentifierNamespace.findAllByTargetType(targetTypeMap['Title'])
+          .each { ns -> nss << ns }
+      } else if (params.targetType == 'Title') {
+        IdentifierNamespace.findAllByTargetTypeInList([targetTypeMap['Book'], targetTypeMap['Journal'], targetTypeMap['Database'], targetTypeMap['Other']])
+          .each { ns -> nss << ns }
+      }
+    } else {
+      nss = IdentifierNamespace.all
+    }
     nss.each { ns ->
       data << [
         name:ns.value,
@@ -244,5 +260,12 @@ class IdentifierController {
     result.data=data
     result['_links']['self'] = ['href': base + "/identifier-namespaces"]
     render result as JSON
+  }
+
+  private void fillTargetMap() {
+    RefdataValue.findAllByOwner(RefdataCategory.findByLabel('IdentifierNamespace.TargetType'))
+      .each { refVal ->
+        targetTypeMap.put((refVal.value), refVal)
+      }
   }
 }
