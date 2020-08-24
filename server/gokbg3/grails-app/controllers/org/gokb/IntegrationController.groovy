@@ -1051,7 +1051,7 @@ class IntegrationController {
 
                             if( title_class_name == 'org.gokb.cred.BookInstance' ){
 
-                              log.debug("Adding Monograph fields for ${title.class.name}: ${title}")
+                              log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
                               def mg_change = addMonographFields(ti, titleObj)
 
                               // TODO: Here we will have to add authors and editors, like addPerson() in TSVIngestionService
