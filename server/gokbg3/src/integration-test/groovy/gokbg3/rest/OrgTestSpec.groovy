@@ -49,7 +49,7 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     then:
 
-    resp.status == 401 // Unauthorized
+    resp.status == 200 // OK
   }
 
   void "test /rest/orgs/<id> with valid token"() {

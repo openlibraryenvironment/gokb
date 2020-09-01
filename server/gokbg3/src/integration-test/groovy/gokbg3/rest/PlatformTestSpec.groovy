@@ -49,7 +49,7 @@ class PlatformTestSpec extends AbstractAuthSpec {
 
     then:
 
-    resp.status == 401 // Unauthorized
+    resp.status == 200 // OK
   }
 
   void "test /rest/platforms/<id> with valid token"() {
