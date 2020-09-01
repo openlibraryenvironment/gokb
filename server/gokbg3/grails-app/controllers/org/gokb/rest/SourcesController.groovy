@@ -23,11 +23,15 @@ class SourcesController {
   def restMappingService
   def componentLookupService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+    
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     def start_db = LocalDateTime.now()
     result = componentLookupService.restLookup(user, Source, params)
@@ -36,13 +40,17 @@ class SourcesController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
     def obj = null
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+    
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     if (params.oid || params.id) {
       obj = Source.findByUuid(params.id)

@@ -84,13 +84,14 @@ class RestMappingService {
         is_curator = obj.pkg.curatoryGroups?.size() > 0 ? user?.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
       }
 
-      if (is_curator || user?.isAdmin()) {
-        result._links.update = ['href': base + obj.restPath + "/${obj.id}"]
-        result._links.delete = ['href': base + obj.restPath + "/${obj.id}"]
+      result.type = obj.niceName
 
-        if (KBComponent.isAssignableFrom(obj.class)) {
-          result._links.retire = ['href': base + obj.restPath + "/${obj.id}/retire"]
-        }
+      def href = (obj.isEditable() && is_curator) || user?.isAdmin() ? base + obj.restPath + "/${obj.id}" : null
+      result._links.update = ['href': href]
+      result._links.delete = ['href': href]
+
+      if (KBComponent.isAssignableFrom(obj.class)) {
+        result._links.retire = ['href': href ? href + "/retire" : null]
       }
     }
 
@@ -181,6 +182,12 @@ class RestMappingService {
             obj[cp].each {
               result['_embedded'][cp] << getEmbeddedJson(it, user)
             }
+          }
+
+          if (include_list?.contains('publisher') && TitleInstance.isAssignableFrom(obj.class)) {
+            def pub = obj.currentPublisher
+
+            result.publisher = pub ? getEmbeddedJson(pub, user) : null
           }
         }
       }
@@ -375,10 +382,10 @@ class RestMappingService {
             catch (grails.validation.ValidationException ve) {
               log.debug("Could not create ID ${ns}:${i.value}")
 
-              errors << messageService.processValidationErrors(ve)
+              errors << messageService.processValidationErrors(ve.errors)
             }
           } else {
-            errors << [message: message(code:'identifier.value.IllegalIDForm'), baddata: i]
+            errors << [message: messageService.resolveCode('identifier.value.IllegalIDForm', null, null), baddata: i]
             valid = false
           }
         }
@@ -495,13 +502,14 @@ class RestMappingService {
 
   @Transactional
   public def updateVariantNames(obj, vals, boolean remove = true) {
-    log.debug("Update Variants ..")
+    log.debug("Update Variants ${vals} ..")
     def remaining = []
     def notFound = []
 
     try {
       vals.each {
         def newVariant = null
+
         if (it instanceof String) {
           if (it.trim()) {
             def nvn = GOKbTextUtils.normaliseString(it)
@@ -542,7 +550,7 @@ class RestMappingService {
           }
         } else if (it instanceof Map) {
           if (it.id && it.id instanceof Integer) {
-            newVariant = KBComponentVariantName.get(it)
+            newVariant = KBComponentVariantName.get(it.id)
 
             if (newVariant && newVariant.owner == obj) {
               remaining << newVariant
@@ -556,8 +564,9 @@ class RestMappingService {
 
             if (dupes) {
               log.debug("Not adding duplicate variant")
+              remaining << dupes
             } else {
-              newVariant = obj.ensureVariantName(it)
+              newVariant = obj.ensureVariantName(it.variantName)
 
               if (newVariant) {
                 log.debug("Added variant ${newVariant}")
@@ -588,12 +597,18 @@ class RestMappingService {
               }
             }
           }
+          else {
+            log.debug("Unable to process map ${it}!")
+          }
         }
       }
 
       if (notFound.size() == 0) {
         if (!obj.hasErrors() && remove) {
+          log.debug("Retain updated list ${remaining}..")
           obj.variantNames.retainAll(remaining)
+          log.debug("new list: ${obj.variantNames}")
+          obj.save(flush:true)
         }
       } else {
         log.debug("Unable to look up variants ..")
@@ -643,12 +658,12 @@ class RestMappingService {
       }
     }
     else {
-        if (!pubs_to_add.collect { it.id == new_pubs}) {
-          pubs_to_add << Org.get(new_pubs)
-        }
-        else {
-          log.warn("Duplicate for incoming publisher ${new_pubs}!")
-        }
+      if (!pubs_to_add.collect { it.id == new_pubs}) {
+        pubs_to_add << Org.get(new_pubs)
+      }
+      else {
+        log.warn("Duplicate for incoming publisher ${new_pubs}!")
+      }
     }
 
     pubs_to_add.each { publisher ->

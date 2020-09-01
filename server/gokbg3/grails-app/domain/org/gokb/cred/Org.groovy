@@ -104,7 +104,8 @@ class Org extends KBComponent {
     'defaultEmbeds': [
       'ids',
       'variantNames',
-      'curatoryGroups'
+      'curatoryGroups',
+      'providedPlatforms'
     ]
   ]
 

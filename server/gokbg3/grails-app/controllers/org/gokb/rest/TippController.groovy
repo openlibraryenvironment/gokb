@@ -29,11 +29,15 @@ class TippController {
   def restMappingService
   def componentLookupService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+    
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
     def es_search = params.es ? true : false
 
     params.componentType = "TIPP" // Tells ESSearchService what to look for
@@ -53,12 +57,16 @@ class TippController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+    
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     if (params.oid || params.id) {
       def obj = TitleInstancePackagePlatform.findByUuid(params.id)
@@ -67,19 +75,13 @@ class TippController {
         obj = TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
       }
 
-      if (obj?.isReadable()) {
+      if (obj) {
         result = restMappingService.mapObjectToJson(obj, params, user)
       }
-      else if (!obj) {
+      else {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
-        result.result = 'ERROR'
-      }
-      else {
-        result.message = "Access to object was denied!"
-        response.setStatus(403)
-        result.code = 403
         result.result = 'ERROR'
       }
     }

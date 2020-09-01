@@ -24,7 +24,7 @@ class CuratoryGroupsController {
   def componentLookupService
   ConcurrencyManagerService concurrencyManagerService
 
-  @Secured(['IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def curGroups = CuratoryGroup.findAll()
 
@@ -52,11 +52,16 @@ class CuratoryGroupsController {
     render result as JSON
   }
 
-  @Secured(['IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
     def curGroup = null
     def base = grailsApplication.config.serverURL + "/rest"
+    User user = null
+    
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     if (params.oid || params.id) {
       curGroup = CuratoryGroup.findByUuid(params.id)
@@ -69,7 +74,7 @@ class CuratoryGroupsController {
       }
 
       if (curGroup) {
-        result.data = restMappingService.mapObjectToJson(curGroup, params, null)
+        result.data = restMappingService.mapObjectToJson(curGroup, params, user)
       } else {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
