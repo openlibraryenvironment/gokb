@@ -73,7 +73,7 @@ class OrgController {
       }
 
       if (obj?.isReadable()) {
-        result = restMappingService.mapObjectToJson(obj, params, user)
+        result << [data: restMappingService.mapObjectToJson(obj, params, user)]
       }
       else if (!obj) {
         result.message = "Object ID could not be resolved!"

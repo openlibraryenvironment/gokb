@@ -52,7 +52,7 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.status == 401 // Unauthorized
   }
 
-  void "test /rest/orgs/<id> with valid token"() {
+  void "test /rest/orgs with valid token"() {
     given:
 
     def urlPath = getUrlPath()
@@ -66,8 +66,26 @@ class OrgTestSpec extends AbstractAuthSpec {
     }
 
     then:
-
     resp.status == 200 // OK
+  }
+
+  void "test GET /rest/provider/<id> with valid token"() {
+    given:
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+    def id = Org.findByName("TestOrgPatch").id
+
+    when:
+
+    RestResponse resp = rest.get("${urlPath}/rest/provider/$id") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
+
+    then:
+    resp.status == 200 // OK
+    resp.json.data
   }
 
   void "test insert new org"() {
