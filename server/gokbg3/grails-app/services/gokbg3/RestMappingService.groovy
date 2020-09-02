@@ -205,7 +205,7 @@ class RestMappingService {
     log.debug("Ignore: ${toIgnore}, Immutable: ${immutable}")
     pent.getPersistentProperties().each { p -> // list of PersistentProperties
       def newVal = reqBody[p.name]
-      if (!toIgnore.contains(p.name) && !immutable.contains(p.name) && reqBody[p.name]) {
+      if (!toIgnore.contains(p.name) && !immutable.contains(p.name) && reqBody.keySet().contains(p.name)) {
         log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
 
         if (p instanceof Association) {
@@ -332,7 +332,7 @@ class RestMappingService {
       }
     }
     else {
-      obj[p.name] = null
+      obj[prop] = null
     }
   }
 
