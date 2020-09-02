@@ -29,7 +29,7 @@ class ReviewRequestService {
         new AllocatedReviewGroup(group: it, review: req).save(flush:true,failOnError:true)
       }
       else if (KBComponent.has(forComponent, 'curatoryGroups')) {
-        componentToReview.curatoryGroups.each {
+        forComponent.curatoryGroups.each {
           new AllocatedReviewGroup(group: it, review: req).save(flush:true,failOnError:true)
         }
       }

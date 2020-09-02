@@ -1,4 +1,0 @@
-aggr_es_index: gokbtest
-gokb:
-    es:
-        cluster: elasticsearch

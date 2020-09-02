@@ -23,6 +23,7 @@ class ProfileController {
     def user = User.get(springSecurityService.principal.id)
 
     def cur_groups = []
+    def base = grailsApplication.config.serverURL + "/rest"
 
     user.curatoryGroups?.each { cg ->
       cur_groups.add([name: cg.name, id: cg.id, uuid: cg.uuid])
@@ -35,9 +36,9 @@ class ProfileController {
     }
 
     def links = [
-      'self'  : ['href': 'rest/profile'],
-      'update': ['href': 'rest/profile'],
-      'delete': ['href': 'rest/profile']
+      'self'  : ['href': base + '/profile'],
+      'update': ['href': base + '/profile'],
+      'delete': ['href': base + '/profile']
     ]
 
     def result = ['data': [
