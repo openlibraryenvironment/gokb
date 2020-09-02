@@ -30,7 +30,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data.size() == 6
+    resp.json.data.size() == 7
   }
 
   void "test GET /rest/sources/{id}"() {
