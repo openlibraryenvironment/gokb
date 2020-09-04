@@ -102,9 +102,10 @@ class ProfileController {
 
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def getJobs() {
+    log.debug("Get Jobs for profile")
     def result = [:]
-    def max = params.limit ? params.long('limit') : 10
-    def offset = params.offset ? params.long('offset') : 0
+    def max = params.limit ? params.int('limit') : 10
+    def offset = params.offset ? params.int('offset') : 0
     def base = grailsApplication.config.serverURL + "/rest"
     def sort = params._sort ?: null
     def order = params._order ?: null
