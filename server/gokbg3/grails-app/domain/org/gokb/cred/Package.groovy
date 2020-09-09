@@ -506,6 +506,11 @@ select tipp.id,
                   }
                 }
               }
+              builder.'identifiers' {
+                getTippIds(tipp[0]).each { tid ->
+                  builder.'identifier'('namespace': tid[0], 'value': tid[1], 'type': tid[2])
+                }
+              }
               'platform'([id: tipp[4], 'uuid': tipp[14]]) {
                 'primaryUrl'(tipp[10]?.trim())
                 'name'(tipp[3]?.trim())
@@ -542,6 +547,14 @@ select tipp.id,
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [title_id, refdata_ids, status_active], [readOnly: true]);
+    result
+  }
+
+  @Transient
+  private static getTippIds(Long tipp_id) {
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [tipp_id, refdata_ids, status_active], [readOnly: true]);
     result
   }
 

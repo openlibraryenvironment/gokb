@@ -1249,6 +1249,8 @@ class IntegrationController {
                       upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
                       log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp?.url}")
                       upserted_tipp = upserted_tipp?.merge(flush: true)
+
+                      componentUpdateService.ensureCoreData(upserted_tipp, tipp, fullsync)
                     }
                     catch (grails.validation.ValidationException ve) {
                       log.error("ValidationException attempting to cross reference TIPP",ve);

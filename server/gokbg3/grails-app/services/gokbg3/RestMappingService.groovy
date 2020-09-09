@@ -116,6 +116,7 @@ class RestMappingService {
 
                 result[p.name] = [
                   'name': label,
+                  'type': obj[p.name].niceName,
                   'id'  : obj[p.name].id
                 ]
 
