@@ -71,7 +71,6 @@ class ProfileTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200 // OK
     resp.json.data.email == "someone@somewhere.org"
-    resp.json.data._links.self.href == "rest/profile"
   }
 
   void "test GET /rest/profile with stale token"() {

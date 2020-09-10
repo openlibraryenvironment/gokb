@@ -220,6 +220,7 @@ class ComponentUpdateService {
             }
 
             component.refresh()
+            hasChanged = true
             def prop = new KBComponentAdditionalProperty()
             prop.propertyDefn = pType
             prop.apValue = it.value
@@ -243,6 +244,7 @@ class ComponentUpdateService {
           // Add to collection.
           if (new_variant_name) {
             variants << [id: new_variant_name.id, variantName: new_variant_name.variantName]
+            hasChanged = true
           }
         }
       }

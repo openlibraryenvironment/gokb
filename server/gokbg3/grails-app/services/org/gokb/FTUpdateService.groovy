@@ -247,6 +247,41 @@ class FTUpdateService {
         result
       }
 
+      updateES(esclient, org.gokb.cred.OtherInstance.class) { kbc ->
+
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
+        def result = null
+        def current_pub = kbc.currentPublisher
+
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
+        result.name = kbc.name
+        result.sortname = kbc.name
+        // result.publisher = kbc.currentPublisher?.name
+        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
+        result.publisherName = current_pub?.name
+        result.publisherUuid = current_pub?.uuid ?: ""
+        result.altname = []
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+
+        result.status = kbc.status?.value
+
+        result.identifiers = []
+        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
+          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        }
+
+        result.componentType=kbc.class.simpleName
+
+        // log.debug("process ${result}");
+        result
+      }
+
       updateES(esclient, org.gokb.cred.BookInstance.class) { kbc ->
 
         def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
