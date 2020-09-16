@@ -2,7 +2,7 @@ package org.gokb
 
 import com.k_int.ConcurrencyManagerService.Job
 import grails.gorm.transactions.Transactional
-
+import grails.io.IOUtils
 import org.gokb.cred.*
 import org.grails.orm.hibernate.HibernateSession
 import org.hibernate.ScrollMode
@@ -940,45 +940,37 @@ class PackageService {
       } catch (IOException iox) {
         log.error("Problem while collecting data", iox)
       }
-
-      // step two: zip data
-      def zipFileName = exportFilePath() + "gokbExport_${pathPrefix}.zip"
-      ZipOutputStream zipFile = new ZipOutputStream(new FileOutputStream(zipFileName))
-      new File("${exportFilePath()}/$pathPrefix").eachFile() { file ->
-        //check if file
-        if (file.isFile()) {
-          zipFile.putNextEntry(new ZipEntry(file.name))
-          def buffer = new byte[file.size()]
-          file.withInputStream {
-            zipFile.write(buffer, 0, it.read(buffer))
-          }
-          zipFile.closeEntry()
-        }
-      }
-      zipFile.close()
-
-      // step three pipe the zipfile into the responsestream
-      File file = new File(zipFileName)
-      response.setContentType('application/octet-stream');
-      response.setHeader("Content-Disposition", "attachment; filename=\"gokbExport.zip\"")
-      response.setHeader("Content-Description", "File Transfer")
-      response.setHeader("Content-Transfer-Encoding", "binary")
-      response.setContentLength(file.bytes.length)
-
-      Reader reader = new FileReader(file)
-      def out = response.outputStream
-      out.withWriter { writer ->
-        int c = reader.read()
-        while (c != -1) {
-          writer.write(c)
-          c = reader.read()
-        }
-        writer.flush()
-        writer.close()
-        reader.close()
-      }
-      out.close()
     }
+
+    // step two: zip data
+    def zipFileName = exportFilePath() + "gokbExport_${pathPrefix}.zip"
+    ZipOutputStream zipFile = new ZipOutputStream(new FileOutputStream(zipFileName))
+    new File("${exportFilePath()}/$pathPrefix").eachFile() { file ->
+      //check if file
+      if (file.isFile()) {
+        zipFile.putNextEntry(new ZipEntry(file.name))
+        def buffer = new byte[file.size()]
+        file.withInputStream {
+          zipFile.write(buffer, 0, it.read(buffer))
+        }
+        zipFile.closeEntry()
+      }
+    }
+    zipFile.close()
+
+    // step three: copy the zipfile into the response
+    File file = new File(zipFileName)
+    response.setContentType('application/octet-stream');
+    response.setHeader("Content-Disposition", "attachment; filename=\"gokbExport.zip\"")
+    response.setHeader("Content-Description", "File Transfer")
+    response.setHeader("Content-Transfer-Encoding", "binary")
+    response.setContentLength(file.length())
+
+    InputStream input = new FileInputStream(file)
+    OutputStream output = response.outputStream
+    IOUtils.copy(input, output)
+    output.close()
+    input.close()
   }
 
   private String generateExportFileName(Package pkg, ExportType type) {
