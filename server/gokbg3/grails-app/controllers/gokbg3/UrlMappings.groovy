@@ -16,6 +16,7 @@ class UrlMappings {
     group "/rest", {
       post "/packages/$id/retire"(controller: 'package', namespace: 'rest', action:'retire')
       post "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'addTipps')
+      put "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'updateTipps')
       "/packages/$id/$action"(controller: 'package', namespace: 'rest')
       get "/packages/$id"(controller: 'package', namespace: 'rest', action: 'show')
       put "/packages/$id"(controller: 'package', namespace: 'rest', action: 'update')

@@ -167,7 +167,7 @@ class RestMappingService {
             if (cval == null) {
               result[cp] = null
             } else {
-              result[cp] = ['id': cval.id, 'name': cval.name, 'uuid': cval.uuid]
+              result[cp] = ['id': cval.id, 'name': cval.name, 'type': cval.niceName, 'uuid': cval.uuid]
             }
           }
 
