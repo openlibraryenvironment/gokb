@@ -895,23 +895,16 @@ class PackageService {
           createTsvExport(pkg)
         file = new File(exportFilePath() + fileName)
       }
-      Reader reader = new FileReader(file)
+      InputStream inFile = new FileInputStream(file)
 
       response.setContentType('text/tab-separated-values');
       response.setHeader("Content-Disposition", "attachment; filename=\"${fileName.substring(0, fileName.length() - 13)}.tsv\"")
+      response.setHeader("Content-Encoding", "UTF-8")
       response.setContentLength(file.bytes.length)
 
       def out = response.outputStream
-      out.withWriter { writer ->
-        int c = reader.read()
-        while (c != -1) {
-          writer.write(c)
-          c = reader.read()
-        }
-        writer.flush()
-        writer.close()
-        reader.close()
-      }
+      IOUtils.copy(inFile, out)
+      inFile.close()
       out.close()
     }
     catch (Exception e) {

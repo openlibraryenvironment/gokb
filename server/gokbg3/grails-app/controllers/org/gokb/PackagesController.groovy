@@ -333,7 +333,6 @@ class PackagesController {
     result
   }
 
-
   @Transactional(readOnly = true)
   def kbart() {
     if (request.method == "GET") {
@@ -343,16 +342,15 @@ class PackagesController {
         }
         return response
       }
-
-      def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id) ?: Package.findById(params.id)
-
-      packageService.sendFile(pkg, PackageService.ExportType.KBART, response)
+      def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+      if (pkg)
+        packageService.sendFile(pkg, PackageService.ExportType.KBART, response)
+      else
+        log.error("Cant find package with ID ${params.id}")
     } else if (request.method == "POST") {
       def packs = []
       request.JSON.data.ids.each { id ->
-        def pkg = Package.findByUuid(id)
-        if (!pkg )
-          genericOIDService.resolveOID(id)
+        def pkg = Package.findByUuid(id) ?: genericOIDService.resolveOID(id)
         if (pkg)
           packs << pkg
       }
@@ -369,17 +367,15 @@ class PackagesController {
         }
         return response
       }
-
-      def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id) ?: Package.findById(params.id)
-
-      packageService.sendFile(pkg, PackageService.ExportType.TSV, response)
-
+      def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+      if (pkg)
+        packageService.sendFile(pkg, PackageService.ExportType.TSV, response)
+      else
+        log.error("Cant find package with ID ${params.id}")
     } else if (request.method == "POST") {
       def packs = []
       request.JSON.data.ids.each { id ->
-        def pkg = Package.findByUuid(id)
-        if (!pkg )
-          genericOIDService.resolveOID(id)
+        def pkg = Package.findByUuid(id) ?: genericOIDService.resolveOID(id)
         if (pkg)
           packs << pkg
       }
