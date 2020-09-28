@@ -23,28 +23,33 @@ class PackageExportSpec extends Specification {
   JournalInstance journal1, journal2, journal3
   Package pack1, pack2
   Platform plt
+  TitleInstancePackagePlatform tipp1, tipp2, tipp3, tipp4
 
   def setup() {
-    journal1 = new JournalInstance(name: "journal1")
-    journal2 = new JournalInstance(name: "journal2")
-    journal3 = new JournalInstance(name: "journal3")
-    pack1 = new Package(name: "package1")
-    pack2 = new Package(name: "package2")
-    plt = new Platform(name: "platform")
+    journal1 = JournalInstance.findByName("journal1") ?: new JournalInstance(name: "journal1")
+    journal2 = JournalInstance.findByName("journal2") ?: new JournalInstance(name: "journal2")
+    journal3 = JournalInstance.findByName("journal3") ?: new JournalInstance(name: "journal3")
+    pack1 = Package.findByName("package1") ?: new Package(name: "package1")
+    pack2 = Package.findByName("package2") ?: new Package(name: "package2")
+    plt = Platform.findByName("platform") ?: new Platform(name: "platform")
 
-    TitleInstancePackagePlatform tipp1 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal1, accessStartDate: new Date())
-    TitleInstancePackagePlatform tipp2 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal2, accessStartDate: new Date())
-    TitleInstancePackagePlatform tipp3 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack2, title: journal3, accessStartDate: new Date())
-    TitleInstancePackagePlatform tipp4 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack2, title: journal2, accessStartDate: new Date())
+    tipp1 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal1, accessStartDate: new Date())
+    tipp2 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal2, accessStartDate: new Date())
+    tipp3 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack2, title: journal3, accessStartDate: new Date())
+    tipp4 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack2, title: journal2, accessStartDate: new Date())
   }
 
   def cleanup() {
-/*    plt.delete(flush:true)
-    pack1.delete(flush:true)
-    pack2.delete(flush:true)
-    journal1.delete(flush:true)
-    journal2.delete(flush:true)
-    journal3.delete(flush:true)*/
+    tipp1.expunge()
+    tipp2.expunge()
+    tipp3.expunge()
+    tipp4.expunge()
+    journal1.expunge()
+    journal2.expunge()
+    journal3.expunge()
+    pack1.expunge()
+    pack2.expunge()
+    plt.expunge()
   }
 
   private String getUrlPath() {
