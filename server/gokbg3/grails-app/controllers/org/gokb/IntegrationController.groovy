@@ -1077,6 +1077,11 @@ class IntegrationController {
                             valid = false
                           }
                         }
+                        catch (org.gokb.exceptions.MultipleComponentsMatchedException mcme) {
+                          log.debug("Handling MultipleComponentsMatchedException")
+                          result.result = "ERROR"
+                          result.message = messageService.resolveCode('crossRef.title.error.multipleMatches', [tipp?.title?.name, mcme.matched_ids], locale)
+                        }
                         catch (grails.validation.ValidationException ve) {
                           log.error("ValidationException attempting to cross reference title",ve);
                           valid_ti = false
@@ -1816,6 +1821,11 @@ class IntegrationController {
                 result.baddata = titleObj.identifiers
                 result.message = messageService.resolveCode('crossRef.title.error.dupes', [title.name], locale)
               }
+            }
+            catch (org.gokb.exceptions.MultipleComponentsMatchedException mcme) {
+              log.debug("Handling MultipleComponentsMatchedException")
+              result.result = "ERROR"
+              result.message = messageService.resolveCode('crossRef.title.error.multipleMatches', [titleObj.name, mcme.matched_ids], locale)
             }
             catch (grails.validation.ValidationException ve) {
               log.debug("ValidationException attempting to cross reference title",ve);

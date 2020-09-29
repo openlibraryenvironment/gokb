@@ -123,6 +123,7 @@ class PackageController {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
     def generateToken = params.generateToken ? params.boolean('generateToken') : (reqBody.generateToken ? true : false)
+    def request_locale = RequestContextUtils.getLocale(request)
     UpdateToken update_token = null
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
@@ -157,7 +158,7 @@ class PackageController {
         }
         else if (obj?.hasErrors()) {
           log.debug("Object has errors!")
-          errors << messageService.processValidationErrors(obj.errors, request.locale)
+          errors << messageService.processValidationErrors(obj.errors, request_locale)
         }
         else if (obj) {
           def jsonMap = obj.jsonMapping
@@ -216,7 +217,7 @@ class PackageController {
             result.result = 'ERROR'
             obj.discard()
             response.setStatus(400)
-            errors << messageService.processValidationErrors(obj.errors, request.locale)
+            errors << messageService.processValidationErrors(obj.errors, request_locale)
           }
         }
       }
@@ -248,6 +249,9 @@ class PackageController {
     def reqBody = request.JSON
     def errors = [:]
     def remove = (request.method == 'PUT')
+    def generateToken = params.generateToken ? params.boolean('generateToken') : (reqBody.generateToken ? true : false)
+    UpdateToken update_token = null
+    def request_locale = RequestContextUtils.getLocale(request)
     def user = User.get(springSecurityService.principal.id)
     def editable = true
     def obj = Package.findByUuid(params.id)
@@ -290,6 +294,19 @@ class PackageController {
         errors << updateCombos(obj, reqBody, remove)
 
         if( obj.validate() ) {
+          if (generateToken) {
+            String charset = (('a'..'z') + ('0'..'9')).join()
+            result.updateToken = RandomStringUtils.random(255, charset.toCharArray())
+
+            if (obj.updateToken) {
+              def old_token = obj.updateToken
+
+              old_token.delete(flush:true)
+            }
+
+            update_token = new UpdateToken(pkg: obj, updateUser: user, value: result.updateToken).save(flush:true)
+          }
+
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush:true)
@@ -303,7 +320,7 @@ class PackageController {
         else {
           result.result = 'ERROR'
           response.setStatus(400)
-          errors << messageService.processValidationErrors(obj.errors, request.locale)
+          errors << messageService.processValidationErrors(obj.errors, request_locale)
         }
       }
       else {
@@ -387,25 +404,49 @@ class PackageController {
     if (reqBody.tipps) {
       reqBody.tipps.each { tipp_dto ->
         tipp_dto.pkg = obj.id
+        def ti_errors = []
 
         if (tipp_dto.title && tipp_dto.title instanceof Map) {
           if (!tipp_dto.id) {
-            def ti = TitleInstance.upsertDTO(tipp_dto.title)
+            try {
+              def ti = TitleInstance.upsertDTO(tipp_dto.title)
 
-            if (ti) {
-              tipp_dto.title = ti.id
+              if (ti) {
+                tipp_dto.title = ti.id
+              }
+            }
+            catch (grails.validation.ValidationException ve) {
+              log.error("ValidationException attempting to cross reference title",ve);
+              valid_ti = false
+              def validation_errors = [
+                message: "Title ${tipp_dto.title?.name} failed validation!",
+                baddata: tipp_dto.title,
+                errors: messageService.processValidationErrors(ve.errors)
+              ]
+              ti_errors.add(validation_errors)
+            }
+            catch (org.gokb.exceptions.MultipleComponentsMatchedException mcme) {
+              log.debug("Handling MultipleComponentsMatchedException")
+              valid_ti = false
+              ti_errors.add([baddata: tipp_dto.title, 'message': "Unable to uniquely match title ${tipp_dto.title?.name}, check duplicates for titles ${mcme.matched_ids}!", conflicts: mcme.matched_ids])
             }
           }
         }
 
         def tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp_dto)
 
-        if (!tipp_validation.valid) {
+        if (ti_errors?.size > 0 || !tipp_validation.valid) {
           if (!errors.tipps) {
             errors.tipps = []
           }
 
-          errors.tipps << tipp_validation.errors
+          if (ti_errors?.size > 0) {
+            errors.tipps << ti_errors
+          }
+
+          if(!tipp_validation.valid) {
+            errors.tipps << tipp_validation.errors
+          }
         }
         else {
           def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp_dto)
@@ -837,6 +878,11 @@ class PackageController {
                               errors: messageService.processValidationErrors(ve.errors)
                             ]
                             errors.add(validation_errors)
+                          }
+                          catch (org.gokb.exceptions.MultipleComponentsMatchedException mcme) {
+                            log.debug("Handling MultipleComponentsMatchedException")
+                            valid = false
+                            errors.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.title.error.multipleMatches', [tipp?.title?.name, mcme.matched_ids], locale)])
                           }
                         }
 

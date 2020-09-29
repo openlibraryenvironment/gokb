@@ -95,7 +95,7 @@ class RestMappingService {
       }
     }
 
-    if (embed_active.size() > 0 || jsonMap?.defaultEmbeds?.size() > 0) {
+    if (embed_active.size() > 0 || jsonMap?.defaultEmbeds?.size() > 0 || user?.editorStatus) {
       result['_embedded'] = [:]
     }
 
@@ -128,7 +128,7 @@ class RestMappingService {
               }
             }
           } else {
-            if (embed_active.contains(p.name) && (user?.isAdmin() || p.type != User)) {
+            if ( (embed_active.contains(p.name) && (user?.isAdmin() || p.type != User))  || (p.name == 'reviewRequests' && user?.editorStatus) ) {
               result['_embedded'][p.name] = []
 
               obj[p.name].each {
