@@ -13,6 +13,8 @@ import org.gokb.cred.TitleInstancePackagePlatform
 import spock.lang.Specification
 import groovyx.net.http.HTTPBuilder
 
+import java.text.SimpleDateFormat
+
 @Integration
 @Rollback
 class PackageExportSpec extends Specification {
@@ -65,6 +67,9 @@ class PackageExportSpec extends Specification {
 
     then:
     resp.status == 200 // OK
+    resp.body.contains("journal1")
+    resp.body.contains("journal2")
+    resp.headers["Content-Disposition"] == ["attachment; filename=\"null_${pack1.name}_${new SimpleDateFormat("yyyy-MM-dd").format(new Date())}.tsv\""]
   }
 
   void "test POST /packages/packageTSVExport/"() {
@@ -81,6 +86,9 @@ class PackageExportSpec extends Specification {
 
     then:
     resp.status == 200 // OK
+    resp.body.contains("GoKBPackage-" + pack1.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
+    resp.body.contains("GoKBPackage-" + pack2.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
+    resp.headers["Content-Disposition"] == ["attachment; filename=\"gokbExport.zip\""]
   }
 }
 
