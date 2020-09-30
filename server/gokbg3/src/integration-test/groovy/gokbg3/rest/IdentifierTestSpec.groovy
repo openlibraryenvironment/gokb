@@ -15,19 +15,19 @@ import org.gokb.cred.RefdataCategory
 class IdentifierTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest = new RestBuilder()
-  def ns_eissn
-  def test_id
-  def test_journal
-  def ns_typeBook
-  def ns_typeOther
-  def ns_typeTitle
+  IdentifierNamespace ns_eissn
+  Identifier test_id
+  JournalInstance test_journal
+  IdentifierNamespace ns_typeBook
+  IdentifierNamespace ns_typeOther
+  IdentifierNamespace ns_typeTitle
 
   def setupSpec() {
   }
 
   def setup() {
-    ns_typeBook = ns_typeBook ?: new IdentifierNamespace(value: 'test_NS_book', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Book')).save(flush: true)
-    ns_typeOther = ns_typeOther ?: new IdentifierNamespace(value: 'test_NS_other', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Other')).save(flush: true)
+    ns_typeBook = ns_typeBook ?: new IdentifierNamespace(value: 'test_NS_book', name:'name_NS_book', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Book')).save(flush: true)
+    ns_typeOther = ns_typeOther ?: new IdentifierNamespace(value: 'test_NS_other',name:'name_NS_other', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Other')).save(flush: true)
     ns_typeTitle = ns_typeTitle ?: new IdentifierNamespace(value: 'test_NS_title', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title')).save(flush: true)
     ns_eissn = ns_eissn ?: IdentifierNamespace.findByValue('eissn')
     test_id = test_id ?: (Identifier.findByValue("1234-4567") ?: new Identifier(value: "1234-4567", namespace: ns_eissn).save(flush: true))
@@ -89,6 +89,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     resp.json.data != null
     resp.json._links.size() == 1
     resp.json.data.size() >= 8
+    resp.json.data[1].name != null
   }
 
   void "test /rest/identifier-namespaces?targetType"() {

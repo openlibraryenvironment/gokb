@@ -667,8 +667,8 @@ class IntegrationControllerSpec extends Specification {
     resp.status == 200
 
     expect: "prices are set correctly"
-    sleep(400)
     def title = TitleInstance.findById(resp.json.results.titleId)
+    sleep(400)
     title?.prices?.size() == 2
     title?.subjectArea
     title?.series

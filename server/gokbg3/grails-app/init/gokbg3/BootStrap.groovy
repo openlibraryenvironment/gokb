@@ -228,14 +228,14 @@ class BootStrap {
 
     log.info("Ensure default Identifier namespaces")
     def namespaces = [
-      [value:'isbn', family:'isxn', pattern:"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
-      [value:'pisbn', family:'isxn', pattern:"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
-      [value:'issn', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
-      [value:'eissn', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
-      [value:'issnl', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
-      [value:'doi'],
-      [value:'zdb', pattern:"^\\d+-[\\dxX]\$"],
-      [value:'isil', pattern:"^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
+      [value:'isbn', name:'Internationale Standardbuchnummer', family:'isxn', pattern:"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
+      [value:'pisbn', name:'pISBN',  family:'isxn', pattern:"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
+      [value:'issn', name:'Internationale Standardnummer für fortlaufende Sammelwerke ', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
+      [value:'eissn', name:'Internationale elektronische Standardzeitschriftennummer', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
+      [value:'issnl', name:'ISSN-L', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
+      [value:'doi', name:'Digital Object Identifier'],
+      [value:'zdb', name:'Zeitschriftendatenbank', pattern:"^\\d+-[\\dxX]\$"],
+      [value:'isil', name:'International Standard Identifier for Libraries and Related Organizations', pattern:"^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
     ]
 
     namespaces.each { ns ->

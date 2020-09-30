@@ -3,6 +3,7 @@ import com.k_int.ClassUtils
 
 class IdentifierNamespace {
 
+  String name
   String value
   RefdataValue  datatype
   RefdataValue targetType
@@ -10,6 +11,7 @@ class IdentifierNamespace {
   String family
 
   static mapping = {
+    name column:'idns_name'
     value column:'idns_value'
     datatype column:'idns_datatype'
     targetType column:'idns_targettype'
@@ -53,7 +55,6 @@ class IdentifierNamespace {
         result.add([id:"org.gokb.cred.IdentifierNamespace:${t[0]}",text:"${t[1]} "])
       }
     }
-
     result
   }
 
@@ -62,8 +63,6 @@ class IdentifierNamespace {
   }
 
   public String toString() {
-    "${this.value}".toString()
+    "${name?name:value}".toString()
   }
-
-
 }

@@ -253,7 +253,7 @@ class IdentifierController {
     }
     nss.each { ns ->
       data << [
-        name:ns.value,
+        name:ns.name,
         value:ns.value,
         id: ns.id,
         pattern: ns.pattern,
