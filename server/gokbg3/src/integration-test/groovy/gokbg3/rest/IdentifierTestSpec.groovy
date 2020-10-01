@@ -26,21 +26,27 @@ class IdentifierTestSpec extends AbstractAuthSpec {
   }
 
   def setup() {
-    ns_typeBook = ns_typeBook ?: new IdentifierNamespace(value: 'test_NS_book', name:'name_NS_book', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Book')).save(flush: true)
-    ns_typeOther = ns_typeOther ?: new IdentifierNamespace(value: 'test_NS_other',name:'name_NS_other', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Other')).save(flush: true)
-    ns_typeTitle = ns_typeTitle ?: new IdentifierNamespace(value: 'test_NS_title', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title')).save(flush: true)
-    ns_eissn = ns_eissn ?: IdentifierNamespace.findByValue('eissn')
-    test_id = test_id ?: (Identifier.findByValue("1234-4567") ?: new Identifier(value: "1234-4567", namespace: ns_eissn).save(flush: true))
-    test_journal = test_journal ?: new JournalInstance(name: "IdTestJournal")
+    ns_typeBook = IdentifierNamespace.findByValue('test_NS_book') ?: new IdentifierNamespace(value: 'test_NS_book', name: 'name_NS_book', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Book')).save(flush:true)
+    ns_typeOther = IdentifierNamespace.findByValue('test_NS_other') ?: new IdentifierNamespace(value: 'test_NS_other', name: 'name_NS_other', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Other')).save(flush:true)
+    ns_typeTitle = IdentifierNamespace.findByValue('test_NS_title') ?: new IdentifierNamespace(value: 'test_NS_title', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title')).save(flush:true)
+    ns_eissn = IdentifierNamespace.findByValue('eissn') ?:new IdentifierNamespace(value:'eissn').save(flush:true)
+    test_id = Identifier.findByValue("1234-4567") ?: new Identifier(value: "1234-4567", namespace: ns_eissn).save(flush:true)
+    test_journal = JournalInstance.findByName("IdTestJournal") ?: new JournalInstance(name: "IdTestJournal").save(flush:true)
   }
 
   def cleanup() {
     sleep(500)
-    test_id?.refresh().expunge()
+    Identifier.findByValue("6644-2231")?.expunge()
+    Identifier.findByValue("6644-223")?.expunge()
+    Identifier.findByValue("6644-2284")?.expunge()
+    Identifier.findByValue("2256676-4")?.expunge()
+    Identifier.findByValue("0001-5547")?.expunge()
+    Identifier.findByValue("1938-2650")?.expunge()
+    test_id?.expunge()
     test_journal?.refresh().expunge()
-    ns_typeBook?.refresh().delete()
-    ns_typeOther?.refresh().delete()
-    ns_typeTitle?.refresh().delete()
+    ns_typeBook?.delete(flush: true)
+    ns_typeOther?.delete(flush: true)
+    ns_typeTitle?.delete(flush: true)
   }
 
   void "test /rest/identifiers/<id> without token"() {
@@ -54,7 +60,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
       accept('application/json')
     }
     then:
-      resp.status == 200 // OK
+    resp.status == 200 // OK
   }
 
   void "test /rest/identifiers/<id> with valid token"() {
@@ -94,7 +100,6 @@ class IdentifierTestSpec extends AbstractAuthSpec {
 
   void "test /rest/identifier-namespaces?targetType"() {
     def urlPath = getUrlPath()
-    // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
     RestResponse resp1 = rest.get("${urlPath}/rest/identifier-namespaces?targetType=Book") {

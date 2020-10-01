@@ -21,6 +21,7 @@ class IdentifierNamespace {
 
   static constraints = {
     // II: Want this, but need to tidy live first :: value (nullable:true, blank:false, unique:true)
+    name (nullable:true)
     value (nullable:true, blank:false, unique:true)
     datatype (nullable:true, blank:false)
     family (nullable:true, blank:false)
@@ -63,6 +64,6 @@ class IdentifierNamespace {
   }
 
   public String toString() {
-    "${name?name:value}".toString()
+    "${value}".toString()
   }
 }
