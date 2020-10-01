@@ -193,6 +193,13 @@ class RestMappingService {
         }
       }
     }
+    else if (obj.class == ReviewRequest && embed_active.contains('allocatedGroups')) {
+      result.allocatedGroups = []
+
+      obj.allocatedGroups?.each {
+        result.allocatedGroups << [name: it.group.name, id: it.group.id]
+      }
+    }
     result
   }
 
@@ -269,7 +276,7 @@ class RestMappingService {
                 } else {
                   obj.errors.reject(
                     'rdc.values.notFound',
-                    [linkObj.id, cat] as Object[],
+                    [rdv, cat] as Object[],
                     '[Value {0} is not valid for category {1}!]'
                   )
                   obj.errors.rejectValue(
@@ -288,6 +295,56 @@ class RestMappingService {
                   prop,
                   'default.not.found.message'
                 )
+              }
+            }
+            else if (val instanceof Map) {
+              if (val.id) {
+                rdv = RefdataValue.get(val.id)
+
+                if (rdv) {
+                  if (rdv in cat.values) {
+                    obj[prop] = rdv
+                  } else {
+                    obj.errors.reject(
+                      'rdc.values.notFound',
+                      [rdv, cat] as Object[],
+                      '[Value {0} is not valid for category {1}!]'
+                    )
+                    obj.errors.rejectValue(
+                      prop,
+                      'rdc.values.notFound'
+                    )
+                  }
+                }
+                else {
+                  obj.errors.reject(
+                    'default.not.found.message',
+                    [ptype, val.id] as Object[],
+                    '[{0} not found with id {1}]'
+                  )
+                  obj.errors.rejectValue(
+                    prop,
+                    'default.not.found.message'
+                  )
+                }
+              }
+              else if (val.name) {
+                rdv = RefdataCategory.lookup(catName, val.name)
+
+                if (!rdv) {
+                  obj.errors.reject(
+                    'rdc.values.notFound',
+                    [val.name, prop] as Object[],
+                    '[{0} is not a valid value for property {1}!]'
+                  )
+                  obj.errors.rejectValue(
+                    prop,
+                    'rdc.values.notFound'
+                  )
+                }
+                else {
+                  obj[prop] = rdv
+                }
               }
             }
             else {

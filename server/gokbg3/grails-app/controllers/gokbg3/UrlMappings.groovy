@@ -101,6 +101,7 @@ class UrlMappings {
 
       get "/reviews"(controller: 'reviews', namespace: 'rest', action: 'index')
       get "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'show')
+      post "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'save')
       put "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
       patch "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
 

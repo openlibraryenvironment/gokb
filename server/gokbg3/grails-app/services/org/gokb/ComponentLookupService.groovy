@@ -355,6 +355,35 @@ class ComponentLookupService {
       qryParams['status'] = RefdataCategory.lookup("ReviewRequest.Status", "Deleted")
     }
 
+    if (cls == ReviewRequest && params['allocatedGroups']) {
+      def cgs = params.list('allocatedGroups')
+      def validCgs = []
+
+      cgs.each { cg ->
+        try {
+          validCgs.add(CuratoryGroup.get(Long.valueOf(cg)))
+        }
+        catch (java.lang.NumberFormatException nfe) {
+          log.debug("Received illegal value ${cg}' for curatoryGroups filter!")
+        }
+      }
+
+      if (validCgs.size() > 0 ) {
+        log.debug("Filtering for CGs: ${validCgs}")
+
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+
+        hqlQry += "exists (select alg from AllocatedReviewGroup as alg where alg.review = p and alg.group IN :alg)"
+        qryParams['alg'] = validCgs
+      }
+    }
+
     def hqlCount = "select ${genericTerm ? 'distinct': ''} count(p.id) ${hqlQry}".toString()
     def hqlFinal = "select ${genericTerm ? 'distinct': ''} p ${sort ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
