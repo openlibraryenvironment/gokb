@@ -1463,7 +1463,7 @@ where cp.owner = :c
   def addCoreGOKbXmlFields(builder, attr) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids')
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def cids = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[this,refdata_ids,status_active],[readOnly:true])
+    def cids = Identifier.executeQuery("select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[this,refdata_ids,status_active],[readOnly:true])
     String cName = this.class.name
 
     // Singel props.
@@ -1475,7 +1475,7 @@ where cp.owner = :c
     // Identifiers
     builder.'identifiers' {
       cids?.each { tid ->
-        builder.'identifier' ('namespace':tid[0], 'value':tid[1], 'type':tid[2])
+        builder.'identifier' ('namespace':tid[0], 'namespaceName':tid[1], 'value':tid[2], 'type':tid[3])
       }
       if ( grailsApplication.config.serverUrl || grailsApplication.config.baseUrl ) {
         builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl ?: grailsApplication.config.baseUrl}/resource/show/${cName}:${id}")
