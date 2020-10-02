@@ -66,6 +66,7 @@ class IntegrationControllerSpec extends Specification {
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
       title.expunge()
     }
+
   }
 
   void "Test assertGroup"() {
