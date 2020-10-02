@@ -97,6 +97,8 @@ class UrlMappings {
 
       get "/sources"(controller: 'sources', namespace: 'rest', action: 'index')
       get "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'show')
+      put "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'update')
+      patch "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'update')
       post "/sources"(controller: 'sources', namespace: 'rest', action: 'save')
 
       get "/reviews"(controller: 'reviews', namespace: 'rest', action: 'index')

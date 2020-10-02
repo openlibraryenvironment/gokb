@@ -112,7 +112,8 @@ class SourcesController {
     if (!errors) {
       if ( source.validate() ) {
         source.save(flush: true)
-        result.data = restMappingService.mapObjectToJson(source, params, user)
+        response.setStatus(201)
+        result = restMappingService.mapObjectToJson(source, params, user)
       } else {
         result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
         response.setStatus(409)
@@ -120,7 +121,35 @@ class SourcesController {
       }
     } else {
       response.setStatus(400)
-      result = errors
+      result.errors = errors
+      result.result = 'ERROR'
+    }
+    render result as JSON
+  }
+
+  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def update() {
+    Source source = Source.get(genericOIDService.oidToId(params.id))
+    def result = [:]
+    def errors = [:]
+    def remove = (request.method == 'PUT')
+    User user = User.get(springSecurityService.principal.id)
+
+    source = restMappingService.updateObject(source, null, request.JSON)
+
+    if (!errors) {
+      if ( source.validate() ) {
+        source = source.merge(flush: true)
+        result = restMappingService.mapObjectToJson(source, params, user)
+      } else {
+        result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
+        response.setStatus(409)
+        source?.discard()
+      }
+    } else {
+      response.setStatus(400)
+      result.errors = errors
       result.result = 'ERROR'
     }
     render result as JSON

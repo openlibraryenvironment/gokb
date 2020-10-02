@@ -372,7 +372,7 @@ class PackageController {
       }
 
       if (prov) {
-        if (!obj.hasErrors() && errors.size() == 0) {
+        if (!obj.hasErrors() && errors.size() == 0 && prov != obj.provider) {
           obj.provider = prov
         }
       }
@@ -392,7 +392,7 @@ class PackageController {
       }
 
       if (plt) {
-        if (!obj.hasErrors() && errors.size() == 0) {
+        if (!obj.hasErrors() && errors.size() == 0 && plt != obj.nominalPlatform) {
           obj.nominalPlatform = plt
         }
       }

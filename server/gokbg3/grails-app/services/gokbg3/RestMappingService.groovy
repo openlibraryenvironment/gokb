@@ -8,6 +8,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import org.gokb.cred.*
+import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -404,9 +405,9 @@ class RestMappingService {
   @Transactional
   public def updateIdentifiers(obj, ids, boolean remove = true) {
     log.debug("updating ids ${ids}")
-    RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    RefdataValue combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
-    RefdataValue combo_expired = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_EXPIRED)
+    def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    def combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
+    def combo_expired = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_EXPIRED)
     def id_combos = obj.getCombosByPropertyName('ids')
     def errors = []
     Set new_ids = []
