@@ -1,8 +1,7 @@
 package org.gokb
 
-import org.gokb.cred.*
-import org.gokb.GOKbTextUtils
-import org.gokb.DomainClassExtender
+import org.gokb.refine.*;
+import org.gokb.cred.*;
 
 import groovy.util.slurpersupport.GPathResult
 import static groovyx.net.http.ContentType.*
@@ -13,8 +12,6 @@ import org.apache.http.entity.mime.content.*
 import java.nio.charset.Charset
 import org.apache.http.*
 import org.apache.http.protocol.*
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 
 
@@ -110,8 +107,9 @@ class TitleAugmentService {
         Thread.sleep(5000);
       }
     }
+
+
     
     // {"status":"ok","message-type":"journal-list","message-version":"1.0.0","message":{"items":[],"total-results":39790,"query":{"search-terms":null,"start-index":70000},"items-per-page":20}}
   }
-  
 }
