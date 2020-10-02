@@ -972,7 +972,7 @@ class PackageService {
     String lastUpdate = sdf.format(pkg.lastUpdated)
     StringBuilder name = new StringBuilder()
     if (type == ExportType.KBART) {
-      name.append(toCamelCase(pkg.provider?.name?pkg.provider.name:"unknown Provider")).append('_')
+      name.append(toCamelCase(pkg.provider?.name ? pkg.provider.name : "unknown Provider")).append('_')
         .append(toCamelCase(pkg.global.value)).append('_')
         .append(toCamelCase(pkg.name))
     } else {
@@ -988,10 +988,12 @@ class PackageService {
     exportPath.endsWith('/') ? exportPath : exportPath + '/'
   }
 
-  private String toCamelCase(String before){
-    StringBuilder ret=new StringBuilder()
-    before.split("\\s").each {word->
-      ret.append(word.substring(0,1).toUpperCase()).append(word.substring(1,word.length()).toLowerCase())
+  private String toCamelCase(String before) {
+    StringBuilder ret = new StringBuilder()
+    before.split("\\W").each { word ->
+      if (word.length() > 0)
+        ret.append(word.substring(0, 1).toUpperCase())
+          .append(word.substring(1, word.length()).toLowerCase())
     }
     ret.toString()
   }
