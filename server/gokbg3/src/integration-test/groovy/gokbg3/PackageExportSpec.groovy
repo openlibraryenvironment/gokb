@@ -31,9 +31,9 @@ class PackageExportSpec extends Specification {
     journal1 = JournalInstance.findByName("journal1") ?: new JournalInstance(name: "journal1")
     journal2 = JournalInstance.findByName("journal2") ?: new JournalInstance(name: "journal2")
     journal3 = JournalInstance.findByName("journal3") ?: new JournalInstance(name: "journal3")
-    pack1 = Package.findByName("package1") ?: new Package(name: "package1")
-    pack2 = Package.findByName("package2") ?: new Package(name: "package2")
-    plt = Platform.findByName("platform") ?: new Platform(name: "platform")
+    pack1 = Package.findByName("Package1") ?: new Package(name: "Package1")
+    pack2 = Package.findByName("Package2") ?: new Package(name: "Package2")
+    plt = Platform.findByName("Platform") ?: new Platform(name: "Platform")
 
     tipp1 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal1, accessStartDate: new Date())
     tipp2 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal2, accessStartDate: new Date())
@@ -69,7 +69,7 @@ class PackageExportSpec extends Specification {
     resp.status == 200 // OK
     resp.body.contains("journal1")
     resp.body.contains("journal2")
-    resp.headers["Content-Disposition"] == ["attachment; filename=\"null_${pack1.name}_${new SimpleDateFormat("yyyy-MM-dd").format(new Date())}.tsv\""]
+    resp.headers["Content-Disposition"] == ["attachment; filename=\"UnknownProvider_${pack1.global.value}_${pack1.name}_${new SimpleDateFormat("yyyy-MM-dd").format(new Date())}.tsv\""]
   }
 
   void "test POST /packages/packageTSVExport/"() {

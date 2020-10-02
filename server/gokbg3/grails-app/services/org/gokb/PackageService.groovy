@@ -16,6 +16,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.text.DateFormat
 import java.text.SimpleDateFormat
+import java.util.regex.Pattern
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -969,14 +970,29 @@ class PackageService {
   private String generateExportFileName(Package pkg, ExportType type) {
     DateFormat sdf = new java.text.SimpleDateFormat('yyyy-MM-dd hh:mm:ss')
     String lastUpdate = sdf.format(pkg.lastUpdated)
-    if (type == ExportType.KBART)
-      return "${pkg.provider?.normname}_${pkg.normname}_${lastUpdate}.tsv"
-    "GoKBPackage-${pkg.id}_${lastUpdate}.tsv"
+    StringBuilder name = new StringBuilder()
+    if (type == ExportType.KBART) {
+      name.append(toCamelCase(pkg.provider?.name?pkg.provider.name:"unknown Provider")).append('_')
+        .append(toCamelCase(pkg.global.value)).append('_')
+        .append(toCamelCase(pkg.name))
+    } else {
+      name.append("GoKBPackage-").append(pkg.id)
+    }
+    name.append('_').append(lastUpdate).append('.tsv')
+    return name.toString()
   }
 
   private String exportFilePath() {
     String exportPath = grailsApplication.config.gokb.tsvExportTempDirectory ?: "/tmp/gokb/export"
     Files.createDirectories(Paths.get(exportPath))
     exportPath.endsWith('/') ? exportPath : exportPath + '/'
+  }
+
+  private String toCamelCase(String before){
+    StringBuilder ret=new StringBuilder()
+    before.split("\\s").each {word->
+      ret.append(word.substring(0,1).toUpperCase()).append(word.substring(1,word.length()).toLowerCase())
+    }
+    ret.toString()
   }
 }
