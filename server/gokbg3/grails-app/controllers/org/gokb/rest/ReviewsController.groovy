@@ -111,7 +111,7 @@ class ReviewsController {
 
           if (reqBody.stdDesc instanceof Integer) {
             def rdc = RefdataCategory.findByDesc("ReviewRequest.StdDesc")
-            def rdv = RefdataValue.get(reqBody.status)
+            def rdv = RefdataValue.get(reqBody.stdDesc)
 
             if (rdv?.owner == rdc) {
               rdv_desc = rdv
