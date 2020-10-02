@@ -66,6 +66,7 @@ class IntegrationControllerSpec extends Specification {
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
       title.expunge()
     }
+
   }
 
   void "Test assertGroup"() {
@@ -667,8 +668,8 @@ class IntegrationControllerSpec extends Specification {
     resp.status == 200
 
     expect: "prices are set correctly"
-    def title = TitleInstance.findById(resp.json.results.titleId)
     sleep(400)
+    def title = TitleInstance.findById(resp.json.results.titleId)
     title?.prices?.size() == 2
     title?.subjectArea
     title?.series
