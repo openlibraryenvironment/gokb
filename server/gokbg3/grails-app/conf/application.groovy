@@ -902,7 +902,8 @@ globalSearchTemplates = [
       qbeGlobals:[
       ],
       qbeResults:[
-        [heading:'Name', property:'value', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Value', property:'value', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Name', property:'name' ],
         [heading:'RDF Datatype', property:'datatype?.value'],
         [heading:'Category', property:'family'],
         [heading:'Target Type', property:'targetType.value']

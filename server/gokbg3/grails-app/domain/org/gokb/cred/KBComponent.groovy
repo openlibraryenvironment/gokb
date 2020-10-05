@@ -1401,7 +1401,6 @@ where cp.owner = :c
     log.debug("Removing all components");
     Combo.executeUpdate("delete from Combo as c where c.fromComponent=:component or c.toComponent=:component",[component:this])
     ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component=:component",[component:this])
-    KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent=:component",[component:this]);
     KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner=:component",[component:this]);
 
     ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)",[component:this]);
@@ -1421,7 +1420,7 @@ where cp.owner = :c
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component",[component:this]);
     KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component",[component:this])
 
-    this.delete(flush:true, failOnError:true)
+    this.delete(failOnError:true)
     result;
   }
 
@@ -1437,7 +1436,6 @@ where cp.owner = :c
 
       Combo.executeUpdate("delete from Combo as c where c.fromComponent.id IN (:component) or c.toComponent.id IN (:component)",[component:batch])
       ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)",[component:batch])
-      KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)",[component:batch]);
       KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)",[component:batch]);
 
       ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))",[component:batch]);
@@ -1463,7 +1461,7 @@ where cp.owner = :c
   def addCoreGOKbXmlFields(builder, attr) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids')
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def cids = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[this,refdata_ids,status_active],[readOnly:true])
+    def cids = Identifier.executeQuery("select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[this,refdata_ids,status_active],[readOnly:true])
     String cName = this.class.name
 
     // Singel props.
@@ -1475,7 +1473,7 @@ where cp.owner = :c
     // Identifiers
     builder.'identifiers' {
       cids?.each { tid ->
-        builder.'identifier' ('namespace':tid[0], 'value':tid[1], 'type':tid[2])
+        builder.'identifier' ('namespace':tid[0], 'namespaceName':tid[1], 'value':tid[2], 'type':tid[3])
       }
       if ( grailsApplication.config.serverUrl || grailsApplication.config.baseUrl ) {
         builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl ?: grailsApplication.config.baseUrl}/resource/show/${cName}:${id}")
