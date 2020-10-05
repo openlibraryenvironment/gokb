@@ -1401,7 +1401,6 @@ where cp.owner = :c
     log.debug("Removing all components");
     Combo.executeUpdate("delete from Combo as c where c.fromComponent=:component or c.toComponent=:component",[component:this])
     ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component=:component",[component:this])
-    KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent=:component",[component:this]);
     KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner=:component",[component:this]);
 
     ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)",[component:this]);
@@ -1421,7 +1420,7 @@ where cp.owner = :c
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component",[component:this]);
     KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component",[component:this])
 
-    this.delete(flush:true, failOnError:true)
+    this.delete(failOnError:true)
     result;
   }
 
@@ -1437,7 +1436,6 @@ where cp.owner = :c
 
       Combo.executeUpdate("delete from Combo as c where c.fromComponent.id IN (:component) or c.toComponent.id IN (:component)",[component:batch])
       ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)",[component:batch])
-      KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)",[component:batch]);
       KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)",[component:batch]);
 
       ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))",[component:batch]);

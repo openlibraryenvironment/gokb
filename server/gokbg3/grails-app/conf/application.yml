@@ -154,6 +154,7 @@ environments:
             es:
                 index: gokbg3dev
                 cluster: gokbg3-dev
+            tsvExportTempDirectory: /tmp/gokb/export
         cache:
             headers:
                 enabled: false
