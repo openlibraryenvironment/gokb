@@ -228,14 +228,14 @@ class BootStrap {
 
     log.info("Ensure default Identifier namespaces")
     def namespaces = [
-      [value:'isbn', family:'isxn', pattern:"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
-      [value:'pisbn', family:'isxn', pattern:"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
-      [value:'issn', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
-      [value:'eissn', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
-      [value:'issnl', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
-      [value:'doi'],
-      [value:'zdb', pattern:"^\\d+-[\\dxX]\$"],
-      [value:'isil', pattern:"^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
+      [value:'isbn', name:'ISBN', family:'isxn', pattern:"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
+      [value:'pisbn', name:'Print-ISBN',  family:'isxn', pattern:"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
+      [value:'issn', name:'p-ISSN', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
+      [value:'eissn', name:'e-ISSN', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
+      [value:'issnl', name:'ISSN-L', family:'isxn', pattern:"^\\d{4}\\-\\d{3}[\\dX]\$"],
+      [value:'doi', name:'DOI'],
+      [value:'zdb', name:'ZDB-ID', pattern:"^\\d+-[\\dxX]\$"],
+      [value:'isil', name:'ISIL', pattern:"^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
     ]
 
     namespaces.each { ns ->
@@ -244,6 +244,11 @@ class BootStrap {
       if (ns_obj) {
         if (ns.pattern && !ns_obj.pattern) {
           ns_obj.pattern = ns.pattern
+          ns_obj.save(flush:true)
+        }
+        
+        if (ns.name && !ns_obj.name) {
+          ns_obj.name = ns.name
           ns_obj.save(flush:true)
         }
       }

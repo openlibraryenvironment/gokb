@@ -68,6 +68,7 @@ class ESWrapperService {
             type: "nested",
             properties: [
               namespace: [type: "keyword"],
+              namespaceName: [type: "keyword"],
               value: [type: "keyword"]
             ]
           ],

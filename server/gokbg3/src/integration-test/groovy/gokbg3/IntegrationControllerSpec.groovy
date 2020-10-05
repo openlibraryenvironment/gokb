@@ -66,6 +66,7 @@ class IntegrationControllerSpec extends Specification {
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
       title.expunge()
     }
+
   }
 
   void "Test assertGroup"() {
@@ -331,6 +332,12 @@ class IntegrationControllerSpec extends Specification {
         [
           "accessEnd"  : "",
           "accessStart": "",
+          "identifiers": [
+            [
+              "type": "global",
+              "value": "testTippId"
+            ]
+          ],
           "coverage"   : [
             [
               "coverageDepth": "Fulltext",
@@ -387,6 +394,7 @@ class IntegrationControllerSpec extends Specification {
     matching_pkgs[0].id == resp.json.pkgId
     matching_pkgs[0].tipps?.size() == 1
     matching_pkgs[0].provider?.name == "American Chemical Society"
+    matching_pkgs[0].ids?.size() == 1
   }
 
   void "Test crossReferencePackage with incomplete coverage dates"() {
@@ -660,7 +668,7 @@ class IntegrationControllerSpec extends Specification {
     resp.status == 200
 
     expect: "prices are set correctly"
-    sleep(200)
+    sleep(400)
     def title = TitleInstance.findById(resp.json.results.titleId)
     title?.prices?.size() == 2
     title?.subjectArea

@@ -116,6 +116,7 @@ class RestMappingService {
 
                 result[p.name] = [
                   'name': label,
+                  'type': obj[p.name].niceName,
                   'id'  : obj[p.name].id
                 ]
 
@@ -751,10 +752,10 @@ class RestMappingService {
 
     if (obj.hasProperty('username')) {
       obj_label = obj.username
-    } else if (obj.hasProperty('name')) {
-      obj_label = obj.name
     } else if (obj.hasProperty('value')) {
       obj_label = obj.value
+    } else if (obj.hasProperty('name')) {
+      obj_label = obj.name
     } else if (obj.hasProperty('variantName')) {
       obj_label = obj.variantName
     }

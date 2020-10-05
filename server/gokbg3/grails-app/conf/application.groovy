@@ -610,7 +610,16 @@ globalSearchTemplates = [
           qparam:'qp_cause',
           placeholder:'Cause',
           contextTree:['ctxtp':'qry', 'comparator' : 'like', 'prop':'descriptionOfCause']
-        ]
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'ReviewRequest.StdDesc',
+          prompt:'Type',
+          qparam:'qp_desc',
+          placeholder:'Standard description',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'stdDesc']
+        ],
       ],
       qbeGlobals:[
       ],
@@ -893,7 +902,8 @@ globalSearchTemplates = [
       qbeGlobals:[
       ],
       qbeResults:[
-        [heading:'Name', property:'value', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Value', property:'value', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Name', property:'name' ],
         [heading:'RDF Datatype', property:'datatype?.value'],
         [heading:'Category', property:'family'],
         [heading:'Target Type', property:'targetType.value']

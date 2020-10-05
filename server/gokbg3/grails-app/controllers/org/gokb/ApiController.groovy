@@ -191,7 +191,7 @@ class ApiController {
     }
 
     all_ns.each { ns ->
-      result.add([value: ns.value, category: ns.family ?: ""])
+      result.add([value: ns.value, namespaceName:ns.name, category: ns.family ?: ""])
     }
 
     apiReturn(result)
