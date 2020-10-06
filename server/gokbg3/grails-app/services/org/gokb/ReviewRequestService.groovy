@@ -29,18 +29,24 @@ class ReviewRequestService {
         new AllocatedReviewGroup(group: group, review: req).save(flush:true,failOnError:true)
       }
       else if (KBComponent.has(forComponent, 'curatoryGroups')) {
-        forComponent.curatoryGroups.each {
-          new AllocatedReviewGroup(group: it, review: req).save(flush:true,failOnError:true)
+        Package.withNewSession {
+          forComponent.curatoryGroups.each {
+            new AllocatedReviewGroup(group: it, review: req).save(flush:true,failOnError:true)
+          }
         }
       }
       else if (forComponent.class == TitleInstancePackagePlatform && forComponent.pkg.curatoryGroups?.size() > 0) {
-        forComponent.pkg.curatoryGroups.each {
-          new AllocatedReviewGroup(group: it, review: req).save(flush:true,failOnError:true)
+        TitleInstancePackagePlatform.withNewSession {
+          forComponent.pkg.curatoryGroups.each {
+            new AllocatedReviewGroup(group: it, review: req).save(flush:true,failOnError:true)
+          }
         }
       }
       else if (raisedBy?.curatoryGroups?.size() > 0) {
-        raisedBy.curatoryGroups.each {
-          new AllocatedReviewGroup(group: it, review: req).save(flush:true,failOnError:true)
+        User.withNewSession {
+          raisedBy.curatoryGroups.each {
+            new AllocatedReviewGroup(group: it, review: req).save(flush:true,failOnError:true)
+          }
         }
       }
     }
