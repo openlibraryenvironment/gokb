@@ -1373,9 +1373,12 @@ class IntegrationController {
                     job_result.result = 'OK'
                     job_result.message = messageService.resolveCode('crossRef.package.success', [json.packageHeader.name, tippctr, existing_tipps.size(), num_removed_tipps], locale)
 
-                    if ( the_pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted') ) {
-                      the_pkg.refresh()
-                      the_pkg.lastUpdateComment = job_result.message
+                    Package.withNewSession {
+                      def pkg_obj = Package.get(the_pkg.id)
+                      if ( pkg_obj.status.value != 'Deleted' ) {
+                        pkg_obj.lastUpdateComment = job_result.message
+                        pkg_obj.save(flush:true)
+                      }
                     }
 
                     job_result.pkgId = the_pkg.id

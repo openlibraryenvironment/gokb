@@ -29,8 +29,8 @@ class AllocatedReviewGroup implements Serializable {
 			[groupId: groupId, reviewId: reviewId]
 	}
 
-	static AllocatedReviewGroup create(CuratoryGroup group, ReviewRequest review, boolean flush = false) {
-		new AllocatedReviewGroup(group: group, review: review).save(flush: flush, insert: true)
+	static AllocatedReviewGroup create(CuratoryGroup grp, ReviewRequest rr, boolean flush = false) {
+		new AllocatedReviewGroup(group: grp, review: rr).save(flush: flush)
 	}
 
 	static boolean remove(CuratoryGroup group, ReviewRequest review, boolean flush = false) {
@@ -54,5 +54,11 @@ class AllocatedReviewGroup implements Serializable {
 	static mapping = {
 		id composite: ['review', 'group']
 		version false
+	}
+
+	static constraints = {
+		group(nullable:false, blank:false)
+    review(nullable:false, blank:false)
+    status(nullable:false, blank:false)
 	}
 }

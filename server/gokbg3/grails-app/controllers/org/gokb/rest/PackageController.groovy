@@ -671,11 +671,11 @@ class PackageController {
   }
 
   @Transactional
-  @Secured(value=["IS_AUTHENTICATED_ANONYMOUSLY"], httpMethod='PUT')
+  @Secured(value=["IS_AUTHENTICATED_ANONYMOUSLY"])
   def updateTipps() {
     def result = [ 'result' : 'OK' ]
     def async = params.async ? params.boolean('async') : true
-    def update = params.addOnly ? params.boolean('addOnly') : false
+    def update = request.method == 'PATCH' || (params.addOnly ? params.boolean('addOnly') : false)
     def request_locale = RequestContextUtils.getLocale(request)
     def force = params.force ? params.boolean('force') : false
     def rjson = request.JSON
@@ -1173,8 +1173,12 @@ class PackageController {
                     the_pkg.refresh()
                     job_result.message = messageService.resolveCode('crossRef.package.success', [the_pkg.name, tippctr, existing_tipps.size(), num_removed_tipps], locale)
 
-                    if ( the_pkg.status.value != 'Deleted' ) {
-                      the_pkg.lastUpdateComment = job_result.message
+                    Package.withNewSession {
+                      def pkg_obj = Package.get(the_pkg.id)
+                      if ( pkg_obj.status.value != 'Deleted' ) {
+                        pkg_obj.lastUpdateComment = job_result.message
+                        pkg_obj.save(flush:true)
+                      }
                     }
 
                     job_result.pkgId = the_pkg.id

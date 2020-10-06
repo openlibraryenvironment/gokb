@@ -1,7 +1,5 @@
 package org.gokb
 
-import grails.gorm.transactions.Transactional
-
 import org.gokb.cred.*
 
 class ReviewRequestService {
@@ -29,23 +27,33 @@ class ReviewRequestService {
         new AllocatedReviewGroup(group: group, review: req).save(flush:true,failOnError:true)
       }
       else if (KBComponent.has(forComponent, 'curatoryGroups')) {
+        log.debug("Using Component groups for ${forComponent} -> ${forComponent.class?.name}..")
         Package.withNewSession {
-          forComponent.curatoryGroups.each {
-            new AllocatedReviewGroup(group: it, review: req).save(flush:true,failOnError:true)
+          def comp = KBComponent.get(forComponent.id)
+          comp.curatoryGroups?.each { gr ->
+            CuratoryGroup cg = CuratoryGroup.get(gr.id)
+            log.debug("Allocating Package Group ${gr} to review")
+            AllocatedReviewGroup.create(cg, req)
           }
         }
       }
-      else if (forComponent.class == TitleInstancePackagePlatform && forComponent.pkg.curatoryGroups?.size() > 0) {
+      else if (forComponent.class == TitleInstancePackagePlatform && forComponent.pkg?.curatoryGroups?.size() > 0) {
+        log.debug("Using TIPP pkg groups ..")
         TitleInstancePackagePlatform.withNewSession {
-          forComponent.pkg.curatoryGroups.each {
-            new AllocatedReviewGroup(group: it, review: req).save(flush:true,failOnError:true)
+          forComponent.pkg?.curatoryGroups?.each { gr ->
+            CuratoryGroup cg = CuratoryGroup.get(gr.id)
+            log.debug("Allocating TIPP Pkg Group ${gr} to review")
+            new AllocatedReviewGroup(group: cg, review: req).save(flush:true,failOnError:true)
           }
         }
       }
       else if (raisedBy?.curatoryGroups?.size() > 0) {
+        log.debug("Using User groups ..")
         User.withNewSession {
-          raisedBy.curatoryGroups.each {
-            new AllocatedReviewGroup(group: it, review: req).save(flush:true,failOnError:true)
+          raisedBy.curatoryGroups.each { gr ->
+            CuratoryGroup cg = CuratoryGroup.get(gr.id)
+            log.debug("Allocating User Group ${gr} to review")
+            new AllocatedReviewGroup(group: cg, review: req).save(flush:true,failOnError:true)
           }
         }
       }
