@@ -59,6 +59,5 @@ class AllocatedReviewGroup implements Serializable {
 	static constraints = {
 		group(nullable:false, blank:false)
     review(nullable:false, blank:false)
-    status(nullable:false, blank:false)
 	}
 }
