@@ -152,7 +152,7 @@ class ClassUtils {
         v = RefdataCategory.lookup(cat, value)
       }
     }
-    else if (value && cat) {
+    else if (value instanceof Integer && cat) {
       try {
         def candidate = RefdataValue.get(value)
 
@@ -162,6 +162,23 @@ class ClassUtils {
       }
       catch (Exception e) {
 
+      }
+    } 
+    else if (value instanceof Map && cat) {
+      if (value.id) {
+        try {
+          def candidate = RefdataCategory.get(value)
+
+          if (candidate && candidate.owner == cat) {
+            v = candidate
+          }
+        }
+        catch (Exception e) {
+
+        }
+      }
+      else if (value.name || value.value) {
+        v = RefdataCategory.lookup(cat, (value.name ?: value.value))
       }
     }
 
