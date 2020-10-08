@@ -467,7 +467,12 @@ class TitleInstancePackagePlatform extends KBComponent {
                                            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?'+
                                            'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
                                           [pkg,plt,ti])
-      def tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null;
+      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null;
+      def tipp = null
+
+      if ( uuid_tipp && uuid_tipp.pkg == pkg && uuid_tipp.title == ti && uuid_tipp.hostPlatform == plt ) {
+        tipp = uuid_tipp
+      }
 
       if  ( !tipp ) {
         switch ( tipps.size() ) {

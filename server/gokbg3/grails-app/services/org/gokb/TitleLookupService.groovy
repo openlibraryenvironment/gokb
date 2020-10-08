@@ -554,6 +554,13 @@ class TitleLookupService {
 
             // Lookup using title string match only.
             string_match = attemptComponentMatch (metadata, newTitleClassName)
+
+            if (results['other_identifiers']?.size() > 0) {
+              log.debug("Skipping name match")
+            }
+            else {
+              the_title = string_match
+            }
           }
 
           if (the_title) {

@@ -24,7 +24,7 @@ class ReviewRequestService {
       }
 
       if (group) {
-        new AllocatedReviewGroup(group: group, review: req).save(flush:true,failOnError:true)
+        AllocatedReviewGroup.create(group, req)
       }
       else if (KBComponent.has(forComponent, 'curatoryGroups')) {
         log.debug("Using Component groups for ${forComponent} -> ${forComponent.class?.name}..")
@@ -43,7 +43,7 @@ class ReviewRequestService {
           forComponent.pkg?.curatoryGroups?.each { gr ->
             CuratoryGroup cg = CuratoryGroup.get(gr.id)
             log.debug("Allocating TIPP Pkg Group ${gr} to review")
-            new AllocatedReviewGroup(group: cg, review: req).save(flush:true,failOnError:true)
+            AllocatedReviewGroup.create(cg, req)
           }
         }
       }
@@ -53,7 +53,7 @@ class ReviewRequestService {
           raisedBy.curatoryGroups.each { gr ->
             CuratoryGroup cg = CuratoryGroup.get(gr.id)
             log.debug("Allocating User Group ${gr} to review")
-            new AllocatedReviewGroup(group: cg, review: req).save(flush:true,failOnError:true)
+            AllocatedReviewGroup.create(cg, req)
           }
         }
       }
