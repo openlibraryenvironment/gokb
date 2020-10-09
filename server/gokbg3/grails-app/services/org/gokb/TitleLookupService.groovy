@@ -879,9 +879,33 @@ class TitleLookupService {
               the_title = matched_with_name[0]
             }
             else {
-              log.debug("Could not match a specific title. Skipping..")
-              def matched_ids = matched_with_name.collect {it.id}
-              throw new org.gokb.exceptions.MultipleComponentsMatchedException("Could not match a specific title!", metadata.title, metadata.identifiers, matched_ids)
+              log.debug("Could not match a specific title. Selection needs review")
+              def matched_sorted = matched_with_name.sort {it.id}
+              the_title = matched_sorted[0]
+              matched_sorted.remove(0)
+
+              def additionalInfo = [:]
+              def combo_ids = [the_title]
+
+              additionalInfo.otherComponents = []
+
+              matched_sorted.each { tlm ->
+                additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
+                combo_ids.add(tlm.id)
+              }
+
+              additionalInfo.cstring = combo_ids.sort().join('_')
+
+              reviewRequestService.raise(
+                the_title,
+                "Check titles for duplicates.",
+                "Multiple titles were matched on all identifiers as well as the provided title name.",
+                user,
+                project,
+                (additionalInfo as JSON).toString(),
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Matches')
+              )
+
             }
             break;
         }

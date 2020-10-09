@@ -33,7 +33,7 @@ class ReviewRequestService {
           comp.curatoryGroups?.each { gr ->
             CuratoryGroup cg = CuratoryGroup.get(gr.id)
             log.debug("Allocating Package Group ${gr} to review")
-            AllocatedReviewGroup.create(cg, req)
+            AllocatedReviewGroup.create(cg, req, true)
           }
         }
       }
@@ -43,7 +43,7 @@ class ReviewRequestService {
           forComponent.pkg?.curatoryGroups?.each { gr ->
             CuratoryGroup cg = CuratoryGroup.get(gr.id)
             log.debug("Allocating TIPP Pkg Group ${gr} to review")
-            AllocatedReviewGroup.create(cg, req)
+            AllocatedReviewGroup.create(cg, req, true)
           }
         }
       }
@@ -53,7 +53,7 @@ class ReviewRequestService {
           raisedBy.curatoryGroups.each { gr ->
             CuratoryGroup cg = CuratoryGroup.get(gr.id)
             log.debug("Allocating User Group ${gr} to review")
-            AllocatedReviewGroup.create(cg, req)
+            AllocatedReviewGroup.create(cg, req, true)
           }
         }
       }
