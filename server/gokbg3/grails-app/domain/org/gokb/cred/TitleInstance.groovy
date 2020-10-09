@@ -382,7 +382,7 @@ class TitleInstance extends KBComponent {
                   }
                   builder."identifiers" {
                     org_ids?.each { org_id ->
-                      builder.'identifier' ('namespace':org_id?.namespace?.value, 'value':org_id?.value)
+                      builder.'identifier' ('namespace':org_id?.namespace?.value, 'namespaceName':org_id?.namespace?.name, 'value':org_id?.value)
                     }
                     if ( grailsApplication.config.serverUrl ) {
                       builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/org.gokb.cred.Org:${pub_org?.id}")
@@ -413,7 +413,7 @@ class TitleInstance extends KBComponent {
                         internalId(hti.id)
                         "identifiers" {
                           hti.ids?.each { tid ->
-                            builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
+                            builder.'identifier' ('namespace':tid.namespace?.value, 'namespaceName':tid.namespace?.name, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
                           }
                           if ( grailsApplication.config.serverUrl ) {
                             builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")
@@ -431,7 +431,7 @@ class TitleInstance extends KBComponent {
                         internalId(hti.id)
                         "identifiers" {
                           hti.ids?.each { tid ->
-                            builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                            builder.'identifier' ('namespace':tid.namespace?.value, 'namespaceName':tid.namespace?.name, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
                           }
                           if ( grailsApplication.config.serverUrl ) {
                             builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")

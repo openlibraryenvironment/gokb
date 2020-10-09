@@ -297,7 +297,7 @@
             <h4>
               <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
             </h4>
-            <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
+            <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers', targetType:'book']}"/>
           </g:if>
         </dd>
       </dl>

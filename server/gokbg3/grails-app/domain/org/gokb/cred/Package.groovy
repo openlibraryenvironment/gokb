@@ -480,6 +480,13 @@ select tipp.id,
             'name'(provider.name)
           }
         }
+
+        if (source) {
+          builder.'source'([id: source.id, uuid: source.uuid]) {
+            'name'(source.name)
+          }
+        }
+
         'listVerifiedDate'(listVerifiedDate ? sdf.format(listVerifiedDate) : null)
 
         builder.'curatoryGroups' {
@@ -489,6 +496,7 @@ select tipp.id,
             }
           }
         }
+
         'dateCreated'(sdf.format(dateCreated))
         'TIPPs'(count: tipps?.size()) {
           tipps.each { tipp ->

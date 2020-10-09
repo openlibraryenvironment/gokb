@@ -657,7 +657,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           builder.'status' (ti.status?.value)
           builder.'identifiers' {
             titleIds.each { tid ->
-              builder.'identifier'([namespace:tid[0], value:tid[1], type:tid[2]])
+              builder.'identifier'([namespace:tid[0], namespaceName:tid[3], value:tid[1], type:tid[2]])
             }
           }
         }
@@ -708,7 +708,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   public getTitleIds() {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[title,refdata_ids,status_active],[readOnly:true]);
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[title,refdata_ids,status_active],[readOnly:true]);
     result
   }
 
