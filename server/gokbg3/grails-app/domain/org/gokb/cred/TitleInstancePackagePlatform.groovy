@@ -645,7 +645,7 @@ class TitleInstancePackagePlatform extends KBComponent {
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
                 changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tcs,'startDate')
                 changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tcs,'endDate')
-                changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth.CoverageDepth')
+                changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
                 cs_match = true
             }

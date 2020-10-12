@@ -265,7 +265,7 @@ class RestMappingService {
         } else {
           String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
 
-          if (catName && catName != 'KBComponent.Status') {
+          if (catName) {
             def cat = RefdataCategory.findByDesc(catName)
 
             if (val instanceof Integer) {
@@ -273,7 +273,12 @@ class RestMappingService {
 
               if (rdv) {
                 if (rdv in cat.values) {
-                  obj[prop] = rdv
+                  if (catName == 'KBComponent.Status' && rdv.value == 'Deleted') {
+                    obj.deleteSoft()
+                  }
+                  else {
+                    obj[prop] = rdv
+                  }
                 } else {
                   obj.errors.reject(
                     'rdc.values.notFound',
@@ -304,7 +309,12 @@ class RestMappingService {
 
                 if (rdv) {
                   if (rdv in cat.values) {
-                    obj[prop] = rdv
+                    if (catName == 'KBComponent.Status' && rdv.value == 'Deleted') {
+                      obj.deleteSoft()
+                    }
+                    else {
+                      obj[prop] = rdv
+                    }
                   } else {
                     obj.errors.reject(
                       'rdc.values.notFound',
@@ -344,7 +354,23 @@ class RestMappingService {
                   )
                 }
                 else {
-                  obj[prop] = rdv
+                  if (catName == 'KBComponent.Status') {
+                    if (rdv.value == 'Deleted') {
+                      obj.deleteSoft()
+                    }
+                    else if (rdv.value == 'Retired') {
+                      obj.retire()
+                    }
+                    else if (rdv.value == 'Current') {
+                      obj.setActive()
+                    }
+                    else if (rdv.value == 'Expected') {
+                      obj.setExpected()
+                    }
+                  }
+                  else {
+                    obj[prop] = rdv
+                  }
                 }
               }
             }
@@ -366,10 +392,8 @@ class RestMappingService {
                 obj[prop] = rdv
               }
             }
-          } else if (!catname) {
-            log.error("Could not resolve category (${obj.niceName}.${p.name})!")
           } else {
-            log.debug("Status updating denied in general PUT/PATCH request!")
+            log.error("Could not resolve category (${obj.niceName}.${p.name})!")
           }
         }
       } else {
