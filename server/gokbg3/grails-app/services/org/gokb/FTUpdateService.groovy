@@ -85,6 +85,9 @@ class FTUpdateService {
         result.scope = kbc.scope ? kbc.scope.value : ""
         result.listVerifiedDate = kbc.listVerifiedDate ? sdf.format(kbc.listVerifiedDate) : ""
 
+        if (kbc.source)
+          result.source = [name : kbc.source.name, id:kbc.source.id]
+
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
           result.curatoryGroups.add(cg.name)
@@ -100,7 +103,6 @@ class FTUpdateService {
         }
 
         result.componentType = kbc.class.simpleName
-
         result
       }
 
@@ -375,6 +377,7 @@ class FTUpdateService {
         result.tippPackage = kbc.pkg ? kbc.pkg.getLogEntityId() : ""
         result.tippPackageName = kbc.pkg ? kbc.pkg.name : ""
         result.tippPackageUuid = kbc.pkg ? kbc.pkg.uuid : ""
+        result.tippPackageSource = kbc.pkg.source ? kbc.pkg.source : ""
 
         result.tippTitle = kbc.title ? kbc.title.getLogEntityId() : ""
         result.tippTitleName = kbc.title ? kbc.title.name : ""
