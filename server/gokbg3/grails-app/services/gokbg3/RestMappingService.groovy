@@ -273,8 +273,19 @@ class RestMappingService {
 
               if (rdv) {
                 if (rdv in cat.values) {
-                  if (catName == 'KBComponent.Status' && rdv.value == 'Deleted') {
-                    obj.deleteSoft()
+                  if (catName == 'KBComponent.Status') {
+                    if (rdv.value == 'Deleted') {
+                      obj.deleteSoft()
+                    }
+                    else if (rdv.value == 'Retired') {
+                      obj.retire()
+                    }
+                    else if (rdv.value == 'Current') {
+                      obj.setActive()
+                    }
+                    else if (rdv.value == 'Expected') {
+                      obj.setExpected()
+                    }
                   }
                   else {
                     obj[prop] = rdv
@@ -309,8 +320,19 @@ class RestMappingService {
 
                 if (rdv) {
                   if (rdv in cat.values) {
-                    if (catName == 'KBComponent.Status' && rdv.value == 'Deleted') {
-                      obj.deleteSoft()
+                    if (catName == 'KBComponent.Status') {
+                      if (rdv.value == 'Deleted') {
+                        obj.deleteSoft()
+                      }
+                      else if (rdv.value == 'Retired') {
+                        obj.retire()
+                      }
+                      else if (rdv.value == 'Current') {
+                        obj.setActive()
+                      }
+                      else if (rdv.value == 'Expected') {
+                        obj.setExpected()
+                      }
                     }
                     else {
                       obj[prop] = rdv
