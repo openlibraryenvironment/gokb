@@ -898,6 +898,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Matches').save(flush:true, failOnError:true)
 
 
     RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save(flush:true, failOnError:true)

@@ -245,10 +245,7 @@ class TippController {
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
       changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tipp,'startDate')
       changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tipp,'endDate')
-
-      if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
-        changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
-      }
+      changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
 
       def cs_match = false
       def startAsDate = (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
@@ -281,7 +278,26 @@ class TippController {
 
       if (!cs_match) {
 
-        def cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+        def cov_depth = null
+
+        if (c.coverageDepth instanceof String) {
+          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
+        }
+        else if (c.coverageDepth instanceof Integer) {
+          cov_depth = RefdataValue.get(c.coverageDepth)
+        }
+        else if (c.coverageDepth instanceof Map) {
+          if (c.coverageDepth.id) {
+            cov_depth = RefdataValue.get(c.coverageDepth.id)
+          }
+          else {
+            cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
+          }
+        }
+
+        if (!cov_depth) {
+          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+        }
 
         tipp.addToCoverageStatements('startVolume': c.startVolume, \
           'startIssue':c.startIssue, \

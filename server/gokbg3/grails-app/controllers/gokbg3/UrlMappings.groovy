@@ -121,6 +121,7 @@ class UrlMappings {
       post "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'addHistory')
       put "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'updateHistory')
       patch "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'updateHistory')
+      get "/titles/$id/tipps"(controller: 'title', namespace: 'rest', action:'tipps')
       "/titles/$id/$action"(controller: 'title', namespace:'rest')
       get "/titles/$id"(controller: 'title', namespace: 'rest', action:'show')
       put "/titles/$id"(controller: 'title', namespace: 'rest', action:'update')
