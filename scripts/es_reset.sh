@@ -183,7 +183,7 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -H 'Content-Type: app
       "source" : {
         "type" : "nested",
         "properties": {
-          "name": { "type": "keyword"},
+          "frequency": { "type": "keyword"},
           "url": { "type": "keyword"}
         }
       },
