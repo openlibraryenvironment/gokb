@@ -480,6 +480,7 @@ select tipp.id,
             'name'(provider.name)
           }
         }
+
         'listVerifiedDate'(listVerifiedDate ? sdf.format(listVerifiedDate) : null)
 
         builder.'curatoryGroups' {
@@ -489,6 +490,7 @@ select tipp.id,
             }
           }
         }
+
         'dateCreated'(sdf.format(dateCreated))
         'TIPPs'(count: tipps?.size()) {
           tipps.each { tipp ->
@@ -502,13 +504,13 @@ select tipp.id,
                 builder.'status'(tipp[15])
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
-                    builder.'identifier'('namespace': tid[0], 'value': tid[1], 'type': tid[2])
+                    builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
                   }
                 }
               }
               builder.'identifiers' {
                 getTippIds(tipp[0]).each { tid ->
-                  builder.'identifier'('namespace': tid[0], 'value': tid[1], 'type': tid[2])
+                  builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
                 }
               }
               'platform'([id: tipp[4], 'uuid': tipp[14]]) {
@@ -546,7 +548,7 @@ select tipp.id,
   private static getTitleIds(Long title_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [title_id, refdata_ids, status_active], [readOnly: true]);
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [title_id, refdata_ids, status_active], [readOnly: true]);
     result
   }
 
@@ -554,7 +556,7 @@ select tipp.id,
   private static getTippIds(Long tipp_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [tipp_id, refdata_ids, status_active], [readOnly: true]);
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [tipp_id, refdata_ids, status_active], [readOnly: true]);
     result
   }
 

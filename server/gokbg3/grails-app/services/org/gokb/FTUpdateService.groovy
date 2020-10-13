@@ -85,6 +85,9 @@ class FTUpdateService {
         result.scope = kbc.scope ? kbc.scope.value : ""
         result.listVerifiedDate = kbc.listVerifiedDate ? sdf.format(kbc.listVerifiedDate) : ""
 
+        if (kbc.source)
+          result.source = [frequency : kbc.source.frequency, id:kbc.source.id]
+
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
           result.curatoryGroups.add(cg.name)
@@ -100,7 +103,6 @@ class FTUpdateService {
         }
 
         result.componentType = kbc.class.simpleName
-
         result
       }
 

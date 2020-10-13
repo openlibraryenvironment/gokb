@@ -30,9 +30,23 @@ class OaiSpec extends Specification {
 
   //test data
   JournalInstance title1
+  Package test_pkg
 
   def setup() {
-    def test_pkg = Package.findByName('Test Package 1') ?: new Package(name: 'Test Package 1').save(flush: true)
+    def http = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
+    def kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
+    Source testSource = Source.findByName("PackTestSource") ?: new Source(
+      name: "PackTestSource",
+      url: "https://org/package",
+      frequency: "w",
+      defaultSupplyMethod: http,
+      defaultDataFormat: kbart).save(flush: true)
+    test_pkg = Package.findByName('Test Package 1')
+    if (!test_pkg) {
+      test_pkg = new Package(name: 'Test Package 1')
+      test_pkg.source=testSource
+      test_pkg.save(flush: true)
+    }
     def test_plt = Platform.findByName('Test Platform') ?: new Platform(name: 'Test Platform').save(flush: true)
 
     title1 = JournalInstance.findByName('Test Title 1') ?: new JournalInstance(name: 'Test Title 1', series: 'Test Series Name').save(flush: true)
@@ -53,6 +67,12 @@ class OaiSpec extends Specification {
   }
 
   def cleanup() {
+    JournalInstance.findByName('Test Title 1')?.expunge()
+    Package.findByName('Test Package 1')?.expunge()
+    Source.findByName("PackTestSource")?.expunge()
+    Platform.findByName('Test Platform')?.expunge()
+    Identifier.findByValue('1234-3456')?.expunge()
+    Identifier.findByValue('1234-4567')?.expunge()
   }
 
   // This is a test REST call
@@ -82,6 +102,15 @@ class OaiSpec extends Specification {
 
     then:
     log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'name'?.text()}")
-    resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'prices'!= null
+    resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'prices' != null
+  }
+
+  void "test GetRecord package response"() {
+    when:
+    RestResponse resp = rest.get("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/packages?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.Package:$test_pkg.id")
+
+    then:
+    log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'name'?.text()}")
+    resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'package'?.'source' != null
   }
 }
