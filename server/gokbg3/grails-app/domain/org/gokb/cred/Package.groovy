@@ -481,12 +481,6 @@ select tipp.id,
           }
         }
 
-        if (source) {
-          builder.'source'([id: source.id, uuid: source.uuid]) {
-            'name'(source.name)
-          }
-        }
-
         'listVerifiedDate'(listVerifiedDate ? sdf.format(listVerifiedDate) : null)
 
         builder.'curatoryGroups' {

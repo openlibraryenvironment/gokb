@@ -28,7 +28,7 @@ class Source extends KBComponent {
     defaultAccessURL(nullable:true, blank:true)
     explanationAtSource(nullable:true, blank:true)
     contextualNotes(nullable:true, blank:true)
-    frequency(nullable:true, blank:true, default: "d")
+    frequency(nullable:true, blank:true, default: "1D")
     defaultSupplyMethod(nullable:true, blank:true)
     defaultDataFormat(nullable:true, blank:true)
     responsibleParty(nullable:true, blank:true)
