@@ -8,6 +8,8 @@ class Org extends KBComponent {
 
   RefdataValue mission
   String homepage
+  IdentifierNamespace titleNamespace
+  IdentifierNamespace packageNamespace
 
   def availableActions() {
     [
@@ -91,6 +93,8 @@ class Org extends KBComponent {
         }
       }
     })
+    titleNamespace (nullable: true)
+    packageNamespace (nullable: true)
   }
 
   static jsonMapping = [
@@ -208,6 +212,14 @@ class Org extends KBComponent {
        
         addCoreGOKbXmlFields ( builder, attr )
         builder.'homepage' (homepage)
+
+        if ( titleNamespace ) {
+          builder.'titleNamespace' (titleNamespace.name, titleNamespace.value, titleNamespace.id)
+        }
+
+        if ( packageNamespace ) {
+          builder.'packageNamespace' (packageNamespace.name, packageNamespace.value, packageNamespace.id)
+        }
 
         if ( roles ) {
           builder.'roles' {

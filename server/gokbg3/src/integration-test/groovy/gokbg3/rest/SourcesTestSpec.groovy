@@ -15,9 +15,15 @@ class SourcesTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest = new RestBuilder()
 
+  def setup() {
+    def src_upd = Source.findByName("Source PreUpdate") ?: new Source(name: "Source PreUpdate")
+  }
+
   @Transactional
   def cleanup() {
     Source.findByName("Quelle 1")?.expunge()
+    Source.findByName("Source PreUpdate")?.expunge()
+    Source.findByName("Source AfterUpdate")?.expunge()
   }
 
   void "test GET /rest/sources"() {
@@ -30,7 +36,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data.size() == 6
+    resp.json.data.size() == 8
   }
 
   void "test GET /rest/sources/{id}"() {
@@ -58,7 +64,26 @@ class SourcesTestSpec extends AbstractAuthSpec {
       body([shortcode: 'q1', name: 'Quelle 1'] as JSON)
     }
     then:
+    resp.status == 201
+    resp.json.name == "Quelle 1"
+  }
+
+  void "test PUT /rest/sources/{id}"() {
+    given:
+    def srcId = Source.findByName("Source PreUpdate")?.id
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.put("http://localhost:$serverPort/gokb/rest/sources/$srcId") {
+      // headers
+      accept('application/json')
+      contentType('application/json')
+      auth("Bearer $accessToken")
+      body([name: 'Source AfterUpdate', frequency: '1M', url: "http://kbart-source.com/test-pkg"] as JSON)
+    }
+    then:
     resp.status == 200
-    resp.json.data.name == "Quelle 1"
+    resp.json.name == "Source AfterUpdate"
+    resp.json.frequency == "1M"
+    resp.json.url == "http://kbart-source.com/test-pkg"
   }
 }

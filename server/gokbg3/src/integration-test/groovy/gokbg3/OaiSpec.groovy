@@ -34,7 +34,10 @@ class OaiSpec extends Specification {
   def setup() {
     def test_pkg = Package.findByName('Test Package 1') ?: new Package(name: 'Test Package 1').save(flush: true)
     def test_plt = Platform.findByName('Test Platform') ?: new Platform(name: 'Test Platform').save(flush: true)
-
+    def test_org = Org.findByName("Test Org") ?: new Org(
+      name: 'Test Org',
+      titleNamespace: IdentifierNamespace.findByName('Test Title NS') ?: new IdentifierNamespace(name: 'Test Title NS'),
+      packageNamespace: IdentifierNamespace.findByName('Test Package NS') ?: new IdentifierNamespace(name: 'Test Package NS'))
     title1 = JournalInstance.findByName('Test Title 1') ?: new JournalInstance(name: 'Test Title 1', series: 'Test Series Name').save(flush: true)
     title1.setPrice('list', '12.54 GBP')
 
@@ -82,6 +85,15 @@ class OaiSpec extends Specification {
 
     then:
     log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'name'?.text()}")
-    resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'prices'!= null
+    resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'prices' != null
+  }
+
+  void "test GetRecord org response"() {
+    when:
+    RestResponse resp = rest.get("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/orgs?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.Org:$org.id")
+
+    then:
+    log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'name'?.text()}")
+    resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'prices' != null
   }
 }
