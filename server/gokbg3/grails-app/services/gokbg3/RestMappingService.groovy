@@ -572,6 +572,9 @@ class RestMappingService {
       } else if (cg instanceof Integer){
         cg_obj = CuratoryGroup.get(cg)
       }
+      else if (cg instanceof Map) {
+        cg_obj = CuratoryGroup.get(cg.id)
+      }
 
       if (cg_obj) {
         new_cgs << cg_obj

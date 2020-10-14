@@ -183,8 +183,8 @@ class PackageController {
 
               if (generateToken) {
                 String charset = (('a'..'z') + ('0'..'9')).join()
-                result.updateToken = RandomStringUtils.random(255, charset.toCharArray())
-                update_token = new UpdateToken(pkg: obj, updateUser: user, value: result.updateToken).save(flush:true)
+                def updateToken = RandomStringUtils.random(255, charset.toCharArray())
+                update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush:true)
               }
 
               errors << updateCombos(obj, reqBody)
@@ -296,21 +296,25 @@ class PackageController {
         if( obj.validate() ) {
           if (generateToken) {
             String charset = (('a'..'z') + ('0'..'9')).join()
-            result.updateToken = RandomStringUtils.random(255, charset.toCharArray())
+            def updateToken = RandomStringUtils.random(255, charset.toCharArray())
 
             if (obj.updateToken) {
-              def old_token = obj.updateToken
-
-              old_token.delete(flush:true)
+              def currentToken = obj.updateToken
+              obj.updateToken = null
+              currentToken.delete(flush:true)
             }
 
-            update_token = new UpdateToken(pkg: obj, updateUser: user, value: result.updateToken).save(flush:true)
+            update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush:true)
           }
 
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
+
+            if (update_token) {
+              result.updateToken = update_token.value
+            }
           }
           else {
             response.setStatus(400)
