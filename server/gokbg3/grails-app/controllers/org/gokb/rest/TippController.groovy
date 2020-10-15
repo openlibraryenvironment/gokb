@@ -172,7 +172,7 @@ class TippController {
 
       def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
-      if (curator) {
+      if (curator || user.isAdmin()) {
         reqBody.title = obj.title.id
         reqBody.hostPlatform = obj.hostPlatform.id
         reqBody.pkg = obj.pkg.id

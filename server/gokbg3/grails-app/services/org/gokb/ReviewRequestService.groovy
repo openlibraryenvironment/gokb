@@ -24,7 +24,7 @@ class ReviewRequestService {
       }
 
       if (group) {
-        AllocatedReviewGroup.create(group, req)
+        AllocatedReviewGroup.create(group, req, true)
       }
       else if (KBComponent.has(forComponent, 'curatoryGroups')) {
         log.debug("Using Component groups for ${forComponent} -> ${forComponent.class?.name}..")
@@ -32,7 +32,7 @@ class ReviewRequestService {
           def comp = KBComponent.get(forComponent.id)
           comp.curatoryGroups?.each { gr ->
             CuratoryGroup cg = CuratoryGroup.get(gr.id)
-            log.debug("Allocating Package Group ${gr} to review")
+            log.debug("Allocating Package Group ${gr} to review ${req}")
             AllocatedReviewGroup.create(cg, req, true)
           }
         }
@@ -42,19 +42,16 @@ class ReviewRequestService {
         TitleInstancePackagePlatform.withNewSession {
           forComponent.pkg?.curatoryGroups?.each { gr ->
             CuratoryGroup cg = CuratoryGroup.get(gr.id)
-            log.debug("Allocating TIPP Pkg Group ${gr} to review")
+            log.debug("Allocating TIPP Pkg Group ${gr} to review ${req}")
             AllocatedReviewGroup.create(cg, req, true)
           }
         }
       }
       else if (raisedBy?.curatoryGroups?.size() > 0) {
         log.debug("Using User groups ..")
-        User.withNewSession {
-          raisedBy.curatoryGroups.each { gr ->
-            CuratoryGroup cg = CuratoryGroup.get(gr.id)
-            log.debug("Allocating User Group ${gr} to review")
-            AllocatedReviewGroup.create(cg, req, true)
-          }
+        raisedBy.curatoryGroups.each { gr ->
+          log.debug("Allocating User Group ${gr} to review ${req}")
+          AllocatedReviewGroup.create(gr, req, true)
         }
       }
     }

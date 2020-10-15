@@ -36,7 +36,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data.size() == 7
+    resp.json.data.size() == 8
   }
 
   void "test GET /rest/sources/{id}"() {
@@ -64,8 +64,8 @@ class SourcesTestSpec extends AbstractAuthSpec {
       body([shortcode: 'q1', name: 'Quelle 1'] as JSON)
     }
     then:
-    resp.status == 200
-    resp.json.data.name == "Quelle 1"
+    resp.status == 201
+    resp.json.name == "Quelle 1"
   }
 
   void "test PUT /rest/sources/{id}"() {
@@ -82,8 +82,8 @@ class SourcesTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data.name == "Source AfterUpdate"
-    resp.json.data.frequency == "1M"
-    resp.json.data.url == "http://kbart-source.com/test-pkg"
+    resp.json.name == "Source AfterUpdate"
+    resp.json.frequency == "1M"
+    resp.json.url == "http://kbart-source.com/test-pkg"
   }
 }

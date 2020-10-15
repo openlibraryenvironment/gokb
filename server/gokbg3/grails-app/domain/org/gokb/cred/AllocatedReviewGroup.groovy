@@ -19,8 +19,8 @@ class AllocatedReviewGroup implements Serializable {
 
 	int hashCode() {
 		def builder = new HashCodeBuilder()
-		if (group) builder.append(group.id)
 		if (review) builder.append(review.id)
+		if (group) builder.append(group.id)
 		builder.toHashCode()
 	}
 
