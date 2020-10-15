@@ -8,6 +8,7 @@ import grails.transaction.Rollback
 import org.gokb.cred.Org
 import org.gokb.cred.Platform
 import org.gokb.TitleLookupService
+import org.gokb.cred.Source
 
 @Integration
 @Rollback
@@ -15,13 +16,15 @@ class OrgTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest = new RestBuilder()
 
-  def setupSpec(){
+  def setupSpec() {
   }
 
   def setup() {
-    def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush:true)
-    def new_plt_upd = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate").save(flush:true)
-    def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch").save(flush:true)
+    def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true)
+    def new_plt_upd = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate").save(flush: true)
+    def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch").save(flush: true)
+    patch_org.setSource(Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource"))
+    patch_org.save(flush:true)
   }
 
   def cleanup() {
@@ -49,7 +52,7 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     then:
 
-    resp.status == 401 // Unauthorized
+    resp.status == 200 // OK
   }
 
   void "test /rest/orgs/<id> with valid token"() {
@@ -76,8 +79,8 @@ class OrgTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     String accessToken = getAccessToken()
     def json_record = [
-      name: "TestOrgPost",
-      ids: [
+      name             : "TestOrgPost",
+      ids              : [
         [namespace: "global", value: "test-org-id-val"]
       ],
       providedPlatforms: ["TestOrgPlt"]
@@ -132,8 +135,8 @@ class OrgTestSpec extends AbstractAuthSpec {
     def id = Org.findByName("TestOrgPatch")?.id
 
     def update_record = [
-      name: "TestOrgUpdateNew",
-      ids: [
+      name             : "TestOrgUpdateNew",
+      ids              : [
         [namespace: "global", value: "test-org-id-val-new"]
       ],
       providedPlatforms: [updated_plt.id]
@@ -156,5 +159,40 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.json.name == "TestOrgUpdateNew"
     resp.json._embedded?.ids?.size() == 1
     resp.json._embedded?.providedPlatforms?.size() == 1
+  }
+
+  void "test source delete"() {
+    given:
+
+    def urlPath = getUrlPath()
+    String accessToken = getAccessToken()
+    def id = Org.findByName("TestOrgPatch")?.id
+
+    def update_record = [
+      name             : "TestOrgUpdateSource",
+      ids              : [
+        [namespace: "global", value: "test-org-id-val-new"]
+      ],
+      source           : null
+    ]
+
+    when:
+
+    RestResponse resp = rest.put("${urlPath}/rest/provider/$id") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(update_record as JSON)
+    }
+
+    then:
+
+    resp.status == 200 // OK
+
+    expect:
+
+    resp.json.name == "TestOrgUpdateSource"
+    resp.json.source == null
+    resp.json._embedded?.ids?.size() == 1
+//    resp.json._embedded?.providedPlatforms?.size() == 1
   }
 }

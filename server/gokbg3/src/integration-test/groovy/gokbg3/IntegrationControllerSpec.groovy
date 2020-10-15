@@ -41,15 +41,22 @@ class IntegrationControllerSpec extends Specification {
   TitleLookupService titleLookupService
 
   def setup() {
-    def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1")
-    def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society")
-    def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org')
+    def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush:true)
+    def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush:true)
+    def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush:true)
+    def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush:true)
+    def test_upd_pkg = Package.findByName('TestTokenPackage') ?: new Package(name: 'TestTokenPackage').save(flush:true)
+    def user = User.findByUsername('ingestAgent')
+    def pkg_token = UpdateToken.findByValue('TestUpdateToken') ?: new UpdateToken(value: 'TestUpdateToken', pkg: test_upd_pkg, updateUser: user).save(flush:true)
   }
 
   def cleanup() {
     CuratoryGroup.findByName('TestGroup1')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
+    Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
+    Package.findByName('TestTokenPackage')?.expunge()
+    UpdateToken.findByValue('TestUpdateToken')?.delete()
     TitleInstance.findAllByName("Acta cytologica")?.each { title ->
       ComponentPrice.findAllByOwner(title)?.each { price ->
         price?.delete()
@@ -59,6 +66,7 @@ class IntegrationControllerSpec extends Specification {
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
       title.expunge()
     }
+
   }
 
   void "Test assertGroup"() {
@@ -216,9 +224,8 @@ class IntegrationControllerSpec extends Specification {
     title != null
     title.publishedFrom?.toString() == "1953-01-01 00:00:00.0"
     title.publishedTo?.toString() == "2001-12-31 00:00:00.0"
-    def pub = title.getCombosByPropertyName('publisher')
-    if (pub.size>0)
-      pub[0].startDate?.toString() == "1953-01-01 00:00:00.0"
+    title.getCombosByPropertyName('publisher')?.size() == 1
+    title.getCombosByPropertyName('publisher')[0].startDate?.toString() == "1953-01-01 00:00:00.0"
   }
 
   void "Test crossReferenceTitle :: Journal with history"() {
@@ -325,6 +332,12 @@ class IntegrationControllerSpec extends Specification {
         [
           "accessEnd"  : "",
           "accessStart": "",
+          "identifiers": [
+            [
+              "type": "global",
+              "value": "testTippId"
+            ]
+          ],
           "coverage"   : [
             [
               "coverageDepth": "Fulltext",
@@ -381,6 +394,7 @@ class IntegrationControllerSpec extends Specification {
     matching_pkgs[0].id == resp.json.pkgId
     matching_pkgs[0].tipps?.size() == 1
     matching_pkgs[0].provider?.name == "American Chemical Society"
+    matching_pkgs[0].ids?.size() == 1
   }
 
   void "Test crossReferencePackage with incomplete coverage dates"() {
@@ -654,7 +668,7 @@ class IntegrationControllerSpec extends Specification {
     resp.status == 200
 
     expect: "prices are set correctly"
-    sleep(200)
+    sleep(400)
     def title = TitleInstance.findById(resp.json.results.titleId)
     title?.prices?.size() == 2
     title?.subjectArea
@@ -748,5 +762,101 @@ class IntegrationControllerSpec extends Specification {
     def pkg = Package.get(resp1.json.pkgId)
     pkg.tipps?.size() == 1
     pkg.listStatus?.value == "In Progress"
+  }
+
+  void "test update package via token"() {
+    given:
+    def json_record = [
+      "updateToken":"TestUpdateToken",
+      "packageHeader" : [
+        "breakable" : "No",
+        "consistent" : "Yes",
+        "editStatus" : "In Progress",
+        "listStatus": "Checked",
+        "fixed" : "No",
+        "global" : "Consortium",
+        "identifiers" : [
+          [
+            "type" : "isil",
+            "value" : "ZDB-1-ACS"
+          ]
+        ],
+        "name" : "TestTokenPackageUpdate",
+        "nominalPlatform" : [
+          "name" : "ACS Publications",
+          "primaryUrl" : "https://pubs.acs.org"
+        ],
+        "nominalProvider" : "American Chemical Society"
+      ],
+      "tipps" : [
+        [
+          "accessEnd" : "",
+          "accessStart" : "",
+          "coverage" : [
+              [
+                "coverageDepth" : "Fulltext",
+                "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                "embargo" : "",
+                "endDate" : "1995",
+                "endIssue" : "",
+                "endVolume" : "43",
+                "startDate" : "1953-01",
+                "startIssue" : "",
+                "startVolume" : "1"
+              ]
+          ],
+          "medium" : "Electronic",
+          "platform" : [
+            "name" : "ACS Publications",
+            "primaryUrl" : "https://pubs.acs.org"
+          ],
+          "status" : "Current",
+          "title" : [
+              "identifiers" : [
+                [
+                    "type" : "zdb",
+                    "value" : "1483109-0"
+                ],
+                [
+                    "type" : "eissn",
+                    "value" : "1520-5118"
+                ],
+                [
+                    "type" : "issn",
+                    "value" : "0021-8561"
+                ]
+              ],
+              "publisher_history": [
+                [
+                  "endDate"  : "",
+                  "name"     : "ACS TestOrg",
+                  "startDate": "1990",
+                  "status"   : ""
+                ]
+              ],
+              "name" : "Journal of agricultural and food chemistry",
+              "type" : "Serial"
+          ],
+          "url" : "http://pubs.acs.org/journal/jafcau"
+        ]
+      ]
+    ]
+    when: "Caller asks for this record to be cross referenced"
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
+      body(json_record as JSON)
+    }
+
+    then: "The request is sucessfully processed"
+    resp.json?.message?.startsWith('Created')
+    expect: "The Package updater is set correctly"
+    sleep(200)
+    def pkg = Package.get(resp.json.pkgId)
+    pkg.tipps?.size() == 1
+    pkg.lastUpdatedBy == User.findByUsername('ingestAgent')
+    pkg.name == "TestTokenPackageUpdate"
+    def title = JournalInstance.findByName("Journal of agricultural and food chemistry")
+    title.publisher?.size() == 1
+    title.publisher[0].name == "ACS TestOrg"
   }
 }
