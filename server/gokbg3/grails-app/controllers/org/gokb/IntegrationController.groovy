@@ -1293,7 +1293,7 @@ class IntegrationController {
                     if (upserted_tipp) {
                       if ( existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id) ) {
                         log.debug("Existing TIPP matched!")
-                        tipps_to_delete.remove(upserted_tipp.id)
+                        tipps_to_delete.removeElement(upserted_tipp.id)
                       }
 
                       if ( upserted_tipp && upserted_tipp?.status != status_deleted && tipp.status == "Deleted" ) {
@@ -1307,7 +1307,7 @@ class IntegrationController {
                       else if ( upserted_tipp && upserted_tipp.status != status_current && (!tipp.status || tipp.status == "Current") ) {
                         upserted_tipp.setActive()
 
-                        if (upserted_tipp.isDeleted() && status_current) {
+                        if (upserted_tipp.isDeleted()) {
                             reviewRequestService.raise(
                             upserted_tipp,
                             "Matched TIPP was marked as Deleted.",
