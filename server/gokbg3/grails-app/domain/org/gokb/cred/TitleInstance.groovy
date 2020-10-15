@@ -97,8 +97,7 @@ class TitleInstance extends KBComponent {
       // Each of the variants...
       def existing = variantNames.find {
         KBComponentVariantName name = it
-        return (name.locale == locale_rd && name.variantType == title_type
-        && name.getNormVariantName().equals(normTitle))
+        return (name.getNormVariantName().equals(normTitle))
       }
 
       if (!existing) {

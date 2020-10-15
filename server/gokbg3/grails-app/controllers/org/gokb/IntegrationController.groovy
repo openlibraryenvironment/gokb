@@ -1306,6 +1306,30 @@ class IntegrationController {
                       }
                       else if ( upserted_tipp && upserted_tipp.status != status_current && (!tipp.status || tipp.status == "Current") ) {
                         upserted_tipp.setActive()
+
+                        if (upserted_tipp.isDeleted() && status_current) {
+                            reviewRequestService.raise(
+                            tipp,
+                            "Matched TIPP was marked as Deleted.",
+                            "Check TIPP Status.",
+                            user,
+                            null,
+                            null,
+                            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Status Deleted')
+                          )
+                        }
+                      }
+
+                      if (upserted_tipp.isCurrent() && upserted_tipp.hostPlatform?.status != status_current ) {
+                        reviewRequestService.raise(
+                          tipp,
+                          "The existing platform matched for this TIPP (${upserted_tipp.hostPlatform}) is marked as ${upserted_tipp.hostPlatform.status?.value}! Please review the URL/Platform for validity.",
+                          "Platform not marked as current.",
+                          user,
+                          null,
+                          null,
+                          RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent')
+                        )
                       }
                     }
                     else {

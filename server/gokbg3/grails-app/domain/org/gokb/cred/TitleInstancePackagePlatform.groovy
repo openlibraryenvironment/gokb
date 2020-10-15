@@ -546,42 +546,13 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if ( tipp ) {
         def changed = false
-        if ( tipp.status == status_current && plt.status != status_current ) {
-          log.warn("TIPP platform is marked as ${plt.status?.value}!")
-          ReviewRequest.raise(
-            tipp,
-            "The existing platform matched for this TIPP (${plt}) is marked as ${plt.status?.value}! Please review the URL/Platform for validity.",
-            "Platform not marked as current.",
-            user,
-            null,
-            null,
-            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent')
-          )
-        }
 
         if ( tipp.isRetired() && tipp_dto.status == "Current" ) {
-
-          ReviewRequest.raise(
-            tipp,
-            "This TIPP was previously marked as Retired, but has now been set back to Current again.",
-            "Retired TIPP reenabled.",
-            user
-          )
-
           if ( tipp.accessEndDate ) {
             tipp.accessEndDate = null
           }
 
           changed = true
-        }
-        else if( tipp.isDeleted() && tipp_dto.status != "Deleted" ) {
-
-          ReviewRequest.raise(
-            tipp,
-            "Matched TIPP was marked as Deleted.",
-            "Check TIPP Status.",
-            user
-          )
         }
 
         if ( tipp_dto.paymentType && tipp_dto.paymentType.length() > 0 ) {
