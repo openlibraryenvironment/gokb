@@ -1309,7 +1309,7 @@ class IntegrationController {
 
                         if (upserted_tipp.isDeleted() && status_current) {
                             reviewRequestService.raise(
-                            tipp,
+                            upserted_tipp,
                             "Matched TIPP was marked as Deleted.",
                             "Check TIPP Status.",
                             user,
@@ -1322,7 +1322,7 @@ class IntegrationController {
 
                       if (upserted_tipp.isCurrent() && upserted_tipp.hostPlatform?.status != status_current ) {
                         reviewRequestService.raise(
-                          tipp,
+                          upserted_tipp,
                           "The existing platform matched for this TIPP (${upserted_tipp.hostPlatform}) is marked as ${upserted_tipp.hostPlatform.status?.value}! Please review the URL/Platform for validity.",
                           "Platform not marked as current.",
                           user,
