@@ -96,7 +96,8 @@ class ProfileController {
   @Secured(value = ['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
-    userProfileService.delete()
+    User user = User.get(springSecurityService.principal.id)
+    userProfileService.delete(user)
     response.status = 204
   }
 
