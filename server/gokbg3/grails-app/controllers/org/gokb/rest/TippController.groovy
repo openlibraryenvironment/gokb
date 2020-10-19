@@ -29,11 +29,15 @@ class TippController {
   def restMappingService
   def componentLookupService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+    
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
     def es_search = params.es ? true : false
 
     params.componentType = "TIPP" // Tells ESSearchService what to look for
@@ -53,12 +57,16 @@ class TippController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+    
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     if (params.oid || params.id) {
       def obj = TitleInstancePackagePlatform.findByUuid(params.id)
@@ -67,19 +75,13 @@ class TippController {
         obj = TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
       }
 
-      if (obj?.isReadable()) {
+      if (obj) {
         result = restMappingService.mapObjectToJson(obj, params, user)
       }
-      else if (!obj) {
+      else {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
-        result.result = 'ERROR'
-      }
-      else {
-        result.message = "Access to object was denied!"
-        response.setStatus(403)
-        result.code = 403
         result.result = 'ERROR'
       }
     }
@@ -170,7 +172,7 @@ class TippController {
 
       def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
-      if (curator) {
+      if (curator || user.isAdmin()) {
         reqBody.title = obj.title.id
         reqBody.hostPlatform = obj.hostPlatform.id
         reqBody.pkg = obj.pkg.id
@@ -243,10 +245,7 @@ class TippController {
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
       changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tipp,'startDate')
       changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tipp,'endDate')
-
-      if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
-        changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
-      }
+      changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
 
       def cs_match = false
       def startAsDate = (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
@@ -279,7 +278,26 @@ class TippController {
 
       if (!cs_match) {
 
-        def cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+        def cov_depth = null
+
+        if (c.coverageDepth instanceof String) {
+          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
+        }
+        else if (c.coverageDepth instanceof Integer) {
+          cov_depth = RefdataValue.get(c.coverageDepth)
+        }
+        else if (c.coverageDepth instanceof Map) {
+          if (c.coverageDepth.id) {
+            cov_depth = RefdataValue.get(c.coverageDepth.id)
+          }
+          else {
+            cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
+          }
+        }
+
+        if (!cov_depth) {
+          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+        }
 
         tipp.addToCoverageStatements('startVolume': c.startVolume, \
           'startIssue':c.startIssue, \

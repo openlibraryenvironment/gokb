@@ -122,7 +122,32 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     resp2.json._links.size() == 1
     resp2.json.data.size() == 3
   }
-    
+
+  void "test /rest/identifier-namespaces?targetType"() {
+    def urlPath = getUrlPath()
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp1 = rest.get("${urlPath}/rest/identifier-namespaces?targetType=Book") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
+    RestResponse resp2 = rest.get("${urlPath}/rest/identifier-namespaces?targetType=Title") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+    }
+    then:
+    resp1.status == 200 // OK
+    resp1.json.data != null
+    resp1.json._links.size() == 1
+    resp1.json.data.size() == 2
+    resp2.status == 200 // OK
+    resp2.json.data != null
+    resp2.json._links.size() == 1
+    resp2.json.data.size() == 3
+  }
+
   void "test identifier create"() {
     given:
     def urlPath = getUrlPath()

@@ -5,6 +5,10 @@ grails:
             - ~/.grails/gokb-config.groovy
             - ~/.grails/gokb-config.yml
             - ~/.grails/gokb-config.properties
+    cors:
+        enabled: true
+        mappings:
+            /rest/**: inherit
 
     profile: web
     codegen:
@@ -150,6 +154,7 @@ environments:
             es:
                 index: gokbg3dev
                 cluster: gokbg3-dev
+            tsvExportTempDirectory: /tmp/gokb/export
         cache:
             headers:
                 enabled: false

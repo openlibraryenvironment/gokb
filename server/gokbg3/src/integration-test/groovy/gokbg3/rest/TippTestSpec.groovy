@@ -57,7 +57,7 @@ class TippTestSpec extends AbstractAuthSpec {
       accept('application/json')
     }
     then:
-    resp.status == 401 // Unauthorized
+    resp.status == 200 // OK
   }
 
   void "test /rest/tipps with valid token"() {

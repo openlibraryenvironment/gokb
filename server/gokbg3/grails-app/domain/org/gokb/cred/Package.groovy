@@ -69,6 +69,8 @@ class Package extends KBComponent {
     successor: 'previous',
   ]
 
+  static hasOne = [updateToken: UpdateToken]
+
   static mapping = {
     includes KBComponent.mapping
     listStatus column: 'pkg_list_status_rv_fk'
@@ -117,7 +119,8 @@ class Package extends KBComponent {
 
   static jsonMapping = [
     'ignore'       : [
-      'lastProject'
+      'lastProject',
+      'updateToken'
     ],
     'es'           : [
       'nominalPlatformUuid': "nominalPlatform.uuid",
@@ -211,7 +214,7 @@ class Package extends KBComponent {
   public getCurrentTitleCount() {
     def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current');
 
-    int result = TitleInstance.executeQuery('''select count(title.id)
+    int result = TitleInstance.executeQuery('''select count(distinct title.id)
       from TitleInstance as title,
         Combo as pkgCombo,
         Combo as titleCombo,
@@ -477,6 +480,7 @@ select tipp.id,
             'name'(provider.name)
           }
         }
+
         'listVerifiedDate'(listVerifiedDate ? sdf.format(listVerifiedDate) : null)
 
         builder.'curatoryGroups' {
@@ -486,6 +490,7 @@ select tipp.id,
             }
           }
         }
+
         'dateCreated'(sdf.format(dateCreated))
         'TIPPs'(count: tipps?.size()) {
           tipps.each { tipp ->
@@ -499,8 +504,13 @@ select tipp.id,
                 builder.'status'(tipp[15])
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
-                    builder.'identifier'('namespace': tid[0], 'value': tid[1], 'type': tid[2])
+                    builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
                   }
+                }
+              }
+              builder.'identifiers' {
+                getTippIds(tipp[0]).each { tid ->
+                  builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
                 }
               }
               'platform'([id: tipp[4], 'uuid': tipp[14]]) {
@@ -538,7 +548,15 @@ select tipp.id,
   private static getTitleIds(Long title_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [title_id, refdata_ids, status_active], [readOnly: true]);
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [title_id, refdata_ids, status_active], [readOnly: true]);
+    result
+  }
+
+  @Transient
+  private static getTippIds(Long tipp_id) {
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [tipp_id, refdata_ids, status_active], [readOnly: true]);
     result
   }
 
@@ -606,7 +624,7 @@ select tipp.id,
    */
   @Transient
   public static def validateDTO(packageHeaderDTO) {
-    def result = [valid: true, errors:[:]]
+    def result = [valid: true, errors:[:], match:false]
 
     if (!packageHeaderDTO.name?.trim()) {
       result.valid = false
@@ -674,6 +692,55 @@ select tipp.id,
 
     if (id_errors.size() > 0) {
       result.errors.ids = id_errors
+    }
+
+    if (result.valid) {
+      def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+      def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
+
+      def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ?", [pkg_normname, status_deleted])
+      def full_matches = []
+
+      if (packageHeaderDTO.uuid) {
+        result.match = Package.findByUuid(packageHeaderDTO.uuid) ? true : false
+      }
+
+      if (!result.match && name_candidates.size() == 1) {
+        result.match = true
+      }
+
+      if (!result.match) {
+        def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
+        def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
+
+        if (variant_candidates.size() == 1) {
+          result.match = true
+          log.debug("Package matched via existing variantName.")
+        }
+      }
+
+      if (!result.match) {
+        log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
+        packageHeaderDTO.variantNames.each {
+
+          if (it.trim().size() > 0) {
+            def var_pkg = Package.findByName(it)
+
+            if (var_pkg) {
+              log.debug("Found existing package name for variantName ${it}")
+            } else {
+
+              def variant_normname = GOKbTextUtils.normaliseString(it)
+              def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
+
+              if (variant_candidates.size() == 1) {
+                log.debug("Found existing package variant name for variantName ${it}")
+                result.match = true
+              }
+            }
+          }
+        }
+      }
     }
 
     if (packageHeaderDTO.provider && packageHeaderDTO.provider instanceof Integer) {
@@ -780,9 +847,11 @@ select tipp.id,
       result = name_candidates[0]
     } else if (result && result.name != packageHeaderDTO.name) {
       def current_name = result.name
+
       changed |= ClassUtils.setStringIfDifferent(result, 'name', packageHeaderDTO.name)
+
       if (!result.variantNames.find { it.variantName == current_name }) {
-        def new_variant = new KBComponentVariantName(owner: result, variantName: current_name).save(flush: true, failOnError: true)
+        result.ensureVariantName(current_name)
       }
     }
 

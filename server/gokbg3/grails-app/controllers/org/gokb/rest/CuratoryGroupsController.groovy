@@ -1,5 +1,8 @@
 package org.gokb.rest
 
+import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.CuratoryGroup
@@ -19,8 +22,9 @@ class CuratoryGroupsController {
   def restMappingService
   def springSecurityService
   def componentLookupService
+  ConcurrencyManagerService concurrencyManagerService
 
-  @Secured(['IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def curGroups = CuratoryGroup.findAll()
 
@@ -48,11 +52,16 @@ class CuratoryGroupsController {
     render result as JSON
   }
 
-  @Secured(['IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
     def curGroup = null
     def base = grailsApplication.config.serverURL + "/rest"
+    User user = null
+    
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     if (params.oid || params.id) {
       curGroup = CuratoryGroup.findByUuid(params.id)
@@ -65,7 +74,7 @@ class CuratoryGroupsController {
       }
 
       if (curGroup) {
-        result.data = restMappingService.mapObjectToJson(curGroup, params, null)
+        result.data = restMappingService.mapObjectToJson(curGroup, params, user)
       } else {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
@@ -184,6 +193,26 @@ class CuratoryGroupsController {
       result.message = "Unable to lookup group for ID ${params.id}!"
       response.setStatus(404)
     }
+
+    render result as JSON
+  }
+
+  @Secured("hasAnyRole('ROLE_CONTRIBUTOR', 'ROLE_EDITOR', 'ROLE_ADMIN') and isAuthenticated()")
+  def getJobs() {
+    def result = [:]
+    def max = params.limit ? params.long('limit') : 10
+    def offset = params.offset ? params.long('offset') : 0
+    def base = grailsApplication.config.serverURL + "/rest"
+    def sort = params._sort ?: null
+    def order = params._order ?: null
+    def group = CuratoryGroup.get(params.id)
+    User user = User.get(springSecurityService.principal.id)
+    def errors = [:]
+
+    if (group && (group.users.contains(user) || user.isAdmin())) {
+      result.data = concurrencyManagerService.getGroupJobs(group.id as int, max, offset)
+    }
+    log.debug("Return ${result}")
 
     render result as JSON
   }

@@ -1,5 +1,6 @@
 package gokbg3.rest
 
+import grails.gorm.transactions.Transactional
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
@@ -10,6 +11,7 @@ import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.JournalInstance
 import org.gokb.cred.Platform
 import grails.converters.JSON
+import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Source
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.WebApplicationContext
@@ -39,7 +41,15 @@ class PackageTestSpec extends AbstractAuthSpec {
     testTitle = JournalInstance.findByName("PackTestTitle") ?: new JournalInstance(name: "PackTestTitle").save(flush: true)
     testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
     testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
-    testSource = Source.findByName("PackTestSource") ?: new Source(name: "PackTestSource").save(flush: true)
+    def http = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
+    def kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
+    testSource = Source.findByName("PackTestSource") ?: new Source(
+      name: "PackTestSource",
+      url: "https://org/package",
+      frequency: "w",
+      defaultSupplyMethod: http,
+      defaultDataFormat: kbart)
+    //.save(flush: true)
   }
 
   def cleanup() {
@@ -66,7 +76,7 @@ class PackageTestSpec extends AbstractAuthSpec {
       accept('application/json')
     }
     then:
-    resp.status == 401 // Unauthorized
+    resp.status == 200 // OK
   }
 
   void "test /rest/packages with valid token"() {
@@ -149,7 +159,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.json._embedded.tipps[0].url == upd_body.tipps[0].url
   }
 
-  void "test /rest/packages post with provider and platform"() {
+  void "test /rest/packages post with provider, source and platform"() {
     given:
     def new_body = [
       name           : "TestPackageWithProviderAndPlatform",
@@ -169,7 +179,7 @@ class PackageTestSpec extends AbstractAuthSpec {
       nominalPlatform: testPlt.id,
       source         : [id: testSource.id],
       scope          : [name: "Front File"]
-    ]
+    ] as JSON
     def urlPath = getUrlPath()
     last = true
     when:
@@ -178,7 +188,7 @@ class PackageTestSpec extends AbstractAuthSpec {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
-      body(new_body as JSON)
+      body(new_body)
     }
     then:
     resp.json.errors == null

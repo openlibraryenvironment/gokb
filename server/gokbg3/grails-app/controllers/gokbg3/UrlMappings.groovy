@@ -16,6 +16,8 @@ class UrlMappings {
     group "/rest", {
       post "/packages/$id/retire"(controller: 'package', namespace: 'rest', action:'retire')
       post "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'addTipps')
+      put "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'updateTipps')
+      patch "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'updateTipps')
       "/packages/$id/$action"(controller: 'package', namespace: 'rest')
       get "/packages/$id"(controller: 'package', namespace: 'rest', action: 'show')
       put "/packages/$id"(controller: 'package', namespace: 'rest', action: 'update')
@@ -80,6 +82,7 @@ class UrlMappings {
       get "/identifier-namespaces"(controller: 'identifier', namespace: 'rest', action: 'namespace')
 
       get "/profile"(controller: 'profile', namespace: 'rest', action: 'show')
+      get "/profile/jobs/"(controller: 'profile', namespace: 'rest', action: 'getJobs')
       put "/profile"(controller: 'profile', namespace: 'rest', action: 'update')
       patch "/profile"(controller: 'profile', namespace: 'rest', action: 'patch')
       delete "/profile"(controller: 'profile', namespace: 'rest', action: 'delete')
@@ -95,14 +98,18 @@ class UrlMappings {
 
       get "/sources"(controller: 'sources', namespace: 'rest', action: 'index')
       get "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'show')
+      put "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'update')
+      patch "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'update')
       post "/sources"(controller: 'sources', namespace: 'rest', action: 'save')
 
       get "/reviews"(controller: 'reviews', namespace: 'rest', action: 'index')
       get "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'show')
+      post "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'save')
       put "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
       patch "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
 
       get "/curatoryGroups/$id/reviews"(controller: 'curatoryGroups', namespace: 'rest', action: 'getReviews')
+      get "/curatoryGroups/$id/jobs"(controller: 'curatoryGroups', namespace: 'rest', action: 'getJobs') 
       get "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'show')
       get "/curatoryGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'index')
 
@@ -114,6 +121,7 @@ class UrlMappings {
       post "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'addHistory')
       put "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'updateHistory')
       patch "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'updateHistory')
+      get "/titles/$id/tipps"(controller: 'title', namespace: 'rest', action:'tipps')
       "/titles/$id/$action"(controller: 'title', namespace:'rest')
       get "/titles/$id"(controller: 'title', namespace: 'rest', action:'show')
       put "/titles/$id"(controller: 'title', namespace: 'rest', action:'update')
@@ -147,6 +155,7 @@ class UrlMappings {
 
       get "/package-scopes" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
       get "/coverage-depth" (controller: 'refdata', namespace: 'rest', action: 'coverageDepth')
+      get "/review-types" (controller: 'refdata', namespace: 'rest', action: 'reviewType')
     }
     "/$controller/$action?/$id?" {
       constraints {

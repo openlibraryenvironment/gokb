@@ -30,18 +30,23 @@ class TitleController {
   def titleHistoryService
   def componentLookupService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def getTypes() {
     def result = ["serial","monograph","database"]
 
     return result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+    
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
+
     def es_search = params.es ? true : false
     Class type = setType(params)
 
@@ -90,7 +95,7 @@ class TitleController {
     return type
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
     def obj = null
@@ -98,7 +103,11 @@ class TitleController {
     def embeds = params['_embed'] ? params['_embed'].split(',') : []
     def is_curator = true
     Class type = setType(params)
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+    
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     if (type && (params.oid || params.id)) {
       obj = type.findByUuid(params.id)
@@ -107,7 +116,7 @@ class TitleController {
         obj = type.get(genericOIDService.oidToId(params.id))
       }
 
-      if (obj?.isReadable()) {
+      if (obj) {
         result = restMappingService.mapObjectToJson(obj, params, user)
 
         if ( (params.history && params.history == 'true') || includes.contains('history') || embeds.contains('history') ) {
@@ -119,16 +128,10 @@ class TitleController {
           }
         }
       }
-      else if (!obj) {
+      else {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
-        result.result = 'ERROR'
-      }
-      else {
-        result.message = "Access to object was denied!"
-        response.setStatus(403)
-        result.code = 403
         result.result = 'ERROR'
       }
     }
@@ -818,4 +821,59 @@ class TitleController {
     }
     result
   }
+
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+  def tipps() {
+    def result = [:]
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
+    log.debug("tipps :: ${params}")
+    def obj = TitleInstance.findByUuid(params.id)
+
+    if (!obj) {
+      obj = TitleInstance.get(genericOIDService.oidToId(params.id))
+    }
+
+    log.debug("TIPPs for Title: ${obj}")
+
+    if (obj) {
+      def context = "/titles/" + params.id + "/tipps"
+      def base = grailsApplication.config.serverURL + "/rest"
+      def es_search = params.es ? true : false
+
+      params.remove('id')
+      params.remove('uuid')
+      params.remove('es')
+      params.title = obj.id
+
+      def esParams = new HashMap(params)
+      esParams.remove('componentType')
+      esParams.componentType = "TIPP" // Tells ESSearchService what to look for
+
+      log.debug("New ES params: ${esParams}")
+      log.debug("New DB params: ${params}")
+
+      if (es_search) {
+        def start_es = LocalDateTime.now()
+        result = ESSearchService.find(esParams, context)
+        log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+      }
+      else {
+        def start_db = LocalDateTime.now()
+        result = componentLookupService.restLookup(user, TitleInstancePackagePlatform, params, context)
+        log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      result.message = "Title id ${params.id} could not be resolved!"
+      response.setStatus(404)
+    }
+
+    render result as JSON
+  }
+
 }

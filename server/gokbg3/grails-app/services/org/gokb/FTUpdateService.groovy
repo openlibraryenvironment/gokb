@@ -29,13 +29,12 @@ class FTUpdateService {
   def synchronized updateFTIndexes() {
     log.debug("updateFTIndexes");
 
-    if ( running == false ) {
+    if (running == false) {
       running = true;
       doFTUpdate()
       log.info("FTUpdate done.")
       return new Date();
-    }
-    else {
+    } else {
       log.info("FTUpdate already running")
       return "Job cancelled – FTUpdate was already running!";
     }
@@ -70,7 +69,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.updater='pkg'
+        result.updater = 'pkg'
         result.titleCount = kbc.currentTippCount
 
         result.cpname = kbc.provider?.name
@@ -86,6 +85,9 @@ class FTUpdateService {
         result.scope = kbc.scope ? kbc.scope.value : ""
         result.listVerifiedDate = kbc.listVerifiedDate ? sdf.format(kbc.listVerifiedDate) : ""
 
+        if (kbc.source)
+          result.source = [frequency : kbc.source.frequency, id:kbc.source.id]
+
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
           result.curatoryGroups.add(cg.name)
@@ -94,12 +96,13 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+          result.identifiers.add([namespace    : idc.toComponent.namespace.value,
+                                  value        : idc.toComponent.value,
+                                  namespaceName: idc.toComponent.namespace.name]);
         }
 
-        result.componentType=kbc.class.simpleName
-
+        result.componentType = kbc.class.simpleName
         result
       }
 
@@ -111,7 +114,7 @@ class FTUpdateService {
         result.name = kbc.name
         result.sortname = kbc.name
         result.altname = []
-        result.updater='org'
+        result.updater = 'org'
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
@@ -130,11 +133,13 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+          result.identifiers.add([namespace    : idc.toComponent.namespace.value,
+                                  value        : idc.toComponent.value,
+                                  namespaceName: idc.toComponent.namespace.name])
         }
 
-        result.componentType=kbc.class.simpleName
+        result.componentType = kbc.class.simpleName
 
         result
       }
@@ -146,7 +151,7 @@ class FTUpdateService {
         result.uuid = kbc.uuid
         result.name = kbc.name
         result.sortname = kbc.name
-        result.updater='platform'
+        result.updater = 'platform'
 
         result.cpname = kbc.provider?.name
 
@@ -163,16 +168,18 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.updater='platform'
+        result.updater = 'platform'
         result.primaryUrl = kbc.primaryUrl
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+          result.identifiers.add([namespace    : idc.toComponent.namespace.value,
+                                  value        : idc.toComponent.value,
+                                  namespaceName: idc.toComponent.namespace.name])
         }
 
-        result.componentType=kbc.class.simpleName
+        result.componentType = kbc.class.simpleName
 
         result
       }
@@ -188,7 +195,7 @@ class FTUpdateService {
         result.uuid = kbc.uuid
         result.name = kbc.name
         result.sortname = kbc.name
-        result.updater='journal'
+        result.updater = 'journal'
         // result.publisher = kbc.currentPublisher?.name
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
@@ -202,11 +209,13 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+          result.identifiers.add([namespace    : idc.toComponent.namespace.value,
+                                  value        : idc.toComponent.value,
+                                  namespaceName: idc.toComponent.namespace.name])
         }
 
-        result.componentType=kbc.class.simpleName
+        result.componentType = kbc.class.simpleName
 
         // log.debug("process ${result}");
         result
@@ -237,11 +246,50 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+          result.identifiers.add([namespace    : idc.toComponent.namespace.value,
+                                  value        : idc.toComponent.value,
+                                  namespaceName: idc.toComponent.namespace.name])
         }
 
-        result.componentType=kbc.class.simpleName
+        result.componentType = kbc.class.simpleName
+
+        // log.debug("process ${result}");
+        result
+      }
+
+      updateES(esclient, org.gokb.cred.OtherInstance.class) { kbc ->
+
+        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
+        def result = null
+        def current_pub = kbc.currentPublisher
+
+        result = [:]
+        result._id = "${kbc.class.name}:${kbc.id}"
+        result.uuid = kbc.uuid
+        result.name = kbc.name
+        result.sortname = kbc.name
+        // result.publisher = kbc.currentPublisher?.name
+        result.publisher = current_pub ? current_pub.getLogEntityId() : ""
+        result.publisherName = current_pub?.name
+        result.publisherUuid = current_pub?.uuid ?: ""
+        result.altname = []
+        kbc.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+
+        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+
+        result.status = kbc.status?.value
+
+        result.identifiers = []
+        kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+          result.identifiers.add([namespace    : idc.toComponent.namespace.value,
+                                  value        : idc.toComponent.value,
+                                  namespaceName: idc.toComponent.namespace.name])
+        }
+
+        result.componentType = kbc.class.simpleName
 
         // log.debug("process ${result}");
         result
@@ -263,7 +311,7 @@ class FTUpdateService {
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
         result.altname = []
-        result.updater='book'
+        result.updater = 'book'
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
@@ -272,11 +320,13 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+          result.identifiers.add([namespace    : idc.toComponent.namespace.value,
+                                  value        : idc.toComponent.value,
+                                  namespaceName: idc.toComponent.namespace.name])
         }
 
-        result.componentType=kbc.class.simpleName
+        result.componentType = kbc.class.simpleName
 
         // log.debug("process ${result}");
         result
@@ -339,18 +389,20 @@ class FTUpdateService {
         result.status = kbc.status?.value
 
         result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids','Active').each { idc ->
-          result.identifiers.add([namespace:idc.toComponent.namespace.value, value:idc.toComponent.value] );
+        kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+          result.identifiers.add([namespace    : idc.toComponent.namespace.value,
+                                  value        : idc.toComponent.value,
+                                  namespaceName: idc.toComponent.namespace.name])
         }
 
-        result.componentType=kbc.class.simpleName
+        result.componentType = kbc.class.simpleName
 
         result
       }
 
     }
-    catch ( Exception e ) {
-      log.error("Problem",e);
+    catch (Exception e) {
+      log.error("Problem", e);
     }
 
     running = false;
@@ -371,30 +423,29 @@ class FTUpdateService {
       def highest_timestamp = 0;
       def highest_id = 0;
       FTControl.withNewTransaction {
-        latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name,'ESIndex')
+        latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name, 'ESIndex')
 
         log.debug("result of findByDomain: ${domain} ${latest_ft_record}");
-        if ( !latest_ft_record) {
-          latest_ft_record=new FTControl(domainClassName:domain.name,activity:'ESIndex',lastTimestamp:0,lastId:0).save(flush:true, failOnError:true)
+        if (!latest_ft_record) {
+          latest_ft_record = new FTControl(domainClassName: domain.name, activity: 'ESIndex', lastTimestamp: 0, lastId: 0).save(flush: true, failOnError: true)
           log.debug("Create new FT control record, as none available for ${domain.name}");
-        }
-        else {
+        } else {
           highest_timestamp = latest_ft_record.lastTimestamp
           log.debug("Got existing ftcontrol record for ${domain.name} max timestamp is ${highest_timestamp} which is ${new Date(highest_timestamp)}");
         }
       }
-      def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
-      def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status','Retired')
+      def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+      def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
 
       log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}");
 
       def total = 0;
       Date from = new Date(latest_ft_record.lastTimestamp);
 
-      def countq = domain.executeQuery("select count(o.id) from "+domain.name+" as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ",[ts: from], [readonly:true])[0];
+      def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ", [ts: from], [readonly: true])[0];
       log.debug("Will process ${countq} records");
 
-      def q = domain.executeQuery("select o.id from "+domain.name+" as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id",[ts: from], [readonly:true]);
+      def q = domain.executeQuery("select o.id from " + domain.name + " as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id", [ts: from], [readonly: true]);
 
       log.debug("Query completed.. processing rows...");
 
@@ -402,7 +453,7 @@ class FTUpdateService {
 
       // while (results.next()) {
       for (r_id in q) {
-        if ( Thread.currentThread().isInterrupted() ) {
+        if (Thread.currentThread().isInterrupted()) {
           log.debug("Job cancelling ..")
           break;
         }
@@ -413,23 +464,23 @@ class FTUpdateService {
 
         def es_index = grailsApplication.config.gokb?.es?.index ?: "gokbg3"
 
-        if ( idx_record != null ) {
+        if (idx_record != null) {
           def recid = idx_record['_id'].toString()
           idx_record.remove('_id');
 
-          bulkRequest.add(esclient.prepareIndex(es_index,'component',recid).setSource(idx_record))
+          bulkRequest.add(esclient.prepareIndex(es_index, 'component', recid).setSource(idx_record))
         }
 
 
-        if ( r.lastUpdated?.getTime() > highest_timestamp ) {
+        if (r.lastUpdated?.getTime() > highest_timestamp) {
           highest_timestamp = r.lastUpdated?.getTime();
         }
-        highest_id=r.id
+        highest_id = r.id
 
         count++
         total++
 
-        if ( count > 250 ) {
+        if (count > 250) {
           count = 0;
           log.debug("interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
           def bulkResponse = bulkRequest.get()
@@ -437,17 +488,16 @@ class FTUpdateService {
           log.debug("BulkResponse: ${bulkResponse}")
           FTControl.withNewTransaction {
             latest_ft_record = FTControl.get(latest_ft_record.id);
-            if ( latest_ft_record ) {
+            if (latest_ft_record) {
               latest_ft_record.lastTimestamp = highest_timestamp
               latest_ft_record.lastId = highest_id
-              latest_ft_record.save(flush:true, failOnError:true);
-            }
-            else {
+              latest_ft_record.save(flush: true, failOnError: true);
+            } else {
               log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update");
             }
           }
           cleanUpGorm();
-          synchronized(this) {
+          synchronized (this) {
             Thread.yield()
           }
         }
@@ -463,14 +513,14 @@ class FTUpdateService {
         latest_ft_record = FTControl.get(latest_ft_record.id);
         latest_ft_record.lastTimestamp = highest_timestamp
         latest_ft_record.lastId = highest_id
-        latest_ft_record.save(flush:true, failOnError:true);
+        latest_ft_record.save(flush: true, failOnError: true);
       }
       cleanUpGorm();
 
       log.info("final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}");
     }
-    catch ( Exception e ) {
-      log.error("Problem with FT index",e);
+    catch (Exception e) {
+      log.error("Problem with FT index", e);
     }
     finally {
       log.debug("Completed processing on ${domain.name} - saved ${count} records");
@@ -485,7 +535,7 @@ class FTUpdateService {
   }
 
   def clearDownAndInitES() {
-    if ( running == false ) {
+    if (running == false) {
       log.debug("Remove existing FTControl ..")
       FTControl.withTransaction {
         def res = FTControl.executeUpdate("delete FTControl c");
@@ -493,8 +543,7 @@ class FTUpdateService {
         log.debug("Result: ${res}")
       }
       updateFTIndexes();
-    }
-    else {
+    } else {
       log.info("FTUpdate already running")
       return "Job cancelled – FTUpdate was already running!";
     }
@@ -504,5 +553,4 @@ class FTUpdateService {
   def destroy() {
     log.debug("Destroy");
   }
-
 }

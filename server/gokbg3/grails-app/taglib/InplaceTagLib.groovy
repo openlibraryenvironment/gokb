@@ -87,7 +87,7 @@ class InplaceTagLib {
 
     def oid = owner.id != null ? "${owner.class.name}:${owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
-    def dformat = attrs."data-format"?:'yyyy-MM-dd'
+    def dformat = attrs."data-format"?:'yyyy-mm-dd'
 
     // Default the format.
 
@@ -107,15 +107,15 @@ class InplaceTagLib {
     def data_link = null
     switch ( attrs.type ) {
       case 'date':
-        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date', dateFormat: (dformat)])
-        out << " data-type='date' data-inputclass='form-control form-date' data-format='${dformat}' data-datepicker='{minYear : 1900,smartDays:true}' data-viewformat='yyyy-mm-dd'"
+        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date', dateFormat: (dformat.replace('mm', 'MM'))])
+        out << " data-type='date' data-inputclass='form-control form-date' data-format='${dformat}' data-datepicker='{minYear: 1500, smartDays: true, clearBtn: true}' data-viewformat='yyyy-mm-dd'"
         def dv = attrs."data-value"
 
         if (!dv) {
           if (owner[attrs.field]) {
 
             // Date format.
-            def sdf = new java.text.SimpleDateFormat(dformat)
+            def sdf = new java.text.SimpleDateFormat(dformat.replace('mm', 'MM'))
             dv = sdf.format(owner[attrs.field])
           } else {
             dv = ""

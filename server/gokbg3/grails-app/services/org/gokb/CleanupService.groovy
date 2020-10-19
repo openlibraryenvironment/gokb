@@ -419,11 +419,11 @@ class CleanupService {
         log.debug("Removed ${rem_unused.num_expunged} unused identifiers")
         j?.message("Removed ${rem_unused.num_expunged} unused identifiers".toString())
 
-        def dupes_vals = Identifier.executeQuery("select count(*), i.value, i.namespace.id from Identifier as i group by i.value, i.namespace.id having count(*) > 1")
+        def dupes_vals = Identifier.executeQuery("select count(*), i.normname, i.namespace.id from Identifier as i group by i.normname, i.namespace.id having count(*) > 1")
         def dupes_to_remove = []
 
         dupes_vals?.each { d ->
-          def duplicates = Identifier.executeQuery("from Identifier as i where i.value = :val and i.namespace.id = :ns", [val: d[1], ns: d[2]])
+          def duplicates = Identifier.executeQuery("from Identifier as i where i.normname = :val and i.namespace.id = :ns", [val: d[1], ns: d[2]])
           def first = duplicates[0]
 
           duplicates.eachWithIndex { dui, idx ->

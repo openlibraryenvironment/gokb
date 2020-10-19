@@ -1,6 +1,8 @@
 package org.gokb.rest
 
-import com.google.gson.annotations.JsonAdapter
+import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.Role
@@ -15,11 +17,13 @@ class ProfileController {
   def springSecurityService
   def userProfileService
   def passwordEncoder
+  ConcurrencyManagerService concurrencyManagerService
 
   def show() {
     def user = User.get(springSecurityService.principal.id)
 
     def cur_groups = []
+    def base = grailsApplication.config.serverURL + "/rest"
 
     user.curatoryGroups?.each { cg ->
       cur_groups.add([name: cg.name, id: cg.id, uuid: cg.uuid])
@@ -32,9 +36,9 @@ class ProfileController {
     }
 
     def links = [
-      'self'  : ['href': 'rest/profile'],
-      'update': ['href': 'rest/profile'],
-      'delete': ['href': 'rest/profile']
+      'self'  : ['href': base + '/profile'],
+      'update': ['href': base + '/profile'],
+      'delete': ['href': base + '/profile']
     ]
 
     def result = ['data': [
@@ -92,7 +96,25 @@ class ProfileController {
   @Secured(value = ['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
-    userProfileService.delete()
+    User user = User.get(springSecurityService.principal.id)
+    userProfileService.delete(user)
     response.status = 204
+  }
+
+  @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
+  def getJobs() {
+    log.debug("Get Jobs for profile")
+    def result = [:]
+    def max = params.limit ? params.int('limit') : 10
+    def offset = params.offset ? params.int('offset') : 0
+    def base = grailsApplication.config.serverURL + "/rest"
+    def sort = params._sort ?: null
+    def order = params._order ?: null
+    User user = User.get(springSecurityService.principal.id)
+    def errors = [:]
+
+    result.data = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+
+    render result as JSON
   }
 }
