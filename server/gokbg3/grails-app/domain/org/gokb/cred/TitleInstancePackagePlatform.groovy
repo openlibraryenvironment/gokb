@@ -4,6 +4,8 @@ import javax.persistence.Transient
 import com.k_int.ClassUtils
 import org.gokb.GOKbTextUtils
 import groovy.util.logging.*
+
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -622,15 +624,15 @@ class TitleInstancePackagePlatform extends KBComponent {
               }
             }
 
-            tipp.addToCoverageStatements('startVolume': c.startVolume,  \
-              'startIssue': c.startIssue,  \
-              'endVolume': c.endVolume,  \
-              'endIssue': c.endIssue,  \
-              'embargo': c.embargo,  \
-              'coverageDepth': cov_depth,  \
-              'coverageNote': c.coverageNote,  \
-              'startDate': startAsDate,  \
-              'endDate': endAsDate
+            tipp.addToCoverageStatements('startVolume': c.startVolume,   \
+               'startIssue': c.startIssue,   \
+               'endVolume': c.endVolume,   \
+               'endIssue': c.endIssue,   \
+               'embargo': c.embargo,   \
+               'coverageDepth': cov_depth,   \
+               'coverageNote': c.coverageNote,   \
+               'startDate': startAsDate,   \
+               'endDate': endAsDate
             )
           }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
@@ -638,7 +640,11 @@ class TitleInstancePackagePlatform extends KBComponent {
 //         tipp.save(flush:true, failOnError:true);
       }
       tipp_dto.prices?.each { price_data ->
-        tipp.setPrice(price_data.type, new StringBuilder((String)price_data.amount).append(price_data.currency?' '+price_data.currency:'').toString())
+        tipp.setPrice(
+          price_data.type,
+          new StringBuilder((String) price_data.amount).append(price_data.currency ? ' ' + price_data.currency : '').toString(),
+          price_data.startDate ? new SimpleDateFormat("yyyy-MM-dd").parse(price_data.startDate) : null
+        )
       }
       if (tipp_dto.series) {
         tipp.setSeries(tipp_dto.series)
@@ -688,6 +694,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'lastUpdated'(lastUpdated ? sdf.format(lastUpdated) : null)
         builder.'format'(format?.value)
         builder.'url'(url ?: "")
+        builder.'name'(ti.name?.trim())
         builder.'title'([id: ti.id, uuid: ti.uuid]) {
           builder.'name'(ti.name?.trim())
           builder.'type'(titleClass)

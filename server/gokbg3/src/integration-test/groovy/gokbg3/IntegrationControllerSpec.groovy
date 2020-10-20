@@ -715,21 +715,21 @@ class IntegrationControllerSpec extends Specification {
             "name"      : "ACS Publications",
             "primaryUrl": "https://pubs.acs.org"
           ],
-          "prices": [
+          "prices"     : [
             [
-              "type": "list",
-              "currency": "EUR",
-              "amount": 123.45,
+              "type"     : "list",
+              "currency" : "EUR",
+              "amount"   : 123.45,
               "startDate": "2010-01-31"
             ],
             [
-              "type": "topup",
-              "currency": "USD",
-              "amount": 43.12,
+              "type"     : "topup",
+              "currency" : "USD",
+              "amount"   : 43.12,
               "startDate": "2020-01-01"
             ]
           ],
-          "series": "Mystery Cloud",
+          "series"     : "Mystery Cloud",
           "status"     : "Current",
           "subjectArea": "Fringe",
           "title"      : [
@@ -772,6 +772,8 @@ class IntegrationControllerSpec extends Specification {
     expect: "The TIPP coverage dates are correctly set"
     def pkg = Package.get(resp1.json.pkgId)
     pkg.tipps?.size() == 1
+    pkg.tipps[0].subjectArea == "Fringe"
+    pkg.tipps[0].prices.size() == 2
     pkg.listStatus?.value == "In Progress"
   }
 
@@ -821,22 +823,22 @@ class IntegrationControllerSpec extends Specification {
             "name"      : "ACS Publications",
             "primaryUrl": "https://pubs.acs.org"
           ],
-          "prices": [
+          "prices"     : [
             [
-              "type": "list",
-              "currency": "EUR",
-              "amount": 123.45,
+              "type"     : "list",
+              "currency" : "EUR",
+              "amount"   : 123.45,
               "startDate": "2010-01-31"
             ],
             [
-              "type": "topup",
-              "currency": "USD",
-              "amount": 43.12,
+              "type"     : "topup",
+              "currency" : "USD",
+              "amount"   : 43.12,
               "startDate": "2020-01-01"
             ]
           ],
           "status"     : "Current",
-          "series": "Mystery Cloud",
+          "series"     : "Mystery Cloud",
           "subjectArea": "Fringe",
           "title"      : [
             "identifiers"      : [

@@ -1563,13 +1563,13 @@ where cp.owner = :c
   /**
    * Set a price formatted as "nnnn.nn" or "nnnn.nn CUR"
    */
-  public void setPrice(String type, String price) {
+  public void setPrice(String type, String price, Date startDate = null) {
     Float f = null;
     RefdataValue rdv_type = null;
     RefdataValue rdv_currency = null;
 
     if (price) {
-      Date now = new Date();
+      Date start = startDate ?: new Date();
 
       String[] price_components = price.trim().split(' ');
       f = Float.parseFloat(price_components[0])
@@ -1579,17 +1579,23 @@ where cp.owner = :c
         rdv_currency = RefdataCategory.lookupOrCreate('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
       }
 
-      // Close out any existing component prices
-      ComponentPrice.executeUpdate('update ComponentPrice set endDate=:now where owner=:t and endDate is null and priceType=:pt', [t: this, now: now, pt: rdv_type]);
-
-      // Create the new component price
-      ComponentPrice cp = new ComponentPrice(
-        owner: this,
-        priceType: rdv_type,
-        currency: rdv_currency,
-        startDate: now,
-        endDate: null,
-        price: f).save(flush: true, failOnError: true);
+      // Close out any existing component prices if present
+      def priceList = ComponentPrice.findAll("from ComponentPrice where owner=:t and endDate is null and priceType=:pt and startDate<:now", [t: this, now: start, pt: rdv_type])
+      if (priceList.size() > 0) {
+        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:now where owner=:t and endDate is null and priceType=:pt and startDate<:now', [t: this, now: start, pt: rdv_type])
+      } else {
+        priceList = ComponentPrice.findAll("from ComponentPrice where owner=:t and endDate is null and priceType=:pt and startDate=:now", [t: this, now: start, pt: rdv_type])
+        if (priceList.size()==0) {
+          // Create the new component price
+          ComponentPrice cp = new ComponentPrice(
+            owner: this,
+            priceType: rdv_type,
+            currency: rdv_currency,
+            startDate: start,
+            endDate: null,
+            price: f).save(flush: true, failOnError: true)
+        }
+      }
     }
   }
 
