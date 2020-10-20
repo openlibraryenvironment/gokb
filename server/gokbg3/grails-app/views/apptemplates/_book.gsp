@@ -313,32 +313,6 @@
         model="${[d:d]}" />
     </div>
 
-    <div class="tab-pane" id="subjectarea">
-
-      <dl class="dl-horizontal">
-        <dt>
-          <g:annotatedLabel owner="${d}" property="subjectArea">Subject Area</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:xEditable owner="${d}" field="subjectArea"/>
-        </dd>
-      </dl>
-    </div>
-
-    <div class="tab-pane" id="series">
-
-      <dl class="dl-horizontal">
-        <dt>
-          <g:annotatedLabel owner="${d}" property="series">Series</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:xEditable owner="${d}" field="series"/>
-        </dd>
-      </dl>
-    </div>
-
-    <g:render template="/tabTemplates/showPrices" model="${[d: displayobj, showActions: true]}"/>
-
     <div class="tab-pane" id="ds">
       <g:render template="/apptemplates/dstab" model="${[d:d]}" />
     </div>

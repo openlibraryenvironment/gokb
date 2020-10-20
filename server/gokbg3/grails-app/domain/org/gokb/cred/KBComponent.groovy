@@ -493,11 +493,11 @@ where cp.owner = :c
   }
 
   @Transient
-  static <T extends KBComponent> T lookupByIO(String idtype, String idvalue) {
+  static KBComponent lookupByIO(String idtype, String idvalue) {
     // println("lookupByIO(${idtype},${idvalue})");
     // Component(ids) -> (fromComponent) Combo (toComponent) -> (identifiedComponents) Identifier
     def result = null
-    def crit = T.createCriteria()
+    def crit = KBComponent.createCriteria()
     def db_results = crit.list {
 
       createAlias('outgoingCombos', 'ogc')
@@ -522,7 +522,7 @@ where cp.owner = :c
 
     switch (db_results.size()) {
       case 1:
-        result = T.get(db_results[0])
+        result = KBComponent.get(db_results[0])
         break
 //      case {it > 1} :
 //        // Error. Should only match 1...
@@ -1534,15 +1534,6 @@ where cp.owner = :c
               builder.'name'(responsibleParty.name)
             }
           }
-        }
-      }
-    }
-    // Prices
-    ComponentPrice[] cps = ComponentPrice.findAllByOwner(this)
-    if (cps) {
-      builder.'prices' {
-        cps.each { cp ->
-          builder.'price'(type: cp.priceType, amount: cp.price, currency: cp.currency, startDate: cp.startDate, endDate: cp.endDate)
         }
       }
     }

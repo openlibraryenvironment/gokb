@@ -21,9 +21,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-/**
- * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
- */
 @Integration
 @Rollback
 class IntegrationControllerSpec extends Specification {
@@ -670,9 +667,7 @@ class IntegrationControllerSpec extends Specification {
     expect: "prices are set correctly"
     sleep(400)
     def title = TitleInstance.findById(resp.json.results[0].titleId)
-    title?.prices?.size() == 2
-    title?.subjectArea
-    title?.series
+    title.prices?.size() == 2
   }
 
   void "Test package update"() {
@@ -720,7 +715,23 @@ class IntegrationControllerSpec extends Specification {
             "name"      : "ACS Publications",
             "primaryUrl": "https://pubs.acs.org"
           ],
+          "prices": [
+            [
+              "type": "list",
+              "currency": "EUR",
+              "amount": 123.45,
+              "startDate": "2010-01-31"
+            ],
+            [
+              "type": "topup",
+              "currency": "USD",
+              "amount": 43.12,
+              "startDate": "2020-01-01"
+            ]
+          ],
+          "series": "Mystery Cloud",
           "status"     : "Current",
+          "subjectArea": "Fringe",
           "title"      : [
             "identifiers": [
               [
@@ -810,7 +821,23 @@ class IntegrationControllerSpec extends Specification {
             "name"      : "ACS Publications",
             "primaryUrl": "https://pubs.acs.org"
           ],
+          "prices": [
+            [
+              "type": "list",
+              "currency": "EUR",
+              "amount": 123.45,
+              "startDate": "2010-01-31"
+            ],
+            [
+              "type": "topup",
+              "currency": "USD",
+              "amount": 43.12,
+              "startDate": "2020-01-01"
+            ]
+          ],
           "status"     : "Current",
+          "series": "Mystery Cloud",
+          "subjectArea": "Fringe",
           "title"      : [
             "identifiers"      : [
               [

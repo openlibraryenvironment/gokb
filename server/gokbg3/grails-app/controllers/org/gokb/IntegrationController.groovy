@@ -974,18 +974,18 @@ class IntegrationController {
                   log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${json.packageHeader}");
 
                   // Validate and upsert titles and platforms
-                  json.tipps.eachWithIndex { tipp, idx ->
+                  json.tipps.eachWithIndex { json_tipp, idx ->
 
-                    def title_validation = TitleInstance.validateDTO(tipp.title);
-                    def tipp_plt_dto = tipp.hostPlatform ?: tipp.platform
+                    def title_validation = TitleInstance.validateDTO(json_tipp.title);
+                    def tipp_plt_dto = json_tipp.hostPlatform ?: json_tipp.platform
                     valid &= title_validation.valid
 
                     if ( title_validation && !title_validation.valid ) {
-                      log.warn("Not valid after title validation ${tipp.title}");
+                      log.warn("Not valid after title validation ${json_tipp.title}");
                       def preval_errors = [
                         code: 400,
-                        message: messageService.resolveCode('crossRef.package.tipps.error.title.preValidation', [tipp.title.name, title_validation.errors], locale),
-                        baddata: tipp.title,
+                        message: messageService.resolveCode('crossRef.package.tipps.error.title.preValidation', [json_tipp.title.name, title_validation.errors], locale),
+                        baddata: json_tipp.title,
                         idx: idx,
                         errors: title_validation.errors
                       ]
@@ -996,7 +996,7 @@ class IntegrationController {
 
                       TitleInstance.withNewSession {
                         def ti = null
-                        def titleObj = tipp.title
+                        def titleObj = json_tipp.title
                         def title_changed = false
                         def title_class_name = determineTitleClass(titleObj)
 
@@ -1065,9 +1065,9 @@ class IntegrationController {
 
                             ti.save(flush:true)
 
-                            tipp.title.internalId = ti.id
+                            json_tipp.title.internalId = ti.id
                           } else {
-                            def errorObj = ['code': 400, 'message': messageService.resolveCode('crossRef.package.tipps.error.title', tipp.title.name, locale), 'baddata': tipp.title]
+                            def errorObj = ['code': 400, 'message': messageService.resolveCode('crossRef.package.tipps.error.title', json_tipp.title.name, locale), 'baddata': json_tipp.title]
                             if (ti != null) {
                               errorObj.errors = messageService.processValidationErrors(ti.errors)
                               errors.tipps.add(errorObj)
@@ -1080,7 +1080,7 @@ class IntegrationController {
                         catch (org.gokb.exceptions.MultipleComponentsMatchedException mcme) {
                           log.debug("Handling MultipleComponentsMatchedException")
                           result.result = "ERROR"
-                          result.message = messageService.resolveCode('crossRef.title.error.multipleMatches', [tipp?.title?.name, mcme.matched_ids], locale)
+                          result.message = messageService.resolveCode('crossRef.title.error.multipleMatches', [json_tipp?.title?.name, mcme.matched_ids], locale)
                         }
                         catch (grails.validation.ValidationException ve) {
                           log.error("ValidationException attempting to cross reference title",ve);
@@ -1088,8 +1088,8 @@ class IntegrationController {
                           valid = false
                           def validation_errors = [
                             code: 400,
-                            message: messageService.resolveCode('crossRef.package.tipps.error.title.validation', [tipp?.title?.name], locale),
-                            baddata: tipp,
+                            message: messageService.resolveCode('crossRef.package.tipps.error.title.validation', [json_tipp?.title?.name], locale),
+                            baddata: json_tipp,
                             idx: idx,
                             errors: messageService.processValidationErrors(ve.errors)
                           ]
@@ -1097,10 +1097,10 @@ class IntegrationController {
                         }
                       }
 
-                      if ( valid_ti && tipp.title.internalId == null ) {
-                        log.error("Failed to locate a title for ${tipp?.title} when attempting to create TIPP");
+                      if ( valid_ti && json_tipp.title.internalId == null ) {
+                        log.error("Failed to locate a title for ${json_tipp?.title} when attempting to create TIPP");
                         valid = false
-                        errors.tipps.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.title', [tipp?.title?.name], locale)])
+                        errors.tipps.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.title', [json_tipp?.title?.name], locale)])
                       }
                     }
 
@@ -1165,12 +1165,12 @@ class IntegrationController {
                       }
                     }
 
-                    if ( ( tipp.package == null ) && ( the_pkg.id ) ) {
-                      tipp.package = [ internalId: the_pkg.id ]
+                    if ( ( json_tipp.package == null ) && ( the_pkg.id ) ) {
+                      json_tipp.package = [ internalId: the_pkg.id ]
                     }
                     else {
                       log.warn("No package");
-                      errors.tipps.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [tipp.title.name], locale)])
+                      errors.tipps.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], locale)])
                       valid = false
                     }
 
@@ -1193,17 +1193,17 @@ class IntegrationController {
                 if ( valid ) {
                   // If valid so far, validate tipps
                   log.debug("Validating tipps [${tippctr++}]");
-                  json.tipps.eachWithIndex { tipp, idx ->
-                    def validation_result = TitleInstancePackagePlatform.validateDTO(tipp)
+                  json.tipps.eachWithIndex { json_tipp, idx ->
+                    def validation_result = TitleInstancePackagePlatform.validateDTO(json_tipp)
 
                     if ( validation_result && !validation_result.valid ) {
-                      log.debug("TIPP Validation failed on ${tipp}")
+                      log.debug("TIPP Validation failed on ${json_tipp}")
                       valid = false
                       def tipp_errors = [
                         'code': 400,
                         idx: idx,
-                        message: messageService.resolveCode('crossRef.package.tipps.error.preValidation', [tipp.title.name, validation_result.errors], locale),
-                        baddata: tipp,
+                        message: messageService.resolveCode('crossRef.package.tipps.error.preValidation', [json_tipp.title.name, validation_result.errors], locale),
+                        baddata: json_tipp,
                         errors: validation_result.errors
                       ]
                       errors.tipps.add(tipp_errors)
@@ -1794,8 +1794,6 @@ class IntegrationController {
 
                 title_changed |= ClassUtils.setDateIfPresent(pubFrom, title, 'publishedFrom')
                 title_changed |= ClassUtils.setDateIfPresent(pubTo, title, 'publishedTo')
-                title_changed |= ClassUtils.setStringIfDifferent(title, 'series', titleObj.series)
-                title_changed |= ClassUtils.setStringIfDifferent(title, 'subjectArea', titleObj.subjectArea)
 
                 if ( titleObj.historyEvents?.size() > 0 ) {
                   def he_result = titleHistoryService.processHistoryEvents(title, titleObj, title_class_name, user, fullsync, locale)
@@ -1876,7 +1874,6 @@ class IntegrationController {
             }
           }
         }
-
     result
   }
 
