@@ -1594,6 +1594,7 @@ where cp.owner = :c
             startDate: start,
             endDate: null,
             price: f).save(flush: true, failOnError: true)
+          this.prices<<cp
         }
       }
     }
