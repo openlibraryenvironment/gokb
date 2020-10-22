@@ -441,7 +441,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       log.debug("Platform lookup: ${plt}")
     }
-    
+
     if (tipp_dto.title) {
       def title_info = tipp_dto.title
 
@@ -697,7 +697,8 @@ class TitleInstancePackagePlatform extends KBComponent {
 
     builder.'gokb' (attr) {
       builder.'tipp' ([id:(id), uuid:(uuid)]) {
-        builder.'status' (status?.value)
+        addCoreGOKbXmlFields(builder, attr)
+
         builder.'lastUpdated' (lastUpdated?sdf.format(lastUpdated):null)
         builder.'format' (format?.value)
         builder.'url'(url?:"")
