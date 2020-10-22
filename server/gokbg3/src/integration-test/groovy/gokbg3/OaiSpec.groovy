@@ -31,6 +31,7 @@ class OaiSpec extends Specification {
   //test data
   JournalInstance title1
   Package test_pkg
+  Org test_org
 
   def setup() {
     def http = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
@@ -44,11 +45,14 @@ class OaiSpec extends Specification {
     test_pkg = Package.findByName('Test Package 1')
     if (!test_pkg) {
       test_pkg = new Package(name: 'Test Package 1')
-      test_pkg.source=testSource
+      test_pkg.source = testSource
       test_pkg.save(flush: true)
     }
     def test_plt = Platform.findByName('Test Platform') ?: new Platform(name: 'Test Platform').save(flush: true)
-
+    test_org = Org.findByName("Test Org") ?: new Org(
+      name: 'Test Org',
+      titleNamespace: IdentifierNamespace.findByName('Test Title NS') ?: new IdentifierNamespace(name: 'Test Title NS', value: 'titleNStest'),
+      packageNamespace: IdentifierNamespace.findByName('Test Package NS') ?: new IdentifierNamespace(name: 'Test Package NS', value: 'packageNStest'))
     title1 = JournalInstance.findByName('Test Title 1') ?: new JournalInstance(name: 'Test Title 1', series: 'Test Series Name').save(flush: true)
     title1.setPrice('list', '12.54 GBP')
 
@@ -103,6 +107,16 @@ class OaiSpec extends Specification {
     then:
     log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'name'?.text()}")
     resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'prices' != null
+  }
+
+  void "test GetRecord org response"() {
+    when:
+    RestResponse resp = rest.get("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/orgs?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.Org:$test_org.id")
+
+    then:
+    log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'org'?.'name'?.text()}")
+    resp.xml.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'org'.'titleNamespace'.'namespaceName' != null
+    resp.xml.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'org'.'packageNamespace'.'value' != null
   }
 
   void "test GetRecord package response"() {
