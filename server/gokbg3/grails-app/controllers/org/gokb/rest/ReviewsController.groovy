@@ -46,10 +46,7 @@ class ReviewsController {
     if (obj?.isReadable()) {
       result = restMappingService.mapObjectToJson(obj, params, user)
       result._links = generateLinks(obj, user)
-
-      if (includes.contains('additionalInfo')) {
-        result.additionalInfo = obj.additional
-      }
+      result.additionalInfo = obj.additional
     }
     else if (!obj) {
       result.message = "Object ID could not be resolved!"
@@ -234,7 +231,7 @@ class ReviewsController {
 
       if (reqBody.reviewRequest?.trim())
         pars.reviewRequest = reqBody.reviewRequest.trim()
-      
+
       if (reqBody.descriptionOfCause?.trim())
         pars.descriptionOfCause = reqBody.descriptionOfCause.trim()
 
@@ -316,7 +313,7 @@ class ReviewsController {
       result.message = "User is not allowed to delete this component!"
     }
     render result as JSON
-  } 
+  }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
@@ -355,7 +352,7 @@ class ReviewsController {
 
     if (obj.allocatedTo == user) {
       curator = true
-    } 
+    }
     else if (obj.allocatedGroups?.id.intersect(user.curatoryGroups?.id)) {
       curator = true
     }
