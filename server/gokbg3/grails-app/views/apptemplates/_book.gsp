@@ -143,11 +143,6 @@
           ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()}
         </span>
       </a></li>
-      <li><a href="#subjectarea" data-toggle="tab">Subject Area </a></li>
-      <li><a href="#series" data-toggle="tab">Series </a></li>
-      <li><a href="#prices" data-toggle="tab">Prices
-        <span class="badge badge-warning">${d?.prices?.size()?: '0'}</span>
-      </a></li>
       <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}" >
         <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       </g:if>
