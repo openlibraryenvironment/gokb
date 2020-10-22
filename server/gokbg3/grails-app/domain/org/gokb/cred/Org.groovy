@@ -212,9 +212,12 @@ class Org extends KBComponent {
 
         addCoreGOKbXmlFields(builder, attr)
         builder.'homepage'(homepage)
-        builder.'titleNamespace'('namespaceName': titleNamespace.name, 'value': titleNamespace.value, 'id': titleNamespace.id)
-        builder.'packageNamespace'('namespaceName': packageNamespace.name, 'value': packageNamespace.value, 'id': packageNamespace.id)
-
+        if (titleNamespace) {
+          builder.'titleNamespace'('namespaceName': titleNamespace.name, 'value': titleNamespace.value, 'id': titleNamespace.id)
+        }
+        if (packageNamespace) {
+          builder.'packageNamespace'('namespaceName': packageNamespace.name, 'value': packageNamespace.value, 'id': packageNamespace.id) {}
+        }
         if (roles) {
           builder.'roles' {
             roles.each { role ->
