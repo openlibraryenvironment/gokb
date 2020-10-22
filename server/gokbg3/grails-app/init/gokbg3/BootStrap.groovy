@@ -203,6 +203,13 @@ class BootStrap {
       }
       log.debug("${ctr} components updated");
 
+    log.info("GoKB remove usused refdata");
+      def rr_std = RefdataCategory.lookup('ReviewRequest.StdDesc', 'RR Standard Desc 1')
+
+      if (rr_std) {
+        rr_std.delete()
+      }
+
     log.info("GoKB missing normalised identifiers");
 
       def id_ctr = 0;
@@ -891,6 +898,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs').save(flush:true, failOnError:true)
     RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier').save(flush:true, failOnError:true)
+    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Matches').save(flush:true, failOnError:true)
 
 
     RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save(flush:true, failOnError:true)

@@ -4,6 +4,8 @@ package org.gokb.rest
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.User
 
@@ -44,11 +46,6 @@ class ReviewsController {
     if (obj?.isReadable()) {
       result = restMappingService.mapObjectToJson(obj, params, user)
       result._links = generateLinks(obj, user)
-      result.allocatedGroups = []
-
-      obj.allocatedGroups?.each {
-        result.allocatedGroups << [name: it.group.name, id: it.group.id]
-      }
 
       if (includes.contains('additionalInfo')) {
         result.additionalInfo = obj.additional
@@ -114,7 +111,7 @@ class ReviewsController {
 
           if (reqBody.stdDesc instanceof Integer) {
             def rdc = RefdataCategory.findByDesc("ReviewRequest.StdDesc")
-            def rdv = RefdataValue.get(reqBody.status)
+            def rdv = RefdataValue.get(reqBody.stdDesc)
 
             if (rdv?.owner == rdc) {
               rdv_desc = rdv
@@ -173,13 +170,11 @@ class ReviewsController {
         }
 
         if (reqBody.descriptionOfCause?.trim()) {
-          obj.reviewRequest = reqBody.reviewRequest.trim()
+          obj.descriptionOfCause = reqBody.descriptionOfCause.trim()
         }
 
-        immutable.each {
-          if (reqBody[it] && reqBody[it] != obj[it]?.id ) {
-            errors[it] = [[message: "Property ${it} is immutable", baddata: reqBody[it]]]
-          }
+        if (reqBody.componentToReview && reqBody.componentToReview != obj.componentToReview.id) {
+          errors.componentToReview = [[message: "Changing the connected component of an existing review is not allowed!", baddata: reqBody.componentToReview]]
         }
 
         if( obj.validate() ) {
@@ -238,10 +233,10 @@ class ReviewsController {
       ]
 
       if (reqBody.reviewRequest?.trim())
-        pars.reviewRequest = reqBody.reviewRequest
+        pars.reviewRequest = reqBody.reviewRequest.trim()
       
       if (reqBody.descriptionOfCause?.trim())
-        pars.descriptionOfCause = reqBody.descriptionOfCause
+        pars.descriptionOfCause = reqBody.descriptionOfCause.trim()
 
       if (reqBody.componentToReview instanceof Integer) {
         def comp = KBComponent.get(reqBody.componentToReview)

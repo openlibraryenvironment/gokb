@@ -214,7 +214,7 @@ class Package extends KBComponent {
   public getCurrentTitleCount() {
     def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current');
 
-    int result = TitleInstance.executeQuery('''select count(title.id)
+    int result = TitleInstance.executeQuery('''select count(distinct title.id)
       from TitleInstance as title,
         Combo as pkgCombo,
         Combo as titleCombo,

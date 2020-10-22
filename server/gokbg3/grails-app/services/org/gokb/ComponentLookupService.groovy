@@ -135,83 +135,85 @@ class ComponentLookupService {
     def order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
     def genericTerm = params.q ?: null
 
-    if ( cls != KBComponent && KBComponent.isAssignableFrom(cls) ) {
-      def comboProps = cls_obj.allComboPropertyNames
+    if ( KBComponent.isAssignableFrom(cls) ) {
       def comboJoinStr = ""
       def comboFilterStr = ""
 
       // Check params for known combo properties
+      if (cls != KBComponent) {
+        def comboProps = cls_obj.allComboPropertyNames
 
-      comboProps.each { c ->
+        comboProps.each { c ->
 
-        if (params[c] || params['_sort'] == c) {
-          boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
-          log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
+          if (params[c] || params['_sort'] == c) {
+            boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
+            log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
 
-          if (incoming) {
-            comboJoinStr += " join p.incomingCombos as ${c}_combo"
-            comboJoinStr += " join ${c}_combo.fromComponent as ${c}"
-          }
-          else {
-            comboJoinStr += " join p.outgoingCombos as ${c}_combo"
-            comboJoinStr += " join ${c}_combo.toComponent as ${c}"
-          }
-
-          if (first) {
-            comboFilterStr += " WHERE "
-            first = false
-          }
-          else {
-            comboFilterStr += " AND "
-          }
-
-          comboFilterStr += "${c}_combo.type = :${c}type AND "
-          qryParams["${c}type"] = RefdataCategory.lookupOrCreate ( "Combo.Type", cls.getComboTypeValueFor(cls, c))
-          comboFilterStr += "${c}_combo.status = :${c}status "
-          qryParams["${c}status"] = RefdataCategory.lookup("Combo.Status", "Active")
-
-          def validLong = []
-          def validStr = []
-          def paramStr = ""
-
-          if (params[c]) {
-            params.list(c)?.each { a ->
-              def addedLong = false
-
-              try {
-                validLong.add(Long.valueOf(a))
-                addedLong = true
-              }
-              catch (java.lang.NumberFormatException nfe) {
-              }
-
-              if (!addedLong && a instanceof String && a?.trim() ) {
-                validStr.add(a)
-              }
+            if (incoming) {
+              comboJoinStr += " join p.incomingCombos as ${c}_combo"
+              comboJoinStr += " join ${c}_combo.fromComponent as ${c}"
+            }
+            else {
+              comboJoinStr += " join p.outgoingCombos as ${c}_combo"
+              comboJoinStr += " join ${c}_combo.toComponent as ${c}"
             }
 
-            if (validStr.size() > 0 || validLong.size() > 0) {
-              paramStr += " AND ("
+            if (first) {
+              comboFilterStr += " WHERE "
+              first = false
+            }
+            else {
+              comboFilterStr += " AND "
+            }
 
-              if (validLong.size() > 0) {
-                paramStr += "${c}.id IN :${c}"
-                qryParams["${c}"] = validLong
-              }
-              if (validStr.size() > 0) {
-                if (validLong.size() > 0) {
-                  paramStr += " OR "
+            comboFilterStr += "${c}_combo.type = :${c}type AND "
+            qryParams["${c}type"] = RefdataCategory.lookupOrCreate ( "Combo.Type", cls.getComboTypeValueFor(cls, c))
+            comboFilterStr += "${c}_combo.status = :${c}status "
+            qryParams["${c}status"] = RefdataCategory.lookup("Combo.Status", "Active")
+
+            def validLong = []
+            def validStr = []
+            def paramStr = ""
+
+            if (params[c]) {
+              params.list(c)?.each { a ->
+                def addedLong = false
+
+                try {
+                  validLong.add(Long.valueOf(a))
+                  addedLong = true
                 }
-                paramStr += "${c}.uuid IN :${c}_str OR "
-                paramStr += "${c}.${c == 'ids' ? 'value' : 'name'} IN :${c}_str"
-                qryParams["${c}_str"] = validStr
+                catch (java.lang.NumberFormatException nfe) {
+                }
+
+                if (!addedLong && a instanceof String && a?.trim() ) {
+                  validStr.add(a)
+                }
               }
-              paramStr += ")"
-              comboFilterStr += paramStr
+
+              if (validStr.size() > 0 || validLong.size() > 0) {
+                paramStr += " AND ("
+
+                if (validLong.size() > 0) {
+                  paramStr += "${c}.id IN :${c}"
+                  qryParams["${c}"] = validLong
+                }
+                if (validStr.size() > 0) {
+                  if (validLong.size() > 0) {
+                    paramStr += " OR "
+                  }
+                  paramStr += "${c}.uuid IN :${c}_str OR "
+                  paramStr += "${c}.${c == 'ids' ? 'value' : 'name'} IN :${c}_str"
+                  qryParams["${c}_str"] = validStr
+                }
+                paramStr += ")"
+                comboFilterStr += paramStr
+              }
             }
-          }
-          else {
-            sortField = "${c}.name"
-            sort = " order by ${c}.name ${order ?: ''}"
+            else {
+              sortField = "${c}.name"
+              sort = " order by ${c}.name ${order ?: ''}"
+            }
           }
         }
       }
@@ -236,7 +238,7 @@ class ComponentLookupService {
         qryParams["idqstatus"] = RefdataCategory.lookup("Combo.Status", "Active")
         comboFilterStr += "idq.value = :idqval"
         qryParams["idqval"] = genericTerm
-        comboFilterStr += "))"
+        comboFilterStr += ") OR EXISTS (select an from KBComponentVariantName as an where lower(an.variantName) like :qname and an.owner = p))"
       }
 
       hqlQry += comboJoinStr + comboFilterStr
@@ -353,8 +355,37 @@ class ComponentLookupService {
       qryParams['status'] = RefdataCategory.lookup("ReviewRequest.Status", "Deleted")
     }
 
-    def hqlCount = "select count(p.id) ${hqlQry}".toString()
-    def hqlFinal = "select p ${sort ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
+    if (cls == ReviewRequest && params['allocatedGroups']) {
+      def cgs = params.list('allocatedGroups')
+      def validCgs = []
+
+      cgs.each { cg ->
+        try {
+          validCgs.add(CuratoryGroup.get(Long.valueOf(cg)))
+        }
+        catch (java.lang.NumberFormatException nfe) {
+          log.debug("Received illegal value ${cg}' for curatoryGroups filter!")
+        }
+      }
+
+      if (validCgs.size() > 0 ) {
+        log.debug("Filtering for CGs: ${validCgs}")
+
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+
+        hqlQry += "exists (select alg from AllocatedReviewGroup as alg where alg.review = p and alg.group IN :alg)"
+        qryParams['alg'] = validCgs
+      }
+    }
+
+    def hqlCount = "select ${genericTerm ? 'distinct': ''} count(p.id) ${hqlQry}".toString()
+    def hqlFinal = "select ${genericTerm ? 'distinct': ''} p ${sort ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
     log.debug("Final qry: ${hqlFinal}")
 

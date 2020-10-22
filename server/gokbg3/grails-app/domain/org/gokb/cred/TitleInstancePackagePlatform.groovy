@@ -316,18 +316,80 @@ class TitleInstancePackagePlatform extends KBComponent {
         LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(coverage.endDate, false)
 
         if (coverage.startDate && !parsedStart) {
+          if (!result.errors.startDate) {
+            result.errors.startDate = []
+          }
+
           result.valid = false
-          result.errors.startDate = [[message:"Unable to parse coverage start date ${coverage.startDate}!", baddata: coverage.startDate]]
+          result.errors.startDate << [message:"Unable to parse coverage start date ${coverage.startDate}!", baddata: coverage.startDate]
         }
 
         if (coverage.endDate && !parsedEnd) {
+          if (!result.errors.endDate) {
+            result.errors.endDate = []
+          }
+
           result.valid = false
-          result.errors.endDate = [[message: "Unable to parse coverage end date ${coverage.endDate}!", baddata: coverage.endDate]]
+          result.errors.endDate << [message: "Unable to parse coverage end date ${coverage.endDate}!", baddata: coverage.endDate]
         }
 
-        if ( !['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase()) ) {
+        if (!coverage.coverageDepth) {
+          if (!result.errors.coverageDepth) {
+            result.errors.coverageDepth = []
+          }
+
           result.valid = false
-          result.errors.coverageDepth = [[message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]]
+          result.errors.coverageDepth << [message: "Missing value for coverage depth", baddata: coverage.coverageDepth]
+        } else {
+          if (coverage.coverageDepth instanceof String && !['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase()) ) {
+            if (!result.errors.coverageDepth) {
+              result.errors.coverageDepth = []
+            }
+
+            result.valid = false
+            result.errors.coverageDepth << [message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+          }
+          else if (coverage.coverageDepth instanceof Integer) {
+            try {
+              def candidate = RefdataValue.get(coverage.coverageDepth)
+
+              if (!candidate && candidate.owner.label == "TIPPCoverageStatement.CoverageDepth") {
+                if (!result.errors.coverageDepth) {
+                  result.errors.coverageDepth = []
+                }
+
+                result.valid = false
+                result.errors.coverageDepth << [message: "Illegal value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+              }
+            } catch (Exception e) {
+            }
+          }
+          else if (coverage.coverageDepth instanceof Map) {
+            if (coverage.coverageDepth.id) {
+              try {
+                def candidate = RefdataValue.get(coverage.coverageDepth.id)
+
+                if (!candidate && candidate.owner.label == "TIPPCoverageStatement.CoverageDepth") {
+                  if (!result.errors.coverageDepth) {
+                    result.errors.coverageDepth = []
+                  }
+
+                  result.valid = false
+                  result.errors.coverageDepth << [message: "Illegal ID value '${coverage.coverageDepth.id}' for coverage depth", baddata: coverage.coverageDepth]
+                }
+              } catch (Exception e) {}
+            }
+            else if (coverage.coverageDepth.value || coverage.coverageDepth.name) {
+              if (!['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase())) {
+                if (!result.errors.coverageDepth) {
+                  result.errors.coverageDepth = []
+                }
+
+                result.valid = false
+                result.errors.coverageDepth << [message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+              }
+            }
+          }
         }
 
         if (parsedStart && parsedEnd && (parsedEnd < parsedStart)) {
@@ -405,7 +467,12 @@ class TitleInstancePackagePlatform extends KBComponent {
                                            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?'+
                                            'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
                                           [pkg,plt,ti])
-      def tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null;
+      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null;
+      def tipp = null
+
+      if ( uuid_tipp && uuid_tipp.pkg == pkg && uuid_tipp.title == ti && uuid_tipp.hostPlatform == plt ) {
+        tipp = uuid_tipp
+      }
 
       if  ( !tipp ) {
         switch ( tipps.size() ) {
@@ -479,42 +546,13 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if ( tipp ) {
         def changed = false
-        if ( tipp.status == status_current && plt.status != status_current ) {
-          log.warn("TIPP platform is marked as ${plt.status?.value}!")
-          ReviewRequest.raise(
-            tipp,
-            "The existing platform matched for this TIPP (${plt}) is marked as ${plt.status?.value}! Please review the URL/Platform for validity.",
-            "Platform not marked as current.",
-            user,
-            null,
-            null,
-            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent')
-          )
-        }
 
         if ( tipp.isRetired() && tipp_dto.status == "Current" ) {
-
-          ReviewRequest.raise(
-            tipp,
-            "This TIPP was previously marked as Retired, but has now been set back to Current again.",
-            "Retired TIPP reenabled.",
-            user
-          )
-
           if ( tipp.accessEndDate ) {
             tipp.accessEndDate = null
           }
 
           changed = true
-        }
-        else if( tipp.isDeleted() && tipp_dto.status != "Deleted" ) {
-
-          ReviewRequest.raise(
-            tipp,
-            "Matched TIPP was marked as Deleted.",
-            "Check TIPP Status.",
-            user
-          )
         }
 
         if ( tipp_dto.paymentType && tipp_dto.paymentType.length() > 0 ) {
@@ -556,10 +594,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
           changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tipp,'startDate')
           changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tipp,'endDate')
-
-          if (RefdataCategory.getOID('TitleInstancePackagePlatform.CoverageDepth', c.coverageDepth.capitalize())) {
-            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth.capitalize(), tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
-          }
+          changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
 
           def cs_match = false
           def startAsDate = (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
@@ -581,6 +616,7 @@ class TitleInstancePackagePlatform extends KBComponent {
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
                 changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tcs,'startDate')
                 changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tcs,'endDate')
+                changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
                 cs_match = true
             }
@@ -590,8 +626,22 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
 
           if (!cs_match) {
+            def cov_depth = null
 
-            def cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+            if (c.coverageDepth instanceof String) {
+              cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+            }
+            else if (c.coverageDepth instanceof Integer) {
+              cov_depth = RefdataValue.get(c.coverageDepth)
+            }
+            else if (c.coverageDepth instanceof Map) {
+              if (c.coverageDepth.id) {
+                cov_depth = RefdataValue.get(c.coverageDepth.id)
+              }
+              else {
+                cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
+              }
+            }
 
             tipp.addToCoverageStatements('startVolume': c.startVolume, \
              'startIssue':c.startIssue, \

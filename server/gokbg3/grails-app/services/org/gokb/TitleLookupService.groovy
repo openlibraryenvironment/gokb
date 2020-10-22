@@ -7,6 +7,9 @@ import grails.converters.JSON
 import grails.gorm.transactions.*
 import groovy.transform.Synchronized
 
+import java.time.LocalDateTime
+import java.time.ZoneId
+
 @Transactional
 class TitleLookupService {
 
@@ -551,6 +554,13 @@ class TitleLookupService {
 
             // Lookup using title string match only.
             string_match = attemptComponentMatch (metadata, newTitleClassName)
+
+            if (results['other_identifiers']?.size() > 0) {
+              log.debug("Skipping name match")
+            }
+            else {
+              the_title = string_match
+            }
           }
 
           if (the_title) {
@@ -869,9 +879,33 @@ class TitleLookupService {
               the_title = matched_with_name[0]
             }
             else {
-              log.debug("Could not match a specific title. Skipping..")
-              def matched_ids = matched_with_name.collect {it.id}
-              throw new org.gokb.exceptions.MultipleComponentsMatchedException("Could not match a specific title!", metadata.title, metadata.identifiers, matched_ids)
+              log.debug("Could not match a specific title. Selection needs review")
+              def matched_sorted = matched_with_name.sort {it.id}
+              the_title = matched_sorted[0]
+              matched_sorted.remove(0)
+
+              def additionalInfo = [:]
+              def combo_ids = [the_title]
+
+              additionalInfo.otherComponents = []
+
+              matched_sorted.each { tlm ->
+                additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
+                combo_ids.add(tlm.id)
+              }
+
+              additionalInfo.cstring = combo_ids.sort().join('_')
+
+              reviewRequestService.raise(
+                the_title,
+                "Check titles for duplicates.",
+                "Multiple titles were matched on all identifiers as well as the provided title name.",
+                user,
+                project,
+                (additionalInfo as JSON).toString(),
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Matches')
+              )
+
             }
             break;
         }
@@ -983,6 +1017,120 @@ class TitleLookupService {
     }
 
     ti
+  }
+
+  public TitleInstance addPublisherHistory ( TitleInstance ti, publishers) {
+    if (publishers && ti) {
+      Org.withNewSession {
+        log.debug("Handling publisher history ..")
+
+        def publisher_combos = []
+        publisher_combos.addAll( ti.getCombosByPropertyName('publisher') )
+        String propName = ti.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
+        String tiPropName = ti.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+
+        // Go through each Org.
+        for (def pub_to_add : publishers) {
+
+          Org publisher = null
+          // Lookup the publisher.
+          if (pub_to_add.uuid) {
+            publisher = Org.findByUuid(pub_to_add.uuid)
+          }
+
+          def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
+          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+          if(!publisher) {
+            publisher = Org.findByNormname(norm_pub_name)
+          }
+
+          if(!publisher || publisher.status == status_deleted){
+            def variant_normname = GOKbTextUtils.normaliseString(pub_to_add.name)
+            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?",[variant_normname, status_deleted]);
+
+            if(candidate_orgs.size() == 1){
+              publisher = candidate_orgs[0]
+            }
+          }
+
+          if (publisher) {
+
+            LocalDateTime parsedStart = GOKbTextUtils.completeDateString(pub_to_add.startDate)
+            LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(pub_to_add.endDate, false)
+            Date pub_add_sd = parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null
+            Date pub_add_ed = parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null
+
+            boolean found = false
+            for ( int i=0; !found && i<publisher_combos.size(); i++) {
+              Combo pc = publisher_combos[i]
+              def idMatch = pc."${propName}".id == publisher.id
+
+              if (idMatch) {
+                if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
+                }
+                else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
+                }
+                else {
+                  found = true
+                }
+              }
+
+
+            }
+
+            // Only add if we havn't found anything.
+            if (!found) {
+
+              log.debug("Adding new combo for publisher ${publisher} (${propName}) to title ${ti} (${tiPropName})")
+
+              RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, ti.getComboTypeValue('publisher'))
+
+              def combo = null
+
+              if (propName == "toComponent") {
+                combo = new Combo(
+                  type            : (type),
+                  status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                  startDate       : pub_add_sd,
+                  endDate         : pub_add_ed,
+                  toComponent     : publisher,
+                  fromComponent   : ti
+                )
+              } else {
+                combo = new Combo(
+                  type            : (type),
+                  status          : pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS,pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                  startDate       : pub_add_sd,
+                  endDate         : pub_add_ed,
+                  fromComponent   : publisher,
+                  toComponent     : ti
+                )
+              }
+
+              if (combo) {
+                combo.save(flush:true, failOnError:true)
+
+                // Add the combo to our list to avoid adding duplicates.
+                publisher_combos.add ( combo )
+
+                log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
+                  (combo.startDate ? ' from ' + combo.startDate : '') +
+                  (combo.endDate ? ' to ' + combo.endDate : '')
+              } else {
+                log.error("Could not create publisher Combo..")
+              }
+
+            } else {
+              log.debug "Publisher ${publisher.name} already set against '${ti.name}'"
+            }
+
+          } else {
+            log.debug "Could not find org name: ${pub_to_add.name}, with normname: ${norm_pub_name}"
+          }
+        }
+      }
+    }
   }
 
   private TitleInstance addIdentifiers (ids, ti) {
@@ -1287,5 +1435,37 @@ class TitleLookupService {
       }
     }
     result
+  }
+
+  def determineTitleClass(titleObj) {
+    if (titleObj.type) {
+      switch (titleObj.type) {
+        case "serial":
+        case "Serial":
+        case "Journal":
+        case "journal":
+          return "org.gokb.cred.JournalInstance"
+          break;
+        case "monograph":
+        case "Monograph":
+        case "Book":
+        case "book":
+          return "org.gokb.cred.BookInstance"
+          break;
+        case "Database":
+        case "database":
+          return "org.gokb.cred.DatabaseInstance"
+          break;
+        case "Other":
+        case "other":
+          return "org.gokb.cred.OtherInstance"
+          break;
+        default:
+          return null
+          break;
+      }
+    } else {
+      return null
+    }
   }
 }

@@ -16,6 +16,8 @@ class UrlMappings {
     group "/rest", {
       post "/packages/$id/retire"(controller: 'package', namespace: 'rest', action:'retire')
       post "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'addTipps')
+      put "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'updateTipps')
+      patch "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'updateTipps')
       "/packages/$id/$action"(controller: 'package', namespace: 'rest')
       get "/packages/$id"(controller: 'package', namespace: 'rest', action: 'show')
       put "/packages/$id"(controller: 'package', namespace: 'rest', action: 'update')
@@ -96,10 +98,13 @@ class UrlMappings {
 
       get "/sources"(controller: 'sources', namespace: 'rest', action: 'index')
       get "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'show')
+      put "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'update')
+      patch "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'update')
       post "/sources"(controller: 'sources', namespace: 'rest', action: 'save')
 
       get "/reviews"(controller: 'reviews', namespace: 'rest', action: 'index')
       get "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'show')
+      post "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'save')
       put "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
       patch "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
 
@@ -116,6 +121,7 @@ class UrlMappings {
       post "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'addHistory')
       put "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'updateHistory')
       patch "/titles/$id/history"(controller: 'title', namespace: 'rest', action:'updateHistory')
+      get "/titles/$id/tipps"(controller: 'title', namespace: 'rest', action:'tipps')
       "/titles/$id/$action"(controller: 'title', namespace:'rest')
       get "/titles/$id"(controller: 'title', namespace: 'rest', action:'show')
       put "/titles/$id"(controller: 'title', namespace: 'rest', action:'update')

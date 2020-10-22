@@ -821,4 +821,59 @@ class TitleController {
     }
     result
   }
+
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+  def tipps() {
+    def result = [:]
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
+    log.debug("tipps :: ${params}")
+    def obj = TitleInstance.findByUuid(params.id)
+
+    if (!obj) {
+      obj = TitleInstance.get(genericOIDService.oidToId(params.id))
+    }
+
+    log.debug("TIPPs for Title: ${obj}")
+
+    if (obj) {
+      def context = "/titles/" + params.id + "/tipps"
+      def base = grailsApplication.config.serverURL + "/rest"
+      def es_search = params.es ? true : false
+
+      params.remove('id')
+      params.remove('uuid')
+      params.remove('es')
+      params.title = obj.id
+
+      def esParams = new HashMap(params)
+      esParams.remove('componentType')
+      esParams.componentType = "TIPP" // Tells ESSearchService what to look for
+
+      log.debug("New ES params: ${esParams}")
+      log.debug("New DB params: ${params}")
+
+      if (es_search) {
+        def start_es = LocalDateTime.now()
+        result = ESSearchService.find(esParams, context)
+        log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+      }
+      else {
+        def start_db = LocalDateTime.now()
+        result = componentLookupService.restLookup(user, TitleInstancePackagePlatform, params, context)
+        log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      result.message = "Title id ${params.id} could not be resolved!"
+      response.setStatus(404)
+    }
+
+    render result as JSON
+  }
+
 }
