@@ -48,24 +48,37 @@ class ComponentPrice {
     if (!ComponentPrice.isInstance(obj))
       return false
     ComponentPrice other = (ComponentPrice) obj
-    if (this.owner != null && other.owner != null)
-      if (!this.owner.equals(other.owner))
+    if (this.owner != null && other.owner != null) {
+      boolean eq = this.owner == other.owner
+      if (!eq) {
         return false
-    if (this.priceType != null && other.priceType != null)
-      if (!this.priceType?.equals(other.priceType))
+      }
+    }
+    if (this.priceType != null && other.priceType != null) {
+      if (!this.priceType?.equals(other.priceType)) {
         return false
-    if (this.currency != null && other.currency != null)
-      if (!this.currency?.equals(other.currency))
+      }
+    }
+    if (this.currency != null && other.currency != null) {
+      if (!this.currency?.equals(other.currency)) {
         return false
-    if (this.startDate != null && other.startDate != null)
-      if (!this.startDate?.equals(other.startDate))
+      }
+    }
+    if (this.startDate != null && other.startDate != null) {
+      if (!this.startDate?.equals(other.startDate)) {
         return false
-    if (this.endDate != null && other.endDate != null)
-      if (!this.endDate?.equals(other.endDate))
+      }
+    }
+    if (this.endDate != null && other.endDate != null) {
+      if (!this.endDate?.equals(other.endDate)) {
         return false
-    if (this.price != null && other.price != null)
-      if (this.price != other.price)
+      }
+    }
+    if (this.price != null && other.price != null) {
+      if (this.price != other.price) {
         return false
+      }
+    }
     true
   }
 }

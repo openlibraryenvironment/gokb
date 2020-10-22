@@ -52,7 +52,11 @@ class IntegrationControllerSpec extends Specification {
     Org.findByName("American Chemical Society")?.expunge()
     Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
-    Package.findByName('TestTokenPackage')?.expunge()
+    Package pkg = Package.findByName('TestTokenPackage')
+    pkg.tipps.each { tipp ->
+      tipp.expunge()
+    }
+    pkg.expunge()
     UpdateToken.findByValue('TestUpdateToken')?.delete()
     TitleInstance.findAllByName("Acta cytologica")?.each { title ->
       ComponentPrice.findAllByOwner(title)?.each { price ->

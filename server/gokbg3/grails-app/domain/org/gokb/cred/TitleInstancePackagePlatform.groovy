@@ -34,6 +34,8 @@ class TitleInstancePackagePlatform extends KBComponent {
   String subjectArea
   String series
 
+  private static SimpleDateFormat df =new SimpleDateFormat("yyyy-MM-dd")
+
   private static refdataDefaults = [
     "format"       : "Electronic",
     "delayedOA"    : "Unknown",
@@ -643,7 +645,8 @@ class TitleInstancePackagePlatform extends KBComponent {
         tipp.setPrice(
           price_data.type,
           new StringBuilder((String) price_data.amount).append(price_data.currency ? ' ' + price_data.currency : '').toString(),
-          price_data.startDate ? new SimpleDateFormat("yyyy-MM-dd").parse(price_data.startDate) : null
+          price_data.startDate ? df.parse(price_data.startDate) : null,
+          price_data.endDate ? df.parse(price_data.endDate) : null
         )
       }
       if (tipp_dto.series) {

@@ -885,7 +885,8 @@ where cp.owner = :c
     Object o = KBComponent.deproxy(obj)
     if (o != null) {
       // Deproxy the object first to ensure it isn't a hibernate proxy.
-      return (this.getClassName() == o.getClass().name) && (this.getId() == o.getId())
+      boolean r = (this.getClassName() == o.getClass().name) && (this.getId() == o.getId())
+      return r
     }
 
     // Return false if we get here.
@@ -1404,7 +1405,7 @@ where cp.owner = :c
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component", [component: this]);
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component", [component: this]);
     KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component", [component: this])
-    this.prices.each { p -> p.delete() }
+    this.prices.each { p -> p.delete(flush: true) }
     this.delete(failOnError: true)
     result;
   }
@@ -1563,13 +1564,15 @@ where cp.owner = :c
   /**
    * Set a price formatted as "nnnn.nn" or "nnnn.nn CUR"
    */
-  public void setPrice(String type, String price, Date startDate = null) {
+  public void setPrice(String type, String price, Date startDate = null, Date endDate = null) {
     Float f = null;
     RefdataValue rdv_type = null;
     RefdataValue rdv_currency = null;
 
     if (price) {
-      Date start = startDate ?: new Date();
+      Date now = new Date()
+      Date start = startDate ?: now
+      Date end = endDate
 
       String[] price_components = price.trim().split(' ');
       f = Float.parseFloat(price_components[0])
@@ -1579,23 +1582,22 @@ where cp.owner = :c
         rdv_currency = RefdataCategory.lookupOrCreate('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
       }
 
-      // Close out any existing component prices if present
-      def priceList = ComponentPrice.findAll("from ComponentPrice where owner=:t and endDate is null and priceType=:pt and startDate<:now", [t: this, now: start, pt: rdv_type])
-      if (priceList.size() > 0) {
-        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:now where owner=:t and endDate is null and priceType=:pt and startDate<:now', [t: this, now: start, pt: rdv_type])
-      } else {
-        priceList = ComponentPrice.findAll("from ComponentPrice where owner=:t and endDate is null and priceType=:pt and startDate=:now", [t: this, now: start, pt: rdv_type])
-        if (priceList.size()==0) {
-          // Create the new component price
-          ComponentPrice cp = new ComponentPrice(
-            owner: this,
-            priceType: rdv_type,
-            currency: rdv_currency,
-            startDate: start,
-            endDate: null,
-            price: f).save(flush: true, failOnError: true)
-          this.prices<<cp
-        }
+      ComponentPrice cp = new ComponentPrice(
+        owner: this,
+        priceType: rdv_type,
+        currency: rdv_currency,
+        startDate: start,
+        endDate: end,
+        price: f)
+      prices = prices ?: []
+      // does this price exist already?
+      if (!prices.contains(cp)) {
+        // set the end date for the current price(s)
+        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:tipp and (endDate is null or endDate>:start) and priceType=:type', [start: cp.startDate, tipp: this, type: cp.priceType])
+        cp.save()
+        // enter the new price
+        prices << cp
+        save()
       }
     }
   }
@@ -1620,4 +1622,5 @@ where cp.owner = :c
     }
     result
   }
+
 }
