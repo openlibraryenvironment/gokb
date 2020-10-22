@@ -1,39 +1,47 @@
 <g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null && request.curator.size() > 0) : true) || (params.curationOverride == 'true' && request.user.isAdmin())) }" />
 <dl class="dl-horizontal">
-      <dt>
-              <g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel>
-      </dt>
-      <dd>
-              <g:xEditable class="ipe" owner="${d}" field="name" />
-      </dd>
-      <dt>
-              <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
-      </dt>
-      <dd>
-        <sec:ifAnyGranted roles="ROLE_SUPERUSER">
-          <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
-        </sec:ifAnyGranted>
-        <sec:ifNotGranted roles="ROLE_SUPERUSER">
-          ${d.status?.value ?: 'Not Set'}
-        </sec:ifNotGranted>
-      </dd>
-      <dt>
-              <g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel>
-      </dt>
-      <dd>
-              <g:xEditable class="ipe" owner="${d}" field="reference" />
-      </dd>
-      <dt>
-              <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel>
-      </dt>
-      <dd>
-              <g:manyToOneReferenceTypedown owner="${d}" field="source"
-                      baseClass="org.gokb.cred.Source">
-                      ${d.source?.name}
-              </g:manyToOneReferenceTypedown>
-      </dd>
+  <dt>
+          <g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel>
+  </dt>
+  <dd>
+          <g:xEditable class="ipe" owner="${d}" field="name" />
+  </dd>
+  <dt>
+          <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
+  </dt>
+  <dd>
+    <sec:ifAnyGranted roles="ROLE_SUPERUSER">
+      <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
+    </sec:ifAnyGranted>
+    <sec:ifNotGranted roles="ROLE_SUPERUSER">
+      ${d.status?.value ?: 'Not Set'}
+    </sec:ifNotGranted>
+  </dd>
+  <dt>
+          <g:annotatedLabel owner="${d}" property="reference">Reference</g:annotatedLabel>
+  </dt>
+  <dd>
+          <g:xEditable class="ipe" owner="${d}" field="reference" />
+  </dd>
+  <dt>
+    <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown>
+  </dd>
+  <dt>
+    <g:annotatedLabel owner="${d}" property="titleNamespace">Title Namespace</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:manyToOneReferenceTypedown owner="${d}" field="titleNamespace" baseClass="org.gokb.cred.IdentifierNamespace">${(d.titleNamespace?.name)?:d.titleNamespace?.value}</g:manyToOneReferenceTypedown>
+  </dd>
+  <dt>
+    <g:annotatedLabel owner="${d}" property="packageNamespace">Package Namespace</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:manyToOneReferenceTypedown owner="${d}" field="packageNamespace" baseClass="org.gokb.cred.IdentifierNamespace">${(d.packageNamespace?.name)?:d.packageNamespace?.value}</g:manyToOneReferenceTypedown>
+  </dd>
 </dl>
-
 <div id="content">
     <ul id="tabs" class="nav nav-tabs">
       <li class="active"><a href="#orgdetails" data-toggle="tab">Organization</a></li>
