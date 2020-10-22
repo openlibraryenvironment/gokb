@@ -8,6 +8,8 @@ class Org extends KBComponent {
 
   RefdataValue mission
   String homepage
+  IdentifierNamespace titleNamespace
+  IdentifierNamespace packageNamespace
 
   def availableActions() {
     [
@@ -90,6 +92,8 @@ class Org extends KBComponent {
         }
       }
     })
+    titleNamespace(nullable: true)
+    packageNamespace(nullable: true)
   }
 
   static jsonMapping = [
