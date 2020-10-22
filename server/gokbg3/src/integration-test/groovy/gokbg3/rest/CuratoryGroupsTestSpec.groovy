@@ -56,7 +56,7 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data.size() == 5
+    resp.json.data.size() >= 5
   }
 
   void "test GET /rest/curatoryGroups with inverse sorting by name"() {

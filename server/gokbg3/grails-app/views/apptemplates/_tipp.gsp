@@ -89,6 +89,17 @@
         <span class="badge badge-warning"> ${d.reviewRequests?.size() ?: '0'}</span>
       </a>
     </li>
+    <li>
+      <a href="#subjectArea" data-toggle="tab">Subject Area</a>
+    </li>
+    <li>
+      <a href="#series" data-toggle="tab">Series</a>
+    </li>
+    <li>
+      <a href="#prices" data-toggle="tab">Prices
+        <span class="badge badge-warning"> ${d.prices?.size() ?: '0'}</span>
+      </a>
+    </li>
   </g:if>
 </ul>
 
@@ -283,6 +294,30 @@
     <div class="tab-pane" id="review">
       <g:render template="/apptemplates/revreqtab" model="${[d:d]}" />
     </div>
+
+    <div class="tab-pane" id="subjectArea">
+      <dl class="dl-horizontal">
+        <dt>
+          <g:annotatedLabel owner="${d}" property="subjectArea">Subject Area</g:annotatedLabel>
+        </dt>
+        <dd>
+          <g:xEditable owner="${d}" field="subjectArea"/>
+        </dd>
+      </dl>
+    </div>
+
+    <div class="tab-pane" id="series">
+
+      <dl class="dl-horizontal">
+        <dt>
+          <g:annotatedLabel owner="${d}" property="series">Series</g:annotatedLabel>
+        </dt>
+        <dd>
+          <g:xEditable owner="${d}" field="series"/>
+        </dd>
+      </dl>
+    </div>
+    <g:render template="/tabTemplates/showPrices" model="${[d: displayobj, showActions: true]}"/>
   </g:if>
 </div>
 <g:render template="/apptemplates/componentStatus"

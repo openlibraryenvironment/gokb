@@ -1405,7 +1405,7 @@ where cp.owner = :c
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component", [component: this]);
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component", [component: this]);
     KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component", [component: this])
-    this.prices.each { p -> p.delete(flush: true) }
+    KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: this])
     this.delete(failOnError: true)
     result;
   }
