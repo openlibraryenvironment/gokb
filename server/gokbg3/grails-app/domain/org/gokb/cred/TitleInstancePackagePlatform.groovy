@@ -34,7 +34,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   String subjectArea
   String series
 
-  private static SimpleDateFormat df =new SimpleDateFormat("yyyy-MM-dd")
+  private static SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
 
   private static refdataDefaults = [
     "format"       : "Electronic",
@@ -626,15 +626,15 @@ class TitleInstancePackagePlatform extends KBComponent {
               }
             }
 
-            tipp.addToCoverageStatements('startVolume': c.startVolume,   \
-               'startIssue': c.startIssue,   \
-               'endVolume': c.endVolume,   \
-               'endIssue': c.endIssue,   \
-               'embargo': c.embargo,   \
-               'coverageDepth': cov_depth,   \
-               'coverageNote': c.coverageNote,   \
-               'startDate': startAsDate,   \
-               'endDate': endAsDate
+            tipp.addToCoverageStatements('startVolume': c.startVolume,    \
+                'startIssue': c.startIssue,    \
+                'endVolume': c.endVolume,    \
+                'endIssue': c.endIssue,    \
+                'embargo': c.embargo,    \
+                'coverageDepth': cov_depth,    \
+                'coverageNote': c.coverageNote,    \
+                'startDate': startAsDate,    \
+                'endDate': endAsDate
             )
           }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
@@ -643,8 +643,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       }
       tipp_dto.prices?.each { price_data ->
         tipp.setPrice(
-          price_data.type,
-          new StringBuilder((String) price_data.amount).append(price_data.currency ? ' ' + price_data.currency : '').toString(),
+          price_data.type, "${price_data.amount} $price_data.currency",
           price_data.startDate ? df.parse(price_data.startDate) : null,
           price_data.endDate ? df.parse(price_data.endDate) : null
         )
