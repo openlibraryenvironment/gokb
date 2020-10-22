@@ -11,6 +11,8 @@ import grails.plugins.orm.auditable.Auditable
 import grails.plugins.orm.auditable.AuditEventType
 import org.gokb.GOKbTextUtils
 
+import java.text.SimpleDateFormat
+
 /**
  * Abstract base class for GoKB Components.
  */
@@ -1570,8 +1572,8 @@ where cp.owner = :c
     RefdataValue rdv_currency = null;
 
     if (price) {
-      Date now = new Date()
-      Date start = startDate ?: now
+      Date today = todayNoTime()
+      Date start = startDate ?: today
       Date end = endDate
 
       String[] price_components = price.trim().split(' ');
@@ -1593,7 +1595,7 @@ where cp.owner = :c
       // does this price exist already?
       if (!prices.contains(cp)) {
         // set the end date for the current price(s)
-        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:tipp and (endDate is null or endDate>:start) and priceType=:type', [start: cp.startDate, tipp: this, type: cp.priceType])
+        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:tipp and (endDate is null or endDate>:start) and priceType=:type and currency=:currency' , [start: cp.startDate, tipp: this, type: cp.priceType, currency:cp.currency])
         cp.save()
         // enter the new price
         prices << cp
@@ -1623,4 +1625,13 @@ where cp.owner = :c
     result
   }
 
+  private static Date todayNoTime() {
+    Calendar calendar = Calendar.getInstance();
+    calendar.set(Calendar.HOUR_OF_DAY, 0);
+    calendar.set(Calendar.MINUTE, 0);
+    calendar.set(Calendar.SECOND, 0);
+    calendar.set(Calendar.MILLISECOND, 0);
+
+    return calendar.getTime();
+  }
 }

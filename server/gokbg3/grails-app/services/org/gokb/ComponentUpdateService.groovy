@@ -265,8 +265,10 @@ class ComponentUpdateService {
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
     if (data.prices) {
       for (def priceData : data.prices) {
-        component.setPrice(priceData.type, "${priceData.amount} $priceData.currency", priceData.startDate?df.parse(priceData.startDate):null, priceData.endDate?df.parse(priceData.endDate):null)
-        hasChanged = true
+        if (priceData.amount) {
+          component.setPrice(priceData.type, "${priceData.amount} $priceData.currency", priceData.startDate ? df.parse(priceData.startDate) : null, priceData.endDate ? df.parse(priceData.endDate) : null)
+          hasChanged = true
+        }
       }
     }
 

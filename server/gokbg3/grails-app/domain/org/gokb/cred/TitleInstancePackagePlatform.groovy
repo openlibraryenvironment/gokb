@@ -641,13 +641,6 @@ class TitleInstancePackagePlatform extends KBComponent {
         }
 //         tipp.save(flush:true, failOnError:true);
       }
-      tipp_dto.prices?.each { price_data ->
-        tipp.setPrice(
-          price_data.type, "${price_data.amount} $price_data.currency",
-          price_data.startDate ? df.parse(price_data.startDate) : null,
-          price_data.endDate ? df.parse(price_data.endDate) : null
-        )
-      }
       if (tipp_dto.series) {
         tipp.setSeries(tipp_dto.series)
       }
