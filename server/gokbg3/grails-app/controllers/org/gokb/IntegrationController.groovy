@@ -692,6 +692,10 @@ class IntegrationController {
           }
           else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
+            def additionalInfo = [:]
+
+            additionalInfo.vars = [canonical_identifier, component.name]
+
             log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
             reviewRequestService.raise(
               component,
@@ -699,7 +703,7 @@ class IntegrationController {
               "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
               user,
               null,
-              null,
+              (additionalInfo as JSON).toString(),
               RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
             )
           }
@@ -917,7 +921,7 @@ class IntegrationController {
       fullsync = true
     }
 
-    if ( rjson?.packageHeader?.name && request_user ) {
+    if ( rjson?.packageHeader?.name && request_user?.apiUserStatus ) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
         def json = rjson
         def job_result = [:]
@@ -1321,13 +1325,17 @@ class IntegrationController {
                       }
 
                       if (upserted_tipp.isCurrent() && upserted_tipp.hostPlatform?.status != status_current ) {
+                        def additionalInfo = [:]
+
+                        additionalInfo.vars = [upserted_tipp.hostPlatform.name, upserted_tipp.hostPlatform.status?.value]
+
                         reviewRequestService.raise(
                           upserted_tipp,
                           "The existing platform matched for this TIPP (${upserted_tipp.hostPlatform}) is marked as ${upserted_tipp.hostPlatform.status?.value}! Please review the URL/Platform for validity.",
                           "Platform not marked as current.",
                           user,
                           null,
-                          null,
+                          (additionalInfo as JSON).toString(),
                           RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent')
                         )
                       }
@@ -1382,13 +1390,17 @@ class IntegrationController {
                         }
                       }
                       if( num_removed_tipps > 0 ) {
+                        def additionalInfo = [:]
+
+                        additionalInfo.vars = [the_pkg.id, num_removed_tipps]
+
                         reviewRequestService.raise(
                             the_pkg,
                             "TIPPs retired.",
                             "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
                             user,
                             null,
-                            null,
+                            (additionalInfo as JSON).toString(),
                             RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
                         )
                       }
@@ -1421,6 +1433,8 @@ class IntegrationController {
                     if (errors.global.size() > 0 || errors.tipps.size() > 0) {
                       additionalInfo.errorObjects = errors
                     }
+
+                    additionalInfo.vars = [job.id]
 
                     reviewRequestService.raise(
                       the_pkg,

@@ -29,7 +29,6 @@ class RestMappingService {
     'normname',
     'people',
     'lastSeen',
-    'additionalProperties',
     'updateBenchmark',
     'systemComponent',
     'insertBenchmark',
@@ -40,6 +39,13 @@ class RestMappingService {
     'componentDiscriminator',
     'incomingCombos',
     'outgoingCombos'
+  ]
+
+  def defaultEmbed = [
+    'ids',
+    'variantNames',
+    'additionalProperties',
+    'reviewRequests'
   ]
 
   def defaultImmmutable = [
@@ -66,6 +72,7 @@ class RestMappingService {
     def include_list = params['_include']?.split(',') ?: null
     def exclude_list = params['_exclude']?.split(',') ?: null
     def base = grailsApplication.config.serverURL + "/rest"
+    def curatedClass = obj.respondsTo('curatoryGroups')
     def jsonMap = null
     def is_curator = true
 
@@ -77,7 +84,7 @@ class RestMappingService {
       result['_links'] = [:]
       result['_links']['self'] = ['href': base + obj.restPath + "/${obj.id}"]
 
-      if (obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0) {
+      if (curatedClass && obj.curatoryGroups?.size() > 0) {
         is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
       }
 
@@ -96,12 +103,19 @@ class RestMappingService {
       }
     }
 
-    if (embed_active.size() > 0 || jsonMap?.defaultEmbeds?.size() > 0 || user?.editorStatus) {
-      result['_embedded'] = [:]
-    }
+    result['_embedded'] = [:]
 
-    if (embed_active.size() == 0 && jsonMap?.defaultEmbeds?.size() > 0) {
-      embed_active = jsonMap.defaultEmbeds
+    if (embed_active.size() == 0) {
+      if (KBComponent.isAssignableFrom(obj.class)) {
+        embed_active = defaultEmbed
+      }
+      if (jsonMap?.defaultEmbeds?.size() > 0) {
+        jsonMap.defaultEmbeds.each {
+          if (!embed_active.contains(it)) {
+            embed_active.add(it)
+          }
+        }
+      }
     }
 
     result['id'] = obj.id
@@ -591,7 +605,7 @@ class RestMappingService {
           log.debug("Existing cg ${c}..")
         }
       }
-      
+
       if (remove) {
         Iterator items = current_cgs.iterator();
         Object element;
@@ -865,6 +879,8 @@ class RestMappingService {
       obj_label = obj.name
     } else if (obj.hasProperty('variantName')) {
       obj_label = obj.variantName
+    } else if (obj.hasProperty('propertyName')) {
+      obj_label = obj.propertyName
     }
 
     return obj_label
