@@ -921,7 +921,7 @@ class IntegrationController {
       fullsync = true
     }
 
-    if ( rjson?.packageHeader?.name && request_user ) {
+    if ( rjson?.packageHeader?.name && request_user?.apiUserStatus ) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
         def json = rjson
         def job_result = [:]
