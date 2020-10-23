@@ -456,6 +456,24 @@ class TitleInstance extends KBComponent {
                   builder.'name' (platform?.name)
                 }
 
+                builder.'subjectArea'(tipp.subjectArea?.trim())
+                builder.'series'(tipp.series?.trim())
+                if (tipp.prices && tipp.prices.size() > 0) {
+                  builder.'prices'() {
+                    tipp.prices.each { price ->
+                      builder.'price' {
+                        builder.'type'(price.priceType.value)
+                        builder.'amount'(price.price)
+                        builder.'currency'(price.currency)
+                        builder.'startDate'(price.startDate)
+                        if (price.endDate) {
+                          builder.'endDate'(price.endDate)
+                        }
+                      }
+                    }
+                  }
+                }
+
                 def cov_statements = tipp.coverageStatements
                 if(cov_statements?.size() > 0){
                   cov_statements.each { tcs ->

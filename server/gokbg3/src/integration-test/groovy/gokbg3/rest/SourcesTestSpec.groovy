@@ -17,6 +17,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
 
   def setup() {
     def src_upd = Source.findByName("Source PreUpdate") ?: new Source(name: "Source PreUpdate")
+    Source quelle = Source.findByName("TestSource")?:new Source(name:"TestSource")
   }
 
   @Transactional
@@ -24,6 +25,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
     Source.findByName("Quelle 1")?.expunge()
     Source.findByName("Source PreUpdate")?.expunge()
     Source.findByName("Source AfterUpdate")?.expunge()
+    Source.findByName("TestSource")?.expunge()
   }
 
   void "test GET /rest/sources"() {
@@ -36,13 +38,13 @@ class SourcesTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data.size() >= 7
+    resp.json.data.size() == 8
   }
 
   void "test GET /rest/sources/{id}"() {
     when:
     String accessToken = getAccessToken()
-    Source quelle = Source.findByName("WILEY")
+    Source quelle = Source.findByName("TestSource")
     RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/sources/$quelle.id") {
       // headers
       accept('application/json')

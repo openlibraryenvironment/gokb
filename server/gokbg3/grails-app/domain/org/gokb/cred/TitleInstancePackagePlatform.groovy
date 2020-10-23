@@ -626,15 +626,15 @@ class TitleInstancePackagePlatform extends KBComponent {
               }
             }
 
-            tipp.addToCoverageStatements('startVolume': c.startVolume,    \
-                'startIssue': c.startIssue,    \
-                'endVolume': c.endVolume,    \
-                'endIssue': c.endIssue,    \
-                'embargo': c.embargo,    \
-                'coverageDepth': cov_depth,    \
-                'coverageNote': c.coverageNote,    \
-                'startDate': startAsDate,    \
-                'endDate': endAsDate
+            tipp.addToCoverageStatements('startVolume': c.startVolume,       \
+                   'startIssue': c.startIssue,       \
+                   'endVolume': c.endVolume,       \
+                   'endIssue': c.endIssue,       \
+                   'embargo': c.embargo,       \
+                   'coverageDepth': cov_depth,       \
+                   'coverageNote': c.coverageNote,       \
+                   'startDate': startAsDate,       \
+                   'endDate': endAsDate
             )
           }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
@@ -690,6 +690,8 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'format'(format?.value)
         builder.'url'(url ?: "")
         builder.'name'(ti.name?.trim())
+        builder.'subjectArea'(subjectArea?.trim())
+        builder.'series'(series?.trim())
         builder.'title'([id: ti.id, uuid: ti.uuid]) {
           builder.'name'(ti.name?.trim())
           builder.'type'(titleClass)
@@ -711,7 +713,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           if (linked_pkg.provider) {
             builder.'provider'([id: linked_pkg.provider?.id, uuid: linked_pkg.provider?.uuid]) {
               'name'(linked_pkg.provider?.name)
-              'mision'(linked_pkg.provider?.mission?.value)
+              'mission'(linked_pkg.provider?.mission?.value)
             }
           } else {
             builder.'provider'()
@@ -738,6 +740,28 @@ class TitleInstancePackagePlatform extends KBComponent {
             )
           }
         }
+        if (prices && prices.size() > 0) {
+          builder.'prices'() {
+            prices.each { price ->
+              builder.'price' {
+                builder.'type'(price.priceType.value)
+                builder.'amount'(price.price)
+                builder.'currency'(price.currency)
+                builder.'startDate'(price.startDate)
+                if (price.endDate) {
+                  builder.'endDate'(price.endDate)
+                }
+              }
+            }
+          }
+        }
+        builder.'type'(titleClass)
+        builder.'status'(ti.status?.value)
+        builder.'identifiers' {
+          titleIds.each { tid ->
+            builder.'identifier'([namespace: tid[0], namespaceName: tid[3], value: tid[1], type: tid[2]])
+          }
+        }
       }
     }
   }
@@ -756,5 +780,4 @@ class TitleInstancePackagePlatform extends KBComponent {
 
     result
   }
-
 }

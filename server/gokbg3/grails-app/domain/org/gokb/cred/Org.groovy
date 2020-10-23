@@ -1,9 +1,12 @@
 package org.gokb.cred
 
+import groovy.util.logging.Slf4j
+
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
 import com.k_int.ClassUtils
 
+@Slf4j
 class Org extends KBComponent {
 
   RefdataValue mission

@@ -50,12 +50,13 @@ class OaiSpec extends Specification {
     def test_plt = Platform.findByName('Test Platform') ?: new Platform(name: 'Test Platform').save(flush: true)
 
     title1 = JournalInstance.findByName('Test Title 1') ?: new JournalInstance(name: 'Test Title 1', series: 'Test Series Name').save(flush: true)
-    title1.setPrice('list', '12.54 GBP', new Date(2020, 01, 01))
+    //title1.setPrice('list', '12.54 GBP', new Date(2020, 01, 01))
 
     def eissn1 = Identifier.findByValue('1234-3456') ?: new Identifier(value: '1234-3456', namespace: IdentifierNamespace.findByValue('eissn')).save(flush: true)
     def issn1 = Identifier.findByValue('1234-4567') ?: new Identifier(value: '1234-4567', namespace: IdentifierNamespace.findByValue('issn')).save(flush: true)
 
-    def tipp1 = new TitleInstancePackagePlatform().save(flush: true)
+    def tipp1 = new TitleInstancePackagePlatform(name:"testTIPP")
+    tipp1.setPrice("list", "1234.56 EUR")
 
     new Combo(fromComponent: test_pkg, toComponent: tipp1, type: RefdataCategory.lookup('Combo.Type', 'Package.Tipps'), status: RefdataCategory.lookup('Combo.Status', 'Active')).save(flush: true)
     new Combo(fromComponent: test_plt, toComponent: tipp1, type: RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps'), status: RefdataCategory.lookup('Combo.Status', 'Active')).save(flush: true)
@@ -64,6 +65,7 @@ class OaiSpec extends Specification {
     def coverageStatement = [startDate: new Date(), startVolume: "1", startIssue: "1"]
 
     tipp1.addToCoverageStatements(coverageStatement)
+    tipp1.save(flush: true)
   }
 
   def cleanup() {
@@ -102,7 +104,7 @@ class OaiSpec extends Specification {
 
     then:
     log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'name'?.text()}")
-    resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'prices' != null
+    resp.xml.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'title'.'TIPPs'.'TIPP'.'prices'.'price'.'type'.'list'.text() != null
   }
 
   void "test GetRecord package response"() {
