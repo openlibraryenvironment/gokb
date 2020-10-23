@@ -945,7 +945,7 @@ class TitleLookupService {
               reviewRequestService.raise(
                 the_title,
                 "Check titles for duplicates.",
-                "Multiple titles were matched on all identifiers as well as the provided title name.",
+                "Multiple titles were matched on all identifiers.",
                 user,
                 project,
                 (additionalInfo as JSON).toString(),
