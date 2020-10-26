@@ -195,8 +195,15 @@ class RestMappingService {
           if( embed_active.contains(cp) ) {
             result['_embedded'][cp] = []
             log.debug("Mapping ManyByCombo ${cp} ${obj[cp]}")
-            obj[cp].each {
-              result['_embedded'][cp] << getEmbeddedJson(it, user)
+            def combos = obj.getCombosByPropertyName(cp)
+
+            combos.each { c ->
+              def combo_object = getEmbeddedJson((c.fromComponent == obj ? c.toComponent : c.fromComponent), user)
+              log.debug("Combo Status: ${c.status}")
+
+              if (c.status == RefdataCategory.lookup('Combo.Status', 'Active')) {
+                result['_embedded'][cp] << combo_object
+              }
             }
           }
 
@@ -466,6 +473,7 @@ class RestMappingService {
   public def updateIdentifiers(obj, ids, boolean remove = true) {
     log.debug("updating ids ${ids}")
     def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
     def combo_expired = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_EXPIRED)
     def id_combos = obj.getCombosByPropertyName('ids')
@@ -534,6 +542,8 @@ class RestMappingService {
           else if (dupe.size() == 1 ) {
             if (dupe[0].status == combo_deleted) {
               log.debug("Matched ID combo was marked as deleted!")
+              dupe[0].status = combo_active
+              dupe[0].save(flush:true)
             }
             else {
               log.debug("Not adding duplicate ..")
