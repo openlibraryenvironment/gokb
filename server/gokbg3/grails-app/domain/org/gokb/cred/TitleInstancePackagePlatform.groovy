@@ -57,8 +57,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       'endIssue',
       'endVolume',
       'description',
-      'hybridOAUrl',
-      'name'
+      'hybridOAUrl'
     ],
     'es': [
       'hostPlatformUuid': "hostPlatform.uuid",
@@ -530,6 +529,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           'url': trimmed_url,
           'uuid': (tipp_dto.uuid ?: null),
           'status': (tipp_dto.status ?: null),
+          'name': (tipp_dto.name ?: null),
           'editStatus': (tipp_dto.editStatus ?: null)
         ]
 

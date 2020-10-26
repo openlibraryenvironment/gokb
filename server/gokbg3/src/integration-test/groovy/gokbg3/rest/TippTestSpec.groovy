@@ -79,6 +79,7 @@ class TippTestSpec extends AbstractAuthSpec {
     def upd_body = [
       pkg: testPackage.id,
       hostPlatform: testPlatform.id,
+      name: "TippName",
       title: testTitle.id,
       url: "http://host-url.test/old",
       coverage: [
@@ -113,6 +114,7 @@ class TippTestSpec extends AbstractAuthSpec {
       pkg: testPackage.id,
       hostPlatform: testPlatform.id,
       title: testTitle.id,
+      name:"TippName",
       url: "http://host-url.test/new",
       coverageStatements: [
         [
@@ -145,6 +147,7 @@ class TippTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200 // OK
     resp.json.url == upd_body.url
+    resp.json.name == "TippName"
     resp.json._embedded.coverageStatements?.size() == 2
     resp.json._embedded.coverageStatements.collect { it.id }.contains(tipp.coverageStatements[0].id.toInteger()) == true
   }
