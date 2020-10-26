@@ -266,7 +266,7 @@ class ComponentUpdateService {
     if (data.prices) {
       for (def priceData : data.prices) {
         if (priceData.amount) {
-          component.setPrice(priceData.type, "${priceData.amount} $priceData.currency", priceData.startDate ? df.parse(priceData.startDate) : null, priceData.endDate ? df.parse(priceData.endDate) : null)
+          component.setPrice(priceData.type, "${priceData.amount} ${priceData.currency?}", priceData.startDate ? df.parse(priceData.startDate) : null, priceData.endDate ? df.parse(priceData.endDate) : null)
           hasChanged = true
         }
       }

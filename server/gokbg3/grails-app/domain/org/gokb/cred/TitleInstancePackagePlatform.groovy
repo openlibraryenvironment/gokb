@@ -685,17 +685,16 @@ class TitleInstancePackagePlatform extends KBComponent {
 
     builder.'gokb'(attr) {
       builder.'tipp'([id: (id), uuid: (uuid)]) {
-        builder.'status'(status?.value)
+        addCoreGOKbXmlFields(builder, attr)
         builder.'lastUpdated'(lastUpdated ? sdf.format(lastUpdated) : null)
         builder.'format'(format?.value)
         builder.'url'(url ?: "")
-        builder.'name'(ti.name?.trim())
         builder.'subjectArea'(subjectArea?.trim())
         builder.'series'(series?.trim())
         builder.'title'([id: ti.id, uuid: ti.uuid]) {
-          builder.'name'(ti.name?.trim())
-          builder.'type'(titleClass)
-          builder.'status'(ti.status?.value)
+        builder.'name'(ti.name?.trim())
+        builder.'type'(titleClass)
+        builder.'status'(ti.status?.value)
           builder.'identifiers' {
             titleIds.each { tid ->
               builder.'identifier'([namespace: tid[0], namespaceName: tid[3], value: tid[1], type: tid[2]])

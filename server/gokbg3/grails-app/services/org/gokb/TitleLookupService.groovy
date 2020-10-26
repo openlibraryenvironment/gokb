@@ -575,13 +575,26 @@ class TitleLookupService {
               // Raise a review request
 
               if (added) {
+                def additionalInfo = [:]
+                def combo_ids = [the_title.id]
+
+                additionalInfo.otherComponents = []
+
+                results['other_matches'].each { tlm ->
+                  additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
+                  combo_ids.add(tlm.id)
+                }
+
+                additionalInfo.cstring = combo_ids.sort().join('_')
+                additionalInfo.vars = [metadata.title, the_title.name]
+
                 reviewRequestService.raise(
                   the_title,
                   "'${metadata.title}' added as a variant of '${the_title.name}'.",
                   "Title was matched via secondary id, but had a different name.",
                   user,
                   project,
-                  null,
+                  (additionalInfo as JSON).toString(),
                   RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Mismatch')
                 )
               }
@@ -615,7 +628,7 @@ class TitleLookupService {
 
             if (string_match) {
               def additionalInfo = [:]
-              def combo_ids = [the_title]
+              def combo_ids = [the_title.id]
 
               additionalInfo.otherComponents = []
 
@@ -649,6 +662,11 @@ class TitleLookupService {
 
           def data = results['x_check_matches'][0]
 
+          def additionalInfo = [:]
+
+          additionalInfo.vars = [data.suppliedNS, data.foundNS]
+          additionalInfo.mismatches = ["${data.suppliedNS}": data.value]
+
           // Fire the review request.
           reviewRequestService.raise(
             matches[0],
@@ -656,7 +674,7 @@ class TitleLookupService {
             "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
             user,
             project,
-            null,
+            (additionalInfo as JSON).toString(),
             RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Mismatch')
           )
         }
@@ -664,12 +682,16 @@ class TitleLookupService {
         // If one identifier matches, but all other class ones are different, it is probably not a real match.
 
         def id_mismatches = []
+        def id_matches = []
 
         results['ids'].each { rid ->
           matches[0].ids.each { mid ->
             if ( rid.namespace == mid.namespace && rid.value != mid.value ) {
               if ( !matches[0].ids.contains(rid) ) {
                 id_mismatches.add(rid)
+              }
+              else {
+                id_matches.add(rid)
               }
             }
           }
@@ -706,22 +728,26 @@ class TitleLookupService {
                   id_mm.add(id_map)
                 }
 
-                def additionalInfo = [:]
-                def combo_ids = [the_title]
+                def id_pm = []
 
-                additionalInfo.otherComponents = []
+                id_matches.each { mId ->
+                  def id_map = [:]
+                  id_map[mId.namespace?.value ?: "ns"] = mId.value
 
-                matches.each { tlm ->
-                  additionalInfo.otherComponents.add([oid:"${tlm.logEntityId}",name:"${tlm.name ?: tlm.displayName}"])
-                  combo_ids.add(tlm.id)
+                  id_pm.add(id_map)
                 }
 
-                additionalInfo.cstring = combo_ids.sort().join('_')
+                def additionalInfo = [:]
+
+                additionalInfo.cstring = the_title.id.toString()
+                additionalInfo.matches = id_pm
+                additionalInfo.mismatches = id_mm
+                additionalInfo.vars = [the_title.name, id_mm]
 
                 reviewRequestService.raise(
-                  matches[0],
+                  the_title,
                   "Identifier mismatch.",
-                  "Title ${matches[0]} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
+                  "Title ${the_title} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
                   user,
                   project,
                   (additionalInfo as JSON).toString(),
@@ -750,7 +776,24 @@ class TitleLookupService {
                 title_created = true
 
                 def additionalInfo = [:]
-                def combo_ids = [the_title]
+                def combo_ids = [the_title.id]
+                def id_mm = []
+
+                id_mismatches.each { mId ->
+                  def id_map = [:]
+                  id_map[mId.namespace?.value ?: "ns"] = mId.value
+
+                  id_mm.add(id_map)
+                }
+
+                def id_pm = []
+
+                id_matches.each { mId ->
+                  def id_map = [:]
+                  id_map[mId.namespace?.value ?: "ns"] = mId.value
+
+                  id_pm.add(id_map)
+                }
 
                 additionalInfo.otherComponents = []
 
@@ -760,6 +803,9 @@ class TitleLookupService {
                 }
 
                 additionalInfo.cstring = combo_ids.sort().join('_')
+                additionalInfo.matches = id_pm
+                additionalInfo.mismatches = id_mm
+                additionalInfo.vars = [matches[0].id, '(' + matches[0].name + ')']
 
 
                 reviewRequestService.raise(
@@ -880,12 +926,12 @@ class TitleLookupService {
             }
             else {
               log.debug("Could not match a specific title. Selection needs review")
-              def matched_sorted = matched_with_name.sort {it.id}
+              def matched_sorted = matched_with_name?.size() > 0 ? matched_with_name.sort {it.id} : all_matched.sort {it.id}
               the_title = matched_sorted[0]
               matched_sorted.remove(0)
 
               def additionalInfo = [:]
-              def combo_ids = [the_title]
+              def combo_ids = [the_title.id]
 
               additionalInfo.otherComponents = []
 
@@ -938,7 +984,7 @@ class TitleLookupService {
         if (results.other_types.size() > 0) {
 
           def additionalInfo = [:]
-          def combo_ids = [the_title]
+          def combo_ids = [the_title.id]
 
           additionalInfo.otherComponents = []
 

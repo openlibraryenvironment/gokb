@@ -48,7 +48,7 @@ class PackageController {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -82,7 +82,7 @@ class PackageController {
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -118,7 +118,7 @@ class PackageController {
   }
 
   @Transactional
-  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  @Secured(value=["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def save() {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
@@ -242,7 +242,7 @@ class PackageController {
     render result as JSON
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Secured(value=["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
     def result = ['result':'OK', 'params': params]
@@ -549,7 +549,7 @@ class PackageController {
   def tipps() {
     def result = [:]
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
