@@ -582,9 +582,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           tipp_dto.coverage = tipp_dto.coverageStatements
         }
 
+        def new_ids = []
+
         tipp_dto.coverage.each { c ->
           def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
           def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+
+          if (c.id) {
+            new_ids.add(c.id)
+          }
 
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
@@ -597,17 +603,56 @@ class TitleInstancePackagePlatform extends KBComponent {
           changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
 
           def cs_match = false
+          def conflict = false
           def startAsDate = (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
           def endAsDate = (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+          def conflicting_statements = []
 
           tipp.coverageStatements?.each { tcs ->
+            if (c.id && tcs.id == c.id) {
+              missing_by_id.remove(tcs)
 
-            if ( !cs_match && (
-                (c.id && tcs.id == c.id) ||
-                (tcs.startVolume && tcs.startVolume == c.startVolume) ||
-                (tcs.startDate && tcs.startDate == startAsDate) ||
-                (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
-            ) {
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
+              changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tcs,'startDate')
+              changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tcs,'endDate')
+              changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
+
+              cs_match = true
+            }
+            else if ( !cs_match ) {
+              if (!tcs.endDate && !endAsDate) {
+                conflict = true
+              }
+              else if (tcs.startVolume && tcs.startVolume == c.startVolume) {
+                log.debug("Matched CoverageStatement by startVolume")
+                cs_match = true
+              }
+              else if (tcs.startDate && tcs.startDate == startAsDate) {
+                log.debug("Matched CoverageStatement by startDate")
+                cs_match = true
+              }
+              else if (!tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate) {
+                log.debug("Matched CoverageStatement with unspecified values")
+                cs_match = true
+              }
+              else if (tcs.startDate && tcs.endDate) {
+                if (startAsDate && startAsDate > tcs.startDate && startAsDate < tcs.endDate) {
+                  conflict = true
+                }
+                else if (endAsDate && endAsDate > tcs.startDate && endAsDate < tcs.endDate) {
+                  conflict = true
+                }
+              }
+
+              if (conflict) {
+                conflicting_statements.add(tcs)
+              }
+              else if (cs_match) {
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
@@ -617,15 +662,19 @@ class TitleInstancePackagePlatform extends KBComponent {
                 changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tcs,'startDate')
                 changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tcs,'endDate')
                 changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
-
-                cs_match = true
+              }
             }
-            else if (cs_match) {
+            else {
               log.debug("Matched new coverage ${c} on multiple existing coverages!")
             }
           }
 
+          for (def cst : conflicting_statements) {
+            tipp.removeFromCoverageStatements(cst)
+          }
+
           if (!cs_match) {
+
             def cov_depth = null
 
             if (c.coverageDepth instanceof String) {
@@ -644,17 +693,27 @@ class TitleInstancePackagePlatform extends KBComponent {
             }
 
             tipp.addToCoverageStatements('startVolume': c.startVolume, \
-             'startIssue':c.startIssue, \
-             'endVolume': c.endVolume, \
-             'endIssue': c.endIssue, \
-             'embargo':c.embargo, \
-             'coverageDepth': cov_depth, \
-             'coverageNote': c.coverageNote, \
-             'startDate': startAsDate, \
-             'endDate': endAsDate
+            'startIssue':c.startIssue, \
+            'endVolume': c.endVolume, \
+            'endIssue': c.endIssue, \
+            'embargo':c.embargo, \
+            'coverageDepth': cov_depth, \
+            'coverageNote': c.coverageNote, \
+            'startDate': startAsDate, \
+            'endDate': endAsDate
             )
           }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
+        }
+
+        def old_cs = tipp.coverageStatements
+        
+        if (new_ids?.size() > 0) {
+          for (def cs : old_cs) {
+            if (!new_ids.contains(cs.id)) {
+              tipp.removeFromCoverageStatements(cs)
+            }
+          }
         }
 //         tipp.save(flush:true, failOnError:true);
       }
