@@ -114,7 +114,7 @@ class TippTestSpec extends AbstractAuthSpec {
       pkg: testPackage.id,
       hostPlatform: testPlatform.id,
       title: testTitle.id,
-      name:"TippName",
+      name: "TippName",
       url: "http://host-url.test/new",
       coverageStatements: [
         [
