@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat
 class ComponentUpdateService {
   def grailsApplication
   def restMappingService
+  def componentLookupService
   def reviewRequestService
 
   public boolean ensureCoreData(KBComponent component, data, boolean sync = false, user) {
@@ -66,7 +67,7 @@ class ComponentUpdateService {
           def canonical_identifier = null
 
           if (!KBComponent.has(component, 'publisher')) {
-            canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
+            canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
           } else {
             def norm_id = Identifier.normalizeIdentifier(ci.value)
             def ns = IdentifierNamespace.findByValueIlike(namespace_val)
@@ -265,8 +266,8 @@ class ComponentUpdateService {
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
     if (data.prices) {
       for (def priceData : data.prices) {
-        if (priceData.amount) {
-          component.setPrice(priceData.type, "${priceData.amount} ${priceData.currency?}", priceData.startDate ? df.parse(priceData.startDate) : null, priceData.endDate ? df.parse(priceData.endDate) : null)
+        if (priceData.amount != null && priceData.currency) {
+          component.setPrice(priceData.type, "${priceData.amount} ${priceData.currency}", priceData.startDate ? df.parse(priceData.startDate) : null, priceData.endDate ? df.parse(priceData.endDate) : null)
           hasChanged = true
         }
       }

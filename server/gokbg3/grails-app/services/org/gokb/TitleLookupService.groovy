@@ -78,9 +78,13 @@ class TitleLookupService {
 
         // id_def is map with keys 'type' and 'value'
         if (!the_id) {
-          the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
+          the_id = componentLookupService.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
         }
 
+        if (!the_id) {
+          log.error("Unable to look up ID")
+          throw new RuntimeException("Unable to lookup Identifier for ${id_def}");
+        }
         // Add the id.
         result['ids'] << the_id
 
@@ -211,7 +215,7 @@ class TitleLookupService {
       }
       else if (id_def.type.toLowerCase() != 'originediturl'){
         log.debug("Skipping problem ID ${id_def}");
-        the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
+        the_id = componentLookupService.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
         result['other_identifiers'] << the_id
       }
     }
@@ -945,7 +949,7 @@ class TitleLookupService {
               reviewRequestService.raise(
                 the_title,
                 "Check titles for duplicates.",
-                "Multiple titles were matched on all identifiers as well as the provided title name.",
+                "Multiple titles were matched on all identifiers.",
                 user,
                 project,
                 (additionalInfo as JSON).toString(),
@@ -1177,6 +1181,7 @@ class TitleLookupService {
         }
       }
     }
+    ti
   }
 
   private TitleInstance addIdentifiers (ids, ti) {

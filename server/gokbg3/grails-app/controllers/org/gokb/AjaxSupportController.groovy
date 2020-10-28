@@ -21,6 +21,7 @@ class AjaxSupportController {
   def genericOIDService
   def aclUtilService
   def springSecurityService
+  def componentLookupService
   def messageSource
   def messageService
 
@@ -954,7 +955,7 @@ class AjaxSupportController {
       if ( ( ns != null ) && ( owner != null ) && owner.isEditable() ) {
         // Lookup or create Identifier
         try {
-            identifier_instance = Identifier.lookupOrCreateCanonicalIdentifier(ns.value, params.identifierValue)
+            identifier_instance = componentLookupService.lookupOrCreateCanonicalIdentifier(ns.value, params.identifierValue)
 
             if (identifier_instance && !identifier_instance.hasErrors()) {
 

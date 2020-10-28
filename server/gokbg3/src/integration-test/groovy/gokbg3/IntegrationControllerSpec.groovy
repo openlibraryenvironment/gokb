@@ -44,7 +44,10 @@ class IntegrationControllerSpec extends Specification {
     def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush: true)
     def test_upd_pkg = Package.findByName('TestTokenPackage') ?: new Package(name: 'TestTokenPackage').save(flush: true)
     def user = User.findByUsername('ingestAgent')
-    def pkg_token = UpdateToken.findByValue('TestUpdateToken') ?: new UpdateToken(value: 'TestUpdateToken', pkg: test_upd_pkg, updateUser: user).save(flush: true)
+    if (!user.apiUserStatus)  {
+      UserRole.create(user, Role.findByAuthority('ROLE_API'), true)
+    }
+    def pkg_token = UpdateToken.findByValue('TestUpdateToken') ?: new UpdateToken(value: 'TestUpdateToken', pkg: test_upd_pkg, updateUser: user).save(flush:true)
   }
 
   def cleanup() {

@@ -1205,35 +1205,6 @@ where cp.owner = :c
     result
   }
 
-  /**
-   *  Accept a map of namespace:x,identifier:y pairs. Every identifier which does match something must match the same component
-   *  Non-matches are OK
-   */
-  @Transient
-  static def secureIdentifierLookup(candidate_identifiers) {
-
-    def result = null;
-
-    def base_query = "select distinct c.fromComponent from Combo as c where c.toComponent in ( :l )"
-    def identifier_list = []
-
-    candidate_identifiers.each { id ->
-      identifier_list.add(Identifier.lookupOrCreateCanonicalIdentifier(id.namespace, id.value))
-    }
-
-    def qresult = Combo.executeQuery(base_query, [l: identifier_list], [readOnly: true]);
-
-    if (qresult.size() == 1) {
-      result = qresult[0]
-    } else if (qresult.size() == 0) {
-    } else {
-      def matching_identifiers = qresult.collect { it.id }
-      throw new Exception("secureIdentifierLookup found multiple (${qresult.size()}) matching components (${matching_identifiers}) for a supposedly unique set of identifiers: ${candidate_identifiers}");
-    }
-
-    result
-  }
-
   @Transient
   public String getDisplayName() {
     return name
@@ -1439,6 +1410,7 @@ where cp.owner = :c
       ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)", [component: batch]);
       ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)", [component: batch]);
       KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)", [component: batch])
+      ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
 
       result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)", [component: batch])
     }

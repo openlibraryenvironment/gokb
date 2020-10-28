@@ -116,7 +116,7 @@ class TSVIngestionService {
           id_value = grailsApplication.config.identifiers.formatters[id_def.type](id_value)
         }
 
-        Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_value)
+        Identifier the_id = componentLookupService.lookupOrCreateCanonicalIdentifier(id_def.type, id_value)
         // Add the id.
 
         result['ids'] << the_id
@@ -298,7 +298,7 @@ class TSVIngestionService {
       // If we made a good match on a class one identifier, but the title in the DB starts with
       // Unknown title, then this is a title whos identifier has come from loading a file of identifiers
       // we should use the title given instead.
-      if ( ( matches[0] ) && 
+      if ( ( matches[0] ) &&
            ( ( matches[0].name?.startsWith('Unknown Title') && ( title?.length() > 0 ) ) || ( matches[0].name == null ) ) ) {
         log.debug("${matches[0].name} is an unknown title - updating to ${title}");
         the_title = matches[0]
@@ -519,7 +519,7 @@ class TSVIngestionService {
     double threshold = grailsApplication.config.cosine.good_threshold
 
     // Work out the distance between the 2 title strings.
-    double distance = 0; 
+    double distance = 0;
 
     // Don't f-about if the title exactly matches the one from the DB we are all-systems-go.
     if ( ti.getName().equalsIgnoreCase(title) ) {
@@ -756,7 +756,7 @@ class TSVIngestionService {
           def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
           editor_role_id = editor_role.id
 
- 
+
           if ( other_params.curatoryGroup ) {
             the_package.addCuratoryGroupIfNotPresent(other_params.curatoryGroup)
             the_package.save(flush:true, failOnError:true);
@@ -826,7 +826,7 @@ class TSVIngestionService {
                                'from TitleInstancePackagePlatform as tipp, Combo as c '+
                                'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
                               [pkg:the_package_id,dt:ingest_systime]);
-  
+
               q.each { tipp ->
                 log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}");
                 // tipp.deleteSoft()
@@ -851,7 +851,7 @@ class TSVIngestionService {
             job.message(it)
           }
         }
- 
+
         long processing_elapsed = System.currentTimeMillis()-startTime
         def average_milliseconds_per_row = kbart_beans.size() > 0 ? processing_elapsed.intdiv(kbart_beans.size()) : 0;
         // 3600 seconds in an hour, * 1000ms in a second
@@ -872,7 +872,7 @@ class TSVIngestionService {
             def update_agent = User.findByUsername('IngestAgent')
             // insertBenchmark updateBenchmark
             def p = Package.lock(the_package_id)
-            if ( p.insertBenchmark == null ) 
+            if ( p.insertBenchmark == null )
               p.insertBenchmark=processing_elapsed;
             p.lastUpdateComment="Direct ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
             p.lastUpdatedBy=update_agent
@@ -993,7 +993,7 @@ class TSVIngestionService {
         log.debug(the_kbart.online_identifier)
 
         def identifiers = []
-        if ( ( the_kbart.online_identifier ) && ( the_kbart.online_identifier.trim().length() > 0 ) ) 
+        if ( ( the_kbart.online_identifier ) && ( the_kbart.online_identifier.trim().length() > 0 ) )
           identifiers << [type:row_specific_config.identifierMap.online_identifier, value:the_kbart.online_identifier]
 
         if ( the_kbart.print_identifier && ( the_kbart.print_identifier.trim().length() > 0 ) )
@@ -1031,7 +1031,7 @@ class TSVIngestionService {
         if ( identifiers.size() > 0 ) {
 
           def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_config, user, the_kbart.publication_type)
-          // should be def title = titleLookupService.find([title:the_kbart.publication_title, 
+          // should be def title = titleLookupService.find([title:the_kbart.publication_title,
           //                                                identifiers:identifiers,
           //                                                publisher_name:the_kbart.publisher_name],
           //                                                null/*user*/, null/*project*/, row_specific_config.defaultTypeName)
@@ -1215,7 +1215,7 @@ class TSVIngestionService {
                                          toComponent:tipp,
                                          status:status_active,
                                          type:tipp_platform_combo_type).save(flush:true, failOnError:true);  // Platform.HostedTipps
-      
+
 
     } else {
       log.debug("found a tipp to update")
@@ -1276,7 +1276,7 @@ class TSVIngestionService {
 
 
         // If we don't currently have a value OR we have a value which is not the same as the one supplied
-        if ( ( current_value == null ) || 
+        if ( ( current_value == null ) ||
              ( ! current_value.equals(value_from_file) ) ) {
           log.debug("${current_value} !=  ${value_from_file} so set...");
           tipp."set${field}"(proptype, value_from_file)
@@ -1326,9 +1326,9 @@ class TSVIngestionService {
 
         def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
         def newpkg = new Package(
-                                 name:packageName, 
-                                 normname:norm_pkg_name, 
-                                 source:source, 
+                                 name:packageName,
+                                 normname:norm_pkg_name,
+                                 source:source,
                                  status: status_current,
                                  description:other_params?.description)
 
@@ -1340,7 +1340,7 @@ class TSVIngestionService {
             def providers = org.gokb.cred.Org.findAllByNormname(norm_provider_name)
             if ( providers.size() == 0 )
               provider = new Org(name:providerName, normname:norm_provider_name).save(flush:true, failOnError:true);
-            else if ( providers.size() == 1 ) 
+            else if ( providers.size() == 1 )
               provider = providers[0]
             else
               log.error("Multiple orgs with name ${providerName}/${norm_provider_name} -- unable to set package provider");
@@ -1374,7 +1374,7 @@ class TSVIngestionService {
     }
 
     // The request can now have additional package level properties that we need to process.
-    // other_params can contain 'pkg.' properties. 
+    // other_params can contain 'pkg.' properties.
     handlePackageProperties(result, other_params)
 
     log.debug("handlePackage returns ${result}");
@@ -1385,7 +1385,7 @@ class TSVIngestionService {
     def package_changed = false;
     packageProperties.each { pp ->
       // consider See if pp.regex matches any of the properties
-      props.keySet().grep(pp.regex).each { prop -> 
+      props.keySet().grep(pp.regex).each { prop ->
         log.debug("Property ${prop} matched config ${pp}");
         switch ( pp.type ) {
           case 'typeValueFunction':
@@ -1677,9 +1677,9 @@ class TSVIngestionService {
 
             if (fileRule.additional!=null && !done) {
               if ( data ) {
-                if ( result[fileRule.additional] == null ) 
+                if ( result[fileRule.additional] == null )
                   result[fileRule.additional] = []
-  
+
                 result[fileRule.additional] << data
               }
             } else {
@@ -1692,14 +1692,14 @@ class TSVIngestionService {
         }
       }
 
-      
+
       log.debug("Processing ${unmapped_cols.size()} unmapped columns");
       unmapped_cols.each { unmapped_col_idx ->
         if ( ( unmapped_col_idx < nl.size() ) && ( unmapped_col_idx < header.size() ) ) {
           log.debug("Setting unmapped column idx ${unmapped_col_idx} ${header[unmapped_col_idx]} to ${nl[unmapped_col_idx]}");
           // result.unmapped.add([header[unmapped_col_idx], nl[unmapped_col_idx]]);
           result.unmapped.add([
-                                name:header[unmapped_col_idx], 
+                                name:header[unmapped_col_idx],
                                 value:nl[unmapped_col_idx],
                                 index:unmapped_col_idx
                               ]);
@@ -1838,10 +1838,10 @@ class TSVIngestionService {
 
   // Preflight works through a file adding and verifying titles and platforms, and posing questions which need to be resolved
   // before the ingest proper. We record parameters used so that after recording any corrections we can re-process the file.
-  def preflight( kbart_beans, 
-                 ingest_cfg, 
-                 source, 
-                 packageName, 
+  def preflight( kbart_beans,
+                 ingest_cfg,
+                 source,
+                 packageName,
                  providerName  ) {
     log.debug("preflight");
 
@@ -1936,7 +1936,7 @@ class TSVIngestionService {
             }
             else {
               log.debug("No matching rule for fingerprint ${rule_fingerprint}");
-         
+
               result.passed = false;
               result.problems.add (
                 [
@@ -1972,7 +1972,7 @@ class TSVIngestionService {
    */
   def addCustprops(obj, props, prefix) {
     boolean changed = false
-    props.each { k,v -> 
+    props.each { k,v ->
       if ( k.toString().startsWith(prefix) ) {
         log.debug("Got custprop match : ${k} = ${v}");
         def trimmed_name = m.name.substring(prefix.length());

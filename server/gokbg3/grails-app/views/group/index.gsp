@@ -83,8 +83,8 @@
               <td>
                 <g:link controller="resource" action="show" id="${rr.componentToReview?.getClassName()+':'+rr.componentToReview?.id}">${rr.componentToReview}</g:link>
               </td>
-              <td>${rr.descriptionOfCause}</td>
-              <td>${rr.reviewRequest}</td>
+              <td><g:link controller="resource" action="show" id="${'org.gokb.cred.ReviewRequest:' + rr.id}">${rr.descriptionOfCause}</g:link></td>
+              <td><g:link controller="resource" action="show" id="${'org.gokb.cred.ReviewRequest:' + rr.id}">${rr.reviewRequest}</g:link></td>
               <td>${rr.status}</td>
               <td>${Math.round((new Date().getTime()-rr.dateCreated.getTime())/(1000*60*60*24))}</td>
             </tr>
