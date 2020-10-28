@@ -103,7 +103,6 @@ class ProfileController {
 
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def getJobs() {
-    log.debug("Get Jobs for profile")
     def result = [:]
     def max = params.limit ? params.int('limit') : 10
     def offset = params.offset ? params.int('offset') : 0

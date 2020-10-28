@@ -21,9 +21,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-/**
- * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
- */
 @Integration
 @Rollback
 class IntegrationControllerSpec extends Specification {
@@ -41,11 +38,11 @@ class IntegrationControllerSpec extends Specification {
   TitleLookupService titleLookupService
 
   def setup() {
-    def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush:true)
-    def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush:true)
-    def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush:true)
-    def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush:true)
-    def test_upd_pkg = Package.findByName('TestTokenPackage') ?: new Package(name: 'TestTokenPackage').save(flush:true)
+    def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush: true)
+    def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush: true)
+    def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush: true)
+    def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush: true)
+    def test_upd_pkg = Package.findByName('TestTokenPackage') ?: new Package(name: 'TestTokenPackage').save(flush: true)
     def user = User.findByUsername('ingestAgent')
     if (!user.apiUserStatus)  {
       UserRole.create(user, Role.findByAuthority('ROLE_API'), true)
@@ -55,21 +52,20 @@ class IntegrationControllerSpec extends Specification {
 
   def cleanup() {
     CuratoryGroup.findByName('TestGroup1')?.expunge()
+    CuratoryGroup.findByName('TestGroup2')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
     Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
-    Package.findByName('TestTokenPackage')?.expunge()
+    Package pkg = Package.findByName('TestTokenPackage')
+    pkg?.expunge()
     UpdateToken.findByValue('TestUpdateToken')?.delete()
     TitleInstance.findAllByName("Acta cytologica")?.each { title ->
-      ComponentPrice.findAllByOwner(title)?.each { price ->
-        price?.delete()
-      }
       title.expunge()
     }
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
       title.expunge()
     }
-
+    Identifier.findByValue('zdb:2256676-4')?.expunge()
   }
 
   void "Test assertGroup"() {
@@ -99,13 +95,13 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "identifiers" : [
+      "identifiers": [
         [
-            "type" : "global",
-            "value" : "org-test-id-acs"
+          "type" : "global",
+          "value": "org-test-id-acs"
         ]
       ],
-      "name" : "TestOrgAcs"
+      "name"       : "TestOrgAcs"
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertOrg") {
       auth('admin', 'admin')
@@ -116,7 +112,7 @@ class IntegrationControllerSpec extends Specification {
     resp.json.message != null
     resp.json.message.startsWith('Added')
     expect: "Find item by name only returns one item"
-    def matching_orgs = Org.executeQuery('select o from Org as o where o.name = :n',[n:json_record.name]);
+    def matching_orgs = Org.executeQuery('select o from Org as o where o.name = :n', [n: json_record.name]);
     matching_orgs.size() == 1
     matching_orgs[0].id == resp.json.orgId
     matching_orgs[0].ids?.size() == 1
@@ -126,8 +122,8 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "platformName" : "TestPlt1",
-      "name" : "TestPlt1",
+      "platformName": "TestPlt1",
+      "name"        : "TestPlt1",
       "platformUrl" : "https://acstest.url"
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePlatform") {
@@ -337,7 +333,7 @@ class IntegrationControllerSpec extends Specification {
           "accessStart": "",
           "identifiers": [
             [
-              "type": "global",
+              "type" : "global",
               "value": "testTippId"
             ]
           ],
@@ -426,9 +422,9 @@ class IntegrationControllerSpec extends Specification {
       ],
       "tipps"        : [
         [
-          "accessEnd"  : "",
-          "accessStart": "",
-          "coverage"   : [
+          "accessEnd"   : "",
+          "accessStart" : "",
+          "coverage"    : [
             [
               "coverageDepth": "Fulltext",
               "coverageNote" : "NL-DE;  1.1953 - 43.1995",
@@ -441,12 +437,12 @@ class IntegrationControllerSpec extends Specification {
               "startVolume"  : "1"
             ]
           ],
-          "hostPlatform" : [
-            "name" : "ACS Publications",
-            "primaryUrl" : "https://pubs.acs.org"
+          "hostPlatform": [
+            "name"      : "ACS Publications",
+            "primaryUrl": "https://pubs.acs.org"
           ],
-          "status"     : "Current",
-          "title"      : [
+          "status"      : "Current",
+          "title"       : [
             "identifiers": [
               [
                 "type" : "zdb",
@@ -464,7 +460,7 @@ class IntegrationControllerSpec extends Specification {
             "name"       : "Journal of agricultural and food chemistry",
             "type"       : "Serial"
           ],
-          "url"        : "http://pubs.acs.org/journal/jafcau"
+          "url"         : "http://pubs.acs.org/journal/jafcau"
         ]
       ]
     ]
@@ -673,76 +669,90 @@ class IntegrationControllerSpec extends Specification {
     expect: "prices are set correctly"
     sleep(400)
     def title = TitleInstance.findById(resp.json.results[0].titleId)
-    title?.prices?.size() == 2
-    title?.subjectArea
-    title?.series
+    title.prices?.size() == 2
   }
 
   void "Test package update"() {
     given:
     def json_record = [
-      "packageHeader" : [
-        "breakable" : "No",
-        "consistent" : "Yes",
-        "editStatus" : "In Progress",
-        "listStatus": "Checked",
-        "fixed" : "No",
-        "global" : "Consortium",
-        "identifiers" : [
+      "packageHeader": [
+        "breakable"      : "No",
+        "consistent"     : "Yes",
+        "editStatus"     : "In Progress",
+        "listStatus"     : "Checked",
+        "fixed"          : "No",
+        "global"         : "Consortium",
+        "identifiers"    : [
           [
             "type" : "isil",
-            "value" : "ZDB-1-ACS"
+            "value": "ZDB-1-ACS"
           ]
         ],
-        "name" : "American Chemical Society: ACS Legacy Archives: UpdateListStatus",
-        "nominalPlatform" : [
-          "name" : "ACS Publications",
-          "primaryUrl" : "https://pubs.acs.org"
+        "name"           : "American Chemical Society: ACS Legacy Archives: UpdateListStatus",
+        "nominalPlatform": [
+          "name"      : "ACS Publications",
+          "primaryUrl": "https://pubs.acs.org"
         ],
-        "nominalProvider" : "American Chemical Society"
+        "nominalProvider": "American Chemical Society"
       ],
-      "tipps" : [
+      "tipps"        : [
         [
-          "accessEnd" : "",
-          "accessStart" : "",
-          "coverage" : [
+          "accessEnd"  : "",
+          "accessStart": "",
+          "coverage"   : [
+            [
+              "coverageDepth": "Fulltext",
+              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+              "embargo"      : "",
+              "endDate"      : "1995",
+              "endIssue"     : "",
+              "endVolume"    : "43",
+              "startDate"    : "1953-01",
+              "startIssue"   : "",
+              "startVolume"  : "1"
+            ]
+          ],
+          "medium"     : "Electronic",
+          "platform"   : [
+            "name"      : "ACS Publications",
+            "primaryUrl": "https://pubs.acs.org"
+          ],
+          "prices"     : [
+            [
+              "type"     : "list",
+              "currency" : "EUR",
+              "amount"   : 123.45,
+              "startDate": "2010-01-31"
+            ],
+            [
+              "type"     : "topup",
+              "currency" : "USD",
+              "amount"   : 43.12,
+              "startDate": "2020-01-01"
+            ]
+          ],
+          "series"     : "Mystery Cloud",
+          "status"     : "Current",
+          "subjectArea": "Fringe",
+          "title"      : [
+            "identifiers": [
               [
-                "coverageDepth" : "Fulltext",
-                "coverageNote" : "NL-DE;  1.1953 - 43.1995",
-                "embargo" : "",
-                "endDate" : "1995",
-                "endIssue" : "",
-                "endVolume" : "43",
-                "startDate" : "1953-01",
-                "startIssue" : "",
-                "startVolume" : "1"
-              ]
-          ],
-          "medium" : "Electronic",
-          "platform" : [
-            "name" : "ACS Publications",
-            "primaryUrl" : "https://pubs.acs.org"
-          ],
-          "status" : "Current",
-          "title" : [
-              "identifiers" : [
-                [
-                    "type" : "zdb",
-                    "value" : "1483109-0"
-                ],
-                [
-                    "type" : "eissn",
-                    "value" : "1520-5118"
-                ],
-                [
-                    "type" : "issn",
-                    "value" : "0021-8561"
-                ]
+                "type" : "zdb",
+                "value": "1483109-0"
               ],
-              "name" : "Journal of agricultural and food chemistry",
-              "type" : "Serial"
+              [
+                "type" : "eissn",
+                "value": "1520-5118"
+              ],
+              [
+                "type" : "issn",
+                "value": "0021-8561"
+              ]
+            ],
+            "name"       : "Journal of agricultural and food chemistry",
+            "type"       : "Serial"
           ],
-          "url" : "http://pubs.acs.org/journal/jafcau"
+          "url"        : "http://pubs.acs.org/journal/jafcau"
         ]
       ]
     ]
@@ -764,83 +774,101 @@ class IntegrationControllerSpec extends Specification {
     expect: "The TIPP coverage dates are correctly set"
     def pkg = Package.get(resp1.json.pkgId)
     pkg.tipps?.size() == 1
+    pkg.tipps[0].subjectArea == "Fringe"
+    pkg.tipps[0].prices.size() == 2
     pkg.listStatus?.value == "In Progress"
   }
 
   void "test update package via token"() {
     given:
     def json_record = [
-      "updateToken":"TestUpdateToken",
-      "packageHeader" : [
-        "breakable" : "No",
-        "consistent" : "Yes",
-        "editStatus" : "In Progress",
-        "listStatus": "Checked",
-        "fixed" : "No",
-        "global" : "Consortium",
-        "identifiers" : [
+      "updateToken"  : "TestUpdateToken",
+      "packageHeader": [
+        "breakable"      : "No",
+        "consistent"     : "Yes",
+        "editStatus"     : "In Progress",
+        "listStatus"     : "Checked",
+        "fixed"          : "No",
+        "global"         : "Consortium",
+        "identifiers"    : [
           [
             "type" : "isil",
-            "value" : "ZDB-1-ACS"
+            "value": "ZDB-1-ACS"
           ]
         ],
-        "name" : "TestTokenPackageUpdate",
-        "nominalPlatform" : [
-          "name" : "ACS Publications",
-          "primaryUrl" : "https://pubs.acs.org"
+        "name"           : "TestTokenPackageUpdate",
+        "nominalPlatform": [
+          "name"      : "ACS Publications",
+          "primaryUrl": "https://pubs.acs.org"
         ],
-        "nominalProvider" : "American Chemical Society"
+        "nominalProvider": "American Chemical Society"
       ],
-      "tipps" : [
+      "tipps"        : [
         [
-          "accessEnd" : "",
-          "accessStart" : "",
-          "coverage" : [
+          "accessEnd"  : "",
+          "accessStart": "",
+          "coverage"   : [
+            [
+              "coverageDepth": "Fulltext",
+              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+              "embargo"      : "",
+              "endDate"      : "1995",
+              "endIssue"     : "",
+              "endVolume"    : "43",
+              "startDate"    : "1953-01",
+              "startIssue"   : "",
+              "startVolume"  : "1"
+            ]
+          ],
+          "medium"     : "Electronic",
+          "platform"   : [
+            "name"      : "ACS Publications",
+            "primaryUrl": "https://pubs.acs.org"
+          ],
+          "prices"     : [
+            [
+              "type"     : "list",
+              "currency" : "EUR",
+              "amount"   : 123.45,
+              "startDate": "2010-01-31"
+            ],
+            [
+              "type"     : "topup",
+              "currency" : "USD",
+              "amount"   : 43.12,
+              "startDate": "2020-01-01"
+            ]
+          ],
+          "status"     : "Current",
+          "series"     : "Mystery Cloud",
+          "subjectArea": "Fringe",
+          "title"      : [
+            "identifiers"      : [
               [
-                "coverageDepth" : "Fulltext",
-                "coverageNote" : "NL-DE;  1.1953 - 43.1995",
-                "embargo" : "",
-                "endDate" : "1995",
-                "endIssue" : "",
-                "endVolume" : "43",
-                "startDate" : "1953-01",
-                "startIssue" : "",
-                "startVolume" : "1"
+                "type" : "zdb",
+                "value": "1483109-0"
+              ],
+              [
+                "type" : "eissn",
+                "value": "1520-5118"
+              ],
+              [
+                "type" : "issn",
+                "value": "0021-8561"
               ]
+            ],
+            "publisher_history": [
+              [
+                "endDate"  : "",
+                "name"     : "ACS TestOrg",
+                "startDate": "1990",
+                "status"   : ""
+              ]
+            ],
+            "name"             : "Journal of agricultural and food chemistry",
+            "type"             : "Serial"
           ],
-          "medium" : "Electronic",
-          "platform" : [
-            "name" : "ACS Publications",
-            "primaryUrl" : "https://pubs.acs.org"
-          ],
-          "status" : "Current",
-          "title" : [
-              "identifiers" : [
-                [
-                    "type" : "zdb",
-                    "value" : "1483109-0"
-                ],
-                [
-                    "type" : "eissn",
-                    "value" : "1520-5118"
-                ],
-                [
-                    "type" : "issn",
-                    "value" : "0021-8561"
-                ]
-              ],
-              "publisher_history": [
-                [
-                  "endDate"  : "",
-                  "name"     : "ACS TestOrg",
-                  "startDate": "1990",
-                  "status"   : ""
-                ]
-              ],
-              "name" : "Journal of agricultural and food chemistry",
-              "type" : "Serial"
-          ],
-          "url" : "http://pubs.acs.org/journal/jafcau"
+          "url"        : "http://pubs.acs.org/journal/jafcau"
         ]
       ]
     ]

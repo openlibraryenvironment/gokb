@@ -35,7 +35,7 @@ class OrgController {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -65,7 +65,7 @@ class OrgController {
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -282,6 +282,7 @@ class OrgController {
 
     if (reqBody.providedPlatforms) {
       def plt_list = reqBody.providedPlatforms ?: reqBody.platforms
+      def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
       Set new_plts = []
 
       plt_list.each { plt ->
@@ -323,7 +324,7 @@ class OrgController {
         new_plts.each { c ->
           if (!obj.providedPlatforms.contains(c)) {
             log.debug("Adding new platform ${c}..")
-            obj.providedPlatforms.add(c)
+            def new_combo = new Combo(fromComponent: c, toComponent: obj, type: plt_combo_type).save(flush: true)
           }
           else {
             log.debug("Existing platform ${c}..")

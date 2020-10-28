@@ -19,8 +19,6 @@ class TitleInstance extends KBComponent {
   Date publishedFrom
   Date publishedTo
   String coverImage
-  String series
-  String subjectArea
 
   private static refdataDefaults = [
     "medium" : "Journal",
@@ -350,8 +348,6 @@ class TitleInstance extends KBComponent {
           builder.'type' (this.class.simpleName)
           builder.'OAStatus' (OAStatus?.value)
           builder.'continuingSeries' (continuingSeries?.value)
-          builder.'subjectArea' (subjectArea)
-          builder.'series' (series)
           builder.'publishedFrom' (publishedFrom)
           builder.'publishedTo' (publishedTo)
 
@@ -458,6 +454,24 @@ class TitleInstance extends KBComponent {
                 def platform = tipp.hostPlatform
                 builder.'platform'(['id':platform?.id, 'uuid':platform?.uuid]) {
                   builder.'name' (platform?.name)
+                }
+
+                builder.'subjectArea'(tipp.subjectArea?.trim())
+                builder.'series'(tipp.series?.trim())
+                if (tipp.prices && tipp.prices.size() > 0) {
+                  builder.'prices'() {
+                    tipp.prices.each { price ->
+                      builder.'price' {
+                        builder.'type'(price.priceType.value)
+                        builder.'amount'(price.price)
+                        builder.'currency'(price.currency)
+                        builder.'startDate'(price.startDate)
+                        if (price.endDate) {
+                          builder.'endDate'(price.endDate)
+                        }
+                      }
+                    }
+                  }
                 }
 
                 def cov_statements = tipp.coverageStatements

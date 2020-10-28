@@ -71,6 +71,7 @@ class RestMappingService {
     def embed_active = params['_embed']?.split(',') ?: []
     def include_list = params['_include']?.split(',') ?: null
     def exclude_list = params['_exclude']?.split(',') ?: null
+    def nested = params['nested'] ? true : false
     def base = grailsApplication.config.serverURL + "/rest"
     def curatedClass = obj.respondsTo('curatoryGroups')
     def jsonMap = null
@@ -105,7 +106,7 @@ class RestMappingService {
 
     result['_embedded'] = [:]
 
-    if (embed_active.size() == 0) {
+    if (embed_active.size() == 0 && !nested) {
       if (KBComponent.isAssignableFrom(obj.class)) {
         embed_active = defaultEmbed
       }
@@ -143,7 +144,7 @@ class RestMappingService {
               }
             }
           } else {
-            if ( (embed_active.contains(p.name) && (user?.isAdmin() || p.type != User))  || (p.name == 'reviewRequests' && user?.editorStatus) ) {
+            if ( (embed_active.contains(p.name) && (user?.isAdmin() || p.type != User))  || (!nested && p.name == 'reviewRequests' && user?.editorStatus) ) {
               result['_embedded'][p.name] = []
 
               obj[p.name].each {
@@ -195,14 +196,18 @@ class RestMappingService {
           if( embed_active.contains(cp) ) {
             result['_embedded'][cp] = []
             log.debug("Mapping ManyByCombo ${cp} ${obj[cp]}")
+
             def combos = obj.getCombosByPropertyName(cp)
+            boolean reverse = obj.isComboReverse(cp)
 
             combos.each { c ->
-              def combo_object = getEmbeddedJson((c.fromComponent == obj ? c.toComponent : c.fromComponent), user)
-              log.debug("Combo Status: ${c.status}")
+              def linked_obj = getEmbeddedJson(reverse ? c.fromComponent : c.toComponent, user)
 
-              if (c.status == RefdataCategory.lookup('Combo.Status', 'Active')) {
-                result['_embedded'][cp] << combo_object
+              if (c.status?.value == 'Active') {
+                result['_embedded'][cp] << linked_obj
+              }
+              else {
+                log.debug("Skipping ${c.status.value} combo..")
               }
             }
           }
@@ -222,6 +227,7 @@ class RestMappingService {
         result.allocatedGroups << [name: it.group.name, id: it.group.id]
       }
     }
+
     result
   }
 
@@ -475,7 +481,6 @@ class RestMappingService {
     def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
     def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
-    def combo_expired = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_EXPIRED)
     def id_combos = obj.getCombosByPropertyName('ids')
     def errors = []
     Set new_ids = []
@@ -503,7 +508,7 @@ class RestMappingService {
 
             try {
               if (ns) {
-                id = Identifier.lookupOrCreateCanonicalIdentifier(ns, i.value)
+                id = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, i.value)
               }
             }
             catch (grails.validation.ValidationException ve) {
@@ -537,13 +542,13 @@ class RestMappingService {
           def dupe = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?",[combo_id_type, obj, i])
 
           if (dupe.size() == 0) {
-            obj.ids.add(i)
+            def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush:true)
           }
           else if (dupe.size() == 1 ) {
             if (dupe[0].status == combo_deleted) {
               log.debug("Matched ID combo was marked as deleted!")
-              dupe[0].status = combo_active
-              dupe[0].save(flush:true)
+              dupe[0].delete(flush:true)
+              def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush:true)
             }
             else {
               log.debug("Not adding duplicate ..")
@@ -566,6 +571,7 @@ class RestMappingService {
             element = items.next();
             if (!new_ids.contains(element.toComponent)) {
               // Remove.
+              log.debug("Removing newly missing ID ${element.toComponent}")
               element.status = combo_deleted
             }
           }
@@ -610,7 +616,7 @@ class RestMappingService {
     if (errors.size() == 0) {
       new_cgs.each { c ->
         if (!obj.curatoryGroups.contains(c)) {
-          obj.curatoryGroups.add(c)
+          def new_combo = new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush:true)
         } else {
           log.debug("Existing cg ${c}..")
         }
@@ -774,6 +780,7 @@ class RestMappingService {
   public def updatePublisher(obj, new_pubs, boolean remove = true) {
     def errors = []
     def publisher_combos = obj.getCombosByPropertyName('publisher')
+    def combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
 
     String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
     String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
@@ -810,7 +817,7 @@ class RestMappingService {
       }
 
       if (!found) {
-        obj.publisher.add(publisher)
+        def new_combo = new Combo(fromComponent: obj, toComponent: publisher, type: combo_type).save(flush: true)
       } else {
         log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
       }
@@ -902,7 +909,7 @@ class RestMappingService {
    */
 
   public def getEmbeddedJson(obj, user) {
-    def pars = ['_embed': null]
+    def pars = ['nested': true]
     log.debug("Embedded object ${obj}")
     mapObjectToJson(obj, pars, user)
   }
