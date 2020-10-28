@@ -691,7 +691,6 @@ class TitleInstancePackagePlatform extends KBComponent {
         }
 
         def old_cs = tipp.coverageStatements
-
         if (new_ids?.size() > 0) {
           for (def cs : old_cs) {
             if (!new_ids.contains(cs.id)) {
