@@ -23,19 +23,19 @@ import grails.gorm.transactions.Transactional
 class ConcurrencyManagerService {
 
   def executorService
-  
+
   private static final Map<String, PromiseFactory> pools
-  
+
   static {
     // Set the default promise factory and limit to 100 threads.
     Promises.setPromiseFactory(
       new CachedThreadPoolPromiseFactory(100, 60L, TimeUnit.SECONDS)
     )
-    
+
     // Immutable pool map.
     pools = Collections.unmodifiableMap (['smallJobs' : new CachedThreadPoolPromiseFactory(1, 60L, TimeUnit.SECONDS)])
   }
-  
+
 
   public class Job implements Promise, Future {
     int id
@@ -87,26 +87,26 @@ class ConcurrencyManagerService {
     @Override
     public synchronized boolean isDone () {
       task.done
-    } 
-    
+    }
+
     @Override
     public Job accept(value) {
       this.task.accept(value)
       this
     }
-    
+
     @Override
     public Job onComplete(Closure callable) {
       this.task.onComplete(callable)
       this
     }
-    
+
     @Override
     public Job onError(Closure callable) {
       this.task.onComplete(callable)
       this
     }
-    
+
     @Override
     public Job then(Closure callable) {
       this.task.onComplete(callable)
@@ -142,7 +142,7 @@ class ConcurrencyManagerService {
 
       this
     }
-    
+
     /**
      * Starts the background task with a named pool.
      * @return this Job
@@ -202,7 +202,7 @@ class ConcurrencyManagerService {
   }
 
   GrailsApplication grailsApplication
-  
+
   static scope = "singleton"
 
 
@@ -269,10 +269,10 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public List getUserJobs(int user_id, int max, int offset) {
+  public Map getUserJobs(int user_id, int max, int offset) {
     def allJobs = getJobs()
     def selected = []
-    def result = []
+    def result = [:]
 
     if (user_id == null) {
       return null
@@ -288,16 +288,19 @@ class ConcurrencyManagerService {
           description: v.description,
           begun: v.begun,
           startTime: v.startTime,
-          endTime: v.endTime
+          endTime: v.endTime,
+          cancelled: v.isCancelled()
         ]
       }
     }
+
+    result.total = selected.size()
 
     if (offset > 0) {
       selected = selected.drop(offset)
     }
 
-    result = selected.take(max)
+    result.records = selected.take(max)
 
     // Return the jobs.
     result
@@ -310,10 +313,10 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public List getGroupJobs(int group_id, int max = 10, int offset = 0) {
+  public Map getGroupJobs(int group_id, int max = 10, int offset = 0) {
     def allJobs = getJobs()
     def selected = []
-    def result = []
+    def result = [:]
 
     if (group_id == null) {
       return null
@@ -331,16 +334,19 @@ class ConcurrencyManagerService {
           description: v.description,
           begun: v.begun,
           startTime: v.startTime,
-          endTime: v.endTime
+          endTime: v.endTime,
+          cancelled: v.isCancelled()
         ]
       }
     }
+
+    result.total = selected.size()
 
     if (offset > 0) {
       selected = selected.drop(offset)
     }
 
-    result = selected.take(max)
+    result.records = selected.take(max)
 
     // Return the jobs.
     result

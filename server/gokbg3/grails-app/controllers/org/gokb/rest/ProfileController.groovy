@@ -112,7 +112,85 @@ class ProfileController {
     User user = User.get(springSecurityService.principal.id)
     def errors = [:]
 
-    result.data = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+    result = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+
+    render result as JSON
+  }
+
+  @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
+  def cancelJob() {
+    def result = [result: 'OK']
+    def jobs = concurrencyManagerService.getJobs()
+    def selected = null
+    def authorized = false
+
+    job.each { k, v ->
+      if (v.id == params.id && (user.superUserStatus || v.ownerId == user.id)) {
+        selected = v
+        authorized = true
+      }
+    }
+
+    if (selected) {
+      if (authorized) {
+        if (selected.isDone()) {
+          result.message = "This Job was already finished!"
+        }
+        else {
+          selected.cancel(true)
+        }
+      }
+      else {
+        result.result = 'ERROR'
+        response.status = 403
+        result.message = "User is not authorized to cancel this job!"
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      response.status = 404
+      result.message = "Unable to retrieve Job with ID ${params.id}"
+    }
+
+    render result as JSON
+  }
+
+  @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
+  def deleteJob() {
+    def result = [result: 'OK']
+    def jobs = concurrencyManagerService.getJobs()
+    def selected = null
+    def authorized = false
+
+    job.each { k, v ->
+      if (v.id == params.id && (user.superUserStatus || v.ownerId == user.id)) {
+        selected = v
+        authorized = true
+      }
+    }
+
+    if (selected) {
+      if (authorized) {
+        if (selected.isDone()) {
+          selected = concurrencyManagerService.getJob()
+        }
+        else {
+          result.result = 'ERROR'
+          response.status = 400
+          result.message = "This job is still running. Please cancel it first before removing it!"
+        }
+      }
+      else {
+        result.result = 'ERROR'
+        response.status = 403
+        result.message = "User is not authorized to delete this job!"
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      response.status = 404
+      result.message = "Unable to retrieve Job with ID ${params.id}"
+    }
 
     render result as JSON
   }

@@ -945,7 +945,12 @@ class IntegrationController {
               def valid = true
               Boolean curated_pkg = false;
               def is_curator = null;
+
               if (the_pkg) {
+                job_result.pkgId = the_pkg.id
+                job_result.uuid = the_pkg.uuid
+                job_result.name = the_pkg.name
+
                 if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
                   is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
 
@@ -1447,9 +1452,6 @@ class IntegrationController {
                         pkg_obj.save(flush:true)
                       }
                     }
-
-                    job_result.pkgId = the_pkg.id
-                    job_result.uuid = the_pkg.uuid
                     log.debug("Elapsed tipp processing time: ${System.currentTimeMillis()-tipp_upsert_start_time} for ${tippctr} records")
                   }
                 }
@@ -2100,46 +2102,69 @@ class IntegrationController {
     book_changed
   }
 
-  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'])
   def getJobInfo() {
     def result = [ 'result' : 'OK', 'params' : params ]
-    User user = springSecurityService.currentUser
+    User user = null
     Integer id = params.int('id')
 
-    if (id == null){
+    if (id == null) {
       result.result = "ERROR"
+      response.setStatus(400)
       result.message = "Request is missing an id parameter."
     }
-    else{
-      Job job = concurrencyManagerService?.jobs?.containsKey(id) ? concurrencyManagerService.jobs[id] : null
+    else {
+      if (springSecurityService.isLoggedIn()) {
+        user = springSecurityService.currentUser
+      }
+      else if (params.updateToken?.trim()) {
+        def updateToken = UpdateToken.findByValue(params.updateToken)
 
-      if ( job ) {
-        log.debug("${job}")
+        if (updateToken) {
+          user = updateToken.updateUser
+        }
+        else {
+          log.error("Unable to reference update token!")
+          result.message = "Unable to reference update token!"
+          response.setStatus(400)
+          result.result = "ERROR"
+        }
+      }
+      else {
+        response.setStatus(401)
+        response.setHeader('WWW-Authenticate', 'Basic realm="gokb"')
+      }
 
-        if (user.superUserStatus || (job.ownerId && job.ownerId == user.id)) {
-          result.description = job.description
-          result.startTime = job.startTime
+      if (user) {
+        Job job = concurrencyManagerService?.jobs?.containsKey(id) ? concurrencyManagerService.jobs[id] : null
 
-          if ( job.endTime ) {
-            result.finished = true
-            result.endTime = job.endTime
-            result.job_result = job.get()
+        if ( job ) {
+          log.debug("${job}")
+
+          if (user.superUserStatus || (job.ownerId && job.ownerId == user.id)) {
+            result.description = job.description
+            result.startTime = job.startTime
+
+            if ( job.endTime ) {
+              result.finished = true
+              result.endTime = job.endTime
+              result.job_result = job.get()
+            }
+            else {
+              result.finished = false
+              result.progress = job.progress
+            }
           }
           else {
-            result.finished = false
-            result.progress = job.progress
+            result.result = "ERROR"
+            response.setStatus(403)
+            result.message = "No permission to view job with ID ${id}."
           }
         }
         else {
           result.result = "ERROR"
-          response.setStatus(403)
-          result.message = "No permission to view job with ID ${id}."
+          response.setStatus(404)
+          result.message = "Could not find job with ID ${id}."
         }
-      }
-      else {
-        result.result = "ERROR"
-        response.setStatus(404)
-        result.message = "Could not find job with ID ${id}."
       }
     }
     render result as JSON
