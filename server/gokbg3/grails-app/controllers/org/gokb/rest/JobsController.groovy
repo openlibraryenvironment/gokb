@@ -12,6 +12,8 @@ import java.util.concurrent.CancellationException
 
 class JobsController {
 
+  static namespace = 'rest'
+
   def springSecurityService
   ConcurrencyManagerService concurrencyManagerService
 
@@ -99,6 +101,7 @@ class JobsController {
         result.startTime = job.startTime
         result.messages = job.messages
         result.progress = job.progress
+        result.linkedItem = job.linkedItem
         result.begun = job.begun
 
         if ( job.isDone() ) {

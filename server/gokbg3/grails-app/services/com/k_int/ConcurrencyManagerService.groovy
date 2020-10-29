@@ -288,6 +288,7 @@ class ConcurrencyManagerService {
           messages: v.messages,
           description: v.description,
           begun: v.begun,
+          linkedItem: v.linkedItem,
           startTime: v.startTime,
           endTime: v.endTime,
           cancelled: v.isCancelled()
@@ -334,6 +335,7 @@ class ConcurrencyManagerService {
           messages: v.messages,
           description: v.description,
           begun: v.begun,
+          linkedItem: v.linkedItem,
           startTime: v.startTime,
           endTime: v.endTime,
           cancelled: v.isCancelled()

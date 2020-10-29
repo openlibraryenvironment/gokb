@@ -1530,7 +1530,7 @@ class IntegrationController {
           log.debug("Starting job ${background_job}..")
 
           background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
-          background_job.linkedItem = [name: upserted_pkg.name, id: upserted_pkg.id, uuid: upserted_pkg.uuid]
+          background_job.linkedItem = [name: upserted_pkg.name, type: "Package", id: upserted_pkg.id, uuid: upserted_pkg.uuid]
           background_job.message("Starting upsert for Package ${upserted_pkg.name} (uuid: ${upserted_pkg.uuid})".toString())
           background_job.startOrQueue()
           background_job.startTime = new Date()
