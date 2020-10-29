@@ -47,6 +47,7 @@ class ConcurrencyManagerService {
     boolean begun = false;
     String description
     List messages = []
+    Map linkedItem
     int ownerId
     int groupId
 

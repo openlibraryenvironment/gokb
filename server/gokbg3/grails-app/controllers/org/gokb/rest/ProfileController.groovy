@@ -118,78 +118,22 @@ class ProfileController {
   }
 
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
-  def cancelJob() {
-    def result = [result: 'OK']
-    def jobs = concurrencyManagerService.getJobs()
-    def selected = null
-    def authorized = false
+  def cleanupJobs() {
+    def result = [:]
+    def max = params.limit ? params.int('limit') : 10
+    def offset = params.offset ? params.int('offset') : 0
+    def base = grailsApplication.config.serverURL + "/rest"
+    def sort = params._sort ?: null
+    def order = params._order ?: null
+    User user = User.get(springSecurityService.principal.id)
+    def errors = [:]
+    def jobs = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
 
-    job.each { k, v ->
-      if (v.id == params.id && (user.superUserStatus || v.ownerId == user.id)) {
-        selected = v
-        authorized = true
+    jobs.each { k, v ->
+      if (v.endTime || v.cancelled) {
+        def j = concurrencyManagerService.getJob(v.id)
+        log.debug("Removed job ${v.id}")
       }
-    }
-
-    if (selected) {
-      if (authorized) {
-        if (selected.isDone()) {
-          result.message = "This Job was already finished!"
-        }
-        else {
-          selected.cancel(true)
-        }
-      }
-      else {
-        result.result = 'ERROR'
-        response.status = 403
-        result.message = "User is not authorized to cancel this job!"
-      }
-    }
-    else {
-      result.result = 'ERROR'
-      response.status = 404
-      result.message = "Unable to retrieve Job with ID ${params.id}"
-    }
-
-    render result as JSON
-  }
-
-  @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
-  def deleteJob() {
-    def result = [result: 'OK']
-    def jobs = concurrencyManagerService.getJobs()
-    def selected = null
-    def authorized = false
-
-    job.each { k, v ->
-      if (v.id == params.id && (user.superUserStatus || v.ownerId == user.id)) {
-        selected = v
-        authorized = true
-      }
-    }
-
-    if (selected) {
-      if (authorized) {
-        if (selected.isDone()) {
-          selected = concurrencyManagerService.getJob()
-        }
-        else {
-          result.result = 'ERROR'
-          response.status = 400
-          result.message = "This job is still running. Please cancel it first before removing it!"
-        }
-      }
-      else {
-        result.result = 'ERROR'
-        response.status = 403
-        result.message = "User is not authorized to delete this job!"
-      }
-    }
-    else {
-      result.result = 'ERROR'
-      response.status = 404
-      result.message = "Unable to retrieve Job with ID ${params.id}"
     }
 
     render result as JSON

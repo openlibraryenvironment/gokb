@@ -158,6 +158,11 @@ class UrlMappings {
       get "/package-scopes" (controller: 'refdata', namespace: 'rest', action: 'packageScope')
       get "/coverage-depth" (controller: 'refdata', namespace: 'rest', action: 'coverageDepth')
       get "/review-types" (controller: 'refdata', namespace: 'rest', action: 'reviewType')
+
+      get "/jobs" (controller: 'jobs', namespace: 'rest', action: 'index')
+      get "/jobs/$id" (controller: 'jobs', namespace: 'rest', action: 'show')
+      patch "/jobs/$id/cancel" (controller: 'jobs', namespace: 'rest', action: 'cancel')
+      delete "/jobs/$id" (controller: 'jobs', namespace: 'rest', action: 'delete')
     }
     "/$controller/$action?/$id?" {
       constraints {
