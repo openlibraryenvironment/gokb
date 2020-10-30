@@ -169,6 +169,7 @@ class PackageTestSpec extends AbstractAuthSpec {
       descriptionURL : "https://heise.de",
       fixed          : "Yes",
       global         : "Consortium",
+      globalNote     : "Testing Consortium",
       ids            : [
         [
           "value"    : "1213-123X",
