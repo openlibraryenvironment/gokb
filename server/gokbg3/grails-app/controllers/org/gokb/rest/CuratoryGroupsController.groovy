@@ -58,7 +58,7 @@ class CuratoryGroupsController {
     def curGroup = null
     def base = grailsApplication.config.serverURL + "/rest"
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -114,7 +114,7 @@ class CuratoryGroupsController {
         if (params.status instanceof Integer) {
           def cat = RefdataCategory.findByLabel('ReviewRequest.Status')
           def val = RefdataValue.get(params.status)
-          
+
           if (val && val in cat.values) {
             status = val
           }
@@ -210,7 +210,7 @@ class CuratoryGroupsController {
     def errors = [:]
 
     if (group && (group.users.contains(user) || user.isAdmin())) {
-      result.data = concurrencyManagerService.getGroupJobs(group.id as int, max, offset)
+      result = concurrencyManagerService.getGroupJobs(group.id as int, max, offset)
     }
     log.debug("Return ${result}")
 

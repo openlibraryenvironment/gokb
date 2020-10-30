@@ -177,12 +177,22 @@ class RestMappingService {
           def cval = null
 
           if ( (include_list && include_list?.contains(cp)) || (!include_list && jsonMap?.defaultLinks?.contains(cp)) ) {
+            RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', obj.getComboTypeValue(cp))
+            def chql = null
+            def reverse = obj.isComboReverse(cp)
 
-            cval = obj[cp]
+            if (reverse) {
+              chql = "from Combo as c where c.toComponent = ? and c.type = ?"
+            }
+            else {
+              chql = "from Combo as c where c.fromComponent = ? and c.type = ?"
+            }
+            def combo = Combo.executeQuery(chql, [obj, combo_type])
 
-            if (cval == null) {
+            if (combo.size() == 0) {
               result[cp] = null
             } else {
+              cval = reverse ? combo[0].fromComponent : combo[0].toComponent
               result[cp] = ['id': cval.id, 'name': cval.name, 'type': cval.niceName, 'uuid': cval.uuid]
             }
           }
