@@ -748,6 +748,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'lastUpdated'(lastUpdated ? sdf.format(lastUpdated) : null)
         builder.'format'(format?.value)
         builder.'url'(url ?: "")
+        builder.'name'(name)
         builder.'subjectArea'(subjectArea?.trim())
         builder.'series'(series?.trim())
         builder.'title'([id: ti.id, uuid: ti.uuid]) {
