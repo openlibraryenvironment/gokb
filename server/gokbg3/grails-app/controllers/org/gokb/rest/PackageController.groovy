@@ -130,7 +130,7 @@ class PackageController {
 
     if (reqBody) {
       log.debug("Save package ${reqBody}")
-      def pkg_validation = Package.validateDTO(reqBody)
+      def pkg_validation = packageService.validateDTO(reqBody, request_locale)
       def obj = null
 
       if (pkg_validation.valid) {
@@ -377,7 +377,16 @@ class PackageController {
 
       if (prov) {
         if (!obj.hasErrors() && errors.size() == 0 && prov != obj.provider) {
-          obj.provider = prov
+          def current_combo = Combo.findByFromComponentAndToComponent(obj, prov)
+
+          if (current_combo) {
+            current_combo.delete(flush:true)
+          }
+
+          def combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Provider')
+          def new_combo = new Combo(fromComponent: obj, toComponent: prov, type: combo_type).save(flush:true)
+
+          obj.refresh()
         }
       }
       else {
@@ -397,7 +406,16 @@ class PackageController {
 
       if (plt) {
         if (!obj.hasErrors() && errors.size() == 0 && plt != obj.nominalPlatform) {
-          obj.nominalPlatform = plt
+          def current_combo = Combo.findByFromComponentAndToComponent(obj, plt)
+
+          if (current_combo) {
+            current_combo.delete(flush:true)
+          }
+
+          def combo_type = RefdataCategory.lookup('Combo.Type', 'Package.NominalPlatform')
+          def new_combo = new Combo(fromComponent: obj, toComponent: plt, type: combo_type).save(flush:true)
+
+          obj.refresh()
         }
       }
       else {

@@ -103,7 +103,6 @@ class ProfileController {
 
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def getJobs() {
-    log.debug("Get Jobs for profile")
     def result = [:]
     def max = params.limit ? params.int('limit') : 10
     def offset = params.offset ? params.int('offset') : 0
@@ -113,7 +112,29 @@ class ProfileController {
     User user = User.get(springSecurityService.principal.id)
     def errors = [:]
 
-    result.data = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+    result = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+
+    render result as JSON
+  }
+
+  @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
+  def cleanupJobs() {
+    def result = [:]
+    def max = params.limit ? params.int('limit') : 10
+    def offset = params.offset ? params.int('offset') : 0
+    def base = grailsApplication.config.serverURL + "/rest"
+    def sort = params._sort ?: null
+    def order = params._order ?: null
+    User user = User.get(springSecurityService.principal.id)
+    def errors = [:]
+    def jobs = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+
+    jobs.each { k, v ->
+      if (v.endTime || v.cancelled) {
+        def j = concurrencyManagerService.getJob(v.id)
+        log.debug("Removed job ${v.id}")
+      }
+    }
 
     render result as JSON
   }

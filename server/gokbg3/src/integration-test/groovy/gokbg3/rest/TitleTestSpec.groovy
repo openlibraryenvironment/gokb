@@ -32,9 +32,18 @@ class TitleTestSpec extends AbstractAuthSpec {
     def new_id = Identifier.findByValue('2345-2334') ?: new Identifier(value: '2345-2334', namespace: ns_eissn).save(flush:true)
     def new_org = Org.findByName('TestOrg') ?: new Org(name: 'TestOrg').save(flush:true)
     def test_ti = JournalInstance.findByName("TestJournal") ?: new JournalInstance(name: "TestJournal").save(flush:true)
+    def old_id = Identifier.findByValue('2345-2323') ?: new Identifier(value: '2345-2323', namespace: ns_eissn).save(flush:true)
+    def combo = new Combo(fromComponent: test_ti, toComponent: old_id, type: RefdataCategory.lookup('Combo.Type','KBComponent.Ids')).save(flush:true)
     def test_prev = JournalInstance.findByName("TestPrevJournal") ?: new JournalInstance(name: "TestPrevJournal").save(flush:true)
     def test_next = JournalInstance.findByName("TestNextJournal") ?: new JournalInstance(name: "TestNextJournal").save(flush:true)
     def test_upd_history = JournalInstance.findByName("TestUpdateJournalHistory") ?: new JournalInstance(name: "TestUpdateJournalHistory").save(flush:true)
+  }
+
+  def cleanup() {
+    JournalInstance.findByName("TestPrevJournal")?.expunge()
+    JournalInstance.findByName("TestNextJournal")?.expunge()
+    JournalInstance.findByName("TestUpdateJournalHistory")?.expunge()
+    JournalInstance.findByName("TestJournal")?.expunge()
   }
 
   void "test /rest/titles without token"() {
@@ -93,7 +102,7 @@ class TitleTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/titles?type=journal&ids=1234435-6") {
+    RestResponse resp = rest.get("${urlPath}/rest/titles?type=journal&ids=2345-2323") {
       accept('application/json')
       auth("Bearer $accessToken")
     }
@@ -153,22 +162,6 @@ class TitleTestSpec extends AbstractAuthSpec {
     then:
     // resp.status == 200 // OK
     resp.json?.data?.size() == 2
-  }
-
-  void "test get title history event"() {
-    given:
-    def urlPath = getUrlPath()
-    def id = JournalInstance.findByName("TestJournal").id
-    when:
-    String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/titles/$id/history") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
-    then:
-    resp.status == 200 // OK
-    expect:
-    resp.json?.data?.size() == 1
   }
 
   void "test remove title history event by update"() {

@@ -42,7 +42,7 @@ class TitleController {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -104,7 +104,7 @@ class TitleController {
     def is_curator = true
     Class type = setType(params)
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -265,6 +265,7 @@ class TitleController {
     }
 
     if (errors.size() > 0) {
+      log.debug("Errors: ${errors}")
       result.result = 'ERROR'
       response.setStatus(400)
       result.error = errors

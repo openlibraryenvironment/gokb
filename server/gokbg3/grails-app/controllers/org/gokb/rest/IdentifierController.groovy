@@ -33,7 +33,7 @@ class IdentifierController {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -55,7 +55,7 @@ class IdentifierController {
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -80,7 +80,7 @@ class IdentifierController {
         response.setStatus(404)
         result.code = 404
         result.result = 'ERROR'
-      } 
+      }
     } else {
       result.result = 'ERROR'
       response.setStatus(400)
@@ -114,7 +114,7 @@ class IdentifierController {
         Identifier obj = null
 
         try {
-          obj = Identifier.lookupOrCreateCanonicalIdentifier(ns, reqBody.value, false)
+          obj = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, reqBody.value, false)
         }
         catch (grails.validation.ValidationException ve) {
           log.debug("Identifier ${reqBody} has failed validation!")

@@ -11,6 +11,8 @@ import grails.plugins.orm.auditable.Auditable
 import grails.plugins.orm.auditable.AuditEventType
 import org.gokb.GOKbTextUtils
 
+import java.text.SimpleDateFormat
+
 /**
  * Abstract base class for GoKB Components.
  */
@@ -493,11 +495,11 @@ where cp.owner = :c
   }
 
   @Transient
-  static <T extends KBComponent> T lookupByIO(String idtype, String idvalue) {
+  static KBComponent lookupByIO(String idtype, String idvalue) {
     // println("lookupByIO(${idtype},${idvalue})");
     // Component(ids) -> (fromComponent) Combo (toComponent) -> (identifiedComponents) Identifier
     def result = null
-    def crit = T.createCriteria()
+    def crit = KBComponent.createCriteria()
     def db_results = crit.list {
 
       createAlias('outgoingCombos', 'ogc')
@@ -522,7 +524,7 @@ where cp.owner = :c
 
     switch (db_results.size()) {
       case 1:
-        result = T.get(db_results[0])
+        result = KBComponent.get(db_results[0])
         break
 //      case {it > 1} :
 //        // Error. Should only match 1...
@@ -885,7 +887,8 @@ where cp.owner = :c
     Object o = KBComponent.deproxy(obj)
     if (o != null) {
       // Deproxy the object first to ensure it isn't a hibernate proxy.
-      return (this.getClassName() == o.getClass().name) && (this.getId() == o.getId())
+      boolean r = (this.getClassName() == o.getClass().name) && (this.getId() == o.getId())
+      return r
     }
 
     // Return false if we get here.
@@ -1202,35 +1205,6 @@ where cp.owner = :c
     result
   }
 
-  /**
-   *  Accept a map of namespace:x,identifier:y pairs. Every identifier which does match something must match the same component
-   *  Non-matches are OK
-   */
-  @Transient
-  static def secureIdentifierLookup(candidate_identifiers) {
-
-    def result = null;
-
-    def base_query = "select distinct c.fromComponent from Combo as c where c.toComponent in ( :l )"
-    def identifier_list = []
-
-    candidate_identifiers.each { id ->
-      identifier_list.add(Identifier.lookupOrCreateCanonicalIdentifier(id.namespace, id.value))
-    }
-
-    def qresult = Combo.executeQuery(base_query, [l: identifier_list], [readOnly: true]);
-
-    if (qresult.size() == 1) {
-      result = qresult[0]
-    } else if (qresult.size() == 0) {
-    } else {
-      def matching_identifiers = qresult.collect { it.id }
-      throw new Exception("secureIdentifierLookup found multiple (${qresult.size()}) matching components (${matching_identifiers}) for a supposedly unique set of identifiers: ${candidate_identifiers}");
-    }
-
-    result
-  }
-
   @Transient
   public String getDisplayName() {
     return name
@@ -1404,7 +1378,7 @@ where cp.owner = :c
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component", [component: this]);
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component", [component: this]);
     KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component", [component: this])
-    this.prices.each { p -> p.delete() }
+    KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: this])
     this.delete(failOnError: true)
     result;
   }
@@ -1436,6 +1410,7 @@ where cp.owner = :c
       ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)", [component: batch]);
       ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)", [component: batch]);
       KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)", [component: batch])
+      ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
 
       result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)", [component: batch])
     }
@@ -1537,15 +1512,6 @@ where cp.owner = :c
         }
       }
     }
-    // Prices
-    ComponentPrice[] cps = ComponentPrice.findAllByOwner(this)
-    if (cps) {
-      builder.'prices' {
-        cps.each { cp ->
-          builder.'price'(type: cp.priceType, amount: cp.price, currency: cp.currency, startDate: cp.startDate, endDate: cp.endDate)
-        }
-      }
-    }
   }
 
   // Given the type return a string such as "1.23 GBP" which represents the CURRENT
@@ -1572,13 +1538,15 @@ where cp.owner = :c
   /**
    * Set a price formatted as "nnnn.nn" or "nnnn.nn CUR"
    */
-  public void setPrice(String type, String price) {
+  public void setPrice(String type, String price, Date startDate = null, Date endDate = null) {
     Float f = null;
     RefdataValue rdv_type = null;
     RefdataValue rdv_currency = null;
 
     if (price) {
-      Date now = new Date();
+      Date today = todayNoTime()
+      Date start = startDate ?: today
+      Date end = endDate
 
       String[] price_components = price.trim().split(' ');
       f = Float.parseFloat(price_components[0])
@@ -1588,17 +1556,23 @@ where cp.owner = :c
         rdv_currency = RefdataCategory.lookupOrCreate('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
       }
 
-      // Close out any existing component prices
-      ComponentPrice.executeUpdate('update ComponentPrice set endDate=:now where owner=:t and endDate is null and priceType=:pt', [t: this, now: now, pt: rdv_type]);
-
-      // Create the new component price
       ComponentPrice cp = new ComponentPrice(
         owner: this,
         priceType: rdv_type,
         currency: rdv_currency,
-        startDate: now,
-        endDate: null,
-        price: f).save(flush: true, failOnError: true);
+        startDate: start,
+        endDate: end,
+        price: f)
+      prices = prices ?: []
+      // does this price exist already?
+      if (!prices.contains(cp)) {
+        // set the end date for the current price(s)
+        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:tipp and (endDate is null or endDate>:start) and priceType=:type and currency=:currency' , [start: cp.startDate, tipp: this, type: cp.priceType, currency:cp.currency])
+        cp.save()
+        // enter the new price
+        prices << cp
+        save()
+      }
     }
   }
 
@@ -1621,5 +1595,15 @@ where cp.owner = :c
       }
     }
     result
+  }
+
+  private static Date todayNoTime() {
+    Calendar calendar = Calendar.getInstance();
+    calendar.set(Calendar.HOUR_OF_DAY, 0);
+    calendar.set(Calendar.MINUTE, 0);
+    calendar.set(Calendar.SECOND, 0);
+    calendar.set(Calendar.MILLISECOND, 0);
+
+    return calendar.getTime();
   }
 }
