@@ -335,7 +335,10 @@ select tipp.id,
        tipp.uuid,
        title.uuid,
        plat.uuid,
-       title.status
+       title.status,
+       tipp.series,
+       tipp.subjectArea,
+       tipp.name
     from TitleInstancePackagePlatform as tipp,
          Combo as hostPlatformCombo,
          Combo as titleCombo,
@@ -500,12 +503,15 @@ select tipp.id,
           tipps.each { tipp ->
             builder.'TIPP'(['id': tipp[0], 'uuid': tipp[12]]) {
               builder.'status'(tipp[6]?.value)
+              builder.'name'(tipp[18])
               builder.'lastUpdated'(tipp[11] ? sdf.format(tipp[11]) : null)
+              builder.'series'(tipp[16])
+              builder.'subjectArea'(tipp[17])
               builder.'medium'(tipp[9]?.value)
               builder.'title'(['id': tipp[2], 'uuid': tipp[13]]) {
                 builder.'name'(tipp[1]?.trim())
                 builder.'type'(getTitleClass(tipp[2]))
-                builder.'status'(tipp[15])
+                builder.'status'(tipp[15]?.value)
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
                     builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])

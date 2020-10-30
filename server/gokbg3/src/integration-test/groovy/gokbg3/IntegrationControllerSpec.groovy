@@ -44,10 +44,10 @@ class IntegrationControllerSpec extends Specification {
     def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush: true)
     def test_upd_pkg = Package.findByName('TestTokenPackage') ?: new Package(name: 'TestTokenPackage').save(flush: true)
     def user = User.findByUsername('ingestAgent')
-    if (!user.apiUserStatus)  {
+    if (!user.apiUserStatus) {
       UserRole.create(user, Role.findByAuthority('ROLE_API'), true)
     }
-    def pkg_token = UpdateToken.findByValue('TestUpdateToken') ?: new UpdateToken(value: 'TestUpdateToken', pkg: test_upd_pkg, updateUser: user).save(flush:true)
+    def pkg_token = UpdateToken.findByValue('TestUpdateToken') ?: new UpdateToken(value: 'TestUpdateToken', pkg: test_upd_pkg, updateUser: user).save(flush: true)
   }
 
   def cleanup() {
@@ -713,6 +713,7 @@ class IntegrationControllerSpec extends Specification {
             ]
           ],
           "medium"     : "Electronic",
+          "name"       : "TIPP Name",
           "platform"   : [
             "name"      : "ACS Publications",
             "primaryUrl": "https://pubs.acs.org"
@@ -774,6 +775,7 @@ class IntegrationControllerSpec extends Specification {
     expect: "The TIPP coverage dates are correctly set"
     def pkg = Package.get(resp1.json.pkgId)
     pkg.tipps?.size() == 1
+    pkg.tipps[0].name == "TIPP Name"
     pkg.tipps[0].subjectArea == "Fringe"
     pkg.tipps[0].prices.size() == 2
     pkg.listStatus?.value == "In Progress"
@@ -821,10 +823,12 @@ class IntegrationControllerSpec extends Specification {
             ]
           ],
           "medium"     : "Electronic",
+          "name"       : "TippName for Journal of agricultural and food chemistry",
           "platform"   : [
             "name"      : "ACS Publications",
             "primaryUrl": "https://pubs.acs.org"
           ],
+          "status"     : "Current",
           "prices"     : [
             [
               "type"     : "list",
@@ -884,6 +888,7 @@ class IntegrationControllerSpec extends Specification {
     sleep(200)
     def pkg = Package.get(resp.json.pkgId)
     pkg.tipps?.size() == 1
+    pkg.tipps[0].name.startsWith("TippName")
     pkg.lastUpdatedBy == User.findByUsername('ingestAgent')
     pkg.name == "TestTokenPackageUpdate"
     def title = JournalInstance.findByName("Journal of agricultural and food chemistry")

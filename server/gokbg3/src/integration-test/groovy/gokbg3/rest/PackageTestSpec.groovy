@@ -139,7 +139,8 @@ class PackageTestSpec extends AbstractAuthSpec {
         [
           title       : testTitle.id,
           hostPlatform: testPlt.id,
-          url         : "http://testpkgwithtipp.test"
+          url         : "http://testpkgwithtipp.test",
+          name        : "TIPP Name"
         ]
       ]
     ]
@@ -157,6 +158,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.status == 201 // OK
     resp.json._embedded.tipps.size() == 1
     resp.json._embedded.tipps[0].url == upd_body.tipps[0].url
+    resp.json._embedded.tipps[0].name == upd_body.tipps[0].name
   }
 
   void "test /rest/packages post with provider, source and platform"() {

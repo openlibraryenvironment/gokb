@@ -1113,13 +1113,37 @@ class PackageService {
             TitleInstancePackagePlatform.withNewSession {
               def tipp = TitleInstancePackagePlatform.get(tipp_id)
               def pub_type = tipp.title?.niceName == 'Book' ? 'Monograph' : 'Serial'
+              def print_id = ""
+              def online_id = ""
+
+              if (tipp.title.hasProperty('dateFirstInPrint')) {
+                def pid = tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')
+                def oid = tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')
+
+                if (pid) {
+                  print_id = pid
+                }
+                if (oid) {
+                  online_id = oid
+                }
+              } else {
+                def pid = tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')
+                def oid = tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')
+
+                if (pid) {
+                  print_id = pid
+                }
+                if (oid) {
+                  online_id = oid
+                }
+              }
 
               if (tipp.coverageStatements?.size() > 0) {
                 tipp.coverageStatements.each { cst ->
                   writer.write(
-                    sanitize(tipp.title.name) + '\t' +
-                      (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.getIdentifierValue('pISBN')) : sanitize(tipp.title.getIdentifierValue('ISSN'))) + '\t' +
-                      (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.getIdentifierValue('ISBN')) : sanitize(tipp.title.getIdentifierValue('eISSN'))) + '\t' +
+                    sanitize(tipp.name ?: tipp.title.name) + '\t' +
+                      print_id + '\t' +
+                      online_id + '\t' +
                       sanitize(cst.startDate) + '\t' +
                       sanitize(cst.startVolume) + '\t' +
                       sanitize(cst.startIssue) + '\t' +
@@ -1142,16 +1166,16 @@ class PackageService {
                       '\t' +  // parent_publication_title_id
                       sanitize(pub_type) + '\t' +  // publication_type
                       sanitize(tipp.paymentType?.value) + '\t' +  // access_type
-                      sanitize(tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
                       sanitize(tipp.uuid) + '\t' +
                       sanitize(tipp.title.uuid) +
                       '\n');
                 }
               } else {
                 writer.write(
-                  sanitize(tipp.title.name) + '\t' +
-                    (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.getIdentifierValue('pISBN')) : sanitize(tipp.title.getIdentifierValue('ISSN'))) + '\t' +
-                    (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.getIdentifierValue('ISBN')) : sanitize(tipp.title.getIdentifierValue('eISSN'))) + '\t' +
+                  sanitize(tipp.name ?: tipp.title.name) + '\t' +
+                    print_id + '\t' +
+                    online_id + '\t' +
                     sanitize(tipp.startDate) + '\t' +
                     sanitize(tipp.startVolume) + '\t' +
                     sanitize(tipp.startIssue) + '\t' +
@@ -1174,7 +1198,7 @@ class PackageService {
                     '\t' +  // parent_publication_title_id
                     sanitize(pub_type) + '\t' +  // publication_type
                     sanitize(tipp.paymentType?.value) + '\t' +  // access_type
-                    sanitize(tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
                     sanitize(tipp.uuid) + '\t' +
                     sanitize(tipp.title.uuid) +
                     '\n');
@@ -1283,7 +1307,7 @@ class PackageService {
                     sanitize(tipp.getId()) + '\t' +
                       sanitize(tipp.url) + '\t' +
                       sanitize(tipp.title.getId()) + '\t' +
-                      sanitize(tipp.title.name) + '\t' +
+                      sanitize(tipp.name ?: tipp.title.name) + '\t' +
                       sanitize(tipp.status.value) + '\t' +
                       sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
                       sanitize(tipp.title.imprint?.name) + '\t' +
@@ -1292,9 +1316,9 @@ class PackageService {
                       sanitize(tipp.title.medium?.value) + '\t' +
                       sanitize(tipp.title.OAStatus?.value) + '\t' +
                       sanitize(tipp.title.continuingSeries?.value) + '\t' +
-                      sanitize(tipp.title.getIdentifierValue('ISSN')) + '\t' +
-                      sanitize(tipp.title.getIdentifierValue('eISSN')) + '\t' +
-                      sanitize(tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
                       sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
                       '\t' +
                       sanitize(tipp.hostPlatform.name) + '\t' +
@@ -1316,9 +1340,9 @@ class PackageService {
                       sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
                       sanitize(tipp.format?.value) + '\t' +
                       sanitize(tipp.paymentType?.value) + '\t' +
-                      sanitize(tipp.title.getIdentifierValue('DOI')) + '\t' +
-                      sanitize(tipp.title.getIdentifierValue('ISBN')) + '\t' +
-                      sanitize(tipp.title.getIdentifierValue('pISBN')) +
+                      sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title.getIdentifierValue('DOI')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')) +
                       '\n');
                 }
               } else {
@@ -1326,7 +1350,7 @@ class PackageService {
                   sanitize(tipp.getId()) + '\t' +
                     sanitize(tipp.url) + '\t' +
                     sanitize(tipp.title.getId()) + '\t' +
-                    sanitize(tipp.title.name) + '\t' +
+                    sanitize(tipp.name ?: tipp.title.name) + '\t' +
                     sanitize(tipp.status.value) + '\t' +
                     sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
                     sanitize(tipp.title.imprint?.name) + '\t' +
@@ -1335,9 +1359,9 @@ class PackageService {
                     sanitize(tipp.title.medium?.value) + '\t' +
                     sanitize(tipp.title.OAStatus?.value) + '\t' +
                     sanitize(tipp.title.continuingSeries?.value) + '\t' +
-                    sanitize(tipp.title.getIdentifierValue('ISSN')) + '\t' +
-                    sanitize(tipp.title.getIdentifierValue('eISSN')) + '\t' +
-                    sanitize(tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
                     sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
                     '\t' +
                     sanitize(tipp.hostPlatform?.name) + '\t' +
@@ -1359,9 +1383,9 @@ class PackageService {
                     sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
                     sanitize(tipp.format?.value) + '\t' +
                     sanitize(tipp.paymentType?.value) + '\t' +
-                    sanitize(tipp.title.getIdentifierValue('DOI')) + '\t' +
-                    sanitize(tipp.title.getIdentifierValue('ISBN')) + '\t' +
-                    sanitize(tipp.title.getIdentifierValue('pISBN')) +
+                    sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title.getIdentifierValue('DOI')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')) +
                     '\n');
               }
               tipp.discard();
