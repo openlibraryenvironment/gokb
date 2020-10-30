@@ -46,7 +46,7 @@ class ESWrapperService {
         ]
       ]
     ]
-    
+
 
     return settings
   }
@@ -70,6 +70,13 @@ class ESWrapperService {
               namespace: [type: "keyword"],
               namespaceName: [type: "keyword"],
               value: [type: "keyword"]
+            ]
+          ],
+          source : [
+            type : "nested",
+            properties: [
+              frequency: [type: "keyword"],
+              url: [type: "keyword"]
             ]
           ],
           sortname: [

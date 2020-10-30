@@ -40,6 +40,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     Identifier.findByValue("6644-223")?.expunge()
     Identifier.findByValue("6644-2284")?.expunge()
     Identifier.findByValue("2256676-4")?.expunge()
+    Identifier.findByValue("2256676-5")?.expunge()
     Identifier.findByValue("0001-5547")?.expunge()
     Identifier.findByValue("1938-2650")?.expunge()
     test_id?.expunge()
@@ -96,31 +97,6 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     resp.json._links.size() == 1
     resp.json.data.size() >= 8
     resp.json.data[1].name != null
-  }
-
-  void "test /rest/identifier-namespaces?targetType"() {
-    def urlPath = getUrlPath()
-    when:
-    String accessToken = getAccessToken()
-    RestResponse resp1 = rest.get("${urlPath}/rest/identifier-namespaces?targetType=Book") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
-    RestResponse resp2 = rest.get("${urlPath}/rest/identifier-namespaces?targetType=Title") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
-    then:
-    resp1.status == 200 // OK
-    resp1.json.data != null
-    resp1.json._links.size() == 1
-    resp1.json.data.size() == 2
-    resp2.status == 200 // OK
-    resp2.json.data != null
-    resp2.json._links.size() == 1
-    resp2.json.data.size() == 3
   }
 
   void "test /rest/identifier-namespaces?targetType"() {

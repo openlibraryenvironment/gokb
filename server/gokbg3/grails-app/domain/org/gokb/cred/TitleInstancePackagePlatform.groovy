@@ -63,8 +63,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       'endIssue',
       'endVolume',
       'description',
-      'hybridOAUrl',
-      'name'
+      'hybridOAUrl'
     ],
     'es'           : [
       'hostPlatformUuid': "hostPlatform.uuid",
@@ -212,7 +211,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 //     result.pkg = tipp_fields.pkg
     def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
     def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
-    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid, status: tipp_status, editStatus: tipp_editstatus).save(failOnError: true)
+    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid, status: tipp_status, editStatus: tipp_editstatus, name: tipp_fields.name).save(failOnError: true)
 
     if (result) {
 
@@ -520,6 +519,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           'url'         : trimmed_url,
           'uuid'        : (tipp_dto.uuid ?: null),
           'status'      : (tipp_dto.status ?: null),
+          'name'        : (tipp_dto.name ?: null),
           'editStatus'  : (tipp_dto.editStatus ?: null)
         ]
 
@@ -748,6 +748,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'lastUpdated'(lastUpdated ? sdf.format(lastUpdated) : null)
         builder.'format'(format?.value)
         builder.'url'(url ?: "")
+        builder.'name'(name)
         builder.'subjectArea'(subjectArea?.trim())
         builder.'series'(series?.trim())
         builder.'title'([id: ti.id, uuid: ti.uuid]) {
