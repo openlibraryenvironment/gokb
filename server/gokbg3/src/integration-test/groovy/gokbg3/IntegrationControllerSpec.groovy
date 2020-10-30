@@ -52,21 +52,20 @@ class IntegrationControllerSpec extends Specification {
 
   def cleanup() {
     CuratoryGroup.findByName('TestGroup1')?.expunge()
+    CuratoryGroup.findByName('TestGroup2')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
     Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
-    Package.findByName('TestTokenPackage')?.expunge()
+    Package pkg = Package.findByName('TestTokenPackage')
+    pkg?.expunge()
     UpdateToken.findByValue('TestUpdateToken')?.delete()
     TitleInstance.findAllByName("Acta cytologica")?.each { title ->
-      ComponentPrice.findAllByOwner(title)?.each { price ->
-        price?.delete()
-      }
       title.expunge()
     }
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
       title.expunge()
     }
-
+    Identifier.findByValue('zdb:2256676-4')?.expunge()
   }
 
   void "Test assertGroup"() {
@@ -670,9 +669,7 @@ class IntegrationControllerSpec extends Specification {
     expect: "prices are set correctly"
     sleep(400)
     def title = TitleInstance.findById(resp.json.results[0].titleId)
-    title?.prices?.size() == 2
-    title?.subjectArea
-    title?.series
+    title.prices?.size() == 2
   }
 
   void "Test package update"() {
@@ -721,7 +718,23 @@ class IntegrationControllerSpec extends Specification {
             "name"      : "ACS Publications",
             "primaryUrl": "https://pubs.acs.org"
           ],
+          "prices"     : [
+            [
+              "type"     : "list",
+              "currency" : "EUR",
+              "amount"   : 123.45,
+              "startDate": "2010-01-31"
+            ],
+            [
+              "type"     : "topup",
+              "currency" : "USD",
+              "amount"   : 43.12,
+              "startDate": "2020-01-01"
+            ]
+          ],
+          "series"     : "Mystery Cloud",
           "status"     : "Current",
+          "subjectArea": "Fringe",
           "title"      : [
             "identifiers": [
               [
@@ -763,6 +776,8 @@ class IntegrationControllerSpec extends Specification {
     def pkg = Package.get(resp1.json.pkgId)
     pkg.tipps?.size() == 1
     pkg.tipps[0].name == "TIPP Name"
+    pkg.tipps[0].subjectArea == "Fringe"
+    pkg.tipps[0].prices.size() == 2
     pkg.listStatus?.value == "In Progress"
   }
 
@@ -814,6 +829,23 @@ class IntegrationControllerSpec extends Specification {
             "primaryUrl": "https://pubs.acs.org"
           ],
           "status"     : "Current",
+          "prices"     : [
+            [
+              "type"     : "list",
+              "currency" : "EUR",
+              "amount"   : 123.45,
+              "startDate": "2010-01-31"
+            ],
+            [
+              "type"     : "topup",
+              "currency" : "USD",
+              "amount"   : 43.12,
+              "startDate": "2020-01-01"
+            ]
+          ],
+          "status"     : "Current",
+          "series"     : "Mystery Cloud",
+          "subjectArea": "Fringe",
           "title"      : [
             "identifiers"      : [
               [

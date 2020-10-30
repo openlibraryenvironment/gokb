@@ -353,33 +353,6 @@
       <g:render template="/apptemplates/revreqtab"
                 model="${[d: d]}"/>
     </div>
-
-    <div class="tab-pane" id="subjectgroup">
-
-      <dl class="dl-horizontal">
-        <dt>
-          <g:annotatedLabel owner="${d}" property="subjectGroup">Subject Group</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:xEditable owner="${d}" field="subjectGroup"/>
-        </dd>
-      </dl>
-    </div>
-
-    <div class="tab-pane" id="series">
-
-      <dl class="dl-horizontal">
-        <dt>
-          <g:annotatedLabel owner="${d}" property="series">Series</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:xEditable owner="${d}" field="series"/>
-        </dd>
-      </dl>
-    </div>
-
-    <g:render template="/tabTemplates/showPrices" model="${[d: displayobj, showActions: true]}"/>
-
   </div>
   <g:render template="/apptemplates/componentStatus"
             model="${[d: displayobj, rd: refdata_properties, dtype: 'KBComponent']}"/>

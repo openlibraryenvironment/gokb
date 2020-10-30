@@ -4,7 +4,6 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
-import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import org.gokb.cred.UserRole

@@ -7,8 +7,11 @@ import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 import grails.util.Holders
+import groovy.transform.Synchronized
+import grails.validation.ValidationException
+import groovy.util.logging.*
 
-
+@Slf4j
 class ComponentLookupService {
   def grailsApplication
   def restMappingService
@@ -113,6 +116,83 @@ class ComponentLookupService {
     }
 
     comp
+  }
+
+  @Synchronized
+  static def lookupOrCreateCanonicalIdentifier(ns, value, def ns_create = true) {
+    def lock = true
+    return findOrCreateId(ns, value, ns_create, lock)
+  }
+
+  private static def findOrCreateId(ns, value, def ns_create = true, lock) {
+    // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
+    def namespace = null
+    def identifier = null
+    def namespaces = IdentifierNamespace.findAllByValueIlike(ns)
+
+    switch ( namespaces.size() ) {
+      case 0:
+        if (ns_create) {
+          namespace = new IdentifierNamespace(value:ns.toLowerCase()).save(failOnError:true);
+        }
+        break;
+      case 1:
+        namespace = namespaces[0]
+        break;
+      default:
+        throw new RuntimeException("Multiple Namespaces with value ${ns}");
+        break;
+    }
+
+    if (namespace) {
+      def norm_id = Identifier.normalizeIdentifier(value)
+      def existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
+      log.debug("Found ID: ${existing}")
+
+      if ( existing?.size() == 1 ) {
+        identifier = existing[0]
+      }
+      else if ( existing?.size() > 1 ) {
+        log.error("Conflicting identifiers found: ${existing}")
+        throw new RuntimeException("Found duplicates for Identifier: ${existing}");
+      }
+      else {
+        log.debug("No matches: ${existing}")
+        def final_val = value
+
+        if (!identifier) {
+          if (namespace.family == 'isxn') {
+            final_val = final_val.replaceAll("x","X")
+          }
+          log.debug("Creating new Identifier ${namespace}:${value} ..")
+
+          try {
+            identifier = new Identifier(namespace: namespace, value: final_val, normname: norm_id).save(flush:true, failOnError:true)
+          }
+          catch (org.springframework.orm.hibernate5.HibernateOptimisticLockingFailureException lfe) {
+            log.error("Locking failure", lfe)
+            def ex = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
+            log.debug("After LFE: ${ex}")
+          }
+          catch (ValidationException ve) {
+            log.debug("Caught validation exception: ${ve.message}")
+            if (ve.message.contains('already exists')) {
+              def dupe = Identifier.executeQuery("from Identifier where normname = ? and namespace = ?",[norm_id, namespace])
+
+              if (dupe.size() == 1) {
+                identifier = dupe[0]
+              }
+              log.error("Thread synchronization failed for ID ${dupe} ...")
+            }
+            else {
+              throw new ValidationException(ve.message, ve.errors)
+            }
+          }
+        }
+      }
+    }
+
+    identifier
   }
 
   /**
