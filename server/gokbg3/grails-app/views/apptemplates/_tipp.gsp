@@ -110,7 +110,6 @@
         <span class="badge badge-warning"> ${d.prices?.size() ?: '0'}</span>
       </a>
     </li>
-  </g:if>
 </ul>
 
 
@@ -337,7 +336,6 @@
       </dl>
     </div>
     <g:render template="/tabTemplates/showPrices" model="${[d: displayobj, showActions: true]}"/>
-  </g:if>
 </div>
 <g:render template="/apptemplates/componentStatus"
           model="${[d: displayobj, rd: refdata_properties, dtype: 'KBComponent']}"/>
