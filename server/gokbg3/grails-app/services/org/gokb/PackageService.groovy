@@ -56,6 +56,7 @@ class PackageService {
   def sessionFactory
   ComponentLookupService componentLookupService
   def grailsApplication
+  def messageService
   public static final enum ExportType {
     KBART, TSV
   }
@@ -556,12 +557,12 @@ class PackageService {
    * Definitive rules for a valid package header
    */
 
-  public static def validateDTO(packageHeaderDTO) {
+  def validateDTO(packageHeaderDTO, locale) {
     def result = [valid: true, errors:[:], match:false]
 
     if (!packageHeaderDTO.name?.trim()) {
       result.valid = false
-      result.errors.name = [[message: "Missing package name!", baddata: packageHeaderDTO.name]]
+      result.errors.name = [[message: messageService.resolveCode('crossRef.package.error.name', null, locale), baddata: packageHeaderDTO.name]]
     }
 
     def ids_list = packageHeaderDTO.identifiers ?: packageHeaderDTO.ids
@@ -586,7 +587,7 @@ class PackageService {
         }
 
         if (!ns_obj) {
-          id_errors.add([message: message(code: 'default.not.found.message', args: ["Namespace", id_ns], default:"unable to lookup identifier namespace ${id_ns}!")])
+          id_errors.add([message: messageService.resolveCode('default.not.found.message', ["Namespace", id_ns], locale)])
         }
         else {
           id_def.type = ns_obj.value
@@ -596,13 +597,13 @@ class PackageService {
         Identifier the_id = Identifier.get(id_inc)
 
         if (!the_id) {
-          id_errors.add([message:"Unable to lookup identifier object by ID!", baddata: idobj])
+          id_errors.add([message: messageService.resolveCode('crossRef.error.lookup', ["Identifier", "ID"], locale), baddata: idobj])
           result.valid = false
         }
       }
       else {
         log.warn("Missing information in id object ${idobj}")
-        id_errors.add([message:"Missing information for identifier object!", baddata: idobj])
+        id_errors.add([message: messageService.resolveCode('crossRef.error.format', ["Identifiers"], locale), baddata: idobj])
         result.valid = false
       }
 
@@ -610,7 +611,7 @@ class PackageService {
         if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
           if ( ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern) ) {
             log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
-            id_errors.add([message:"Validation for identifier ${id_def.type}:${id_def.value} failed!", baddata: idobj])
+            id_errors.add([message: messageService.resolveCode('identifier.validate.error', [ns_obj.value, id_def.value], locale), baddata: idobj])
             result.valid = false
           }
           else {
@@ -680,7 +681,7 @@ class PackageService {
       def prov = Org.get(packageHeaderDTO.provider)
 
       if (!prov) {
-        result.errors.provider = [[message: "Unable to find provider via ID", baddata: packageHeaderDTO.provider]]
+        result.errors.provider = [[message: messageService.resolveCode('crossRef.error.lookup', ["Provider", "ID"], locale), code: 404, baddata: packageHeaderDTO.provider]]
         result.valid =false
       }
     }
@@ -689,7 +690,7 @@ class PackageService {
       def prov = Platform.get(packageHeaderDTO.nominalPlatform)
 
       if (!prov) {
-        result.errors.nominalPlatform = [[message: "Unable to find platform via ID", baddata: packageHeaderDTO.nominalPlatform]]
+        result.errors.nominalPlatform = [[message: messageService.resolveCode('crossRef.error.lookup', ["Platform", "ID"], locale), code: 404, baddata: packageHeaderDTO.nominalPlatform]]
         result.valid = false
       }
     }
