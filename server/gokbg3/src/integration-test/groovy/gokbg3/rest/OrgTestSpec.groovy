@@ -22,9 +22,11 @@ class OrgTestSpec extends AbstractAuthSpec {
   def setup() {
     def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true)
     def new_plt_upd = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate").save(flush: true)
-    def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch").save(flush: true)
-    patch_org.setSource(Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource"))
-    patch_org.save(flush:true)
+    def patch_org = Org.findByName("TestOrgPatch") ?:
+      new Org(name: "TestOrgPatch",
+        source: Source.findByName("TestOrgPatchSource") ?:
+          new Source(name: "TestOrgPatchSource"))
+        .save(flush: true)
   }
 
   def cleanup() {
@@ -169,11 +171,11 @@ class OrgTestSpec extends AbstractAuthSpec {
     def id = Org.findByName("TestOrgPatch")?.id
 
     def update_record = [
-      name             : "TestOrgUpdateSource",
-      ids              : [
+      name  : "TestOrgUpdateSource",
+      ids   : [
         [namespace: "global", value: "test-org-id-val-new"]
       ],
-      source           : null
+      source: null
     ]
 
     when:

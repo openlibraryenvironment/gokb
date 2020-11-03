@@ -103,5 +103,6 @@ class SourcesTestSpec extends AbstractAuthSpec {
     resp.json.frequency == "1M"
     resp.json.url == "http://kbart-source.com/test-pkg"
     resp.json.targetNamespace.name == "TestSourceTitleNS"
+    resp.json.automaticUpdates == false
   }
 }

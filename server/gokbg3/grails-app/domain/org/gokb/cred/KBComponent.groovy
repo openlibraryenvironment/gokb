@@ -1360,8 +1360,6 @@ where cp.owner = :c
     log.debug("Removing all components");
     Combo.executeUpdate("delete from Combo as c where c.fromComponent=:component or c.toComponent=:component", [component: this])
     ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component=:component", [component: this])
-    KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent=:component",[component:this])
-    additionalProperties = null;
     KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner=:component", [component: this])
 
     ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)", [component: this]);
@@ -1381,7 +1379,7 @@ where cp.owner = :c
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component", [component: this]);
     KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component", [component: this])
     KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: this])
-    this.delete(flush:true, failOnError: true)
+    this.delete(failOnError: true)
     result;
   }
 
@@ -1397,7 +1395,6 @@ where cp.owner = :c
 
       Combo.executeUpdate("delete from Combo as c where c.fromComponent.id IN (:component) or c.toComponent.id IN (:component)", [component: batch])
       ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)", [component: batch])
-      KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)",[component:batch]);
       KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)", [component: batch]);
 
       ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))", [component: batch]);
@@ -1570,7 +1567,7 @@ where cp.owner = :c
       // does this price exist already?
       if (!prices.contains(cp)) {
         // set the end date for the current price(s)
-        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:tipp and (endDate is null or endDate>:start) and priceType=:type and currency=:currency' , [start: cp.startDate, tipp: this, type: cp.priceType, currency:cp.currency])
+        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:tipp and (endDate is null or endDate>:start) and priceType=:type and currency=:currency', [start: cp.startDate, tipp: this, type: cp.priceType, currency: cp.currency])
         cp.save()
         // enter the new price
         prices << cp

@@ -1,8 +1,5 @@
 package org.gokb.cred
-
 import com.k_int.ClassUtils
-
-import javax.persistence.Transient
 
 class IdentifierNamespace {
 
@@ -33,6 +30,8 @@ class IdentifierNamespace {
   }
 
   public static final String restPath = "/namespaces"
+  // used by @gokbg3.RestMappingService.selectJsonLabel
+  public static final String jsonLabel = "name"
 
   @Override
   public boolean equals(Object obj) {
