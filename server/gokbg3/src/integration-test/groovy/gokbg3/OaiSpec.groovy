@@ -59,7 +59,7 @@ class OaiSpec extends Specification {
     def eissn1 = Identifier.findByValue('1234-3456') ?: new Identifier(value: '1234-3456', namespace: IdentifierNamespace.findByValue('eissn')).save(flush: true)
     def issn1 = Identifier.findByValue('1234-4567') ?: new Identifier(value: '1234-4567', namespace: IdentifierNamespace.findByValue('issn')).save(flush: true)
 
-    def tipp1 = new TitleInstancePackagePlatform(name:"testTIPP")
+    def tipp1 = new TitleInstancePackagePlatform(name: "testTIPP")
     tipp1.setPrice("list", "1234.56 EUR")
 
     new Combo(fromComponent: test_pkg, toComponent: tipp1, type: RefdataCategory.lookup('Combo.Type', 'Package.Tipps'), status: RefdataCategory.lookup('Combo.Status', 'Active')).save(flush: true)
@@ -109,16 +109,6 @@ class OaiSpec extends Specification {
     then:
     log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'name'?.text()}")
     resp.xml.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'title'.'TIPPs'.'TIPP'.'prices'.'price'.'type'.'list'.text() != null
-  }
-
-  void "test GetRecord org response"() {
-    when:
-    RestResponse resp = rest.get("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/orgs?verb=GetRecord&metadataPrefix=gokb&identifier=org.gokb.cred.Org:$test_org.id")
-
-    then:
-    log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'org'?.'name'?.text()}")
-    resp.xml.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'org'.'titleNamespace'.'namespaceName' != null
-    resp.xml.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'org'.'packageNamespace'.'value' != null
   }
 
   void "test GetRecord org response"() {

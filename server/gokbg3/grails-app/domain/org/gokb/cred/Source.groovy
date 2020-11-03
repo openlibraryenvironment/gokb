@@ -9,13 +9,19 @@ class Source extends KBComponent {
   String explanationAtSource
   String contextualNotes
   // Org combo -- What organisation - aggregator -- responsibleParty
+  boolean automaticUpdates = false
   String frequency
   String ruleset
   // Default method refdata - email web ftp other
   // Default data Format KBART,Prop
   RefdataValue defaultSupplyMethod
   RefdataValue defaultDataFormat
+  IdentifierNamespace targetNamespace
+  Date lastRun
+  boolean zdbMatch = false
+  boolean ezbMatch=false
   Org responsibleParty
+
 
   static mapping = {
     includes KBComponent.mapping
@@ -33,6 +39,8 @@ class Source extends KBComponent {
     defaultDataFormat(nullable:true, blank:true)
     responsibleParty(nullable:true, blank:true)
     ruleset(nullable:true, blank:true)
+    targetNamespace(nullable:true, blank:true)
+    lastRun(nullable:true)
     name(validator: { val, obj ->
       if (obj.hasChanged('name')) {
         if (val && val.trim()) {
@@ -99,15 +107,22 @@ class Source extends KBComponent {
   @Transient
   def toGoKBXml(builder, attr) {
     builder.'gokb' (attr) {
-      
+
       addCoreGOKbXmlFields(builder, attr)
-      
+
       builder.'url' (url)
       builder.'defaultAccessURL' (defaultAccessURL)
       builder.'explanationAtSource' (explanationAtSource)
       builder.'contextualNotes' (contextualNotes)
       builder.'frequency' (frequency)
       builder.'ruleset' (ruleset)
+      builder.'automaticUpdates' (automaticUpdates)
+      builder.'ezbMatch' (ezbMatch)
+      builder.'zdbMatch' (zdbMatch)
+      builder.'lastRun' (lastRun)
+      if ( targetNamespace ) {
+        builder.'targetNamespace'('namespaceName': targetNamespace.name, 'value': targetNamespace.value, 'id': targetNamespace.id)
+      }
       if ( defaultSupplyMethod ) {
         builder.'defaultSupplyMethod' ( defaultSupplyMethod.value )
       }
@@ -121,5 +136,4 @@ class Source extends KBComponent {
       }
     }
   }
-  
 }
