@@ -26,10 +26,26 @@ class IdentifierTestSpec extends AbstractAuthSpec {
   }
 
   def setup() {
-    ns_typeBook = IdentifierNamespace.findByValue('test_NS_book') ?: new IdentifierNamespace(value: 'test_NS_book', name: 'name_NS_book', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Book')).save(flush:true)
-    ns_typeOther = IdentifierNamespace.findByValue('test_NS_other') ?: new IdentifierNamespace(value: 'test_NS_other', name: 'name_NS_other', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Other')).save(flush:true)
-    ns_typeTitle = IdentifierNamespace.findByValue('test_NS_title') ?: new IdentifierNamespace(value: 'test_NS_title', targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title')).save(flush:true)
-    ns_eissn = IdentifierNamespace.findByValue('eissn') ?:new IdentifierNamespace(value:'eissn').save(flush:true)
+    ns_typeBook = IdentifierNamespace.findByValue('test_NS_book')
+      ?: new IdentifierNamespace(
+      value: 'test_NS_book',
+      name: 'name_NS_book',
+      targetType:
+        RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Book')
+    ).save(flush:true)
+    ns_typeOther = IdentifierNamespace.findByValue('test_NS_other')
+      ?: new IdentifierNamespace(
+      value: 'test_NS_other',
+      name: 'name_NS_other',
+      targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Other')
+    ).save(flush:true)
+    ns_typeTitle = IdentifierNamespace.findByValue('test_NS_title')
+      ?: new IdentifierNamespace(
+      value: 'test_NS_title',
+      name: 'name_NS_title',
+      targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title')
+    ).save(flush:true)
+    ns_eissn = IdentifierNamespace.findByValue('eissn')
     test_id = Identifier.findByValue("1234-4567") ?: new Identifier(value: "1234-4567", namespace: ns_eissn).save(flush:true)
     test_journal = JournalInstance.findByName("IdTestJournal") ?: new JournalInstance(name: "IdTestJournal").save(flush:true)
   }
@@ -45,9 +61,9 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     Identifier.findByValue("1938-2650")?.expunge()
     test_id?.expunge()
     test_journal?.refresh().expunge()
-    ns_typeBook?.delete(flush: true)
-    ns_typeOther?.delete(flush: true)
-    ns_typeTitle?.delete(flush: true)
+    ns_typeBook.delete(flush: true)
+    ns_typeOther.delete(flush:true)
+    ns_typeTitle.delete(flush: true)
   }
 
   void "test /rest/identifiers/<id> without token"() {

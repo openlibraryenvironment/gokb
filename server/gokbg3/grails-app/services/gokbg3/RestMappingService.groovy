@@ -65,7 +65,7 @@ class RestMappingService {
    */
 
   def mapObjectToJson(obj, params, def user = null) {
-    //log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
+    log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
     def result = [:]
     def sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
     def embed_active = params['_embed']?.split(',') ?: []
@@ -144,7 +144,7 @@ class RestMappingService {
               }
             }
           } else {
-            if ((embed_active.contains(p.name) && (user?.isAdmin() || p.type != User)) || (!nested && p.name == 'reviewRequests' && user?.editorStatus)) {
+            if ( (embed_active.contains(p.name) && (user?.isAdmin() || p.type != User))  || (!nested && p.name == 'reviewRequests' && user?.editorStatus) ) {
               result['_embedded'][p.name] = []
 
               obj[p.name].each {
@@ -173,17 +173,18 @@ class RestMappingService {
       def combo_props = obj.allComboPropertyNames
 
       combo_props.each { cp ->
-        if (obj.getCardinalityFor(obj.class, cp) == 'hasByCombo') {
+        if (obj.getCardinalityFor(obj.class,cp) == 'hasByCombo') {
           def cval = null
 
-          if ((include_list && include_list?.contains(cp)) || (!include_list && jsonMap?.defaultLinks?.contains(cp))) {
+          if ( (include_list && include_list?.contains(cp)) || (!include_list && jsonMap?.defaultLinks?.contains(cp)) ) {
             RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', obj.getComboTypeValue(cp))
             def chql = null
             def reverse = obj.isComboReverse(cp)
 
             if (reverse) {
               chql = "from Combo as c where c.toComponent = ? and c.type = ?"
-            } else {
+            }
+            else {
               chql = "from Combo as c where c.fromComponent = ? and c.type = ?"
             }
             def combo = Combo.executeQuery(chql, [obj, combo_type])
@@ -196,12 +197,13 @@ class RestMappingService {
             }
           }
 
-          if (embed_active.contains(cp)) {
+          if ( embed_active.contains(cp) ) {
             cval = obj[cp]
             result['_embedded'][cp] = getEmbeddedJson(cval, user)
           }
-        } else {
-          if (embed_active.contains(cp)) {
+        }
+        else {
+          if( embed_active.contains(cp) ) {
             result['_embedded'][cp] = []
             log.debug("Mapping ManyByCombo ${cp} ${obj[cp]}")
 
@@ -213,7 +215,8 @@ class RestMappingService {
 
               if (c.status?.value == 'Active') {
                 result['_embedded'][cp] << linked_obj
-              } else {
+              }
+              else {
                 log.debug("Skipping ${c.status.value} combo..")
               }
             }
@@ -226,7 +229,8 @@ class RestMappingService {
           }
         }
       }
-    } else if (obj.class == ReviewRequest && embed_active.contains('allocatedGroups')) {
+    }
+    else if (obj.class == ReviewRequest && embed_active.contains('allocatedGroups')) {
       result.allocatedGroups = []
 
       obj.allocatedGroups?.each {
@@ -245,7 +249,7 @@ class RestMappingService {
 
   @Transactional
   def updateObject(obj, jsonMap, reqBody) {
-    //log.debug("Update object ${obj} - ${reqBody}")
+    log.debug("Update object ${obj} - ${reqBody}")
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
     def toIgnore = defaultIgnore + (jsonMap?.ignore ?: [])
@@ -286,14 +290,14 @@ class RestMappingService {
   }
 
   public def updateAssoc(obj, prop, val) {
-    //log.debug("Update association $obj - $prop: $val")
+    log.debug("Update association $obj - $prop: $val")
     def ptype = grailsApplication.mappingContext.getPersistentEntity(obj.class.name).getPropertyByName(prop).type
 
-    if (val != null) {
+    if ( val != null ) {
       if (ptype == RefdataValue) {
         def rdv = null
 
-        if (val == null) {
+        if ( val == null ) {
           obj[prop] = null
         } else {
           String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
@@ -777,7 +781,7 @@ class RestMappingService {
 
     pubs_to_add.each { publisher ->
       boolean found = false
-      for (int i = 0; !found && i < publisher_combos.size(); i++) {
+      for ( int i=0; !found && i<publisher_combos.size(); i++) {
         Combo pc = publisher_combos[i]
         def idMatch = pc."${propName}".id == publisher.id
 
@@ -860,9 +864,7 @@ class RestMappingService {
 
     if (obj.hasProperty('jsonLabel')) {
       obj_label = obj[obj.jsonLabel]
-    } else /* if (obj.hasProperty('username')) {
-      obj_label = obj.username
-    } else */ if (obj.hasProperty('value')) {
+    } else if (obj.hasProperty('value')) {
       obj_label = obj.value
     } else if (obj.hasProperty('name')) {
       obj_label = obj.name

@@ -100,7 +100,7 @@ class IdentifierController {
     def user = User.get(springSecurityService.principal.id)
     log.debug("Save new Identifier: ${reqBody}")
 
-    if (reqBody?.value && reqBody?.namespace) {
+    if ( reqBody?.value && reqBody?.namespace ) {
       def ns = null
 
       if (reqBody.namespace instanceof Integer) {
@@ -113,7 +113,7 @@ class IdentifierController {
         Identifier obj = null
 
         try {
-          obj = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, reqBody.value,false)
+          obj = componentLookupService.lookupOrCreateCanonicalIdentifier(ns.value, reqBody.value,false)
         }
         catch (grails.validation.ValidationException ve) {
           log.debug("Identifier ${reqBody} has failed validation!")
@@ -129,43 +129,49 @@ class IdentifierController {
 
         if (!obj) {
           log.debug("Could not create identifier!")
-        } else if (obj.hasErrors()) {
+        }
+        else if ( obj.hasErrors() ) {
           errors = messageService.processValidationErrors(obj.errors, request.locale)
           result.message = "Identifier failed validation!"
-        } else {
+        }
+        else {
           if (reqBody.component) {
             KBComponent comp = null
 
-            if (reqBody.component instanceof Integer) {
+            if ( reqBody.component instanceof Integer ) {
               comp = KBComponent.get(reqBody.component)
-            } else if (reqBody.component instanceof String) {
+            }
+            else if ( reqBody.component instanceof String ) {
               comp = KBComponent.findByUuid(reqBody.component)
             }
 
             if (comp) {
-              if (comp?.isEditable()) {
+              if ( comp?.isEditable() ) {
                 comp.ids.add(obj)
-                comp.save(flush: true)
+                comp.save(flush:true)
 
                 params['_embed'] = params['_embed'] ?: 'identifiedComponents'
                 response.setStatus(201)
 
                 result = restMappingService.mapObjectToJson(obj, params, user)
                 log.debug("Got mapped ID with component! ${result}")
-              } else {
+              }
+              else {
                 result.message = "Access to object was denied!"
                 response.setStatus(403)
                 result.code = 403
                 result.result = 'ERROR'
               }
-            } else {
+            }
+            else {
               result.message = "Component could not be resolved!"
               result.badData = [component: reqBody.component]
               response.setStatus(400)
               result.code = 400
               result.result = 'ERROR'
             }
-          } else {
+          }
+          else {
             result = restMappingService.mapObjectToJson(obj, params, user)
             response.setStatus(201)
             log.debug("Got mapped ID without component! ${result}")
@@ -228,7 +234,7 @@ class IdentifierController {
     }
     def result = [_links: [:]]
     def data = []
-    params << [_exclude: "_links"]
+    params << [_exclude:"_links"]
     def user = User.get(springSecurityService.principal.id)
     def base = grailsApplication.config.serverURL + "/rest"
     List<IdentifierNamespace> nss = []
@@ -246,14 +252,14 @@ class IdentifierController {
     }
     nss.each { ns ->
       data << [
-        name   : ns.name,
-        value  : ns.value,
-        id     : ns.id,
+        name:ns.name,
+        value:ns.value,
+        id: ns.id,
         pattern: ns.pattern,
-        family : ns.family
+        family: ns.family
       ]
     }
-    result.data = data
+    result.data=data
     result['_links']['self'] = ['href': base + "/identifier-namespaces"]
     render result as JSON
   }
