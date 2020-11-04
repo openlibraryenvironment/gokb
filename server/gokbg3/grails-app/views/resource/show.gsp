@@ -206,7 +206,7 @@
                     follow_link.attr('href', truncated_link + new_linked_oid);
                   }else {
                     var new_url = contextPath + "/resource/show/" + new_linked_oid;
-                    related_editable.after(' &nbsp; <a href="new_url"><i class="fas fa-eye"></i></a>');
+                    related_editable.after(' &nbsp; <a href="${new_url}"><i class="fas fa-eye"></i></a>');
                   }
                 } else if (follow_link.attr('href')) {
                   $(follow_link).remove();

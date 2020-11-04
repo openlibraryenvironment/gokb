@@ -39,7 +39,7 @@
     </ul>
     <div id="my-tab-content" class="tab-content">
       <div class="tab-pane active" id="roles">
-        <g:link class="display-inline" controller="security" action="roles" params="${['id': (d.class.name + ':' + d.id) ]}"></g:link>
+        <g:link class="display-inline" controller="security" action="roles" params="${['id': (d.class.name + ':' + d.id) ]}"/>
       </div>
     </div>
   </div>

@@ -9,7 +9,7 @@ class Source extends KBComponent {
   String explanationAtSource
   String contextualNotes
   // Org combo -- What organisation - aggregator -- responsibleParty
-  boolean automaticUpdates = false
+  Boolean automaticUpdates = false
   String frequency
   String ruleset
   // Default method refdata - email web ftp other
@@ -18,8 +18,8 @@ class Source extends KBComponent {
   RefdataValue defaultDataFormat
   IdentifierNamespace targetNamespace
   Date lastRun
-  boolean zdbMatch = false
-  boolean ezbMatch=false
+  Boolean zdbMatch = false
+  Boolean ezbMatch=false
   Org responsibleParty
 
 
@@ -40,7 +40,10 @@ class Source extends KBComponent {
     responsibleParty(nullable:true, blank:true)
     ruleset(nullable:true, blank:true)
     targetNamespace(nullable:true, blank:true)
-    lastRun(nullable:true)
+    lastRun(nullable:true,default: null)
+    ezbMatch(nullable:true, default: false)
+    zdbMatch(nullable:true,default: false)
+    automaticUpdates(nullable: true,default: false)
     name(validator: { val, obj ->
       if (obj.hasChanged('name')) {
         if (val && val.trim()) {
