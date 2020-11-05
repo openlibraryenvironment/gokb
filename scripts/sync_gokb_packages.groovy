@@ -39,7 +39,7 @@ while ( moredata ) {
         data.TIPPs.TIPP.each { xmltipp ->
 
           // TIPP.
-          def newtipp = directAddFields (xmltipp, ['medium', 'url'], addCoreItems ( xmltipp ))
+          def newtipp = directAddFields (xmltipp, ['medium', 'url', 'series', 'subjectArea'], addCoreItems ( xmltipp ))
           newtipp.accessStartDate = cleanText( xmltipp.access.'@start'.text() )
           newtipp.accessEndDate = cleanText( xmltipp.access.'@end'.text() )
 

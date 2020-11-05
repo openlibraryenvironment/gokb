@@ -251,6 +251,11 @@ class IdentifierController {
     } else {
       nss = IdentifierNamespace.all
     }
+
+    if (params.q?.trim()) {
+      nss = nss.collect { it.name.startsWith(params.q.trim()) }
+    }
+
     nss.each { ns ->
       data << [
         name:ns.name,

@@ -742,19 +742,26 @@ class TitleInstancePackagePlatform extends KBComponent {
     def linked_pkg = getPkg()
     def ti = getTitle()
 
-    builder.'gokb'(attr) {
-      builder.'tipp'([id: (id), uuid: (uuid)]) {
+    builder.'gokb' (attr) {
+      builder.'tipp' ([id:(id), uuid:(uuid)]) {
+
         addCoreGOKbXmlFields(builder, attr)
-        builder.'lastUpdated'(lastUpdated ? sdf.format(lastUpdated) : null)
-        builder.'format'(format?.value)
-        builder.'url'(url ?: "")
+
+        builder.'lastUpdated' (lastUpdated?sdf.format(lastUpdated):null)
+        builder.'format' (format?.value)
+        builder.'url'(url?:"")
         builder.'name'(name)
         builder.'subjectArea'(subjectArea?.trim())
         builder.'series'(series?.trim())
-        builder.'title'([id: ti.id, uuid: ti.uuid]) {
-          builder.'name'(ti.name?.trim())
-          builder.'type'(titleClass)
-          builder.'status'(ti.status?.value)
+        builder.'identifiers' {
+          ids.each { tid ->
+            builder.'identifier'([namespace:tid[0], namespaceName:tid[3], value:tid[1], type:tid[2]])
+          }
+        }
+        builder.'title' ([id:ti.id, uuid:ti.uuid]) {
+          builder.'name' (ti.name?.trim())
+          builder.'type' (titleClass)
+          builder.'status' (ti.status?.value)
           builder.'identifiers' {
             titleIds.each { tid ->
               builder.'identifier'([namespace: tid[0], namespaceName: tid[3], value: tid[1], type: tid[2]])
@@ -830,6 +837,14 @@ class TitleInstancePackagePlatform extends KBComponent {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [title, refdata_ids, status_active], [readOnly: true]);
+    result
+  }
+
+  @Transient
+  public getPackageIds() {
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[pkg,refdata_ids,status_active],[readOnly:true]);
     result
   }
 

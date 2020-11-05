@@ -416,7 +416,7 @@ class CleanupService {
 
         def unused = Identifier.executeQuery("select i.id from Identifier as i where not exists (select c from Combo as c where c.toComponent = i)")
 
-        def rem_unused = KBComponent.expungeAll(unused)
+        def rem_unused = expungeAll(unused, j)
 
         log.debug("Removed ${rem_unused.num_expunged} unused identifiers")
         j?.message("Removed ${rem_unused.num_expunged} unused identifiers".toString())
@@ -436,7 +436,7 @@ class CleanupService {
           }
         }
 
-        def rem_dupes = KBComponent.expungeAll(dupes_to_remove)
+        def rem_dupes = expungeAll(dupes_to_remove, j)
 
         log.debug("Removed ${rem_dupes.num_expunged} linked identifiers")
         j?.message("Removed ${rem_dupes.num_expunged} linked identifiers".toString())
@@ -706,5 +706,55 @@ class CleanupService {
       job.message("${res} titles set to editStatus 'Rejected'")
     }
     job.endTime = new Date()
+  }
+
+  def expungeAll(List components, Job j = null) {
+    log.debug("Component bulk expunge");
+    def result = [num_requested: components.size(), num_expunged: 0]
+    log.debug("Expunging ${result.num_requested} components")
+    def esclient = ESWrapperService.getClient()
+    def remaining = components
+
+    while (remaining.size() > 0) {
+      def batch = remaining.take(50)
+      remaining = remaining.drop(50)
+
+      Combo.executeUpdate("delete from Combo as c where c.fromComponent.id IN (:component) or c.toComponent.id IN (:component)",[component:batch])
+      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)",[component:batch])
+      KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)",[component:batch]);
+      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)",[component:batch]);
+
+      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))",[component:batch]);
+      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant.id IN (:component)",[component:batch])
+
+      events_to_delete.each {
+        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = ?",[it])
+        ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
+      }
+
+      ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)",[component:batch]);
+      ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)",[component:batch]);
+      ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)",[component:batch]);
+      ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)",[component:batch]);
+      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)",[component:batch])
+      ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
+
+      batch.each {
+        def kbc = KBComponent.get(it)
+        def oid = "${kbc.class.name}:${it}"
+
+        DeleteRequest req = new DeleteRequest(grailsApplication.config.gokb?.es?.index ?: "gokbg3")
+              .type('component')
+              .id(oid)
+
+        def es_response = esclient.delete(req)
+      }
+
+      result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)",[component:batch])
+
+      j.setProgress(result.num_expunged, result.num_requested)
+    }
+
+    result
   }
 }
