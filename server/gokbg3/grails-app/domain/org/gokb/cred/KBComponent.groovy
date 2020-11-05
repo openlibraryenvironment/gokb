@@ -1567,7 +1567,7 @@ where cp.owner = :c
       // does this price exist already?
       if (!prices.contains(cp)) {
         // set the end date for the current price(s)
-        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:tipp and (endDate is null or endDate>:start) and priceType=:type and currency=:currency', [start: cp.startDate, tipp: this, type: cp.priceType, currency: cp.currency])
+        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:tipp and (endDate is null or endDate>:start) and priceType=:type and currency=:currency' , [start: cp.startDate, tipp: this, type: cp.priceType, currency:cp.currency])
         cp.save()
         // enter the new price
         prices << cp

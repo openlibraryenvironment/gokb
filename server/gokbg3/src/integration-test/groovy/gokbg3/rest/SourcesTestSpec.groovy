@@ -32,7 +32,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
     Source.findByName("Source PreUpdate")?.expunge()
     Source.findByName("Source AfterUpdate")?.expunge()
     Source.findByName("TestSource")?.expunge()
-    IdentifierNamespace titleNS = IdentifierNamespace.findByName("TestSourceTitleNS")?.delete(flush: true)
+    IdentifierNamespace.findByName("TestSourceTitleNS")?.delete(flush: true)
   }
 
   void "test GET /rest/sources"() {

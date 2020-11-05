@@ -22,7 +22,6 @@ class Source extends KBComponent {
   Boolean ezbMatch=false
   Org responsibleParty
 
-
   static mapping = {
     includes KBComponent.mapping
     url column:'source_url'

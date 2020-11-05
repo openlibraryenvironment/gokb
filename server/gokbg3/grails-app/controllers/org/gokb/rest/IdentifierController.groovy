@@ -105,7 +105,8 @@ class IdentifierController {
 
       if (reqBody.namespace instanceof Integer) {
         ns = IdentifierNamespace.get(reqBody.namespace)
-      } else if (reqBody.namespace instanceof String) {
+      }
+      else if (reqBody.namespace instanceof String) {
         ns = IdentifierNamespace.findByValueIlike(reqBody.namespace)
       }
 

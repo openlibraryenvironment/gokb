@@ -313,14 +313,18 @@ class RestMappingService {
                   if (catName == 'KBComponent.Status') {
                     if (rdv.value == 'Deleted') {
                       obj.deleteSoft()
-                    } else if (rdv.value == 'Retired') {
+                    }
+                    else if (rdv.value == 'Retired') {
                       obj.retire()
-                    } else if (rdv.value == 'Current') {
+                    }
+                    else if (rdv.value == 'Current') {
                       obj.setActive()
-                    } else if (rdv.value == 'Expected') {
+                    }
+                    else if (rdv.value == 'Expected') {
                       obj.setExpected()
                     }
-                  } else {
+                  }
+                  else {
                     obj[prop] = rdv
                   }
                 } else {
@@ -334,7 +338,8 @@ class RestMappingService {
                     'rdc.values.notFound'
                   )
                 }
-              } else {
+              }
+              else {
                 obj.errors.reject(
                   'default.not.found.message',
                   [ptype, val] as Object[],
@@ -345,7 +350,8 @@ class RestMappingService {
                   'default.not.found.message'
                 )
               }
-            } else if (val instanceof Map) {
+            }
+            else if (val instanceof Map) {
               if (val.id) {
                 rdv = RefdataValue.get(val.id)
 
@@ -354,14 +360,18 @@ class RestMappingService {
                     if (catName == 'KBComponent.Status') {
                       if (rdv.value == 'Deleted') {
                         obj.deleteSoft()
-                      } else if (rdv.value == 'Retired') {
+                      }
+                      else if (rdv.value == 'Retired') {
                         obj.retire()
-                      } else if (rdv.value == 'Current') {
+                      }
+                      else if (rdv.value == 'Current') {
                         obj.setActive()
-                      } else if (rdv.value == 'Expected') {
+                      }
+                      else if (rdv.value == 'Expected') {
                         obj.setExpected()
                       }
-                    } else {
+                    }
+                    else {
                       obj[prop] = rdv
                     }
                   } else {
@@ -375,7 +385,8 @@ class RestMappingService {
                       'rdc.values.notFound'
                     )
                   }
-                } else {
+                }
+                else {
                   obj.errors.reject(
                     'default.not.found.message',
                     [ptype, val.id] as Object[],
@@ -386,7 +397,8 @@ class RestMappingService {
                     'default.not.found.message'
                   )
                 }
-              } else if (val.name) {
+              }
+              else if (val.name) {
                 rdv = RefdataCategory.lookup(catName, val.name)
 
                 if (!rdv) {
@@ -399,23 +411,29 @@ class RestMappingService {
                     prop,
                     'rdc.values.notFound'
                   )
-                } else {
+                }
+                else {
                   if (catName == 'KBComponent.Status') {
                     if (rdv.value == 'Deleted') {
                       obj.deleteSoft()
-                    } else if (rdv.value == 'Retired') {
+                    }
+                    else if (rdv.value == 'Retired') {
                       obj.retire()
-                    } else if (rdv.value == 'Current') {
+                    }
+                    else if (rdv.value == 'Current') {
                       obj.setActive()
-                    } else if (rdv.value == 'Expected') {
+                    }
+                    else if (rdv.value == 'Expected') {
                       obj.setExpected()
                     }
-                  } else {
+                  }
+                  else {
                     obj[prop] = rdv
                   }
                 }
               }
-            } else {
+            }
+            else {
               rdv = RefdataCategory.lookup(catName, val)
 
               if (!rdv) {
@@ -428,7 +446,8 @@ class RestMappingService {
                   prop,
                   'rdc.values.notFound'
                 )
-              } else {
+              }
+              else {
                 obj[prop] = rdv
               }
             }
@@ -441,7 +460,8 @@ class RestMappingService {
 
         if (val instanceof Integer) {
           linkObj = ptype.get(val)
-        } else if (val instanceof Map) {
+        }
+        else if (val instanceof Map) {
           linkObj = val.id ? ptype.get(val.id) : null
         }
 
@@ -459,7 +479,8 @@ class RestMappingService {
           )
         }
       }
-    } else {
+    }
+    else {
       obj[prop] = null
     }
   }
@@ -481,7 +502,8 @@ class RestMappingService {
 
         if (i instanceof Integer) {
           id = Identifier.get(i)
-        } else if (i instanceof Map) {
+        }
+        else if (i instanceof Map) {
           def ns_val = i.namespace ?: i.type
 
           if (i.value && ns_val) {
@@ -489,7 +511,8 @@ class RestMappingService {
 
             if (ns_val instanceof String) {
               ns = ns_val
-            } else if (ns_val) {
+            }
+            else if (ns_val) {
               ns = IdentifierNamespace.get(ns_val)?.value ?: null
             }
 
@@ -507,7 +530,8 @@ class RestMappingService {
             errors << [message: messageService.resolveCode('identifier.value.IllegalIDForm', null, null), baddata: i]
             valid = false
           }
-        } else {
+        }
+        else {
           errors << [message: "Could not identify ID form!", baddata: i]
           valid = false
           log.error("Could not identify ID form!")
@@ -516,7 +540,8 @@ class RestMappingService {
         if (id && !obj.hasErrors() && valid) {
           log.debug("Adding id ${id} to current set")
           new_ids << id
-        } else if (!id) {
+        }
+        else if (!id) {
           log.debug("No Identifier found for ID ${i}, or errors on object ..")
         }
       }
@@ -524,19 +549,22 @@ class RestMappingService {
       if (errors.size() == 0) {
         new_ids.each { i ->
 
-          def dupe = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?", [combo_id_type, obj, i])
+          def dupe = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?",[combo_id_type, obj, i])
 
           if (dupe.size() == 0) {
-            def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true)
-          } else if (dupe.size() == 1) {
+            def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush:true)
+          }
+          else if (dupe.size() == 1 ) {
             if (dupe[0].status == combo_deleted) {
               log.debug("Matched ID combo was marked as deleted!")
-              dupe[0].delete(flush: true)
-              def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true)
-            } else {
+              dupe[0].delete(flush:true)
+              def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush:true)
+            }
+            else {
               log.debug("Not adding duplicate ..")
             }
-          } else {
+          }
+          else {
             if (!errors.ids) {
               errors.ids = []
             }
@@ -559,7 +587,8 @@ class RestMappingService {
           }
         }
       }
-    } else {
+    }
+    else {
       log.error("Object ${obj} not found or illegal id format")
       errors << [message: "Expected an Array to process!", baddata: ids]
     }
@@ -580,9 +609,10 @@ class RestMappingService {
 
       if (cg instanceof String) {
         cg_obj = CuratoryGroup.findByNameIlike(cg)
-      } else if (cg instanceof Integer) {
+      } else if (cg instanceof Integer){
         cg_obj = CuratoryGroup.get(cg)
-      } else if (cg instanceof Map) {
+      }
+      else if (cg instanceof Map) {
         cg_obj = CuratoryGroup.get(cg.id)
       }
 
@@ -596,7 +626,7 @@ class RestMappingService {
     if (errors.size() == 0) {
       new_cgs.each { c ->
         if (!obj.curatoryGroups.contains(c)) {
-          def new_combo = new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush: true)
+          def new_combo = new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush:true)
         } else {
           log.debug("Existing cg ${c}..")
         }
@@ -641,7 +671,8 @@ class RestMappingService {
               if (newVariant) {
                 log.debug("Added variant ${newVariant}")
                 remaining << newVariant
-              } else {
+              }
+              else {
                 log.debug("Could not add variant ${it}!")
                 obj.errors.reject(
                   'component.addToList.denied.label',
@@ -674,7 +705,8 @@ class RestMappingService {
             } else {
               notFound << it
             }
-          } else if (it.variantName) {
+          }
+          else if (it.variantName) {
             def nvn = GOKbTextUtils.normaliseString(it.variantName)
             def dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj)
 
@@ -712,7 +744,8 @@ class RestMappingService {
                 )
               }
             }
-          } else {
+          }
+          else {
             log.debug("Unable to process map ${it}!")
           }
         }
@@ -723,7 +756,7 @@ class RestMappingService {
           log.debug("Retain updated list ${remaining}..")
           obj.variantNames.retainAll(remaining)
           log.debug("new list: ${obj.variantNames}")
-          obj.save(flush: true)
+          obj.save(flush:true)
         }
       } else {
         log.debug("Unable to look up variants ..")
@@ -765,16 +798,19 @@ class RestMappingService {
 
     if (new_pubs instanceof Collection) {
       new_pubs.each { pub ->
-        if (!pubs_to_add.collect { it.id == pub }) {
+        if (!pubs_to_add.collect { it.id == pub}) {
           pubs_to_add << Org.get(pub)
-        } else {
+        }
+        else {
           log.warn("Duplicate for incoming publisher ${pub}!")
         }
       }
-    } else {
-      if (!pubs_to_add.collect { it.id == new_pubs }) {
+    }
+    else {
+      if (!pubs_to_add.collect { it.id == new_pubs}) {
         pubs_to_add << Org.get(new_pubs)
-      } else {
+      }
+      else {
         log.warn("Duplicate for incoming publisher ${new_pubs}!")
       }
     }

@@ -171,11 +171,11 @@ class OrgTestSpec extends AbstractAuthSpec {
     def id = Org.findByName("TestOrgPatch")?.id
 
     def update_record = [
-      name  : "TestOrgUpdateSource",
-      ids   : [
+      name             : "TestOrgUpdateSource",
+      ids              : [
         [namespace: "global", value: "test-org-id-val-new"]
       ],
-      source: null
+      source           : null
     ]
 
     when:

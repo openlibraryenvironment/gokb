@@ -61,9 +61,9 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     Identifier.findByValue("1938-2650")?.expunge()
     test_id?.expunge()
     test_journal?.refresh().expunge()
-    ns_typeBook.delete(flush: true)
-    ns_typeOther.delete(flush:true)
-    ns_typeTitle.delete(flush: true)
+    ns_typeBook?.delete(flush: true)
+    ns_typeOther?.delete(flush: true)
+    ns_typeTitle?.delete(flush: true)
   }
 
   void "test /rest/identifiers/<id> without token"() {

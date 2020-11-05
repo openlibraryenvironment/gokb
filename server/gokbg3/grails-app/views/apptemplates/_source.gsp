@@ -46,27 +46,25 @@
             <g:annotatedLabel owner="${d}" property="automaticUpdates">automatic Updates</g:annotatedLabel>
         </dt>
         <dd>
-            <g:checkBox owner="${d}" field="automaticUpdates" value="${automaticUpdates}"
-                        checked="${automaticUpdates ? automaticUpdates : false}"
-                        name="_automaticUpdates"/>
+            <g:xEditableBoolean owner="${d}" field="automaticUpdates"/>
         </dd>
         <dt>
-            <g:annotatedLabel owner="${d}" property="ezb&&zdb">match data with</g:annotatedLabel>
+            <g:annotatedLabel owner="${d}" property="ezbMatch">match with EZB</g:annotatedLabel>
         </dt>
         <dd>
-            <g:annotatedLabel owner="${d}" property="ezbMatch">ezb</g:annotatedLabel>
-            <g:checkBox owner="${d}" field="ezbMatch" value="${ezbMatch}" checked="${ezbMatch ? ezbMatch : false}"
-                        name="_ezbMatch"/>
-            &nbsp;
-            <g:annotatedLabel owner="${d}" property="zdbMatch">zdb</g:annotatedLabel>
-            <g:checkBox owner="${d}" field="zdbMatch" value="${zdbMatch}" checked="${zdbMatch ? zdbMatch : false}"
-                        name="_zdbMatch"/>
+            <g:xEditableBoolean owner="${d}" field="ezbMatch"/>
         </dd>
         <dt>
-            <g:annotatedLabel owner="${d}" property="lastRun">last Run</g:annotatedLabel>
+            <g:annotatedLabel owner="${d}" property="zdbMatch">match with ZDB</g:annotatedLabel>
         </dt>
         <dd>
-            ${d.lastRun ? d.lastRun : 'never'}
+            <g:xEditableBoolean owner="${d}" field="zdbMatch"/>
+        </dd>
+        <dt>
+            <g:annotatedLabel owner="${d}" property="lastRun">last AutoUpdate</g:annotatedLabel>
+        </dt>
+        <dd>
+            <g:xEditable owner="${d}" field="lastRun" editable="false"/>
         </dd>
         <dt>
             <g:annotatedLabel owner="${d}" property="responsibleParty">Responsible Party</g:annotatedLabel>
