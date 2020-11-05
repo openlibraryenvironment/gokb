@@ -32,6 +32,7 @@ class Package extends KBComponent {
   RefdataValue paymentType
   RefdataValue global
   RefineProject lastProject
+  String globalNote
   String listVerifier
   User userListVerifier
   Date listVerifiedDate
@@ -81,6 +82,7 @@ class Package extends KBComponent {
     fixed column: 'pkg_fixed_rv_fk'
     paymentType column: 'pkg_payment_type_rv_fk'
     global column: 'pkg_global_rv_fk'
+    globalNote column: 'pkg_global_note'
     listVerifier column: 'pkg_list_verifier'
     userListVerifier column: 'pkg_list_verifier_user_fk'
     descriptionURL column: 'pkg_descr_url'
@@ -95,6 +97,7 @@ class Package extends KBComponent {
     fixed(nullable: true, blank: false)
     paymentType(nullable: true, blank: false)
     global(nullable: true, blank: false)
+    globalNote(nullable: true, blank: true)
     lastProject(nullable: true, blank: false)
     descriptionURL(nullable: true, blank: true)
     name(validator: { val, obj ->
@@ -469,6 +472,7 @@ select tipp.id,
         'fixed'(fixed?.value)
         'paymentType'(paymentType?.value)
         'global'(global?.value)
+        'globalNote'(globalNote)
         'contentType'(contentType?.value)
 
         if (nominalPlatform) {
@@ -624,7 +628,7 @@ select tipp.id,
 
     return result;
   }
-
+  
   public void addCuratoryGroupIfNotPresent(String cgname) {
     boolean add_needed = true;
     curatoryGroups.each { cgtest ->

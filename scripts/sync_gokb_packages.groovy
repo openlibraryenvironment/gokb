@@ -20,7 +20,7 @@ while ( moredata ) {
       println("Record ${index + 1}")
       def resourceFieldMap = [
         packageHeader : directAddFields (data, ['scope', 'listStatus', 'breakable' ,'consistent', 'fixed', 'paymentType',
-        'global', 'listVerifier', 'userListVerifier', 'listVerifiedDate'], addCoreItems ( data ) )
+        'global', 'globalNote', 'listVerifier', 'userListVerifier', 'listVerifiedDate'], addCoreItems ( data ) )
       ]
 
       resourceFieldMap.packageHeader['nominalPlatform'] = [name: data.nominalPlatform.name.text(),

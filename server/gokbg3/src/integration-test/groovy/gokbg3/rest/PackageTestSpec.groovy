@@ -171,6 +171,7 @@ class PackageTestSpec extends AbstractAuthSpec {
       descriptionURL : "https://heise.de",
       fixed          : "Yes",
       global         : "Consortium",
+      globalNote     : "Testing Consortium",
       ids            : [
         [
           "value"    : "1213-123X",
@@ -199,5 +200,6 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.json.provider != null
     resp.json.nominalPlatform != null
     resp.json.scope.name == "Front File"
+    resp.json.globalNote == "Testing Consortium"
   }
 }
