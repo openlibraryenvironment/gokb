@@ -2,8 +2,6 @@ package org.gokb
 
 import grails.converters.JSON
 import org.springframework.security.access.annotation.Secured;
-import org.codehaus.groovy.grails.commons.*
-import org.grails.plugins.web.taglib.ApplicationTagLib
 import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -54,7 +52,7 @@ class CreateController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def process() {
-    log.debug("CreateControler::process... ${params}");
+    log.debug("CreateController::process... ${params}");
 
     def result=['responseText':'OK']
     
@@ -117,10 +115,10 @@ class CreateController {
                 if ( pprop.getType().name == 'java.lang.String' ) {
                   result.newobj[p.key] = p.value?.trim() ?: null
                 }
-                else if ( pprop.getType().name == 'java.lang.Date' ) {
-                  def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                else if ( pprop.getType().name == 'java.util.Date' ) {
+                  def sdf = new java.text.SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss", Locale.ENGLISH);
 
-                  result.newobj[p.key] = sdf.parse(p.value)
+                  result.newobj[p.key] = sdf.parse(p.value.substring(0,24))
                 }
                 propertyWasSet = propertyWasSet || (p.value != null)
               }

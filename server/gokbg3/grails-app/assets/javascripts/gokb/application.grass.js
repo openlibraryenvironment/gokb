@@ -182,7 +182,7 @@ window.gokb = {
       }
     });
     
-    $(".xEditableManyToOne").editable();
+    $('.xEditableManyToOne').editable();
     
     // Handle dates differently now.
     $('.ipe').each(function() {
