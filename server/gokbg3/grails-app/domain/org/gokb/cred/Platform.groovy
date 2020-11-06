@@ -118,7 +118,6 @@ class Platform extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     def identifiers = getIds()
 
     builder.'gokb'(attr) {
