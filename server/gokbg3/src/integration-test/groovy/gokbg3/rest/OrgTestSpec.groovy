@@ -22,11 +22,8 @@ class OrgTestSpec extends AbstractAuthSpec {
   def setup() {
     def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true)
     def new_plt_upd = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate").save(flush: true)
-    def patch_org = Org.findByName("TestOrgPatch") ?:
-      new Org(name: "TestOrgPatch",
-        source: Source.findByName("TestOrgPatchSource") ?:
-          new Source(name: "TestOrgPatchSource"))
-        .save(flush: true)
+    def new_source = Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource").save(flush: true)
+    def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source).save(flush: true)
   }
 
   def cleanup() {
@@ -36,8 +33,18 @@ class OrgTestSpec extends AbstractAuthSpec {
     if (Platform.findByName("TestOrgPltUpdate")) {
       Platform.findByName("TestOrgPltUpdate")?.refresh().expunge()
     }
-    if (Org.findByName("TestOrgPatch")) {
-      Org.findByName("TestOrgPatch")?.refresh().expunge()
+    if (Org.findByName("TestOrgPost")) {
+      Org.findByName("TestOrgPost")?.refresh().expunge()
+    }
+    if (Org.findByName("TestOrgUpdateNew")) {
+      Org.findByName("TestOrgUpdateNew")?.refresh().expunge()
+    }
+    if (Org.findByName("TestOrgUpdateSource")) {
+      Org.findByName("TestOrgUpdateSource")?.refresh().expunge()
+
+      if (Source.findByName("TestOrgPatchSource")) {
+        Source.findByName("TestOrgPatchSource")?.refresh().expunge()
+      }
     }
   }
 

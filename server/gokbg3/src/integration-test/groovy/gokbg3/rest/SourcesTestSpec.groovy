@@ -94,7 +94,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
         name           : 'Source AfterUpdate',
         frequency      : '1M',
         url            : "http://kbart-source.com/test-pkg",
-        targetNamespace: namespace
+        targetNamespace: namespace.id
       ] as JSON)
     }
     then:
