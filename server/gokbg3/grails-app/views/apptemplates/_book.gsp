@@ -94,14 +94,14 @@
     <g:annotatedLabel owner="${d}" property="publishedFrom">Published From</g:annotatedLabel>
   </dt>
   <dd>
-    <g:xEditable class="ipe" owner="${d}" type="date" data-format="yyyy-mm-dd" field="publishedFrom" />
+    <g:xEditable class="ipe" owner="${d}" type="date" field="publishedFrom" />
   </dd>
 
   <dt>
     <g:annotatedLabel owner="${d}" property="publishedTo">Published To</g:annotatedLabel>
   </dt>
   <dd>
-    <g:xEditable class="ipe" owner="${d}" type="date" data-format="yyyy-mm-dd" field="publishedTo" />
+    <g:xEditable class="ipe" owner="${d}" type="date" field="publishedTo" />
   </dd>
 
   <g:if test="${d.id != null && d.titleHistory}">
