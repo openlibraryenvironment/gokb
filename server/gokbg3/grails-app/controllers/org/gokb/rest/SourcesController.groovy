@@ -28,7 +28,7 @@ class SourcesController {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -47,7 +47,7 @@ class SourcesController {
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -112,8 +112,18 @@ class SourcesController {
     if (!errors) {
       if ( source.validate() ) {
         source.save(flush: true)
-        response.setStatus(201)
-        result = restMappingService.mapObjectToJson(source, params, user)
+
+        errors << updateCombos(obj, reqBody, remove)
+
+        if (!errors) {
+          response.setStatus(201)
+          result = restMappingService.mapObjectToJson(source, params, user)
+        }
+        else {
+          response.setStatus(400)
+          result.errors = errors
+          result.result = 'ERROR'
+        }
       } else {
         result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
         response.setStatus(409)
@@ -135,23 +145,54 @@ class SourcesController {
     def errors = [:]
     def remove = (request.method == 'PUT')
     User user = User.get(springSecurityService.principal.id)
+    boolean editable = true
 
-    source = restMappingService.updateObject(source, null, request.JSON)
+    if ( !user.hasRole('ROLE_ADMIN') && obj.curatoryGroups && obj.curatoryGroups.size() > 0 ) {
+      def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
 
-    if (!errors) {
-      if ( source.validate() ) {
-        source = source.merge(flush: true)
-        result = restMappingService.mapObjectToJson(source, params, user)
-      } else {
-        result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
-        response.setStatus(409)
-        source?.discard()
+      if (!cur) {
+        editable = false
       }
-    } else {
-      response.setStatus(400)
-      result.errors = errors
-      result.result = 'ERROR'
+    }
+
+    if (editable) {
+      source = restMappingService.updateObject(source, null, request.JSON)
+
+      errors << updateCombos(obj, reqBody, remove)
+
+      if (!errors) {
+        if ( source.validate() ) {
+          source = source.merge(flush: true)
+          result = restMappingService.mapObjectToJson(source, params, user)
+        } else {
+          result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
+          response.setStatus(409)
+          source?.discard()
+        }
+      } else {
+        response.setStatus(400)
+        result.errors = errors
+        result.result = 'ERROR'
+      }
+    }
+    else {
+
     }
     render result as JSON
+  }
+
+  private def updateCombos(obj, reqBody, boolean remove = true) {
+    log.debug("Updating package combos ..")
+    def errors = [:]
+
+    if (reqBody.curatoryGroups) {
+      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+
+      if (cg_errors.size() > 0) {
+        errors['curatoryGroups'] = cg_errors
+      }
+    }
+
+    errors
   }
 }

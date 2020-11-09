@@ -19,8 +19,12 @@ class Source extends KBComponent {
   IdentifierNamespace targetNamespace
   Date lastRun
   Boolean zdbMatch = false
-  Boolean ezbMatch=false
+  Boolean ezbMatch = false
   Org responsibleParty
+
+  static manyByCombo = [
+    curatoryGroups: CuratoryGroup
+  ]
 
   static mapping = {
     includes KBComponent.mapping
@@ -48,7 +52,7 @@ class Source extends KBComponent {
         if (val && val.trim()) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
           def dupes = Source.findAllByNameIlikeAndStatusNotEqual(val, status_deleted);
-          
+
           if (dupes.size() > 0 && dupes.any {it != obj}) {
             return ['notUnique']
           }
@@ -66,11 +70,11 @@ class Source extends KBComponent {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     def status_filter = null
-    
+
     if(params.filter1) {
       status_filter = RefdataCategory.lookup('KBComponent.Status', params.filter1)
     }
-    
+
     def ql = null;
     ql = Source.findAllByNameIlikeAndStatusNotEqual("${params.q}%", status_deleted, params)
 

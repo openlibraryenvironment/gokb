@@ -136,6 +136,10 @@ class RestMappingService {
                   'id'  : obj[p.name].id
                 ]
 
+                if (p.name == 'namespace') {
+                  result['namespace']['value'] = obj['namespace'].value
+                }
+
                 if (embed_active.contains(p.name)) {
                   result['_embedded'][p.name] = getEmbeddedJson(obj[p.name], user)
                 }

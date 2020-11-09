@@ -228,7 +228,7 @@ class IdentifierController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def namespace() {
     if (targetTypeMap.size() == 0) {
       fillTargetMap()

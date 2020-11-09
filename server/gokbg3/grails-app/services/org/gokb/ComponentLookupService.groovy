@@ -390,7 +390,7 @@ class ComponentLookupService {
         }
         else if ( p.name == 'name' ){
           paramStr += "lower(p.${p.name}) like :${p.name}"
-          qryParams[p.name] = "${params[p.name].toLowerCase()}%"
+          qryParams[p.name] = "%${params[p.name].toLowerCase()}%"
         }
         else {
           paramStr += "p.${p.name} = :${p.name}"
