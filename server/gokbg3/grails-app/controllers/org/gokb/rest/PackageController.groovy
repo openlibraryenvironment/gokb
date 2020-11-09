@@ -261,8 +261,6 @@ class PackageController {
     }
 
     if (obj && reqBody) {
-      obj.lock()
-
       if ( !user.hasRole('ROLE_ADMIN') && obj.curatoryGroups && obj.curatoryGroups.size() > 0 ) {
         def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
 

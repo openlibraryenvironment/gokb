@@ -6,6 +6,8 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
+import org.gokb.cred.IdentifierNamespace
+import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Source
 import spock.lang.Ignore
 
@@ -17,7 +19,11 @@ class SourcesTestSpec extends AbstractAuthSpec {
 
   def setup() {
     def src_upd = Source.findByName("Source PreUpdate") ?: new Source(name: "Source PreUpdate")
-    Source quelle = Source.findByName("TestSource")?:new Source(name:"TestSource")
+    IdentifierNamespace titleNS = IdentifierNamespace.findByName("TestSourceTitleNS") ?: new IdentifierNamespace(
+      value: "testsourcetitlenamespace",
+      name: "TestSourceTitleNS",
+      targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title'))
+    Source quelle = Source.findByName("TestSource") ?: new Source(name: "TestSource", targetNamespace: titleNS)
   }
 
   @Transactional
@@ -26,6 +32,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
     Source.findByName("Source PreUpdate")?.expunge()
     Source.findByName("Source AfterUpdate")?.expunge()
     Source.findByName("TestSource")?.expunge()
+    IdentifierNamespace.findByName("TestSourceTitleNS")?.delete(flush: true)
   }
 
   void "test GET /rest/sources"() {
@@ -38,7 +45,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data.size() == 9
+    resp.json.data.size() == 8
   }
 
   void "test GET /rest/sources/{id}"() {
@@ -53,6 +60,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.name == quelle.name
+    resp.json.targetNamespace != null
   }
 
   void "test POST /rest/sources"() {
@@ -74,6 +82,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
   void "test PUT /rest/sources/{id}"() {
     given:
     def srcId = Source.findByName("Source PreUpdate")?.id
+    def namespace = IdentifierNamespace.findByName("TestSourceTitleNS")
     when:
     String accessToken = getAccessToken()
     RestResponse resp = rest.put("http://localhost:$serverPort/gokb/rest/sources/$srcId") {
@@ -81,12 +90,19 @@ class SourcesTestSpec extends AbstractAuthSpec {
       accept('application/json')
       contentType('application/json')
       auth("Bearer $accessToken")
-      body([name: 'Source AfterUpdate', frequency: '1M', url: "http://kbart-source.com/test-pkg"] as JSON)
+      body([
+        name           : 'Source AfterUpdate',
+        frequency      : '1M',
+        url            : "http://kbart-source.com/test-pkg",
+        targetNamespace: namespace.id
+      ] as JSON)
     }
     then:
     resp.status == 200
     resp.json.name == "Source AfterUpdate"
     resp.json.frequency == "1M"
     resp.json.url == "http://kbart-source.com/test-pkg"
+    resp.json.targetNamespace.name == "TestSourceTitleNS"
+    resp.json.automaticUpdates == false
   }
 }
