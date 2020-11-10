@@ -36,9 +36,11 @@ class SourcesTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/sources"() {
+    given:
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/sources?_sort=name&_order=asc&es") {
+    RestResponse resp = rest.get("$urlPath/rest/sources?_sort=name&_order=asc&es") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -49,10 +51,12 @@ class SourcesTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/sources/{id}"() {
+    given:
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
     Source quelle = Source.findByName("TestSource")
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/sources/$quelle.id") {
+    RestResponse resp = rest.get("$urlPath/rest/sources/$quelle.id") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -64,9 +68,11 @@ class SourcesTestSpec extends AbstractAuthSpec {
   }
 
   void "test POST /rest/sources"() {
+    given:
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("http://localhost:$serverPort/gokb/rest/sources") {
+    RestResponse resp = rest.post("$urlPath/rest/sources") {
       // headers
       accept('application/json')
       contentType('application/json')
@@ -82,10 +88,11 @@ class SourcesTestSpec extends AbstractAuthSpec {
   void "test PUT /rest/sources/{id}"() {
     given:
     def srcId = Source.findByName("Source PreUpdate")?.id
+    def urlPath = getUrlPath()
     def namespace = IdentifierNamespace.findByName("TestSourceTitleNS")
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("http://localhost:$serverPort/gokb/rest/sources/$srcId") {
+    RestResponse resp = rest.put("$urlPath/rest/sources/$srcId") {
       // headers
       accept('application/json')
       contentType('application/json')

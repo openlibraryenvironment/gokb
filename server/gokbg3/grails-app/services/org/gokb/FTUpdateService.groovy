@@ -8,13 +8,13 @@ import org.hibernate.ScrollMode
 import java.nio.charset.Charset
 import java.util.GregorianCalendar
 import org.gokb.cred.*
-import java.text.SimpleDateFormat
 
 @Transactional
 class FTUpdateService {
 
   def ESWrapperService
   def sessionFactory
+  def dateFormatService
   def grailsApplication
 
   public static boolean running = false;
@@ -52,7 +52,6 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.Package.class) { kbc ->
 
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
         result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
@@ -64,7 +63,7 @@ class FTUpdateService {
         result.sortname = kbc.name
         result.altname = []
         result.listStatus = kbc.listStatus?.value
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -83,7 +82,7 @@ class FTUpdateService {
         result.nominalPlatformUuid = kbc.nominalPlatform?.uuid ?: ""
 
         result.scope = kbc.scope ? kbc.scope.value : ""
-        result.listVerifiedDate = kbc.listVerifiedDate ? sdf.format(kbc.listVerifiedDate) : ""
+        result.listVerifiedDate = kbc.listVerifiedDate ? dateFormatService.formatTimestamp(kbc.listVerifiedDate) : ""
 
         if (kbc.source)
           result.source = [frequency : kbc.source.frequency, id:kbc.source.id]
@@ -108,7 +107,6 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.Org.class) { kbc ->
         def result = [:]
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
@@ -118,7 +116,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         result.roles = []
         kbc.roles.each { role ->
@@ -146,7 +144,6 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.Platform.class) { kbc ->
         def result = [:]
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
@@ -157,7 +154,7 @@ class FTUpdateService {
 
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -186,7 +183,6 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.JournalInstance.class) { kbc ->
 
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
         def current_pub = kbc.currentPublisher
 
@@ -205,7 +201,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
         result.status = kbc.status?.value
 
         result.identifiers = []
@@ -223,7 +219,6 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.DatabaseInstance.class) { kbc ->
 
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
         def current_pub = kbc.currentPublisher
 
@@ -241,7 +236,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         result.status = kbc.status?.value
 
@@ -260,7 +255,6 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.OtherInstance.class) { kbc ->
 
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
         def current_pub = kbc.currentPublisher
 
@@ -278,7 +272,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         result.status = kbc.status?.value
 
@@ -297,7 +291,6 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.BookInstance.class) { kbc ->
 
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
         def current_pub = kbc.currentPublisher
 
@@ -316,7 +309,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
         result.status = kbc.status?.value
 
         result.identifiers = []
@@ -334,7 +327,6 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class) { kbc ->
 
-        def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
         def result = null
 
         result = [:]
@@ -349,7 +341,7 @@ class FTUpdateService {
 
         result.titleType = kbc.title?.niceName ?: 'Unknown'
 
-        result.lastUpdatedDisplay = sdf.format(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         result.url = kbc.url
 
@@ -361,10 +353,10 @@ class FTUpdateService {
           coverage_src.each { tcs ->
             def cst = [:]
 
-            cst.startDate = tcs.startDate ? sdf.format(tcs.startDate) : ""
+            cst.startDate = tcs.startDate ? dateFormatService.formatTimestamp(tcs.startDate) : ""
             cst.startVolume = tcs.startVolume ?: ""
             cst.startIssue = tcs.startIssue ?: ""
-            cst.endDate = tcs.endDate ? sdf.format(tcs.endDate) : ""
+            cst.endDate = tcs.endDate ? dateFormatService.formatTimestamp(tcs.endDate) : ""
             cst.endVolume = tcs.endVolume ?: ""
             cst.endIssue = tcs.endIssue ?: ""
             cst.embargo = tcs.embargo ?: ""

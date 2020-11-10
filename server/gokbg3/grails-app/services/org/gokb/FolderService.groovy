@@ -6,7 +6,6 @@ import au.com.bytecode.opencsv.CSVReader
 import au.com.bytecode.opencsv.bean.CsvToBean
 import au.com.bytecode.opencsv.bean.HeaderColumnNameMappingStrategy
 import au.com.bytecode.opencsv.bean.HeaderColumnNameTranslateMappingStrategy
-import java.text.SimpleDateFormat
 import org.apache.commons.io.ByteOrderMark
 
 class FolderService {

@@ -26,6 +26,7 @@ class PublicController {
   def TSVIngestionService
   def ESWrapperService
   def ESSearchService
+  def dateFormatService
   def sessionFactory
 
   public static String TIPPS_QRY = 'from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=? and c.toComponent=tipp and c.type = ? and tipp.status = ?';
@@ -112,8 +113,7 @@ class PublicController {
 
     def pkg = genericOIDService.resolveOID(params.id)
 
-    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new Date());
+    def export_date = dateFormatService.formatDate(new Date());
 
     def filename = "GOKb Export : ${pkg.name} : ${export_date}.tsv"
 
@@ -218,10 +218,7 @@ class PublicController {
 
   def packageTSVExport() {
 
-
-    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new Date());
-
+    def export_date = dateFormatService.formatDate(new Date());
 
     def pkg = genericOIDService.resolveOID(params.id)
 

@@ -1,14 +1,10 @@
 package gokbg3
 
 import com.k_int.ClassUtils
-import grails.core.GrailsClass
 
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 import org.gokb.cred.*
-import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -22,6 +18,7 @@ class RestMappingService {
   def componentLookupService
   def messageSource
   def messageService
+  def dateFormatService
 
   def defaultIgnore = [
     'bucketHash',
@@ -67,7 +64,6 @@ class RestMappingService {
   def mapObjectToJson(obj, params, def user = null) {
     log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
     def result = [:]
-    def sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
     def embed_active = params['_embed']?.split(',') ?: []
     def include_list = params['_include']?.split(',') ?: null
     def exclude_list = params['_exclude']?.split(',') ?: null
@@ -163,7 +159,7 @@ class RestMappingService {
               break;
 
             case Date.class:
-              result[p.name] = obj[p.name] ? sdf.format(obj[p.name]) : null
+              result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
               break;
             default:
               result[p.name] = obj[p.name]

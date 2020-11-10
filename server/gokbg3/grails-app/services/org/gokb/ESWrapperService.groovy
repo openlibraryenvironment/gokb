@@ -2,7 +2,6 @@ package org.gokb
 
 import groovy.json.JsonBuilder
 
-import java.text.SimpleDateFormat
 import java.net.InetAddress;
 
 import org.elasticsearch.client.Client
