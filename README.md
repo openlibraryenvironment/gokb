@@ -18,6 +18,14 @@ GOKb development has moved here from https://github.com/k-int/gokb-phase1
 
 Default configuration in `gokb/server/gokbg3/grails-app/conf/application.yml` can be overridden by placing an `application-development.yml` (such as the example in `template_files/`) in `gokb/server/gokbg3/`
 
+As some scripts rely on the path `/gokb`, it is recommended to deploy GOKb in this path. For local development environment, add to your local `application-development.yml`:
+
+```
+server:
+    port: 8080
+    contextPath: /gokb
+```
+
 ## Starting the application
 
 from `gokb/server/gokbg3/`

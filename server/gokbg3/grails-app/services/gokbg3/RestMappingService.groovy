@@ -124,13 +124,17 @@ class RestMappingService {
             // Set ref property
             if (user?.isAdmin() || p.type != User) {
               if (obj[p.name]) {
-                def label = selectPreferredLabel(obj[p.name])
+                def label = selectJsonLabel(obj[p.name])
 
                 result[p.name] = [
                   'name': label,
                   'type': obj[p.name].niceName,
                   'id'  : obj[p.name].id
                 ]
+
+                if (p.name == 'namespace') {
+                  result['namespace']['value'] = obj['namespace'].value
+                }
 
                 if (embed_active.contains(p.name)) {
                   result['_embedded'][p.name] = getEmbeddedJson(obj[p.name], user)
@@ -891,11 +895,11 @@ class RestMappingService {
    * @param obj : The object to be examined
    */
 
-  private String selectPreferredLabel(obj) {
+  private String selectJsonLabel(obj) {
     def obj_label = null
 
-    if (obj.hasProperty('username')) {
-      obj_label = obj.username
+    if (obj.hasProperty('jsonLabel')) {
+      obj_label = obj[obj.jsonLabel]
     } else if (obj.hasProperty('value')) {
       obj_label = obj.value
     } else if (obj.hasProperty('name')) {

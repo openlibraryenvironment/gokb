@@ -971,6 +971,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Licensor').save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate('Combo.Type', 'License.Licensee').save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate('Combo.Type', 'IngestionProfile.Source').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Combo.type', 'Source.CuratoryGroups').save(flush: true, failOnError: true)
 
 
     RefdataCategory.lookupOrCreate('MembershipRole', 'Administrator').save(flush: true, failOnError: true)
