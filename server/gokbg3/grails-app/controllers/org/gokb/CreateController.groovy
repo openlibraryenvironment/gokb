@@ -6,6 +6,9 @@ import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 import grails.core.GrailsClass
+import java.time.Instant
+import java.time.ZoneId
+import java.time.LocalDateTime
 
 class CreateController {
 
@@ -55,7 +58,7 @@ class CreateController {
     log.debug("CreateController::process... ${params}");
 
     def result=['responseText':'OK']
-    
+
 
     // II: Defaulting this to true - don't like it much, but we need to be able to create a title without any
     // props being set... not ideal, but issue closing.
@@ -117,8 +120,10 @@ class CreateController {
                 }
                 else if ( pprop.getType().name == 'java.util.Date' ) {
                   def sdf = new java.text.SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss", Locale.ENGLISH);
+                  Instant instant = sdf.parse(p.value.substring(0,24)).toInstant()
+                  LocalDateTime ldt = LocalDateTime.ofInstant(instant, ZoneId.of("GMT"))
 
-                  result.newobj[p.key] = sdf.parse(p.value.substring(0,24))
+                  result.newobj[p.key] = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant())
                 }
                 propertyWasSet = propertyWasSet || (p.value != null)
               }
@@ -140,7 +145,7 @@ class CreateController {
             flash.error="Please fill in at least one piece of information to create the component."
             result.uri = g.createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
           } else {
-          
+
             log.debug("Saving..");
             if ( !result.newobj.validate() ) {
               flash.error = []
@@ -183,7 +188,7 @@ class CreateController {
               }
 
               result.errors = flash.error
-              
+
               result.uri = createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
             } else {
               result.newobj.save(flush:true)
