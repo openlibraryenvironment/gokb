@@ -119,8 +119,9 @@ class CreateController {
                   result.newobj[p.key] = p.value?.trim() ?: null
                 }
                 else if ( pprop.getType().name == 'java.util.Date' ) {
-                  def sdf = new java.text.SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss", Locale.ENGLISH);
-                  Instant instant = sdf.parse(p.value.substring(0,24)).toInstant()
+                  def sdf = new java.text.SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss z", Locale.ENGLISH);
+                  def incoming = p.value.substring(0,31) + ":" + p.value.substring(31, 33)
+                  Instant instant = sdf.parse(incoming).toInstant()
                   LocalDateTime ldt = LocalDateTime.ofInstant(instant, ZoneId.of("GMT"))
 
                   result.newobj[p.key] = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant())
