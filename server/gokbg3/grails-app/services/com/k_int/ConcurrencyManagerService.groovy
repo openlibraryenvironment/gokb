@@ -1,5 +1,8 @@
 package com.k_int
 
+import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
+
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -48,12 +51,18 @@ class ConcurrencyManagerService {
     String description
     List messages = []
     Map linkedItem
+    RefdataValue type
     int ownerId
     int groupId
 
     public message(String message) {
       log.debug(message);
-      messages.add([timestamp:System.currentTimeMillis(), message:message]);
+      messages.add([timestamp:System.currentTimeMillis(), message:message], RefdataCategory.lookupOrCreate('KBComponent.Job.Type', 'Unknown'));
+    }
+
+    public message(String message, RefdataValue type) {
+      log.debug(message + ', ' + type.toString());
+      messages.add([timestamp:System.currentTimeMillis(), message:message, type:type]);
     }
 
     public message(Map message) {
