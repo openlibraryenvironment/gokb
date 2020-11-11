@@ -28,10 +28,11 @@ class ReviewsTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/reviews with params"() {
-    // use the bearerToken to write to /authRest/user
+    given:
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/reviews") {
+    RestResponse resp = rest.get("$urlPath/rest/reviews") {
       // headers
       accept('application/json')
       contentType('application/json')

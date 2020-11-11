@@ -1,14 +1,10 @@
 package gokbg3
 
 import com.k_int.ClassUtils
-import grails.core.GrailsClass
 
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 import org.gokb.cred.*
-import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -22,6 +18,7 @@ class RestMappingService {
   def componentLookupService
   def messageSource
   def messageService
+  def dateFormatService
 
   def defaultIgnore = [
     'bucketHash',
@@ -67,7 +64,6 @@ class RestMappingService {
   def mapObjectToJson(obj, params, def user = null) {
     log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
     def result = [:]
-    def sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
     def embed_active = params['_embed']?.split(',') ?: []
     def include_list = params['_include']?.split(',') ?: null
     def exclude_list = params['_exclude']?.split(',') ?: null
@@ -128,13 +124,17 @@ class RestMappingService {
             // Set ref property
             if (user?.isAdmin() || p.type != User) {
               if (obj[p.name]) {
-                def label = selectPreferredLabel(obj[p.name])
+                def label = selectJsonLabel(obj[p.name])
 
                 result[p.name] = [
                   'name': label,
                   'type': obj[p.name].niceName,
                   'id'  : obj[p.name].id
                 ]
+
+                if (p.name == 'namespace') {
+                  result['namespace']['value'] = obj['namespace'].value
+                }
 
                 if (embed_active.contains(p.name)) {
                   result['_embedded'][p.name] = getEmbeddedJson(obj[p.name], user)
@@ -159,7 +159,7 @@ class RestMappingService {
               break;
 
             case Date.class:
-              result[p.name] = obj[p.name] ? sdf.format(obj[p.name]) : null
+              result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
               break;
             default:
               result[p.name] = obj[p.name]
@@ -895,11 +895,11 @@ class RestMappingService {
    * @param obj : The object to be examined
    */
 
-  private String selectPreferredLabel(obj) {
+  private String selectJsonLabel(obj) {
     def obj_label = null
 
-    if (obj.hasProperty('username')) {
-      obj_label = obj.username
+    if (obj.hasProperty('jsonLabel')) {
+      obj_label = obj[obj.jsonLabel]
     } else if (obj.hasProperty('value')) {
       obj_label = obj.value
     } else if (obj.hasProperty('name')) {

@@ -15,9 +15,11 @@ class RefdataTestSpec extends AbstractAuthSpec {
   private RestBuilder rest = new RestBuilder()
 
   void "test GET /rest/package-scopes"() {
+    given:
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/package-scopes") {
+    RestResponse resp = rest.get("$urlPath/rest/package-scopes") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -29,9 +31,11 @@ class RefdataTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/coverage-depth"() {
+    given:
+    def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/coverage-depth") {
+    RestResponse resp = rest.get("$urlPath/rest/coverage-depth") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")

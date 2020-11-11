@@ -738,14 +738,13 @@ class TitleInstancePackagePlatform extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
     def linked_pkg = getPkg()
     def ti = getTitle()
 
     builder.'gokb'(attr) {
       builder.'tipp'([id: (id), uuid: (uuid)]) {
         addCoreGOKbXmlFields(builder, attr)
-        builder.'lastUpdated'(lastUpdated ? sdf.format(lastUpdated) : null)
+        builder.'lastUpdated'(lastUpdated ? dateFormatService.formatIsoTimestamp(lastUpdated) : null)
         builder.'format'(format?.value)
         builder.'url'(url ?: "")
         builder.'name'(name)
@@ -766,8 +765,8 @@ class TitleInstancePackagePlatform extends KBComponent {
           'status'(linked_pkg.status?.value)
           'editStatus'(linked_pkg.editStatus?.value)
           'listStatus'(linked_pkg.listStatus?.value)
-          'listVerifiedDate'(linked_pkg.listVerifiedDate ? sdf.format(linked_pkg.listVerifiedDate) : null)
-          'lastUpdated'(linked_pkg.lastUpdated ? sdf.format(linked_pkg.lastUpdated) : null)
+          'listVerifiedDate'(linked_pkg.listVerifiedDate ? dateFormatService.formatIsoTimestamp(linked_pkg.listVerifiedDate) : null)
+          'lastUpdated'(linked_pkg.lastUpdated ? dateFormatService.formatIsoTimestamp(linked_pkg.lastUpdated) : null)
           'contentType'(linked_pkg.contentType?.value)
           if (linked_pkg.provider) {
             builder.'provider'([id: linked_pkg.provider?.id, uuid: linked_pkg.provider?.uuid]) {
@@ -782,15 +781,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           'primaryUrl'(hostPlatform.primaryUrl?.trim())
           'name'(hostPlatform.name?.trim())
         }
-        'access'([start: (accessStartDate ? sdf.format(accessStartDate) : null), end: (accessEndDate ? sdf.format(accessEndDate) : null)])
+        'access'([start: (accessStartDate ? dateFormatService.formatIsoTimestamp(accessStartDate) : null), end: (accessEndDate ? dateFormatService.formatIsoTimestamp(accessEndDate) : null)])
         def cov_statements = getCoverageStatements()
         if (cov_statements?.size() > 0) {
           cov_statements.each { tcs ->
             'coverage'(
-              startDate: (tcs.startDate ? sdf.format(tcs.startDate) : null),
+              startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
               startVolume: (tcs.startVolume),
               startIssue: (tcs.startIssue),
-              endDate: (tcs.endDate ? sdf.format(tcs.endDate) : null),
+              endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
               endVolume: (tcs.endVolume),
               endIssue: (tcs.endIssue),
               coverageDepth: (tcs.coverageDepth?.value ?: null),

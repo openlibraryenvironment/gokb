@@ -13,14 +13,13 @@ import grails.util.Holders
 
 import groovy.util.logging.*
 
-import java.text.SimpleDateFormat
-
 @Slf4j
 class ComponentUpdateService {
   def grailsApplication
   def restMappingService
   def componentLookupService
   def reviewRequestService
+  def dateFormatService
 
   public boolean ensureCoreData(KBComponent component, data, boolean sync = false, user) {
     return ensureSync(component, data, sync, user)
@@ -263,11 +262,10 @@ class ComponentUpdateService {
     }
 
     // Prices.
-    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
     if (data.prices) {
       for (def priceData : data.prices) {
         if (priceData.amount != null && priceData.currency) {
-          component.setPrice(priceData.type, "${priceData.amount} ${priceData.currency}", priceData.startDate ? df.parse(priceData.startDate) : null, priceData.endDate ? df.parse(priceData.endDate) : null)
+          component.setPrice(priceData.type, "${priceData.amount} ${priceData.currency}", priceData.startDate ? dateFormatService.parseDate(priceData.startDate) : null, priceData.endDate ? dateFormatService.parseDate(priceData.endDate) : null)
           hasChanged = true
         }
       }

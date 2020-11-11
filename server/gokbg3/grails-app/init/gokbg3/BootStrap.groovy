@@ -971,6 +971,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Licensor').save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate('Combo.Type', 'License.Licensee').save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate('Combo.Type', 'IngestionProfile.Source').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Combo.type', 'Source.CuratoryGroups').save(flush: true, failOnError: true)
 
 
     RefdataCategory.lookupOrCreate('MembershipRole', 'Administrator').save(flush: true, failOnError: true)
@@ -998,16 +999,13 @@ class BootStrap {
   }
 
   def sourceObjects() {
-    log.debug("Lookup or create source objects");
-    def ybp_source = Source.findByName('YBP') ?: new Source(name: 'YBP').save(flush: true, failOnError: true);
-    def cup_source = Source.findByName('CUP') ?: new Source(name: 'CUP').save(flush: true, failOnError: true);
-    def wiley_source = Source.findByName('WILEY')
-    if (!wiley_source) {
-      wiley_source = new Source(name: 'WILEY').save(flush: true, failOnError: true)
-    }
-    def cufts_source = Source.findByName('CUFTS') ?: new Source(name: 'CUFTS').save(flush: true, failOnError: true);
-    def askews_source = Source.findByName('ASKEWS') ?: new Source(name: 'ASKEWS').save(flush: true, failOnError: true);
-    def ebsco_source = Source.findByName('EBSCO') ?: new Source(name: 'EBSCO').save(flush: true, failOnError: true);
+    log.debug("Lookup or create source objects")
+    def ybp_source = Source.findByName('YBP') ?: new Source(name: 'YBP').save(flush: true, failOnError: true)
+    def cup_source = Source.findByName('CUP') ?: new Source(name: 'CUP').save(flush: true, failOnError: true)
+    def wiley_source = Source.findByName('WILEY')?:new Source(name: 'WILEY').save(flush: true, failOnError: true)
+    def cufts_source = Source.findByName('CUFTS') ?: new Source(name: 'CUFTS').save(flush: true, failOnError: true)
+    def askews_source = Source.findByName('ASKEWS') ?: new Source(name: 'ASKEWS').save(flush: true, failOnError: true)
+    def ebsco_source = Source.findByName('EBSCO') ?: new Source(name: 'EBSCO').save(flush: true, failOnError: true)
   }
 
   def DSConfig() {

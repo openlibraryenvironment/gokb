@@ -30,6 +30,8 @@ class IdentifierNamespace {
   }
 
   public static final String restPath = "/namespaces"
+  // used by @gokbg3.RestMappingService.selectJsonLabel
+  public static final String jsonLabel = "name"
 
   @Override
   public boolean equals(Object obj) {
@@ -64,6 +66,6 @@ class IdentifierNamespace {
   }
 
   public String toString() {
-    "${value}".toString()
+    "${name ?: value}".toString()
   }
 }
