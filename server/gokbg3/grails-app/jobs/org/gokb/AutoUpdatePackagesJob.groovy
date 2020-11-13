@@ -24,23 +24,41 @@ class AutoUpdatePackagesJob {
       concurrent = true;
       if (grailsApplication.config.gokb.packageUpdate.enabled && grailsApplication.config.gokb.ygorUrl) {
         log.debug("Beginning scheduled auto update packages job.")
-        def endpoint = grailsApplication.config.gokb.ygorUrl
-        def target_service
+        def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
+        def udateTrigger
         def respData
         // find all updateable packages
-        def updPacks = Package.executeQuery("from Package p where p.source != null and p.source.automaticUpdates = true and (p.source.lastRun = null or p.source.lastRun < current_date)")
+        def updPacks = Package.executeQuery("from Package p where p.updateToken is not null and p.source != null and p.source.automaticUpdates = true and (p.source.lastRun = null or p.source.lastRun < current_date)")
         updPacks.each { Package p ->
           if (needsUpdate(p)) {
             def error = false
-            def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${p.updateToken}"
-            target_service = new RESTClient(endpoint + path)
+            def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${p.updateToken.value}"
+            udateTrigger = new RESTClient(ygorBaseUrl + path)
             try {
-              target_service.request(GET) { request ->
+              udateTrigger.request(GET) { request ->
                 response.success = { resp, data ->
                   respData = data
+                  // wait for ygor to finish the enrichment
+                  def running = true
+                  def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
+                  while (running) {
+                    log.debug("checking Ygor update Process ${respData.jobId}")
+                    statusService.request(GET) { req ->
+                      response.success = { statusResp, statusData ->
+                        running = statusData.uploadStatus in ['PREPARATION', 'STARTED']
+                        log.debug("status of job ${respData.gokbJobId}: ${statusData.uploadStatus}")
+                        sleep(300000) // 5 min
+                      }
+                      response.failure { statusResp ->
+                        log.error("autoUpdateStatus Error - ${statusResp}")
+                        running = false
+                        error = true
+                      }
+                    }
+                  }
                 }
                 response.failure = { resp ->
-                  log.error("Error - ${resp}");
+                  log.error("autoUpdatePackage Error - ${resp}");
                   error = true
                 }
               }
@@ -48,7 +66,6 @@ class AutoUpdatePackagesJob {
             catch (Exception e) {
               e.printStackTrace();
             }
-            // TODO: asynchronous calls to avoid timeouts followed by waiting for status=finished before next package
             if (!error) {
               p.source.lastRun = new Date()
             }
@@ -84,10 +101,12 @@ class AutoUpdatePackagesJob {
         def interval = matcher.group(2)
         def number = matcher.group(1)
         days = Integer.parseInt(number) * length[interval.toUpperCase()]
-      }
-      Date today = new Date()
-      if (src.lastRun.plus(days) < today) {
-        return true
+
+        Date today = new Date()
+        Date due = src.lastRun.plus(days)
+        if (due.before(today)) {
+          return true
+        }
       }
     }
     return false
