@@ -1,6 +1,8 @@
 package org.gokb.cred
 
 import javax.persistence.Transient
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 class Source extends KBComponent {
 
@@ -141,5 +143,38 @@ class Source extends KBComponent {
         }
       }
     }
+  }
+
+  public boolean needsUpdate() {
+    Source src = this
+    if (src.lastRun == null) {
+      return true;
+    }
+    if (src.frequency != null) {
+      Pattern pattern = Pattern.compile("\\s*(\\d*)\\s*([a-zA-Z]*)\\s*");
+      Matcher matcher = pattern.matcher(src.frequency);
+      int days
+      if (matcher.find()) {
+        def length = [
+          D: 1,
+          T: 1,
+          W: 7,
+          M: 30,
+          Q: 91,
+          H: 182,
+          J: 365,
+          Y: 365]
+        def interval = matcher.group(2)
+        def number = matcher.group(1)
+        days = Integer.parseInt(number) * length[interval.toUpperCase()]
+
+        Date today = new Date()
+        Date due = src.lastRun.plus(days)
+        if (due.before(today)) {
+          return true
+        }
+      }
+    }
+    return false
   }
 }

@@ -4,6 +4,7 @@ import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ClassUtils
 import grails.gorm.transactions.Transactional
 import grails.io.IOUtils
+import groovyx.net.http.RESTClient
 import org.gokb.cred.*
 import groovy.util.logging.*
 
@@ -22,6 +23,9 @@ import java.text.SimpleDateFormat
 import java.util.regex.Pattern
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+
+import static groovyx.net.http.Method.GET
+import static groovyx.net.http.Method.GET
 
 @Slf4j
 class PackageService {
@@ -57,6 +61,8 @@ class PackageService {
   ComponentLookupService componentLookupService
   def grailsApplication
   def messageService
+  def concurrencyManagerService
+
   public static final enum ExportType {
     KBART, TSV
   }
@@ -1483,6 +1489,64 @@ class PackageService {
     IOUtils.copy(input, output)
     output.close()
     input.close()
+  }
+
+  /**
+   * this method calls Ygor to perform an automated Update on this package.
+   * Bad configurations will result in failure.
+   * The frequency is ignored: the update starts immediately, setting the
+   * lastRun to today if the import was successful.
+   */
+  public void updateFromSource(Package p) {
+    def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
+    def updateTrigger
+    def respData
+    if (p.updateToken != null) {
+      def error = false
+      def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${p.updateToken.value}"
+      updateTrigger = new RESTClient(ygorBaseUrl + path)
+      try {
+        updateTrigger.request(GET) { request ->
+          response.success = { resp, data ->
+            respData = data
+            // wait for ygor to finish the enrichment
+            def running = true
+            def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
+            while (running) {
+              log.debug("checking Ygor update Process ${respData.jobId}")
+              statusService.request(GET) { req ->
+                response.success = { statusResp, statusData ->
+                  running = statusData.uploadStatus in ['PREPARATION', 'STARTED']
+                  log.debug("status of job ${respData.jobId}: ${statusData.uploadStatus}")
+                  sleep(300000) // 5 min
+                  if (statusData.uploadStatus == 'SUCCESS') {
+                    Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
+                    while (!job.isDone()){
+                      wait(60000) // 1 min
+                    }
+                  }
+                }
+                response.failure { statusResp ->
+                  log.error("autoUpdateStatus Error - ${statusResp}")
+                  running = false
+                  error = true
+                }
+              }
+            }
+          }
+          response.failure = { resp ->
+            log.error("autoUpdatePackage Error - ${resp}");
+            error = true
+          }
+        }
+      }
+      catch (Exception e) {
+        e.printStackTrace();
+      }
+      if (!error) {
+        p.source.lastRun = new Date()
+      }
+    }
   }
 
   private String generateExportFileName(Package pkg, ExportType type) {
