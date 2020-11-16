@@ -257,6 +257,7 @@ class PackagesController {
             }
 
             background_job.description = "Deposit datafile ${upload_filename}(as ${params.fmt} from ${source} ) and create/update package ${pkg}"
+            background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'DepositDatafile')
             background_job.startOrQueue()
             jobid = background_job.getId()
             log.debug("Background job started");

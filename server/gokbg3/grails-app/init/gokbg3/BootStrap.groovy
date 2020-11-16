@@ -281,6 +281,8 @@ class BootStrap {
     }.startOrQueue()
 
     hk_job.description = "Bootstrap Identifier Cleanup"
+    hk_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'BootstrapIdentifierCleanup')
+
     hk_job.startTime = new Date()
 
     log.debug("Checking for missing component statistics")
@@ -992,7 +994,31 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Currency', 'USD').save(flush: true, failOnError: true)
 
     RefdataCategory.lookupOrCreate('Job.Type', 'Unknown').save(flush: true, failOnError: true)
-    RefdataCategory.lookupOrCreate('Job.Type', 'Package.CrossRef').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'Undefined').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'TitleCrossRef').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'BootstrapIdentifierCleanup').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'DepositDatafile').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'RegenerateLicenseSummaries').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'TidyOrgsData').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'EnsureUUIDs').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'EnsureTIPLs').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'GenerateTIPPCoverage').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'MarkInconsDateRanges').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'UpdateFreeTextIndexes').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'ResetFreeTextIndexes').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'MasterListUpdate').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'EnrichmentService').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'GeneratePackageTypes').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'Housekeeping').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'CleanupDeletedComponents').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'CleanupRejectedComponents').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'TIPPCleanup').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'DeleteTIWithoutHistory').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'RejectTIWithoutIdentifier').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'PlatformCleanup').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'RecalculateStatistics').save(flush: true, failOnError: true)
+
 
     log.debug("Deleting any null refdata values");
     RefdataValue.executeUpdate('delete from RefdataValue where value is null');

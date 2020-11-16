@@ -58,6 +58,7 @@ class JobsController {
           progress: v.progress,
           messages: v.messages,
           description: v.description,
+          type: v.type,
           begun: v.begun,
           startTime: v.startTime,
           endTime: v.endTime,
@@ -98,6 +99,7 @@ class JobsController {
 
       if (user.superUserStatus || (job.ownerId && job.ownerId == user.id)) {
         result.description = job.description
+        result.type = job.type
         result.startTime = job.startTime
         result.messages = job.messages
         result.progress = job.progress
