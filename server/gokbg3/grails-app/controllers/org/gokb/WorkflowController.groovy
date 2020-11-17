@@ -18,6 +18,7 @@ class WorkflowController {
   def springSecurityService
   def sessionFactory
   def reviewRequestService
+  def packageService
 
   def actionConfig = [
     'method::deleteSoft':[actionType:'simple'],
@@ -27,6 +28,7 @@ class WorkflowController {
     'method::registerWebhook':[actionType:'workflow', view:'registerWebhook'],
     'method::RRTransfer':[actionType:'workflow', view:'revReqTransfer'],
     'method::RRClose':[actionType:'simple' ],
+    'packageUrlUpdate':[actionType:'process', method: 'triggerSourceUpdate'],
     'title::reconcile':[actionType:'workflow', view:'titleReconcile' ],
     'title::merge':[actionType:'workflow', view:'titleMerge' ],
     'tipp::retire':[actionType:'workflow', view:'tippRetire' ],
@@ -146,7 +148,7 @@ class WorkflowController {
               }
 
               break
-            
+
             case "setStatus":
               log.debug("SetStatus: ${method_config[1]}")
               def status_to_set = RefdataCategory.lookup('KBComponent.Status', method_config[1])
@@ -2220,14 +2222,66 @@ class WorkflowController {
 
     packages_to_verify.each { ptv ->
       def pkgObj = Package.get(ptv.id)
+      Boolean curated_pkg = false;
+      def is_curator = null;
 
-      if ( pkgObj?.isEditable() ) {
+      if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
+        is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
+        curated_pkg = true;
+      }
+
+      if (pkgObj?.isEditable() && (is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))) {
         pkgObj.listStatus = RefdataCategory.lookupOrCreate('Package.ListStatus','Checked')
         pkgObj.userListVerifier = user
         pkgObj.listVerifiedDate = new Date()
         pkgObj.save(flush: true, failOnError: true)
       }
     }
+    redirect(url: request.getHeader('referer'));
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  private def triggerSourceUpdate(packages_to_update) {
+    log.debug("triggerSourceUpdate for Packages ${packages_to_update}..")
+    def user = springSecurityService.currentUser
+    def pars = [:]
+    def denied = false
+
+    if (packages_to_update.size() > 1) {
+      flash.error = "Please select a single Package to update!"
+    }
+    else {
+      packages_to_update.each { ptv ->
+        def pkgObj = Package.get(ptv.id)
+        Boolean curated_pkg = false;
+        def is_curator = null;
+
+        if (pkgObj) {
+          if ( pkgObj.curatoryGroups && pkgObj.curatoryGroups?.size() > 0 ) {
+            is_curator = user.curatoryGroups?.id.intersect(pkgObj.curatoryGroups?.id)
+            curated_pkg = true;
+          }
+
+          if (pkgObj?.isEditable() && (is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))) {
+            def started = packageService.updateFromSource(pkgObj, user)
+
+            if (started) {
+              flash.success = "Update successfully started!"
+            }
+            else {
+              flash.error = "Another update is already running. Please try again later."
+            }
+          }
+          else {
+            flash.error = "Insufficient permissions to update this Package!"
+          }
+        }
+        else {
+          flash.error = "Unable to reference provided Package!"
+        }
+      }
+    }
+
     redirect(url: request.getHeader('referer'));
   }
 }

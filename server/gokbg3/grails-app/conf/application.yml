@@ -154,7 +154,7 @@ environments:
             ygorUrl: null
             packageUpdate:
                 enabled: false
-           es:
+            es:
                 index: gokbg3dev
                 cluster: gokbg3-dev
             tsvExportTempDirectory: /tmp/gokb/export
@@ -233,7 +233,7 @@ environments:
 gokb:
     defaultCuratoryGroup: Local
     ftupdate_enabled: true
-    decisionSupport: 
+    decisionSupport:
         active: false
         otherVoters: false
     costInfo: false

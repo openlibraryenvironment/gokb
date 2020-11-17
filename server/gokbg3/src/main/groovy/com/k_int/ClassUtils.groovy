@@ -163,7 +163,7 @@ class ClassUtils {
       catch (Exception e) {
 
       }
-    } 
+    }
     else if (value instanceof Map && cat) {
       if (value.id) {
         try {
@@ -195,6 +195,16 @@ class ClassUtils {
         obj[prop] = value
         return true
       }
+    return false
+  }
+
+  public static boolean setBooleanIfDifferent(obj, prop, value) {
+    if ((obj != null) && (prop != null) && (value != null)) {
+      if (obj[prop] != value) {
+        obj[prop] = value
+        return true
+      }
+    }
     return false
   }
 }

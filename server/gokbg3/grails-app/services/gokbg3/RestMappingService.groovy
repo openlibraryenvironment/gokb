@@ -203,7 +203,7 @@ class RestMappingService {
 
           if ( embed_active.contains(cp) ) {
             cval = obj[cp]
-            result['_embedded'][cp] = getEmbeddedJson(cval, user)
+            result['_embedded'][cp] = cval ? getEmbeddedJson(cval, user) : null
           }
         }
         else {

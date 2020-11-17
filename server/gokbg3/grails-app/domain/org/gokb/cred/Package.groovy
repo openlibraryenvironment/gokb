@@ -405,6 +405,7 @@ select tipp.id,
       [code: 'exportPackage', label: 'TSV Export'],
       [code: 'kbartExport', label: 'KBART Export'],
       [code: 'verifyTitleList', label: 'Verify Title List'],
+      [code: 'packageUrlUpdate', label: 'Trigger Update']
       // [code:'method::registerWebhook', label:'Register Web Hook']
     ]
   }
@@ -628,7 +629,7 @@ select tipp.id,
 
     return result;
   }
-  
+
   public void addCuratoryGroupIfNotPresent(String cgname) {
     boolean add_needed = true;
     curatoryGroups.each { cgtest ->
