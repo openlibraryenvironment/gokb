@@ -19,6 +19,7 @@ class WorkflowController {
   def sessionFactory
   def reviewRequestService
   def packageService
+  def dateFormatService
 
   def actionConfig = [
     'method::deleteSoft':[actionType:'simple'],
@@ -188,7 +189,6 @@ class WorkflowController {
 
     log.debug("startTitleChange(${params})");
 
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
     def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleChange').save()
     def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -233,10 +233,10 @@ class WorkflowController {
               title_id:tipp.title.id,
               package_id:tipp.pkg.id,
               platform_id:tipp.hostPlatform.id,
-              startDate:tipp.startDate ? sdf.format(tipp.startDate) : null,
+              startDate:tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
               startVolume:tipp.startVolume,
               startIssue:tipp.startIssue,
-              endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
+              endDate:tipp.endDate? dateFormatService.formatDate(tipp.endDate) : null,
               endVolume:tipp.endVolume,
               endIssue:tipp.endIssue,
               url:tipp.url
@@ -250,10 +250,10 @@ class WorkflowController {
                                  title_id:new_title_obj.id,
                                  package_id:tipp.pkg.id,
                                  platform_id:tipp.hostPlatform.id,
-                                 startDate:tipp.startDate ? sdf.format(tipp.startDate) : null,
+                                 startDate:tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
                                  startVolume:tipp.startVolume,
                                  startIssue:tipp.startIssue,
-                                 endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
+                                 endDate:tipp.endDate? dateFormatService.formatDate(tipp.endDate) : null,
                                  endVolume:tipp.endVolume,
                                  url:tipp.url,
                                  endIssue:tipp.endIssue]
@@ -289,7 +289,6 @@ class WorkflowController {
     log.debug("startTitleMerge(${params})");
 
     def user = springSecurityService.currentUser
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     def active_status = RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
     def transfer_type = RefdataCategory.lookupOrCreate('Activity.Type', 'TitleMerge').save()
     def first_title = null
@@ -349,8 +348,6 @@ class WorkflowController {
   def editTitleMerge() {
     log.debug("editTitleMerge() - ${params}");
 
-    // def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     def activity_record = Activity.get(params.id)
     def activity_data = new JsonSlurper().parseText(activity_record.activityData)
     def merge_params = [:]
@@ -445,7 +442,6 @@ class WorkflowController {
           }
 
           sw.write(title_instance.name);
-          def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
 
           result.titles.add(title_instance)
           titleTransferData.title_ids.add(title_instance.id)
@@ -457,10 +453,10 @@ class WorkflowController {
                   title_id:tipp.title.id,
                   package_id:tipp.pkg.id,
                   platform_id:tipp.hostPlatform.id,
-                  startDate:tipp.startDate ? sdf.format(tipp.startDate) : null,
+                  startDate:tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
                   startVolume:tipp.startVolume,
                   startIssue:tipp.startIssue,
-                  endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
+                  endDate:tipp.endDate? dateFormatService.formatDate(tipp.endDate) : null,
                   endVolume:tipp.endVolume,
                   endIssue:tipp.endIssue,
                   url:tipp.url
@@ -506,8 +502,6 @@ class WorkflowController {
   def editTitleTransfer() {
     log.debug("editTitleTransfer() - ${params}");
 
-    // def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     def activity_record = Activity.get(params.id)
     def activity_data = new JsonSlurper().parseText(activity_record.activityData)
 
@@ -567,10 +561,10 @@ class WorkflowController {
                                         title_id:old_tipp.title.id,
                                         package_id:new_tipp_package.id,
                                         platform_id:new_tipp_platform.id,
-                                        startDate:old_tipp.startDate ? sdf.format(old_tipp.startDate) : null,
+                                        startDate:old_tipp.startDate ? dateFormatService.formatDate(old_tipp.startDate) : null,
                                         startVolume:old_tipp.startVolume,
                                         startIssue:old_tipp.startIssue,
-                                        endDate:old_tipp.endDate? sdf.format(old_tipp.endDate) : null,
+                                        endDate:old_tipp.endDate? dateFormatService.formatDate(old_tipp.endDate) : null,
                                         endVolume:old_tipp.endVolume,
                                         endIssue:old_tipp.endIssue,
                                         url:old_tipp.url]
@@ -702,8 +696,6 @@ class WorkflowController {
   def editTitleChange() {
     log.debug("editTitleChange() - ${params}");
 
-    // def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     def activity_record = Activity.get(params.id)
     def activity_data = new JsonSlurper().parseText(activity_record.activityData)
 
@@ -846,8 +838,6 @@ class WorkflowController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processTitleChange(activity_record, activity_data) {
 
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
-
     activity_data.tipps.each { tipp_map_entry ->
 
       def current_tipp = TitleInstancePackagePlatform.get(tipp_map_entry.key)
@@ -884,8 +874,8 @@ class WorkflowController {
       def parsed_start_date = null
       def parsed_end_date = null
       try {
-        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? sdf.parse(tipp_map_entry.value.oldTippValue.startDate) : null;
-        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? sdf.parse(tipp_map_entry.value.oldTippValue.endDate) : null;
+        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.startDate) : null;
+        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.endDate) : null;
       }
       catch ( Exception e ) {
       }
@@ -919,10 +909,10 @@ class WorkflowController {
 
 
     // Default to today if not set
-    def event_date = activity_data.eventDate ?: sdf.format(new Date());
+    def event_date = activity_data.eventDate ?: dateFormatService.formatDate(new Date());
 
     // Create title history event
-    def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:sdf.parse(event_date)).save()
+    def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:dateFormatService.parseDate(event_date)).save()
 
     activity_data.afterTitles?.each { at ->
       def component = genericOIDService.resolveOID2(at)
@@ -948,7 +938,6 @@ class WorkflowController {
   def processTitleMerge(activity_record, activity_data, merge_params) {
     log.debug("processTitleMerge ${params}\n\n ${activity_data}");
 
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status','Deleted')
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
     def rr_status_current = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open')
@@ -1090,8 +1079,8 @@ class WorkflowController {
               'endIssue': otcs.endIssue ?: "",
               'embargo':otcs.embargo ?: "",
               'coverageNote': otcs.coverageNote ?: "",
-              'startDate': otcs.startDate ? sdf.format(otcs.startDate) : "",
-              'endDate': otcs.endDate ? sdf.format(otcs.endDate) : "",
+              'startDate': otcs.startDate ? dateFormatService.formatTimestampMs(otcs.startDate) : "",
+              'endDate': otcs.endDate ?  dateFormatService.formatTimestampMs(otcs.endDate) : "",
               'coverageDepth': old_tipp.coverageDepth?.value ?: ""
             ]
             tipp_dto.coverage.add(cst)
@@ -1123,7 +1112,6 @@ class WorkflowController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processTitleTransfer(activity_record, activity_data) {
     log.debug("processTitleTransfer ${params}\n\n ${activity_data}");
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
     def user = springSecurityService.currentUser
 
     def publisher = Org.get(activity_data.newPublisherId);
@@ -1149,7 +1137,7 @@ class WorkflowController {
 
         if ( tipp_map_entry.value.oldTippValue?.startDate ) {
           try {
-            current_tipp.startDate = sdf.parse(tipp_map_entry.value.oldTippValue?.startDate)
+            current_tipp.startDate = dateFormatService.parseDate(tipp_map_entry.value.oldTippValue?.startDate)
           }
           catch ( Exception e ) {
           }
@@ -1161,7 +1149,7 @@ class WorkflowController {
 
         if ( tipp_map_entry.value.oldTippValue?.endDate ) {
           try {
-            current_tipp.endDate = sdf.parse(tipp_map_entry.value.oldTippValue?.endDate)
+            current_tipp.endDate = dateFormatService.parseDate(tipp_map_entry.value.oldTippValue?.endDate)
           }
           catch ( Exception e ) {
           }
@@ -1213,8 +1201,8 @@ class WorkflowController {
       def parsed_start_date = null
       def parsed_end_date = null
       try {
-        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? sdf.parse(tipp_map_entry.value.oldTippValue.startDate) : null;
-        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? sdf.parse(tipp_map_entry.value.oldTippValue.endDate) : null;
+        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.startDate) : null;
+        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.endDate) : null;
       }
       catch ( Exception e ) {}
 
@@ -1300,7 +1288,6 @@ class WorkflowController {
     log.debug("processTippMove ${params}")
     def deleted_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     def user = springSecurityService.currentUser
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
     def new_package = params.newpackage ? genericOIDService.resolveOID2(params.newpackage) : null
     def new_platform = params.newplatform ? genericOIDService.resolveOID2(params.newplatform) : null
     def tipps_to_action = params.list('beforeTipps')
@@ -1319,8 +1306,8 @@ class WorkflowController {
                       'endIssue': cst.endIssue ?: "",
                       'embargo':cst.embargo ?: "",
                       'coverageNote': cst.coverageNote ?: "",
-                      'startDate': cst.startDate ? sdf.format(cst.startDate) : "",
-                      'endDate': cst.endDate ? sdf.format(cst.endDate) : "",
+                      'startDate': cst.startDate ? dateFormatService.formatTimestampMs(cst.startDate) : "",
+                      'endDate': cst.endDate ? dateFormatService.formatTimestampMs(cst.endDate) : "",
                       'coverageDepth': cst.coverageDepth?.value ?: ""
         ])
       }
@@ -1712,10 +1699,9 @@ class WorkflowController {
     if ( packages_to_export.size() == 0 )
       return
 
-    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
     def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     def combo_pkg_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-    def export_date = sdf.format(new Date());
+    def export_date = dateFormatService.formatDate(new Date());
 
     if ( packages_to_export.size() == 1 ) {
       filename = "GOKb Export : ${packages_to_export[0].provider?.name} : ${packages_to_export[0].name} : ${export_date}.tsv"
@@ -1868,10 +1854,9 @@ class WorkflowController {
     if ( packages_to_export.size() == 0 )
       return
 
-    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
     def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     def combo_pkg_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-    def export_date = sdf.format(new Date());
+    def export_date = dateFormatService.formatDate(new Date());
 
     if ( packages_to_export.size() == 1 ) {
       filename = "GOKb Export : ${packages_to_export[0].provider?.name} : ${packages_to_export[0].name} : ${export_date}.tsv"

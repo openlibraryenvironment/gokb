@@ -2,9 +2,6 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 import groovy.util.logging.*
-import org.gokb.GOKbTextUtils
-import org.gokb.DomainClassExtender
-import com.k_int.ClassUtils
 import groovy.time.TimeCategory
 
 
@@ -12,6 +9,8 @@ import org.gokb.refine.*
 
 @Slf4j
 class Package extends KBComponent {
+
+  def dateFormatService
 
   // Owens defaults:
   // Status default to 'Current'
@@ -446,8 +445,6 @@ select tipp.id,
 
     log.debug("toGoKBXml... ${this.class.name}:${id}");
 
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-
     def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
 
     def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps');
@@ -489,7 +486,7 @@ select tipp.id,
           }
         }
 
-        'listVerifiedDate'(listVerifiedDate ? sdf.format(listVerifiedDate) : null)
+        'listVerifiedDate'(listVerifiedDate ? dateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
 
         builder.'curatoryGroups' {
           curatoryGroups.each { cg ->
@@ -499,13 +496,13 @@ select tipp.id,
           }
         }
 
-        'dateCreated'(sdf.format(dateCreated))
+        'dateCreated'(dateFormatService.formatIsoTimestamp(dateCreated))
         'TIPPs'(count: tipps?.size()) {
           tipps.each { tipp ->
             builder.'TIPP'(['id': tipp[0], 'uuid': tipp[12]]) {
               builder.'status'(tipp[6]?.value)
               builder.'name'(tipp[18])
-              builder.'lastUpdated'(tipp[11] ? sdf.format(tipp[11]) : null)
+              builder.'lastUpdated'(tipp[11] ? dateFormatService.formatIsoTimestamp(tipp[11]) : null)
               builder.'series'(tipp[16])
               builder.'subjectArea'(tipp[17])
               builder.'medium'(tipp[9]?.value)
@@ -528,15 +525,15 @@ select tipp.id,
                 'primaryUrl'(tipp[10]?.trim())
                 'name'(tipp[3]?.trim())
               }
-              'access'(start: tipp[7] ? sdf.format(tipp[7]) : null, end: tipp[8] ? sdf.format(tipp[8]) : null)
+              'access'(start: tipp[7] ? dateFormatService.formatIsoTimestamp(tipp[7]) : null, end: tipp[8] ? dateFormatService.formatIsoTimestamp(tipp[8]) : null)
               def cov_statements = getCoverageStatements(tipp[0])
               if (cov_statements?.size() > 0) {
                 cov_statements.each { tcs ->
                   'coverage'(
-                    startDate: (tcs.startDate ? sdf.format(tcs.startDate) : null),
+                    startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
                     startVolume: (tcs.startVolume),
                     startIssue: (tcs.startIssue),
-                    endDate: (tcs.endDate ? sdf.format(tcs.endDate) : null),
+                    endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
                     endVolume: (tcs.endVolume),
                     endIssue: (tcs.endIssue),
                     coverageDepth: (tcs.coverageDepth?.value ?: null),

@@ -1,21 +1,18 @@
 package org.gokb
 
-import grails.converters.*
-import org.springframework.security.access.annotation.Secured;
+
 import org.gokb.cred.*
 import groovy.xml.MarkupBuilder
 import groovy.xml.StreamingMarkupBuilder
-import java.text.ParseException
 
 class OaiController {
 
   def genericOIDService
+  def dateFormatService
 
   // JSON.registerObjectMarshaller(DateTime) {
   //     return it?.toString("yyyy-MM-dd'T'HH:mm:ss'Z'")
   // }
-
-  def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
   def index() {
     def result = [:]
@@ -145,7 +142,7 @@ class OaiController {
     xml.'OAI-PMH'('xmlns' : 'http://www.openarchives.org/OAI/2.0/',
     'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
     'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-      'responseDate'( sdf.format(new Date()) )
+      'responseDate'(dateFormatService.formatIsoTimestamp(new Date()) )
       if (errors) {
         if (!returnAttrs) {
           'request'(request_map, request.requestURL)
@@ -166,7 +163,7 @@ class OaiController {
             xml.'header'() {
               identifier("${record.class.name}:${record.id}")
               uuid(record.uuid)
-              datestamp(sdf.format(record.lastUpdated))
+              datestamp(dateFormatService.formatIsoTimestamp(record.lastUpdated))
               if (record.status == status_deleted) {
                 status('deleted')
               }
@@ -193,7 +190,7 @@ class OaiController {
     xml.'OAI-PMH'('xmlns'   : 'http://www.openarchives.org/OAI/2.0/',
     'xmlns:xsi'             : 'http://www.w3.org/2001/XMLSchema-instance',
     'xsi:schemaLocation'    : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-      'responseDate'( sdf.format(new Date()) )
+      'responseDate'( dateFormatService.formatIsoTimestamp(new Date()) )
       'request'('verb':'Identify', request.requestURL)
       'Identify'() {
         'repositoryName'("GOKb ${result.oaiConfig.id}")
@@ -205,7 +202,7 @@ class OaiController {
             ))
         'protocolVersion'('2.0')
         'adminEmail'('admin@gokb.org')
-        'earliestDatestamp'(sdf.format(obj."${result.oaiConfig.lastModified}"))
+        'earliestDatestamp'(dateFormatService.formatIsoTimestamp(obj."${result.oaiConfig.lastModified}"))
         'deletedRecord'('transient')
         'granularity'('YYYY-MM-DDThh:mm:ssZ')
         'compression'('deflate')
@@ -245,7 +242,7 @@ class OaiController {
       if ( rtc.length == 4 ) {
         if ( rtc[0].trim() ) {
           try {
-            from = sdf.parse(rtc[0])
+            from = dateFormatService.parseIsoTimestamp(rtc[0])
           }
           catch (Exception pe) {
             errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
@@ -253,7 +250,7 @@ class OaiController {
         }
         if ( rtc[1].trim() ) {
           try {
-            until = sdf.parse(rtc[1])
+            until = dateFormatService.parseIsoTimestamp(rtc[1])
           }
           catch (Exception pe) {
             errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
@@ -308,7 +305,7 @@ class OaiController {
       }
 
       try {
-        from = sdf.parse(fparam)
+        from = dateFormatService.parseIsoTimestamp(fparam)
 
         if(!wClause){
           query += 'where '
@@ -347,7 +344,7 @@ class OaiController {
       }
 
       try {
-        until = sdf.parse(uparam)
+        until = dateFormatService.parseIsoTimestamp(uparam)
 
         if(!wClause){
           query += 'where '
@@ -378,7 +375,7 @@ class OaiController {
 
       if ( offset + records.size() < rec_count ) {
         // Query returns more records than sent, we will need a resumption token
-        resumption = "${from?sdf.format(from):''}|${until?sdf.format(until):''}|${offset+records.size()}|${metadataPrefix}"
+        resumption = "${from?dateFormatService.formatIsoTimestamp(from):''}|${until?dateFormatService.formatIsoTimestamp(until):''}|${offset+records.size()}|${metadataPrefix}"
       }
     }
 
@@ -386,7 +383,7 @@ class OaiController {
       'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
       'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
       'xsi:schemaLocation'    : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-        'responseDate'( sdf.format(new Date()) )
+        'responseDate'( dateFormatService.formatIsoTimestamp(new Date()) )
 
         if (errors) {
           if (returnAttrs) {
@@ -406,7 +403,7 @@ class OaiController {
               mkp.'header'() {
                 identifier("${rec.class.name}:${rec.id}")
                 uuid(rec.uuid)
-                datestamp(sdf.format(rec.lastUpdated))
+                datestamp(dateFormatService.formatIsoTimestamp(rec.lastUpdated))
               }
             }
 
@@ -436,7 +433,7 @@ class OaiController {
       mkp.'OAI-PMH'(
           'xmlns':'http://www.openarchives.org/OAI/2.0/',
           'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
-            'responseDate'( sdf.format(new Date()) )
+            'responseDate'( dateFormatService.formatIsoTimestamp(new Date()) )
             'request'('verb':'ListMetadataFormats', request.requestURL)
             'ListMetadataFormats'() {
 
@@ -487,7 +484,7 @@ class OaiController {
         if ( rtc.length == 4 ) {
           if ( rtc[0].trim() ) {
             try {
-              from = sdf.parse(rtc[0])
+              from = dateFormatService.parseIsoTimestamp(rtc[0])
             }
             catch (Exception pe) {
               errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
@@ -495,7 +492,7 @@ class OaiController {
           }
           if ( rtc[1].trim() ) {
             try {
-              until = sdf.parse(rtc[1])
+              until = dateFormatService.parseIsoTimestamp(rtc[1])
             }
             catch (Exception pe) {
               errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
@@ -589,7 +586,7 @@ class OaiController {
         }
 
         try {
-          from = sdf.parse(fparam)
+          from = dateFormatService.parseIsoTimestamp(fparam)
 
           if(!wClause){
             query += 'where '
@@ -627,7 +624,7 @@ class OaiController {
         }
 
         try {
-          until = sdf.parse(uparam)
+          until = dateFormatService.parseIsoTimestamp(uparam)
 
           if(!wClause){
             query += 'where '
@@ -662,7 +659,7 @@ class OaiController {
         if ( offset + records.size() < rec_count ) {
           // Query returns more records than sent, we will need a resumption token
 
-          resumption = "${from?sdf.format(from):''}|${until?sdf.format(until):''}|${offset+records.size()}|${metadataPrefix}"
+          resumption = "${from?dateFormatService.formatIsoTimestamp(from):''}|${until?dateFormatService.formatIsoTimestamp(until):''}|${offset+records.size()}|${metadataPrefix}"
         }
       }
 
@@ -670,7 +667,7 @@ class OaiController {
         'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
         'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
         'xsi:schemaLocation':'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-          'responseDate'( sdf.format(new Date()) )
+          'responseDate'( dateFormatService.formatIsoTimestamp(new Date()) )
 
           if(errors) {
             if (returnAttrs) {
@@ -691,7 +688,7 @@ class OaiController {
                   mkp.'header' () {
                     identifier("${rec.class.name}:${rec.id}")
                     uuid(rec.uuid)
-                    datestamp(sdf.format(rec.lastUpdated))
+                    datestamp(dateFormatService.formatIsoTimestamp(rec.lastUpdated))
                     if (rec.status == status_deleted) {
                       status('deleted')
                     }
@@ -724,7 +721,7 @@ class OaiController {
     def resp =  { mkp ->
       'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
       'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
-        'responseDate'( sdf.format(new Date()) )
+        'responseDate'( dateFormatService.formatIsoTimestamp(new Date()) )
         'request'('verb':'ListSets', request.requestURL)
 
         // For now we are not supporting sets...
@@ -744,7 +741,7 @@ class OaiController {
     def resp =  { mkp ->
       'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
       'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance') {
-        'responseDate'( sdf.format(new Date()) )
+        'responseDate'( dateFormatService.formatIsoTimestamp(new Date()) )
         'request'(request.requestURL)
 
         'error'('code' : "badVerb", "Illegal OAI verb" )

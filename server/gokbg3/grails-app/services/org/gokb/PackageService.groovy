@@ -19,8 +19,6 @@ import org.springframework.util.FileCopyUtils
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.text.DateFormat
-import java.text.SimpleDateFormat
 import java.util.regex.Pattern
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -63,9 +61,9 @@ class PackageService {
   def grailsApplication
   def messageService
   def concurrencyManagerService
+  def dateFormatService
 
   public static boolean running = false;
-
   public static final enum ExportType {
     KBART, TSV
   }
@@ -1269,13 +1267,12 @@ class PackageService {
   }
 
   public void createTsvExport(Package pkg) {
-    DateFormat sdf = new SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new Date());
+    def export_date = dateFormatService.formatDate(new Date());
     String filename = generateExportFileName(pkg, ExportType.TSV)
     String path = exportFilePath()
     try {
       if (pkg) {
-        String lastUpdate = sdf.format(pkg.lastUpdated)
+        String lastUpdate = dateFormatService.formatDate(pkg.lastUpdated)
         File out = new File("${path}${filename}")
         if (out.isFile())
           return
@@ -1634,8 +1631,7 @@ class PackageService {
   }
 
   private String generateExportFileName(Package pkg, ExportType type) {
-    DateFormat sdf = new java.text.SimpleDateFormat('yyyy-MM-dd hh:mm:ss')
-    String lastUpdate = sdf.format(pkg.lastUpdated)
+    String lastUpdate = dateFormatService.formatTimestamp(pkg.lastUpdated)
     StringBuilder name = new StringBuilder()
     if (type == ExportType.KBART) {
       name.append(toCamelCase(pkg.provider?.name ? pkg.provider.name : "unknown Provider")).append('_')

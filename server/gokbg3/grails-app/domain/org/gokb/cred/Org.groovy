@@ -202,7 +202,6 @@ class Org extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     def publishes = getPublishedTitles()
     def issues = getIssuedTitles()
     def provides = getProvidedPackages()

@@ -1258,6 +1258,7 @@ class PackageController {
         log.debug("Starting job ${background_job}..")
 
         background_job.description = "Package CrossRef (${obj.name})"
+        background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
         background_job.startOrQueue()
         background_job.startTime = new Date()
 
