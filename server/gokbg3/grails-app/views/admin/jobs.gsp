@@ -19,6 +19,7 @@
       <tr>
         <th>ID</th>
         <th>Group-ID</th>
+        <th>Type</th>
         <th>Description</th>
         <th>Has Started</th>
         <th>Start Time</th>
@@ -32,6 +33,7 @@
         <tr class="${k==params.highlightJob?'highlightRow':''}">
           <td rowspan="2">${k}</td>
           <td>${v.groupId}</td>
+          <td>${v.type}</td>
           <td>${v.description}</td>
           <td>${v.begun}</td>
           <td>${v.startTime}</td>
@@ -54,7 +56,7 @@
         </tr>
         <tr>
           <td colspan="6">
-            messages: 
+            messages:
             <ul>
               <g:each in="${v.messages}" var="m">
                 <g:if test="${m instanceof String}">

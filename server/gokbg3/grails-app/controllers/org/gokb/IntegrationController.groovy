@@ -1530,6 +1530,7 @@ class IntegrationController {
           log.debug("Starting job ${background_job}..")
 
           background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
+          background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
           background_job.linkedItem = [name: upserted_pkg.name, type: "Package", id: upserted_pkg.id, uuid: upserted_pkg.uuid]
           background_job.message("Starting upsert for Package ${upserted_pkg.name} (uuid: ${upserted_pkg.uuid})".toString())
           background_job.startOrQueue()
@@ -1812,6 +1813,7 @@ class IntegrationController {
 
       background_job.startOrQueue()
       background_job.description = "Title CrossRef"
+      background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'TitleCrossRef')
       background_job.startTime = new Date()
 
       if ( async == false) {
@@ -2197,6 +2199,7 @@ class IntegrationController {
 
           if (user.superUserStatus || (job.ownerId && job.ownerId == user.id)) {
             result.description = job.description
+            result.type = job.type ? [value: job.type.value, id: job.type.id] : null
             result.linkedItem = job.linkedItem
             result.startTime = job.startTime
 
