@@ -404,7 +404,7 @@ class ComponentLookupService {
 
       if (params['_sort'] == p.name) {
         sortField = "p.${p.name}"
-        sort = " order by ${p.name} ${order ?: ''}"
+        sort = " order by p.${p.name} ${order ?: ''}"
       }
     }
 
@@ -464,7 +464,7 @@ class ComponentLookupService {
     }
 
     def hqlCount = "select ${genericTerm ? 'distinct': ''} count(p.id) ${hqlQry}".toString()
-    def hqlFinal = "select ${genericTerm ? 'distinct': ''} p ${sort ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
+    def hqlFinal = "select ${genericTerm ? 'distinct': ''} p ${sortField ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
     log.debug("Final qry: ${hqlFinal}")
 
