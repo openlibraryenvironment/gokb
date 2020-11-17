@@ -1593,13 +1593,13 @@ class PackageService {
                 response.success = { statusResp, statusData ->
                   processing = statusData.uploadStatus in ['PREPARATION', 'STARTED']
                   log.debug("status of job ${respData.jobId}: ${statusData.uploadStatus}")
-                  sleep(10000) // 5 min
+                  sleep(10000) // 10 sec
 
                   if (statusData.uploadStatus == 'SUCCESS') {
                     Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
 
                     while (!job.isDone()){
-                      wait(5000) // 1 min
+                      sleep(5000) // 5 sec
                     }
                   }
                 }
