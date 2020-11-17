@@ -648,11 +648,11 @@ class RestMappingService {
     errors
   }
 
-  @Transactional
   public def updateVariantNames(obj, vals, boolean remove = true) {
     log.debug("Update Variants ${vals} ..")
     def remaining = []
     def notFound = []
+    def toRemove = []
 
     try {
       vals.each {
@@ -753,10 +753,20 @@ class RestMappingService {
 
       if (notFound.size() == 0) {
         if (!obj.hasErrors() && remove) {
-          log.debug("Retain updated list ${remaining}..")
-          obj.variantNames.retainAll(remaining)
-          log.debug("new list: ${obj.variantNames}")
-          obj.save(flush:true)
+          obj.variantNames.each { vn ->
+            if (!remaining.contains(vn)) {
+              toRemove.add(vn.id)
+            }
+          }
+
+          toRemove.each {
+            obj.removeFromVariantNames(KBComponentVariantName.get(it))
+          }
+
+          log.debug("New List has ${obj.variantNames.size()} items!")
+        }
+        else {
+          log.debug("Not removing: (remove: ${remove} - errors: ${obj.errors})")
         }
       } else {
         log.debug("Unable to look up variants ..")

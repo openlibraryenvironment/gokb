@@ -151,6 +151,9 @@ environments:
             mail:
                 port: 3025
         gokb:
+            ygorUrl: null
+            packageUpdate:
+                enabled: false
             es:
                 index: gokbg3dev
                 cluster: gokbg3-dev
@@ -224,7 +227,7 @@ environments:
 gokb:
     defaultCuratoryGroup: Local
     ftupdate_enabled: true
-    decisionSupport: 
+    decisionSupport:
         active: false
         otherVoters: false
     costInfo: false

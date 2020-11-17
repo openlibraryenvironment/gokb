@@ -7,6 +7,7 @@ import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.ReviewRequest
+import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Org
 import org.gokb.cred.Role
 import org.gokb.cred.User
@@ -26,7 +27,17 @@ class CuratoryGroupsController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def curGroups = CuratoryGroup.findAll()
+    def status_filter = RefdataCategory.lookup('KBComponent.Status', 'Current')
+
+    if (params.status) {
+      def status = RefdataCategory.lookup('KBComponent.Status', params.status)
+
+      if (status) {
+        status_filter = status
+      }
+    }
+
+    def curGroups = CuratoryGroup.findAllByStatus(status_filter)
 
     String sortField = null, sortOrder = null
     if (params._sort) {

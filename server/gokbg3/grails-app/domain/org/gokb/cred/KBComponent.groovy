@@ -225,12 +225,14 @@ where cp.owner = :c
               String propType = propertyDef?.getType()?.getName()
 
               if (propType) {
-
+                log.debug("Setting prop ${propType} ${lone_property}")
                 switch (propType) {
                   case RefdataValue.class.getName():
 
                     final String ucProp = GrailsNameUtils.getClassName(lone_property);
                     final String key = "${rdc ?: className}.${ucProp}"
+
+                    log.debug("Final config: ${key}:${values}")
 
                     if (values instanceof Collection) {
                       values.each { val ->
@@ -425,6 +427,7 @@ where cp.owner = :c
     componentDiscriminator column: 'kbc_component_descriminator'
     incomingCombos batchSize: 10
     outgoingCombos batchSize: 10
+    variantNames cascade: "all,delete-orphan", lazy: false
     //dateCreatedYearMonth formula: "DATE_FORMAT(kbc_date_created, '%Y-%m')"
     //lastUpdatedYearMonth formula: "DATE_FORMAT(kbc_last_updated, '%Y-%m')"
 
