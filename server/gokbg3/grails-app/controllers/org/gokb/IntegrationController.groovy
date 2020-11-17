@@ -2199,7 +2199,7 @@ class IntegrationController {
 
           if (user.superUserStatus || (job.ownerId && job.ownerId == user.id)) {
             result.description = job.description
-            result.type = job.type
+            result.type = job.type ? [value: job.type.value, id: job.type.id] : null
             result.linkedItem = job.linkedItem
             result.startTime = job.startTime
 

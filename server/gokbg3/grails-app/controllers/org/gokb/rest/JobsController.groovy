@@ -58,7 +58,7 @@ class JobsController {
           progress: v.progress,
           messages: v.messages,
           description: v.description,
-          type: v.type,
+          type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
           begun: v.begun,
           startTime: v.startTime,
           endTime: v.endTime,
@@ -99,7 +99,7 @@ class JobsController {
 
       if (user.superUserStatus || (job.ownerId && job.ownerId == user.id)) {
         result.description = job.description
-        result.type = job.type
+        result.type = job.type ? [id: job.type.id, name: job.type.value, value: job.type.value] : null
         result.startTime = job.startTime
         result.messages = job.messages
         result.progress = job.progress
