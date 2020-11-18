@@ -1553,7 +1553,7 @@ class PackageService {
    * The frequency is ignored: the update starts immediately, setting the
    * lastRun to today if the import was successful.
    */
-  public void startSourceUpdate(Package p, def user = null) {
+  private void startSourceUpdate(Package p, def user = null) {
     log.debug("Source update start..")
     def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
     def updateTrigger

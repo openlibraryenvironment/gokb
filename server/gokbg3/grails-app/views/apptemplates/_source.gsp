@@ -8,16 +8,15 @@
 		</dt>
 		<dd>
 			<g:xEditable class="ipe" owner="${d}" field="url" />
-               <g:if test="${d.url}">
-                  &nbsp;<a href="${d.url}" target="new">Follow Link</a>
-                </g:if>
-
+			<g:if test="${d.url}">
+				&nbsp;<a href="${d.url}" target="new">Follow Link</a>
+			</g:if>
 		</dd>
 		<dt>
-                  <g:annotatedLabel owner="${d}" property="frequency">Frequency</g:annotatedLabel>
+			<g:annotatedLabel owner="${d}" property="frequency">Frequency</g:annotatedLabel>
 		</dt>
 		<dd>
-                  <g:xEditable class="ipe" owner="${d}" field="frequency" />
+			<g:xEditable class="ipe" owner="${d}" field="frequency" />
 		</dd>
 		<dt>
 			<g:annotatedLabel owner="${d}" property="defaultSupplyMethod">Default Supply Method</g:annotatedLabel>
@@ -47,6 +46,12 @@
 		</dt>
 		<dd>
 			<g:xEditableBoolean owner="${d}" field="automaticUpdates" />
+		</dd>
+		<dt>
+			<g:annotatedLabel owner="${d}" property="targetNamespace">Title ID Namespace</g:annotatedLabel>
+		</dt>
+		<dd>
+			<g:manyToOneReferenceTypedown owner="${d}" field="targetNamespace" baseClass="org.gokb.cred.IdentifierNamespace">${d.targetNamespace?.name}</g:manyToOneReferenceTypedown>
 		</dd>
 		<dt>
 			<g:annotatedLabel owner="${d}" property="ezbMatch">EZB Matching Enabled</g:annotatedLabel>

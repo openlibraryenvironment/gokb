@@ -2241,7 +2241,7 @@ class WorkflowController {
         Boolean curated_pkg = false;
         def is_curator = null;
 
-        if (pkgObj) {
+        if (pkgObj && pkgObj.source?.url) {
           if ( pkgObj.curatoryGroups && pkgObj.curatoryGroups?.size() > 0 ) {
             is_curator = user.curatoryGroups?.id.intersect(pkgObj.curatoryGroups?.id)
             curated_pkg = true;
@@ -2261,8 +2261,11 @@ class WorkflowController {
             flash.error = "Insufficient permissions to update this Package!"
           }
         }
-        else {
+        else if (!pkgObj){
           flash.error = "Unable to reference provided Package!"
+        }
+        else {
+          flash.error = "Please check the Package Source for validity!"
         }
       }
     }
