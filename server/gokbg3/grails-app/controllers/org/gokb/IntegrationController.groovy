@@ -977,6 +977,13 @@ class IntegrationController {
                     if (!pkg_validation.match && json.packageHeader.generateToken) {
                       String charset = (('a'..'z') + ('0'..'9')).join()
                       def tokenValue = RandomStringUtils.random(255, charset.toCharArray())
+
+                      if (the_pkg.updateToken) {
+                        def currentToken = the_pkg.updateToken
+                        the_pkg.updateToken = null
+                        currentToken.delete(flush:true)
+                      }
+
                       def update_token = new UpdateToken(pkg: the_pkg, updateUser: user, value: tokenValue).save(flush:true)
                       job_result.updateToken = update_token.value
                     }

@@ -152,7 +152,7 @@ class TitleController {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
     def errors = [:]
-    Class type = setType(params)
+    Class type = setType(reqBody?.type ? reqBody : params)
     def obj = null
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
