@@ -1,5 +1,6 @@
 package com.k_int
 
+import org.gokb.cred.RefdataValue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -48,6 +49,7 @@ class ConcurrencyManagerService {
     String description
     List messages = []
     Map linkedItem
+    RefdataValue type
     int ownerId
     int groupId
 
@@ -287,6 +289,7 @@ class ConcurrencyManagerService {
           progress: v.progress,
           messages: v.messages,
           description: v.description,
+          type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
           begun: v.begun,
           linkedItem: v.linkedItem,
           startTime: v.startTime,
@@ -334,6 +337,7 @@ class ConcurrencyManagerService {
           progress: v.progress,
           messages: v.messages,
           description: v.description,
+          type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
           begun: v.begun,
           linkedItem: v.linkedItem,
           startTime: v.startTime,

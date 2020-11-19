@@ -182,6 +182,9 @@ environments:
                 validationQuery: select 1
                 defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
         gokb:
+            ygorUrl: null
+            packageUpdate:
+                enabled: false
             es:
                 index: gokbg3test
                 cluster: gokbg3-test
@@ -220,6 +223,9 @@ environments:
                 greenmail:
                     disabled: true
         gokb:
+            packageUpdate:
+                enabled: false
+            ygorUrl: null
             es:
                 index: gokbg3
                 cluster: gokbg3-prod
