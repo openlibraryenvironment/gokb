@@ -1538,6 +1538,7 @@ class PackageService {
     if (running == false) {
       running = true
       startSourceUpdate(p, user)
+      running = false
       log.debug("Source Update done")
       return true
     }
@@ -1556,6 +1557,11 @@ class PackageService {
   private void startSourceUpdate(Package p, def user = null) {
     log.debug("Source update start..")
     def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
+    
+    if (ygorBaseurl?.endsWith('/')) {
+      ygorBaseUrl = ygorBaseUrl.length() - 1
+    }
+    
     def updateTrigger
     def tokenValue = p.updateToken?.value ?: null
     def respData
@@ -1573,7 +1579,7 @@ class PackageService {
       def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush:true)
     }
 
-    if (tokenValue) {
+    if (tokenValue && ygorBaseUrl) {
       def error = false
       def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
       updateTrigger = new RESTClient(ygorBaseUrl + path)
@@ -1604,10 +1610,11 @@ class PackageService {
                     }
                   }
                 }
-              }
-              catch (groovyx.net.http.HttpResponseException ex) {
-                log.error("Status check failed with status ${ex.statusCode}")
-                log.error(ex.response)
+                response.failure = { statusResp ->
+                  log.error("autoUpdateStatus Error - ${statusResp}")
+                  processing = false
+                  error = true
+                }
               }
             }
           }
@@ -1619,6 +1626,7 @@ class PackageService {
       }
       catch (Exception e) {
         e.printStackTrace();
+        error = true
       }
       if (!error) {
         p.source.lastRun = new Date()
@@ -1627,7 +1635,6 @@ class PackageService {
     else {
       log.debug("No user provided and no existing updateToken found!")
     }
-    running = false
   }
 
   private String generateExportFileName(Package pkg, ExportType type) {
