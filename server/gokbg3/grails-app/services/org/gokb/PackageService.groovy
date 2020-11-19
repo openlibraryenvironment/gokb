@@ -1558,7 +1558,7 @@ class PackageService {
     log.debug("Source update start..")
     def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
 
-    if (ygorBaseurl?.endsWith('/')) {
+    if (ygorBaseUrl?.endsWith('/')) {
       ygorBaseUrl = ygorBaseUrl.length() - 1
     }
 
