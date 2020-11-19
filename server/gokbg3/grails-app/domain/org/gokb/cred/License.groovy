@@ -89,7 +89,6 @@ class License extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     builder.'gokb' (attr) {
       addCoreGOKbXmlFields(builder, attr)
 

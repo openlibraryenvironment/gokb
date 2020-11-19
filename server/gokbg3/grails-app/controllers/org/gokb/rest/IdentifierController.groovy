@@ -114,7 +114,7 @@ class IdentifierController {
         Identifier obj = null
 
         try {
-          obj = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, reqBody.value, false)
+          obj = componentLookupService.lookupOrCreateCanonicalIdentifier(ns.value, reqBody.value,false)
         }
         catch (grails.validation.ValidationException ve) {
           log.debug("Identifier ${reqBody} has failed validation!")
@@ -228,7 +228,7 @@ class IdentifierController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def namespace() {
     if (targetTypeMap.size() == 0) {
       fillTargetMap()

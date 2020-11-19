@@ -29,6 +29,7 @@ class TitleController {
   def titleLookupService
   def titleHistoryService
   def componentLookupService
+  def dateFormatService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def getTypes() {
@@ -151,7 +152,7 @@ class TitleController {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
     def errors = [:]
-    Class type = setType(params)
+    Class type = setType(reqBody?.type ? reqBody : params)
     def obj = null
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
@@ -373,7 +374,6 @@ class TitleController {
 
     if (ti) {
       def current_history = ti.titleHistory
-      def sdf = new SimpleDateFormat("yyyy-MM-dd")
       def events = []
 
       log.debug("Current history: ${current_history}")
@@ -388,14 +388,14 @@ class TitleController {
           if (event.id) {
             def matched_event = current_history.find { it.id == event.id }
 
-            if (event.date && matched_event && event.date != sdf.format(matched_event.eventDate)) {
+            if (event.date && matched_event && event.date != dateFormatService.formatDate(matched_event.eventDate)) {
               def he_obj = ComponentHistoryEvent.get(matched_event.id)
 
               if (he_obj) {
                 def parsed_date = null
 
                 try {
-                  parsed_date = sdf.parse(event.date)
+                  parsed_date = dateFormatService.parseDate(event.date)
                 }
                 catch (Exception e){
                   log.debug("Illegal date value ${event.date}!")
@@ -610,14 +610,13 @@ class TitleController {
   private def getDirectHistory(obj, params, User user = null) {
     def result = []
     def embeds = params['_embed'] ? params['_embed'].split(',') : []
-    def sdf = new SimpleDateFormat("yyyy-MM-dd")
 
     if (obj) {
       def history = obj.titleHistory
 
       if (history) {
         history.each { he ->
-          def mapped_event = [id: he.id, date: sdf.format(he.date), from: [], to: []]
+          def mapped_event = [id: he.id, date: dateFormatService.formatDate(he.date), from: [], to: []]
 
           he.from.each { f ->
             if (embeds.contains('history')) {

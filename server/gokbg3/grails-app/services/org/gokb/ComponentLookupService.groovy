@@ -119,12 +119,11 @@ class ComponentLookupService {
   }
 
   @Synchronized
-  static def lookupOrCreateCanonicalIdentifier(ns, value, def ns_create = true) {
-    def lock = true
-    return findOrCreateId(ns, value, ns_create, lock)
+  static def lookupOrCreateCanonicalIdentifier(String ns, String value, boolean ns_create = true) {
+    return findOrCreateId(ns, value, ns_create)
   }
 
-  private static def findOrCreateId(ns, value, def ns_create = true, lock) {
+  private static def findOrCreateId(String ns, String value, boolean ns_create = true) {
     // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
     def namespace = null
     def identifier = null
@@ -391,7 +390,7 @@ class ComponentLookupService {
         }
         else if ( p.name == 'name' ){
           paramStr += "lower(p.${p.name}) like :${p.name}"
-          qryParams[p.name] = "${params[p.name].toLowerCase()}%"
+          qryParams[p.name] = "%${params[p.name].toLowerCase()}%"
         }
         else {
           paramStr += "p.${p.name} = :${p.name}"
@@ -405,7 +404,7 @@ class ComponentLookupService {
 
       if (params['_sort'] == p.name) {
         sortField = "p.${p.name}"
-        sort = " order by ${p.name} ${order ?: ''}"
+        sort = " order by p.${p.name} ${order ?: ''}"
       }
     }
 
@@ -465,7 +464,7 @@ class ComponentLookupService {
     }
 
     def hqlCount = "select ${genericTerm ? 'distinct': ''} count(p.id) ${hqlQry}".toString()
-    def hqlFinal = "select ${genericTerm ? 'distinct': ''} p ${sort ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
+    def hqlFinal = "select ${genericTerm ? 'distinct': ''} p ${sortField ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
     log.debug("Final qry: ${hqlFinal}")
 

@@ -208,6 +208,7 @@ class IntegrationControllerSpec extends Specification {
             "editStatus" : "In Progress",
             "fixed" : "No",
             "global" : "Consortium",
+            "globalNote": "Testing Consortium",
             "identifiers" : [
               [
                 "type" : "isil",

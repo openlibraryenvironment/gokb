@@ -4,9 +4,11 @@ import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ClassUtils
 import grails.gorm.transactions.Transactional
 import grails.io.IOUtils
+import groovyx.net.http.RESTClient
 import org.gokb.cred.*
 import groovy.util.logging.*
 
+import org.apache.commons.lang.RandomStringUtils
 import org.grails.orm.hibernate.HibernateSession
 import org.hibernate.ScrollMode
 import org.hibernate.ScrollableResults
@@ -17,11 +19,12 @@ import org.springframework.util.FileCopyUtils
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.text.DateFormat
-import java.text.SimpleDateFormat
 import java.util.regex.Pattern
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+
+import static groovyx.net.http.Method.GET
+import static groovyx.net.http.Method.GET
 
 @Slf4j
 class PackageService {
@@ -57,6 +60,10 @@ class PackageService {
   ComponentLookupService componentLookupService
   def grailsApplication
   def messageService
+  def concurrencyManagerService
+  def dateFormatService
+
+  public static boolean running = false;
   public static final enum ExportType {
     KBART, TSV
   }
@@ -969,25 +976,6 @@ class PackageService {
 
     // Source
 
-    if (packageHeaderDTO.source) {
-      def src = null
-
-      if (packageHeaderDTO.source instanceof Integer) {
-        src = Source.get(packageHeaderDTO.source)
-      }
-      else if (packageHeaderDTO.source.id) {
-        src = Source.get(packageHeaderDTO.source.id)
-      }
-      else if (packageHeaderDTO.source.url) {
-        src = Source.findByUrl(packageHeaderDTO.source.url)
-      }
-
-      if (src && result.source != src) {
-        result.source = src
-        changed = true
-      }
-    }
-
     // variantNames are handled in ComponentUpdateService
     // packageHeaderDTO.variantNames?.each {
     //   if ( it.trim().size() > 0 ) {
@@ -1031,6 +1019,67 @@ class PackageService {
       } else if (cgname) {
         def new_cg = new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
         result.curatoryGroups.add(new_cg)
+        changed = true
+      }
+    }
+
+    if (packageHeaderDTO.source) {
+      def src = null
+
+      if (packageHeaderDTO.source instanceof Integer) {
+        src = Source.get(packageHeaderDTO.source)
+      }
+      else if (packageHeaderDTO.source instanceof Map) {
+        def sourceMap = packageHeaderDTO.source
+
+        if (sourceMap.id) {
+          src = Source.get(sourceMap.id)
+        }
+        else {
+          def namespace = null
+
+          if (sourceMap.targetNamespace instanceof Integer) {
+            namespace = IdentifierNamespace.get(sourceMap.targetNamespace)
+          }
+
+          if (!result.source || result.source.name != result.name) {
+            def source_config = [
+              name: result.name,
+              url: sourceMap.url,
+              frequency: sourceMap.frequency,
+              ezbMatch: (sourceMap.ezbMatch ?: false),
+              zdbMatch: (sourceMap.zdbMatch ?: false),
+              automaticUpdate: (sourceMap.automaticUpdate ?: false),
+              targetNamespace: namespace
+            ]
+
+            src = new Source(source_config).save(flush: true)
+
+            result.curatoryGroups.each { cg ->
+              src.curatoryGroups.add(cg)
+            }
+          }
+          else {
+            src = result.source
+
+            changed |= ClassUtils.setStringIfDifferent(src, 'frequency', sourceMap.frequency)
+            changed |= ClassUtils.setStringIfDifferent(src, 'url', sourceMap.url)
+            changed |= ClassUtils.setBooleanIfDifferent(src, 'ezbMatch', sourceMap.ezbMatch)
+            changed |= ClassUtils.setBooleanIfDifferent(src, 'zdbMatch', sourceMap.zdbMatch)
+            changed |= ClassUtils.setBooleanIfDifferent(src, 'automaticUpdate', sourceMap.automaticUpdate)
+
+            if (namespace && namespace != src.targetNamespace) {
+              src.targetNamespace = namespace
+              changed = true
+            }
+
+            src.save(flush: true)
+          }
+        }
+      }
+
+      if (src && result.source != src) {
+        result.source = src
         changed = true
       }
     }
@@ -1218,13 +1267,12 @@ class PackageService {
   }
 
   public void createTsvExport(Package pkg) {
-    DateFormat sdf = new SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new Date());
+    def export_date = dateFormatService.formatDate(new Date());
     String filename = generateExportFileName(pkg, ExportType.TSV)
     String path = exportFilePath()
     try {
       if (pkg) {
-        String lastUpdate = sdf.format(pkg.lastUpdated)
+        String lastUpdate = dateFormatService.formatDate(pkg.lastUpdated)
         File out = new File("${path}${filename}")
         if (out.isFile())
           return
@@ -1485,9 +1533,105 @@ class PackageService {
     input.close()
   }
 
+  def synchronized updateFromSource(Package p, def user = null) {
+    log.debug("updateFromSource")
+    if (running == false) {
+      running = true
+      startSourceUpdate(p, user)
+      log.debug("Source Update done")
+      return true
+    }
+    else {
+      log.debug("update skipped - already running")
+      return false
+    }
+  }
+
+  /**
+   * this method calls Ygor to perform an automated Update on this package.
+   * Bad configurations will result in failure.
+   * The frequency is ignored: the update starts immediately, setting the
+   * lastRun to today if the import was successful.
+   */
+  private void startSourceUpdate(Package p, def user = null) {
+    log.debug("Source update start..")
+    def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
+    def updateTrigger
+    def tokenValue = p.updateToken?.value ?: null
+    def respData
+
+    if (user) {
+      String charset = (('a'..'z') + ('0'..'9')).join()
+      tokenValue = RandomStringUtils.random(255, charset.toCharArray())
+
+      if (p.updateToken) {
+        def currentToken = p.updateToken
+        p.updateToken = null
+        currentToken.delete(flush:true)
+      }
+
+      def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush:true)
+    }
+
+    if (tokenValue) {
+      def error = false
+      def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
+      updateTrigger = new RESTClient(ygorBaseUrl + path)
+
+      try {
+        updateTrigger.request(GET) { request ->
+          response.success = { resp, data ->
+            respData = data
+            // wait for ygor to finish the enrichment
+            def processing = true
+            def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
+
+            while (processing) {
+              log.debug("checking Ygor update Process ${respData.jobId}")
+
+              statusService.request(GET) { req ->
+                response.success = { statusResp, statusData ->
+                  processing = statusData.uploadStatus in ['PREPARATION', 'STARTED']
+                  log.debug("status of job ${respData.jobId}: ${statusData.uploadStatus}")
+                  sleep(10000) // 10 sec
+
+                  if (statusData.uploadStatus == 'SUCCESS') {
+                    Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
+
+                    while (!job.isDone()){
+                      sleep(5000) // 5 sec
+                    }
+                  }
+                }
+                response.failure { statusResp ->
+                  log.error("autoUpdateStatus Error - ${statusResp}")
+                  processing = false
+                  error = true
+                }
+              }
+            }
+          }
+          response.failure = { resp ->
+            log.error("autoUpdatePackage Error - ${resp}");
+            error = true
+          }
+        }
+      }
+      catch (Exception e) {
+        e.printStackTrace();
+      }
+      if (!error) {
+        p.source.lastRun = new Date()
+      }
+    }
+    else {
+      log.debug("No user provided and no existing updateToken found!")
+    }
+    running = false
+  }
+
   private String generateExportFileName(Package pkg, ExportType type) {
-    DateFormat sdf = new java.text.SimpleDateFormat('yyyy-MM-dd hh:mm:ss')
-    String lastUpdate = sdf.format(pkg.lastUpdated)
+    String lastUpdate = dateFormatService.formatTimestamp(pkg.lastUpdated)
     StringBuilder name = new StringBuilder()
     if (type == ExportType.KBART) {
       name.append(toCamelCase(pkg.provider?.name ? pkg.provider.name : "unknown Provider")).append('_')

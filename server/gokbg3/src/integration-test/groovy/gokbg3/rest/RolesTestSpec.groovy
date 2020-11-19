@@ -20,9 +20,11 @@ class RolesTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/roles"() {
+    given:
+      def urlPath = getUrlPath()
     when:
     String token = getAccessToken("rolesUser", "rolesUser")
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/roles") {
+    RestResponse resp = rest.get("$urlPath/rest/roles") {
       // headers
       accept('application/json')
       auth("Bearer $token")

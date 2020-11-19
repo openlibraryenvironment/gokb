@@ -151,6 +151,9 @@ environments:
             mail:
                 port: 3025
         gokb:
+            ygorUrl: null
+            packageUpdate:
+                enabled: false
             es:
                 index: gokbg3dev
                 cluster: gokbg3-dev
@@ -179,6 +182,9 @@ environments:
                 validationQuery: select 1
                 defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
         gokb:
+            ygorUrl: null
+            packageUpdate:
+                enabled: false
             es:
                 index: gokbg3test
                 cluster: gokbg3-test
@@ -217,6 +223,9 @@ environments:
                 greenmail:
                     disabled: true
         gokb:
+            packageUpdate:
+                enabled: false
+            ygorUrl: null
             es:
                 index: gokbg3
                 cluster: gokbg3-prod
@@ -224,7 +233,7 @@ environments:
 gokb:
     defaultCuratoryGroup: Local
     ftupdate_enabled: true
-    decisionSupport: 
+    decisionSupport:
         active: false
         otherVoters: false
     costInfo: false
