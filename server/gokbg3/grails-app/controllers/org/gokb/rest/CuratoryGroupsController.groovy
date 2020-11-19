@@ -27,8 +27,17 @@ class CuratoryGroupsController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-    def curGroups = CuratoryGroup.findAllByStatus(status_current)
+    def status_filter = RefdataCategory.lookup('KBComponent.Status', 'Current')
+
+    if (params.status) {
+      def status = RefdataCategory.lookup('KBComponent.Status', params.status)
+
+      if (status) {
+        status_filter = status
+      }
+    }
+
+    def curGroups = CuratoryGroup.findAllByStatus(status_filter)
 
     String sortField = null, sortOrder = null
     if (params._sort) {

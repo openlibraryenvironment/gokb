@@ -83,6 +83,8 @@ class CuratoryGroup extends KBComponent {
     this.generateShortcode()
     this.generateNormname()
     this.generateComponentHash()
+    this.generateUuid()
+    this.ensureDefaults()
   }
 }
 

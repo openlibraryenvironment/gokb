@@ -1557,6 +1557,11 @@ class PackageService {
   private void startSourceUpdate(Package p, def user = null) {
     log.debug("Source update start..")
     def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
+    
+    if (ygorBaseurl?.endsWith('/')) {
+      ygorBaseUrl = ygorBaseUrl.length() - 1
+    }
+    
     def updateTrigger
     def tokenValue = p.updateToken?.value ?: null
     def respData
@@ -1574,7 +1579,7 @@ class PackageService {
       def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush:true)
     }
 
-    if (tokenValue) {
+    if (tokenValue && ygorBaseUrl) {
       def error = false
       def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
       updateTrigger = new RESTClient(ygorBaseUrl + path)
@@ -1589,18 +1594,19 @@ class PackageService {
 
             while (processing) {
               log.debug("checking Ygor update Process ${respData.jobId}")
+              try {
+                statusService.request(GET) { req ->
+                  response.success = { statusResp, statusData ->
+                    processing = statusData.uploadStatus in ['PREPARATION', 'STARTED']
+                    log.debug("status of job ${respData.jobId}: ${statusData.uploadStatus}")
+                    sleep(10000) // 10 sec
 
-              statusService.request(GET) { req ->
-                response.success = { statusResp, statusData ->
-                  processing = statusData.uploadStatus in ['PREPARATION', 'STARTED']
-                  log.debug("status of job ${respData.jobId}: ${statusData.uploadStatus}")
-                  sleep(10000) // 10 sec
+                    if (statusData.uploadStatus == 'SUCCESS') {
+                      Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
 
-                  if (statusData.uploadStatus == 'SUCCESS') {
-                    Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
-
-                    while (!job.isDone()){
-                      sleep(5000) // 5 sec
+                      while (!job.isDone()){
+                        sleep(5000) // 5 sec
+                      }
                     }
                   }
                 }
@@ -1613,13 +1619,14 @@ class PackageService {
             }
           }
           response.failure = { resp ->
-            log.error("autoUpdatePackage Error - ${resp}");
+            log.error("autoUpdatePackage Error - ${resp.status}: ${resp.data}");
             error = true
           }
         }
       }
       catch (Exception e) {
         e.printStackTrace();
+        error = true
       }
       if (!error) {
         p.source.lastRun = new Date()

@@ -883,7 +883,7 @@ class AjaxSupportController {
 
       if (curatedObj && obj.curatoryGroups?.size() > 0) {
 
-        editable = user.curatoryGroups?.id.intersect(curatedObj.curatoryGroups?.id).size() > 0 ? true : false
+        editable = (user.curatoryGroups?.id.intersect(curatedObj.curatoryGroups?.id).size() > 0 || user.isAdmin()) ? true : false
       }
     }
 
