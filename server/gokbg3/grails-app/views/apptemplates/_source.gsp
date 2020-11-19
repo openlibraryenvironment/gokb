@@ -51,7 +51,7 @@
 			<g:annotatedLabel owner="${d}" property="targetNamespace">Title ID Namespace</g:annotatedLabel>
 		</dt>
 		<dd>
-			<g:manyToOneReferenceTypedown owner="${d}" field="targetNamespace" baseClass="org.gokb.cred.IdentifierNamespace">${d.targetNamespace?.name}</g:manyToOneReferenceTypedown>
+			<g:manyToOneReferenceTypedown owner="${d}" field="targetNamespace" baseClass="org.gokb.cred.IdentifierNamespace">${ d.targetNamespace }</g:manyToOneReferenceTypedown>
 		</dd>
 		<dt>
 			<g:annotatedLabel owner="${d}" property="ezbMatch">EZB Matching Enabled</g:annotatedLabel>
