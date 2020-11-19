@@ -1538,6 +1538,7 @@ class PackageService {
     if (running == false) {
       running = true
       startSourceUpdate(p, user)
+      running = false
       log.debug("Source Update done")
       return true
     }
@@ -1603,7 +1604,7 @@ class PackageService {
                     }
                   }
                 }
-                response.failure { statusResp ->
+                response.failure = { statusResp ->
                   log.error("autoUpdateStatus Error - ${statusResp}")
                   processing = false
                   error = true
@@ -1627,7 +1628,6 @@ class PackageService {
     else {
       log.debug("No user provided and no existing updateToken found!")
     }
-    running = false
   }
 
   private String generateExportFileName(Package pkg, ExportType type) {
