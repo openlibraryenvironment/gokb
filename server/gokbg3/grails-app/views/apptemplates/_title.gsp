@@ -118,12 +118,6 @@
     </span></a></li>
     <li><a href="#review" data-toggle="tab">Review Tasks <span
         class="badge badge-warning">${d.reviewRequests?.size() ?: '0'}</span></a></li>
-    <li><a href="#subjectgroup" data-toggle="tab">Subject Group</a></li>
-    <li><a href="#series" data-toggle="tab">Series</a></li>
-    <li><a href="#prices" data-toggle="tab">Prices
-      <span class="badge badge-warning">${d?.prices?.size() ?: '0'}</span>
-    </a></li>
-
   </ul>
 
   <div id="my-tab-content" class="tab-content">

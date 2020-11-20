@@ -1020,7 +1020,7 @@ class IntegrationController {
 
                         TitleInstance.withNewSession {
                           def ti = null
-                          def titleObj = json_tipp.title
+                          def titleObj = json_tipp.title.name?json_tipp.title:json_tipp
                           def title_changed = false
                           def title_class_name = determineTitleClass(titleObj)
 
@@ -1063,8 +1063,6 @@ class IntegrationController {
 
                               title_changed |= ClassUtils.setDateIfPresent(pubFrom, ti, 'publishedFrom')
                               title_changed |= ClassUtils.setDateIfPresent(pubTo, ti, 'publishedTo')
-                              title_changed |= ClassUtils.setStringIfDifferent(ti, 'series', titleObj.series)
-                              title_changed |= ClassUtils.setStringIfDifferent(ti, 'subjectArea', titleObj.subjectArea)
 
                               if ( titleObj.historyEvents?.size() > 0 ) {
                                 def he_result = titleHistoryService.processHistoryEvents(ti, titleObj, title_class_name, user, fullsync, locale)
@@ -2333,7 +2331,7 @@ class IntegrationController {
 
             if ( candidate_identifiers.size() > 0 ) {
               log.debug("Looking up ${candidate_identifiers} - ${nl[col_positions.'title']}");
-              def existing_component = titleLookupService.find (nl[col_positions.'title'], null, candidate_identifiers)
+              // def existing_component = titleLookupService.find (nl[col_positions.'title'], null, candidate_identifiers)
             }
             else {
               log.debug("No candidate identifiers: ${nl}");

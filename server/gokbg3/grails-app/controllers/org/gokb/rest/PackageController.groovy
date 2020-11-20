@@ -848,8 +848,6 @@ class PackageController {
 
                               title_changed |= ClassUtils.setDateIfPresent(pubFrom, ti, 'publishedFrom')
                               title_changed |= ClassUtils.setDateIfPresent(pubTo, ti, 'publishedTo')
-                              title_changed |= ClassUtils.setStringIfDifferent(ti, 'series', titleObj.series)
-                              title_changed |= ClassUtils.setStringIfDifferent(ti, 'subjectArea', titleObj.subjectArea)
 
                               if ( titleObj.historyEvents?.size() > 0 ) {
                                 def he_result = titleHistoryService.processHistoryEvents(ti, titleObj, title_class_name, user, fullsync, locale)
