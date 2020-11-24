@@ -2251,7 +2251,8 @@ class WorkflowController {
             def started = packageService.updateFromSource(pkgObj, user)
 
             if (started) {
-              flash.success = "Update successfully started!"
+              String msg= "${pkgObj.name} successfully updated!"
+              flash.success = msg
             }
             else {
               flash.error = "Another update is already running. Please try again later."

@@ -4,7 +4,8 @@ class CuratoryGroup extends KBComponent {
 
   static belongsTo = User
 
-  User owner;
+  User owner
+  RefdataValue type // can be 'academic', 'provider' or 'other'
 
   static hasMany = [
     users: User,
@@ -12,6 +13,7 @@ class CuratoryGroup extends KBComponent {
 
   static mapping = {
     includes KBComponent.mapping
+    type column : 'cg_type'
   }
 
   static mappedBy = [users: "curatoryGroups", ]
@@ -34,6 +36,10 @@ class CuratoryGroup extends KBComponent {
     sources: 'curatoryGroups'
   ]
 
+  private static refdataDefaults = [
+    "type" : "academic"
+  ]
+
   static constraints = {
     owner (nullable:true, blank:false)
     name (validator: { val, obj ->
@@ -50,6 +56,7 @@ class CuratoryGroup extends KBComponent {
         }
       }
     })
+    type (nullable: false)
   }
 
   public String getRestPath() {

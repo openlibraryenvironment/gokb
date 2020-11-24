@@ -1628,6 +1628,7 @@ class PackageService {
       }
       if (!error) {
         p.source.lastRun = new Date()
+        p.source.save(flush:true)
       }
     }
     else {
