@@ -12,6 +12,8 @@ import java.time.ZoneId
 @Slf4j
 class TitleInstancePackagePlatform extends KBComponent {
 
+  def dateFormatService
+
   Date startDate
   String startVolume
   String startIssue
@@ -781,6 +783,14 @@ class TitleInstancePackagePlatform extends KBComponent {
             }
           } else {
             builder.'provider'()
+          }
+          if (linked_pkg.nominalPlatform) {
+            builder.'nominalPlatform'([id: linked_pkg.nominalPlatform?.id, uuid: linked_pkg.nominalPlatform?.uuid]) {
+              'name'(linked_pkg.nominalPlatform.name?.trim())
+              'primaryUrl'(linked_pkg.nominalPlatform.primaryUrl?.trim())
+            }
+          } else {
+            builder.'nominalPlatform'()
           }
         }
         builder.'platform'([id: hostPlatform.id, uuid: hostPlatform.uuid]) {

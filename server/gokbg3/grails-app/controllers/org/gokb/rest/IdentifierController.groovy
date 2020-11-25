@@ -236,7 +236,6 @@ class IdentifierController {
     def result = [_links: [:]]
     def data = []
     params << [_exclude:"_links"]
-    def user = User.get(springSecurityService.principal.id)
     def base = grailsApplication.config.serverURL + "/rest"
     List<IdentifierNamespace> nss = []
     if (params.targetType != null) {
