@@ -76,17 +76,17 @@ class OaiController {
 
   private def buildMetadata (subject, builder, result, prefix, config) {
     log.debug("buildMetadata....");
-    
+
     // def attr = ["xsi:schemaLocation" : "${config.schema}"]
     def attr = [:]
     config.metadataNamespaces.each {ns, url ->
       ns = (ns == '_default_' ? '' : ":${ns}")
-      
-      attr["xmlns${ns}"] = url 
+
+      attr["xmlns${ns}"] = url
     }
 
     log.debug("proceed...");
-    
+
     // Add the metadata element and populate it depending on the config.
     builder.'metadata'() {
       subject."${config.methodName}" (builder, attr)
@@ -527,19 +527,46 @@ class OaiController {
       def query_params = []
       // def query = " from Package as p where p.status.value != 'Deleted'"
       def query = result.oaiConfig.query
-      
+
       def status_filter = result.oaiConfig.statusFilter
 
       if ( params.curator && result.oaiConfig.curators) {
         def cg = CuratoryGroup.findByName(params.curator)
         def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.curators)
 
-        query += ', Combo as cgCombo, CuratoryGroup as cg where cgCombo.toComponent = ? and cgCombo.type = ? and cgCombo.fromComponent = o '
-        wClause = true
-        query_params.add(cg)
-        query_params.add(comboType)
+        if (cg) {
+          query += ', Combo as cgCombo, CuratoryGroup as cg where cgCombo.toComponent = ? and cgCombo.type = ? and cgCombo.fromComponent = o '
+          wClause = true
+          query_params.add(cg)
+          query_params.add(comboType)
+        } else {
+          errors.add([code:'badArgument', name: 'curator', expl: 'Unable to lookup Curatory Group.'])
+          returnAttrs = false
+        }
       }
-      
+
+      if ( params.pkg && result.oaiConfig.pkg ) {
+        def pkg = Package.findByUuid(params.pkg)
+
+        if (!pkg) {
+          pkg = Package.get(genericOIDService.oidToId(params.pkg))
+        }
+
+        if (pkg) {
+
+          def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.pkg)
+
+          query += ', Combo as pkgCombo, Package as pkg where pkgCombo.fromComponent = ? and pkgCombo.type = ? and pkgCombo.toComponent = o '
+          wClause = true
+          query_params.add(pkg)
+          query_params.add(comboType)
+        }
+        else {
+          errors.add([code:'badArgument', name: 'pkg', expl: 'Unable to lookup Package.'])
+          returnAttrs = false
+        }
+      }
+
       if(status_filter && status_filter.size() > 0){
         status_filter.eachWithIndex { val, index ->
           if(!wClause){

@@ -721,6 +721,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   static def oaiConfig = [
     id             : 'tipps',
     textDescription: 'TIPP repository for GOKb',
+    pkg            : 'Package.Tipps',
     query          : " from TitleInstancePackagePlatform as o ",
     pageSize       : 10
   ]
@@ -769,28 +770,43 @@ class TitleInstancePackagePlatform extends KBComponent {
           }
         }
         builder.'package'([id: linked_pkg.id, uuid: linked_pkg.uuid]) {
-          'name'(linked_pkg.name)
-          'status'(linked_pkg.status?.value)
-          'editStatus'(linked_pkg.editStatus?.value)
-          'listStatus'(linked_pkg.listStatus?.value)
-          'listVerifiedDate'(linked_pkg.listVerifiedDate ? dateFormatService.formatIsoTimestamp(linked_pkg.listVerifiedDate) : null)
-          'lastUpdated'(linked_pkg.lastUpdated ? dateFormatService.formatIsoTimestamp(linked_pkg.lastUpdated) : null)
-          'contentType'(linked_pkg.contentType?.value)
-          if (linked_pkg.provider) {
-            builder.'provider'([id: linked_pkg.provider?.id, uuid: linked_pkg.provider?.uuid]) {
-              'name'(linked_pkg.provider?.name)
-              'mission'(linked_pkg.provider?.mission?.value)
+          linked_pkg.with {
+            addCoreGOKbXmlFields(builder, attr)
+
+            'scope'(scope?.value)
+            'listStatus'(listStatus?.value)
+            'breakable'(breakable?.value)
+            'consistent'(consistent?.value)
+            'fixed'(fixed?.value)
+            'paymentType'(paymentType?.value)
+            'global'(global?.value)
+            'globalNote'(globalNote)
+            'contentType'(contentType?.value)
+            'listVerifiedDate'(listVerifiedDate ? dateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
+            'lastUpdated'(lastUpdated ? dateFormatService.formatIsoTimestamp(lastUpdated) : null)
+            if (provider) {
+              builder.'provider'([id: provider?.id, uuid: provider?.uuid]) {
+                'name'(provider?.name)
+                'mission'(provider?.mission?.value)
+              }
+            } else {
+              builder.'provider'()
             }
-          } else {
-            builder.'provider'()
-          }
-          if (linked_pkg.nominalPlatform) {
-            builder.'nominalPlatform'([id: linked_pkg.nominalPlatform?.id, uuid: linked_pkg.nominalPlatform?.uuid]) {
-              'name'(linked_pkg.nominalPlatform.name?.trim())
-              'primaryUrl'(linked_pkg.nominalPlatform.primaryUrl?.trim())
+            if (nominalPlatform) {
+              builder.'nominalPlatform'([id: nominalPlatform?.id, uuid: nominalPlatform?.uuid]) {
+                'name'(nominalPlatform.name?.trim())
+                'primaryUrl'(nominalPlatform.primaryUrl?.trim())
+              }
+            } else {
+              builder.'nominalPlatform'()
             }
-          } else {
-            builder.'nominalPlatform'()
+            builder.'curatoryGroups' {
+              curatoryGroups.each { cg ->
+                builder.'group' {
+                  builder.'name'(cg.name)
+                }
+              }
+            }
           }
         }
         builder.'platform'([id: hostPlatform.id, uuid: hostPlatform.uuid]) {
