@@ -72,7 +72,7 @@ class UserProfileService {
     }
     data.each { field, value ->
       if (field in immutables && (user[field] != value)) {
-        errors << [$field: [message: "property is immutable!",
+        errors << ["${field}": [message: "property is immutable!",
                             baddata: value, code: null]]
       }
       if (field in adminAttributes && !adminUser.isAdmin()) {
@@ -105,7 +105,7 @@ class UserProfileService {
     data.each { field, value ->
       if (field != "roleIds" && field != "curatoryGroupIds" && !user.hasProperty(field)) {
         log.error("property user.$field is unknown!")
-        errors << [$field: [message: "unknown property", baddata: field, code: null]]
+        errors << ["${field}": [message: "unknown property", baddata: field, code: null]]
       } else {
         if (field == "roleIds") {
           // change roles
