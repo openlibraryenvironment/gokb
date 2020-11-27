@@ -88,16 +88,6 @@ class BootStrap {
       'XMLHttpRequest' == delegate.getHeader('X-Requested-With')
     }
 
-    CuratoryGroup.withTransaction() {
-      if (grailsApplication.config.gokb.defaultCuratoryGroup != null) {
-
-        log.debug("Ensure curatory group: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
-
-        def local_cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup) ?:
-          new CuratoryGroup(name: grailsApplication.config.gokb?.defaultCuratoryGroup).save(flush: true, failOnError: true);
-      }
-    }
-
     // Global System Roles
     KBComponent.withTransaction() {
       def contributorRole = Role.findByAuthority('ROLE_CONTRIBUTOR') ?: new Role(authority: 'ROLE_CONTRIBUTOR', roleType: 'global').save(failOnError: true)
@@ -189,6 +179,16 @@ class BootStrap {
     registerDomainClasses()
 
     migrateDiskFilesToDatabase()
+
+    CuratoryGroup.withTransaction() {
+      if (grailsApplication.config.gokb.defaultCuratoryGroup != null) {
+
+        log.debug("Ensure curatory group: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
+
+        def local_cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup) ?:
+          new CuratoryGroup(name: grailsApplication.config.gokb?.defaultCuratoryGroup).save(flush: true, failOnError: true);
+      }
+    }
 
 
     log.info("GoKB missing normalised component names");
