@@ -1580,7 +1580,7 @@ class PackageService {
     }
 
     if (tokenValue && ygorBaseUrl) {
-      def error = false
+      boolean error = false
       def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
       updateTrigger = new RESTClient(ygorBaseUrl + path)
 
@@ -1589,7 +1589,7 @@ class PackageService {
           response.success = { resp, data ->
             respData = data
             // wait for ygor to finish the enrichment
-            def processing = true
+            boolean processing = true
             def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
 
             while (processing) {
@@ -1602,10 +1602,11 @@ class PackageService {
 
                   if (statusData.uploadStatus == 'SUCCESS') {
                     Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
-
                     while (!job.isDone()){
                       sleep(5000) // 5 sec
                     }
+                    // xrPackage had errors or was cancelled -> lastRun stays untouched
+                    error=job.get().job_result.result in ["ERROR", "CANCELLED"]
                   }
                 }
               }
@@ -1623,7 +1624,7 @@ class PackageService {
         }
       }
       catch (Exception e) {
-        e.printStackTrace();
+        log.debug ("SourceUpdate Exception:", e);
         error = true
       }
       if (!error) {
