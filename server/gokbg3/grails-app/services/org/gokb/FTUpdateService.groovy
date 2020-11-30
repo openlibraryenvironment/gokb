@@ -32,10 +32,10 @@ class FTUpdateService {
     if (running == false) {
       running = true;
       doFTUpdate()
-      log.info("FTUpdate done.")
+      log.debug("FTUpdate done.")
       return new Date();
     } else {
-      log.info("FTUpdate already running")
+      log.error("FTUpdate already running")
       return "Job cancelled – FTUpdate was already running!";
     }
   }
@@ -404,7 +404,7 @@ class FTUpdateService {
 
   def updateES(esclient, domain, recgen_closure) {
 
-    log.info("updateES(${domain}...)");
+    log.debug("updateES(${domain}...)");
     cleanUpGorm();
 
     def count = 0;
@@ -510,7 +510,7 @@ class FTUpdateService {
       }
       cleanUpGorm();
 
-      log.info("final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}");
+      log.debug("final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}");
     }
     catch (Exception e) {
       log.error("Problem with FT index", e);
@@ -537,7 +537,7 @@ class FTUpdateService {
       }
       updateFTIndexes();
     } else {
-      log.info("FTUpdate already running")
+      log.error("FTUpdate already running")
       return "Job cancelled – FTUpdate was already running!";
     }
   }

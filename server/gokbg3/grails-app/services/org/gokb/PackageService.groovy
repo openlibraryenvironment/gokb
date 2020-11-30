@@ -1539,7 +1539,7 @@ class PackageService {
       running = true
       startSourceUpdate(p, user)
       running = false
-      log.debug("Source Update done")
+      log.debug("Source Update started")
       return true
     }
     else {
@@ -1585,54 +1585,65 @@ class PackageService {
       updateTrigger = new RESTClient(ygorBaseUrl + path)
 
       try {
+        log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}")
         updateTrigger.request(GET) { request ->
           response.success = { resp, data ->
+            log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => success")
             respData = data
             // wait for ygor to finish the enrichment
             boolean processing = true
             def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
 
             while (processing) {
-              log.debug("checking Ygor update Process ${respData.jobId}")
+              log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId}")
               statusService.request(GET) { req ->
                 response.success = { statusResp, statusData ->
-                  processing = statusData.uploadStatus in ['PREPARATION', 'STARTED']
-                  log.debug("status of job ${respData.jobId}: ${statusData.uploadStatus}")
-                  sleep(10000) // 10 sec
-
-                  if (statusData.uploadStatus == 'SUCCESS') {
-                    Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
-                    while (!job.isDone()){
-                      sleep(5000) // 5 sec
+                  log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => success")
+                  log.debug("status of Ygor ${respData.jobId}: ${statusData.uploadStatus}")
+                  if (statusData.gokbJobId) {
+                    processing = false
+                    // start Thread to monitor the Processing of the Update and set source date accordingly
+                    Thread monitor = new Thread() {
+                      public void run() {
+                        Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
+                        while (!job.isDone()) {
+                          log.debug("xrPackage Job $statusData.gokbJobId not done")
+                          sleep(5000) // 5 sec
+                        }
+                        def xrPackJobResult = job.get()
+                        log.debug("job.get()=$xrPackJobResult")
+                        if (xrPackJobResult.result in ["OK", "SUCCESS"]) {
+                          log.debug("job_result.result: $xrPackJobResult.result")
+                          p.source.lastRun = new Date()
+                          p.source.save(flush: true)
+                        }
+                      }
                     }
-                    // xrPackage had errors or was cancelled -> lastRun stays untouched
-                    error=job.get().job_result.result in ["ERROR", "CANCELLED"]
+                    monitor.start()
+                    log.debug("Monitor Thread started!")
+                  } else {
+                    sleep(10000) // 10 sec
                   }
                 }
               }
               response.failure = { statusResp ->
-                log.error("autoUpdateStatus Error - ${statusResp}")
+                log.error("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => failure")
                 processing = false
                 error = true
               }
             }
           }
           response.failure = { resp ->
-            log.error("autoUpdatePackage Error - ${resp.status}: ${resp.data}");
+            log.error("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => failure")
             error = true
           }
         }
       }
       catch (Exception e) {
-        log.debug ("SourceUpdate Exception:", e);
+        log.error("SourceUpdate Exception:", e);
         error = true
       }
-      if (!error) {
-        p.source.lastRun = new Date()
-        p.source.save(flush:true)
-      }
-    }
-    else {
+    } else {
       log.debug("No user provided and no existing updateToken found!")
     }
   }

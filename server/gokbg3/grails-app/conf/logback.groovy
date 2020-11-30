@@ -23,11 +23,23 @@ appender('STDOUT', ConsoleAppender) {
 }
 
 if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST ) {
-  logger ('com.k_int', DEBUG)
+  logger ('com.k_int', ERROR)
   logger ('org.gokb', DEBUG)
   logger ('gokbg3', DEBUG)
+
   logger ('org.gokb.DomainClassExtender', WARN)
   logger ('org.gokb.ClassExaminationService', WARN)
+  logger ('org.gokb.IntegrationController', ERROR)
+  logger ('org.gokb.ComponentUpdateService', ERROR)
+  logger ('org.gokb.ComponentStatisticsService', ERROR)
+  logger ('org.gokb.ComponentLookupService', ERROR)
+  logger ('org.gokb.TitleLookupService', ERROR)
+  logger ('org.gokb.ResourceController', ERROR)
+  logger ('org.gokb.FTUpdateService', ERROR)
+  logger ('org.gokb.ESUpdateJob', ERROR)
+  logger ('org.gokb.cred', ERROR)
+  logger ('gokbg3.RestMappingService', ERROR)
+  logger ('gokbg3.UserDetailsInceptor', ERROR)
 }else{
   logger ('com.k_int', INFO)
   logger ('org.gokb', INFO)
