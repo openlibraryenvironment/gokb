@@ -2210,8 +2210,8 @@ class WorkflowController {
       Boolean curated_pkg = false;
       def is_curator = null;
 
-      if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
-        is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
+      if ( pkgObj.curatoryGroups && pkgObj.curatoryGroups?.size() > 0 ) {
+        is_curator = user.curatoryGroups?.id.intersect(pkgObj.curatoryGroups?.id)
         curated_pkg = true;
       }
 
@@ -2248,7 +2248,7 @@ class WorkflowController {
           }
 
           if (pkgObj?.isEditable() && (is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))) {
-            def started = packageService.updateFromSource(pkgObj, user)
+            def started = packageService.updateFromSource(pkgObj, user, true)
 
             if (started) {
               flash.success = "Update successfully started!"

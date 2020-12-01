@@ -11,7 +11,7 @@ class AutoUpdatePackagesJob {
 
   static triggers = {
     // Cron timer.
-    cron name: 'AutoUpdatePackageTrigger', cronExpression: "0 0 6 * * ? *" // daily at 6:00 am
+    cron name: 'AutoUpdatePackageTrigger', cronExpression: "0 0 6 * * ?" // daily at 6:00 am
   }
 
   def execute() {
@@ -24,13 +24,11 @@ class AutoUpdatePackagesJob {
           "p.source.automaticUpdates = true " +
           "and (p.source.lastRun is null or p.source.lastRun < current_date)")
       updPacks.each { Package p ->
-        if (p.source.needsUpdate()) {
-          def started = false
+        def started = false
 
-          while (!started) {
-            started = packageService.updateFromSource(p)
-            sleep(10000)
-          }
+        while (!started) {
+          started = packageService.updateFromSource(p)
+          sleep(10000)
         }
       }
       log.info("auto update packages job completed.")

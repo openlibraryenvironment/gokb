@@ -1533,12 +1533,11 @@ class PackageService {
     input.close()
   }
 
-  def synchronized updateFromSource(Package p, def user = null) {
+  def synchronized updateFromSource(Package p, def user = null, boolean async = false) {
     log.debug("updateFromSource")
     if (running == false) {
       running = true
-      startSourceUpdate(p, user)
-      running = false
+      startSourceUpdate(p, user, async)
       log.debug("Source Update done")
       return true
     }
@@ -1554,7 +1553,7 @@ class PackageService {
    * The frequency is ignored: the update starts immediately, setting the
    * lastRun to today if the import was successful.
    */
-  private void startSourceUpdate(Package p, def user = null) {
+  private void startSourceUpdate(Package p, def user = null, async) {
     log.debug("Source update start..")
     def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
 
@@ -1562,8 +1561,9 @@ class PackageService {
       ygorBaseUrl = ygorBaseUrl.length() - 1
     }
 
-    def updateTrigger
     def tokenValue = p.updateToken?.value ?: null
+    def userId = user?.id ?: null
+    def pkgSourceId = p.source?.id ?: null
     def respData
 
     if (user) {
@@ -1579,57 +1579,86 @@ class PackageService {
       def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush:true)
     }
 
-    if (tokenValue && ygorBaseUrl) {
-      boolean error = false
-      def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
-      updateTrigger = new RESTClient(ygorBaseUrl + path)
+    if (tokenValue && ygorBaseUrl && (user || p.source?.needsUpdate())) {
+      log.debug("User: ${user} – Source: ${p.source?.needsUpdate()}")
 
-      try {
-        updateTrigger.request(GET) { request ->
-          response.success = { resp, data ->
-            respData = data
-            // wait for ygor to finish the enrichment
-            boolean processing = true
-            def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
+      def updateJob = concurrencyManagerService.createJob { uj ->
+        Package.withNewSession {
+          def jobOwner = user ? User.get(userId) : null
+          def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
+          def updateTrigger = new RESTClient(ygorBaseUrl + path)
 
-            while (processing) {
-              log.debug("checking Ygor update Process ${respData.jobId}")
-              statusService.request(GET) { req ->
-                response.success = { statusResp, statusData ->
-                  processing = statusData.uploadStatus in ['PREPARATION', 'STARTED']
-                  log.debug("status of job ${respData.jobId}: ${statusData.uploadStatus}")
-                  sleep(10000) // 10 sec
+          try {
+            updateTrigger.request(GET) { request ->
+              response.success = { resp, data ->
+                respData = data
+                // wait for ygor to finish the enrichment
+                boolean processing = true
 
-                  if (statusData.uploadStatus == 'SUCCESS') {
-                    Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
-                    while (!job.isDone()){
-                      sleep(5000) // 5 sec
+                if (respData.jobId) {
+                  def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
+
+                  while (processing) {
+                    log.debug("checking Ygor update Process ${respData.jobId}")
+                    statusService.request(GET) { req ->
+                      response.success = { statusResp, statusData ->
+                        processing = statusData.uploadStatus in ['PREPARATION', 'STARTED']
+                        log.debug("status of job ${respData.jobId}: ${statusData.uploadStatus}")
+                        sleep(10000) // 10 sec
+
+                        if (statusData.uploadStatus == 'SUCCESS') {
+                          uj.message("Enrichment successful - starting import.")
+                          Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
+
+                          while (!job.isDone()){
+                            sleep(5000) // 5 sec
+                          }
+
+                          def jobResult = job.get()
+
+                          if (jobResult.result in ['OK', 'SUCCESS']) {
+                            uj.message("Import for job ${job.id} successful.".toString())
+                            def src = Source.get(pkgSourceId)
+                            src.lastRun = new Date()
+                            src.save(flush:true)
+                          }
+                          else {
+                            uj.message("Import for job ${job.id} failed!".toString())
+                          }
+                        }
+                      }
+                      response.failure = { statusResp ->
+                        log.error("autoUpdateStatus Error - ${statusResp}")
+                        uj.message("Status check for update failed".toString())
+                        processing = false
+                      }
                     }
-                    // xrPackage had errors or was cancelled -> lastRun stays untouched
-                    error=job.get().job_result.result in ["ERROR", "CANCELLED"]
                   }
                 }
+                else {
+                  log.debug("Enrichment Response: ${respData}")
+                  uj.message("Update failed: Unable to retrieve Enrichment job ID!".toString())
+                }
               }
-              response.failure = { statusResp ->
-                log.error("autoUpdateStatus Error - ${statusResp}")
-                processing = false
-                error = true
+              response.failure = { resp ->
+                uj.message("Initial enrichment request failed!")
+                log.error("autoUpdatePackage Error - ${resp.status}: ${resp.data}");
               }
             }
           }
-          response.failure = { resp ->
-            log.error("autoUpdatePackage Error - ${resp.status}: ${resp.data}");
-            error = true
+          catch (Exception e) {
+            log.debug ("SourceUpdate Exception:", e);
           }
+          running = false
         }
-      }
-      catch (Exception e) {
-        log.debug ("SourceUpdate Exception:", e);
-        error = true
-      }
-      if (!error) {
-        p.source.lastRun = new Date()
-        p.source.save(flush:true)
+      }.startOrQueue()
+
+      updateJob.description = "Package Source URL Update"
+      updateJob.linkedItem = [id: p.id, name: p.name, uuid: p.uuid]
+      updateJob.startTime = new Date()
+
+      if (!async) {
+        updateJob.get()
       }
     }
     else {
