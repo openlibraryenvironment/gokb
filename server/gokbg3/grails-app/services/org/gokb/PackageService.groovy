@@ -1608,13 +1608,9 @@ class PackageService {
 
                         if (statusData.uploadStatus == 'SUCCESS') {
                           uj.message("Enrichment successful - starting import.")
-                          Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
+                          Job job = concurrencyManagerService.jobs.find { it.id == statusData.gokbJobId }
 
-                          while (!job.isDone()){
-                            sleep(5000) // 5 sec
-                          }
-
-                          def jobResult = job.get()
+                          def jobResult = job?.get()
 
                           if (jobResult.result in ['OK', 'SUCCESS']) {
                             uj.message("Import for job ${job.id} successful.".toString())
