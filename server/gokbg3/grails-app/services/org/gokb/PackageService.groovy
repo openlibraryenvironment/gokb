@@ -4,12 +4,10 @@ import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ClassUtils
 import grails.gorm.transactions.Transactional
 import grails.io.IOUtils
+import groovy.util.logging.Slf4j
 import groovyx.net.http.RESTClient
-import org.gokb.cred.*
-import groovy.util.logging.*
-
 import org.apache.commons.lang.RandomStringUtils
-import org.grails.orm.hibernate.HibernateSession
+import org.gokb.cred.*
 import org.hibernate.ScrollMode
 import org.hibernate.ScrollableResults
 import org.hibernate.Session
@@ -17,14 +15,12 @@ import org.hibernate.type.StandardBasicTypes
 import org.springframework.util.FileCopyUtils
 
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.regex.Pattern
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 import static groovyx.net.http.Method.GET
-import static groovyx.net.http.Method.GET
+import static grails.async.Promises.*
 
 @Slf4j
 class PackageService {
@@ -1539,7 +1535,7 @@ class PackageService {
       running = true
       startSourceUpdate(p, user)
       running = false
-      log.debug("Source Update started")
+      log.debug("UpdateFromSource started")
       return true
     }
     else {
@@ -1580,7 +1576,7 @@ class PackageService {
     }
 
     if (tokenValue && ygorBaseUrl) {
-      boolean error = false
+      def error = false
       def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
       updateTrigger = new RESTClient(ygorBaseUrl + path)
 
@@ -1599,37 +1595,39 @@ class PackageService {
               statusService.request(GET) { req ->
                 response.success = { statusResp, statusData ->
                   log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => success")
-                  log.debug("status of Ygor ${respData.jobId}: ${statusData.uploadStatus}")
+                  log.debug("status of Ygor  ${statusData.uploadStatus} gokbJob #${statusData.gokbJobId}")
                   if (statusData.gokbJobId) {
                     processing = false
-                    // start Thread to monitor the Processing of the Update and set source date accordingly
-                    Thread monitor = new Thread() {
-                      public void run() {
-                        Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
-                        while (!job.isDone()) {
-                          log.debug("xrPackage Job $statusData.gokbJobId not done")
-                          sleep(5000) // 5 sec
-                        }
-                        def xrPackJobResult = job.get()
-                        log.debug("job.get()=$xrPackJobResult")
-                        if (xrPackJobResult.result in ["OK", "SUCCESS"]) {
-                          log.debug("job_result.result: $xrPackJobResult.result")
-                          p.source.lastRun = new Date()
-                          p.source.save(flush: true)
+                    task {
+                      log.debug("task start...")
+                      Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
+                      while (!job.isDone() && job.get() == null) {
+                        this.wait(5000) // 5 sec
+                        log.debug("checking xRefPackage status...")
+                      }
+                      log.debug("xRefPackage Job done!")
+                      def xRefResult = job.get()
+                      if (xRefResult) {
+                        if (xRefResult.result == "OK") {
+                          log.debug("xRefPackage result OK")
+                          Package.withNewSession {
+                            def pkg = Package.get(xRefResult.pkgId)
+                            pkg.source.lastRun = new Date()
+                            pkg.source.save(flush: true)
+                          }
+                          log.debug("set ${p.source.getNormname()}.lastRun = now")
                         }
                       }
                     }
-                    monitor.start()
-                    log.debug("Monitor Thread started!")
                   } else {
-                    sleep(10000) // 10 sec
+                    this.wait(10000) // 10 sec
                   }
                 }
-              }
-              response.failure = { statusResp ->
-                log.error("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => failure")
-                processing = false
-                error = true
+                response.failure = { statusResp ->
+                  log.error("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => failure")
+                  processing = false
+                  error = true
+                }
               }
             }
           }
@@ -1638,8 +1636,7 @@ class PackageService {
             error = true
           }
         }
-      }
-      catch (Exception e) {
+      } catch (Exception e) {
         log.error("SourceUpdate Exception:", e);
         error = true
       }

@@ -32,14 +32,13 @@ class IntegrationController {
   def messageService
   def titleHistoryService
 
-
-  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def index() {
   }
 
-  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def assertJsonldPlatform() {
-    def result = [result:'OK']
+    def result = [result: 'OK']
     def name = request.JSON.'skos:prefLabel'
     def normname = GOKbTextUtils.norm2(name)
     def located_entries = KBComponent.findAllByNormname(normname)
@@ -1492,7 +1491,7 @@ class IntegrationController {
           background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
           background_job.linkedItem = [name: upserted_pkg.name,
                                        type: "Package",
-                                       id: upserted_pkg.id,
+                                       id  : upserted_pkg.id,
                                        uuid: upserted_pkg.uuid]
           background_job.message("Starting upsert for Package ${upserted_pkg.name} (uuid: ${upserted_pkg.uuid})".toString())
           background_job.startOrQueue()
@@ -2001,8 +2000,10 @@ class IntegrationController {
 
             if (idMatch) {
               if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
-              } else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
-              } else {
+              }
+              else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
+              }
+              else {
                 found = true
               }
             }
