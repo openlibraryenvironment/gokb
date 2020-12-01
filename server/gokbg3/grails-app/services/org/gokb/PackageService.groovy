@@ -1633,7 +1633,12 @@ class PackageService {
                 }
                 else {
                   log.debug("Enrichment Response: ${respData}")
-                  uj.message("Update failed: Unable to retrieve Enrichment job ID!".toString())
+                  if (respData.status == 'SKIPPED') {
+                    uj.message("Update skipped – No active URLs!".toString())
+                  }
+                  else {
+                    uj.message("Update failed: Unable to retrieve Enrichment job ID!".toString())
+                  }
                 }
               }
               response.failure = { resp ->
