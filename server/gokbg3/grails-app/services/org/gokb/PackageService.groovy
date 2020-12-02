@@ -561,7 +561,7 @@ class PackageService {
    */
 
   def validateDTO(packageHeaderDTO, locale) {
-    def result = [valid: true, errors:[:], match:false]
+    def result = [valid: true, errors: [:], match: false]
 
     if (!packageHeaderDTO.name?.trim()) {
       result.valid = false
@@ -583,28 +583,24 @@ class PackageService {
         if (id_ns instanceof String) {
           log.debug("Default namespace handling for ${id_ns}..")
           ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
-        }
-        else if (id_ns) {
+        } else if (id_ns) {
           log.debug("Handling namespace def ${id_ns}")
           ns_obj = IdentifierNamespace.get(id_ns)
         }
 
         if (!ns_obj) {
           id_errors.add([message: messageService.resolveCode('default.not.found.message', ["Namespace", id_ns], locale)])
-        }
-        else {
+        } else {
           id_def.type = ns_obj.value
         }
-      }
-      else if (idobj instanceof Integer){
+      } else if (idobj instanceof Integer) {
         Identifier the_id = Identifier.get(id_inc)
 
         if (!the_id) {
           id_errors.add([message: messageService.resolveCode('crossRef.error.lookup', ["Identifier", "ID"], locale), baddata: idobj])
           result.valid = false
         }
-      }
-      else {
+      } else {
         log.warn("Missing information in id object ${idobj}")
         id_errors.add([message: messageService.resolveCode('crossRef.error.format', ["Identifiers"], locale), baddata: idobj])
         result.valid = false
@@ -612,16 +608,14 @@ class PackageService {
 
       if (ns_obj && id_def.size() > 0) {
         if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
-          if ( ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern) ) {
+          if (ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern)) {
             log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
             id_errors.add([message: messageService.resolveCode('identifier.validate.error', [ns_obj.value, id_def.value], locale), baddata: idobj])
             result.valid = false
-          }
-          else {
+          } else {
             log.debug("New identifier ..")
           }
-        }
-        else {
+        } else {
           log.debug("Found existing identifier ..")
         }
       }
@@ -685,7 +679,7 @@ class PackageService {
 
       if (!prov) {
         result.errors.provider = [[message: messageService.resolveCode('crossRef.error.lookup', ["Provider", "ID"], locale), code: 404, baddata: packageHeaderDTO.provider]]
-        result.valid =false
+        result.valid = false
       }
     }
 
@@ -988,17 +982,14 @@ class PackageService {
 
       if (it instanceof Integer) {
         cg = CuratoryGroup.get(it)
-      }
-      else if (it instanceof String) {
+      } else if (it instanceof String) {
         String normname = CuratoryGroup.generateNormname(it)
         cgname = it
 
         cg = CuratoryGroup.findByNormname(normname)
-      }
-      else if (it.id){
+      } else if (it.id) {
         cg = CuratoryGroup.get(it.id)
-      }
-      else if (it.name) {
+      } else if (it.name) {
         String normname = CuratoryGroup.generateNormname(it.name)
         cgname = it.name
 
@@ -1024,14 +1015,12 @@ class PackageService {
 
       if (packageHeaderDTO.source instanceof Integer) {
         src = Source.get(packageHeaderDTO.source)
-      }
-      else if (packageHeaderDTO.source instanceof Map) {
+      } else if (packageHeaderDTO.source instanceof Map) {
         def sourceMap = packageHeaderDTO.source
 
         if (sourceMap.id) {
           src = Source.get(sourceMap.id)
-        }
-        else {
+        } else {
           def namespace = null
 
           if (sourceMap.targetNamespace instanceof Integer) {
@@ -1040,11 +1029,11 @@ class PackageService {
 
           if (!result.source || result.source.name != result.name) {
             def source_config = [
-              name: result.name,
-              url: sourceMap.url,
-              frequency: sourceMap.frequency,
-              ezbMatch: (sourceMap.ezbMatch ?: false),
-              zdbMatch: (sourceMap.zdbMatch ?: false),
+              name           : result.name,
+              url            : sourceMap.url,
+              frequency      : sourceMap.frequency,
+              ezbMatch       : (sourceMap.ezbMatch ?: false),
+              zdbMatch       : (sourceMap.zdbMatch ?: false),
               automaticUpdate: (sourceMap.automaticUpdate ?: false),
               targetNamespace: namespace
             ]
@@ -1054,8 +1043,7 @@ class PackageService {
             result.curatoryGroups.each { cg ->
               src.curatoryGroups.add(cg)
             }
-          }
-          else {
+          } else {
             src = result.source
 
             changed |= ClassUtils.setStringIfDifferent(src, 'frequency', sourceMap.frequency)
@@ -1080,7 +1068,7 @@ class PackageService {
       }
     }
 
-    result.save(flush:true)
+    result.save(flush: true)
 
 
     result
@@ -1570,10 +1558,10 @@ class PackageService {
       if (p.updateToken) {
         def currentToken = p.updateToken
         p.updateToken = null
-        currentToken.delete(flush:true)
+        currentToken.delete(flush: true)
       }
 
-      def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush:true)
+      def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush: true)
     }
 
     if (tokenValue && ygorBaseUrl) {
@@ -1603,7 +1591,7 @@ class PackageService {
               statusService.request(GET) { req ->
                 response.success = { statusResp, statusData ->
                   log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => success")
-                  log.debug("status of Ygor ${statusData.uploadStatus} gokbJob #${statusData.gokbJobId}")
+                  log.debug("status of Ygor ${statusData.status} gokbJob #${statusData.gokbJobId}")
                   if (statusData.gokbJobId) {
                     processing = false
                     task {
