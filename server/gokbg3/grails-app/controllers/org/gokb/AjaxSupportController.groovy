@@ -881,7 +881,7 @@ class AjaxSupportController {
     if (editable) {
       def curatedObj = obj.respondsTo("getCuratoryGroups") ? obj : ( KBComponent.has(obj, 'pkg') ? obj.pkg : null )
 
-      if (curatedObj && curatedObj.curatoryGroups?.size() > 0) {
+      if (curatedObj && obj.curatoryGroups?.size() > 0) {
 
         editable = (user.curatoryGroups?.id.intersect(curatedObj.curatoryGroups?.id).size() > 0 || user.isAdmin()) ? true : false
       }
