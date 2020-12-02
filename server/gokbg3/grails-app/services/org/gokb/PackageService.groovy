@@ -1583,6 +1583,7 @@ class PackageService {
       log.debug("User: ${user} – Source: ${p.source?.needsUpdate()}")
 
       def updateJob = concurrencyManagerService.createJob { uj ->
+        uj.message("Starting update for package ${p.name}!".toString())
         Package.withNewSession {
           def jobOwner = user ? User.get(userId) : null
           def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
@@ -1650,6 +1651,7 @@ class PackageService {
           catch (Exception e) {
             log.debug ("SourceUpdate Exception:", e);
           }
+          uj.endTime = new Date()
           running = false
         }
       }.startOrQueue()
@@ -1657,6 +1659,14 @@ class PackageService {
       updateJob.description = "Package Source URL Update"
       updateJob.linkedItem = [id: p.id, name: p.name, uuid: p.uuid]
       updateJob.startTime = new Date()
+
+      if (user) {
+        updateJob.ownerId = user.id
+      }
+
+      if (p.curatoryGroups?.size() == 1) {
+        updateJob.groupId = p.curatoryGroups[0].id
+      }
 
       if (!async) {
         updateJob.get()
