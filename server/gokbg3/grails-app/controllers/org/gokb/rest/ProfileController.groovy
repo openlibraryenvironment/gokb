@@ -131,7 +131,7 @@ class ProfileController {
 
     jobs.each { k, v ->
       if (v.endTime || v.cancelled) {
-        def j = concurrencyManagerService.getJob(v.id)
+        def j = concurrencyManagerService.getJob(v.id, true)
         log.debug("Removed job ${v.id}")
       }
     }

@@ -247,7 +247,7 @@ class ConcurrencyManagerService {
    * @param job_id
    * @return the Job
    */
-  public Job getJob(int job_id) {
+  public Job getJob(int job_id, boolean cleanup = false) {
     if (job_id == null || !this.map.containsKey(job_id)) {
       return null
     }
@@ -256,7 +256,7 @@ class ConcurrencyManagerService {
     Job j = map.get (job_id)
 
     // Check if the job has finished.
-    if (j.isDone()) {
+    if (j.isDone() && cleanup) {
       // Remove from the map too as we don't need to keep track any more.
       map.remove (job_id)
     }

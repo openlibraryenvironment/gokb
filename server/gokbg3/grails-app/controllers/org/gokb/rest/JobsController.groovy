@@ -174,7 +174,7 @@ class JobsController {
     if (job) {
       if (user.superUserStatus || job.ownerId == user.id) {
         if (job.isDone()) {
-          def removed = concurrencyManagerService.getJob(params.id)
+          def removed = concurrencyManagerService.getJob(params.id, true)
           log.debug("Removed job with id ${removed.id}")
         }
         else {
