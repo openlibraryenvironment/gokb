@@ -1531,16 +1531,16 @@ class PackageService {
 
   def synchronized updateFromSource(Package p, def user = null) {
     log.debug("updateFromSource")
+    boolean started = false
     if (running == false) {
       running = true
-      startSourceUpdate(p, user)
+      started = startSourceUpdate(p, user)
       running = false
       log.debug("UpdateFromSource started")
-      return true
-    }
-    else {
+      return started
+    } else {
       log.debug("update skipped - already running")
-      return false
+      return started
     }
   }
 
@@ -1550,8 +1550,9 @@ class PackageService {
    * The frequency is ignored: the update starts immediately, setting the
    * lastRun to today if the import was successful.
    */
-  private void startSourceUpdate(Package p, def user = null) {
+  private boolean startSourceUpdate(Package p, def user = null) {
     log.debug("Source update start..")
+    boolean error = false
     def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
 
     if (ygorBaseUrl?.endsWith('/')) {
@@ -1576,7 +1577,6 @@ class PackageService {
     }
 
     if (tokenValue && ygorBaseUrl) {
-      def error = false
       def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
       updateTrigger = new RESTClient(ygorBaseUrl + path)
 
@@ -1587,9 +1587,13 @@ class PackageService {
             log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => success")
             // wait for ygor to finish the enrichment
             boolean processing = true
-            if (!respData || !respData.jobId){
+            respData = data
+            if (!respData || !respData.jobId) {
               log.error("no ygor job Id received, skipping update of ${p.id}!")
-              processing=false
+              if (respData?.message) {
+                log.error("ygor message: ${respData.message}")
+              }
+              processing = false
               return
             }
             def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
@@ -1599,7 +1603,7 @@ class PackageService {
               statusService.request(GET) { req ->
                 response.success = { statusResp, statusData ->
                   log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => success")
-                  log.debug("status of Ygor  ${statusData.uploadStatus} gokbJob #${statusData.gokbJobId}")
+                  log.debug("status of Ygor ${statusData.uploadStatus} gokbJob #${statusData.gokbJobId}")
                   if (statusData.gokbJobId) {
                     processing = false
                     task {
@@ -1649,6 +1653,7 @@ class PackageService {
     } else {
       log.debug("No user provided and no existing updateToken found!")
     }
+    return !error
   }
 
   private String generateExportFileName(Package pkg, ExportType type) {
