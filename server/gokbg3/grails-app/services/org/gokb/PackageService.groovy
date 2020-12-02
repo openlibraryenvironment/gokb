@@ -1585,9 +1585,13 @@ class PackageService {
         updateTrigger.request(GET) { request ->
           response.success = { resp, data ->
             log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => success")
-            respData = data
             // wait for ygor to finish the enrichment
             boolean processing = true
+            if (!respData || !respData.jobId){
+              log.error("no ygor job Id received, skipping update of ${p.id}!")
+              processing=false
+              return
+            }
             def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
 
             while (processing) {
@@ -1625,6 +1629,7 @@ class PackageService {
                 }
                 response.failure = { statusResp ->
                   log.error("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => failure")
+                  log.error("ygor response: $statusResp")
                   processing = false
                   error = true
                 }
@@ -1633,6 +1638,7 @@ class PackageService {
           }
           response.failure = { resp ->
             log.error("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => failure")
+            log.error("ygor response: ${resp.responseBase}")
             error = true
           }
         }
