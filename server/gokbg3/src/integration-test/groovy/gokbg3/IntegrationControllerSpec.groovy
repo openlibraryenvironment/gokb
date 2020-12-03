@@ -950,4 +950,33 @@ class IntegrationControllerSpec extends Specification {
     def bookInstance = BookInstance.get(update_resp.json.titleId)
     bookInstance?.variantNames?.size() == 0
   }
+
+  void "Create Title with problematic characters"() {
+    when: "Caller asks for this record to be cross referenced"
+    def json_record = [
+      "identifiers"    : [
+        [
+          "type" : "isbn",
+          "value": "978-13-12112-23-2"
+        ]
+      ],
+      "type"           : "Monograph",
+      "name"           : "TestVariantBookName \"Quotes Test\"",
+      "editionNumber"  : "4",
+      "volumeNumber"   : "3",
+      "firstAuthor"    : "J. Smith",
+      "dateFirstOnline": "2019-01-01 00:00:00.000"
+    ]
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
+      auth('admin', 'admin')
+      body(json_record as JSON)
+    }
+
+    then: "Item is created in the database"
+    resp.json.message.startsWith('Created')
+    expect: "Find item by ID can now locate that item and the discriminator is set correctly"
+    def bookInstance = BookInstance.get(resp.json.titleId)
+    bookInstance?.name == 'TestVariantBookName "Quotes Test"'
+  }
 }

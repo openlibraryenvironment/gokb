@@ -750,15 +750,10 @@ class TitleInstancePackagePlatform extends KBComponent {
         addCoreGOKbXmlFields(builder, attr)
         builder.'lastUpdated'(lastUpdated ? dateFormatService.formatIsoTimestamp(lastUpdated) : null)
         builder.'format'(format?.value)
+        builder.'type'(titleClass)
         builder.'url'(url ?: "")
-        builder.'name'(name)
         builder.'subjectArea'(subjectArea?.trim())
         builder.'series'(series?.trim())
-        builder.'identifiers' {
-          ids.each { tid ->
-            builder.'identifier'([namespace:tid[0], namespaceName:tid[3], value:tid[1], type:tid[2]])
-          }
-        }
         builder.'title' ([id:ti.id, uuid:ti.uuid]) {
           builder.'name' (ti.name?.trim())
           builder.'type' (titleClass)
@@ -843,13 +838,6 @@ class TitleInstancePackagePlatform extends KBComponent {
                 }
               }
             }
-          }
-        }
-        builder.'type'(titleClass)
-        builder.'status'(ti.status?.value)
-        builder.'identifiers' {
-          titleIds.each { tid ->
-            builder.'identifier'([namespace: tid[0], namespaceName: tid[3], value: tid[1], type: tid[2]])
           }
         }
       }
