@@ -255,7 +255,6 @@ class ComponentUpdateService {
         if (!data.variantNames || !data.variantNames.contains(vn.variantName)) {
           def vobj = KBComponentVariantName.get(vn.id)
           vobj.delete()
-          component.refresh()
           hasChanged = true
         }
       }

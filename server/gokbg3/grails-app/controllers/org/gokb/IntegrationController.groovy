@@ -1310,9 +1310,7 @@ class IntegrationController {
                           upserted_tipp.retire()
                           num_removed_tipps++;
                         } else if (upserted_tipp && upserted_tipp.status != status_current && (!json_tipp.status || json_tipp.status == "Current")) {
-                          upserted_tipp.setActive()
-
-                          if (upserted_tipp.isDeleted()) {
+                          if (upserted_tipp.isDeleted() && !fullsync) {
                             reviewRequestService.raise(
                               upserted_tipp,
                               "Matched TIPP was marked as Deleted.",
@@ -1323,7 +1321,10 @@ class IntegrationController {
                               RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Status Deleted')
                             )
                           }
+                          upserted_tipp.setActive()
                         }
+
+                        upserted_tipp.save()
 
                         if (upserted_tipp.isCurrent() && upserted_tipp.hostPlatform?.status != status_current) {
                           def additionalInfo = [:]
