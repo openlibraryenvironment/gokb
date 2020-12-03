@@ -4,12 +4,10 @@ import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ClassUtils
 import grails.gorm.transactions.Transactional
 import grails.io.IOUtils
+import groovy.util.logging.Slf4j
 import groovyx.net.http.RESTClient
-import org.gokb.cred.*
-import groovy.util.logging.*
-
 import org.apache.commons.lang.RandomStringUtils
-import org.grails.orm.hibernate.HibernateSession
+import org.gokb.cred.*
 import org.hibernate.ScrollMode
 import org.hibernate.ScrollableResults
 import org.hibernate.Session
@@ -17,14 +15,12 @@ import org.hibernate.type.StandardBasicTypes
 import org.springframework.util.FileCopyUtils
 
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.regex.Pattern
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 import static groovyx.net.http.Method.GET
-import static groovyx.net.http.Method.GET
+import static grails.async.Promises.*
 
 @Slf4j
 class PackageService {
@@ -565,7 +561,7 @@ class PackageService {
    */
 
   def validateDTO(packageHeaderDTO, locale) {
-    def result = [valid: true, errors:[:], match:false]
+    def result = [valid: true, errors: [:], match: false]
 
     if (!packageHeaderDTO.name?.trim()) {
       result.valid = false
@@ -587,28 +583,24 @@ class PackageService {
         if (id_ns instanceof String) {
           log.debug("Default namespace handling for ${id_ns}..")
           ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
-        }
-        else if (id_ns) {
+        } else if (id_ns) {
           log.debug("Handling namespace def ${id_ns}")
           ns_obj = IdentifierNamespace.get(id_ns)
         }
 
         if (!ns_obj) {
           id_errors.add([message: messageService.resolveCode('default.not.found.message', ["Namespace", id_ns], locale)])
-        }
-        else {
+        } else {
           id_def.type = ns_obj.value
         }
-      }
-      else if (idobj instanceof Integer){
+      } else if (idobj instanceof Integer) {
         Identifier the_id = Identifier.get(id_inc)
 
         if (!the_id) {
           id_errors.add([message: messageService.resolveCode('crossRef.error.lookup', ["Identifier", "ID"], locale), baddata: idobj])
           result.valid = false
         }
-      }
-      else {
+      } else {
         log.warn("Missing information in id object ${idobj}")
         id_errors.add([message: messageService.resolveCode('crossRef.error.format', ["Identifiers"], locale), baddata: idobj])
         result.valid = false
@@ -616,16 +608,14 @@ class PackageService {
 
       if (ns_obj && id_def.size() > 0) {
         if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
-          if ( ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern) ) {
+          if (ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern)) {
             log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
             id_errors.add([message: messageService.resolveCode('identifier.validate.error', [ns_obj.value, id_def.value], locale), baddata: idobj])
             result.valid = false
-          }
-          else {
+          } else {
             log.debug("New identifier ..")
           }
-        }
-        else {
+        } else {
           log.debug("Found existing identifier ..")
         }
       }
@@ -689,7 +679,7 @@ class PackageService {
 
       if (!prov) {
         result.errors.provider = [[message: messageService.resolveCode('crossRef.error.lookup', ["Provider", "ID"], locale), code: 404, baddata: packageHeaderDTO.provider]]
-        result.valid =false
+        result.valid = false
       }
     }
 
@@ -992,17 +982,14 @@ class PackageService {
 
       if (it instanceof Integer) {
         cg = CuratoryGroup.get(it)
-      }
-      else if (it instanceof String) {
+      } else if (it instanceof String) {
         String normname = CuratoryGroup.generateNormname(it)
         cgname = it
 
         cg = CuratoryGroup.findByNormname(normname)
-      }
-      else if (it.id){
+      } else if (it.id) {
         cg = CuratoryGroup.get(it.id)
-      }
-      else if (it.name) {
+      } else if (it.name) {
         String normname = CuratoryGroup.generateNormname(it.name)
         cgname = it.name
 
@@ -1028,14 +1015,12 @@ class PackageService {
 
       if (packageHeaderDTO.source instanceof Integer) {
         src = Source.get(packageHeaderDTO.source)
-      }
-      else if (packageHeaderDTO.source instanceof Map) {
+      } else if (packageHeaderDTO.source instanceof Map) {
         def sourceMap = packageHeaderDTO.source
 
         if (sourceMap.id) {
           src = Source.get(sourceMap.id)
-        }
-        else {
+        } else {
           def namespace = null
 
           if (sourceMap.targetNamespace instanceof Integer) {
@@ -1044,11 +1029,11 @@ class PackageService {
 
           if (!result.source || result.source.name != result.name) {
             def source_config = [
-              name: result.name,
-              url: sourceMap.url,
-              frequency: sourceMap.frequency,
-              ezbMatch: (sourceMap.ezbMatch ?: false),
-              zdbMatch: (sourceMap.zdbMatch ?: false),
+              name           : result.name,
+              url            : sourceMap.url,
+              frequency      : sourceMap.frequency,
+              ezbMatch       : (sourceMap.ezbMatch ?: false),
+              zdbMatch       : (sourceMap.zdbMatch ?: false),
               automaticUpdate: (sourceMap.automaticUpdate ?: false),
               targetNamespace: namespace
             ]
@@ -1058,8 +1043,7 @@ class PackageService {
             result.curatoryGroups.each { cg ->
               src.curatoryGroups.add(cg)
             }
-          }
-          else {
+          } else {
             src = result.source
 
             changed |= ClassUtils.setStringIfDifferent(src, 'frequency', sourceMap.frequency)
@@ -1084,7 +1068,7 @@ class PackageService {
       }
     }
 
-    result.save(flush:true)
+    result.save(flush: true)
 
 
     result
@@ -1535,16 +1519,16 @@ class PackageService {
 
   def synchronized updateFromSource(Package p, def user = null) {
     log.debug("updateFromSource")
+    boolean started = false
     if (running == false) {
       running = true
-      startSourceUpdate(p, user)
+      started = startSourceUpdate(p, user)
       running = false
-      log.debug("Source Update done")
-      return true
-    }
-    else {
+      log.debug("UpdateFromSource started")
+      return started
+    } else {
       log.debug("update skipped - already running")
-      return false
+      return started
     }
   }
 
@@ -1554,8 +1538,9 @@ class PackageService {
    * The frequency is ignored: the update starts immediately, setting the
    * lastRun to today if the import was successful.
    */
-  private void startSourceUpdate(Package p, def user = null) {
+  private boolean startSourceUpdate(Package p, def user = null) {
     log.debug("Source update start..")
+    boolean error = false
     def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
 
     if (ygorBaseUrl?.endsWith('/')) {
@@ -1573,68 +1558,90 @@ class PackageService {
       if (p.updateToken) {
         def currentToken = p.updateToken
         p.updateToken = null
-        currentToken.delete(flush:true)
+        currentToken.delete(flush: true)
       }
 
-      def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush:true)
+      def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush: true)
     }
 
     if (tokenValue && ygorBaseUrl) {
-      boolean error = false
       def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
       updateTrigger = new RESTClient(ygorBaseUrl + path)
 
       try {
+        log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}")
         updateTrigger.request(GET) { request ->
           response.success = { resp, data ->
-            respData = data
+            log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => success")
             // wait for ygor to finish the enrichment
             boolean processing = true
+            respData = data
+            if (!respData || !respData.jobId) {
+              log.error("no ygor job Id received, skipping update of ${p.id}!")
+              if (respData?.message) {
+                log.error("ygor message: ${respData.message}")
+              }
+              processing = false
+              return
+            }
             def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
 
             while (processing) {
-              log.debug("checking Ygor update Process ${respData.jobId}")
+              log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId}")
               statusService.request(GET) { req ->
                 response.success = { statusResp, statusData ->
-                  processing = statusData.uploadStatus in ['PREPARATION', 'STARTED']
-                  log.debug("status of job ${respData.jobId}: ${statusData.uploadStatus}")
-                  sleep(10000) // 10 sec
-
-                  if (statusData.uploadStatus == 'SUCCESS') {
-                    Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
-                    while (!job.isDone()){
-                      sleep(5000) // 5 sec
+                  log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => success")
+                  log.debug("status of Ygor ${statusData.status} gokbJob #${statusData.gokbJobId}")
+                  if (statusData.gokbJobId) {
+                    processing = false
+                    task {
+                      log.debug("task start...")
+                      Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
+                      while (!job.isDone() && job.get() == null) {
+                        this.wait(5000) // 5 sec
+                        log.debug("checking xRefPackage status...")
+                      }
+                      log.debug("xRefPackage Job done!")
+                      def xRefResult = job.get()
+                      if (xRefResult) {
+                        if (xRefResult.result == "OK") {
+                          log.debug("xRefPackage result OK")
+                          Package.withNewSession {
+                            def pkg = Package.get(xRefResult.pkgId)
+                            pkg.source.lastRun = new Date()
+                            pkg.source.save(flush: true)
+                          }
+                          log.debug("set ${p.source.getNormname()}.lastRun = now")
+                        }
+                      }
                     }
-                    // xrPackage had errors or was cancelled -> lastRun stays untouched
-                    error=job.get().job_result.result in ["ERROR", "CANCELLED"]
+                  } else {
+                    this.wait(10000) // 10 sec
                   }
                 }
-              }
-              response.failure = { statusResp ->
-                log.error("autoUpdateStatus Error - ${statusResp}")
-                processing = false
-                error = true
+                response.failure = { statusResp ->
+                  log.error("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => failure")
+                  log.error("ygor response: $statusResp")
+                  processing = false
+                  error = true
+                }
               }
             }
           }
           response.failure = { resp ->
-            log.error("autoUpdatePackage Error - ${resp.status}: ${resp.data}");
+            log.error("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => failure")
+            log.error("ygor response: ${resp.responseBase}")
             error = true
           }
         }
-      }
-      catch (Exception e) {
-        log.debug ("SourceUpdate Exception:", e);
+      } catch (Exception e) {
+        log.error("SourceUpdate Exception:", e);
         error = true
       }
-      if (!error) {
-        p.source.lastRun = new Date()
-        p.source.save(flush:true)
-      }
-    }
-    else {
+    } else {
       log.debug("No user provided and no existing updateToken found!")
     }
+    return !error
   }
 
   private String generateExportFileName(Package pkg, ExportType type) {
