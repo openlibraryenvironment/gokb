@@ -895,4 +895,59 @@ class IntegrationControllerSpec extends Specification {
     title.publisher?.size() == 1
     title.publisher[0].name == "ACS TestOrg"
   }
+
+  void "Update Title remove VariantName via fullsync"() {
+    when: "Caller asks for this record to be cross referenced"
+    def json_record = [
+      "identifiers"    : [
+        [
+          "type" : "isbn",
+          "value": "978-13-12232-23-8"
+        ]
+      ],
+      "variantNames"   : [
+        "TestVariantBookName"
+      ],
+      "type"           : "Monograph",
+      "name"           : "Test Book 1",
+      "editionNumber"  : "4",
+      "volumeNumber"   : "3",
+      "firstAuthor"    : "J. Smith",
+      "dateFirstOnline": "2019-01-01 00:00:00.000"
+    ]
+
+    def json_update_record = [
+      "identifiers"    : [
+        [
+          "type" : "isbn",
+          "value": "978-13-12232-23-8"
+        ]
+      ],
+      "type"           : "Monograph",
+      "name"           : "Test Book 1",
+      "editionNumber"  : "4",
+      "volumeNumber"   : "3",
+      "firstAuthor"    : "J. Smith",
+      "dateFirstOnline": "2019-01-01 00:00:00.000"
+    ]
+
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
+      auth('admin', 'admin')
+      body(json_record as JSON)
+    }
+
+    RestResponse update_resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle?fullsync=true") {
+      auth('admin', 'admin')
+      body(json_update_record as JSON)
+    }
+
+    then: "Item is created in the database"
+    resp.json.message.startsWith('Created')
+    update_resp.json.message.startsWith('Created')
+    expect: "Find item by ID can now locate that item and the discriminator is set correctly"
+    resp.json.titleId == update_resp.json.titleId
+    def bookInstance = BookInstance.get(update_resp.json.titleId)
+    bookInstance?.variantNames?.size() == 0
+  }
 }
