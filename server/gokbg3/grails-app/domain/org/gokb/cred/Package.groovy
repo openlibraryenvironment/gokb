@@ -122,7 +122,8 @@ class Package extends KBComponent {
   static jsonMapping = [
     'ignore'       : [
       'lastProject',
-      'updateToken'
+      'updateToken',
+      'tipps'
     ],
     'es'           : [
       'nominalPlatformUuid': "nominalPlatform.uuid",
@@ -139,7 +140,6 @@ class Package extends KBComponent {
       'scope'              : "refdata"
     ],
     'defaultLinks' : [
-      'tipps',
       'provider',
       'nominalPlatform',
       'curatoryGroups'

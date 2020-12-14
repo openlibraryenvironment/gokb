@@ -196,7 +196,7 @@ class TitleLookupService {
                         log.debug("Adding cross check title to matches (Now ${result['matches'].size()} items)");
                       }
                     }
-                    else {
+                    else if (dproxied.class.name != 'org.gokb.cred.TitleInstancePackagePlatform') {
                       log.debug("Found other linked component type: ${c} (${dproxied.class.name})")
 
                       if (result['other_types'].contains(c)) {

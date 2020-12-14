@@ -274,7 +274,6 @@ class PackageController {
 
         jsonMap.ignore = [
           'lastProject',
-          'status'
         ]
 
         jsonMap.immutable = [
@@ -361,6 +360,29 @@ class PackageController {
 
       if (cg_errors.size() > 0) {
         errors['curatoryGroups'] = cg_errors
+      }
+    }
+
+    if (reqBody.listStatus) {
+      def new_val = null
+
+      if (reqBody.listStatus instanceof String) {
+        new_val = RefdataCategory.lookup('Package.ListStatus', reqBody.listStatus)
+      }
+      else if (reqBody.listStatus instanceof Integer) {
+        def rdv = RefdataValue.get(reqBody.listStatus)
+
+        if (rdv.owner == RefdataCategory.findByLabel('Package.ListStatus')) {
+          new_val = rdv
+        }
+
+        if (new_val && new_val != obj.listStatus) {
+          obj.listStatus = new_val
+        }
+
+        if (new_val && new_val.value == 'Checked') {
+          obj.listVerifiedDate = new Date()
+        }
       }
     }
 

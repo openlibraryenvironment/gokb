@@ -114,7 +114,12 @@ class PackagesController {
           def platformUrl = params.platformUrl
           def source = Source.findByName(params.source) ?: new Source(name: params.source).save(flush: true, failOnError: true);
           def providerName = params.providerName
+          def providerObj = Org.findByName(providerName) ?: null
           def providerIdentifierNamespace = params.providerIdentifierNamespace
+
+          if (providerObj?.titleNamespace) {
+            providerIdentifierNamespace = providerObj?.titleNamespace.value
+          }
 
           def info = analyse(temp_file);
 
@@ -171,7 +176,12 @@ class PackagesController {
             // def source = params.source
             def source = Source.findByName(params.source) ?: new Source(name: params.source).save(flush: true, failOnError: true);
             def providerName = params.providerName
-            def providerIdentifierNamespace = params.providerIdentifierNamespace
+            def providerObj = Org.findByName(providerName) ?: null
+            def providerIdentifierNamespace = IdentifierNamespace.findByValue(params.providerIdentifierNamespace)
+
+            if (providerObj?.titleNamespace) {
+              providerIdentifierNamespace = providerObj?.titleNamespace
+            }
 
             def info = analyse(temp_file);
 
@@ -243,7 +253,8 @@ class PackagesController {
                   null, //  ip_id
                   null, //  ingest_cfg
                   incremental_flag,
-                  additional_params);
+                  additional_params,
+                  user);
               }
               catch (Exception e) {
                 log.error("Problem", e)
@@ -258,6 +269,7 @@ class PackagesController {
 
             background_job.description = "Deposit datafile ${upload_filename}(as ${params.fmt} from ${source} ) and create/update package ${pkg}"
             background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'DepositDatafile')
+            background_job.ownerId = user.id
             background_job.startOrQueue()
             jobid = background_job.getId()
             log.debug("Background job started");
