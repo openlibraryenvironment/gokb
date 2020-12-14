@@ -51,9 +51,9 @@ services:
       - xpack.graph.enabled=false
       - xpack.watcher.enabled=false
       - bootstrap.memory_lock=true
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ES_JAVA_OPTS=-Xms512m -Xmx1g
       - discovery.zen.minimum_master_nodes=1
-      - discovery.type=single-node 
+      - discovery.type=single-node
       - cluster.name=elasticsearch
     ulimits:
       memlock:
@@ -61,7 +61,7 @@ services:
         hard: -1
     mem_limit: 1g
     ports:
-      - 9200:9200 
+      - 9200:9200
       - 9300:9300
     volumes:
       - esdata:/usr/share/elasticsearch/data
@@ -71,18 +71,18 @@ services:
           - eshost
 
 
-  # Converted from 
+  # Converted from
   # docker run -d --restart always --hostname rabbitmq -p 15672:15672 -p 5672:5672 --name rabbitmq -e RABBITMQ_DEFAULT_USER=adm -e RABBITMQ_DEFAULT_PASS=admpass rabbitmq:management
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:management
     restart: always
     ports:
-      - 15672:15672 
+      - 15672:15672
       - 5672:5672
     environment:
       - RABBITMQ_DEFAULT_USER=adm
-      - RABBITMQ_DEFAULT_PASS=admpass 
+      - RABBITMQ_DEFAULT_PASS=admpass
 
   # https://github.com/tenforce/docker-virtuoso  (7.2.4 is latest)
   virtuoso:
@@ -96,7 +96,7 @@ services:
       - virtuoso:/data
     ports:
       - "8890:8890"
- 
+
 #  adminer:
 #    image: adminer
 #    restart: always
