@@ -22,6 +22,7 @@ class DummyKbartDownloadController {
   private static int JOURNAL = 1
   private myService = new DummyKbartService()
 
+  @Secured(value = ['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     if (Environment.current in [Environment.TEST, Environment.DEVELOPMENT]) {
       def max = 100
