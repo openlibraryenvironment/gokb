@@ -82,6 +82,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/api/namespaces',          access: ['permitAll']],
   [pattern: '/api/groups',              access: ['permitAll']],
   [pattern: '/integration/**',          access: ['permitAll']],
+  [pattern: '/dummyKbartDownload',      access: ['permitAll']],
   [pattern: '/fwk/**',                  access: ['ROLE_USER']],
   [pattern: '/user/**',                 access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/user/search',             access: ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY']],
