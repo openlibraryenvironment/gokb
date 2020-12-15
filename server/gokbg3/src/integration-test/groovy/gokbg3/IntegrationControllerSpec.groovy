@@ -379,7 +379,8 @@ class IntegrationControllerSpec extends Specification {
       ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
+      "/integration/crossReferencePackage") {
       auth('admin', 'admin')
       body(json_record as JSON)
     }
