@@ -692,7 +692,7 @@ class ESSearchService{
           mapCuratoryGroups(domainMapping, val)
         }
         else if (field == "altname" && !toSkip) {
-          domainMapping['_embedded']['variantNames'] = mapVariantNames(val)
+          domainMapping['_embedded']['variantNames'] = val
         }
         else if (field == "identifiers" && !toSkip) {
           domainMapping['_embedded']['ids'] = mapIdentifiers(val)
@@ -850,16 +850,6 @@ class ESSearchService{
       idmap << [namespace : [value: id.namespace, name: ns.name, id: ns.id], value: id.value ]
     }
     idmap
-  }
-
-  private def mapVariantNames(names) {
-    def vns = []
-
-    names.each {
-      vns << [variantName: it]
-    }
-
-    vns
   }
 
   /**
