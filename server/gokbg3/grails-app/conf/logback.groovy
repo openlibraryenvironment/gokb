@@ -30,7 +30,7 @@ if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST 
   logger ('org.gokb.DomainClassExtender', WARN)
   logger ('org.gokb.ClassExaminationService', WARN)
   logger ('org.gokb.IntegrationController', ERROR)
-  logger ('org.gokb.CrossReferenceService', ERROR)
+  logger ('org.gokb.CrossReferenceService', DEBUG)
   logger ('org.gokb.ComponentUpdateService', ERROR)
   logger ('org.gokb.ComponentStatisticService', ERROR)
   logger ('org.gokb.ComponentLookupService', ERROR)
