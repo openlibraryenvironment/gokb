@@ -290,10 +290,10 @@ class ESSearchService{
       QueryBuilder dateQuery = QueryBuilders.rangeQuery("lastUpdatedDisplay")
 
       if (qpars.changedSince) {
-        dateQuery.gte(date_filters.changedSince)
+        dateQuery.gte(qpars.changedSince)
       }
       if (qpars.changedBefore) {
-        dateQuery.lt(date_filters.changedBefore)
+        dateQuery.lt(qpars.changedBefore)
       }
       dateQuery.format("yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
 
@@ -448,7 +448,6 @@ class ESSearchService{
       def pkgNameSort = false
       def acceptedStatus = []
       def component_type = null
-      def date_filters = [changedSince: null, changedBefore: null]
 
       if (params.componentType){
         component_type = deriveComponentType(params.componentType)
@@ -693,7 +692,7 @@ class ESSearchService{
           mapCuratoryGroups(domainMapping, val)
         }
         else if (field == "altname" && !toSkip) {
-          domainMapping['_embedded']['variantNames'] = val
+          domainMapping['_embedded']['variantNames'] = mapVariantNames(val)
         }
         else if (field == "identifiers" && !toSkip) {
           domainMapping['_embedded']['ids'] = mapIdentifiers(val)
@@ -743,7 +742,12 @@ class ESSearchService{
         }
         else if (!toSkip) {
           log.debug("Transfering unmapped field ${field}:${val}")
-          domainMapping[field] = val
+          if (val?.trim()) {
+            domainMapping[field] =  val
+          }
+          else {
+            domainMapping[field] = null
+          }
         }
       }
 
@@ -846,6 +850,16 @@ class ESSearchService{
       idmap << [namespace : [value: id.namespace, name: ns.name, id: ns.id], value: id.value ]
     }
     idmap
+  }
+
+  private def mapVariantNames(names) {
+    def vns = []
+
+    names.each {
+      vns << [variantName: it]
+    }
+
+    vns
   }
 
   /**
