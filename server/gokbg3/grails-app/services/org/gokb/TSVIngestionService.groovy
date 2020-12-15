@@ -1028,7 +1028,7 @@ class TSVIngestionService {
         if ( ( the_kbart.title_id ) && ( the_kbart.title_id.trim().length() > 0 ) ) {
           log.debug("title_id ${the_kbart.title_id}");
           if ( ingest_cfg.providerIdentifierNamespace ) {
-            identifiers << [type:ingest_cfg.providerIdentifierNamespace, value:the_kbart.title_id]
+            identifiers << [type:ingest_cfg.providerIdentifierNamespace.value, value:the_kbart.title_id]
           }
           else {
             identifiers << [type:'title_id', value:the_kbart.title_id]
@@ -2032,7 +2032,7 @@ class TSVIngestionService {
         if ( ( the_kbart.title_id ) && ( the_kbart.title_id.trim().length() > 0  ) ) {
           log.debug("title_id ${the_kbart.title_id}");
           if ( ingest_cfg.providerIdentifierNamespace ) {
-            identifiers << [type:ingest_cfg.providerIdentifierNamespace, value:the_kbart.title_id]
+            identifiers << [type:ingest_cfg.providerIdentifierNamespace.value, value:the_kbart.title_id]
           }
           else {
             identifiers << [type:'title_id', value:the_kbart.title_id]
