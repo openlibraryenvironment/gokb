@@ -122,8 +122,7 @@ class Package extends KBComponent {
   static jsonMapping = [
     'ignore'       : [
       'lastProject',
-      'updateToken',
-      'tipps'
+      'updateToken'
     ],
     'es'           : [
       'nominalPlatformUuid': "nominalPlatform.uuid",
