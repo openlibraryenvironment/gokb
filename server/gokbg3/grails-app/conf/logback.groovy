@@ -24,8 +24,8 @@ appender('STDOUT', ConsoleAppender) {
 
 if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST ) {
   logger ('com.k_int', ERROR)
-  logger ('org.gokb', DEBUG)
-  logger ('gokbg3', DEBUG)
+  logger ('org.gokb', ERROR)
+  logger ('gokbg3', ERROR)
 
   logger ('org.gokb.DomainClassExtender', WARN)
   logger ('org.gokb.ClassExaminationService', WARN)

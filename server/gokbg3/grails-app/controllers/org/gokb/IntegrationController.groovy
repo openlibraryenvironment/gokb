@@ -891,7 +891,7 @@ class IntegrationController {
     }
 
     if (rjson?.packageHeader?.name && request_user?.apiUserStatus) {
-      result=crossReferenceService.xRefPackage(rjson, fullsync, update, request_user, request_locale, async, result)
+      result=crossReferenceService.xRefPackage(rjson, fullsync, update, request_user, request_locale, async, result, updateToken!=null)
     } else if (request_user) {
       if (request_user.apiUserStatus) {
         log.debug("Not ingesting package without name!")
