@@ -1516,28 +1516,31 @@ class PackageService {
 
   def synchronized updateFromSource(Package p, def user = null) {
     log.debug("updateFromSource")
-    boolean started = false
-    if (running == false) {
-      running = true
-      started = startSourceUpdate(p, user)
-      running = false
-      log.debug("UpdateFromSource started")
-      return started
-    } else {
+    def started
+    if (running == true) {
       log.debug("update skipped - already running")
-      return started
+      return [status: "BLOCKED", message: "another update is already running"]
     }
+    running = true
+    started = startSourceUpdate(p, user)
+    if (started.status != "STARTED") {
+      log.error(started.message)
+    }
+    running = false
+    log.debug("UpdateFromSource started")
+    return started
   }
 
-  /**
-   * this method calls Ygor to perform an automated Update on this package.
-   * Bad configurations will result in failure.
-   * The frequency is ignored: the update starts immediately, setting the
-   * lastRun to today if the import was successful.
-   */
-  private boolean startSourceUpdate(Package p, def user = null) {
+/**
+ * this method calls Ygor to perform an automated Update on this package.
+ * Bad configurations will result in failure.
+ * The frequency is ignored: the update starts immediately, setting the
+ * lastRun to today if the import was successful.
+ */
+  private def startSourceUpdate(Package p, def user = null) {
     log.debug("Source update start..")
     boolean error = false
+    def returnData
     def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
 
     if (ygorBaseUrl?.endsWith('/')) {
@@ -1566,79 +1569,48 @@ class PackageService {
       updateTrigger = new RESTClient(ygorBaseUrl + path)
 
       try {
-        log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}")
         updateTrigger.request(GET) { request ->
+          response.failure = { resp ->
+            log.error("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => failure")
+            log.error("ygor response: ${resp.responseBase}")
+            returnData = [status: "FAILURE", message: resp]
+          }
           response.success = { resp, data ->
             log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => success")
             // wait for ygor to finish the enrichment
             boolean processing = true
             respData = data
-            if (!respData || !respData.jobId) {
-              log.error("no ygor job Id received, skipping update of ${p.id}!")
-              if (respData?.message) {
-                log.error("ygor message: ${respData.message}")
-              }
-              processing = false
-              return
-            }
             def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
-
             while (processing) {
-              log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId}")
               statusService.request(GET) { req ->
-                response.success = { statusResp, statusData ->
-                  log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => success")
-                  log.debug("status of Ygor ${statusData.status} gokbJob #${statusData.gokbJobId}")
-                  if (statusData.gokbJobId) {
-                    processing = false
-                    task {
-                      log.debug("task start...")
-                      Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
-                      while (!job.isDone() && job.get() == null) {
-                        this.wait(5000) // 5 sec
-                        log.debug("checking xRefPackage status...")
-                      }
-                      log.debug("xRefPackage Job done!")
-                      def xRefResult = job.get()
-                      if (xRefResult) {
-                        if (xRefResult.result == "OK") {
-                          log.debug("xRefPackage result OK")
-                          Package.withNewSession {
-                            def pkg = Package.get(xRefResult.pkgId)
-                            pkg.source.lastRun = new Date()
-                            pkg.source.save(flush: true)
-                          }
-                          log.debug("set ${p.source.getNormname()}.lastRun = now")
-                        }
-                      }
-                    }
-                  } else {
-                    this.wait(10000) // 10 sec
-                  }
-                }
                 response.failure = { statusResp ->
                   log.error("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => failure")
                   log.error("ygor response: $statusResp")
+                  returnData = [status: "FAILURE", message: statusResp]
                   processing = false
-                  error = true
+                }
+                response.success = { statusResp, statusData ->
+                  log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => success")
+                  log.debug("status of Ygor ${statusData.status} gokbJob #${statusData.gokbJobId}")
+                  processing = statusData.status in ["PREPARATION"]
+                  returnData = [status: statusData.status, message: statusData.message, gokbJobId: statusData.gokbJobId]
+                  if (processing) {
+                    sleep(5000)
+                  }
                 }
               }
             }
-          }
-          response.failure = { resp ->
-            log.error("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => failure")
-            log.error("ygor response: ${resp.responseBase}")
-            error = true
           }
         }
       } catch (Exception e) {
         log.error("SourceUpdate Exception:", e);
-        error = true
+        returnData = [status: "FAILURE", message: e]
       }
     } else {
-      log.debug("No user provided and no existing updateToken found!")
+      returnData = [status: "FAILURE", message: "No user provided and no existing updateToken found!"]
+      log.debug(returnData.message)
     }
-    return !error
+    returnData
   }
 
   private String generateExportFileName(Package pkg, ExportType type) {
@@ -1670,4 +1642,5 @@ class PackageService {
     }
     ret.toString()
   }
+
 }

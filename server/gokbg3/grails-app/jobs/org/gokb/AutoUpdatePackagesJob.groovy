@@ -25,11 +25,10 @@ class AutoUpdatePackagesJob {
           "and (p.source.lastRun is null or p.source.lastRun < current_date)")
       updPacks.each { Package p ->
         if (p.source.needsUpdate()) {
-          def started = false
-
-          while (!started) {
+          def started
+          while (started == null){
             started = packageService.updateFromSource(p)
-            sleep(10000)
+            sleep(60000)
           }
         }
       }

@@ -100,7 +100,7 @@ class CrossReferenceService {
    * @param result
    * @return result parameter enriched by the data from this method run
    */
-  def xRefPackage(def rjson, boolean fullsync, boolean update, def request_user, def request_locale, boolean async, def result) {
+  def xRefPackage(def rjson, boolean fullsync, boolean update, def request_user, def request_locale, boolean async, def result, boolean autoUpdate) {
     def pkg_validation = packageService.validateDTO(rjson.packageHeader, request_locale)
     if (!pkg_validation.valid) {
       log.debug("Package validation failed!")
@@ -123,7 +123,7 @@ class CrossReferenceService {
       return result
     }
     ConcurrencyManagerService.Job background_job = concurrencyManagerService.createJob { ConcurrencyManagerService.Job job ->
-      return xRefTippsWork(job, request_user, request_locale, rjson, upserted_pkg)
+      return xRefTippsWork(job, request_user, request_locale, rjson, upserted_pkg.id, fullsync, update, autoUpdate)
     }
     log.debug("Starting job ${background_job}..")
     background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
@@ -158,7 +158,7 @@ class CrossReferenceService {
     return result
   }
 
-  def xrefTippsWork(def job, def request_user, def request_locale, def json, def pkgId) {
+  def xRefTippsWork(ConcurrencyManagerService.Job job, def request_user, def request_locale, def json, def pkgId, boolean fullsync, boolean update, boolean autoUpdate) {
     def job_result = [:]
     boolean cancelled = false
     def errors = [global: [], tipps: []]
@@ -189,7 +189,7 @@ class CrossReferenceService {
         job_result.uuid = the_pkg.uuid
         job_result.name = the_pkg.name
 
-        if (!the_pkg.curatoryGroups || the_pkg.curatoryGroups.size() <1) {
+        if (!the_pkg.curatoryGroups || the_pkg.curatoryGroups.size() < 1) {
           valid = false
           log.warn("Package update denied because it has no curatory group set!")
           job_result.result = 'ERROR'
@@ -239,7 +239,7 @@ class CrossReferenceService {
             } else {
               def valid_ti = true
 
-              TitleInstance.withSession {
+              TitleInstance.withNewSession {
                 def ti = null
                 def titleObj = json_tipp.title.name ? json_tipp.title : json_tipp
                 def title_changed = false
@@ -346,10 +346,17 @@ class CrossReferenceService {
               }
             }
 
-            def valid_plt = Platform.validateDTO(tipp_plt_dto);
-            valid &= valid_plt?.valid
+            def valid_plt, valid_cached=false
+            if (!platform_cache.containsKey(tipp_plt_dto.name)) {
+              // platform is new and has to be validated
+              valid_plt = Platform.validateDTO(tipp_plt_dto)
+              valid &= valid_plt?.valid
+            } else {
+              valid_plt = platform_cache[tipp_plt_dto.name].platform
+              valid_cached=platform_cache[tipp_plt_dto.name].valid
+            }
 
-            if (!valid_plt.valid) {
+            if (!valid_cached && !valid_plt.valid ) {
               log.warn("Not valid after platform validation ${tipp_plt_dto}");
 
               def plt_errors = [
@@ -359,23 +366,19 @@ class CrossReferenceService {
                 baddata: tipp_plt_dto,
                 errors : valid_plt.errors
               ]
-              errors.tipps.add([])
+              errors.tipps.add(plt_errors)
             }
-
+            Platform pl = null
             if (valid) {
-
-              def pl = null
               def pl_id
-              if (platform_cache.containsKey(tipp_plt_dto.name) && (pl_id = platform_cache[tipp_plt_dto.name]) != null) {
-                pl = Platform.get(pl_id)
+              if (platform_cache.containsKey(tipp_plt_dto.name)) {
+                pl = platform_cache[tipp_plt_dto.name].platform
               } else {
                 // Not in cache.
                 try {
                   pl = Platform.upsertDTO(tipp_plt_dto, user);
-
                   if (pl) {
-                    platform_cache[tipp_plt_dto.name] = pl.id
-
+                    platform_cache[tipp_plt_dto.name] = [platform: pl, valid: true]
                     componentUpdateService.ensureCoreData(pl, tipp_plt_dto, fullsync)
                   } else {
                     log.error("Could not find/create ${tipp_plt_dto}")
@@ -384,10 +387,9 @@ class CrossReferenceService {
                   }
                 }
                 catch (grails.validation.ValidationException ve) {
-                  log.error("ValidationException attempting to cross reference title", ve);
+                  log.error("ValidationException attempting to validate Platform during cross reference package", ve);
                   valid_plt = false
                   valid = false
-
                   def plt_errors = [
                     code   : 400,
                     message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tipp_plt_dto], locale),
@@ -434,10 +436,8 @@ class CrossReferenceService {
             job.setProgress(idx, json.tipps.size() * 2)
           }
           // end Validation of titles and platforms
-        } else {
-          int tippctr = 0
         }
-
+        int tippctr=0
         if (valid && !cancelled) {
           def vidx = 0
           // If valid so far, validate tipps
@@ -498,7 +498,7 @@ class CrossReferenceService {
           def tidx = 0
 
           if (json.tipps?.size() > 0) {
-            Package.withSession {
+            Package.withNewSession {
               def pkg_new = Package.get(the_pkg.id)
               def status_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
 
@@ -683,11 +683,15 @@ class CrossReferenceService {
               job_result.result = 'OK'
               job_result.message = messageService.resolveCode('crossRef.package.success', [json.packageHeader.name, tippctr, existing_tipps.size(), num_removed_tipps], locale)
 
-              Package.withSession {
+              Package.withNewSession {
                 def pkg_obj = Package.get(the_pkg.id)
                 if (pkg_obj.status.value != 'Deleted') {
                   pkg_obj.lastUpdateComment = job_result.message
                   pkg_obj.save(flush: true)
+                }
+                if (autoUpdate) {
+                  pkg_obj.source?.lastRun = new Date()
+                  pkg_obj.source?.save(flush: true)
                 }
               }
               log.debug("Elapsed tipp processing time: ${System.currentTimeMillis() - tipp_upsert_start_time} for ${tippctr} records")
@@ -725,11 +729,10 @@ class CrossReferenceService {
           }
         }
       }
-
       catch (Exception e) {
         log.error("Package Crossref failed with Exception", e)
         job_result.result = "ERROR"
-        job_result.message = "Package referencing failed with exception!"
+        job_result.message = "xRefService: Package referencing failed with exception!"
         job_result.code = 500
         errors.global.add([code: 500, message: messageService.resolveCode('crossRef.package.error.unknown', null, locale), data: json.packageHeader])
       }
@@ -738,7 +741,7 @@ class CrossReferenceService {
       // flush and clear the session.
       session.flush()
       session.clear()
-    }// end of Package.withSession
+    }// end of Package.withNewSession
 
     if (!cancelled) {
       job.message(job_result.message.toString())
@@ -749,7 +752,6 @@ class CrossReferenceService {
     if (errors.global.size() > 0 || errors.tipps.size() > 0) {
       job_result.errors = errors
     }
-
     return job_result
   }
 }
