@@ -663,15 +663,6 @@ class TitleController {
       if (editable) {
         obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
-        if ( reqBody.status ) {
-          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          RefdataValue newStatus = RefdataValue.get(reqBody.status)
-
-          if ( status_deleted != newStatus || obj.isDeletable() ) {
-            obj.status = newStatus
-          }
-        }
-
         if ( obj.validate() ) {
           log.debug("No errors.. updating combos..")
 

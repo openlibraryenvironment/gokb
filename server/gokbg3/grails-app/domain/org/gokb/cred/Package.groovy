@@ -139,7 +139,6 @@ class Package extends KBComponent {
       'scope'              : "refdata"
     ],
     'defaultLinks' : [
-      'tipps',
       'provider',
       'nominalPlatform',
       'curatoryGroups'

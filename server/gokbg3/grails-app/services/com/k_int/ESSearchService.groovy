@@ -290,10 +290,10 @@ class ESSearchService{
       QueryBuilder dateQuery = QueryBuilders.rangeQuery("lastUpdatedDisplay")
 
       if (qpars.changedSince) {
-        dateQuery.gte(date_filters.changedSince)
+        dateQuery.gte(qpars.changedSince)
       }
       if (qpars.changedBefore) {
-        dateQuery.lt(date_filters.changedBefore)
+        dateQuery.lt(qpars.changedBefore)
       }
       dateQuery.format("yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
 
@@ -448,7 +448,6 @@ class ESSearchService{
       def pkgNameSort = false
       def acceptedStatus = []
       def component_type = null
-      def date_filters = [changedSince: null, changedBefore: null]
 
       if (params.componentType){
         component_type = deriveComponentType(params.componentType)
@@ -682,24 +681,20 @@ class ESSearchService{
         domainMapping['_links'] = ['self': ['href': base + obj_cls.restPath + "/${rec_id}"]]
       }
 
-      if (embed_active.size() > 0) {
-        domainMapping['_embedded'] = [:]
-      }
+      domainMapping['_embedded'] = [:]
 
-      if (!exclude_list || exclude_list.contains('id')) {
-        domainMapping['id'] = rec_id
-      }
+      domainMapping['id'] = rec_id
 
       record.source.each { field, val ->
         def toSkip = (include_list && !include_list.contains(field)) || (exclude_list?.contains(field))
 
-        if (field == "curatoryGroups" && embed_active.contains('curatoryGroups')) {
+        if (field == "curatoryGroups" && !toSkip) {
           mapCuratoryGroups(domainMapping, val)
         }
-        else if (field == "altname" && embed_active.contains('variantNames')) {
+        else if (field == "altname" && !toSkip) {
           domainMapping['_embedded']['variantNames'] = val
         }
-        else if (field == "identifiers" && embed_active.contains('ids')) {
+        else if (field == "identifiers" && !toSkip) {
           domainMapping['_embedded']['ids'] = mapIdentifiers(val)
         }
         else if (!toSkip && (field == "status" || field == "editStatus")) {
@@ -747,7 +742,12 @@ class ESSearchService{
         }
         else if (!toSkip) {
           log.debug("Transfering unmapped field ${field}:${val}")
-          domainMapping[field] = val
+          if (val?.trim()) {
+            domainMapping[field] =  val
+          }
+          else {
+            domainMapping[field] = null
+          }
         }
       }
 
@@ -847,7 +847,7 @@ class ESSearchService{
     def idmap = []
     ids.each { id ->
       def ns = IdentifierNamespace.findByValueIlike(id.namespace)
-      idmap << [namespace : [value: id.namespace, id: ns.id], value: id.value ]
+      idmap << [namespace : [value: id.namespace, name: ns.name, id: ns.id], value: id.value ]
     }
     idmap
   }
