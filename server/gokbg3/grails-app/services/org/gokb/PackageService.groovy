@@ -1603,7 +1603,7 @@ class PackageService {
           }
         }
       } catch (Exception e) {
-        log.error("SourceUpdate Exception:", e);
+        log.error("SourceUpdate Exception:", e.toString());
         returnData = [status: "FAILURE", message: e]
       }
     } else {
