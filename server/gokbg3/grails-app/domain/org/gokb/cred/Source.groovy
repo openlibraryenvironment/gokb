@@ -168,7 +168,7 @@ class Source extends KBComponent {
         def number = matcher.group(1)
         days = Integer.parseInt(number) * length[interval.toUpperCase()]
 
-        Date today = new Date().minus(1)
+        Date today = new Date()
         Date due = src.lastRun.plus(days)
         if (due.before(today)) {
           return true
