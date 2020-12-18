@@ -1524,7 +1524,7 @@ class PackageService {
     running = true
     started = startSourceUpdate(p, user)
     if (started.status != "STARTED") {
-      log.error(started.message)
+      log.error(started.message.toString())
     }
     running = false
     log.debug("UpdateFromSource started")
