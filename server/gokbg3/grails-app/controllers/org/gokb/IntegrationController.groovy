@@ -852,6 +852,7 @@ class IntegrationController {
   }
 
   def crossReferencePackage() {
+
     def result = ['result': 'OK']
     def async = params.async ? params.boolean('async') : false
     def update = params.addOnly ? params.boolean('addOnly') : false

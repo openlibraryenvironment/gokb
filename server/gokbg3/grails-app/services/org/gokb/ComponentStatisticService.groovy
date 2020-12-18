@@ -16,13 +16,12 @@ class ComponentStatisticService {
   def synchronized updateCompStats(int months = 12, int offset = 0, boolean force_update = false) {
     log.debug("updateCompStats");
 
-    if ( running == false ) {
+    if (running == false) {
       running = true;
       ensureStats(months, offset, force_update)
       log.debug("updateCompStats returning");
       return new Date();
-    }
-    else {
+    } else {
       log.debug("Stats Update already running");
     }
   }
@@ -32,10 +31,10 @@ class ComponentStatisticService {
     log.debug("Ensuring stats for ${months} months with offset ${offset}.")
     Calendar calendar = Calendar.getInstance()
 
-    months = ( months > 3 ? months : 3 )
-    offset = ( offset > 0 ? offset : 0 )
+    months = (months > 3 ? months : 3)
+    offset = (offset > 0 ? offset : 0)
 
-    int to_substract = months + offset -1
+    int to_substract = months + offset - 1
 
     calendar.add(Calendar.MONTH, -to_substract)
 
@@ -52,7 +51,7 @@ class ComponentStatisticService {
       def new_stats_created = 0
       def stats_updated = 0
 
-      for ( int i; i <= to_substract; i++ ) {
+      for (int i; i <= to_substract; i++) {
 
         def period_start_date = calendar.getTime()
         def period_month = calendar.get(Calendar.MONTH)
@@ -64,35 +63,29 @@ class ComponentStatisticService {
 
         def existing_stats = ComponentStatistic.executeQuery("from ComponentStatistic where componentType = ? and month = ? and year = ?", [c, period_month, period_year], [readOnly: true])
 
-        if ( !existing_stats || existing_stats.size() == 0 || ( offset == 0 && i == to_substract ) || force_update ) {
+        if (!existing_stats || existing_stats.size() == 0 || (offset == 0 && i == to_substract) || force_update) {
 
-          def query_params = [:]
-
-          query_params.enddate = period_end_date
-
-          def fetch_all = "select count(o.id) from ${c} as o where dateCreated < :enddate"
-          def fetch_new = "select count(o.id) from ${c} as o where dateCreated > :startdate and dateCreated < :enddate"
-
+          def query_params = [enddate: period_end_date,
+                              forbiddenStatus : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)]
+          def fetch_all = "select count(o.id) from ${c} as o where dateCreated < :enddate and status != :forbiddenStatus"
           def stats_total_count = KBComponent.executeQuery(fetch_all.toString(), query_params, [readOnly: true])[0]
 
           query_params.startdate = period_start_date
-
+          def fetch_new = "select count(o.id) from ${c} as o where dateCreated > :startdate and dateCreated < :enddate and status != :forbiddenStatus"
           def stats_new_count = KBComponent.executeQuery(fetch_new.toString(), query_params, [readOnly: true])[0]
 
-          if (existing_stats && existing_stats.size() > 0 && ( ( offset == 0 && i == to_substract ) || force_update ) ) {
-            if( existing_stats.size() == 1 ) {
+          if (existing_stats && existing_stats.size() > 0 && ((offset == 0 && i == to_substract) || force_update)) {
+            if (existing_stats.size() == 1) {
               existing_stats[0].numTotal = stats_total_count
               existing_stats[0].numNew = stats_new_count
-              existing_stats[0].save(failOnError: true, flush:true)
+              existing_stats[0].save(failOnError: true, flush: true)
 
               stats_updated++
-            }
-            else{
+            } else {
               log.error("Statline ${month_year_string} for componentType ${c} has ${existing_stats.size()} entries!")
             }
-          }
-          else {
-            def new_statsline = new ComponentStatistic(componentType: c, month: period_month, year: period_year, numTotal: stats_total_count, numNew: stats_new_count).save(failOnError: true, flush:true)
+          } else {
+            def new_statsline = new ComponentStatistic(componentType: c, month: period_month, year: period_year, numTotal: stats_total_count, numNew: stats_new_count).save(failOnError: true, flush: true)
 
             new_stats_created++
           }
