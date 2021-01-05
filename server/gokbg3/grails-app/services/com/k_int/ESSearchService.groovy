@@ -1,11 +1,8 @@
 package com.k_int
 
-import grails.core.GrailsClass
-
 import groovyx.net.http.URIBuilder
 
 import org.apache.lucene.search.join.ScoreMode
-
 import org.elasticsearch.action.search.*
 import org.elasticsearch.client.*
 import org.elasticsearch.index.query.*
@@ -28,7 +25,6 @@ class ESSearchService{
   def ESWrapperService
   def grailsApplication
   def genericOIDService
-  def restMappingService
   def classExaminationService
 
   def requestMapping = [
@@ -423,12 +419,12 @@ class ESSearchService{
     log.debug("Processing platform value ${val} .. ")
   }
 
+
   /**
    * find : Query the Elasticsearch index --
    * @param params : Elasticsearch query params
    * @param context : Overrides default url path
   **/
-
   def find(params, def context = null, def user = null) {
     def result = [result: 'OK']
     def search_action = null
@@ -436,86 +432,28 @@ class ESSearchService{
     log.debug("find :: ${params}")
 
     try {
-
-      Client esclient = ESWrapperService.getClient()
+      def unknown_fields = []
+      def component_type = null
+      if (params.componentType){
+        component_type = deriveComponentType(params.componentType)
+      }
 
       QueryBuilder exactQuery = QueryBuilders.boolQuery()
 
-      def singleParams = [:]
-      def linkedFieldParams = [:]
-      def unknown_fields = []
-      def platformParam = null
-      def pkgNameSort = false
-      def acceptedStatus = []
-      def component_type = null
-
-      if (params.componentType){
-        component_type = deriveComponentType(params.componentType)
-
-        if (component_type == "TitleInstance") {
-          QueryBuilder typeQuery = QueryBuilders.boolQuery()
-
-          typeQuery.should(QueryBuilders.termQuery('componentType', "JournalInstance"))
-          typeQuery.should(QueryBuilders.termQuery('componentType', "DatabaseInstance"))
-          typeQuery.should(QueryBuilders.termQuery('componentType', "BookInstance"))
-
-          typeQuery.minimumNumberShouldMatch(1)
-
-          exactQuery.must(typeQuery)
-        }
-        else if (component_type) {
-          exactQuery.must(QueryBuilders.termQuery('componentType',component_type))
-        }
-        log.debug("Using component type ${component_type}")
-      }
-      else {
-        log.debug("Not filtering by component type..")
-      }
-
+      filterByComponentType(exactQuery, component_type, params)
       addStatusQuery(exactQuery, errors, params)
       addDateQueries(exactQuery, errors, params)
       processNameFields(exactQuery, errors, params)
       processGenericFields(exactQuery, errors, params)
       addIdentifierQuery(exactQuery,errors, params)
-
-      params.each { k, v ->
-        if (requestMapping.generic && k in requestMapping.generic) {
-          exactQuery.must(QueryBuilders.matchQuery(k, v))
-        }
-        else if (requestMapping.simpleMap?.containsKey(k)) {
-          exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v))
-        }
-        else if (requestMapping.linked?.containsKey(k)) {
-          processLinkedField(exactQuery, requestMapping.linked[k], v)
-        }
-        else if (k.contains('platform') || k.contains('Platform')) {
-          if (!platformParam) {
-            platformParam = k
-            addPlatformQuery(exactQuery, errors, v)
-          }
-          else {
-            errors[k] = "Platform filter has already been defined by parameter '${platformParam}'!"
-          }
-        }
-        else if (requestMapping.dates && k in requestMapping.dates) {
-          log.debug("Processing date param ${k}")
-        }
-        else if (requestMapping.complex && k in requestMapping.complex) {
-          log.debug("Processing complex param ${k}")
-        }
-        else if (requestMapping.ignore && k in requestMapping.ignore) {
-          log.debug("Processing unmapped param ${k}")
-        }
-        else {
-          unknown_fields.add(k)
-        }
-      }
+      specifyQueryWithParams(params, exactQuery, errors, unknown_fields)
 
       if(unknown_fields.size() > 0){
         errors['unknown_params'] = unknown_fields
       }
 
       if( !errors && exactQuery.hasClauses() ) {
+        Client esclient = ESWrapperService.getClient()
         SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
 
         es_request.setIndices(grailsApplication.config.gokb.es.index)
@@ -640,6 +578,64 @@ class ESSearchService{
 
     result
   }
+
+  private void specifyQueryWithParams(params, QueryBuilder exactQuery, errors, unknown_fields){
+    def platformParam = null
+    params.each{ k, v ->
+      if (requestMapping.generic && k in requestMapping.generic){
+        exactQuery.must(QueryBuilders.matchQuery(k, v))
+      }
+      else if (requestMapping.simpleMap?.containsKey(k)){
+        exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v))
+      }
+      else if (requestMapping.linked?.containsKey(k)){
+        processLinkedField(exactQuery, requestMapping.linked[k], v)
+      }
+      else if (k.contains('platform') || k.contains('Platform')){
+        if (!platformParam){
+          platformParam = k
+          addPlatformQuery(exactQuery, errors, v)
+        }
+        else{
+          errors[k] = "Platform filter has already been defined by parameter '${platformParam}'!"
+        }
+      }
+      else if (requestMapping.dates && k in requestMapping.dates){
+        log.debug("Processing date param ${k}")
+      }
+      else if (requestMapping.complex && k in requestMapping.complex){
+        log.debug("Processing complex param ${k}")
+      }
+      else if (requestMapping.ignore && k in requestMapping.ignore){
+        log.debug("Processing unmapped param ${k}")
+      }
+      else{
+        unknown_fields.add(k)
+      }
+    }
+  }
+
+
+  private void filterByComponentType(BoolQueryBuilder exactQuery, component_type, params){
+    if (params.componentType){
+      if (component_type == "TitleInstance"){
+        QueryBuilder typeQuery = QueryBuilders.boolQuery()
+        typeQuery.should(QueryBuilders.termQuery('componentType', "JournalInstance"))
+        typeQuery.should(QueryBuilders.termQuery('componentType', "DatabaseInstance"))
+        typeQuery.should(QueryBuilders.termQuery('componentType', "BookInstance"))
+        typeQuery.minimumNumberShouldMatch(1)
+        exactQuery.must(typeQuery)
+      }
+      else if (component_type){
+        exactQuery.must(QueryBuilders.termQuery('componentType', component_type))
+      }
+      log.debug("Using component type ${component_type}")
+    }
+    else{
+      log.debug("Not filtering by component type..")
+    }
+  }
+
 
   /**
    *  mapEsToDomain : Maps an ES record to its final REST serialization.
