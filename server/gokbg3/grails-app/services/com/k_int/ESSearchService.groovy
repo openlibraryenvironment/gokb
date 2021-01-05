@@ -3,10 +3,13 @@ package com.k_int
 import groovyx.net.http.URIBuilder
 
 import org.apache.lucene.search.join.ScoreMode
+import org.elasticsearch.action.ActionFuture
 import org.elasticsearch.action.search.*
 import org.elasticsearch.client.*
 import org.elasticsearch.index.query.*
+import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.*
 
 import org.gokb.cred.*
@@ -15,12 +18,12 @@ import org.gokb.cred.*
 class ESSearchService{
 // Map the parameter names we use in the webapp with the ES fields
   def reversemap = [
-                    'type':'rectype',
-                    'curatoryGroups':'curatoryGroups',
-                    'cpname':'cpname',
-                    'provider':'provider',
-                    'componentType':'componentType',
-                    'lastUpdatedDisplay':'lastUpdatedDisplay']
+      'type':'rectype',
+      'curatoryGroups':'curatoryGroups',
+      'cpname':'cpname',
+      'provider':'provider',
+      'componentType':'componentType',
+      'lastUpdatedDisplay':'lastUpdatedDisplay']
 
   def ESWrapperService
   def grailsApplication
@@ -28,54 +31,54 @@ class ESSearchService{
   def classExaminationService
 
   def requestMapping = [
-    generic: [
-      "id",
-      "uuid",
-      "listStatus"
-    ],
-    simpleMap: [
-      "curatoryGroup": "curatoryGroups",
-      "role": "roles"
-    ],
-    complex: [
-      "identifier",
-      "status",
-      "componentType",
-      "platform",
-      "suggest",
-      "label",
-      "name",
-      "altname",
-      "q"
-    ],
-    linked: [
-      provider: "provider",
-      publisher: "publisher",
-      currentPublisher: "publisher",
-      linkedPackage: "tippPackage",
-      tippPackage: "tippPackage",
-      pkg: "tippPackage",
-      tippTitle: "tippTitle",
-      linkedTitle: "tippTitle",
-      title: "tippTitle"
-    ],
-    dates: [
-      "changedSince",
-      "changedBefore"
-    ],
-    ignore: [
-      "controller",
-      "action",
-      "max",
-      "offset",
-      "from",
-      "skipDomainMapping",
-      "sort",
-      "order",
-      "_embed",
-      "_include",
-      "_exclude"
-    ]
+      generic: [
+          "id",
+          "uuid",
+          "listStatus"
+      ],
+      simpleMap: [
+          "curatoryGroup": "curatoryGroups",
+          "role": "roles"
+      ],
+      complex: [
+          "identifier",
+          "status",
+          "componentType",
+          "platform",
+          "suggest",
+          "label",
+          "name",
+          "altname",
+          "q"
+      ],
+      linked: [
+          provider: "provider",
+          publisher: "publisher",
+          currentPublisher: "publisher",
+          linkedPackage: "tippPackage",
+          tippPackage: "tippPackage",
+          pkg: "tippPackage",
+          tippTitle: "tippTitle",
+          linkedTitle: "tippTitle",
+          title: "tippTitle"
+      ],
+      dates: [
+          "changedSince",
+          "changedBefore"
+      ],
+      ignore: [
+          "controller",
+          "action",
+          "max",
+          "offset",
+          "from",
+          "skipDomainMapping",
+          "sort",
+          "order",
+          "_embed",
+          "_include",
+          "_exclude"
+      ]
   ]
 
   def search(params){
@@ -92,8 +95,8 @@ class ESSearchService{
     try {
       if ( (params.q && params.q.length() > 0) || params.rectype) {
 
-       if ((!params.all) || (!params.all?.equals("yes"))) {
-         params.max = Math.min(params.max ? params.max : 15, 100)
+        if ((!params.all) || (!params.all?.equals("yes"))) {
+          params.max = Math.min(params.max ? params.max : 15, 100)
         }
 
         params.offset = params.offset ? params.offset : 0
@@ -126,10 +129,10 @@ class ESSearchService{
           log.debug("srb start to add query and aggregration query string is ${query_str}")
 
           srb.setQuery(QueryBuilders.queryStringQuery(query_str))//QueryBuilders.wrapperQuery(query_str)
-             .addAggregation(AggregationBuilders.terms('curatoryGroups').size(25).field('curatoryGroups'))
-             .addAggregation(AggregationBuilders.terms('provider').size(25).field('provider'))
-             .setFrom(params.offset)
-             .setSize(params.max)
+              .addAggregation(AggregationBuilders.terms('curatoryGroups').size(25).field('curatoryGroups'))
+              .addAggregation(AggregationBuilders.terms('provider').size(25).field('provider'))
+              .setFrom(params.offset)
+              .setSize(params.max)
 
           // log.debug("finished srb and aggregrations: " + srb)
           search_results = srb.get()
@@ -207,20 +210,20 @@ class ESSearchService{
 
           plist.eachWithIndex { p, idx ->
             if (p) {
-                if (idx == 0){
-                  sw.write(" ( ")
-                }
-                sw.write(mapping.value?.toString())
-                sw.write(":".toString())
+              if (idx == 0){
+                sw.write(" ( ")
+              }
+              sw.write(mapping.value?.toString())
+              sw.write(":".toString())
 
-                p = p.replaceAll(":","\\\\:")
+              p = p.replaceAll(":","\\\\:")
 
-                sw.write(p.toString())
-                if(idx == plist.size()-1) {
-                  sw.write(" ) ")
-                }else{
-                  sw.write(" OR ")
-                }
+              sw.write(p.toString())
+              if(idx == plist.size()-1) {
+                sw.write(" ) ")
+              }else{
+                sw.write(" OR ")
+              }
             }
           }
         }
@@ -233,20 +236,20 @@ class ESSearchService{
           try {
             if ( params[mapping.key].length() > 0 && ! ( params[mapping.key].equalsIgnoreCase('*') ) ) {
 
-                def pval = params[mapping.key].replaceAll(":","\\\\:");
+              def pval = params[mapping.key].replaceAll(":","\\\\:");
 
-                log.debug("pval = ${pval}")
+              log.debug("pval = ${pval}")
 
-                if(sw.toString()) sw.write(" AND ");
+              if(sw.toString()) sw.write(" AND ");
 
-                sw.write(mapping.value)
-                sw.write(":")
+              sw.write(mapping.value)
+              sw.write(":")
 
-                if(params[mapping.key].startsWith("[") && params[mapping.key].endsWith("]")){
-                  sw.write(pval)
-                }else{
-                  sw.write(pval)
-                }
+              if(params[mapping.key].startsWith("[") && params[mapping.key].endsWith("]")){
+                sw.write(pval)
+              }else{
+                sw.write(pval)
+              }
             }
           }
           catch ( Exception e ) {
@@ -421,10 +424,54 @@ class ESSearchService{
 
 
   /**
+   * scroll : Get large amounts of data from the Elasticsearch index --
+   * @param params : Elasticsearch query params
+   * @return chunks of 5.000 data sets. In case the answer's size is smaller than 5000, then the end of scrolling
+   *         is reached.
+   **/
+  def scroll(params) throws Exception{
+
+    def result = ["result" : "OK"]
+    def esClient = ESWrapperService.getClient()
+
+    QueryBuilder query = (!params.component_type) ?
+        QueryBuilders.matchAllQuery() :
+        QueryBuilders.matchQuery("componentType", params.component_type)
+    // TODO: alternative query builders for scroll searches with q
+
+    ActionFuture<SearchResponse> response
+    if (!params.scrollId){
+      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      searchSourceBuilder.query(query)
+      searchSourceBuilder.size(5000)
+
+      SearchRequest searchRequest = new SearchRequest(grailsApplication.config.gokb.es.index)
+      searchRequest.scroll("1m")
+      searchRequest.source(searchSourceBuilder)
+      // ... set scroll interval to 1 minute
+      response = esClient.search(searchRequest)
+    }
+    else{
+      SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
+      scrollRequest.scroll("1m")
+      response = esClient.searchScroll(scrollRequest)
+    }
+
+    result.scrollId = response.actionGet().getScrollId()
+    SearchHit[] searchHits = response.actionGet().getHits().getHits()
+    result.records = []
+    for (SearchHit hit in searchHits){
+      result.records << hit.getSourceAsString()
+    }
+    result.size = result.records.size()
+    result
+  }
+
+  /**
    * find : Query the Elasticsearch index --
    * @param params : Elasticsearch query params
    * @param context : Overrides default url path
-  **/
+   **/
   def find(params, def context = null, def user = null) {
     def result = [result: 'OK']
     def search_action = null
@@ -652,13 +699,13 @@ class ESSearchService{
     def exclude_list = params['_exclude']?.split(',') ?: null
     Integer rec_id = genericOIDService.oidToId(record.id)
     def esMapping = [
-      'lastUpdatedDisplay': 'lastUpdated',
-      'sortname': false,
-      'updater': false,
-      'identifiers': false,
-      'altname': false,
-      'roles': false,
-      'curatoryGroups': false
+        'lastUpdatedDisplay': 'lastUpdated',
+        'sortname': false,
+        'updater': false,
+        'identifiers': false,
+        'altname': false,
+        'roles': false,
+        'curatoryGroups': false
     ]
 
     def obj_cls = Class.forName("org.gokb.cred.${record.source.componentType}").newInstance()
@@ -776,9 +823,9 @@ class ESSearchService{
     es_result.remove('records')
     es_result.remove('result')
     es_result['_pagination'] = [
-      offset: es_result.offset,
-      limit: es_result.max,
-      total: es_result.count
+        offset: es_result.offset,
+        limit: es_result.max,
+        total: es_result.count
     ]
 
     def selfLink = new URIBuilder(base)
@@ -861,14 +908,14 @@ class ESSearchService{
     cgs.each { cg ->
       def cg_obj = CuratoryGroup.findByName(cg)
       domainMapping['_embedded']['curatoryGroups'] << [
-        'links': [
-          'self': [
-            'href': base + cg_obj.getRestPath()+"/" + cg_obj.uuid
-          ]
-        ],
-        'name': cg_obj.name,
-        'id': cg_obj.id,
-        'uuid': cg_obj.uuid
+          'links': [
+              'self': [
+                  'href': base + cg_obj.getRestPath()+"/" + cg_obj.uuid
+              ]
+          ],
+          'name': cg_obj.name,
+          'id': cg_obj.id,
+          'uuid': cg_obj.uuid
       ]
     }
   }
@@ -881,19 +928,19 @@ class ESSearchService{
   private def deriveComponentType(String typeString) {
     def result = null
     def defined_types = [
-      "Package",
-      "Org",
-      "JournalInstance",
-      "Journal",
-      "BookInstance",
-      "Book",
-      "DatabaseInstance",
-      "Database",
-      "Platform",
-      "TitleInstancePackagePlatform",
-      "TIPP",
-      "TitleInstance",
-      "Title"
+        "Package",
+        "Org",
+        "JournalInstance",
+        "Journal",
+        "BookInstance",
+        "Book",
+        "DatabaseInstance",
+        "Database",
+        "Platform",
+        "TitleInstancePackagePlatform",
+        "TIPP",
+        "TitleInstance",
+        "Title"
     ]
     def final_type = typeString.capitalize()
 
