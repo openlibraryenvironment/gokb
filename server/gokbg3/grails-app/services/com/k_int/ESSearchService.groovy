@@ -462,7 +462,7 @@ class ESSearchService{
     SearchHit[] searchHits = response.actionGet().getHits().getHits()
     result.records = []
     for (SearchHit hit in searchHits){
-      result.records << hit.getSourceAsString()
+      result.records << hit.getSourceAsMap()
     }
     result.size = result.records.size()
     result
