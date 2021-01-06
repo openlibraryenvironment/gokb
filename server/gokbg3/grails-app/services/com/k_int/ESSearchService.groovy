@@ -426,12 +426,13 @@ class ESSearchService{
   /**
    * scroll : Get large amounts of data from the Elasticsearch index --
    * @param params : Elasticsearch query params
-   * @return chunks of 5.000 data sets. In case the answer's size is smaller than 5000, then the end of scrolling
-   *         is reached.
+   * @return chunks of scrollSize data sets. In case the answer's size is smaller than scrollSize,
+   *         then the end of scrolling is reached.
    **/
   def scroll(params) throws Exception{
 
-    def result = ["result" : "OK"]
+    int scrollSize = 5000
+    def result = ["result" : "OK", "scrollSize" : scrollSize]
     def esClient = ESWrapperService.getClient()
 
     QueryBuilder query = (!params.component_type) ?
@@ -443,7 +444,7 @@ class ESSearchService{
     if (!params.scrollId){
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       searchSourceBuilder.query(query)
-      searchSourceBuilder.size(5000)
+      searchSourceBuilder.size(scrollSize)
 
       SearchRequest searchRequest = new SearchRequest(grailsApplication.config.gokb.es.index)
       searchRequest.scroll("1m")
@@ -456,7 +457,7 @@ class ESSearchService{
       scrollRequest.scroll("1m")
       response = esClient.searchScroll(scrollRequest)
     }
-
+    log.debug("scrollId : " + response.actionGet().getScrollId())
     result.scrollId = response.actionGet().getScrollId()
     SearchHit[] searchHits = response.actionGet().getHits().getHits()
     result.records = []
