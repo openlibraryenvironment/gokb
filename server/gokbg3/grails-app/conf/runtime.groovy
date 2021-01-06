@@ -324,7 +324,7 @@ kbart2.mappings= [
                 [field:'package_name', kbart:"package_name"],
               ]
      ],
-     
+
 ]
 
 kbart2.personCategory='SPR'
@@ -406,7 +406,7 @@ grails.web.disable.multipart=false
 grails.exceptionresolver.params.exclude = ['password']
 
 // configure auto-caching of queries by default (if false you can cache individual queries with 'cache: true')
-grails.hibernate.cache.queries = false
+grails.hibernate.cache.queries = true
 
 environments {
   development {

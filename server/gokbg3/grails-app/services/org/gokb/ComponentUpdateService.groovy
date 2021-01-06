@@ -21,11 +21,14 @@ class ComponentUpdateService {
   def reviewRequestService
   def dateFormatService
 
+  private final RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+  private final RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+  private final RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+  private final Object findLock = new Object()
+
   public boolean ensureCoreData(KBComponent component, data, boolean sync = false, user) {
     return ensureSync(component, data, sync, user)
   }
-
-  private final findLock = new Object()
 
   @Synchronized("findLock")
   private boolean ensureSync(KBComponent component, data, boolean sync = false, user) {
@@ -52,9 +55,6 @@ class ComponentUpdateService {
     // Identifiers
     log.debug("Identifier processing ${data.identifiers}")
     Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
-    RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
     data.identifiers.each { ci ->
       def namespace_val = ci.type ?: ci.namespace
@@ -326,6 +326,7 @@ class ComponentUpdateService {
     }
     catch (Exception e) {
       e.printStackTrace()
+      result.error = e
     }
     result
   }

@@ -91,7 +91,8 @@ class CrossReferenceService {
   }
 
   /**
-   * starting a crossReferencePackage job
+   * starting a xRefPackage in a job
+   *
    * @param rjson
    * @param fullsync
    * @param update
@@ -159,6 +160,18 @@ class CrossReferenceService {
     return result
   }
 
+  /** the xRefPackage Worker method.
+   *
+   * @param job
+   * @param request_user
+   * @param request_locale
+   * @param json
+   * @param pkgId
+   * @param fullsync
+   * @param update
+   * @param autoUpdate
+   * @return
+   */
   def xRefTippsWork(ConcurrencyManagerService.Job job, def request_user, def request_locale, def json, def pkgId, boolean fullsync, boolean update, boolean autoUpdate) {
     def job_result = [:]
     boolean cancelled = false
@@ -172,6 +185,7 @@ class CrossReferenceService {
 
       job.ownerId = user.id
 
+      // outer try catch block for general Exceptions
       try {
         Package the_pkg = Package.get(pkgId)
         def existing_tipps = []
@@ -587,7 +601,7 @@ class CrossReferenceService {
                 errors.tipps.add(tipp_errors)
               }
 
-              if (idx % 50 == 0) {
+              if (idx % 100 == 0) {
                 def session = sessionFactory.currentSession
                 // flush and clear the session.
                 session.flush()
@@ -597,6 +611,7 @@ class CrossReferenceService {
               job.setProgress(idx, json.tipps.size() + 1)
             }
           } // Ende schleife
+
           if (!valid) {
             job_result.result = 'ERROR'
             job_result.message = "Package was created, but ${tipp_fails} TIPPs could not be created!"
@@ -613,7 +628,7 @@ class CrossReferenceService {
                   to_retire.save(failOnError: true)
                   num_removed_tipps++;
                 }
-                if (ix % 100 == 0) {
+                if (ix % 50 == 0) {
                   def session = sessionFactory.currentSession
                   // flush and clear the session.
                   session.flush()
@@ -678,14 +693,13 @@ class CrossReferenceService {
             )
           }
         }
-      }
-      catch (Exception e) {
+      } catch (Exception e) {
         log.error("Package Crossref failed with Exception", e)
         job_result.result = "ERROR"
         job_result.message = "xRefService: Package referencing failed with exception!"
         job_result.code = 500
         errors.global.add([code: 500, message: messageService.resolveCode('crossRef.package.error.unknown', null, locale), data: json.packageHeader])
-      }
+      }   // outer try catch block for general Exceptions
       def session = sessionFactory.currentSession
 
       // flush and clear the session.
