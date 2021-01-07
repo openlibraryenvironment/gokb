@@ -1098,9 +1098,9 @@ class IntegrationController {
                         }
                       }
 
-                      if (!Platform.validateDTO(tipp_plt_dto)) {
+                      if (!Platform.validateDTO(tipp_plt_dto).valid) {
                         log.warn("Not valid after platform validation ${tipp_plt_dto}");
-
+                        invalidTipps << json_tipp
                         def plt_errors = [
                           code   : 400,
                           idx    : idx,
@@ -1108,8 +1108,9 @@ class IntegrationController {
                           baddata: tipp_plt_dto,
                           errors : valid_plt.errors
                         ]
-                        errors.tipps.add([plt])
-                      } else {
+                        errors.tipps.add([plt_errors])
+                      }
+                      else {
                         def pl = null
                         def pl_id
                         if (platform_cache.containsKey(tipp_plt_dto.name) && (pl_id = platform_cache[tipp_plt_dto.name]) != null) {
@@ -1133,7 +1134,7 @@ class IntegrationController {
                             log.error("ValidationException attempting to cross reference title", ve);
                             valid_plt = false
                             allTippsValid = false
-
+                            invalidTipps << json_tipp
                             def plt_errors = [
                               code   : 400,
                               message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tipp_plt_dto], locale),
@@ -1158,6 +1159,7 @@ class IntegrationController {
                         log.warn("No package");
                         errors.tipps.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], locale)])
                         allTippsValid = false
+                        invalidTipps << json_tipp
                       }
 
                       if (idx % 50 == 0) {
@@ -1517,7 +1519,7 @@ class IntegrationController {
         log.debug("Package validation failed!")
         result.result = 'ERROR'
         response.setStatus(400)
-        result.errors.global << pkg_validation.errors
+        result.errors << pkg_validation.errors
         result.message = messageService.resolveCode('crossRef.package.error.validation.global', null, request_locale)
       }
     } else if (request_user) {
@@ -1525,13 +1527,14 @@ class IntegrationController {
         log.debug("Not ingesting package without name!")
         result.result = "ERROR"
         result.message = messageService.resolveCode('crossRef.package.error.name', [], request_locale)
-        result.errors.global << [name: [[message: messageService.resolveCode('crossRef.package.error.name', null, request_locale), baddata: null]]]
+        result.errors << [name: [[message: messageService.resolveCode('crossRef.package.error.name', null, request_locale), baddata: null]]]
         response.setStatus(400)
-      } else {
-        log.debug("User missing API access!")
+      }
+      else {
+        log.debug("User lacks API access!")
         result.result = "ERROR"
         result.message = messageService.resolveCode('crossRef.package.error.apiRole', [], request_locale)
-        result.errors.global << [name: [[message: messageService.resolveCode('crossRef.package.error.apiRole', null, request_locale), baddata: null]]]
+        result.errors << [name: [[message: messageService.resolveCode('crossRef.package.error.apiRole', null, request_locale), baddata: null]]]
         response.setStatus(403)
       }
     } else {
