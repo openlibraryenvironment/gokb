@@ -30,6 +30,12 @@ class CrossReferenceService {
   def titleHistoryService
   def sessionFactory
 
+  final def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+  final def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+  final def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+  final def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+  final def status_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+
   static transactional = false
 
   static determineTitleClass(titleObj) {
@@ -177,6 +183,7 @@ class CrossReferenceService {
     boolean cancelled = false
     def errors = [global: [], tipps: []]
     int num_removed_tipps = 0
+    List invalid_tipps = []
     // Package.withNewSession begin
     Package.withNewSession {
       def user = User.get(request_user.id)
@@ -188,8 +195,7 @@ class CrossReferenceService {
       // outer try catch block for general Exceptions
       try {
         Package the_pkg = Package.get(pkgId)
-        def existing_tipps = []
-        boolean valid = true
+        def existing_tippIDs = []
 
         if (!the_pkg) {
           // Package not found in DB - Fatal error
@@ -199,15 +205,16 @@ class CrossReferenceService {
           job_result.message = messageService.resolveCode('crossRef.package.error', null, locale)
           return job_result
         }
+
         job_result.pkgId = the_pkg.id
         job_result.uuid = the_pkg.uuid
         job_result.name = the_pkg.name
 
         if (!the_pkg.curatoryGroups || the_pkg.curatoryGroups.size() < 1) {
-          valid = false
+          valid_remove = false
           log.warn("Package update denied because it has no curatory group set!")
           job_result.result = 'ERROR'
-          errors.global.add(['code': 400, 'message': message.resolveCode('crossRef.package.error.deied', null, locale)])
+          errors.global.add(['code': 400, 'message': message.resolveCode('crossRef.package.error.denied', null, locale)])
           job_result.errors = errors
           job_result.message = messageService.resolveCode('crossRef.package.error.denied', [the_pkg.name, the_pkg.curatoryGroups], locale)
           return job_result
@@ -216,7 +223,8 @@ class CrossReferenceService {
 
         if (is_curator?.size() == 1) {
           job.groupId = is_curator[0]
-        } else if (is_curator?.size() > 1) {
+        }
+        else if (is_curator?.size() > 1) {
           log.debug("Got more than one cg candidate!")
           job.groupId = is_curator[0]
         }
@@ -225,21 +233,21 @@ class CrossReferenceService {
           componentUpdateService.ensureCoreData(the_pkg, json.packageHeader, fullsync, user)
 
           if (the_pkg.tipps) {
-            //existing_tipps = TitleInstance.executeQuery(all current tipps in package)
-            existing_tipps = TitleInstance.executeQuery(
+            existing_tippIDs = TitleInstance.executeQuery(
               "select tipp.id from TitleInstancePackagePlatform tipp, Combo combo " +
                 "where tipp.status = :status " +
-                "and combo.toComponent=tipp " +
-                "and combo.fromComponent=:package",
-              [package: the_pkg, status: RefdataCategory.lookup('KBComponent.Status', 'Current')])
-            //existing_tipps = the_pkg.tipps*.id
-            log.debug("Matched package has ${existing_tipps.size()} TIPPs")
+                "and combo.toComponent = tipp " +
+                "and combo.fromComponent = :package",
+              [package: the_pkg, status: status_current])
+            log.debug("Matched package has ${existing_tippIDs.size()} TIPPs")
           }
-          def tipps_to_delete = existing_tipps?.clone()
+
+          List tippIDs_to_delete = existing_tippIDs?.clone()
 
           Map platform_cache = [:]
+
           log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${json.packageHeader}");
-          def idx = 0
+          int idx = 0
 
           // Validate and upsert titles and platforms
           def tipp_upsert_start_time = System.currentTimeMillis()
@@ -248,18 +256,18 @@ class CrossReferenceService {
             log.debug("handling tipp ${json_tipp.title}");
             def title_validation = TitleInstance.validateDTO(json_tipp.title);
             def tipp_plt_dto = json_tipp.hostPlatform ?: json_tipp.platform
-            valid &= title_validation.valid
 
             if (title_validation && !title_validation.valid) {
-              log.warn("Not valid after title validation ${json_tipp.title}");
-              def preval_errors = [
+              invalid_tipps << json_tipp
+              log.warn("Not valid_remove after title validation ${json_tipp.title}");
+              def preval_error = [
                 code   : 400,
                 message: messageService.resolveCode('crossRef.package.tipps.error.title.preValidation', [json_tipp.title.name, title_validation.errors], locale),
                 baddata: json_tipp.title,
                 idx    : idx,
                 errors : title_validation.errors
               ]
-              errors.tipps.add(preval_errors)
+              errors.tipps.add(preval_error)
             } else {
               def valid_ti = true
 
@@ -333,7 +341,8 @@ class CrossReferenceService {
                     ti = ti.merge(flush: true)
 
                     json_tipp.title.internalId = ti.id
-                  } else {
+                  }
+                  else {
                     def errorObj = ['code': 400, 'message': messageService.resolveCode('crossRef.package.tipps.error.title', json_tipp.title.name, locale), 'baddata': json_tipp.title]
                     if (ti != null) {
                       errorObj.errors = messageService.processValidationErrors(ti.errors)
@@ -341,18 +350,19 @@ class CrossReferenceService {
                       ti.discard()
                     }
                     valid_ti = false
-                    valid = false
+                    invalid_tipps << json_tipp
                   }
                 }
                 catch (org.gokb.exceptions.MultipleComponentsMatchedException mcme) {
                   log.debug("Handling MultipleComponentsMatchedException")
                   result.result = "ERROR"
                   result.message = messageService.resolveCode('crossRef.title.error.multipleMatches', [json_tipp?.title?.name, mcme.matched_ids], locale)
+                  // should probably raise a ReviewRequest
                 }
                 catch (grails.validation.ValidationException ve) {
                   log.error("ValidationException attempting to cross reference title", ve);
                   valid_ti = false
-                  valid = false
+                  invalid_tipps << json_tipp
                   def validation_errors = [
                     code   : 400,
                     message: messageService.resolveCode('crossRef.package.tipps.error.title.validation', [json_tipp?.title?.name], locale),
@@ -366,7 +376,6 @@ class CrossReferenceService {
 
               if (valid_ti && json_tipp.title.internalId == null) {
                 log.error("Failed to locate a title for ${json_tipp?.title} when attempting to create TIPP");
-                valid = false
                 errors.tipps.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.title', [json_tipp?.title?.name], locale)])
               }
             }
@@ -375,26 +384,25 @@ class CrossReferenceService {
             if (!platform_cache.containsKey(tipp_plt_dto.name)) {
               // platform is new and has to be validated
               valid_plt = Platform.validateDTO(tipp_plt_dto)
-              valid &= valid_plt?.valid
             } else {
               valid_plt = platform_cache[tipp_plt_dto.name].platform
               valid_cached = platform_cache[tipp_plt_dto.name].valid
             }
 
             if (!valid_cached && !valid_plt.valid) {
-              log.warn("Not valid after platform validation ${tipp_plt_dto}");
-
-              def plt_errors = [
+              log.warn("Not valid: remove after platform validation ${tipp_plt_dto}");
+              invalid_tipps<<json_tipp
+              def plt_error = [
                 code   : 400,
                 idx    : idx,
                 message: messageService.resolveCode('crossRef.package.tipps.error.platform.preValidation', [tipp_plt_dto?.name], locale),
                 baddata: tipp_plt_dto,
                 errors : valid_plt.errors
               ]
-              errors.tipps.add(plt_errors)
+              errors.tipps.add(plt_error)
             }
             Platform pl = null
-            if (valid) {
+            if (!invalid_tipps.contains(json_tipp)) {
               def pl_id
               if (platform_cache.containsKey(tipp_plt_dto.name)) {
                 pl = platform_cache[tipp_plt_dto.name].platform
@@ -408,13 +416,13 @@ class CrossReferenceService {
                   } else {
                     log.error("Could not find/create ${tipp_plt_dto}")
                     errors.tipps.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.platform', [tipp_plt_dto.name], locale)])
-                    valid = false
+                    invalid_tipps << json_tipp
                   }
                 }
                 catch (grails.validation.ValidationException ve) {
                   log.error("ValidationException attempting to validate Platform during cross reference package", ve);
                   valid_plt = false
-                  valid = false
+                  invalid_tipps << json_tipp
                   def plt_errors = [
                     code   : 400,
                     message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tipp_plt_dto], locale),
@@ -438,21 +446,21 @@ class CrossReferenceService {
             } else {
               log.warn("No package");
               errors.tipps.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], locale)])
-              valid = false
+              invalid_tipps << json_tipp
             }
 
             //}
             // end Validation of titles and platforms
 
-            if (valid) {
-              // If valid so far, validate tipp
+            if (!invalid_tipps.contains(json_tipp)) {
+              // If valid_remove so far, validate tipp
               log.debug("Validating tipp [${idx}]");
               // for (json_tipp in json.tipps) {
               def validation_result = TitleInstancePackagePlatform.validateDTO(json_tipp)
 
               if (validation_result && !validation_result.valid) {
                 log.debug("TIPP Validation failed on ${json_tipp}")
-                valid = false
+                invalid_tipps << json_tipp
                 def tipp_errors = [
                   'code' : 400,
                   idx    : idx,
@@ -477,29 +485,12 @@ class CrossReferenceService {
               log.warn("Not validating tipps - failed pre validation")
             }
 
-            if (valid) {
+            if (!invalid_tipps.contains(json_tipp)) {
               log.debug("upsert tipp data")
-
-              def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-              def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-              def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-              def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
 
               def tipp_fails = 0
 
-              if (json.tipps?.size() > 0) {
-                Package.withNewSession {
-                  def pkg_new = Package.get(the_pkg.id)
-                  def status_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
-
-                  if (pkg_new.status == status_current && pkg_new?.listStatus != status_ip) {
-                    pkg_new.listStatus = status_ip
-                    pkg_new.save(flush: true)
-                  }
-                }
-              }
-
-              // If valid, upsert tipps
+              // If valid_remove, upsert tipps
               //       for (json_tipp in json.tipps) {
 
               log.debug("Upsert tipp [${idx}] ${json_tipp}")
@@ -514,7 +505,7 @@ class CrossReferenceService {
               }
               catch (ValidationException ve) {
                 log.error("ValidationException attempting to cross reference TIPP", ve);
-                valid = false
+                invalid_tipps << json_tipp
                 tipp_fails++
                 def tipp_errors = [
                   code   : 400,
@@ -524,13 +515,11 @@ class CrossReferenceService {
                   errors : messageService.processValidationErrors(ve.errors)
                 ]
                 errors.tipps.add(tipp_errors)
-
-                if (upserted_tipp)
-                  upserted_tipp.discard()
+                upserted_tipp?.discard()
               }
               catch (Exception ge) {
                 log.error("Exception attempting to cross reference TIPP:", ge)
-                valid = false
+                valid_remove = false
                 tipp_fails++
                 def tipp_errors = [
                   code   : 500,
@@ -539,24 +528,22 @@ class CrossReferenceService {
                   baddata: json_tipp
                 ]
                 errors.tipps.add(tipp_errors)
-
-                if (upserted_tipp)
-                  upserted_tipp.discard()
+                upserted_tipp.discard()
               }
 
               if (upserted_tipp) {
-                if (existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id)) {
+                if (existing_tippIDs.size() > 0 && existing_tippIDs.contains(upserted_tipp.id)) {
                   log.debug("Existing TIPP matched!")
-                  tipps_to_delete.removeElement(upserted_tipp.id)
+                  tippIDs_to_delete.removeElement(upserted_tipp.id)
                 }
 
-                if (upserted_tipp && upserted_tipp?.status != status_deleted && json_tipp.status == "Deleted") {
+                if (upserted_tipp?.status != status_deleted && json_tipp.status == "Deleted") {
                   upserted_tipp.deleteSoft()
                   num_removed_tipps++;
-                } else if (upserted_tipp && upserted_tipp?.status != status_retired && json_tipp.status == "Retired") {
+                } else if (upserted_tipp?.status != status_retired && json_tipp.status == "Retired") {
                   upserted_tipp.retire()
                   num_removed_tipps++;
-                } else if (upserted_tipp && upserted_tipp.status != status_current && (!json_tipp.status || json_tipp.status == "Current")) {
+                } else if (upserted_tipp.status != status_current && (!json_tipp.status || json_tipp.status == "Current")) {
                   if (upserted_tipp.isDeleted() && !fullsync) {
                     reviewRequestService.raise(
                       upserted_tipp,
@@ -590,7 +577,7 @@ class CrossReferenceService {
                 }
               } else {
                 log.debug("Could not reference TIPP")
-                valid = false
+                valid_remove = false
                 tipp_fails++
                 def tipp_errors = [
                   code   : 500,
@@ -612,86 +599,94 @@ class CrossReferenceService {
             }
           } // Ende schleife
 
-          if (!valid) {
-            job_result.result = 'ERROR'
-            job_result.message = "Package was created, but ${tipp_fails} TIPPs could not be created!"
-          } else {
-            if (!update && existing_tipps.size() > 0) {
-              tipps_to_delete.eachWithIndex { ttd, ix ->
-                def to_retire = TitleInstancePackagePlatform.get(ttd)
-                if (to_retire?.isCurrent()) {
-                  if (fullsync) {
-                    to_retire.deleteSoft()
-                  } else {
-                    to_retire.retire()
-                  }
-                  to_retire.save(failOnError: true)
-                  num_removed_tipps++;
-                }
-                if (ix % 50 == 0) {
-                  def session = sessionFactory.currentSession
-                  // flush and clear the session.
-                  session.flush()
-                  session.clear()
-                }
-              }
-              if (num_removed_tipps > 0) {
-                def additionalInfo = [:]
-
-                additionalInfo.vars = [the_pkg.id, num_removed_tipps]
-
-                reviewRequestService.raise(
-                  the_pkg,
-                  "TIPPs retired.",
-                  "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
-                  user,
-                  null,
-                  (additionalInfo as JSON).toString(),
-                  RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
-                )
-              }
-            }
-            // log.debug("Found ${num_removed_tipps} TIPPS to delete/retire from the matched package!")
-            job_result.result = 'OK'
-            job_result.message = messageService.resolveCode('crossRef.package.success', [json.packageHeader.name, idx, existing_tipps.size(), num_removed_tipps], locale)
-
+          if (json.tipps?.size() > invalid_tipps.size()) {
             Package.withNewSession {
-              def pkg_obj = Package.get(the_pkg.id)
-              if (pkg_obj.status.value != 'Deleted') {
-                pkg_obj.lastUpdateComment = job_result.message
-                pkg_obj.save(flush: true)
-              }
-              if (autoUpdate) {
-                pkg_obj.source?.lastRun = new Date()
-                pkg_obj.source?.save(flush: true)
+              def pkg_new = Package.get(the_pkg.id)
+              if (pkg_new.status == status_current && pkg_new?.listStatus != status_ip) {
+                pkg_new.listStatus = status_ip
+                pkg_new.save(flush: true)
               }
             }
-            log.debug("Elapsed tipp processing time: ${System.currentTimeMillis() - tipp_upsert_start_time} for ${idx} records")
           }
+
+          if (invalid_tipps.size > 0) {
+            job_result.result = 'WARNING'
+            job_result.message = "Package was created, but ${invalid_tipps.size} TIPPs could not be created!"
+          }
+          if (!update && existing_tippIDs.size() > 0) {
+            tippIDs_to_delete.eachWithIndex { ttd, ix ->
+              def to_retire = TitleInstancePackagePlatform.get(ttd)
+              if (to_retire?.isCurrent()) {
+                if (fullsync) {
+                  to_retire.deleteSoft()
+                } else {
+                  to_retire.retire()
+                }
+                to_retire.save(failOnError: true)
+                num_removed_tipps++;
+              }
+              if (ix % 50 == 0) {
+                def session = sessionFactory.currentSession
+                // flush and clear the session.
+                session.flush()
+                session.clear()
+              }
+            }
+            if (num_removed_tipps > 0) {
+              def additionalInfo = [:]
+
+              additionalInfo.vars = [the_pkg.id, num_removed_tipps]
+              reviewRequestService.raise(
+                the_pkg,
+                "TIPPs retired.",
+                "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
+                user,
+                null,
+                (additionalInfo as JSON).toString(),
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
+              )
+            }
+          }
+          // log.debug("Found ${num_removed_tipps} TIPPS to delete/retire from the matched package!")
+          job_result.result = 'OK'
+          job_result.message = messageService.resolveCode('crossRef.package.success', [json.packageHeader.name, idx, existing_tippIDs.size(), num_removed_tipps], locale)
+
+          Package.withNewSession {
+            def pkg_obj = Package.get(the_pkg.id)
+            if (pkg_obj.status.value != 'Deleted') {
+              pkg_obj.lastUpdateComment = job_result.message
+              pkg_obj.save(flush: true)
+            }
+            if (autoUpdate) {
+              pkg_obj.source?.lastRun = new Date()
+              pkg_obj.source?.save(flush: true)
+            }
+          }
+          log.debug("Elapsed tipp processing time: ${System.currentTimeMillis() - tipp_upsert_start_time} for ${idx} records")
         } else {
           job_result.result = 'ERROR'
           job_result.message = messageService.resolveCode('crossRef.package.error.tipps', [json.packageHeader.name], locale)
-          log.warn("Not loading tipps - failed validation")
+          log.warn("user $user.username is not superuser nor member of any entitled curatory group")
+        }
 
-          if (the_pkg) {
-            def additionalInfo = [:]
+        if (the_pkg && invalid_tipps) {
+          def additionalInfo = [:]
 
-            if (errors.global.size() > 0 || errors.tipps.size() > 0) {
-              additionalInfo.errorObjects = errors
-            }
-
-            additionalInfo.vars = [job.id]
-
-            reviewRequestService.raise(
-              the_pkg,
-              "Invalid TIPPs.",
-              "An update for this package failed because of invalid TIPP information (JOB ${job.id}).",
-              user,
-              null,
-              (additionalInfo as JSON).toString(),
-              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs')
-            )
+          if (errors.global.size() > 0 || errors.tipps.size() > 0) {
+            additionalInfo.errorObjects = errors
           }
+
+          additionalInfo.vars = [job.id]
+          additionalInfo.otherComponents = invalid_tipps
+          reviewRequestService.raise(
+            the_pkg,
+            "Invalid TIPPs.",
+            "An update for this package failed because of invalid TIPP information (JOB ${job.id}).",
+            user,
+            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs')
+          )
         }
       } catch (Exception e) {
         log.error("Package Crossref failed with Exception", e)
