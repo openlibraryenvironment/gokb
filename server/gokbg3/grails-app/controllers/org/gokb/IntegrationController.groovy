@@ -1194,7 +1194,7 @@ class IntegrationController {
                       def validation_result = TitleInstancePackagePlatform.validateDTO(json_tipp)
 
                       if (validation_result && !validation_result.valid) {
-                        invalidTipps.add(json_tipp)
+                        Tipps.add(json_tipp)
                         log.debug("TIPP Validation failed on ${json_tipp}")
                         allTippsValid = false
                         def tipp_error = [
@@ -1439,11 +1439,12 @@ class IntegrationController {
                     }
 
                     additionalInfo.vars = [job.id]
+                    additionalInfo.otherComponents = invalidTipps
 
                     reviewRequestService.raise(
                       the_pkg,
                       "Invalid TIPPs.",
-                      "An update for this package failed partially because of invalid TIPP information (JOB ${job.id}).",
+                      "An update for this package was incomplete due to ${invalidTipps.size()} TIPPs containing invalid information (JOB ${job.id}).",
                       user,
                       null,
                       (additionalInfo as JSON).toString(),
