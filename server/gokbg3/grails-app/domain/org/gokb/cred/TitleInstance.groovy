@@ -711,12 +711,7 @@ class TitleInstance extends KBComponent {
     if (id_errors.size() > 0) {
       result.errors.ids = id_errors
     }
-
-    if ( !result ) {
-      log.warn("Title Failed Validation ${titleDTO}");
-    }
-
-    result;
+    result
   }
 
   @Transient

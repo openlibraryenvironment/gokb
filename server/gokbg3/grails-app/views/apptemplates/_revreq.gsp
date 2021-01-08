@@ -85,6 +85,21 @@
             </ul>
           <dd>
         </g:if>
+        <g:if test="${d.additional?.skippedItems}">
+
+          <dt>
+            <g:annotatedLabel owner="${d}" property="skippedItems">Skipped Items</g:annotatedLabel>
+          </dt>
+          <dd>
+            <ul>
+              <g:each in="${d.additional?.skippedItems}" var="si">
+                <li>
+                  ${si.name ?: si.title.name}
+                </li>
+              </g:each>
+            </ul>
+          <dd>
+        </g:if>
         <sec:ifAnyGranted roles="ROLE_SUPERUSER">
           <dt>
             <g:annotatedLabel owner="${d}" property="allocatedTo">Allocated To</g:annotatedLabel>
@@ -125,7 +140,7 @@
                 </tr>
               </thead>
               <tbody>
-                <g:each in="${d.additional?.problems}" var="revreq_problem" status="i"> 
+                <g:each in="${d.additional?.problems}" var="revreq_problem" status="i">
                   <tr>
                    <td>
                      <input type="hidden" name="pr.prob_res_${revreq_problem?.problemSequence}.probfingerprint" value='${revreq_problem?.problemFingerprint.encodeAsHTML()}' />
