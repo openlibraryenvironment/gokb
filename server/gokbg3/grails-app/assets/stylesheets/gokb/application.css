@@ -135,6 +135,16 @@ body .modal-dialog {
   line-height:normal !important;
 }
 
+.add-on {
+  font-size:1.3em;
+  color:#222;
+  height:39px;
+  vertical-align: sub;
+  margin-left:-35px;
+  margin-right:35px;
+  display:inline-block;
+}
+
 .form-label {
   display:inline-block;
   vertical-align:middle;

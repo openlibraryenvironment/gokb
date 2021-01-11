@@ -2,7 +2,6 @@ package org.gokb
 
 import groovy.json.JsonBuilder
 
-import java.text.SimpleDateFormat
 import java.net.InetAddress;
 
 import org.elasticsearch.client.Client
@@ -46,7 +45,7 @@ class ESWrapperService {
         ]
       ]
     ]
-    
+
 
     return settings
   }
@@ -68,7 +67,15 @@ class ESWrapperService {
             type: "nested",
             properties: [
               namespace: [type: "keyword"],
+              namespaceName: [type: "keyword"],
               value: [type: "keyword"]
+            ]
+          ],
+          source : [
+            type : "nested",
+            properties: [
+              frequency: [type: "keyword"],
+              url: [type: "keyword"]
             ]
           ],
           sortname: [

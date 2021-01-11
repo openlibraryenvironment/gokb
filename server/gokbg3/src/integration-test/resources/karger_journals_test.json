@@ -1,0 +1,309 @@
+[
+   {
+      "OAStatus": "",
+      "volumeNumber": "null",
+      "historyEvents": [],
+      "imprint": "",
+      "editionStatement": "null",
+      "editStatus": "In Progress",
+      "defaultAccessURL": "",
+      "dateFirstOnline": "",
+      "medium": "Journal",
+      "type": "Serial",
+      "shortcode": "",
+      "issuer": "",
+      "publisher_history": [{
+         "endDate": "",
+         "name": "S. Karger",
+         "startDate": "",
+         "status": "Active"
+      }],
+      "firstEditor": "null",
+      "firstAuthor": "null",
+      "dateFirstInPrint": "",
+      "identifiers": [
+         {
+            "type": "zdb",
+            "value": "2256676-4"
+         },
+         {
+            "type": "issn",
+            "value": "0001-5547"
+         },
+         {
+            "type": "eissn",
+            "value": "1938-2650"
+         },
+         {
+            "type": "ezb",
+            "value": "150346"
+         }
+      ],
+      "monographEdition": "null",
+      "editionDifferentiator": "null",
+      "publishedTo": "",
+      "editionNumber": "",
+      "publishedFrom": "1996-01-01 00:00:00.000",
+      "name": "Acta cytologica",
+      "continuingSeries": "",
+      "status": "Current"
+   },
+   {
+      "OAStatus": "",
+      "volumeNumber": "null",
+      "historyEvents": [],
+      "imprint": "",
+      "editionStatement": "null",
+      "editStatus": "In Progress",
+      "defaultAccessURL": "",
+      "dateFirstOnline": "",
+      "medium": "Journal",
+      "type": "Serial",
+      "shortcode": "",
+      "issuer": "",
+      "publisher_history": [{
+         "endDate": "",
+         "name": "S. Karger",
+         "startDate": "",
+         "status": "Active"
+      }],
+      "firstEditor": "null",
+      "firstAuthor": "null",
+      "dateFirstInPrint": "",
+      "identifiers": [
+         {
+            "type": "zdb",
+            "value": "1481888-7"
+         },
+         {
+            "type": "issn",
+            "value": "0001-5792"
+         },
+         {
+            "type": "eissn",
+            "value": "1421-9662"
+         },
+         {
+            "type": "ezb",
+            "value": "3005"
+         }
+      ],
+      "monographEdition": "null",
+      "editionDifferentiator": "null",
+      "publishedTo": "",
+      "editionNumber": "",
+      "publishedFrom": "1948-01-01 00:00:00.000",
+      "name": "Acta haematologica",
+      "continuingSeries": "",
+      "status": "Current"
+   },
+   {
+      "OAStatus": "",
+      "volumeNumber": "null",
+      "historyEvents": [],
+      "imprint": "",
+      "editionStatement": "null",
+      "editStatus": "In Progress",
+      "defaultAccessURL": "",
+      "dateFirstOnline": "",
+      "medium": "Journal",
+      "type": "Serial",
+      "shortcode": "",
+      "issuer": "",
+      "publisher_history": [{
+         "endDate": "",
+         "name": "S. Karger",
+         "startDate": "",
+         "status": "Active"
+      }],
+      "firstEditor": "null",
+      "firstAuthor": "null",
+      "dateFirstInPrint": "",
+      "identifiers": [
+         {
+            "type": "zdb",
+            "value": "1468523-1"
+         },
+         {
+            "type": "issn",
+            "value": "0250-8095"
+         },
+         {
+            "type": "eissn",
+            "value": "1421-9670"
+         },
+         {
+            "type": "ezb",
+            "value": "2186"
+         }
+      ],
+      "monographEdition": "null",
+      "editionDifferentiator": "null",
+      "publishedTo": "",
+      "editionNumber": "",
+      "publishedFrom": "1981-01-01 00:00:00.000",
+      "name": "American journal of nephrology",
+      "continuingSeries": "",
+      "status": "Current"
+   },
+   {
+      "OAStatus": "",
+      "volumeNumber": "null",
+      "historyEvents": [{
+         "date": "1974-01-01 00:00:00.000",
+         "from": [{
+            "identifiers": [{
+               "type": "zdb",
+               "value": "2911756-2"
+            }],
+            "title": "Zeitschrift für analytische Psychologie und ihre Grenzgebiete"
+         }],
+         "to": [{
+            "identifiers": [
+               {
+                  "type": "zdb",
+                  "value": "1481968-5"
+               },
+               {
+                  "type": "eissn",
+                  "value": "1421-9689"
+               }
+            ],
+            "title": "Analytische Psychologie"
+         }]
+      }],
+      "imprint": "",
+      "editionStatement": "null",
+      "editStatus": "In Progress",
+      "defaultAccessURL": "",
+      "dateFirstOnline": "",
+      "medium": "Journal",
+      "type": "Serial",
+      "shortcode": "",
+      "issuer": "",
+      "publisher_history": [],
+      "firstEditor": "null",
+      "firstAuthor": "null",
+      "dateFirstInPrint": "",
+      "identifiers": [
+         {
+            "type": "zdb",
+            "value": "1481968-5"
+         },
+         {
+            "type": "issn",
+            "value": "0301-3006"
+         },
+         {
+            "type": "eissn",
+            "value": "1421-9689"
+         }
+      ],
+      "monographEdition": "null",
+      "editionDifferentiator": "null",
+      "publishedTo": "",
+      "editionNumber": "",
+      "publishedFrom": "1974-01-01 00:00:00.000",
+      "name": "Analytische Psychologie",
+      "continuingSeries": "",
+      "status": "Current"
+   },
+   {
+      "OAStatus": "",
+      "volumeNumber": "null",
+      "historyEvents": [],
+      "imprint": "",
+      "editionStatement": "null",
+      "editStatus": "In Progress",
+      "defaultAccessURL": "",
+      "dateFirstOnline": "",
+      "medium": "Journal",
+      "type": "Serial",
+      "shortcode": "",
+      "issuer": "",
+      "publisher_history": [{
+         "endDate": "",
+         "name": "S. Karger",
+         "startDate": "",
+         "status": "Active"
+      }],
+      "firstEditor": "null",
+      "firstAuthor": "null",
+      "dateFirstInPrint": "",
+      "identifiers": [
+         {
+            "type": "zdb",
+            "value": "2204701-3"
+         },
+         {
+            "type": "issn",
+            "value": "0250-9652"
+         },
+         {
+            "type": "eissn",
+            "value": "1661-3740"
+         },
+         {
+            "type": "ezb",
+            "value": "58897"
+         }
+      ],
+      "monographEdition": "null",
+      "editionDifferentiator": "null",
+      "publishedTo": "2008-12-31 23:59:59.000",
+      "editionNumber": "",
+      "publishedFrom": "2006-01-01 00:00:00.000",
+      "name": "Annales Nestlé / Deutsche Ausgabe",
+      "continuingSeries": "",
+      "status": "Current"
+   },
+   {
+      "OAStatus": "",
+      "volumeNumber": "null",
+      "historyEvents": [],
+      "imprint": "",
+      "editionStatement": "null",
+      "editStatus": "In Progress",
+      "defaultAccessURL": "",
+      "dateFirstOnline": "",
+      "medium": "Journal",
+      "type": "Serial",
+      "shortcode": "",
+      "issuer": "",
+      "publisher_history": [{
+         "endDate": "",
+         "name": "S. Karger",
+         "startDate": "",
+         "status": "Active"
+      }],
+      "firstEditor": "null",
+      "firstAuthor": "null",
+      "dateFirstInPrint": "",
+      "identifiers": [
+         {
+            "type": "zdb",
+            "value": "2242202-X"
+         },
+         {
+            "type": "issn",
+            "value": "0252-8185"
+         },
+         {
+            "type": "eissn",
+            "value": "1661-4003"
+         },
+         {
+            "type": "ezb",
+            "value": "80946"
+         }
+      ],
+      "monographEdition": "null",
+      "editionDifferentiator": "null",
+      "publishedTo": "2010-12-31 23:59:59.000",
+      "editionNumber": "",
+      "publishedFrom": "2006-01-01 00:00:00.000",
+      "name": "Annales Nestlé / Ed. española",
+      "continuingSeries": "",
+      "status": "Current"
+   }
+]

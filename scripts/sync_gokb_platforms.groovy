@@ -12,17 +12,23 @@ while ( moredata ) {
     body?.'ListRecords'?.'record'.eachWithIndex { rec, index ->
 
       def data = rec.metadata.gokb.platform
+      def directFields = ['authentication', 'software', 'service']
 
       println("Record ${index + 1}")
 
       def resourceFieldMap = addCoreItems ( data )
       
       resourceFieldMap['platformName'] = cleanText(data.name.text())
-      resourceFieldMap['name'] = cleanText(data.name.text())
       resourceFieldMap['platformUrl'] = cleanText(data.primaryUrl.text())
+
+      if (data.provider?.name) {
+        resourceFieldMap['provider'] = addCoreItems ( data.provider )
+      }
+      else {
+        directFields.add('provider')
+      }
       
-      
-      directAddFields (data, ['authentication', 'software', 'service', 'provider'], resourceFieldMap)
+      directAddFields (data, directFields, resourceFieldMap)
       
       resources.add(resourceFieldMap)
 

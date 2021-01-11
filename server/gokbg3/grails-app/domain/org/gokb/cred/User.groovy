@@ -33,9 +33,12 @@ class User extends Party {
   RefdataValue showQuickView
   RefdataValue showInfoIcon
 
+  // used by @gokbg3.RestMappingService.selectJsonLabel
+  public static final String jsonLabel = "username"
+
   static hasMany = [
     curatoryGroups : CuratoryGroup,
-
+    updateTokens: UpdateToken
   ]
 
   static mappedBy = [curatoryGroups: "users"]
@@ -127,6 +130,19 @@ class User extends Party {
       return getAuthorities().contains(role)
     } else {
       log.error( "Error loading admin role (ROLE_EDITOR)" )
+    }
+
+    role.save()
+    false
+  }
+
+  transient boolean getSuperUserStatus() {
+    Role role = Role.findByAuthority("ROLE_SUPERUSER")
+
+    if (role != null) {
+      return getAuthorities().contains(role)
+    } else {
+      log.error( "Error loading admin role (ROLE_SUPERUSER)" )
     }
 
     role.save()

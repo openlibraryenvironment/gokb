@@ -93,6 +93,7 @@ class AdminController {
     }.startOrQueue()
 
     j.description = "Tidy Orgs Data"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'TidyOrgsData')
 
     render(view: "logViewer", model: logViewer())
   }
@@ -135,6 +136,7 @@ class AdminController {
     }.startOrQueue()
 
     j.description = "Regenerate License Summaries"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'RegenerateLicenseSummaries')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -147,6 +149,7 @@ class AdminController {
     }.startOrQueue()
 
     j.description = "Ensure UUIDs for components"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'EnsureUUIDs')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -159,6 +162,7 @@ class AdminController {
     }.startOrQueue()
 
     j.description = "Ensure TIPLs for all TIPPs"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'EnsureTIPLs')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -170,6 +174,7 @@ class AdminController {
     }.startOrQueue()
 
     j.description = "Generate missing TIPPCoverageStatements"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'GenerateTIPPCoverage')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -181,6 +186,7 @@ class AdminController {
     }.startOrQueue()
 
     j.description = "Mark insonsistent date ranges"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'MarkInconsDateRanges')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -233,6 +239,7 @@ class AdminController {
     }.startOrQueue()
 
     j.description = "Update Free Text Indexes"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'UpdateFreeTextIndexes')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -245,6 +252,7 @@ class AdminController {
     }.startOrQueue()
 
     j.description = "Reset Free Text Indexes"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'ResetFreeTextIndexes')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -257,6 +265,7 @@ class AdminController {
     }.startOrQueue()
 
     j.description = "Master List Update"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'MasterListUpdate')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -277,6 +286,7 @@ class AdminController {
     }.startOrQueue()
 
     j.description = "Enrichment Service"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'EnrichmentService')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -289,6 +299,7 @@ class AdminController {
     }.startOrQueue()
 
     j.description = "Generate Package Types"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'GeneratePackageTypes')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -341,7 +352,7 @@ class AdminController {
     def maxId = jobs.max { it.key }.key
 
     jobs.each { k, j ->
-      if (k < maxId - 5 && j.isDone()) {
+      if (j.isDone()) {
         jobs.remove(k)
       }
     }
@@ -355,13 +366,13 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
-  @Deprecated
   def housekeeping() {
     Job j = concurrencyManagerService.createJob { Job j ->
       cleanupService.housekeeping(j)
     }.startOrQueue()
 
     j.description = "Housekeeping"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Housekeeping')
     j.startTime = new Date()
 
     log.debug "Triggering housekeeping task. Started job #${j.id}"
@@ -377,6 +388,7 @@ class AdminController {
     log.debug "Triggering cleanup task. Started job #${j.id}"
 
     j.description = "Cleanup Deleted Components"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'CleanupDeletedComponents')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -390,6 +402,7 @@ class AdminController {
     log.debug "Triggering cleanup task. Started job #${j.id}"
 
     j.description = "Cleanup Rejected Components"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'CleanupRejectedComponents')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -403,6 +416,7 @@ class AdminController {
     log.debug("Triggering cleanup task. Started job #${j.id}")
 
     j.description = "TIPP Cleanup"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'TIPPCleanup')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -416,6 +430,7 @@ class AdminController {
     log.debug("Reject wrong titles. Started job #${j.id}")
 
     j.description = "Set status of TitleInstances without package+history to 'Deleted'"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'DeleteTIWithoutHistory')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -429,6 +444,7 @@ class AdminController {
     log.debug("Reject wrong titles. Started job #${j.id}")
 
     j.description = "Set status of TitleInstances without identifiers+tipps to 'Rejected'"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'RejectTIWithoutIdentifier')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -442,6 +458,7 @@ class AdminController {
     log.debug("Triggering cleanup task. Started job #${j.id}")
 
     j.description = "Platform Cleanup"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'PlatformCleanup')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
@@ -477,16 +494,17 @@ class AdminController {
 
     log.debug "Triggering statistics rewrite, job #${j.id}"
     j.description = "Recalculate Statistics"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'RecalculateStatistics')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
   }
-  
+
   @Secured(['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'])
   def setupAcl() {
 
     def default_dcs = ["BookInstance", "JournalInstance", "TitleInstancePackagePlatform", "DatabaseInstance", "Office", "Imprint", "Package", "ReviewRequest", "Org", "Platform", "Source", "KBComponentVariantName", "TitleInstancePlatform", "TIPPCoverageStatement"]
-    
+
     default_dcs.each { dcd ->
 
       def dc_org = KBDomainInfo.findByDcName("org.gokb.cred.${dcd}")
@@ -496,7 +514,7 @@ class AdminController {
       aclUtilService.addPermission(dc_org, 'ROLE_CONTRIBUTOR', BasePermission.READ)
       aclUtilService.addPermission(dc_org, 'ROLE_CONTRIBUTOR', BasePermission.WRITE)
       aclUtilService.addPermission(dc_org, 'ROLE_CONTRIBUTOR', BasePermission.CREATE)
-      
+
       aclUtilService.addPermission(dc_org, 'ROLE_EDITOR', BasePermission.READ)
       aclUtilService.addPermission(dc_org, 'ROLE_EDITOR', BasePermission.WRITE)
       aclUtilService.addPermission(dc_org, 'ROLE_EDITOR', BasePermission.CREATE)
@@ -526,7 +544,7 @@ class AdminController {
 
     aclUtilService.addPermission(dc_tit, 'ROLE_CONTRIBUTOR', BasePermission.READ)
     aclUtilService.addPermission(dc_tit, 'ROLE_CONTRIBUTOR', BasePermission.WRITE)
-    
+
     aclUtilService.addPermission(dc_tit, 'ROLE_EDITOR', BasePermission.READ)
     aclUtilService.addPermission(dc_tit, 'ROLE_EDITOR', BasePermission.WRITE)
     aclUtilService.addPermission(dc_tit, 'ROLE_EDITOR', BasePermission.DELETE)
@@ -658,7 +676,7 @@ class AdminController {
     aclUtilService.addPermission(dc_dscat, 'ROLE_ADMIN', BasePermission.ADMINISTRATION)
 
     def dc_kbc = KBDomainInfo.findByDcName('org.gokb.cred.KBComponent')
-    
+
     aclUtilService.addPermission(dc_kbc, 'ROLE_USER', BasePermission.READ)
 
     aclUtilService.addPermission(dc_kbc, 'ROLE_CONTRIBUTOR', BasePermission.READ)

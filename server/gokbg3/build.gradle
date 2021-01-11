@@ -14,8 +14,10 @@ buildscript {
         classpath "org.grails.plugins:hibernate5:${gormVersion-".RELEASE"}"
         classpath "com.bertramlabs.plugins:asset-pipeline-gradle:2.14.8"
         // Experiment with guide from http://guides.grails.org/grails-as-docker-container/guide/index.html
-        classpath "com.bmuschko:gradle-docker-plugin:3.2.5" 
+        classpath "com.bmuschko:gradle-docker-plugin:3.2.5"
         classpath 'org.grails.plugins:database-migration:3.0.3'
+        // Fixing too long classpath in Windows development environment
+        classpath "gradle.plugin.ua.eshepelyuk:ManifestClasspath:1.0.0"
     }
 }
 
@@ -33,6 +35,8 @@ apply plugin:"asset-pipeline"
 apply plugin:"org.grails.grails-gsp"
 apply plugin:"com.bmuschko.docker-remote-api"
 apply plugin:"org.grails.grails-doc"
+// Fixing too long classpath in Windows development environment
+apply plugin: "ua.eshepelyuk.ManifestClasspath"
 
 repositories {
     mavenLocal()
@@ -90,12 +94,11 @@ dependencies {
     compile 'org.grails.plugins:audit-logging:3.0.0'
     compile 'org.liquibase:liquibase-core:3.5.3'
     compile 'org.grails.plugins:external-config:1.4.0'
-  
+
     // This  is for rest integration tests -  see more at
     //  http://guides.grails.org/grails-controller-testing/guide/index.html
     //  and https://github.com/grails-plugins/grails-rest-client-builder
     compile 'org.grails:grails-datastore-rest-client'
-
 
     console "org.grails:grails-console"
     profile "org.grails.profiles:web"
@@ -106,7 +109,7 @@ dependencies {
     runtime "org.apache.tomcat:tomcat-jdbc"
     runtime "com.bertramlabs.plugins:asset-pipeline-grails:2.14.10"
     assets 'com.bertramlabs.plugins:less-asset-pipeline:2.14.10'
-    
+
     testCompile "org.grails:grails-gorm-testing-support"
     testCompile "org.grails:grails-web-testing-support"
     testCompile "org.grails.plugins:geb"
@@ -115,6 +118,7 @@ dependencies {
     testRuntime "org.seleniumhq.selenium:selenium-remote-driver:3.141.59"
     testRuntime "org.seleniumhq.selenium:selenium-api:3.141.59"
     testRuntime 'com.bertramlabs.plugins:less-asset-pipeline:2.14.10'
+    testRuntime "org.apache.httpcomponents:httpclient"
 }
 
 bootRun {
@@ -204,17 +208,17 @@ assets {
 // http://guides.grails.org/grails-as-docker-container/guide/index.html
 // Build docker image:: ./gradlew buildImage
 // ./gradlew dockerPushImage should push the image, but it is better to use the commands below to do that
-// 
+//
 // list know docker images  :: docker images
 // Logon to docker hub:: docker login --username=yourhubusername
 // Push image to docker hub::   docker push knowint/gokbg3
 
 ext {
-    dockerTag = "knowint/${project.name}:${project.version}".toLowerCase() 
-    dockerBuildDir = mkdir("${buildDir}/docker") 
+    dockerTag = "knowint/${project.name}:${project.version}".toLowerCase()
+    dockerBuildDir = mkdir("${buildDir}/docker")
 }
 
-task prepareDocker(type: Copy, dependsOn: assemble) { 
+task prepareDocker(type: Copy, dependsOn: assemble) {
     description = 'Copy files from src/main/docker and application jar to Docker temporal build directory'
     group = 'Docker'
 
@@ -224,7 +228,7 @@ task prepareDocker(type: Copy, dependsOn: assemble) {
     into dockerBuildDir
 }
 
-task createDockerfile(type: Dockerfile, dependsOn: prepareDocker) { 
+task createDockerfile(type: Dockerfile, dependsOn: prepareDocker) {
     description = 'Create a Dockerfile file'
     group = 'knowint'
 
@@ -238,13 +242,13 @@ task createDockerfile(type: Dockerfile, dependsOn: prepareDocker) {
     workingDir '/app'
 
     copyFile war.archiveName, 'application.jar'
-    copyFile 'app-entrypoint.sh', 'app-entrypoint.sh' 
+    copyFile 'app-entrypoint.sh', 'app-entrypoint.sh'
     runCommand 'chmod +x app-entrypoint.sh'
 
-    entryPoint '/app/app-entrypoint.sh' 
+    entryPoint '/app/app-entrypoint.sh'
 }
 
-task buildImage(type: DockerBuildImage, dependsOn: createDockerfile) { 
+task buildImage(type: DockerBuildImage, dependsOn: createDockerfile) {
     description = 'Create Docker image to run the Grails application'
     group = 'knowint'
 

@@ -1,4 +1,4 @@
-<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null && request.curator.size() > 0) : true) || (params.curationOverride == 'true')) }" />
+<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null && request.curator.size() > 0) : true) || (params.curationOverride == 'true' && request.user.isAdmin())) }" />
 <dl class="dl-horizontal">
   <dt>
     <g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel>
@@ -39,15 +39,15 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#platformdetails" data-toggle="tab">Platform Details</a></li>
     <g:if test="${d.id}">
-      <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs <span class="badge badge-warning"> ${d.hostedTipps?.findAll{ it.status.value == 'Current'}?.size() ?: '0'}</span> </a></li>
+      <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs</span> </a></li>
       <li><a href="#packages" data-toggle="tab">Packages</a></li>
       <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
       <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}">
         <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       </g:if>
-      <li><a href="#review" data-toggle="tab">Review Tasks <span
+      <li><a href="#review" data-toggle="tab">Review Tasks (Open/Total)<span
           class="badge badge-warning">
-            ${d.reviewRequests?.size() ?: '0'}
+            ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()}
         </span></a></li>
     </g:if>
     <g:else>

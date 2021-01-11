@@ -110,7 +110,11 @@
           class="badge badge-warning">
             ${d.additionalProperties?.size() ?: '0'}
         </span></a></li>
-      <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning"> ${d.reviewRequests?.size() ?: '0'} </span></a></li>
+      <li><a href="#review" data-toggle="tab">Review Tasks (Open/Total)
+        <span class="badge badge-warning"> 
+          ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()} 
+        </span>
+      </a></li>
     </g:if>
     <g:else>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
@@ -263,8 +267,6 @@
       <g:render template="/apptemplates/revreqtab"
         model="${[d:d]}" />
     </div>
-
-
   </div>
   <g:if test="${d.id}">
     <g:render template="/apptemplates/componentStatus" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />

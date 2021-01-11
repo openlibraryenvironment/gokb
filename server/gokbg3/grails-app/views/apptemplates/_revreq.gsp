@@ -17,31 +17,33 @@
         <dd>
           <g:xEditable class="ipe" owner="${d}" field="reviewRequest" />
         </dd>
-        <sec:ifAnyGranted roles="ROLE_ADMIN">
-          <dt>
-            <g:annotatedLabel owner="${d}" property="allocationLog">Allocation Log</g:annotatedLabel>
-          </dt>
-          <dd>
-            <table class="table table-bordered table-striped">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>User</th>
-                  <th>Note</th>
-                </tr>
-              </thead>
-              <tbody>
-                <g:each in="${d.allocationLog}" var="l">
+        <g:if test="${d.id}">
+          <sec:ifAnyGranted roles="ROLE_SUPERUSER">
+            <dt>
+              <g:annotatedLabel owner="${d}" property="allocationLog">Allocation Log</g:annotatedLabel>
+            </dt>
+            <dd>
+              <table class="table table-bordered table-striped">
+                <thead>
                   <tr>
-                    <td>${l.dateCreated}</td>
-                    <td>${l.allocatedTo}</td>
-                    <td>${l.note}</td>
+                    <th>Date</th>
+                    <th>User</th>
+                    <th>Note</th>
                   </tr>
-                </g:each>
-              </tbody>
-            </table>
-          </dd>
-        </sec:ifAnyGranted>
+                </thead>
+                <tbody>
+                  <g:each in="${d.allocationLog}" var="l">
+                    <tr>
+                      <td>${l.dateCreated}</td>
+                      <td>${l.allocatedTo}</td>
+                      <td>${l.note}</td>
+                    </tr>
+                  </g:each>
+                </tbody>
+              </table>
+            </dd>
+          </sec:ifAnyGranted>
+        </g:if>
      </dl>
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
@@ -83,21 +85,47 @@
             </ul>
           <dd>
         </g:if>
-        <dt>
-          <g:annotatedLabel owner="${d}" property="allocatedTo">Allocated To</g:annotatedLabel>
-        </dt>
-        <dd>
-          ${d.allocatedTo ? d.allocatedTo.displayName ?: d.allocatedTo.username : 'N/A'}
-        </dd>
+        <g:if test="${d.additional?.skippedItems}">
 
-        <g:if test="${d.id != null}">
           <dt>
-            <g:annotatedLabel owner="${d}" property="dateCreated">Request Timestamp</g:annotatedLabel>
+            <g:annotatedLabel owner="${d}" property="skippedItems">Skipped Items</g:annotatedLabel>
           </dt>
           <dd>
-            ${d.dateCreated}&nbsp;
-          </dd>
+            <ul>
+              <g:each in="${d.additional?.skippedItems}" var="si">
+                <li>
+                  ${si.name ?: si.title.name}
+                </li>
+              </g:each>
+            </ul>
+          <dd>
         </g:if>
+        <sec:ifAnyGranted roles="ROLE_SUPERUSER">
+          <dt>
+            <g:annotatedLabel owner="${d}" property="allocatedTo">Allocated To</g:annotatedLabel>
+          </dt>
+          <dd>
+            ${d.allocatedTo ? d.allocatedTo.displayName ?: d.allocatedTo.username : 'N/A'}
+          </dd>
+
+          <g:if test="${d.id != null}">
+            <dt>
+              <g:annotatedLabel owner="${d}" property="dateCreated">Request Timestamp</g:annotatedLabel>
+            </dt>
+            <dd>
+              ${d.dateCreated}&nbsp;
+            </dd>
+          </g:if>
+        </sec:ifAnyGranted>
+
+        <dt>
+          <g:annotatedLabel owner="${d}" property="allocatedTo">Allocated Groups</g:annotatedLabel>
+        </dt>
+        <dd>
+          <g:each in="${d.allocatedGroups}" var="ag">
+            <g:link controller="resource" class="badge badge-primary" action="show" id="${ag.group.uuid}">${ag.group.name}</g:link>
+          </g:each>
+        </dd>
 
         <g:if test="${d.additional?.problems}">
           <g:form name="AddRules" controller="workflow" action="addToRulebase">
@@ -112,7 +140,7 @@
                 </tr>
               </thead>
               <tbody>
-                <g:each in="${d.additional?.problems}" var="revreq_problem" status="i"> 
+                <g:each in="${d.additional?.problems}" var="revreq_problem" status="i">
                   <tr>
                    <td>
                      <input type="hidden" name="pr.prob_res_${revreq_problem?.problemSequence}.probfingerprint" value='${revreq_problem?.problemFingerprint.encodeAsHTML()}' />

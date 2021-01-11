@@ -430,6 +430,9 @@ abstract class GOKbSyncBase extends Script {
       if (config.lastRun && Instant.parse(config.lastRun) == lastTimestamp) {
         config.lastRun = lastTimestamp.plusSeconds(1).toString()
       }
+      else if (config.lastRun && Instant.parse(config.lastRun) == lastTimestamp.plusSeconds(1)) {
+        println 'No changes ..'
+      }
       else {
         config.lastRun = config.lastTimestamp
       }

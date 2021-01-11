@@ -191,7 +191,7 @@ class ApiController {
     }
 
     all_ns.each { ns ->
-      result.add([value: ns.value, category: ns.family ?: ""])
+      result.add([value: ns.value, namespaceName:ns.name, category: ns.family ?: ""])
     }
 
     apiReturn(result)
@@ -377,7 +377,6 @@ class ApiController {
   /**
    * find : Query the Elasticsearch index via ESSearchService
   **/
-
   def find() {
     def result = [:]
     def searchParams = params
@@ -391,14 +390,33 @@ class ApiController {
 
     try {
       result = ESSearchService.find(searchParams)
-    }finally {
+    }
+    finally {
       if (result.errors) {
         response.setStatus(400)
       }
     }
-
     render result as JSON
   }
+
+
+  /**
+    * scroll : Deliver huge amounts of Elasticsearch data
+    **/
+  def scroll() {
+    def result = [:]
+    try {
+      result = ESSearchService.scroll(params)
+    }
+    catch(Exception e){
+      result.result = "ERROR"
+      result.message = e.message
+      log.error("Could not process scroll request. Exception was: ${e.message}")
+      response.setStatus(400)
+    }
+    render result as JSON
+  }
+
 
   private def buildQuery(params) {
 

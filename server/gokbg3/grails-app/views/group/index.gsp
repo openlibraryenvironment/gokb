@@ -21,7 +21,6 @@
               
           </th>
           <th>Status</th>
-          <th>List verified by</th>
           <th>List verified date</th>
           <th>
             <g:link params="${params+[pkg_sort:'lastUpdated',pkg_sort_order:('desc'== params.pkg_sort_order?'asc':'desc')]}">
@@ -31,12 +30,11 @@
           </th>
           <th>Scope</th>
           <th>ListStatus</th>
-          <th>Number of Titles (TIPPs)</th>
+          <th>Number of TIPPs</th>
         </tr>
       </thead>
       <tbody>
         <g:each in="${packages}" var="pkg">
-          <g:set var="titles" value="${pkg.getTitles(true, 0).size()}" />
           <tr>
             <td>
               <g:link controller="resource" action="show" id="${pkg?.getClassName()+':'+pkg?.id}">
@@ -44,21 +42,11 @@
               </g:link>
             </td>
             <td>${pkg.status?.value}</td>
-            <td>
-              <g:if test="${pkg?.userListVerifier}">
-                <g:if test="${org.gokb.cred.User.isTypeReadable()}">
-                  <g:link controller="resource" action="show" id="${pkg.userListVerifier.getClassName()+':'+pkg.userListVerifier.id}">${pkg.userListVerifier.displayName ?: pkg.userListVerifier.username} </g:link>
-                </g:if>
-                <g:else>
-                  ${pkg.userListVerifier.displayName ?: pkg.userListVerifier.username}
-                </g:else>
-              </g:if>
-            </td>
             <td>${pkg.listVerifiedDate}</td>
             <td>${pkg.lastUpdated}</td>
             <td style="white-space:nowrap;">${pkg.scope?.value}</td>
             <td style="white-space:nowrap;">${pkg.listStatus?.value}</td>
-            <td style="white-space:nowrap;">${titles} (${pkg.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'})</td>
+            <td style="white-space:nowrap;">${pkg.currentTippCount}</td>
           </tr>
         </g:each>
       </tbody>
@@ -73,36 +61,30 @@
       <thead>
         <tr>
           <th>
-            <g:link params="${params+[rr_sort:'displayName',rr_sort_order:('desc'== params.rr_sort_order?'asc':'desc')]}">
-              Allocated To
+            <g:link params="${params+[rr_sort:'name',rr_sort_order:('desc'== params.rr_sort_order?'asc':'desc')]}">
+              Component
               <i class="fas fa-sort"></i>
             </g:link>
           </th>
-          <th>Component</th>
           <th>Cause</th>
           <th>Review Request</th>
           <th>Request Status</th>
-          <th>Days open</th>
+          <th>
+            <g:link params="${params+[rr_sort:'dateCreated',rr_sort_order:('asc'== params.rr_sort_order?'desc':'asc')]}">
+              Days Open
+              <i class="fas fa-sort"></i>
+            </g:link>
+          </th>
         </tr>
       </thead>
       <tbody>
         <g:each in="${rrs}" var="rr">
             <tr>
               <td>
-                <g:if test="${rr.allocatedTo?.isReadable()}">
-                  <g:link controller="resource" action="show" id="${rr.allocatedTo?.getClassName()+':'+rr.allocatedTo.id}">
-                    ${rr.allocatedTo?.displayName ?: rr.allocatedTo.username }
-                  </g:link>
-                </g:if>
-                <g:else>
-                  ${rr.allocatedTo?.displayName ?: rr.allocatedTo.username }
-                </g:else>
-              </td>
-              <td>
                 <g:link controller="resource" action="show" id="${rr.componentToReview?.getClassName()+':'+rr.componentToReview?.id}">${rr.componentToReview}</g:link>
               </td>
-              <td>${rr.descriptionOfCause}</td>
-              <td>${rr.reviewRequest}</td>
+              <td><g:link controller="resource" action="show" id="${'org.gokb.cred.ReviewRequest:' + rr.id}">${rr.descriptionOfCause}</g:link></td>
+              <td><g:link controller="resource" action="show" id="${'org.gokb.cred.ReviewRequest:' + rr.id}">${rr.reviewRequest}</g:link></td>
               <td>${rr.status}</td>
               <td>${Math.round((new Date().getTime()-rr.dateCreated.getTime())/(1000*60*60*24))}</td>
             </tr>

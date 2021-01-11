@@ -10,7 +10,7 @@
       <div class="row">
         <div class="col-md-12">
           <div>
-            ${message(code="default.error.exception")}
+            ${message(code:"default.error.exception")}
           </div>
         </div>
       </div>

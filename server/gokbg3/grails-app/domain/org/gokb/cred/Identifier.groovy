@@ -1,7 +1,10 @@
 package org.gokb.cred
 import groovy.transform.Synchronized
 import java.util.regex.Pattern
+import groovy.util.logging.*
 
+
+@Slf4j
 class Identifier extends KBComponent {
 
   IdentifierNamespace namespace
@@ -17,32 +20,50 @@ class Identifier extends KBComponent {
       "${this.class.name}:${id}"
   }
 
-  private static nameSpaceRules = [
-    "issn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
-    "issnl" : "^\\d{4}\\-\\d{3}[\\dX]\$",
-    "eissn" : "^\\d{4}\\-\\d{3}[\\dX]\$",
-    "zdb" : "^\\d+\\-[\\dxX]\$"
+  public String getRestPath() {
+    return "/identifiers"
+  }
+
+  static jsonMapping = [
+    'ignore': [
+      'lastUpdatedBy',
+      'dateCreated',
+      'editStatus',
+      'name',
+      'status',
+      'lastUpdated',
+      'description',
+      'source',
+      '_links'
+    ],
+    'defaultLinks': [
+      'namespace'
+    ]
   ]
 
   static constraints = {
     namespace (nullable:false, blank:false)
     value (validator: { val, obj ->
-      if (obj.hasChanged('value')) {
-        if (!val || val.trim().size() == 0) {
-          return ['notNull']
-        }
+      if (!val || !val.trim()) {
+        return ['notNull']
+      }
 
-        def norm_id = Identifier.normalizeIdentifier(val)
-        def dupes = Identifier.findByNamespaceAndNormname(obj.namespace, norm_id)
-        def pattern = obj.namespace.pattern ? ~"${obj.namespace.pattern}" : null
+      def norm_id = Identifier.normalizeIdentifier(val)
+      def dupes = Identifier.findAllByNamespaceAndNormname(obj.namespace, norm_id)
+      def pattern = obj.namespace.pattern ? ~"${obj.namespace.pattern}" : null
+      def isDupe = false
 
-        if (dupes && dupes != obj) {
-          return ['notUnique']
+      dupes.each { d ->
+        if (d != obj) {
+          isDupe = true
         }
+      }
+      if (isDupe) {
+        return ['notUnique']
+      }
 
-        if ( (nameSpaceRules[obj.namespace.value] && !(val ==~ nameSpaceRules[obj.namespace.value])) || (pattern && !(val ==~ pattern)) )  {
-          return ['illegalIdForm.' + obj.namespace.value ]
-        }
+      if ( pattern && !(val ==~ pattern) )  {
+        return ['illegalIdForm']
       }
     })
   }
@@ -71,7 +92,7 @@ class Identifier extends KBComponent {
   public static normalizeIdentifier(String id) {
     return id.toLowerCase().trim().replaceAll("\\W", "")
   }
-  
+
   @Override
   protected def generateShortcode () {
     if (!shortcode && namespace && value) {
@@ -79,52 +100,6 @@ class Identifier extends KBComponent {
       shortcode = generateShortcode("${namespace.value}:${value}").replaceAll("\\W", "-")
     }
   }
-
-  static def lookupOrCreateCanonicalIdentifier(ns, value, def ns_create = true) {
-    def lock = true
-    return findOrCreateId(ns, value, ns_create, lock)
-  }
-
-  private static final findLock = new Object()
-
-  @Synchronized("findLock")
-  private static def findOrCreateId(ns, value, def ns_create = true, lock) {
-    // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
-    def namespace = null
-    def identifier = null
-    def namespaces = IdentifierNamespace.findAllByValue(ns.toLowerCase())
-
-    switch ( namespaces.size() ) {
-      case 0:
-        if (ns_create) {
-          namespace = new IdentifierNamespace(value:ns.toLowerCase()).save(failOnError:true);
-        }
-        break;
-      case 1:
-        namespace = namespaces[0]
-        break;
-      default:
-        throw new RuntimeException("Multiple Namespaces with value ${ns}");
-        break;
-    }
-
-    if (namespace) {
-      def norm_id = Identifier.normalizeIdentifier(value)
-      identifier = Identifier.findByNamespaceAndNormname(namespace,norm_id)
-
-      def final_val = value
-      if (!identifier) {
-        if (namespace.family == 'isxn') {
-          final_val = final_val.replaceAll("x","X")
-        }
-
-        identifier = new Identifier(namespace:namespace, value:final_val, normname:norm_id).save(flush:true, failOnError:true)
-      }
-    }
-
-    identifier
-  }
-
 
   @Override
   public boolean equals(Object obj) {

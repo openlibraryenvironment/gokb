@@ -18,6 +18,7 @@ import org.apache.http.protocol.*
 class TitleAugmentService {
 
   def grailsApplication
+  def componentLookupService
   def edinaPublicationsAPIService
 
   def augment(titleInstance) {
@@ -40,7 +41,7 @@ class TitleAugmentService {
             }
             if ( matched && suncat_identifier ) {
               log.debug("set suncat identifier to ${suncat_identifier}");
-              def canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier('SUNCAT',suncat_identifier);
+              def canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier('SUNCAT',suncat_identifier);
               titleInstance.addToIds(canonical_identifier);
               titleInstance.save(flush:true);
             }
@@ -84,7 +85,7 @@ class TitleAugmentService {
             offset:offset,
             rows:100
           ]
-  
+
           response.success = { resp, data ->
             data.message.items.each { item ->
               log.debug("item:: ${item.title}");
@@ -109,7 +110,7 @@ class TitleAugmentService {
     }
 
 
-    
+
     // {"status":"ok","message-type":"journal-list","message-version":"1.0.0","message":{"items":[],"total-results":39790,"query":{"search-terms":null,"start-index":70000},"items-per-page":20}}
   }
 }

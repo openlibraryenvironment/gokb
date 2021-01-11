@@ -1,6 +1,7 @@
 package gokbg3
 
 import grails.converters.JSON
+import grails.util.Environment
 import groovy.util.logging.*
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.acls.model.NotFoundException
@@ -15,8 +16,13 @@ class ErrorController {
 
   def serverError() {
     def resp = [code: 500, message:'Server Error']
+    def exception = request.exception?.cause ?: null
 
-    if(request.forwardURI.contains('/rest/')) {
+    if ( exception && Environment.current == Environment.DEVELOPMENT ) {
+      resp.exception = exception
+    }
+
+    if ( request.forwardURI.contains('/rest/') ) {
       log.debug("Rendering JSON REST 500 (${request.forwardURI})")
       response.setStatus(500)
       render resp as JSON
@@ -24,7 +30,7 @@ class ErrorController {
     else {
       withFormat {
         html {
-          redirect (uri:'/error')
+          forward (uri:'/error')
         }
         json {
           response.setStatus(500)

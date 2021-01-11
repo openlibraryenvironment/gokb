@@ -41,15 +41,27 @@ class BookInstance extends TitleInstance {
   }
 
   static constraints = {
-            editionNumber (nullable:true, blank:false)
+    editionNumber (validator: { val, obj ->
+      if (obj.hasChanged('editionNumber') && val) {
+        if ( !(val ==~ "^\\d+\$") )  {
+          return ["typeMismatch.java.lang.Integer"]
+        }
+      }
+    })
     editionDifferentiator (nullable:true, blank:false)
-         editionStatement (nullable:true, blank:false)
-             volumeNumber (nullable:true, blank:false)
-         dateFirstInPrint (nullable:true, blank:false)
-          dateFirstOnline (nullable:true, blank:false)
-         summaryOfContent (nullable:true, blank:false)
-              firstAuthor (nullable:true, blank:false)
-              firstEditor (nullable:true, blank:false)
+    editionStatement (nullable:true, blank:false)
+    volumeNumber (validator: { val, obj ->
+      if (obj.hasChanged('volumeNumber') && val) {
+        if ( !(val ==~ "^\\d+\$") )  {
+          return ["typeMismatch.java.lang.Integer"]
+        }
+      }
+    })
+    dateFirstInPrint (nullable:true, blank:false)
+    dateFirstOnline (nullable:true, blank:false)
+    summaryOfContent (nullable:true, blank:false)
+    firstAuthor (nullable:true, blank:false)
+    firstEditor (nullable:true, blank:false)
   }
 
   @Override
@@ -61,14 +73,14 @@ class BookInstance extends TitleInstance {
   public String getNiceName() {
     return "Book";
   }
-
-  public static final String restPath = "/books"
+  
+  public static final String restPath = "/titles"
 
   /**
    * Auditable plugin, on change
    *
    * See if properties that might impact the mapping of this instance to a work have changed.
-   * If so, fire the appropriate event to cause a remap. 
+   * If so, fire the appropriate event to cause a remap.
    */
 
   def afterUpdate() {
@@ -80,6 +92,7 @@ class BookInstance extends TitleInstance {
       log.debug("Detected an update to properties for ${id} that might change the work mapping. Looking up");
 //       submitRemapWorkTask();
     }
+    touchAllDependants()
   }
 
   @Override

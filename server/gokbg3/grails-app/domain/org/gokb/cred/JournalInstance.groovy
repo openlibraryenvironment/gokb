@@ -30,13 +30,13 @@ class JournalInstance extends TitleInstance {
     return "Journal";
   }
 
-  public static final String restPath = "/journals"
+  public static final String restPath = "/titles"
 
   /**
    * Auditable plugin, on change
    *
    * See if properties that might impact the mapping of this instance to a work have changed.
-   * If so, fire the appropriate event to cause a remap. 
+   * If so, fire the appropriate event to cause a remap.
    */
 
   def afterUpdate() {
@@ -45,6 +45,7 @@ class JournalInstance extends TitleInstance {
          ( hasChanged('componentDiscriminator') )) {
 //       submitRemapWorkTask();
     }
+    touchAllDependants()
   }
 
 

@@ -10,7 +10,7 @@
       </div>
     </g:if>
     <g:else>
-      <g:xEditable class="ipe" owner="${d}" field="name" />
+      <g:xEditable class="ipe" owner="${d}" field="name"/>
     </g:else>
   </dd>
 
@@ -18,7 +18,8 @@
     <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel>
   </dt>
   <dd>
-    <g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown>
+    <g:manyToOneReferenceTypedown owner="${d}" field="source"
+                                  baseClass="org.gokb.cred.Source">${d.source?.name}</g:manyToOneReferenceTypedown>
   </dd>
 
   <dt>
@@ -26,7 +27,7 @@
   </dt>
   <dd>
     <sec:ifAnyGranted roles="ROLE_SUPERUSER">
-      <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status' />
+      <g:xEditableRefData owner="${d}" field="status" config='KBComponent.Status'/>
     </sec:ifAnyGranted>
     <sec:ifNotGranted roles="ROLE_SUPERUSER">
       ${d.status?.value ?: 'Not Set'}
@@ -38,7 +39,7 @@
   </dt>
   <dd>
     <g:xEditableRefData owner="${d}" field="reasonRetired"
-      config='TitleInstance.ReasonRetired' />
+                        config='TitleInstance.ReasonRetired'/>
   </dd>
 
   <dt>
@@ -46,7 +47,7 @@
   </dt>
   <dd>
     <g:xEditableRefData owner="${d}" field="editStatus"
-      config='KBComponent.EditStatus' />
+                        config='KBComponent.EditStatus'/>
   </dd>
 
   <dt>
@@ -54,7 +55,9 @@
   </dt>
   <dd>
     <g:if test="${d.currentPublisher}">
-      ${d.currentPublisher.name} <g:link controller="resource" action="show" id="org.gokb.cred.Org:${d.currentPublisher.id}"><i class="fas fa-eye"></i></g:link>
+      ${d.currentPublisher.name} <g:link controller="resource" action="show"
+                                         id="org.gokb.cred.Org:${d.currentPublisher.id}"><i
+          class="fas fa-eye"></i></g:link>
     </g:if>
   </dd>
 
@@ -63,7 +66,7 @@
   </dt>
   <dd>
     <g:manyToOneReferenceTypedown owner="${d}" field="imprint"
-      baseClass="org.gokb.cred.Imprint">
+                                  baseClass="org.gokb.cred.Imprint">
       ${d.imprint?.name}
     </g:manyToOneReferenceTypedown>
     &nbsp;
@@ -73,14 +76,14 @@
     <g:annotatedLabel owner="${d}" property="publishedFrom">Published From</g:annotatedLabel>
   </dt>
   <dd>
-    <g:xEditable class="ipe" owner="${d}" type="date" field="publishedFrom" />
+    <g:xEditable class="ipe" owner="${d}" type="date" field="publishedFrom"/>
   </dd>
 
   <dt>
     <g:annotatedLabel owner="${d}" property="publishedTo">Published To</g:annotatedLabel>
   </dt>
   <dd>
-    <g:xEditable class="ipe" owner="${d}" type="date" field="publishedTo" />
+    <g:xEditable class="ipe" owner="${d}" type="date" field="publishedTo"/>
   </dd>
 
   <g:if test="${d?.id != null && d.titleHistory}">
@@ -88,7 +91,7 @@
       <g:annotatedLabel owner="${d}" property="titleHistory">Title History</g:annotatedLabel>
     </dt>
     <dd>
-      <g:render template="/apptemplates/fullth" model="${[d:d]}" />
+      <g:render template="/apptemplates/fullth" model="${[d: d]}"/>
     </dd>
   </g:if>
 </dl>
@@ -97,44 +100,66 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
     <g:if test="${d.id}">
-      <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
+      <li><a href="#altnames" data-toggle="tab">Alternate Names <span
+          class="badge badge-warning">${d.variantNames?.size() ?: '0'}</span></a></li>
 
-      <g:if test="${ d.isEditable() }">
+      <g:if test="${d.isEditable()}">
         <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
       </g:if>
-      <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a></li>
+      <li><a href="#identifiers" data-toggle="tab">Identifiers <span
+          class="badge badge-warning">${d?.getCombosByPropertyNameAndStatus('ids', 'Active')?.size() ?: '0'}</span></a>
+      </li>
       <li><a href="#publishers" data-toggle="tab">Publishers <span
           class="badge badge-warning">
-            ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size() ?: '0'}
-        </span></a></li>
+        ${d.getCombosByPropertyNameAndStatus('publisher', params.publisher_status)?.size() ?: '0'}
+      </span></a></li>
       <li><a href="#availability" data-toggle="tab">Package Availability <span
           class="badge badge-warning">
-            ${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'}
-        </span></a></li>
+        ${d?.tipps?.findAll { it.status?.value == 'Current' }?.size() ?: '0'}
+      </span></a></li>
       <li><a href="#tipls" data-toggle="tab">Platforms <span
           class="badge badge-warning">
-            ${d?.tipls?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'}
-        </span></a></li>
+        ${d?.tipls?.findAll { it.status?.value == 'Current' }?.size() ?: '0'}
+      </span></a></li>
       <li><a href="#addprops" data-toggle="tab">Custom Fields <span
           class="badge badge-warning">
-            ${d.additionalProperties?.size() ?: '0'}
-        </span></a></li>
-      <li><a href="#review" data-toggle="tab">Review Tasks <span class="badge badge-warning"> ${d.reviewRequests?.size() ?: '0'} </span></a></li>
+        ${d.additionalProperties?.size() ?: '0'}
+      </span></a></li>
+      <li><a href="#review" data-toggle="tab">Review Tasks (Open/Total)
+        <span class="badge badge-warning">
+          ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status', 'Open') }?.size() ?: '0'}/${d.reviewRequests.size()}
+        </span>
+      </a></li>
     </g:if>
     <g:else>
-      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
-      <g:if test="${ d.isEditable() }">
-        <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Add to Title History </span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">Alternate Names</span></li>
+      <g:if test="${d.isEditable()}">
+        <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+            class="nav-tab-disabled">Add to Title History</span></li>
       </g:if>
-      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Identifiers </span></li>
-      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Publishers </span></li>
-      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Package Availability </span></li>
-      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Platforms </span></li>
-      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Custom Fields </span></li>
-      <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Tasks </span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">Identifiers</span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">Publishers</span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">Package Availability</span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">Platforms</span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">Custom Fields</span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">Review Tasks</span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">Subject Group</span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">Series</span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">List Price</span></li>
     </g:else>
 
   </ul>
+
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="titledetails">
 
@@ -145,7 +170,7 @@
         <dd>
           <g:if test="${d.id != null}">
             <g:xEditableRefData owner="${d}" field="medium"
-              config='TitleInstance.Medium' />
+                                config='TitleInstance.Medium'/>
           </g:if>
           <g:else>
             Journal
@@ -157,7 +182,7 @@
         </dt>
         <dd>
           <g:xEditableRefData owner="${d}" field="OAStatus"
-            config='TitleInstance.OAStatus' />
+                              config='TitleInstance.OAStatus'/>
         </dd>
 
         <dt>
@@ -165,18 +190,18 @@
         </dt>
         <dd>
           <g:xEditableRefData owner="${d}" field="continuingSeries"
-            config='TitleInstance.ContinuingSeries' />
+                              config='TitleInstance.ContinuingSeries'/>
         </dd>
       </dl>
     </div>
 
-    <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
+    <g:render template="/tabTemplates/showVariantnames" model="${[d: displayobj, showActions: true]}"/>
 
     <div class="tab-pane" id="history">
       <g:if test="${d.id != null}">
         <dl class="dl-horizontal">
           <g:form name="AddHistoryForm" controller="workflow"
-            action="createTitleHistoryEvent">
+                  action="createTitleHistoryEvent">
             <dt style="width:100px;">
               Titles
             </dt>
@@ -189,45 +214,46 @@
                 </tr>
                 <tr>
                   <td><select name="beforeTitles" size="5" multiple
-                    class="input-xxlarge" style="width:100%">
-                      <option value="org.gokb.cred.JournalInstance:${d.id}">
-                        ${d.name}
-                      </option>
-                  </select><br /></td>
+                              class="input-xxlarge" style="width:100%">
+                    <option value="org.gokb.cred.JournalInstance:${d.id}">
+                      ${d.name}
+                    </option>
+                  </select><br/></td>
                   <td style="text-align:center;">
                     <button class="btn btn-sm" style="margin: 2px 5px;" type="button"
-                      onClick="SelectMoveRows(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">&gt;</button>
+                            onClick="SelectMoveRows(document.AddHistoryForm.beforeTitles, document.AddHistoryForm.afterTitles)">&gt;</button>
+
                     <div style="height:2px;"></div>
                     <button class="btn btn-sm" style="margin: 2px 5px;" type="button"
-                      onClick="SelectMoveRows(document.AddHistoryForm.afterTitles,document.AddHistoryForm.beforeTitles)">&lt;</button>
+                            onClick="SelectMoveRows(document.AddHistoryForm.afterTitles, document.AddHistoryForm.beforeTitles)">&lt;</button>
                   </td>
                   <td><select name="afterTitles" size="5" multiple="multiple"
-                    class="input-xxlarge" style="width:100%"></select></td>
+                              class="input-xxlarge" style="width:100%"></select></td>
                 </tr>
                 <tr>
                   <td><g:simpleReferenceTypedown class="form-control" name="fromTitle"
-                      baseClass="org.gokb.cred.JournalInstance" /> <br />
+                                                 baseClass="org.gokb.cred.JournalInstance"/> <br/>
                     <button class="btn btn-sm" type="button"
-                      onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button>
+                            onClick="AddTitle(document.AddHistoryForm.fromTitle, document.AddHistoryForm.beforeTitles)">Add</button>
                     <button class="btn btn-sm" type="button" onClick="removeTitle('beforeTitles')">Remove</button></td>
                   <td></td>
                   <td><g:simpleReferenceTypedown class="form-control" name="ToTitle"
-                      baseClass="org.gokb.cred.JournalInstance" /> <br />
+                                                 baseClass="org.gokb.cred.JournalInstance"/> <br/>
                     <button class="btn btn-sm" type="button"
-                      onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button>
+                            onClick="AddTitle(document.AddHistoryForm.ToTitle, document.AddHistoryForm.afterTitles)">Add</button>
                     <button class="btn btn-sm" type="button" onClick="removeTitle('afterTitles')">Remove</button></td>
                 </tr>
               </table>
             </dd>
             <dt class="dt-label" style="width:100px;">Event Date</dt>
             <dd>
-              <input type="date" class="form-control" name="EventDate" required />
+              <input type="date" format="yyyy-mm-dd" class="form-control" name="EventDate" required />
             </dd>
             <dt style="width:100px;"></dt>
             <dd>
               <button class="btn btn-default btn-primary"
-                onClick="submitTitleHistoryEvent(document.AddHistoryForm.beforeTitles,document.AddHistoryForm.afterTitles)">Add
-                Title History Event</button>
+                      onClick="submitTitleHistoryEvent(document.AddHistoryForm.beforeTitles, document.AddHistoryForm.afterTitles)">Add
+              Title History Event</button>
             </dd>
           </g:form>
         </dl>
@@ -244,8 +270,8 @@
         </dt>
         <dd>
           <g:link class="display-inline" controller="search" action="index"
-            params="[qbe:'g:3tipps', inline:true, refOid: d.getLogEntityId(), qp_title_id:d.id, hide:['qp_title_id', 'qp_title']]"
-            id="">Availability of this Title</g:link>
+                  params="[qbe: 'g:3tipps', inline: true, refOid: d.getLogEntityId(), qp_title_id: d.id, hide: ['qp_title_id', 'qp_title']]"
+                  id="">Availability of this Title</g:link>
         </dd>
       </g:if>
     </div>
@@ -254,29 +280,33 @@
       <dt>
         <g:annotatedLabel owner="${d}" property="tipls">Platforms</g:annotatedLabel>
       </dt>
-      <div style="margin:5px 0px;">
-        <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="tipls" params="${params.findAll{k, v -> k != 'tipl_status'}}">
 
-        <span>Hide Deleted:</span> <g:select name="tipl_status" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.tipl_status}" />
+      <div style="margin:5px 0px;">
+        <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="tipls"
+                params="${params.findAll { k, v -> k != 'tipl_status' }}">
+
+          <span>Hide Deleted:</span> <g:select name="tipl_status" optionKey="key" optionValue="value"
+                                               from="${[null: 'Off', 'Active': 'On']}" value="${params.tipl_status}"/>
         </g:form>
       </div>
       <dd>
         <table class="table table-striped table-bordered">
           <thead>
-            <tr>
-              <th>Platform</th>
-              <th>Url</th>
-              <th>Status</th>
-            </tr>
+          <tr>
+            <th>Platform</th>
+            <th>Url</th>
+            <th>Status</th>
+          </tr>
           </thead>
           <tbody>
-            <g:each in="${d.tipls}" var="tipl">
-              <tr>
-                <td><g:link controller="resource" action="show" id="${tipl.tiplHostPlatform.class.name}:${tipl.tiplHostPlatform.id}"> ${tipl.tiplHostPlatform.name} </g:link></td>
-                <td>${tipl.url}</td>
-                <td><g:xEditableRefData owner="${tipl}" field="status" config='KBComponent.Status' /></td>
-              </tr>
-            </g:each>
+          <g:each in="${d.tipls}" var="tipl">
+            <tr>
+              <td><g:link controller="resource" action="show"
+                          id="${tipl.tiplHostPlatform.class.name}:${tipl.tiplHostPlatform.id}">${tipl.tiplHostPlatform.name}</g:link></td>
+              <td>${tipl.url}</td>
+              <td><g:xEditableRefData owner="${tipl}" field="status" config='KBComponent.Status'/></td>
+            </tr>
+          </g:each>
           </tbody>
         </table>
       </dd>
@@ -285,7 +315,7 @@
 
     <div class="tab-pane" id="publishers">
       <g:render template="/tabTemplates/showPublishers"
-      model="${[d:displayobj]}" />
+                model="${[d: displayobj]}"/>
     </div>
 
     <div class="tab-pane" id="identifiers">
@@ -295,14 +325,14 @@
         </dt>
         <dd>
           <g:render template="/apptemplates/combosByType"
-            model="${[d:d, property:'ids', fragment:'identifiers',combo_status:'Active', cols:[
-                      [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                      [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
+                    model="${[d: d, property: 'ids', fragment: 'identifiers', combo_status: 'Active', cols: [
+                        [expr: 'toComponent.namespace.value', colhead: 'Namespace'],
+                        [expr: 'toComponent.value', colhead: 'ID', action: 'link']]]}"/>
           <g:if test="${d.isEditable()}">
             <h4>
               <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
             </h4>
-            <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
+            <g:render template="/apptemplates/addIdentifier" model="${[d: d, hash: '#identifiers']}"/>
           </g:if>
         </dd>
       </dl>
@@ -316,21 +346,20 @@
         </dt>
         <dd>
           <g:render template="/apptemplates/addprops"
-            model="${[d:d]}" />
-        </dl>
+                    model="${[d: d]}"/>
       </dl>
+    </dl>
     </div>
 
     <div class="tab-pane" id="review">
       <g:render template="/apptemplates/revreqtab"
-        model="${[d:d]}" />
+                model="${[d: d]}"/>
     </div>
-
-
   </div>
 
   <g:if test="${d.id}">
-    <g:render template="/apptemplates/componentStatus" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />
+    <g:render template="/apptemplates/componentStatus"
+              model="${[d: displayobj, rd: refdata_properties, dtype: 'KBComponent']}"/>
   </g:if>
 </div>
 

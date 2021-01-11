@@ -1,7 +1,7 @@
 package org.gokb.cred
 
 class CuratoryGroup extends KBComponent {
-  
+
   static belongsTo = User
 
   User owner;
@@ -13,21 +13,25 @@ class CuratoryGroup extends KBComponent {
   static mapping = {
     includes KBComponent.mapping
   }
-  
+
   static mappedBy = [users: "curatoryGroups", ]
-  
+
   static manyByCombo = [
-  	licenses: License,
-  	packages: Package,
-  	platforms: Platform,
-  	offices: Office,
+    licenses: License,
+    packages: Package,
+    platforms: Platform,
+    orgs: Org,
+    offices: Office,
+    sources: Source
   ]
-  
+
   static mappedByCombo = [
-  	licenses: 'curatoryGroups',
-  	packages: 'curatoryGroups',
-  	platforms: 'curatoryGroups',
-  	offices: 'curatoryGroups',
+    licenses: 'curatoryGroups',
+    packages: 'curatoryGroups',
+    platforms: 'curatoryGroups',
+    orgs: 'curatoryGroups',
+    offices: 'curatoryGroups',
+    sources: 'curatoryGroups'
   ]
 
   static constraints = {
@@ -36,8 +40,9 @@ class CuratoryGroup extends KBComponent {
       if (obj.hasChanged('name')) {
         if (val && val.trim()) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          def dupes = CuratoryGroup.findByNameIlikeAndStatusNotEqual(val, status_deleted);
-          if (dupes && dupes != obj) {
+          def dupes = CuratoryGroup.findAllByNameIlikeAndStatusNotEqual(val, status_deleted);
+
+          if (dupes?.size() > 0 && dupes.any { it != obj }) {
             return ['notUnique']
           }
         } else {
@@ -48,14 +53,14 @@ class CuratoryGroup extends KBComponent {
   }
 
   public String getRestPath() {
-    return "/groups";
+    return "/curatoryGroups";
   }
 
   @Override
   public String getNiceName() {
     return "Curatory Group";
   }
-  
+
   static def refdataFind(params) {
     def result = [];
     def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
@@ -78,6 +83,8 @@ class CuratoryGroup extends KBComponent {
     this.generateShortcode()
     this.generateNormname()
     this.generateComponentHash()
+    this.generateUuid()
+    this.ensureDefaults()
   }
 }
 

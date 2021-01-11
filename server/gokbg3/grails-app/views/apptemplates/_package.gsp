@@ -1,4 +1,4 @@
-<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null && request.curator.size() > 0) : true) || (params.curationOverride == 'true')) }" />
+<g:set var="editable" value="${ d.isEditable() && ((d.curatoryGroups ? (request.curator != null && request.curator.size() > 0) : true) || (params.curationOverride == 'true' && request.user.isAdmin())) }" />
   <dl class="dl-horizontal">
   <dt>
     <g:annotatedLabel owner="${d}" property="name">Package Name</g:annotatedLabel>
@@ -89,7 +89,7 @@
       <g:if test="${d.id}">
         <li role="presentation"><a href="#titledetails" data-toggle="tab">Titles/TIPPs <span class="badge badge-warning"> ${d.currentTitleCount}/ ${d.currentTippCount} </span></a></li>
         <li role="presentation"><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d?.getCombosByPropertyNameAndStatus('ids','Active')?.size() ?: '0'} </span></a></li>
-        
+
         <li role="presentation"><a href="#altnames" data-toggle="tab">Alternate Names
           <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
         </a></li>
@@ -125,6 +125,12 @@
         <dl class="dl-horizontal">
           <g:render template="/apptemplates/refdataprops"
             model="${[d:(d), rd:(rd), dtype:(dtype)]}" />
+          <dt>
+            <g:annotatedLabel owner="${d}" property="globalNote">Global Range</g:annotatedLabel>
+          </dt>
+          <dd>
+            <g:xEditable class="ipe" owner="${d}" field="globalNote" />
+          </dd>
           <dt>
             <g:annotatedLabel owner="${d}" property="nominalPlatform">Nominal Platform</g:annotatedLabel>
           </dt>

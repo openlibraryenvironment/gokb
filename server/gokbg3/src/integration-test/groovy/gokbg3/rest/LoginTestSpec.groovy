@@ -1,5 +1,6 @@
 package gokbg3.rest
 
+import grails.core.GrailsApplication
 import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
@@ -11,11 +12,13 @@ import spock.lang.Specification
  */
 @Integration
 class LoginTestSpec extends Specification {
+
+  GrailsApplication grailsApplication
   private RestBuilder rest = new RestBuilder()
 
   void "test getting tokens with valid credentials"() {
     when:
-    RestResponse response = rest.post("http://localhost:$serverPort/gokb/rest/login") {
+    RestResponse response = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login") {
       accept('application/json')
       // body
       body('{"username": "admin","password": "admin"}')
@@ -33,7 +36,7 @@ class LoginTestSpec extends Specification {
   */
   void "test refresh tokens "() {
     when:
-    RestResponse response = rest.post("http://localhost:$serverPort/gokb/rest/login") {
+    RestResponse response = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login") {
       accept('application/json')
       contentType('application/json')
       // body
@@ -54,14 +57,14 @@ class LoginTestSpec extends Specification {
 
   void "test logout"() {
     when:
-    RestResponse response = rest.post("http://localhost:$serverPort/gokb/rest/login") {
+    RestResponse response = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login") {
       accept('application/json')
       contentType('application/json')
       // body
       body('{"username": "admin","password": "admin"}')
     }
     String accessToken = response.json.access_token
-    response = rest.post("http://localhost:$serverPort/gokb" +
+    response = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
         "/rest/logout"){
       accept('application/json')
       auth("Bearer $accessToken")

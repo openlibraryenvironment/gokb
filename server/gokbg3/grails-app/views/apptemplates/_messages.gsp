@@ -7,7 +7,20 @@
     </g:if>
     <g:else>
       <g:each in="${flash.error}" var="error">
-        <li>${error}</li>
+        <g:if test="${error instanceof String}">
+          <li>${error}</li>
+        </g:if>
+        <g:else>
+          <g:each in="${error}" var="eo">
+            <li>${eo.key}
+              <ul>
+                <g:each in="${eo.value}" var="em">
+                  <li>${em.message}</li>
+                </g:each>
+              </ul>
+            </li>
+          </g:each>
+        </g:else>
       </g:each>
     </g:else>
     </ul>

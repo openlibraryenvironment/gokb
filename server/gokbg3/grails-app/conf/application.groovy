@@ -70,6 +70,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/**/images/**',            access: ['permitAll']],
   [pattern: '/**/favicon.ico',          access: ['permitAll']],
   [pattern: '/api/find',                access: ['permitAll']],
+  [pattern: '/api/scroll',              access: ['permitAll']],
   [pattern: '/api/suggest',             access: ['permitAll']],
   [pattern: '/api/esconfig',            access: ['permitAll']],
   [pattern: '/api/capabilities',        access: ['permitAll']],
@@ -81,6 +82,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/api/show',                access: ['ROLE_USER']],
   [pattern: '/api/namespaces',          access: ['permitAll']],
   [pattern: '/api/groups',              access: ['permitAll']],
+  [pattern: '/integration/**',          access: ['permitAll']],
   [pattern: '/fwk/**',                  access: ['ROLE_USER']],
   [pattern: '/user/**',                 access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/user/search',             access: ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY']],
@@ -95,6 +97,9 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/oai',                     access: ['permitAll']],
   [pattern: '/oai/**',                  access: ['permitAll']],
   [pattern: '/rest/login',              access: ['permitAll']],
+ // [pattern: '/rest/roles',              access: ['permitAll']],
+  //[pattern: '/rest/curatoryGroups',     access: ['permitAll']],
+  //[pattern: '/rest/curatoryGroups/**',  access: ['permitAll']],
   [pattern: '/rest/refdata',            access: ['permitAll']],
   [pattern: '/rest/refdata/**',         access: ['permitAll']],
   [pattern: '/rest/**',                 access: ['ROLE_USER', 'IS_AUTHENTICATED_FULLY']],
@@ -602,27 +607,20 @@ globalSearchTemplates = [
           contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'status']
         ],
         [
-          type:'lookup',
-          baseClass:'org.gokb.cred.User',
-          prompt:'Raised By',
-          qparam:'qp_raisedby',
-          placeholder:'Raised By',
-          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'raisedBy']
-        ],
-        [
-          type:'lookup',
-          baseClass:'org.gokb.cred.User',
-          prompt:'Allocated To',
-          qparam:'qp_allocatedto',
-          placeholder:'Allocated To',
-          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'allocatedTo']
-        ],
-        [
           prompt:'Cause',
           qparam:'qp_cause',
           placeholder:'Cause',
           contextTree:['ctxtp':'qry', 'comparator' : 'like', 'prop':'descriptionOfCause']
-        ]
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'ReviewRequest.StdDesc',
+          prompt:'Type',
+          qparam:'qp_desc',
+          placeholder:'Standard description',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'stdDesc']
+        ],
       ],
       qbeGlobals:[
       ],
@@ -905,9 +903,11 @@ globalSearchTemplates = [
       qbeGlobals:[
       ],
       qbeResults:[
-        [heading:'Name', property:'value', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Value', property:'value', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Name', property:'name' ],
         [heading:'RDF Datatype', property:'datatype?.value'],
-        [heading:'Category', property:'family']
+        [heading:'Category', property:'family'],
+        [heading:'Target Type', property:'targetType.value']
       ]
     ]
   ],

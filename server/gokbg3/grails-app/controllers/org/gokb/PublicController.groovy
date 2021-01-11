@@ -26,6 +26,7 @@ class PublicController {
   def TSVIngestionService
   def ESWrapperService
   def ESSearchService
+  def dateFormatService
   def sessionFactory
 
   public static String TIPPS_QRY = 'from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=? and c.toComponent=tipp and c.type = ? and tipp.status = ?';
@@ -39,7 +40,7 @@ class PublicController {
       def pkg_id_components = params.id.split(':');
       
       if ( pkg_id_components?.size() == 2 ) {
-        result.pkg = Package.get(pkg_id_components[1]);
+        result.pkg = Package.get(Long.parseLong(pkg_id_components[1]));
       }
       else {
         result.pkg = Package.findByUuid(params.id)
@@ -54,7 +55,7 @@ class PublicController {
         log.debug("Tipp qry name: ${result.pkgName}");
         
         result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY,[result.pkgId, tipp_combo_rdv, status_current])[0]
-        result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id',[result.pkgId, tipp_combo_rdv, status_current],[offset:params.offset?:0,max:10])
+        result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id',[result.pkgId, tipp_combo_rdv, status_current],[offset:params.offset?params.long('offset'):0,max:10])
         log.debug("Tipp qry done ${result.tipps?.size()}");
       }
     }
@@ -112,8 +113,7 @@ class PublicController {
 
     def pkg = genericOIDService.resolveOID(params.id)
 
-    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new Date());
+    def export_date = dateFormatService.formatDate(new Date());
 
     def filename = "GOKb Export : ${pkg.name} : ${export_date}.tsv"
 
@@ -218,10 +218,7 @@ class PublicController {
 
   def packageTSVExport() {
 
-
-    def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
-    def export_date = sdf.format(new Date());
-
+    def export_date = dateFormatService.formatDate(new Date());
 
     def pkg = genericOIDService.resolveOID(params.id)
 

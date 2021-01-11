@@ -26,6 +26,11 @@ class TitleInstance extends KBComponent {
     "OAStatus"  : "Unknown"
   ]
 
+  static touchOnUpdate = [
+    "tipps",
+    "tipls"
+  ]
+
   static mapping = {
     // From TitleInstance
     includes KBComponent.mapping
@@ -38,6 +43,32 @@ class TitleInstance extends KBComponent {
   }
 
   public static final String restPath = "/titles"
+
+  static jsonMapping = [
+    'ignore': [
+      'pureOA',
+      'continuingSeries',
+      'reasonRetired',
+      'work',
+      'coverImage',
+      'issuer',
+      'translatedFrom',
+      'absorbedBy',
+      'mergedWith',
+      'renamedTo',
+      'splitFrom'
+    ],
+    'es': [
+      'publisherUuid': "publisher.uuid",
+      'publisherName': "publisher.name",
+      'publisher': "publisher.id"
+    ],
+    'defaultEmbeds': [
+      'ids',
+      'variantNames',
+      'publisher'
+    ]
+  ]
 
   // This map is used to convey information about the title in general processing. The initial usecase is so that we can attach
   // information about how this specific title was located, for example, by class 1 identifier match, or some other method
@@ -64,8 +95,7 @@ class TitleInstance extends KBComponent {
       // Each of the variants...
       def existing = variantNames.find {
         KBComponentVariantName name = it
-        return (name.locale == locale_rd && name.variantType == title_type
-        && name.getNormVariantName().equals(normTitle))
+        return (name.getNormVariantName().equals(normTitle))
       }
 
       if (!existing) {
@@ -217,8 +247,7 @@ class TitleInstance extends KBComponent {
           addToOutgoingCombos(combo)
         }
 
-        new_publisher.save()
-        save()
+        this.save()
 
         return true
         //        publisher.add(new_publisher)
@@ -348,7 +377,7 @@ class TitleInstance extends KBComponent {
                   }
                   builder."identifiers" {
                     org_ids?.each { org_id ->
-                      builder.'identifier' ('namespace':org_id?.namespace?.value, 'value':org_id?.value)
+                      builder.'identifier' ('namespace':org_id?.namespace?.value, 'namespaceName':org_id?.namespace?.name, 'value':org_id?.value)
                     }
                     if ( grailsApplication.config.serverUrl ) {
                       builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/org.gokb.cred.Org:${pub_org?.id}")
@@ -379,7 +408,7 @@ class TitleInstance extends KBComponent {
                         internalId(hti.id)
                         "identifiers" {
                           hti.ids?.each { tid ->
-                            builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
+                            builder.'identifier' ('namespace':tid.namespace?.value, 'namespaceName':tid.namespace?.name, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
                           }
                           if ( grailsApplication.config.serverUrl ) {
                             builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")
@@ -397,7 +426,7 @@ class TitleInstance extends KBComponent {
                         internalId(hti.id)
                         "identifiers" {
                           hti.ids?.each { tid ->
-                            builder.'identifier' ('namespace':tid.namespace?.value, 'value':tid.value)
+                            builder.'identifier' ('namespace':tid.namespace?.value, 'namespaceName':tid.namespace?.name, 'value':tid.value, 'datatype':tid.namespace.datatype?.value)
                           }
                           if ( grailsApplication.config.serverUrl ) {
                             builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")
@@ -425,6 +454,24 @@ class TitleInstance extends KBComponent {
                 def platform = tipp.hostPlatform
                 builder.'platform'(['id':platform?.id, 'uuid':platform?.uuid]) {
                   builder.'name' (platform?.name)
+                }
+
+                builder.'subjectArea'(tipp.subjectArea?.trim())
+                builder.'series'(tipp.series?.trim())
+                if (tipp.prices && tipp.prices.size() > 0) {
+                  builder.'prices'() {
+                    tipp.prices.each { price ->
+                      builder.'price' {
+                        builder.'type'(price.priceType.value)
+                        builder.'amount'(price.price)
+                        builder.'currency'(price.currency)
+                        builder.'startDate'(price.startDate)
+                        if (price.endDate) {
+                          builder.'endDate'(price.endDate)
+                        }
+                      }
+                    }
+                  }
                 }
 
                 def cov_statements = tipp.coverageStatements
@@ -575,116 +622,143 @@ class TitleInstance extends KBComponent {
    */
   @Transient
   public static def validateDTO(titleDTO) {
-    def result = ['valid':true, 'errors':[]]
+    def result = ['valid':true, 'errors':[:]]
 
-    if (titleDTO == null) {
+    if (titleDTO?.name?.trim() == false) {
       result.valid = false
-      result.errors.add("No title information given!")
+      result.errors.name =  [[message: "Missing title name!", baddata: titleDTO.name]]
       return result
     }
 
-    if (titleDTO.name == null || !titleDTO.name.trim()) {
-      result.valid = false
-      result.errors.add("Missing title name!")
-      return result
-    }
-
-    if (titleDTO.identifiers == null ) {
-      result.valid = false
-      result.errors.add("Title has no identifiers!")
-      return result
-    }
+    def ids_list = titleDTO.identifiers ?: titleDTO.ids
 
     LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
     LocalDateTime endDate = GOKbTextUtils.completeDateString(titleDTO.publishedTo, false)
 
     if ( titleDTO.publishedFrom && !startDate ) {
       result.valid = false
-      result.errors.add("Unable to parse publishing start date ${titleDTO.publishedFrom}!")
+      result.errors.publishedFrom = [[message:"Unable to parse publishing start date ${titleDTO.publishedFrom}!", baddata: titleDTO.publishedFrom]]
     }
 
     if ( titleDTO.publishedTo && !endDate ) {
       result.valid = false
-      result.errors.add("Unable to parse publishing end date ${titleDTO.publishedTo}!")
+      result.errors.publishedTo = [[message:"Unable to parse publishing end date ${titleDTO.publishedTo}!", baddata: titleDTO.publishedTo]]
     }
 
     if (startDate && endDate && (endDate < startDate)) {
       result.valid = false
-      result.errors.add("Publishing end date must not be prior to its start date!")
+      result.errors.publishedTo = [[message:"Publishing end date must not be prior to its start date!", baddata: titleDTO.publishedTo]]
     }
 
-    titleDTO.identifiers.each { idobj ->
-      if (idobj.type && idobj.value) {
-        def found_ns = IdentifierNamespace.findByValue(idobj.type.toLowerCase())
-        def final_val = idobj.value
+    def id_errors = []
 
-        if (found_ns) {
-          try {
+    ids_list?.each { idobj ->
+      def id_def = [:]
+      def ns_obj = null
 
-            if (found_ns.family == 'isxn') {
-              final_val = final_val.replaceAll("x","X")
-            }
+      if (idobj instanceof Map) {
+        def id_ns = idobj.type ?: (idobj.namespace ?: null)
 
-            if (!Identifier.findByNamespaceAndNormname(found_ns, Identifier.normalizeIdentifier(final_val))) {
-              def test_id = new Identifier(namespace:found_ns, value:final_val).validate()
-            }
-          }
-          catch (grails.validation.ValidationException ve) {
-            log.warn("Validation for ${found_ns.value}:${final_val} failed!")
-            result.errors.add("Validation for identifier ${found_ns.value}:${final_val} failed!")
-            result.valid = false
-          }
+        id_def.value = idobj.value
+
+        if (id_ns instanceof String) {
+          log.debug("Default namespace handling for ${id_ns}..")
+          ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
+        }
+        else if (id_ns) {
+          log.debug("Handling namespace def ${id_ns}")
+          ns_obj = IdentifierNamespace.get(id_ns)
+        }
+
+        if (!ns_obj) {
+          id_errors.add([message: "Unable to lookup identifier namespace ${id_ns}!", baddata: id_ns, code: 404])
+        }
+        else {
+          id_def.type = ns_obj.value
+        }
+      }
+      else if (idobj instanceof Integer){
+        Identifier the_id = Identifier.get(id_inc)
+
+        if (!the_id) {
+          id_errors.add([message:"Unable to lookup identifier object by ID!", baddata: idobj])
+          result.valid = false
         }
       }
       else {
         log.warn("Missing information in id object ${idobj}")
-        result.errors.add("Missing information for identifier object ${idobj}!")
+        id_errors.add([message:"Missing information for identifier object!", baddata: idobj])
         result.valid = false
+      }
+
+      if (ns_obj && id_def.size() > 0) {
+        if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
+          if ( ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern) ) {
+            log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
+            id_errors.add([message:"Validation for identifier ${id_def.type}:${id_def.value} failed!", baddata: idobj])
+            result.valid = false
+          }
+          else {
+            log.debug("New identifier ..")
+          }
+        }
+        else {
+          log.debug("Found existing identifier ..")
+        }
       }
     }
 
-    if ( !result ) {
-      log.warn("Title Failed Validation ${titleDTO}");
+    if (id_errors.size() > 0) {
+      result.errors.ids = id_errors
     }
-
-    result;
+    result
   }
 
   @Transient
-  public static TitleInstance upsertDTO(titleLookupService,titleDTO,user=null) {
+  public static TitleInstance upsertDTO(titleLookupService,titleDTO,user=null,fullsync=false) {
     def result = null;
-    def type = 'org.gokb.cred.JournalInstance'
+    def type = null
 
-    switch (titleDTO.type) {
-      case 'Serial':
-        log.debug("Type is ${titleDTO.type}")
-        break;
-      case 'Monograph':
-      case 'Book':
-        log.debug("type ${titleDTO.type} given")
-        type = 'org.gokb.cred.BookInstance'
-        break;
-      case 'Database':
-        log.debug("type ${titleDTO.type} given")
-        type = 'org.gokb.cred.DatabaseInstance'
-        break;
-      case 'Other':
-        log.debug("type ${titleDTO.type} given")
-        type = 'org.gokb.cred.OtherInstance'
-        break;
-      default:
-        log.warn("Unknown or missing type ${titleDTO.type}! Handling title as journal ..")
+    if (titleDTO.type) {
+      switch (titleDTO.type) {
+        case "serial":
+        case "Serial":
+        case "Journal":
+        case "journal":
+          type = "org.gokb.cred.JournalInstance"
+          break;
+        case "monograph":
+        case "Monograph":
+        case "Book":
+        case "book":
+          type = "org.gokb.cred.BookInstance"
+          break;
+        case "Database":
+        case "database":
+          type = "org.gokb.cred.DatabaseInstance"
+          break;
+        case "Other":
+        case "other":
+          type = "org.gokb.cred.OtherInstance"
+          break;
+        default:
+          log.warn("Missing type for title!")
+          break;
+      }
     }
 
-    result = titleLookupService.find(titleDTO.name,
-                                     titleDTO.publisher,
-                                     titleDTO.identifiers,
-                                     user,
-                                     null,
-                                     type,
-                                     titleDTO.uuid
-                                )
-    log.debug("Result of upsertDTO: ${result}");
+    if (type) {
+      result = titleLookupService.findOrCreate(titleDTO.name,
+                                      titleDTO.publisher,
+                                      titleDTO.identifiers,
+                                      user,
+                                      null,
+                                      type,
+                                      titleDTO.uuid,
+                                      fullsync
+                                  )
+      log.debug("Result of upsertDTO: ${result}");
+    }
     result;
   }
 
@@ -726,7 +800,7 @@ class TitleInstance extends KBComponent {
   @Override
   @Transient
   def ensureVariantName(String name) {
-
+    def result = null
     if (name.trim().size() != 0) {
 
       // Variant names use different normalisation method.
@@ -735,7 +809,7 @@ class TitleInstance extends KBComponent {
       // not already a name
       // Make sure not already a variant name
       if ( !KBComponentVariantName.findByOwnerAndNormVariantName(this, variant_normname) ) {
-        KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
+        result = new KBComponentVariantName( owner:this, variantName:name ).save(flush:true)
       }
       else {
         log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
@@ -744,20 +818,30 @@ class TitleInstance extends KBComponent {
     else {
       log.error("No viable variant name supplied!")
     }
-
+    result
   }
 
   def beforeUpdate() {
-    if (this.isDirty('status') && this.status == RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    if (this.isDirty('status') && this.status == deleted_status) {
       // Delete the tipps too as a TIPP should not exist without the associated
       // title.
       def tipps = getTipps()
+      def tipls = getTipls()
 
       if ( tipps?.size() > 0 ) {
-        def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def tipp_ids = tipps?.collect { it.id }
+        Date now = new Date()
 
-        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del where t.id IN (:ttd)",[del: deleted_status, ttd:tipp_ids])
+        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd) and t.status != :del",[del: deleted_status, ttd:tipp_ids, now: now])
+      }
+
+      if ( tipps?.size() > 0 ) {
+        def tipl_ids = tipls?.collect { it.id }
+        Date now = new Date()
+
+        TitleInstancePlatform.executeUpdate("update TitleInstancePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd) and t.status != :del",[del: deleted_status, ttd:tipl_ids, now: now])
       }
 
       def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this])
@@ -767,5 +851,9 @@ class TitleInstance extends KBComponent {
         ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
       }
     }
+  }
+
+  def afterInsert() {
+
   }
 }

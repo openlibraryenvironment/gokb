@@ -1,5 +1,6 @@
 package com.k_int
 
+import org.gokb.cred.RefdataValue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -23,19 +24,19 @@ import grails.gorm.transactions.Transactional
 class ConcurrencyManagerService {
 
   def executorService
-  
+
   private static final Map<String, PromiseFactory> pools
-  
+
   static {
     // Set the default promise factory and limit to 100 threads.
     Promises.setPromiseFactory(
       new CachedThreadPoolPromiseFactory(100, 60L, TimeUnit.SECONDS)
     )
-    
+
     // Immutable pool map.
     pools = Collections.unmodifiableMap (['smallJobs' : new CachedThreadPoolPromiseFactory(1, 60L, TimeUnit.SECONDS)])
   }
-  
+
 
   public class Job implements Promise, Future {
     int id
@@ -47,6 +48,10 @@ class ConcurrencyManagerService {
     boolean begun = false;
     String description
     List messages = []
+    Map linkedItem
+    RefdataValue type
+    int ownerId
+    int groupId
 
     public message(String message) {
       log.debug(message);
@@ -85,26 +90,26 @@ class ConcurrencyManagerService {
     @Override
     public synchronized boolean isDone () {
       task.done
-    } 
-    
+    }
+
     @Override
     public Job accept(value) {
       this.task.accept(value)
       this
     }
-    
+
     @Override
     public Job onComplete(Closure callable) {
       this.task.onComplete(callable)
       this
     }
-    
+
     @Override
     public Job onError(Closure callable) {
       this.task.onComplete(callable)
       this
     }
-    
+
     @Override
     public Job then(Closure callable) {
       this.task.onComplete(callable)
@@ -140,7 +145,7 @@ class ConcurrencyManagerService {
 
       this
     }
-    
+
     /**
      * Starts the background task with a named pool.
      * @return this Job
@@ -200,7 +205,7 @@ class ConcurrencyManagerService {
   }
 
   GrailsApplication grailsApplication
-  
+
   static scope = "singleton"
 
 
@@ -242,7 +247,7 @@ class ConcurrencyManagerService {
    * @param job_id
    * @return the Job
    */
-  public Job getJob(int job_id){
+  public Job getJob(int job_id, boolean cleanup = false) {
     if (job_id == null || !this.map.containsKey(job_id)) {
       return null
     }
@@ -251,12 +256,106 @@ class ConcurrencyManagerService {
     Job j = map.get (job_id)
 
     // Check if the job has finished.
-    if (j.isDone()) {
+    if (j.isDone() && cleanup) {
       // Remove from the map too as we don't need to keep track any more.
       map.remove (job_id)
     }
 
     // Return the job.
     j
+  }
+
+  /**
+   * Gets all Jobs for the supplied User id.
+   * @param user_id
+   * @param max
+   * @param offset
+   * @return List of Jobs
+   */
+  public Map getUserJobs(int user_id, int max, int offset) {
+    def allJobs = getJobs()
+    def selected = []
+    def result = [:]
+
+    if (user_id == null) {
+      return null
+    }
+
+    // Get the jobs.
+    allJobs.each { k, v ->
+      if (v.ownerId == user_id) {
+        selected << [
+          id: v.id,
+          progress: v.progress,
+          messages: v.messages,
+          description: v.description,
+          type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
+          begun: v.begun,
+          linkedItem: v.linkedItem,
+          startTime: v.startTime,
+          endTime: v.endTime,
+          cancelled: v.isCancelled()
+        ]
+      }
+    }
+
+    result.total = selected.size()
+
+    if (offset > 0) {
+      selected = selected.drop(offset)
+    }
+
+    result.records = selected.take(max)
+
+    // Return the jobs.
+    result
+  }
+
+  /**
+   * Gets all Jobs for the supplied CuratoryGroup id.
+   * @param group_id
+   * @param max
+   * @param offset
+   * @return List of Jobs
+   */
+  public Map getGroupJobs(int group_id, int max = 10, int offset = 0) {
+    def allJobs = getJobs()
+    def selected = []
+    def result = [:]
+
+    if (group_id == null) {
+      return null
+    }
+
+    log.debug("Getting jobs for group ${group_id}")
+
+    // Get the jobs.
+    allJobs.each { k, v ->
+      if (v.groupId == group_id) {
+        selected << [
+          id: v.id,
+          progress: v.progress,
+          messages: v.messages,
+          description: v.description,
+          type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
+          begun: v.begun,
+          linkedItem: v.linkedItem,
+          startTime: v.startTime,
+          endTime: v.endTime,
+          cancelled: v.isCancelled()
+        ]
+      }
+    }
+
+    result.total = selected.size()
+
+    if (offset > 0) {
+      selected = selected.drop(offset)
+    }
+
+    result.records = selected.take(max)
+
+    // Return the jobs.
+    result
   }
 }

@@ -40,16 +40,24 @@ class GroupController {
 
       result.group = CuratoryGroup.get(params.id);
 
-      def rr_sort= params.rr_sort?:'displayName'
-      def rr_sort_order = params.rr_sort_order?:'desc'
+      def rr_sort= params.rr_sort ?: 'dateCreated'
+      def rr_sort_order = params.rr_sort_order?:'asc'
 
       def closedStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed')
       def delStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Deleted')
+      def cg_components = KBComponent.executeQuery("select c.id from KBComponent as c where exists ( select oc from c.outgoingCombos as oc where oc.toComponent.id = :group )",[group:result.group.id])
    
+      log.debug("Got ${cg_components.size()} connected components")
 
-      def cg_review_tasks_hql = " from ReviewRequest as rr where allocatedTo in ( select u from CuratoryGroup as cg join cg.users as u where cg = ? ) and rr.status!=? and rr.status!=? "
-      result.rr_count = Package.executeQuery('select count(rr) '+cg_review_tasks_hql,[result.group,closedStat,delStat])[0];
-      result.rrs = Package.executeQuery('select rr '+cg_review_tasks_hql,[result.group,closedStat,delStat],[max:result.max,offset:result.rr_offset,sort:rr_sort,order:rr_sort_order]);
+      def cg_review_tasks_hql = ''' from ReviewRequest as rr where ((
+        rr.allocatedTo in ( select u from CuratoryGroup as cg join cg.users as u where cg = :group )
+        or rr.componentToReview.id in (:cgcomponents)
+      ) or exists (select arc from AllocatedReviewGroup as arc where arc.review = rr and arc.group = :group))
+      and rr.status != :closed and rr.status != :deleted
+      '''
+
+      result.rr_count = Package.executeQuery('select count(rr) '+cg_review_tasks_hql,[group:result.group,cgcomponents:cg_components,closed:closedStat,deleted:delStat])[0];
+      result.rrs = Package.executeQuery('select rr '+cg_review_tasks_hql + " order by ${rr_sort} ${rr_sort_order}",[group:result.group,cgcomponents:cg_components,closed:closedStat,deleted:delStat],[max:result.max,offset:result.rr_offset]);
 
 
       result.rr_page_max = (result.rr_count / result.max).toInteger() + (result.rr_count % result.max > 0 ? 1 : 0)

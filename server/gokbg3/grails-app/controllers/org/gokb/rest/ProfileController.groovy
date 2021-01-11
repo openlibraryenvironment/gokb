@@ -1,25 +1,29 @@
 package org.gokb.rest
 
+import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.Role
 import org.gokb.cred.User
-import org.springframework.security.access.annotation.Secured
+import grails.plugin.springsecurity.annotation.Secured
 
 @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-@Transactional(readOnly = true)
 class ProfileController {
 
   static namespace = 'rest'
 
-  def genericOIDService
   def springSecurityService
   def userProfileService
+  def passwordEncoder
+  ConcurrencyManagerService concurrencyManagerService
 
   def show() {
     def user = User.get(springSecurityService.principal.id)
 
     def cur_groups = []
+    def base = grailsApplication.config.serverURL + "/rest"
 
     user.curatoryGroups?.each { cg ->
       cur_groups.add([name: cg.name, id: cg.id, uuid: cg.uuid])
@@ -32,12 +36,12 @@ class ProfileController {
     }
 
     def links = [
-      'self'  : 'rest/profile',
-      'update': 'rest/profile/update'//,
-//      'delete': 'rest/profile/delete'
+      'self'  : ['href': base + '/profile'],
+      'update': ['href': base + '/profile'],
+      'delete': ['href': base + '/profile']
     ]
 
-    def result = [
+    def result = ['data': [
       'id'             : user.id,
       'username'       : user.username,
       'displayName'    : user.displayName,
@@ -50,91 +54,88 @@ class ProfileController {
       'defaultPageSize': user.defaultPageSize,
       'roles'          : roles,
       '_links'         : links
-    ]
-
+    ]]
     render result as JSON
   }
 
   @Transactional
   def update() {
-    def result = ['result': 'OK']
-    def immutables = ['id', 'username', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
-    def errors = []
-    def skippedCG = false
-    def reqBody = request.JSON
-    User user = springSecurityService.currentUser
-
-
-    if (reqBody && reqBody.id && reqBody.id == user.id) {
-      reqBody.each { field, val ->
-        if (val && user.hasProperty(field)) {
-          if (field != 'curatoryGroups') {
-            if (!immutables.contains(field)) {
-              user."${field}" = val
-            } else {
-              log.debug("Ignoring immutable field ${field}")
-            }
-          } else {
-            if (user.hasRole('ROLE_EDITOR') || user.hasRole('ROLE_ADMIN')) {
-              def curGroups = []
-              val.each { cg ->
-                def cg_obj = null
-
-                if (cg.uuid?.trim()) {
-                  cg_obj = CuratoryGroup.findByUuid(cg.uuid)
-                }
-
-                if (!cg_obj && cg.id) {
-                  cg_obj = cg.id instanceof String ? genericOIDService.resolveOID(cg.id) : CuratoryGroup.get(cg.id)
-                }
-
-                if (cg_obj) {
-                  curGroups.add(cg_obj)
-                } else {
-                  log.debug("CuratoryGroup ${cg} not found!")
-                  errors << ['message': 'Could not find referenced curatory group!', 'baddata': cg]
-                }
-              }
-              log.debug("New CuratoryGroups: ${curGroups}")
-
-              if (errors.size() > 0) {
-                result.message = "There have been errors updating the users curatory groups."
-                result.errors = errors
-                response.setStatus(400)
-              } else {
-                user.curatoryGroups.addAll(curGroups)
-                user.curatoryGroups.retainAll(curGroups)
-              }
-            } else {
-              skippedCG = true
-            }
-          }
-        }
-      }
-
-      if (errors.size() == 0) {
-        if (user.validate()) {
-          user.save(flush: true)
-          result.message = "User profile sucessfully updated."
-        } else {
-          result.result = "ERROR"
-          result.message = "There have been errors saving the user object."
-          result.errors = user.errors
-        }
-      }
-    } else {
-      log.debug("Missing update payload or wrong user id")
-      result.result = "ERROR"
-      response.setStatus(400)
-      result.message = "Missing update payload or wrong user id!"
-    }
+    Map result = [:]
+    User user = User.get(springSecurityService.principal.id)
+    def reqData = request.JSON
+    reqData.remove('new_password')
+    reqData.remove('password')
+    result = userProfileService.update(user, reqData, params, user)
     render result as JSON
   }
 
+  @Secured(value = ['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'PATCH')
+  @Transactional
+  def patch() {
+    Map result = [:]
+    Map reqData = request.JSON
+    User user = User.get(springSecurityService.principal.id)
+    if (reqData.new_password && reqData.password) {
+      if (passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
+        user.password = reqData.new_password
+        user.save(flush: true, failOnError: true);
+      } else {
+        response.status = 400
+        result.errors = [password: [message: "wrong password - profile unchanged", code: null]]
+        render result as JSON
+      }
+    }
+    reqData.remove('new_password')
+    reqData.remove('password')
+    result = userProfileService.update(user, reqData, params, user)
+    if (result.errors != null)
+      response.status = 400
+    render result as JSON
+  }
+
+  @Secured(value = ['ROLE_USER', 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
   @Transactional
   def delete() {
-    userProfileService.delete(springSecurityService.currentUser)
+    User user = User.get(springSecurityService.principal.id)
+    userProfileService.delete(user)
+    response.status = 204
+  }
+
+  @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
+  def getJobs() {
     def result = [:]
+    def max = params.limit ? params.int('limit') : 10
+    def offset = params.offset ? params.int('offset') : 0
+    def base = grailsApplication.config.serverURL + "/rest"
+    def sort = params._sort ?: null
+    def order = params._order ?: null
+    User user = User.get(springSecurityService.principal.id)
+    def errors = [:]
+
+    result = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+
+    render result as JSON
+  }
+
+  @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
+  def cleanupJobs() {
+    def result = [:]
+    def max = params.limit ? params.int('limit') : 10
+    def offset = params.offset ? params.int('offset') : 0
+    def base = grailsApplication.config.serverURL + "/rest"
+    def sort = params._sort ?: null
+    def order = params._order ?: null
+    User user = User.get(springSecurityService.principal.id)
+    def errors = [:]
+    def jobs = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+
+    jobs.each { k, v ->
+      if (v.endTime || v.cancelled) {
+        def j = concurrencyManagerService.getJob(v.id, true)
+        log.debug("Removed job ${v.id}")
+      }
+    }
+
     render result as JSON
   }
 }
