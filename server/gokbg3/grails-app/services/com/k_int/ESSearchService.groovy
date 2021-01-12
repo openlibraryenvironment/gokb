@@ -14,6 +14,8 @@ import org.elasticsearch.search.sort.*
 
 import org.gokb.cred.*
 
+import java.text.SimpleDateFormat
+
 
 class ESSearchService{
 // Map the parameter names we use in the webapp with the ES fields
@@ -473,12 +475,29 @@ class ESSearchService{
     log.debug("scrollId : " + response.actionGet().getScrollId())
     result.scrollId = response.actionGet().getScrollId()
     SearchHit[] searchHits = response.actionGet().getHits().getHits()
-    result.records = []
-    for (SearchHit hit in searchHits){
-      result.records << hit.getSourceAsMap()
-    }
+
+    result.hasMoreRecords = (searchHits.length == scrollSize) ? true : false
+    result.records = filterLastUpdatedDisplay(searchHits, params, errors, result)
     result.size = result.records.size()
     result
+  }
+
+
+  /**
+   * This is a workaround for the not working scroll request with date range query in Elasticsearch 5.6.10.
+   * TODO: check if this can be removed when having migrated to a higher Elasticsearch version.
+   */
+  private List<SearchHit> filterLastUpdatedDisplay(SearchHit[] searchHitsArray, params,
+                                               Map<String, Object> errors, Serializable result){
+    List filteredHits = []
+    SimpleDateFormat YYYY_MM_DD_HH_mm_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    for (SearchHit hit in searchHitsArray){
+      String dateString = hit.getSourceAsMap().get("lastUpdatedDisplay")
+      if (dateString && !YYYY_MM_DD_HH_mm_SS.parse(dateString)?.before(YYYY_MM_DD_HH_mm_SS.parse(params.changedSince))){
+        filteredHits.add(hit.getSourceAsMap())
+      }
+    }
+    return filteredHits
   }
 
   /**
