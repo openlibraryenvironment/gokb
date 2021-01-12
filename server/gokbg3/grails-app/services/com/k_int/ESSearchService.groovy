@@ -145,9 +145,9 @@ class ESSearchService{
         //TODO: change this part to represent what we really need if this is not it, see the final part of this method where hits are done
         if (search_results) {
           def search_hits = search_results.getHits()
-          result.hits = search_hits.getHits()
+          result.hits = search_hits
           result.firstrec = params.offset + 1
-          result.resultsTotal = search_hits.totalHits
+          result.resultsTotal = search_hits.getTotalHits().value
           result.lastrec = Math.min ( params.offset + params.max, result.resultsTotal)
 
           if (search_results.getAggregations()) {

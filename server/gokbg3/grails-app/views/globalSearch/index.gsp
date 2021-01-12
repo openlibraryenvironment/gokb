@@ -51,12 +51,12 @@
     <title>GOKb: Global Search</title>
   </head>
   <body>
-  
+
     <h1 class="page-header">Global Search</h1>
 
     <div id="mainarea" class="panel panel-default">
       <div class="panel-body">
-        <g:form action="index" method="get">           
+        <g:form action="index" method="get">
            <div class="input-group">
             <input type="text" name="q" id="q" class="form-control" value="${params.q}" placeholder="Search for..." />
             <span class="input-group-btn">
@@ -81,7 +81,7 @@
             <span class="badge alert-info">${facet}:${fv} &nbsp; <g:link controller="${controller}" action="${action}" params="${removeFacet(params,facet,fv)}"><i class="fa fa-times"></i></g:link></span>
           </g:each>
         </g:each>
-      </p> 
+      </p>
      <div class="row">
 
        <div class="col-md-2">
@@ -127,8 +127,8 @@
                <g:each in="${hits}" var="hit">
                 <g:set var="hitInst" value="${org.gokb.cred.KBComponent.get(hit.id.split(':')[1].toLong())}" />
                  <tr>
-                   <td> <g:if test="${hitInst}"><g:link controller="resource" action="show" id="${hit.id}">${hit.source.name ?: "- Not Set -"}</g:link></g:if><g:else>${hit.source.name ?: "- Not Set -"}</g:else></td>
-                   <td> ${hit.source.componentType} </td>
+                   <td> <g:if test="${hitInst}"><g:link controller="resource" action="show" id="${hit.id}">${hit.getSourceAsMap().name ?: "- Not Set -"}</g:link></g:if><g:else>${hit.getSourceAsMap().name ?: "- Not Set -"}</g:else></td>
+                   <td> ${hit.getSourceAsMap().componentType} </td>
                    <td> ${hitInst?.status?.value ?: 'Unknown'}</td>
                  </tr>
                </g:each>
@@ -145,6 +145,6 @@
      </div>
 
    </div>
-  
+
   </body>
 </html>

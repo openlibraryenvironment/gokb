@@ -13,7 +13,7 @@ class GlobalSearchController {
 
   def ESWrapperService
 
-  def index() { 
+  def index() {
     def result = [:]
     def apiresponse = null
 
@@ -74,12 +74,7 @@ class GlobalSearchController {
 
         def search = es_request.execute().actionGet()
 
-        result.hits = search.hits
-
-        if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
-          search.hits.maxScore = 0;
-        }
-
+        result.hits = search.getHits()
         result.resultsTotal = search.hits.totalHits
         // We pre-process the facet response to work around some translation issues in ES
 
@@ -111,7 +106,7 @@ class GlobalSearchController {
             response_record.name = r.source.name
             response_record.identifiers = r.source.identifiers
             response_record.altNames = r.source.altname
-            
+
             apiresponse.records.add(response_record);
           }
         }
@@ -173,7 +168,7 @@ class GlobalSearchController {
             // Write out the mapped field name, not the name from the source
             sw.write(mapping.value)
             sw.write(":")
-  
+
             if(non_analyzed_fields.contains(mapping.value)) {
               sw.write("${params[mapping.key]}")
             }

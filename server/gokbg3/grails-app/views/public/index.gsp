@@ -127,19 +127,19 @@
               <g:each in="${hits}" var="hit">
                 <tr>
                   <td>
-                      <g:link controller="public" action="packageContent" id="${hit.id}">${hit.source.name}</g:link>
+                      <g:link controller="public" action="packageContent" id="${hit.id}">${hit.getSourceAsMap().name}</g:link>
                       <!-- <g:link controller="public" action="kbart" id="${hit.id}">(Download Kbart File)</g:link>-->
-                      <g:if test="${hit.source.curatoryGroups?.size() > 0}">
-                        <div>(Curated by <g:each in="${hit.source.curatoryGroups}" var="cg" status="i"><g:if test="${i>0}">; </g:if>${cg}</g:each>)</div>
+                      <g:if test="${hit.getSourceAsMap().curatoryGroups?.size() > 0}">
+                        <div>(Curated by <g:each in="${hit.getSourceAsMap().curatoryGroups}" var="cg" status="i"><g:if test="${i>0}">; </g:if>${cg}</g:each>)</div>
                       </g:if>
                       <g:else>
                         <div>No Curators</div>
                       </g:else>
                   </td>
-                  <td>${hit.source.cpname}</td>
-                  <td>${hit.source.contentType}</td>
-                  <td>${hit.source.titleCount}<g:if test="${hit.source.listStatus != 'Checked'}">*</g:if></td>
-                  <td>${hit.source.lastUpdatedDisplay}</td>
+                  <td>${hit.getSourceAsMap().cpname}</td>
+                  <td>${hit.getSourceAsMap().contentType}</td>
+                  <td>${hit.getSourceAsMap().titleCount}<g:if test="${hit.getSourceAsMap().listStatus != 'Checked'}">*</g:if></td>
+                  <td>${hit.getSourceAsMap().lastUpdatedDisplay}</td>
                 </tr>
               </g:each>
             </tbody>
