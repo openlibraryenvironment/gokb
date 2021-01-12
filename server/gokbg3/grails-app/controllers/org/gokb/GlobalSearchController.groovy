@@ -2,7 +2,9 @@ package org.gokb
 
 import grails.converters.*
 import org.elasticsearch.action.search.*
+import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.index.query.*
 
 class GlobalSearchController {
@@ -43,13 +45,12 @@ class GlobalSearchController {
 
         log.debug("Using index ${grailsApplication.config.gokb?.es?.index /*?: 'gokbg3dev (auto)'*/}")
 
-        SearchRequestBuilder es_request = esclient.prepareSearch("globalSearch")
-            .setIndices(grailsApplication.config.gokb?.es?.index ?: "gokbg3")
-            .setTypes(grailsApplication.config.globalSearch.types ?: "component")
-            .setSize(result.max)
-            .setFrom(result.offset)
-            .setQuery(esQuery)
-            .addAggregation(
+        SearchRequest es_request = new SearchRequest(grailsApplication.config.gokb?.es?.index ?: "gokbg3")
+        SearchSourceBuilder source = new SearchSourceBuilder()
+            .size(result.max)
+            .from(result.offset)
+            .query(esQuery)
+            .aggregation(
               AggregationBuilders.terms('ComponentType').field(typing_field)
             )
 
@@ -72,7 +73,8 @@ class GlobalSearchController {
 //                        }
 //                      }
 
-        def search = es_request.execute().actionGet()
+        es_request.source(source)
+        def search = esclient.search(es_request, RequestOptions.DEFAULT)
 
         result.hits = search.getHits()
         result.resultsTotal = search.hits.totalHits

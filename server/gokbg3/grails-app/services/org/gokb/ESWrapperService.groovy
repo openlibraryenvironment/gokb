@@ -4,11 +4,11 @@ import groovy.json.JsonBuilder
 
 import java.net.InetAddress;
 
+import org.apache.http.HttpHost
 import org.elasticsearch.client.Client
 import org.elasticsearch.node.Node
-import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.common.settings.Settings
-import org.elasticsearch.common.transport.TransportAddress
+import org.elasticsearch.client.RestHighLevelClient
+import org.elasticsearch.client.RestClient
 
 import static groovy.json.JsonOutput.*
 
@@ -18,7 +18,7 @@ class ESWrapperService {
 
   def grailsApplication
 
-  TransportClient esclient = null;
+  RestHighLevelClient esclient = null;
 
   @javax.annotation.PostConstruct
   def init() {
@@ -194,9 +194,10 @@ class ESWrapperService {
 
       log.debug("Looking for es on host ${es_host_name} with cluster name ${es_cluster_name}");
 
-      Settings settings = Settings.builder().put("cluster.name", es_cluster_name).build();
-      esclient = new org.elasticsearch.transport.client.PreBuiltTransportClient(settings);
-      esclient.addTransportAddress(new TransportAddress(InetAddress.getByName(es_host_name), 9300));
+      esclient = new RestHighLevelClient(RestClient.builder(
+        new HttpHost(es_host_name, 9200, "http"),
+        new HttpHost(es_host_name, 9201, "http")
+      ))
 
       log.debug("ES wrapper service init completed OK");
     }
@@ -223,6 +224,8 @@ class ESWrapperService {
   def getClient() {
     return ensureClient()
   }
+
+
 
   @javax.annotation.PreDestroy
   def destroy() {

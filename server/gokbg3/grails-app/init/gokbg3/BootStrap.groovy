@@ -38,11 +38,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.AuthorityUtils
 
 import org.elasticsearch.client.Client
-import org.elasticsearch.client.AdminClient
-import org.elasticsearch.client.IndicesAdminClient
+import org.elasticsearch.client.RequestOptions
+import org.elasticsearch.client.core.*
+import org.elasticsearch.client.indices.GetIndexRequest
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse
 import static org.elasticsearch.common.xcontent.XContentFactory.*
@@ -1148,21 +1149,25 @@ class BootStrap {
 
   def ensureESIndex() {
     def indexName = grailsApplication.config.gokb.es.index ?: (grailsApplication.config.gokb_es_index ?: "gokbg3")
-    log.debug("ensureESIndex for ${indexName}");
-    def esclient = ESWrapperService.getClient()
-    IndicesAdminClient adminClient = esclient.admin().indices();
+    log.debug("ensureESIndex for ${indexName}")
 
-    if (!adminClient.prepareExists(indexName).execute().actionGet().isExists()) {
+    def esclient = ESWrapperService.getClient()
+    def info = esclient.info(RequestOptions.DEFAULT)
+    log.debug("Found ES node with version ${info.getVersion()}!")
+
+    GetIndexRequest checkIndex = new GetIndexRequest(indexName)
+
+    if (!esclient.indices().exists(checkIndex, RequestOptions.DEFAULT)) {
       log.debug("ES index ${indexName} did not exist, creating..")
 
-      CreateIndexRequestBuilder createIndexRequestBuilder = adminClient.prepareCreate(indexName);
+      CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexName)
 
       log.debug("Adding index setttings..")
-      createIndexRequestBuilder.setSettings(indexSettings());
+      createIndexRequest.settings(indexSettings())
       log.debug("Adding index mappings..")
-      createIndexRequestBuilder.addMapping("component", indexMapping());
+      createIndexRequest.mapping("component", indexMapping())
 
-      CreateIndexResponse indexResponse = createIndexRequestBuilder.execute().actionGet();
+      CreateIndexResponse indexResponse = esclient.createIndex(createIndexRequest)
 
       if (indexResponse.isAcknowledged()) {
         log.debug("Index ${indexName} successfully created!")

@@ -90,7 +90,7 @@ class ESSearchService{
 
     def result = [:]
 
-    Client esclient = ESWrapperService.getClient()
+    def esclient = ESWrapperService.getClient()
 
     try {
       if ( (params.q && params.q.length() > 0) || params.rectype) {
@@ -117,25 +117,27 @@ class ESSearchService{
 
         try {
           log.debug("start to build srb with index: " + es_index)
-          SearchRequestBuilder srb = esclient.prepareSearch(es_index)
+          SearchRequest request = new SearchRequest(es_index)
+          SearchSourceBuilder srb = new SearchSourceBuilder()
           log.debug("srb built: ${srb} sort=${params.sort}");
           if (params.sort) {
             SortOrder order = SortOrder.ASC
             if (params.order) {
               order = SortOrder.valueOf(params.order?.toUpperCase())
             }
-            srb = srb.addSort("${params.sort}".toString(), order)
+            srb = srb.sort("${params.sort}".toString(), order)
           }
           log.debug("srb start to add query and aggregration query string is ${query_str}")
 
-          srb.setQuery(QueryBuilders.queryStringQuery(query_str))//QueryBuilders.wrapperQuery(query_str)
-              .addAggregation(AggregationBuilders.terms('curatoryGroups').size(25).field('curatoryGroups'))
-              .addAggregation(AggregationBuilders.terms('provider').size(25).field('provider'))
-              .setFrom(params.offset)
-              .setSize(params.max)
+          srb.query(QueryBuilders.queryStringQuery(query_str))//QueryBuilders.wrapperQuery(query_str)
+              .aggregation(AggregationBuilders.terms('curatoryGroups').size(25).field('curatoryGroups'))
+              .aggregation(AggregationBuilders.terms('provider').size(25).field('provider'))
+              .from(params.offset)
+              .size(params.max)
 
           // log.debug("finished srb and aggregrations: " + srb)
-          search_results = srb.get()
+          request.source(srb)
+          search_results = esclient.search(request)
           // log.debug("search results: " + search_results)
         }
         catch (Exception ex) {
@@ -440,7 +442,8 @@ class ESSearchService{
         QueryBuilders.matchQuery("componentType", params.component_type)
     // TODO: alternative query builders for scroll searches with q
 
-    ActionFuture<SearchResponse> response
+    SearchResponse response
+
     if (!params.scrollId){
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       searchSourceBuilder.query(query)
@@ -455,11 +458,11 @@ class ESSearchService{
     else{
       SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
       scrollRequest.scroll("1m")
-      response = esClient.searchScroll(scrollRequest)
+      response = esClient.scroll(scrollRequest)
     }
-    log.debug("scrollId : " + response.actionGet().getScrollId())
-    result.scrollId = response.actionGet().getScrollId()
-    SearchHit[] searchHits = response.actionGet().getHits().getHits()
+    log.debug("scrollId : " + response.getScrollId())
+    result.scrollId = response.getScrollId()
+    SearchHit[] searchHits = response.getHits().getHits()
     result.records = []
     for (SearchHit hit in searchHits){
       result.records << hit.getSourceAsMap()
@@ -501,26 +504,25 @@ class ESSearchService{
       }
 
       if( !errors && exactQuery.hasClauses() ) {
-        Client esclient = ESWrapperService.getClient()
-        SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
-
-        es_request.setIndices(grailsApplication.config.gokb.es.index)
-        es_request.setTypes(grailsApplication.config.globalSearch.types)
-        es_request.setQuery(exactQuery)
+        def esclient = ESWrapperService.getClient()
+        SearchRequest es_request = new SearchRequest(grailsApplication.config.gokb.es.index)
+        SearchSourceBuilder source = new SearchSourceBuilder()
+        es_request.types(grailsApplication.config.globalSearch.types)
+        source.query(exactQuery)
 
         checkInt(result, errors, params.max, 'max')
         checkInt(result, errors, params.from, 'offset')
         checkInt(result, errors, params.offset, 'offset')
 
         if (params.max) {
-          es_request.setSize(result.max)
+          source.size(result.max)
         }
         else {
           result.max = 10
         }
 
         if (params.offset || params.from) {
-          es_request.setFrom(result.offset)
+          source.from(result.offset)
         }
         else {
           result.offset = 0
@@ -551,12 +553,13 @@ class ESSearchService{
 
             sortQry.order(order)
 
-            es_request.addSort(sortQry)
+            source.sort(sortQry)
           }
         }
 
         if (!errors) {
-          search_action = es_request.execute()
+          es_request.source(source)
+          search_action = esclient.search(es_request)
         }
       }
       else if ( !exactQuery.hasClauses() ){
@@ -566,12 +569,7 @@ class ESSearchService{
       def search = null
 
       if (search_action) {
-        search = search_action.actionGet()
-
-
-        if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
-          search.hits.maxScore = 0;
-        }
+        search = search_action
 
         result.count = search.hits.totalHits.value
         result.records = []
