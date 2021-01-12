@@ -434,23 +434,36 @@ class ESSearchService{
     int scrollSize = 5000
     def result = ["result" : "OK", "scrollSize" : scrollSize]
     def esClient = ESWrapperService.getClient()
+    def errors = [:]                              // TODO: use errors
 
-    QueryBuilder query = (!params.component_type) ?
-        QueryBuilders.matchAllQuery() :
-        QueryBuilders.matchQuery("componentType", params.component_type)
+    QueryBuilder scrollQuery = QueryBuilders.boolQuery()
+    if (params.component_type){
+      QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
+      scrollQuery.must(typeFilter)
+    }
+    addDateQueries(scrollQuery, errors, params)
     // TODO: alternative query builders for scroll searches with q
 
     ActionFuture<SearchResponse> response
     if (!params.scrollId){
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      searchSourceBuilder.query(query)
+      searchSourceBuilder.query(scrollQuery)
       searchSourceBuilder.size(scrollSize)
-
       SearchRequest searchRequest = new SearchRequest(grailsApplication.config.gokb.es.index)
       searchRequest.scroll("1m")
       searchRequest.source(searchSourceBuilder)
       // ... set scroll interval to 1 minute
       response = esClient.search(searchRequest)
+
+      /*
+      // another try to build a scroll request where the added date query works.
+      ClearScrollRequestBuilder searchRequestBuilder = esClient.prepareClearScroll()
+      searchRequestBuilder.setIndices(grailsApplication.config.gokb.es.index)
+      searchRequestBuilder.setTypes(grailsApplication.config.globalSearch.types)
+      searchRequestBuilder.setQuery(scrollQuery)
+      searchRequestBuilder.setSize(scrollSize)
+      response = searchRequestBuilder.execute().actionGet()
+      */
     }
     else{
       SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
