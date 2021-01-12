@@ -4,7 +4,6 @@ package org.gokb
 import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.bulk.BulkRequest
 import org.elasticsearch.action.index.IndexRequest
-import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.gokb.FTControl
 import org.hibernate.ScrollMode
 import java.nio.charset.Charset
