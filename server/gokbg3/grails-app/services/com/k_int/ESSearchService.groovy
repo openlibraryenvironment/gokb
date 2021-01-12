@@ -316,7 +316,7 @@ class ESSearchService{
         statusQuery.should(QueryBuilders.termQuery('status', it))
       }
 
-      statusQuery.minimumNumberShouldMatch(1)
+      statusQuery.minimumShouldMatch(1)
 
       query.must(statusQuery)
     }
@@ -357,7 +357,7 @@ class ESSearchService{
 
       labelQuery.should(QueryBuilders.matchQuery('name', qpars.label))
       labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label))
-      labelQuery.minimumNumberShouldMatch(1)
+      labelQuery.minimumShouldMatch(1)
 
       query.must(labelQuery)
     }
@@ -380,7 +380,7 @@ class ESSearchService{
       genericQuery.should(QueryBuilders.matchQuery('name',qpars.q))
       genericQuery.should(QueryBuilders.matchQuery('altname',qpars.q))
       // genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.None))
-      genericQuery.minimumNumberShouldMatch(1)
+      genericQuery.minimumShouldMatch(1)
 
       query.must(genericQuery)
     }
@@ -401,7 +401,7 @@ class ESSearchService{
     linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
     linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), val))
     linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), val))
-    linkedFieldQuery.minimumNumberShouldMatch(1)
+    linkedFieldQuery.minimumShouldMatch(1)
 
     query.must(linkedFieldQuery)
   }
@@ -415,7 +415,7 @@ class ESSearchService{
     linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', val))
     linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', val))
     linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', val))
-    linkedFieldQuery.minimumNumberShouldMatch(1)
+    linkedFieldQuery.minimumShouldMatch(1)
 
     query.must(linkedFieldQuery)
 
@@ -671,7 +671,7 @@ class ESSearchService{
         typeQuery.should(QueryBuilders.termQuery('componentType', "JournalInstance"))
         typeQuery.should(QueryBuilders.termQuery('componentType', "DatabaseInstance"))
         typeQuery.should(QueryBuilders.termQuery('componentType', "BookInstance"))
-        typeQuery.minimumNumberShouldMatch(1)
+        typeQuery.minimumShouldMatch(1)
         exactQuery.must(typeQuery)
       }
       else if (component_type){
@@ -709,7 +709,7 @@ class ESSearchService{
         'curatoryGroups': false
     ]
 
-    def obj_cls = Class.forName("org.gokb.cred.${record.source.componentType}").newInstance()
+    def obj_cls = Class.forName("org.gokb.cred.${record.componentType}").newInstance()
 
     if (obj_cls) {
 
@@ -749,7 +749,7 @@ class ESSearchService{
         }
         else if (esMapping[field] == "refdata" && !toSkip) {
           if (val) {
-            def cat = classExaminationService.deriveCategoryForProperty("org.gokb.cred.${record.source.componentType}", field)
+            def cat = classExaminationService.deriveCategoryForProperty("org.gokb.cred.${record.componentType}", field)
             def rdv = RefdataCategory.lookup(cat, val)
             domainMapping[field] = [id: rdv.id, name:rdv.value]
           }
