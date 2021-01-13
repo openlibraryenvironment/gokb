@@ -303,11 +303,13 @@ class ESSearchService{
   }
 
   private void addStatusQuery(query, errors, qpars) {
-    if ( qpars.status && qpars.status instanceof List ) {
+    if ( qpars.list('status') ) {
+      log.debug("List status - use bool query: ${qpars.status}")
+      def statusList = qpars.list('status')
 
       QueryBuilder statusQuery = QueryBuilders.boolQuery()
 
-      qpars.status.each {
+      statusList.each {
         def ref_status = it
 
         try {
@@ -323,6 +325,7 @@ class ESSearchService{
       query.must(statusQuery)
     }
     else {
+      log.debug("No status - use default: ${qpars.status}")
       query.must(QueryBuilders.termQuery('status', 'Current'))
     }
   }
