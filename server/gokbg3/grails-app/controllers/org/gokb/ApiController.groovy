@@ -1,29 +1,20 @@
 package org.gokb
 
 import com.k_int.ConcurrencyManagerService
-import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ExtendedHibernateDetachedCriteria
-import com.k_int.TextUtils
 import com.k_int.TsvSuperlifterService
 import grails.converters.JSON
 import grails.util.GrailsNameUtils
-import grails.util.Holders
 import groovy.util.logging.*
-import org.elasticsearch.action.search.*
-import org.elasticsearch.index.query.*
-import org.elasticsearch.search.sort.*
 import org.gokb.cred.*
-import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
 import org.hibernate.criterion.CriteriaSpecification
 import org.hibernate.criterion.Subqueries
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.multipart.MultipartHttpServletRequest
-import org.apache.lucene.search.join.ScoreMode
 
 import java.security.SecureRandom
 
-import static java.util.UUID.randomUUID
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
  *
@@ -411,6 +402,7 @@ class ApiController {
     catch(Exception e){
       result.result = "ERROR"
       result.message = e.message
+      result.cause = e.cause
       log.error("Could not process scroll request. Exception was: ${e.message}")
       response.setStatus(400)
     }

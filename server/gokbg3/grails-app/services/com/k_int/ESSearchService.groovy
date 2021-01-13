@@ -14,6 +14,8 @@ import org.elasticsearch.search.sort.*
 
 import org.gokb.cred.*
 
+import java.text.SimpleDateFormat
+
 
 class ESSearchService{
 // Map the parameter names we use in the webapp with the ES fields
@@ -434,23 +436,36 @@ class ESSearchService{
     int scrollSize = 5000
     def result = ["result" : "OK", "scrollSize" : scrollSize]
     def esClient = ESWrapperService.getClient()
+    def errors = [:]                              // TODO: use errors
 
-    QueryBuilder query = (!params.component_type) ?
-        QueryBuilders.matchAllQuery() :
-        QueryBuilders.matchQuery("componentType", params.component_type)
+    QueryBuilder scrollQuery = QueryBuilders.boolQuery()
+    if (params.component_type){
+      QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
+      scrollQuery.must(typeFilter)
+    }
+    addDateQueries(scrollQuery, errors, params)
     // TODO: alternative query builders for scroll searches with q
 
     ActionFuture<SearchResponse> response
     if (!params.scrollId){
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      searchSourceBuilder.query(query)
+      searchSourceBuilder.query(scrollQuery)
       searchSourceBuilder.size(scrollSize)
-
       SearchRequest searchRequest = new SearchRequest(grailsApplication.config.gokb.es.index)
       searchRequest.scroll("1m")
       searchRequest.source(searchSourceBuilder)
       // ... set scroll interval to 1 minute
       response = esClient.search(searchRequest)
+
+      /*
+      // another try to build a scroll request where the added date query works.
+      ClearScrollRequestBuilder searchRequestBuilder = esClient.prepareClearScroll()
+      searchRequestBuilder.setIndices(grailsApplication.config.gokb.es.index)
+      searchRequestBuilder.setTypes(grailsApplication.config.globalSearch.types)
+      searchRequestBuilder.setQuery(scrollQuery)
+      searchRequestBuilder.setSize(scrollSize)
+      response = searchRequestBuilder.execute().actionGet()
+      */
     }
     else{
       SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
@@ -460,12 +475,29 @@ class ESSearchService{
     log.debug("scrollId : " + response.actionGet().getScrollId())
     result.scrollId = response.actionGet().getScrollId()
     SearchHit[] searchHits = response.actionGet().getHits().getHits()
-    result.records = []
-    for (SearchHit hit in searchHits){
-      result.records << hit.getSourceAsMap()
-    }
+
+    result.hasMoreRecords = (searchHits.length == scrollSize) ? true : false
+    result.records = filterLastUpdatedDisplay(searchHits, params, errors, result)
     result.size = result.records.size()
     result
+  }
+
+
+  /**
+   * This is a workaround for the not working scroll request with date range query in Elasticsearch 5.6.10.
+   * TODO: check if this can be removed when having migrated to a higher Elasticsearch version.
+   */
+  private List<SearchHit> filterLastUpdatedDisplay(SearchHit[] searchHitsArray, params,
+                                               Map<String, Object> errors, Serializable result){
+    List filteredHits = []
+    SimpleDateFormat YYYY_MM_DD_HH_mm_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    for (SearchHit hit in searchHitsArray){
+      String dateString = hit.getSourceAsMap().get("lastUpdatedDisplay")
+      if (dateString && !YYYY_MM_DD_HH_mm_SS.parse(dateString)?.before(YYYY_MM_DD_HH_mm_SS.parse(params.changedSince))){
+        filteredHits.add(hit.getSourceAsMap())
+      }
+    }
+    return filteredHits
   }
 
   /**
