@@ -14,6 +14,7 @@ import org.elasticsearch.search.sort.*
 
 import org.gokb.cred.*
 
+import java.lang.reflect.Array
 import java.text.SimpleDateFormat
 
 
@@ -302,30 +303,35 @@ class ESSearchService{
     }
   }
 
-  private void addStatusQuery(query, errors, qpars) {
-    if ( qpars.status && qpars.status instanceof List ) {
-
-      QueryBuilder statusQuery = QueryBuilders.boolQuery()
-
-      qpars.status.each {
-        def ref_status = it
-
-        try {
-          ref_status = RefdataValue.get(Long.valueOf(it))
-        }
-        catch (Exception e) {
-        }
-        statusQuery.should(QueryBuilders.termQuery('status', it))
-      }
-
-      statusQuery.minimumNumberShouldMatch(1)
-
-      query.must(statusQuery)
-    }
-    else {
+  private void addStatusQuery(query, errors, status) {
+    if (!status){
       query.must(QueryBuilders.termQuery('status', 'Current'))
+      return
     }
+    QueryBuilder statusQuery = QueryBuilders.boolQuery()
+    if (status.getClass().isArray() || status instanceof List){
+      status.each {
+        addStatusToQuery(it, statusQuery)
+      }
+    }
+    if (status instanceof String){
+      addStatusToQuery(status, statusQuery)
+    }
+    statusQuery.minimumNumberShouldMatch(1)
+    query.must(statusQuery)
+    return
   }
+
+
+  private void addStatusToQuery(String status, QueryBuilder statusQuery){
+    try{
+      status = RefdataValue.get(Long.valueOf(status))
+    }
+    catch (Exception e){
+    }
+    statusQuery.should(QueryBuilders.termQuery('status', status))
+  }
+
 
   private void addIdentifierQuery(query,errors, qpars) {
     def id_params = [:]
@@ -444,6 +450,7 @@ class ESSearchService{
       scrollQuery.must(typeFilter)
     }
     addDateQueries(scrollQuery, errors, params)
+    addStatusQuery(scrollQuery, errors, params.status)
     // TODO: alternative query builders for scroll searches with q
 
     ActionFuture<SearchResponse> response
@@ -456,16 +463,6 @@ class ESSearchService{
       searchRequest.source(searchSourceBuilder)
       // ... set scroll interval to 1 minute
       response = esClient.search(searchRequest)
-
-      /*
-      // another try to build a scroll request where the added date query works.
-      ClearScrollRequestBuilder searchRequestBuilder = esClient.prepareClearScroll()
-      searchRequestBuilder.setIndices(grailsApplication.config.gokb.es.index)
-      searchRequestBuilder.setTypes(grailsApplication.config.globalSearch.types)
-      searchRequestBuilder.setQuery(scrollQuery)
-      searchRequestBuilder.setSize(scrollSize)
-      response = searchRequestBuilder.execute().actionGet()
-      */
     }
     else{
       SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
@@ -493,7 +490,8 @@ class ESSearchService{
     SimpleDateFormat YYYY_MM_DD_HH_mm_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
     for (SearchHit hit in searchHitsArray){
       String dateString = hit.getSourceAsMap().get("lastUpdatedDisplay")
-      if (dateString && !YYYY_MM_DD_HH_mm_SS.parse(dateString)?.before(YYYY_MM_DD_HH_mm_SS.parse(params.changedSince))){
+      if (!params.changedSince ||
+          dateString && !YYYY_MM_DD_HH_mm_SS.parse(dateString)?.before(YYYY_MM_DD_HH_mm_SS.parse(params.changedSince))){
         filteredHits.add(hit.getSourceAsMap())
       }
     }
@@ -521,7 +519,7 @@ class ESSearchService{
       QueryBuilder exactQuery = QueryBuilders.boolQuery()
 
       filterByComponentType(exactQuery, component_type, params)
-      addStatusQuery(exactQuery, errors, params)
+      addStatusQuery(exactQuery, errors, params.status)
       addDateQueries(exactQuery, errors, params)
       processNameFields(exactQuery, errors, params)
       processGenericFields(exactQuery, errors, params)
