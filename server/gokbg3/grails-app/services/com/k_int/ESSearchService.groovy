@@ -449,8 +449,11 @@ class ESSearchService{
       QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
       scrollQuery.must(typeFilter)
     }
-    addDateQueries(scrollQuery, errors, params)
     addStatusQuery(scrollQuery, errors, params.status)
+
+    // addDateQueries(scrollQuery, errors, params)
+    // TODO: add this after upgrade to Elasticsearch 7
+
     // TODO: alternative query builders for scroll searches with q
 
     ActionFuture<SearchResponse> response
@@ -472,9 +475,11 @@ class ESSearchService{
     log.debug("scrollId : " + response.actionGet().getScrollId())
     result.scrollId = response.actionGet().getScrollId()
     SearchHit[] searchHits = response.actionGet().getHits().getHits()
-
     result.hasMoreRecords = (searchHits.length == scrollSize) ? true : false
+
     result.records = filterLastUpdatedDisplay(searchHits, params, errors, result)
+    // TODO: remove this after upgrade to Elasticsearch 7
+
     result.size = result.records.size()
     result
   }
