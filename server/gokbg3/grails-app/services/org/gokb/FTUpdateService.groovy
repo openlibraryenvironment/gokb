@@ -443,13 +443,14 @@ class FTUpdateService {
 
       log.debug("Query completed.. processing rows...");
 
-      def es_index = grailsApplication.config.gokb?.es?.index ?: "gokbg3"
+      def es_index = grailsApplication.config.gokb?.es?.index
       BulkRequest bulkRequest = new BulkRequest();
 
       // while (results.next()) {
       for (r_id in q) {
         if (Thread.currentThread().isInterrupted()) {
           log.debug("Job cancelling ..")
+          running = false
           break;
         }
 
@@ -460,7 +461,7 @@ class FTUpdateService {
         if (idx_record != null) {
           def recid = idx_record['_id'].toString()
           idx_record.remove('_id');
-          IndexRequest req = new IndexRequest(es_index, 'component', recid)
+          IndexRequest req = new IndexRequest(es_index).id(recid)
 
           bulkRequest.add(req.source(idx_record))
         }
@@ -478,7 +479,7 @@ class FTUpdateService {
           count = 0;
           log.debug("interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
           def bulkResponse = esclient.bulk(bulkRequest)
-          bulkRequest = new BulkRequest(es_index, 'component');
+          bulkRequest = new BulkRequest();
           log.debug("BulkResponse: ${bulkResponse}")
           FTControl.withNewTransaction {
             latest_ft_record = FTControl.get(latest_ft_record.id);

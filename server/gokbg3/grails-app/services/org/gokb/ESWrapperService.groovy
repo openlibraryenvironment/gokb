@@ -176,8 +176,11 @@ class ESWrapperService {
       ]
     ]
 
-    dynamic.each { k, v ->
-      mapping.component.dynamic_templates << [k: v]
+    dynamic.each { key, val ->
+      def map = [:]
+      map["${key}"] = val
+
+      mapping.component.dynamic_templates << map
     }
 
     return mapping

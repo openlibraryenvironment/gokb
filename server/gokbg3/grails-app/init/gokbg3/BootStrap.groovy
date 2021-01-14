@@ -41,11 +41,8 @@ import org.elasticsearch.client.Client
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.core.*
 import org.elasticsearch.client.indices.GetIndexRequest
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest
 import static org.elasticsearch.common.xcontent.XContentFactory.*
 import org.elasticsearch.common.xcontent.XContentBuilder
 
@@ -1167,7 +1164,7 @@ class BootStrap {
       log.debug("Adding index mappings..")
       createIndexRequest.mapping("component", indexMapping())
 
-      CreateIndexResponse indexResponse = esclient.createIndex(createIndexRequest)
+      CreateIndexResponse indexResponse = esclient.indices().create(createIndexRequest, RequestOptions.DEFAULT)
 
       if (indexResponse.isAcknowledged()) {
         log.debug("Index ${indexName} successfully created!")
