@@ -95,8 +95,7 @@ class OaiController {
   }
 
   def getRecord(result) {
-    // long session for possible huge requests
-    request.getSession(true).setMaxInactiveInterval(12000)
+
     log.debug("getRecord - ${result}");
 
     def errors = []
@@ -456,8 +455,6 @@ class OaiController {
 
 
   def listRecords(result) {
-    // long session for possible huge requests
-    request.getSession(true).setMaxInactiveInterval(12000)
     response.contentType = "text/xml"
     response.setCharacterEncoding("UTF-8");
     def out = response.outputStream
