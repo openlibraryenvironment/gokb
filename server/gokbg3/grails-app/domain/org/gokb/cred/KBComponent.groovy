@@ -1378,7 +1378,6 @@ where cp.owner = :c
     if (this?.class == CuratoryGroup) {
       AllocatedReviewGroup.removeAll(this)
     }
-    AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup as grp where grp.review in  as c where c.componentToReview=:component", [component: this]);
     ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview=:component", [component: this]);
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component", [component: this]);
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component", [component: this]);
