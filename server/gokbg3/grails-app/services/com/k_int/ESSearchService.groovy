@@ -14,7 +14,6 @@ import org.elasticsearch.search.sort.*
 
 import org.gokb.cred.*
 
-import java.lang.reflect.Array
 import java.text.SimpleDateFormat
 
 
@@ -475,7 +474,7 @@ class ESSearchService{
     log.debug("scrollId : " + response.actionGet().getScrollId())
     result.scrollId = response.actionGet().getScrollId()
     SearchHit[] searchHits = response.actionGet().getHits().getHits()
-    result.hasMoreRecords = (searchHits.length == scrollSize) ? true : false
+    result.hasMoreRecords = searchHits.length == scrollSize
 
     result.records = filterLastUpdatedDisplay(searchHits, params, errors, result)
     // TODO: remove this after upgrade to Elasticsearch 7
@@ -492,16 +491,32 @@ class ESSearchService{
   private List<SearchHit> filterLastUpdatedDisplay(SearchHit[] searchHitsArray, params,
                                                Map<String, Object> errors, Serializable result){
     List filteredHits = []
+    SimpleDateFormat YYYY_MM_DD = new SimpleDateFormat("yyyy-MM-dd")
     SimpleDateFormat YYYY_MM_DD_HH_mm_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    Date changedSince = parseDate(params.changedSince, YYYY_MM_DD_HH_mm_SS, YYYY_MM_DD)
     for (SearchHit hit in searchHitsArray){
       String dateString = hit.getSourceAsMap().get("lastUpdatedDisplay")
-      if (!params.changedSince ||
-          dateString && !YYYY_MM_DD_HH_mm_SS.parse(dateString)?.before(YYYY_MM_DD_HH_mm_SS.parse(params.changedSince))){
+      if (changedSince == null ||
+          dateString && !YYYY_MM_DD_HH_mm_SS.parse(dateString)?.before(changedSince)){
         filteredHits.add(hit.getSourceAsMap())
       }
     }
     return filteredHits
   }
+
+
+  private Date parseDate(String dateString, SimpleDateFormat... dateFormats){
+    for (SimpleDateFormat format in dateFormats){
+      try{
+        return format.parse(dateString)
+      }
+      catch (Exception e){
+        continue
+      }
+    }
+    return null
+  }
+
 
   /**
    * find : Query the Elasticsearch index --
