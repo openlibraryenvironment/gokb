@@ -266,7 +266,7 @@ class ComponentLookupService {
                 }
 
                 if (!addedLong && a instanceof String && a?.trim() ) {
-                  validStr.add(a)
+                  validStr.add(a.toLowerCase())
                 }
               }
 
@@ -282,7 +282,7 @@ class ComponentLookupService {
                     paramStr += " OR "
                   }
                   paramStr += "${c}.uuid IN :${c}_str OR "
-                  paramStr += "${c}.${c == 'ids' ? 'value' : 'name'} IN :${c}_str"
+                  paramStr += "lower(${c}.${c == 'ids' ? 'value' : 'name'}) IN :${c}_str"
                   qryParams["${c}_str"] = validStr
                 }
                 paramStr += ")"
@@ -298,6 +298,17 @@ class ComponentLookupService {
       }
 
       if (genericTerm?.trim()) {
+        log.debug("Using generic term search with '${genericTerm}'..")
+
+        def validLong = null
+        def lcTerm = genericTerm.toLowerCase()
+
+        try {
+          validLong = Long.valueOf(genericTerm)
+        }
+        catch (java.lang.NumberFormatException nfe) {
+        }
+
         comboJoinStr += " join p.outgoingCombos as idq_combo"
         comboJoinStr += " join idq_combo.toComponent as idq"
 
@@ -309,16 +320,23 @@ class ComponentLookupService {
           comboFilterStr += " AND "
         }
 
-        comboFilterStr += "(lower(p.name) like :qname OR ("
-        qryParams['qname'] = "${genericTerm.toLowerCase()}%"
+        comboFilterStr += "(lower(p.name) like :qname OR p.uuid = :idqval OR ("
+        qryParams['qname'] = "%${lcTerm}%"
         comboFilterStr += "idq_combo.type = :idqtype AND "
-        qryParams["idqtype"] = RefdataCategory.lookupOrCreate ( "Combo.Type", 'KBComponent.Ids')
+        qryParams["idqtype"] = RefdataCategory.lookupOrCreate ("Combo.Type", "KBComponent.Ids")
         comboFilterStr += "idq_combo.status = :idqstatus AND "
         qryParams["idqstatus"] = RefdataCategory.lookup("Combo.Status", "Active")
-        comboFilterStr += "idq.value = :idqval"
-        qryParams["idqval"] = genericTerm
-        comboFilterStr += ") OR EXISTS (select an from KBComponentVariantName as an where lower(an.variantName) like :qname and an.owner = p))"
+        comboFilterStr += "lower(idq.value) = :idqval"
+        qryParams["idqval"] = lcTerm
+        comboFilterStr += ") OR EXISTS (select an from KBComponentVariantName as an where lower(an.variantName) like :qname and an.owner = p)"
+        if (validLong) {
+          qryParams["qid"] = validLong
+          comboFilterStr += " OR p.id = :qid"
+        }
+        comboFilterStr += ")"
       }
+
+      log.debug("comboFilterString: ${comboFilterStr}")
 
       hqlQry += comboJoinStr + comboFilterStr
     }

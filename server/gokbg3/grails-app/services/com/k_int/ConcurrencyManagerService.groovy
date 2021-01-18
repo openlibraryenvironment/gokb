@@ -1,5 +1,6 @@
 package com.k_int
 
+import org.gokb.cred.JobResult
 import org.gokb.cred.RefdataValue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
@@ -10,6 +11,7 @@ import org.grails.async.factory.future.CachedThreadPoolPromiseFactory
 import grails.async.Promise
 import grails.async.PromiseFactory
 import grails.async.Promises
+import grails.converters.JSON
 import grails.core.GrailsApplication
 import grails.gorm.transactions.Transactional
 
@@ -39,7 +41,7 @@ class ConcurrencyManagerService {
 
 
   public class Job implements Promise, Future {
-    int id
+    String uuid
     private Promise task
     int progress
     Date startTime
@@ -196,8 +198,8 @@ class ConcurrencyManagerService {
 
   // Store each job hashed by ID. ConcurrentHashMap is thread-safe and, with only one thread updating per entry,
   // should perform well enough.
-  private Map<Integer, Job> map = new ConcurrentHashMap<Integer, Job>().withDefault { int the_id ->
-    new Job (["id" : the_id])
+  private Map<String, Job> map = new ConcurrentHashMap<String, Job>().withDefault { String the_id ->
+    new Job (["uuid" : the_id])
   }
 
   public Map<Integer, Job> getJobs() {
@@ -233,10 +235,7 @@ class ConcurrencyManagerService {
   private Job createNewJob() {
 
     // The job id.
-    int jobid = map.size() + 1
-    while (this.map.containsKey(jobid)) {
-      jobid ++
-    }
+    String jobid = UUID.randomUUID().toString()
 
     Job j = map.get(jobid)
     j
@@ -247,7 +246,7 @@ class ConcurrencyManagerService {
    * @param job_id
    * @return the Job
    */
-  public Job getJob(int job_id, boolean cleanup = false) {
+  public Job getJob(String job_id, boolean cleanup = false) {
     if (job_id == null || !this.map.containsKey(job_id)) {
       return null
     }
@@ -285,7 +284,7 @@ class ConcurrencyManagerService {
     allJobs.each { k, v ->
       if (v.ownerId == user_id) {
         selected << [
-          id: v.id,
+          id: v.uuid,
           progress: v.progress,
           messages: v.messages,
           description: v.description,
@@ -333,7 +332,7 @@ class ConcurrencyManagerService {
     allJobs.each { k, v ->
       if (v.groupId == group_id) {
         selected << [
-          id: v.id,
+          uuid: v.uuid,
           progress: v.progress,
           messages: v.messages,
           description: v.description,
@@ -357,5 +356,36 @@ class ConcurrencyManagerService {
 
     // Return the jobs.
     result
+  }
+
+  public JobResult persistJobResult(Job j, def result_object = null) {
+    def jobResult = JobResult.findByUuid(j.uuid)
+
+    if (!jobResult) {
+      log.debug("Persisting Job result for Job '${j.description}'")
+      if (!result_object) {
+        result_object = j.get()
+      }
+
+      def job_map = [
+        uuid: (j.uuid),
+        description: (j.description),
+        resultObject: (result_object as JSON).toString(),
+        type: (j.type),
+        statusText: (result_object.result),
+        ownerId: (j.ownerId),
+        groupId: (j.groupId),
+        startTime: (j.startTime),
+        endTime: (j.endTime),
+        linkedItemId: (j.linkedItem?.id)
+      ]
+
+      jobResult = new JobResult(job_map).save(flush: true, failOnError: true)
+    }
+    jobResult
+  }
+
+  @javax.annotation.PreDestroy
+  def destroy() {
   }
 }

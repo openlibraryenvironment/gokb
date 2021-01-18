@@ -576,6 +576,7 @@ class RestMappingService {
 
         if (remove) {
           Iterator items = id_combos.iterator();
+          List removedIds = []
           Object element;
           while (items.hasNext()) {
             element = items.next();
@@ -583,7 +584,18 @@ class RestMappingService {
               // Remove.
               log.debug("Removing newly missing ID ${element.toComponent}")
               element.status = combo_deleted
+              removedIds.add(element.toComponent)
             }
+          }
+
+          if (removedIds) {
+            def idString = ""
+
+            removedIds.each {
+              idString += "${it.namespace.value}:${it.value} "
+            }
+
+            obj.lastUpdateComment = "Removed Ids: ${idString}"
           }
         }
       }

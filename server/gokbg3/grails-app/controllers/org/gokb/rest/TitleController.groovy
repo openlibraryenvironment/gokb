@@ -711,21 +711,24 @@ class TitleController {
     log.debug("Updating title combos ..")
     def errors = [:]
 
-    if (reqBody.ids || reqBody.identifiers) {
-      def id_map = reqBody.ids ?: reqBody.identifiers
-      def id_errors = restMappingService.updateIdentifiers(obj, id_map, remove)
+    if (remove || reqBody.ids instanceof Collection || reqBody.identifierss instanceof Collection) {
+      def id_list = reqBody.ids
+
+      if (id_list == null) {
+        id_list = eqBody.identifiers
+      }
+
+      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
 
       if (id_errors.size() > 0) {
         errors.ids = id_errors
       }
     }
 
-    if (reqBody.publisher) {
-      def pub_errors = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
+    def pub_errors = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
 
-      if (pub_errors.size() > 0)
-        errors.publisher = pub_errors
-    }
+    if (pub_errors.size() > 0)
+      errors.publisher = pub_errors
 
     errors
   }

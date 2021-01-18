@@ -346,16 +346,21 @@ class PackageController {
     log.debug("Updating package combos ..")
     def errors = [:]
 
-    if (reqBody.ids || reqBody.identifiers) {
-      def ids = reqBody.ids ?: reqBody.identifiers
-      def id_errors = restMappingService.updateIdentifiers(obj, ids, remove)
+    if (remove || reqBody.ids instanceof Collection || reqBody.identifierss instanceof Collection) {
+      def id_list = reqBody.ids
+
+      if (id_list == null) {
+        id_list = eqBody.identifiers
+      }
+
+      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
 
       if (id_errors.size > 0) {
         errors['ids'] = id_errors
       }
     }
 
-    if (reqBody.curatoryGroups) {
+    if (reqBody.curatoryGroups instanceof Collection) {
       def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
       if (cg_errors.size() > 0) {
@@ -386,7 +391,7 @@ class PackageController {
       }
     }
 
-    if (reqBody.provider) {
+    if (reqBody.provider instanceof Integer) {
       def prov = null
 
       try {
@@ -412,9 +417,11 @@ class PackageController {
       else {
         errors.provider = [[message: "Could not find provider Org with id ${reqBody.provider}!", baddata: reqBody.provider]]
       }
+    } else if (reqBody.provider == null) {
+      obj.provider = null
     }
 
-    if (reqBody.nominalPlatform || reqBody.platform) {
+    if (reqBody.nominalPlatform != null || reqBody.platform != null) {
       def plt_id = reqBody.nominalPlatform ?: reqBody.platform
       def plt = null
 
@@ -441,6 +448,8 @@ class PackageController {
       else {
         errors.nominalPlatform = [[message: "Could not find platform with id ${reqBody.nominalPlatform}!", baddata: plt_id]]
       }
+    } else if (reqBody.nominalPlatform == null || reqBody.platform == null) {
+      obj.nominalPlatform = null
     }
 
     if (reqBody.tipps) {

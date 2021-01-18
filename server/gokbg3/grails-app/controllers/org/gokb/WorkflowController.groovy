@@ -2210,8 +2210,8 @@ class WorkflowController {
       Boolean curated_pkg = false;
       def is_curator = null;
 
-      if ( the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0 ) {
-        is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
+      if ( pkgObj.curatoryGroups && pkgObj.curatoryGroups?.size() > 0 ) {
+        is_curator = user.curatoryGroups?.id.intersect(pkgObj.curatoryGroups?.id)
         curated_pkg = true;
       }
 
