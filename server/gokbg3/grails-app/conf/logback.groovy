@@ -36,7 +36,6 @@ if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST 
   logger ('org.gokb.TitleLookupService', ERROR)
   logger ('org.gokb.SearchController', ERROR)
   logger ('org.gokb.ResourceController', ERROR)
-  logger ('org.gokb.FTUpdateService', ERROR)
   logger ('org.gokb.ESUpdateJob', ERROR)
   logger ('org.gokb.cred', ERROR)
   logger ('gokbg3.UserDetailsInterceptor', ERROR)

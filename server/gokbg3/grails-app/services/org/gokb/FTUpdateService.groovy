@@ -461,7 +461,7 @@ class FTUpdateService {
         if (idx_record != null) {
           def recid = idx_record['_id'].toString()
           idx_record.remove('_id');
-          IndexRequest req = new IndexRequest(es_index).id(recid)
+          IndexRequest req = new IndexRequest(es_index, "component").id(recid)
 
           bulkRequest.add(req.source(idx_record))
         }
@@ -479,7 +479,6 @@ class FTUpdateService {
           count = 0;
           log.debug("interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush");
           def bulkResponse = esclient.bulk(bulkRequest)
-          bulkRequest = new BulkRequest();
           log.debug("BulkResponse: ${bulkResponse}")
           FTControl.withNewTransaction {
             latest_ft_record = FTControl.get(latest_ft_record.id);
