@@ -14,6 +14,8 @@ import org.elasticsearch.search.sort.*
 
 import org.gokb.cred.*
 
+import java.text.SimpleDateFormat
+
 
 class ESSearchService{
 // Map the parameter names we use in the webapp with the ES fields
@@ -300,30 +302,35 @@ class ESSearchService{
     }
   }
 
-  private void addStatusQuery(query, errors, qpars) {
-    if ( qpars.status && qpars.status instanceof List ) {
-
-      QueryBuilder statusQuery = QueryBuilders.boolQuery()
-
-      qpars.status.each {
-        def ref_status = it
-
-        try {
-          ref_status = RefdataValue.get(Long.valueOf(it))
-        }
-        catch (Exception e) {
-        }
-        statusQuery.should(QueryBuilders.termQuery('status', it))
-      }
-
-      statusQuery.minimumNumberShouldMatch(1)
-
-      query.must(statusQuery)
-    }
-    else {
+  private void addStatusQuery(query, errors, status) {
+    if (!status){
       query.must(QueryBuilders.termQuery('status', 'Current'))
+      return
     }
+    QueryBuilder statusQuery = QueryBuilders.boolQuery()
+    if (status.getClass().isArray() || status instanceof List){
+      status.each {
+        addStatusToQuery(it, statusQuery)
+      }
+    }
+    if (status instanceof String){
+      addStatusToQuery(status, statusQuery)
+    }
+    statusQuery.minimumNumberShouldMatch(1)
+    query.must(statusQuery)
+    return
   }
+
+
+  private void addStatusToQuery(String status, QueryBuilder statusQuery){
+    try{
+      status = RefdataValue.get(Long.valueOf(status))
+    }
+    catch (Exception e){
+    }
+    statusQuery.should(QueryBuilders.termQuery('status', status))
+  }
+
 
   private void addIdentifierQuery(query,errors, qpars) {
     def id_params = [:]
@@ -434,18 +441,25 @@ class ESSearchService{
     int scrollSize = 5000
     def result = ["result" : "OK", "scrollSize" : scrollSize]
     def esClient = ESWrapperService.getClient()
+    def errors = [:]                              // TODO: use errors
 
-    QueryBuilder query = (!params.component_type) ?
-        QueryBuilders.matchAllQuery() :
-        QueryBuilders.matchQuery("componentType", params.component_type)
+    QueryBuilder scrollQuery = QueryBuilders.boolQuery()
+    if (params.component_type){
+      QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
+      scrollQuery.must(typeFilter)
+    }
+    addStatusQuery(scrollQuery, errors, params.status)
+
+    // addDateQueries(scrollQuery, errors, params)
+    // TODO: add this after upgrade to Elasticsearch 7
+
     // TODO: alternative query builders for scroll searches with q
 
     ActionFuture<SearchResponse> response
     if (!params.scrollId){
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      searchSourceBuilder.query(query)
+      searchSourceBuilder.query(scrollQuery)
       searchSourceBuilder.size(scrollSize)
-
       SearchRequest searchRequest = new SearchRequest(grailsApplication.config.gokb.es.index)
       searchRequest.scroll("1m")
       searchRequest.source(searchSourceBuilder)
@@ -460,13 +474,49 @@ class ESSearchService{
     log.debug("scrollId : " + response.actionGet().getScrollId())
     result.scrollId = response.actionGet().getScrollId()
     SearchHit[] searchHits = response.actionGet().getHits().getHits()
-    result.records = []
-    for (SearchHit hit in searchHits){
-      result.records << hit.getSourceAsMap()
-    }
+    result.hasMoreRecords = searchHits.length == scrollSize
+
+    result.records = filterLastUpdatedDisplay(searchHits, params, errors, result)
+    // TODO: remove this after upgrade to Elasticsearch 7
+
     result.size = result.records.size()
     result
   }
+
+
+  /**
+   * This is a workaround for the not working scroll request with date range query in Elasticsearch 5.6.10.
+   * TODO: check if this can be removed when having migrated to a higher Elasticsearch version.
+   */
+  private List<SearchHit> filterLastUpdatedDisplay(SearchHit[] searchHitsArray, params,
+                                               Map<String, Object> errors, Serializable result){
+    List filteredHits = []
+    SimpleDateFormat YYYY_MM_DD = new SimpleDateFormat("yyyy-MM-dd")
+    SimpleDateFormat YYYY_MM_DD_HH_mm_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    Date changedSince = parseDate(params.changedSince, YYYY_MM_DD_HH_mm_SS, YYYY_MM_DD)
+    for (SearchHit hit in searchHitsArray){
+      String dateString = hit.getSourceAsMap().get("lastUpdatedDisplay")
+      if (changedSince == null ||
+          dateString && !YYYY_MM_DD_HH_mm_SS.parse(dateString)?.before(changedSince)){
+        filteredHits.add(hit.getSourceAsMap())
+      }
+    }
+    return filteredHits
+  }
+
+
+  private Date parseDate(String dateString, SimpleDateFormat... dateFormats){
+    for (SimpleDateFormat format in dateFormats){
+      try{
+        return format.parse(dateString)
+      }
+      catch (Exception e){
+        continue
+      }
+    }
+    return null
+  }
+
 
   /**
    * find : Query the Elasticsearch index --
@@ -489,7 +539,7 @@ class ESSearchService{
       QueryBuilder exactQuery = QueryBuilders.boolQuery()
 
       filterByComponentType(exactQuery, component_type, params)
-      addStatusQuery(exactQuery, errors, params)
+      addStatusQuery(exactQuery, errors, params.status)
       addDateQueries(exactQuery, errors, params)
       processNameFields(exactQuery, errors, params)
       processGenericFields(exactQuery, errors, params)
