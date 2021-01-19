@@ -424,24 +424,26 @@ class FTUpdateService {
           }
 
           // simple eBook fields
-          result.titleVolumeNumber = kbc.title?.volumeNumber ? kbc.title.volumeNumber : ""
-          result.titleDateFirstInPrint = kbc.title?.dateFirstInPrint ? kbc.title.dateFirstInPrint : ""
-          result.titleDateFirstOnline = kbc.title?.dateFirstOnline ? kbc.title.dateFirstOnline : ""
-          result.titleFirstEditor = kbc.title?.firstEditor ? kbc.title.firstEditor : ""
-          result.titleFirstAuthor = kbc.title?.firstAuthor ? kbc.title.firstAuthor : ""
-          result.titleImprint = kbc.title?.imprint ? kbc.title.imprint : ""
+          result.titleVolumeNumber = kbc.title?.volumeNumber ?: ""
+          result.titleDateFirstInPrint = kbc.title?.dateFirstInPrint ?: ""
+          result.titleDateFirstOnline = kbc.title?.dateFirstOnline ?: ""
+          result.titleFirstEditor = kbc.title?.firstEditor ?: ""
+          result.titleFirstAuthor = kbc.title?.firstAuthor ?: ""
+          result.titleImprint = kbc.title?.imprint ?: ""
         }
 
         // title history for all title types
-        result.titleHistory = []
-        kbc.title?.historyEvents?.each{ he ->
-          if (he.date){
-            def event = [:]
-            event.date = he.date
-            event.from = he.from ?: ""
-            event.to = he.to ?: ""
-            event.uuid = he.uuid ?: ""
-            result.titleHistory.add(event)
+        if (kbc.title?.hasProperty("historyEvents")){
+          result.titleHistory = []
+          kbc.title?.historyEvents?.each{ he ->
+            if (he.date){
+              def event = [:]
+              event.date = he.date
+              event.from = he.from ?: ""
+              event.to = he.to ?: ""
+              event.uuid = he.uuid ?: ""
+              result.titleHistory.add(event)
+            }
           }
         }
 
@@ -449,7 +451,7 @@ class FTUpdateService {
         result.titlePublishers = []
         kbc.title?.publisher?.each { pub ->
           def publisher = [:]
-          publisher.name = pub.name
+          publisher.name = pub.name ?: ""
           publisher.id = pub.id ?: ""
           publisher.uuid = pub.uuid ?: ""
           result.titlePublishers.add(publisher)
