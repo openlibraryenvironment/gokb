@@ -139,6 +139,15 @@ class FTUpdateService {
 
         result.componentType = kbc.class.simpleName
 
+        result.platforms = []
+        kbc.providedPlatforms?.each { plt ->
+          def platform = [:]
+          platform.uuid = plt.uuid ?: ""
+          platform.url = plt.primaryUrl ?: ""
+          platform.name = plt.name ?: ""
+          result.platforms.add(platform)
+        }
+
         result
       }
 
