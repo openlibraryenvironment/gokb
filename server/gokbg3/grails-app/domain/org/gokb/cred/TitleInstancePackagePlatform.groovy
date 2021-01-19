@@ -35,6 +35,9 @@ class TitleInstancePackagePlatform extends KBComponent {
   Date accessEndDate
   String subjectArea
   String series
+  String publisherName
+  Date dateFirstInPrint
+  Date dateFirstOnline
 
   private static SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
 
@@ -78,7 +81,10 @@ class TitleInstancePackagePlatform extends KBComponent {
       'tippPackageName' : "pkg.name",
       'tippPackage'     : "pkg.id",
       'titleType'       : "title.niceName",
-      'coverage'        : "coverageStatements"
+      'coverage'        : "coverageStatements",
+      'publisherName'   : "publisherName",
+      'dateFirstInPrint': "dateFirstInPrint",
+      'dateFirstOnline' : "dateFirstOnline"
     ],
     'defaultLinks' : [
       'pkg',
@@ -88,7 +94,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     'defaultEmbeds': [
       'coverageStatements'
     ]
-  ];
+  ]
 
   static touchOnUpdate = [
     "pkg"
@@ -199,7 +205,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Override
   public String getNiceName() {
-    return "TIPP";
+    return "TIPP"
   }
 
   /**
@@ -218,21 +224,18 @@ class TitleInstancePackagePlatform extends KBComponent {
     if (result) {
 
       def pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
-      def pkg_combo = new Combo(toComponent: result, fromComponent: tipp_fields.pkg, type: pkg_combo_type).save(flush: true, failOnError: true);
+      new Combo(toComponent: result, fromComponent: tipp_fields.pkg, type: pkg_combo_type).save(flush: true, failOnError: true)
 
       def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
-      def plt_combo = new Combo(toComponent: result, fromComponent: tipp_fields.hostPlatform, type: plt_combo_type).save(flush: true, failOnError: true);
+      new Combo(toComponent: result, fromComponent: tipp_fields.hostPlatform, type: plt_combo_type).save(flush: true, failOnError: true)
 
       def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-      def ti_combo = new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true);
+      new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
 
-      def tipl = TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
+      TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
     } else {
       log.error("TIPP creation failed!")
     }
-
-//     // See if there is a TIPL
-//     TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
 
     result
   }
@@ -361,6 +364,7 @@ class TitleInstancePackagePlatform extends KBComponent {
               result.errors.coverageDepth << [message: "Illegal value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
             }
           } catch (Exception e) {
+            log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Integer")
           }
         } else if (coverage.coverageDepth instanceof Map) {
           if (coverage.coverageDepth.id) {
@@ -376,6 +380,7 @@ class TitleInstancePackagePlatform extends KBComponent {
                 result.errors.coverageDepth << [message: "Illegal ID value '${coverage.coverageDepth.id}' for coverage depth", baddata: coverage.coverageDepth]
               }
             } catch (Exception e) {
+              log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Map")
             }
           } else if (coverage.coverageDepth.value || coverage.coverageDepth.name) {
             if (!['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase())) {
@@ -397,7 +402,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
 
     if (!result.valid) {
-      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${pkgLink} plat:${pltLink} ti:${tiLink} -- Errors: ${result.errors}");
+      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${pkgLink} plat:${pltLink} ti:${tiLink} -- Errors: ${result.errors}")
     }
 
     return result
@@ -409,7 +414,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   @Transient
   static TitleInstancePackagePlatform upsertDTO(tipp_dto, def user = null) {
     def result = null
-    log.debug("upsertDTO(${tipp_dto})");
+    log.debug("upsertDTO(${tipp_dto})")
     def pkg = null
     def plt = null
     def ti = null
@@ -456,13 +461,13 @@ class TitleInstancePackagePlatform extends KBComponent {
     def curator = pkg?.curatoryGroups?.size() > 0 ? (user.adminStatus || user.curatoryGroups?.id.intersect(pkg?.curatoryGroups?.id)) : true
 
     if (pkg && plt && ti && curator) {
-      log.debug("See if we already have a tipp");
+      log.debug("See if we already have a tipp")
       def tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
         'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
         'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
         'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
         [pkg, plt, ti])
-      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null;
+      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
       def tipp = null
 
       if (uuid_tipp && uuid_tipp.pkg == pkg && uuid_tipp.title == ti && uuid_tipp.hostPlatform == plt) {
@@ -472,7 +477,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       if (!tipp) {
         switch (tipps.size()) {
           case 1:
-            log.debug("found");
+            log.debug("found")
 
             if (trimmed_url && trimmed_url.size() > 0) {
               if (!tipps[0].url || tipps[0].url == trimmed_url) {
@@ -708,11 +713,19 @@ class TitleInstancePackagePlatform extends KBComponent {
       if (tipp_dto.subjectArea) {
         tipp.setSubjectArea(tipp_dto.subjectArea)
       }
+      if (tipp_dto.publisherName) {
+        tipp.publisherName(tipp_dto.publisherName)
+      }
+      if (tipp_dto.dateFirstInPrint) {
+        tipp.dateFirstInPrint(tipp_dto.dateFirstInPrint)
+      }
+      if (tipp_dto.dateFirstOnline) {
+        tipp.dateFirstOnline(tipp_dto.dateFirstOnline)
+      }
       result = tipp;
     } else {
       log.debug("Not able to reference TIPP: ${tipp_dto}")
     }
-
     result;
   }
 
@@ -754,6 +767,9 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'url'(url ?: "")
         builder.'subjectArea'(subjectArea?.trim())
         builder.'series'(series?.trim())
+        builder.'publisherName'(publisherName?.trim())
+        builder.'dateFirstInPrint'(dateFirstInPrint?.trim())
+        builder.'dateFirstOnline'(dateFirstOnline?.trim())
         builder.'title' ([id:ti.id, uuid:ti.uuid]) {
           builder.'name' (ti.name?.trim())
           builder.'type' (titleClass)
@@ -862,8 +878,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Transient
   public getTitleClass() {
-    def result = KBComponent.get(title.id)?.class.getSimpleName();
-
+    def result = KBComponent.get(title.id)?.class.getSimpleName()
     result
   }
 }
