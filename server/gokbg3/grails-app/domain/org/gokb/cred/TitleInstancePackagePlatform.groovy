@@ -705,7 +705,6 @@ class TitleInstancePackagePlatform extends KBComponent {
             }
           }
         }
-//         tipp.save(flush:true, failOnError:true);
       }
       if (tipp_dto.series) {
         tipp.setSeries(tipp_dto.series)
@@ -714,19 +713,24 @@ class TitleInstancePackagePlatform extends KBComponent {
         tipp.setSubjectArea(tipp_dto.subjectArea)
       }
       if (tipp_dto.publisherName) {
-        tipp.publisherName(tipp_dto.publisherName)
+        com.k_int.ClassUtils.setStringIfDifferent(tipp, 'publisherName', tipp_dto.publisherName)
       }
-      if (tipp_dto.dateFirstInPrint) {
-        tipp.dateFirstInPrint(tipp_dto.dateFirstInPrint)
+      if (org.apache.commons.lang.StringUtils.isNotEmpty(tipp_dto.dateFirstInPrint)) {
+        def print = GOKbTextUtils.completeDateString(tipp_dto.dateFirstInPrint)
+        com.k_int.ClassUtils.setDateIfPresent(print, tipp, 'dateFirstInPrint')
       }
-      if (tipp_dto.dateFirstOnline) {
-        tipp.dateFirstOnline(tipp_dto.dateFirstOnline)
+      if (org.apache.commons.lang.StringUtils.isNotEmpty(tipp_dto.dateFirstOnline)) {
+        def online = GOKbTextUtils.completeDateString(tipp_dto.dateFirstOnline)
+        com.k_int.ClassUtils.setDateIfPresent(online, tipp, 'dateFirstOnline')
       }
-      result = tipp;
+
+      tipp.save(flush:true, failOnError:true);
+
+      result = tipp
     } else {
       log.debug("Not able to reference TIPP: ${tipp_dto}")
     }
-    result;
+    result
   }
 
 

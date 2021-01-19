@@ -82,7 +82,7 @@
         <g:annotatedLabel owner="${d}" property="publisherName">Publisher Name</g:annotatedLabel>
     </dt>
     <dd>
-        <g:xEditable class="ipe" owner="${d}" field="name"/>
+        <g:xEditable class="ipe" owner="${d}" field="publisherName"/>
     </dd>
 
     <dt>

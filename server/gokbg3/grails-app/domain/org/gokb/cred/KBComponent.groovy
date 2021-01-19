@@ -118,7 +118,7 @@ where cp.owner = :c
       this.touchOnUpdate.each { dep_name ->
 
         // Get the dependant.
-        def deps = this."${dep_name}"
+        def deps = this.getProperty(dep_name)
 
         log.debug("Got ${dep_name}: ${deps}")
 
