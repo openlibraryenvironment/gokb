@@ -389,6 +389,74 @@ class FTUpdateService {
         }
 
         result.componentType = kbc.class.simpleName
+        result.tippTitleMedium = kbc.title ? kbc.title.medium : ""
+
+        result.accessStartDate = kbc.accessStartDate ? kbc.accessStartDate.toString() : ""
+        result.accessEndDate = kbc.accessEndDate ? kbc.accessEndDate.toString() : ""
+
+        result.subjectArea = kbc.subjectArea ?: ""
+        result.series = kbc.series ?: ""
+
+        if (kbc.title?.niceName == 'Book'){
+
+          // edition for eBooks
+          def edition = [:]
+          if (kbc.title?.editionNumber){
+            edition.number = kbc.title.editionNumber
+          }
+          if (kbc.title?.editionDifferentiator){
+            edition.differentiator = kbc.title.editionDifferentiator
+          }
+          if (kbc.title?.editionStatement){
+            edition.statement = kbc.title.editionStatement
+          }
+          if (!edition.isEmpty()){
+            result.titleEdition = edition
+          }
+
+          // simple eBook fields
+          result.titleVolumeNumber = kbc.title?.volumeNumber ? kbc.title.volumeNumber : ""
+          result.titleDateFirstInPrint = kbc.title?.dateFirstInPrint ? kbc.title.dateFirstInPrint : ""
+          result.titleDateFirstOnline = kbc.title?.dateFirstOnline ? kbc.title.dateFirstOnline : ""
+          result.titleFirstEditor = kbc.title?.firstEditor ? kbc.title.firstEditor : ""
+          result.titleFirstAuthor = kbc.title?.firstAuthor ? kbc.title.firstAuthor : ""
+          result.titleImprint = kbc.title?.imprint ? kbc.title.imprint : ""
+        }
+
+        // title history for all title types
+        result.titleHistory = []
+        kbc.title?.historyEvents?.each{ he ->
+          if (he.date){
+            def event = [:]
+            event.date = he.date
+            event.from = he.from ?: ""
+            event.to = he.to ?: ""
+            event.uuid = he.uuid ?: ""
+            result.titleHistory.add(event)
+          }
+        }
+
+        // publishers for all title types
+        result.titlePublishers = []
+        kbc.title?.publisher?.each { pub ->
+          def publisher = [:]
+          publisher.name = pub.name
+          publisher.id = pub.id ?: ""
+          publisher.uuid = pub.uuid ?: ""
+          result.titlePublishers.add(publisher)
+        }
+
+        // prices for all title types
+        result.prices = []
+        kbc.prices?.each { p ->
+          def price = [:]
+          price.type = p.priceType?.value ?: ""
+          price.amount = p.price ?: ""
+          price.currency = p.currency ?: ""
+          price.startDate = p.startDate ?: ""
+          price.endDate = p.endDate ?: ""
+          result.prices.add(price)
+        }
 
         result
       }
@@ -397,7 +465,6 @@ class FTUpdateService {
     catch (Exception e) {
       log.error("Problem", e);
     }
-
     running = false;
   }
 
