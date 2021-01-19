@@ -18,7 +18,6 @@
             <dt class="dt-label">Conflict type</dt>
             <dd>
               <select class="form-control" id="ctype" name="ctype">
-                <option value="all" ${ctype == 'all' ? 'selected' : ''}>Show all</option>
                 <option value="st" ${ctype == 'st' ? 'selected' : ''}>Multiple occurrences of one namespace on one title</option>
                 <option value="di" ${ctype == 'di' ? 'selected' : ''}>Identifers connected to multiple components</option>
               </select>
@@ -32,8 +31,8 @@
     </div>
   </div>
   <g:if test="${namespace}">
-    <g:if test="${!ctype || ctype != 'di'}">
-      <h1 class="page-header">Components with multiple IDs of namespace <g:link controller="resource" action="show" id="org.gokb.cred.IdentifierNamespace:${namespace.id}">${namespace.value}</g:link> (${singleTitles.size()})</h1>
+    <g:if test="${ctype == 'st'}">
+      <h1 class="page-header">Components with multiple IDs of namespace <g:link controller="resource" action="show" id="org.gokb.cred.IdentifierNamespace:${namespace.id}">${namespace.value}</g:link> (${titleCount})</h1>
       <div id="mainarea" class="panel panel-default">
 
         <g:if test="${singleTitles.size() > 0}">
@@ -65,6 +64,19 @@
               </g:each>
             </tbody>
           </table>
+          <div class="pagination" style="text-align:center">
+            <g:if test="${titleCount?:0 > 0 }" >
+              <g:paginate
+                controller="component"
+                action="identifierConflicts"
+                params="${[ctype: ctype, id: params.id]}"
+                next="Next"
+                prev="Prev"
+                max="${tiMax}"
+                total="${titleCount}"
+              />
+            </g:if>
+          </div>
         </g:if>
         <g:else>
           <div style="text-align:center">
@@ -74,8 +86,8 @@
       </div>
     </g:if>
 
-    <g:if test="${!ctype || ctype != 'st'}">
-      <h1 class="page-header">Identifiers connected to multiple components for namespace <g:link controller="resource" action="show" id="org.gokb.cred.IdentifierNamespace:${namespace.id}">${namespace.value}</g:link> (${dispersedIds.size()})</h1>
+    <g:if test="${ctype == 'di'}">
+      <h1 class="page-header">Identifiers connected to multiple components for namespace <g:link controller="resource" action="show" id="org.gokb.cred.IdentifierNamespace:${namespace.id}">${namespace.value}</g:link> (${idsCount})</h1>
       <div id="mainarea" class="panel panel-default">
 
         <g:if test="${dispersedIds.size() > 0}">
@@ -99,6 +111,19 @@
               </g:each>
             </tbody>
           </table>
+          <div class="pagination" style="text-align:center">
+            <g:if test="${idsCount?:0 > 0 }" >
+              <g:paginate
+                controller="component"
+                action="identifierConflicts"
+                params="${[ctype: ctype, id: params.id]}"
+                next="Next"
+                prev="Prev"
+                max="${idMax}"
+                total="${idsCount}"
+              />
+            </g:if>
+          </div>
         </g:if>
         <g:else>
           <div style="text-align:center">
