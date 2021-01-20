@@ -36,7 +36,7 @@ class ComponentController {
           RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
           RefdataValue combo_status = RefdataCategory.lookup('Combo.Status', 'Active')
 
-          if (!params.ctype || params.ctype != 'di') {
+          if (params.ctype == 'st') {
 
             final String query = '''SELECT ti.kbc_id FROM title_instance AS ti NATURAL JOIN kbcomponent as kbc WHERE kbc.kbc_status_rv_fk <> :deleted
               AND (SELECT count(c.combo_id) FROM combo AS c JOIN identifier AS id ON (c.combo_to_fk = id.kbc_id) WHERE
@@ -70,7 +70,7 @@ class ComponentController {
             components = singleTitles
           }
 
-          if (!params.ctype || params.ctype != 'st') {
+          if (params.ctype == 'di') {
             final String dquery = '''SELECT id.kbc_id FROM identifier AS id WHERE id.id_namespace_fk = :namespace
               AND (SELECT COUNT(c.combo_id) FROM combo AS c JOIN kbcomponent as kbc ON (c.combo_from_fk = kbc.kbc_id) WHERE
                 kbc.kbc_status_rv_fk <> :deleted AND c.combo_to_fk = id.kbc_id AND c.combo_type_rv_fk = :comboType AND c.combo_status_rv_fk = :comboStatus ) > 1
