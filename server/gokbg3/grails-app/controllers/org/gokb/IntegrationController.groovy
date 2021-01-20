@@ -34,11 +34,6 @@ class IntegrationController {
   def messageService
   def titleHistoryService
 
-  final def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-  final def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-  final def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-  final def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-
   @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def index() {
   }
@@ -953,6 +948,11 @@ class IntegrationController {
               def locale = request_locale
               springSecurityService.reauthenticate(request_user.username)
 
+              final def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+              final def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+              final def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+              final def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+
               job.ownerId = user.id
 
               try {
@@ -1423,8 +1423,6 @@ class IntegrationController {
                     }
                     if (!cancelled) {
                       if (!update && existing_tipps.size() > 0) {
-
-
                         tipps_to_delete.eachWithIndex { ttd, idx ->
 
                           def to_retire = TitleInstancePackagePlatform.get(ttd)
