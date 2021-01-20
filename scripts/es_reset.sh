@@ -9,10 +9,10 @@ curl -XDELETE "http://localhost:9200/$INDEXNAME"
 echo \\nCreate index
 curl -X PUT "localhost:9200/$INDEXNAME" -H 'Content-Type: application/json' -d '{
   "settings": {
-      "number_of_shards": 1, 
+      "number_of_shards": 1,
       "analysis": {
           "filter": {
-              "autocomplete_filter": { 
+              "autocomplete_filter": {
                   "type":     "edge_ngram",
                   "min_gram": 1,
                   "max_gram": 20
@@ -24,7 +24,7 @@ curl -X PUT "localhost:9200/$INDEXNAME" -H 'Content-Type: application/json' -d '
                   "tokenizer": "standard",
                   "filter": [
                       "lowercase",
-                      "autocomplete_filter" 
+                      "autocomplete_filter"
                   ]
               }
           }
@@ -42,6 +42,24 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -H 'Content-Type: app
           "match_mapping_type": "string",
           "mapping": {
             "type": "keyword"
+          }
+        }
+      },
+      {
+        "dateFirstInPrint": {
+          "match": "dateFirstInPrint",
+          "mapping": {
+            "type": "date",
+            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
+          }
+        }
+      },
+      {
+        "dateFirstOnline": {
+          "match": "dateFirstOnline",
+          "mapping": {
+            "type": "date",
+            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
           }
         }
       },
