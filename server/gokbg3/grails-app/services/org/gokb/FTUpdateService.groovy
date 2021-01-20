@@ -330,6 +330,7 @@ class FTUpdateService {
         def result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
+        result.name = kbc.name ?: (kbc.title?.name ?: null)
 
         result.curatoryGroups = []
         kbc.pkg?.curatoryGroups?.each { cg ->
