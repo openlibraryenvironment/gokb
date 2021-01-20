@@ -69,13 +69,38 @@
         <g:xEditable class="ipe" owner="${d}" type="date"
                      field="accessStartDate"/>
     </dd>
+
     <dt>
-        <g:annotatedLabel owner="${d}" property="accessStartDate">Access End Date</g:annotatedLabel>
+        <g:annotatedLabel owner="${d}" property="accessEndDate">Access End Date</g:annotatedLabel>
     </dt>
     <dd>
         <g:xEditable class="ipe" owner="${d}" type="date"
                      field="accessEndDate"/>
     </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="publisherName">Publisher Name</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditable class="ipe" owner="${d}" field="publisherName"/>
+    </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="dateFirstInPrint">First in print Date</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditable class="ipe" owner="${d}" type="date"
+                     field="dateFirstInPrint"/>
+    </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="dateFirstOnline">First online Date</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditable class="ipe" owner="${d}" type="date"
+                     field="dateFirstOnline"/>
+    </dd>
+
 </dl>
 
 <ul id="tabs" class="nav nav-tabs">

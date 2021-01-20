@@ -109,6 +109,20 @@ class ESWrapperService {
         match_mapping_type: "string",
         mapping: [type: "keyword"]
       ],
+      dateFirstInPrint: [
+        match: "dateFirstInPrint",
+        mapping: [
+          type: "date",
+          format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
+        ]
+      ],
+      dateFirstOnline: [
+        match: "dateFirstOnline",
+        mapping: [
+          type: "date",
+          format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
+        ]
+      ],
       cpname: [
         match: "cpname",
         match_mapping_type: "string",
@@ -177,7 +191,10 @@ class ESWrapperService {
     ]
 
     dynamic.each { k, v ->
-      mapping.component.dynamic_templates << [k: v]
+      def mapObj = [:]
+      mapObj[k] = v
+
+      mapping.component.dynamic_templates << mapObj
     }
 
     return mapping

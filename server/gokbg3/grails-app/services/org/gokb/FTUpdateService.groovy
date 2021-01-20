@@ -85,7 +85,7 @@ class FTUpdateService {
         result.listVerifiedDate = kbc.listVerifiedDate ? dateFormatService.formatTimestamp(kbc.listVerifiedDate) : ""
 
         if (kbc.source)
-          result.source = [frequency : kbc.source.frequency, id:kbc.source.id]
+          result.source = [frequency: kbc.source.frequency, id: kbc.source.id]
 
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -327,9 +327,7 @@ class FTUpdateService {
 
       updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class) { kbc ->
 
-        def result = null
-
-        result = [:]
+        def result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name ?: (kbc.title?.name ?: null)
@@ -386,6 +384,16 @@ class FTUpdateService {
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
                                   namespaceName: idc.toComponent.namespace.name])
+        }
+
+        if (org.apache.commons.lang.StringUtils.isNotEmpty(kbc.publisherName)) {
+          result.publisherName = kbc.publisherName
+        }
+        if (kbc.dateFirstOnline) {
+          result.dateFirstOnline = dateFormatService.formatTimestamp(kbc.dateFirstOnline)
+        }
+        if (kbc.dateFirstInPrint) {
+          result.dateFristInPrint = dateFormatService.formatTimestamp(kbc.dateFirstInPrint)
         }
 
         result.componentType = kbc.class.simpleName
