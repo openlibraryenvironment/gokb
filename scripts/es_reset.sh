@@ -50,7 +50,7 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -H 'Content-Type: app
           "match": "dateFirstInPrint",
           "mapping": {
             "type": "date",
-            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
+            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'\''T'\''HH:mm:ssZ||epoch_millis"
           }
         }
       },
@@ -59,7 +59,7 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -H 'Content-Type: app
           "match": "dateFirstOnline",
           "mapping": {
             "type": "date",
-            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
+            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'\''T'\''HH:mm:ssZ||epoch_millis"
           }
         }
       },
