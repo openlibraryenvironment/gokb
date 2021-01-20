@@ -346,21 +346,26 @@ class PackageController {
     log.debug("Updating package combos ..")
     def errors = [:]
 
-    if (remove || reqBody.ids instanceof Collection || reqBody.identifierss instanceof Collection) {
+    if (reqBody.ids || reqBody.identifiers) {
       def id_list = reqBody.ids
 
       if (id_list == null) {
-        id_list = eqBody.identifiers
+        id_list = reqBody.identifiers
       }
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      if (id_list == null) {
+        def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size > 0) {
-        errors['ids'] = id_errors
+        if (id_errors.size() > 0) {
+          errors.ids = id_errors
+        }
       }
     }
+    else {
+      log.debug("No IDs in ${reqBody}")
+    }
 
-    if (reqBody.curatoryGroups instanceof Collection) {
+    if (reqBody.containsKey('curatoryGroups')) {
       def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
       if (cg_errors.size() > 0) {

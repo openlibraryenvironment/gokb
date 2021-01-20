@@ -711,18 +711,26 @@ class TitleController {
     log.debug("Updating title combos ..")
     def errors = [:]
 
-    if (remove || reqBody.ids instanceof Collection || reqBody.identifierss instanceof Collection) {
+    if (reqBody.ids || reqBody.identifiers) {
       def id_list = reqBody.ids
 
       if (id_list == null) {
-        id_list = eqBody.identifiers
+        id_list = reqBody.identifiers
       }
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      if (id_list != null) {
+        def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+        if (id_errors.size() > 0) {
+          errors.ids = id_errors
+        }
       }
+      else {
+        log.debug("Parameter should be List, but was 'null': ${reqBody.ids} - ${reqBody.identifiers}")
+      }
+    }
+    else {
+      log.debug("No IDs in ${reqBody}")
     }
 
     def pub_errors = restMappingService.updatePublisher(obj, reqBody.publisher, remove)

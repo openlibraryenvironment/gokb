@@ -1830,6 +1830,26 @@ class IntegrationController {
         job.setProgress(100)
         job.message("Finished processing ${job_result?.results?.size()} titles.".toString())
 
+        JobResult.withNewSession {
+          def result_object = JobResult.findByUuid(job.uuid)
+
+          if (!result_object) {
+            def job_map = [
+              uuid: (job.uuid),
+              description: (job.description),
+              resultObject: (job_result as JSON).toString(),
+              type: (job.type),
+              statusText: (job_result?.result),
+              ownerId: (job.ownerId),
+              groupId: (job.groupId),
+              startTime: (job.startTime),
+              endTime: (job.endTime)
+            ]
+
+            result_object = new JobResult(job_map).save(flush: true, failOnError: true)
+          }
+        }
+
         return job_result
       }
       log.debug("Starting job ${background_job}..")
@@ -1843,7 +1863,7 @@ class IntegrationController {
         result = background_job.get()
       }
       else {
-        result = [job_id: background_job.id]
+        result = [job_id: background_job.uuid]
       }
     }
 
