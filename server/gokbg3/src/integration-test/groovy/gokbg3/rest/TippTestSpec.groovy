@@ -91,7 +91,8 @@ class TippTestSpec extends AbstractAuthSpec {
                 startIssue   : "1",
                 coverageDepth: "Fulltext"
             ]
-        ]
+        ],
+            publisherName: "other Publisher"
     ]
     def urlPath = getUrlPath()
     when:
@@ -106,6 +107,7 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.status == 200 // OK
     resp.json.url == upd_body.url
     resp.json._embedded.coverageStatements?.size() == 1
+    resp.json.publisherName == "other Publisher"
   }
 
   void "test /rest/tipps/<id> PUT"() {
