@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import grails.converters.JSON
+
 class JobResult {
 
   String uuid
@@ -30,5 +32,13 @@ class JobResult {
     if (!uuid) {
       uuid = UUID.randomUUID().toString()
     }
+  }
+
+  def getResultJson() {
+    def result = null
+    if (resultObject && resultObject.length() > 0 ) {
+      result = JSON.parse(resultObject);
+    }
+    result;
   }
 }

@@ -118,6 +118,35 @@ class ProfileController {
   }
 
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
+  def getJobResults() {
+    def result = [records:[]]
+    User user = User.get(springSecurityService.principal.id)
+    def max = params.limit ? params.int('limit') : 10
+    def offset = params.offset ? params.int('offset') : 0
+
+    result.total = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?", [user.id])
+    def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ?", [user.id], [max: max, offset: offset])
+
+    jobs.each { j ->
+      def component = KBComponent.findByUuid(j.resultJson.uuid)
+      // No JsonObject for list view
+
+      result.data << [
+        uuid: j.uuid,
+        messages: j.message,
+        description: j.description,
+        type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+        linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+        startTime: j.startTime,
+        endTime: j.endTime,
+        status: j.statusText
+      ]
+    }
+
+    render result as JSON
+  }
+
+  @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def cleanupJobs() {
     def result = [:]
     def max = params.limit ? params.int('limit') : 10

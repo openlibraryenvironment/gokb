@@ -26,7 +26,17 @@
             <div class="panel-body">
               <g:link class="display-inline" controller="search" action="index"
                 params="[qbe:'g:UserWatchedComponents', inline:true]"
-                id="">Titles in this package</g:link>
+                id="">User Watched Components</g:link>
+            </div>
+          </div>
+          <div class="panel panel-default">
+            <div class="panel-heading clearfix">
+              <h3 class="panel-title">Finished Upload Jobs</h3>
+            </div>
+            <div class="panel-body">
+              <g:link class="display-inline" controller="search" action="index"
+                params="[qbe:'g:JobResult', inline:true]"
+                id="">Finished Upload Jobs</g:link>
             </div>
           </div>
           <g:if test="${request.user.getFolderList()}">

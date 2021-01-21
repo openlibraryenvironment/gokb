@@ -5,6 +5,7 @@ import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+import org.gokb.cred.JobResult
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import grails.plugin.springsecurity.annotation.Secured
@@ -61,6 +62,7 @@ class JobsController {
           type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
           begun: v.begun,
           startTime: v.startTime,
+          linkedItem: v.linkedItem,
           endTime: v.endTime,
           cancelled: v.isCancelled()
         ]
@@ -91,8 +93,8 @@ class JobsController {
   def show() {
     def result = [:]
     User user = User.get(springSecurityService.principal.id)
-    Integer id = params.int('id')
-    Job job = concurrencyManagerService?.jobs?.containsKey(id) ? concurrencyManagerService.jobs[id] : null
+    Job job = concurrencyManagerService?.getJob(params.id)
+    JobResult jobResult = JobResult.findByUuid(params.id)
 
     if ( job ) {
       log.debug("${job}")
@@ -111,25 +113,48 @@ class JobsController {
           result.endTime = job.endTime
           try {
             result.job_result = job.get()
+            result.status = result.job_result?.result
           }
           catch (CancellationException ce) {
             result.cancelled = true
+            result.status = 'CANCELLED'
           }
         }
         else {
           result.finished = false
+          result.status = job.begun ? 'RUNNING' : 'WAITING'
         }
       }
       else {
         result.result = "ERROR"
         response.setStatus(403)
-        result.message = "No permission to view job with ID ${id}."
+        result.message = "No permission to view job with ID ${params.id}."
+      }
+    }
+    else if (jobResult) {
+      if (user.superUserStatus || (job.ownerId && job.ownerId == user.id) || (job.groupId && user.curatoryGroups.find { it.id == job.groupId})) {
+        def linkedComponent = jobResult.linkedItemId ? KBComponent.get(jobResult.linkedItemId) : null
+
+        result.uuid = jobResult.uuid
+        result.description = jobResult.description
+        result.type = jobResult.type ? [id: jobResult.type.id, name: jobResult.type.value, value: jobResult.type.value] : null
+        result.startTime = jobResult.startTime
+        result.endTime = jobResult.endTime
+        result.status = jobResult.statusText
+        result.finished = true
+        result.linkedItem = linkedComponent ? [id: linkedComponent.id, type: linkedComponent.niceName, uuid: linkedComponent.uuid, name: linkedComponent.name] : null
+        result.job_result = jobResult.resultJson
+      }
+      else {
+        result.result = "ERROR"
+        response.setStatus(403)
+        result.message = "No permission to view job with ID ${params.id}."
       }
     }
     else {
       result.result = "ERROR"
       response.setStatus(404)
-      result.message = "Could not find job with ID ${id}."
+      result.message = "Could not find job with ID ${params.id}."
     }
 
     render result as JSON
@@ -138,7 +163,7 @@ class JobsController {
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def cancel() {
     def result = [result: 'OK']
-    Job job = concurrencyManagerService?.jobs?.containsKey(params.id) ? concurrencyManagerService.jobs[params.id] : null
+    Job job = concurrencyManagerService.getJob(params.id)
     User user = User.get(springSecurityService.principal.id)
 
     if (job) {
@@ -168,7 +193,7 @@ class JobsController {
   @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def delete() {
     def result = [result: 'OK']
-    Job job = concurrencyManagerService?.jobs?.containsKey(id) ? concurrencyManagerService.jobs[id] : null
+    Job job = concurrencyManagerService.getJob(params.id)
     User user = User.get(springSecurityService.principal.id)
 
     if (job) {

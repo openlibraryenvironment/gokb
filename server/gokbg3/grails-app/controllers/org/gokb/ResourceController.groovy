@@ -37,6 +37,10 @@ class ResourceController {
     if (params.type && params.id) {
       oid = "org.gokb.cred." + params.type + ":" + params.id
     }
+    else if (params.int('id')) {
+      displayobj = KBComponent.get(params.int('id'))
+      oid = (displayobj ? (displayobj.class.name + ":" + params.id) : null)
+    }
 
     if ( oid ) {
       displayobj = KBComponent.findByUuid(oid)
@@ -47,7 +51,7 @@ class ResourceController {
       else {
         oid = "${displayobj?.class?.name}:${displayobj?.id}"
       }
-      
+
       if ( displayobj ) {
 
         read_perm = displayobj.isTypeReadable()
@@ -75,7 +79,7 @@ class ResourceController {
 
           result.displayobjclassname = displayobj.class.name
           result.__oid = "${result.displayobjclassname}:${displayobj.id}"
-  
+
           log.debug("Looking up display template for ${result.displayobjclassname}");
 
           result.displaytemplate = displayTemplateService.getTemplateInfo(result.displayobjclassname);
@@ -156,7 +160,7 @@ class ResourceController {
 
         if (params.prop && obj."${params.prop}" && obj."${params.prop}" instanceof byte[]) {
           untarSingleFileAndSend (obj."${params.prop}")
-          
+
         } else {
           log.debug("unable to get field data")
         }
@@ -165,48 +169,48 @@ class ResourceController {
       }
     }
   }
-  
-  
+
+
   private untarSingleFileAndSend (byte[] content) {
-    
+
     // Input stream for the file.
     ByteArrayInputStream bin = new ByteArrayInputStream(content)
-    
+
     GzipCompressorInputStream gzIn = new GzipCompressorInputStream(bin)
     TarArchiveInputStream tin = new TarArchiveInputStream(gzIn)
-    
+
     // We are assuming only one entry so just access the first and close.
     TarArchiveEntry ae = tin.getNextTarEntry()
     if (ae) {
-      
+
       // Use tika for the content media type.
       Tika t = new Tika()
       String type = null
-      
+
       String filename = ae.name
       int bytes_to_read = ae.getSize()
-      
+
       // If it's less than buffer size then just set it to that.
       long buf_size = bytes_to_read > 4096 ? 4096 : bytes_to_read
-      
+
       byte[] buffer = new byte[buf_size]
       while (bytes_to_read) {
         bytes_to_read -= tin.read(buffer)
-        
+
         // First 4096 bytes should (hopefully) be enough to determine the type....
         if (!type) {
           Metadata m = new Metadata()
           m.add(Metadata.RESOURCE_NAME_KEY, filename)
           type = t.detect(new ByteArrayInputStream(buffer), m)
         }
-        
+
         // Let's return the data.
         response.contentType = "${type}"
         response.setHeader 'Content-disposition', "attachment; filename=\"${filename}\""
         response.outputStream << buffer
       }
     }
-    
+
     // Close the streams.
     IOUtils.closeQuietly(tin)
     IOUtils.closeQuietly(gzIn)
