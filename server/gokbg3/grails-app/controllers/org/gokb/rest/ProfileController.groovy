@@ -5,6 +5,8 @@ import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+import org.gokb.cred.JobResult
+import org.gokb.cred.KBComponent
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import grails.plugin.springsecurity.annotation.Secured
@@ -112,35 +114,28 @@ class ProfileController {
     User user = User.get(springSecurityService.principal.id)
     def errors = [:]
 
-    result = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+    if (params.boolean('archived') == true) {
+      result.records = []
+      result.total = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?", [user.id])[0]
+      def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ?", [user.id], [max: max, offset: offset])
 
-    render result as JSON
-  }
+      jobs.each { j ->
+        def component = KBComponent.findByUuid(j.resultJson.uuid)
+        // No JsonObject for list view
 
-  @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
-  def getJobResults() {
-    def result = [records:[]]
-    User user = User.get(springSecurityService.principal.id)
-    def max = params.limit ? params.int('limit') : 10
-    def offset = params.offset ? params.int('offset') : 0
-
-    result.total = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?", [user.id])
-    def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ?", [user.id], [max: max, offset: offset])
-
-    jobs.each { j ->
-      def component = KBComponent.findByUuid(j.resultJson.uuid)
-      // No JsonObject for list view
-
-      result.data << [
-        uuid: j.uuid,
-        messages: j.message,
-        description: j.description,
-        type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-        linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
-        startTime: j.startTime,
-        endTime: j.endTime,
-        status: j.statusText
-      ]
+        result.records << [
+          uuid: j.uuid,
+          description: j.description,
+          type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+          linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+          startTime: j.startTime,
+          endTime: j.endTime,
+          status: j.statusText
+        ]
+      }
+    }
+    else {
+      result = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
     }
 
     render result as JSON

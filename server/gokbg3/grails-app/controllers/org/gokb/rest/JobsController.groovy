@@ -6,6 +6,7 @@ import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.JobResult
+import org.gokb.cred.KBComponent
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import grails.plugin.springsecurity.annotation.Secured
@@ -93,10 +94,11 @@ class JobsController {
   def show() {
     def result = [:]
     User user = User.get(springSecurityService.principal.id)
+    boolean onlyArchived = params.boolean('archived') ?: false
     Job job = concurrencyManagerService?.getJob(params.id)
     JobResult jobResult = JobResult.findByUuid(params.id)
 
-    if ( job ) {
+    if ( job && !onlyArchived ) {
       log.debug("${job}")
 
       if (user.superUserStatus || (job.ownerId && job.ownerId == user.id)) {

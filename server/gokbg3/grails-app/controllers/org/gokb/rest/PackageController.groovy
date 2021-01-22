@@ -353,7 +353,7 @@ class PackageController {
         id_list = reqBody.identifiers
       }
 
-      if (id_list == null) {
+      if (id_list != null) {
         def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
 
         if (id_errors.size() > 0) {
@@ -365,7 +365,7 @@ class PackageController {
       log.debug("No IDs in ${reqBody}")
     }
 
-    if (reqBody.containsKey('curatoryGroups')) {
+    if (reqBody.curatoryGroups) {
       def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
       if (cg_errors.size() > 0) {
