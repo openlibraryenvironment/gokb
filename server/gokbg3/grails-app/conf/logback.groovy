@@ -24,13 +24,14 @@ appender('STDOUT', ConsoleAppender) {
 
 if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST ) {
   logger ('com.k_int', ERROR)
-  logger ('org.gokb', ERROR)
+  logger ('org.gokb', DEBUG)
   logger ('gokbg3', ERROR)
 
   logger ('org.gokb.DomainClassExtender', WARN)
   logger ('org.gokb.ClassExaminationService', WARN)
   logger ('org.gokb.IntegrationController', ERROR)
-  logger ('org.gokb.CrossReferenceService', ERROR)
+  logger ('org.gokb.CrossReferenceService', DEBUG)
+  logger ('org.gokb.CrossRefPkgRun', DEBUG)
   logger ('org.gokb.PackageService', DEBUG)
   logger ('org.gokb.ComponentUpdateService', ERROR)
   logger ('org.gokb.ComponentStatisticService', ERROR)
@@ -48,6 +49,8 @@ if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST 
   logger ('com.k_int', INFO)
   logger ('org.gokb', INFO)
   logger ('gokbg3', INFO)
+
+  logger ('org.gokb.CrossRefPkgRun', ERROR)
 }
 
 
