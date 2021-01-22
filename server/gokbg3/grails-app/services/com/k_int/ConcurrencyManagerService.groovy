@@ -284,7 +284,7 @@ class ConcurrencyManagerService {
     allJobs.each { k, v ->
       if (v.ownerId == user_id) {
         selected << [
-          id: v.uuid,
+          uuid: v.uuid,
           progress: v.progress,
           messages: v.messages,
           description: v.description,
