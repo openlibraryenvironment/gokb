@@ -32,7 +32,37 @@ class JobsController {
 
     if (params.user) {
       if (user.superUserStatus || user.id == params.int('user')) {
-        result = concurrencyManagerService.getUserJobs(params.int('user'), max, offset)
+        int userId = params.long('user')
+
+        if (params.archived == "true") {
+          result.data = []
+          def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?", [userId.toLong()])[0]
+          def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ? order by jr.startTime desc", [userId.toLong()], [max: max, offset: offset])
+
+          jobs.each { j ->
+            def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+            // No JsonObject for list view
+
+            result.data << [
+              uuid: j.uuid,
+              description: j.description,
+              type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+              linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+              startTime: j.startTime,
+              endTime: j.endTime,
+              status: j.statusText
+            ]
+          }
+
+          result['_pagination'] = [
+            offset: offset,
+            limit: max,
+            total: hqlTotal
+          ]
+        }
+        else {
+          result = concurrencyManagerService.getUserJobs(userId, max, offset)
+        }
       }
       else {
         result.result = 'ERROR'
@@ -42,7 +72,37 @@ class JobsController {
     }
     if (params.curatoryGroup) {
       if (user.superUserStatus || user.curatoryGroups?.find { it.id == params.int('curatoryGroup')}) {
-        result = concurrencyManagerService.getGroupJobs(params.int('curatoryGroup'), max, offset)
+        int groupId = params.int('curatoryGroup')
+
+        if (params.boolean('archived') == true) {
+          result.data = []
+          def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?", [groupId.toLong()])[0]
+          def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ? order by jr.startTime desc", [groupId.toLong()], [max: max, offset: offset])
+
+          jobs.each { j ->
+            def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+            // No JsonObject for list view
+
+            result.data << [
+              uuid: j.uuid,
+              description: j.description,
+              type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+              linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+              startTime: j.startTime,
+              endTime: j.endTime,
+              status: j.statusText
+            ]
+          }
+
+          result['_pagination'] = [
+            offset: offset,
+            limit: max,
+            total: hqlTotal
+          ]
+        }
+        else {
+          result = concurrencyManagerService.getGroupJobs(groupId, max, offset)
+        }
       }
       else {
         result.result = 'ERROR'
@@ -51,35 +111,63 @@ class JobsController {
       }
     }
     else if (user.superUserStatus) {
-      def rawJobs = concurrencyManagerService.getJobs()
-      def selected = []
+      if (params.archived == "true") {
+        result.data = []
+        def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr")[0]
+        def jobs = JobResult.executeQuery("from JobResult as jr order by jr.startTime desc", [], [max: max, offset: offset])
 
-      rawJobs.each { k, v ->
-        selected << [
-          id: v.id,
-          progress: v.progress,
-          messages: v.messages,
-          description: v.description,
-          type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
-          begun: v.begun,
-          startTime: v.startTime,
-          linkedItem: v.linkedItem,
-          endTime: v.endTime,
-          cancelled: v.isCancelled()
+        jobs.each { j ->
+          def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+          // No JsonObject for list view
+
+          result.data << [
+            uuid: j.uuid,
+            description: j.description,
+            type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+            linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+            startTime: j.startTime,
+            endTime: j.endTime,
+            status: j.statusText
+          ]
+        }
+
+        result['_pagination'] = [
+          offset: offset,
+          limit: max,
+          total: hqlTotal
         ]
       }
+      else {
+        def rawJobs = concurrencyManagerService.getJobs()
+        def selected = []
 
-      if (offset > 0) {
-        selected = selected.drop(offset)
+        rawJobs.each { k, v ->
+          selected << [
+            id: v.id,
+            progress: v.progress,
+            messages: v.messages,
+            description: v.description,
+            type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
+            begun: v.begun,
+            startTime: v.startTime,
+            linkedItem: v.linkedItem,
+            endTime: v.endTime,
+            cancelled: v.isCancelled()
+          ]
+        }
+
+        if (offset > 0) {
+          selected = selected.drop(offset)
+        }
+
+        result.data = selected.take(max)
+
+        result._pagination = [
+          offset: offset,
+          limit: max,
+          total: selected.size()
+        ]
       }
-
-      result.data = selected.take(max)
-
-      result._pagination = [
-        offset: offset,
-        limit: max,
-        total: selected.size()
-      ]
     }
     else {
       result.result = 'ERROR'

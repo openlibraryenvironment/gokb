@@ -115,15 +115,15 @@ class ProfileController {
     def errors = [:]
 
     if (params.boolean('archived') == true) {
-      result.records = []
-      result.total = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?", [user.id])[0]
-      def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ?", [user.id], [max: max, offset: offset])
+      result.data = []
+      def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?", [user.id])[0]
+      def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ? order by jr.startTime desc", [user.id], [max: max, offset: offset])
 
       jobs.each { j ->
-        def component = KBComponent.findByUuid(j.resultJson.uuid)
+        def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
         // No JsonObject for list view
 
-        result.records << [
+        result.data << [
           uuid: j.uuid,
           description: j.description,
           type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
@@ -133,6 +133,12 @@ class ProfileController {
           status: j.statusText
         ]
       }
+
+      result['_pagination'] = [
+        offset: offset,
+        limit: max,
+        total: hqlTotal
+      ]
     }
     else {
       result = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
