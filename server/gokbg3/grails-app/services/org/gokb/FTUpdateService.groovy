@@ -400,8 +400,8 @@ class FTUpdateService {
         result.componentType = kbc.class.simpleName
         result.tippTitleMedium = kbc.title ? kbc.title.medium : ""
 
-        result.accessStartDate = kbc.accessStartDate ? kbc.accessStartDate.toString() : ""
-        result.accessEndDate = kbc.accessEndDate ? kbc.accessEndDate.toString() : ""
+        result.accessStartDate = kbc.accessStartDate ? dateFormatService.formatIsoTimestamp(kbc.accessStartDate) : ""
+        result.accessEndDate = kbc.accessEndDate ? dateFormatService.formatIsoTimestamp(kbc.accessEndDate) : ""
 
         result.subjectArea = kbc.subjectArea ?: ""
         result.series = kbc.series ?: ""
@@ -425,11 +425,13 @@ class FTUpdateService {
 
           // simple eBook fields
           result.titleVolumeNumber = kbc.title?.volumeNumber ?: ""
-          result.titleDateFirstInPrint = kbc.title?.dateFirstInPrint ?: ""
-          result.titleDateFirstOnline = kbc.title?.dateFirstOnline ?: ""
+          result.titleDateFirstInPrint = kbc.title?.dateFirstInPrint ?
+              dateFormatService.formatIsoTimestamp(kbc.title.dateFirstInPrint) : ""
+          result.titleDateFirstOnline = kbc.title?.dateFirstOnline ?
+              dateFormatService.formatIsoTimestamp(kbc.title.dateFirstOnline) : ""
           result.titleFirstEditor = kbc.title?.firstEditor ?: ""
           result.titleFirstAuthor = kbc.title?.firstAuthor ?: ""
-          result.titleImprint = kbc.title?.imprint ?: ""
+          result.titleImprint = kbc.title?.imprint?.name ?: ""
         }
 
         // title history for all title types
@@ -438,10 +440,12 @@ class FTUpdateService {
           kbc.title?.historyEvents?.each{ he ->
             if (he.date){
               def event = [:]
-              event.date = he.date
-              event.from = he.from ?: ""
-              event.to = he.to ?: ""
-              event.uuid = he.uuid ?: ""
+              event.date = dateFormatService.formatIsoTimestamp(he.date)
+              event.from = []
+              event.from.addAll(he.from)
+              event.to = []
+              event.to.addAll(he.to)
+              event.id = he.id ?: ""
               result.titleHistory.add(event)
             }
           }
@@ -462,10 +466,10 @@ class FTUpdateService {
         kbc.prices?.each { p ->
           def price = [:]
           price.type = p.priceType?.value ?: ""
-          price.amount = p.price ?: ""
-          price.currency = p.currency ?: ""
-          price.startDate = p.startDate ?: ""
-          price.endDate = p.endDate ?: ""
+          price.amount = String.valueOf(p.price) ?: ""
+          price.currency = p.currency?.value ?: ""
+          price.startDate = p.startDate ? dateFormatService.formatIsoTimestamp(p.startDate) : ""
+          price.endDate = p.endDate ? dateFormatService.formatIsoTimestamp(p.endDate) : ""
           result.prices.add(price)
         }
 
