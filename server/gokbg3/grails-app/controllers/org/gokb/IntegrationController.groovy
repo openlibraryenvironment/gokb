@@ -855,7 +855,6 @@ class IntegrationController {
   def crossReferencePackage() {
     def result = ['result': 'OK']
     def async = params.async ? params.boolean('async') : false
-    //async = false
     def addOnly = params.addOnly ? params.boolean('addOnly') : false
     def request_locale = RequestContextUtils.getLocale(request)
     def rjson = request.JSON
@@ -1367,8 +1366,10 @@ class IntegrationController {
 
             if (idMatch) {
               if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
-              } else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
-              } else {
+              }
+              else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
+              }
+              else {
                 found = true
               }
             }

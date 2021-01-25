@@ -51,7 +51,7 @@ services:
       - xpack.graph.enabled=false
       - xpack.watcher.enabled=false
       - bootstrap.memory_lock=true
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ES_JAVA_OPTS=-Xms512m -Xmx1g
       - discovery.zen.minimum_master_nodes=1
       - discovery.type=single-node
       - cluster.name=elasticsearch

@@ -1069,6 +1069,9 @@ class PackageService {
     }
 
     result.save(flush: true)
+
+
+    result
   }
 
 
@@ -1627,5 +1630,4 @@ class PackageService {
     }
     ret.toString()
   }
-
 }

@@ -2250,26 +2250,26 @@ class WorkflowController {
           if (pkgObj?.isEditable() && (is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))) {
             def started = packageService.updateFromSource(pkgObj, user)
 
-            if (started) {
-              flash.success = "Update successfully started!"
+            if (started?.status=="STARTED") {
+              flash.success = "Job #${started.gokbJobId?:'unknown'} has started.".toString()
             }
             else {
-              flash.error = "Another update is already running. Please try again later."
+              flash.error = "could not start update. Ygor response: ${started.message}".toString()
             }
           }
           else {
-            flash.error = "Insufficient permissions to update this Package!"
+            flash.error = "Insufficient permissions to update this Package!".toString()
           }
         }
         else if (!pkgObj){
-          flash.error = "Unable to reference provided Package!"
+          flash.error = "Unable to reference provided Package!".toString()
         }
         else {
-          flash.error = "Please check the Package Source for validity!"
+          flash.error = "Please check the Package Source for validity!".toString()
         }
       }
     }
-
+    log.debug('triggerSourceUpdate() done - redirecting')
     redirect(url: request.getHeader('referer'));
   }
 }
