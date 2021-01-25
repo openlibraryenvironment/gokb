@@ -1260,7 +1260,7 @@ class PackageController {
               job_result.result = "ERROR"
               job_result.message = "Package referencing failed with exception!"
               job_result.code = 500
-              errors.global.add([code: 500, message: messageService.resolveCode('crossRef.package.error.unknown', null, locale), data: json.packageHeader])
+              errors.global.add([code: 500, message: messageService.resolveCode('crossRef.package.error.unknown', [e], locale), data: json.packageHeader])
             }
             cleanUpGorm(session)
           }
