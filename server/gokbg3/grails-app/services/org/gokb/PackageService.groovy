@@ -1069,9 +1069,7 @@ class PackageService {
     }
 
     result.save(flush: true)
-
-
-    result
+    return result
   }
 
 

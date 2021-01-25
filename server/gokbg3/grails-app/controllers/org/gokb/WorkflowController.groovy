@@ -2227,7 +2227,7 @@ class WorkflowController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   private def triggerSourceUpdate(packages_to_update) {
-    log.debug("triggerSourceUpdate for Packages ${packages_to_update}..")
+    log.info("triggerSourceUpdate for Packages ${packages_to_update}..")
     def user = springSecurityService.currentUser
     def pars = [:]
     def denied = false
@@ -2250,22 +2250,22 @@ class WorkflowController {
           if (pkgObj?.isEditable() && (is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))) {
             def started = packageService.updateFromSource(pkgObj, user)
 
-            if (started?.status=="STARTED") {
-              flash.success = "Job #${started.gokbJobId?:'unknown'} has started.".toString()
+            if (started) {
+              flash.success = "Update successfully started!"
             }
             else {
-              flash.error = "could not start update. Ygor response: ${started.message}".toString()
+              flash.error = "Another update is already running. Please try again later."
             }
           }
           else {
-            flash.error = "Insufficient permissions to update this Package!".toString()
+            flash.error = "Insufficient permissions to update this Package!"
           }
         }
         else if (!pkgObj){
-          flash.error = "Unable to reference provided Package!".toString()
+          flash.error = "Unable to reference provided Package!"
         }
         else {
-          flash.error = "Please check the Package Source for validity!".toString()
+          flash.error = "Please check the Package Source for validity!"
         }
       }
     }

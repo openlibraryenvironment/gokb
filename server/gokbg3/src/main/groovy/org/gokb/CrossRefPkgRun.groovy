@@ -220,7 +220,7 @@ class CrossRefPkgRun {
                 session.clear()
               }
               removedNum++
-              job?.setProgress(removedNum + rjson.tipps.size, total)
+              job?.setProgress(removedNum + rjson.tipps.size(), total)
             }
           }
           if (removedNum > 0) {
