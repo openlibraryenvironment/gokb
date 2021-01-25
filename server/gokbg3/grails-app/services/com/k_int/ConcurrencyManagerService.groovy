@@ -1,6 +1,8 @@
 package com.k_int
 
 import org.gokb.cred.RefdataValue
+import org.gokb.cred.Work
+
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -34,7 +36,7 @@ class ConcurrencyManagerService {
     )
 
     // Immutable pool map.
-    pools = Collections.unmodifiableMap (['smallJobs' : new CachedThreadPoolPromiseFactory(1, 60L, TimeUnit.SECONDS)])
+    pools = Collections.unmodifiableMap(['smallJobs': new CachedThreadPoolPromiseFactory(1, 60L, TimeUnit.SECONDS)])
   }
 
 
@@ -55,7 +57,7 @@ class ConcurrencyManagerService {
 
     public message(String message) {
       log.debug(message);
-      messages.add([timestamp:System.currentTimeMillis(), message:message]);
+      messages.add([timestamp: System.currentTimeMillis(), message: message]);
     }
 
     public message(Map message) {
@@ -69,17 +71,17 @@ class ConcurrencyManagerService {
 
     /**
      * Cancel the job.
-     * @see java.util.concurrent.FutureTask#cancel()
+     * @see java.util.concurrent.FutureTask#cancel(boolean)
      */
-    public synchronized boolean cancel () {
-      cancel (false)
+    public synchronized boolean cancel() {
+      cancel(false)
     }
 
     /**
      * Attempt to force Cancel the job.
      * @see java.util.concurrent.FutureTask#cancel(boolean mayInterruptIfRunning)
      */
-    public synchronized boolean forceCancel () {
+    public synchronized boolean forceCancel() {
       task.cancel true
     }
 
@@ -88,7 +90,7 @@ class ConcurrencyManagerService {
      * @see java.util.concurrent.FutureTask#done()
      */
     @Override
-    public synchronized boolean isDone () {
+    public synchronized boolean isDone() {
       task.done
     }
 
@@ -117,12 +119,12 @@ class ConcurrencyManagerService {
     }
 
     @Override
-    public boolean cancel (boolean mayInterruptIfRunning) {
+    public boolean cancel(boolean mayInterruptIfRunning) {
       this.task.cancel(mayInterruptIfRunning);
     }
 
     @Override
-    public boolean isCancelled () {
+    public boolean isCancelled() {
       this.task.isCancelled();
     }
 
@@ -130,7 +132,7 @@ class ConcurrencyManagerService {
      * Starts the background task.
      * @return this Job
      */
-    public synchronized Job startOrQueue () {
+    public synchronized Job startOrQueue() {
 
       // Just return if this task has already started.
       if (!begun) {
@@ -150,14 +152,14 @@ class ConcurrencyManagerService {
      * Starts the background task with a named pool.
      * @return this Job
      */
-    public synchronized Job startOrQueue (String poolName) {
+    public synchronized Job startOrQueue(String poolName) {
 
       // Just return if this task has already started.
       if (!begun) {
 
         // Check for a parameter on this closure.
         work = work.rcurry(this)
-        task = ConcurrencyManagerService.pools.get ("${poolName}").createPromise(work as Closure)
+        task = ConcurrencyManagerService.pools.get("${poolName}").createPromise(work as Closure)
 
         begun = true
       }
@@ -173,7 +175,7 @@ class ConcurrencyManagerService {
      */
     @Override
     public def get() {
-      return task.get()
+      return task?.get()
     }
 
     /**
@@ -185,8 +187,8 @@ class ConcurrencyManagerService {
       return task.get(time, unit)
     }
 
-    public synchronized def setProgress( progress, total) {
-      this.progress = ( progress.div(total) * 100 )
+    public synchronized def setProgress(progress, total) {
+      this.progress = (progress.div(total) * 100)
     }
 
     public synchronized def setProgress(int progress) {
@@ -197,7 +199,7 @@ class ConcurrencyManagerService {
   // Store each job hashed by ID. ConcurrentHashMap is thread-safe and, with only one thread updating per entry,
   // should perform well enough.
   private Map<Integer, Job> map = new ConcurrentHashMap<Integer, Job>().withDefault { int the_id ->
-    new Job (["id" : the_id])
+    new Job(["id": the_id])
   }
 
   public Map<Integer, Job> getJobs() {
@@ -214,7 +216,7 @@ class ConcurrencyManagerService {
    * @param task
    * @return a new Job
    */
-  public Job createJob (Closure task) {
+  public Job createJob(Closure task) {
 
     // Just allocate the job ID to the size of the map.
     Job j = createNewJob()
@@ -235,7 +237,7 @@ class ConcurrencyManagerService {
     // The job id.
     int jobid = map.size() + 1
     while (this.map.containsKey(jobid)) {
-      jobid ++
+      jobid++
     }
 
     Job j = map.get(jobid)
@@ -253,12 +255,12 @@ class ConcurrencyManagerService {
     }
 
     // Get the job.
-    Job j = map.get (job_id)
+    Job j = map.get(job_id)
 
     // Check if the job has finished.
     if (j.isDone() && cleanup) {
       // Remove from the map too as we don't need to keep track any more.
-      map.remove (job_id)
+      map.remove(job_id)
     }
 
     // Return the job.
@@ -285,16 +287,16 @@ class ConcurrencyManagerService {
     allJobs.each { k, v ->
       if (v.ownerId == user_id) {
         selected << [
-          id: v.id,
-          progress: v.progress,
-          messages: v.messages,
+          id         : v.id,
+          progress   : v.progress,
+          messages   : v.messages,
           description: v.description,
-          type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
-          begun: v.begun,
-          linkedItem: v.linkedItem,
-          startTime: v.startTime,
-          endTime: v.endTime,
-          cancelled: v.isCancelled()
+          type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
+          begun      : v.begun,
+          linkedItem : v.linkedItem,
+          startTime  : v.startTime,
+          endTime    : v.endTime,
+          cancelled  : v.isCancelled()
         ]
       }
     }
@@ -333,16 +335,16 @@ class ConcurrencyManagerService {
     allJobs.each { k, v ->
       if (v.groupId == group_id) {
         selected << [
-          id: v.id,
-          progress: v.progress,
-          messages: v.messages,
+          id         : v.id,
+          progress   : v.progress,
+          messages   : v.messages,
           description: v.description,
-          type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
-          begun: v.begun,
-          linkedItem: v.linkedItem,
-          startTime: v.startTime,
-          endTime: v.endTime,
-          cancelled: v.isCancelled()
+          type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
+          begun      : v.begun,
+          linkedItem : v.linkedItem,
+          startTime  : v.startTime,
+          endTime    : v.endTime,
+          cancelled  : v.isCancelled()
         ]
       }
     }

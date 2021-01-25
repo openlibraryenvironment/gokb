@@ -15,20 +15,28 @@ import groovy.util.logging.*
 
 @Slf4j
 class ComponentUpdateService {
-  def grailsApplication
-  def restMappingService
   def componentLookupService
   def reviewRequestService
   def dateFormatService
 
-  private final RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-  private final RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-  private final RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+  private RefdataValue combo_active
+  private RefdataValue combo_deleted
+  private RefdataValue combo_type_id
   private final Object findLock = new Object()
 
   public boolean ensureCoreData(KBComponent component, data, boolean sync = false, user) {
+    populateRefs()
     return ensureSync(component, data, sync, user)
   }
+
+private void populateRefs(){
+  if (!combo_active)
+    combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+  if (!combo_deleted)
+    combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+  if (!combo_type_id)
+    combo_type_id= RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+}
 
   @Synchronized("findLock")
   private boolean ensureSync(KBComponent component, data, boolean sync = false, user) {
@@ -280,6 +288,7 @@ class ComponentUpdateService {
 
   public boolean setAllRefdata(propNames, data, target, boolean createNew = false) {
     boolean changed = false
+    populateRefs()
     propNames.each { String prop ->
       changed |= ClassUtils.setRefdataIfPresent(data[prop], target, prop, createNew)
     }
