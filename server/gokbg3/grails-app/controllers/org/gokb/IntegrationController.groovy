@@ -852,6 +852,7 @@ class IntegrationController {
     component.ensureVariantName(variant_name)
   }
 
+  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def crossReferencePackage() {
     def result = ['result': 'OK']
     def async = params.async ? params.boolean('async') : false
