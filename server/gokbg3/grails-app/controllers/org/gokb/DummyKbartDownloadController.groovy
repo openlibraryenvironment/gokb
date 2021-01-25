@@ -145,11 +145,7 @@ class DummyKbartDownloadController {
       record.preceding_publication_title_id = ""
       record.access_type = accessType()
       record.zdb_id = record.zdb_id = "${ThreadLocalRandom.current().nextLong(1000000000)}-${["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "x", "X"][ThreadLocalRandom.current().nextInt(12)]}"
-<<<<<<< HEAD
       record.last_changed = timeline[4].format(dtf)
-=======
-      record.last_changed = timeline[4].format(plain)
->>>>>>> origin/xRefService_368
       record.access_start_date = timeline[2].format(dtf)
       record.access_end_date = timeline[3].format(dtf)
       record.listprice_eur = price(50)
