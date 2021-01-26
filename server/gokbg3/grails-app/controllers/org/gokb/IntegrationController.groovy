@@ -919,7 +919,7 @@ class IntegrationController {
       background_job.startOrQueue()
       background_job.startTime = new Date()
       result << [job_id: background_job.id,
-                 // TODO: key info is deprecated
+                 // TODO: remove key 'info' as it is deprecated
                  info  : [job_id: background_job.id]]
       render result as JSON
     }
