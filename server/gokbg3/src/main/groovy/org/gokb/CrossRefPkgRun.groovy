@@ -168,6 +168,7 @@ class CrossRefPkgRun {
           job?.message("the Job was canceled")
           job?.endTime = new Date()
           jsonResult.result = "ERROR"
+          break
         }
         job?.setProgress(idx, total)
         if (idx % 50 == 0) {
@@ -181,69 +182,69 @@ class CrossRefPkgRun {
         }
       }
 
-      pkg = Package.get(pkg.id)
-      if (invalidTipps.size() > 0) {
-        String msg = messageService.resolveCode('crossRef.package.tipps.ignored', [invalidTipps.size()], locale)
-        log.warn(msg)
-        jsonResult.result = "WARNING"
-        jsonResult.message = msg
-        errors.global.add([message: msg, baddata: rjson.packageHeader])
-        job?.message(msg)
-      }
-      if (rjson.tipps?.size() > 0 && rjson.tipps.size() > invalidTipps.size()) {
-        if (pkg.status == status_current && pkg?.listStatus != status_ip) {
-          pkg.listStatus = status_ip
-          pkg.merge(flush: true)
+      if (!cancelled) {
+        pkg = Package.get(pkg.id)
+        if (invalidTipps.size() > 0) {
+          String msg = messageService.resolveCode('crossRef.package.tipps.ignored', [invalidTipps.size()], locale)
+          log.warn(msg)
+          jsonResult.result = "WARNING"
+          jsonResult.message = msg
+          errors.global.add([message: msg, baddata: rjson.packageHeader])
+          job?.message(msg)
         }
-      }
-      else {
-        log.debug("imported Package $pkg.name contains no valid TIPPs")
-      }
-      if (!addOnly && existing_tipp_ids.size() > 0) {
-        existing_tipp_ids.eachWithIndex { ttd, idx ->
-          def to_retire = TitleInstancePackagePlatform.get(ttd)
-          if (to_retire?.isCurrent()) {
-            if (fullsync) {
-              to_retire.deleteSoft()
+        if (rjson.tipps?.size() > 0 && rjson.tipps.size() > invalidTipps.size()) {
+          if (pkg.status == status_current && pkg?.listStatus != status_ip) {
+            pkg.listStatus = status_ip
+            pkg.merge(flush: true)
+          }
+        } else {
+          log.debug("imported Package $pkg.name contains no valid TIPPs")
+        }
+        if (!addOnly && existing_tipp_ids.size() > 0) {
+          existing_tipp_ids.eachWithIndex { ttd, idx ->
+            def to_retire = TitleInstancePackagePlatform.get(ttd)
+            if (to_retire?.isCurrent()) {
+              if (fullsync) {
+                to_retire.deleteSoft()
+              } else {
+                to_retire.retire()
+              }
+              to_retire.merge(flush: true, failOnError: true)
+              removedNum++
+              job?.setProgress(removedNum + rjson.tipps.size(), total)
             }
-            else {
-              to_retire.retire()
-            }
-            to_retire.merge(flush: true, failOnError: true)
-            removedNum++
-            job?.setProgress(removedNum + rjson.tipps.size(), total)
+          }
+          if (removedNum > 0) {
+            def additionalInfo = [:]
+            additionalInfo.vars = [pkg.id, removedNum]
+            reviewRequestService.raise(
+                pkg,
+                "TIPPs retired.",
+                "An update to package ${pkg.id} did not contain ${removedNum} previously existing TIPPs.",
+                user,
+                null,
+                (additionalInfo as JSON).toString(),
+                rr_TIPPs_retired
+            )
           }
         }
-        if (removedNum > 0) {
-          def additionalInfo = [:]
-          additionalInfo.vars = [pkg.id, removedNum]
-          reviewRequestService.raise(
-            pkg,
-            "TIPPs retired.",
-            "An update to package ${pkg.id} did not contain ${removedNum} previously existing TIPPs.",
-            user,
-            null,
-            (additionalInfo as JSON).toString(),
-            rr_TIPPs_retired
-          )
+        log.debug("Found ${removedNum} TIPPS to delete/retire from the matched package!")
+        jsonResult.result = 'OK'
+        def msg = messageService.resolveCode('crossRef.package.success', [rjson.packageHeader.name, rjson.tipps.size(), existing_tipp_ids.size(), removedNum], locale)
+        jsonResult.message = msg
+        job?.message(msg)
+        if (pkg.status != status_deleted) {
+          pkg = Package.get(pkg.id)
+          pkg.lastUpdateComment = jsonResult.message
+          pkg.merge(flush: true)
+        }
+        if (autoUpdate) {
+          Source src = Source.get(pkg.source.id)
+          src.lastRun = new Date()
+          src.merge(flush: true)
         }
       }
-      log.debug("Found ${removedNum} TIPPS to delete/retire from the matched package!")
-      jsonResult.result = 'OK'
-      def msg = messageService.resolveCode('crossRef.package.success', [rjson.packageHeader.name, rjson.tipps.size(), existing_tipp_ids.size(), removedNum], locale)
-      jsonResult.message = msg
-      job?.message(msg)
-      if (pkg.status != status_deleted) {
-        pkg = Package.get(pkg.id)
-        pkg.lastUpdateComment = jsonResult.message
-        pkg.merge(flush: true)
-      }
-      if (autoUpdate){
-        Source src = Source.get(pkg.source.id)
-        src.lastRun = new Date()
-        src.merge(flush:true)
-      }
-        log.debug("final flush");
+      log.debug("final flush");
         // Get the current session.
         def session = sessionFactory.currentSession
         // flush and clear the session.

@@ -29,14 +29,14 @@ class ComponentUpdateService {
     return ensureSync(component, data, sync, user)
   }
 
-private void populateRefs(){
+  private void populateRefs() {
   if (!combo_active)
-    combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+      combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
   if (!combo_deleted)
-    combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+      combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
   if (!combo_type_id)
-    combo_type_id= RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
-}
+      combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+    }
 
   @Synchronized("findLock")
   private boolean ensureSync(KBComponent component, data, boolean sync = false, user) {
@@ -75,7 +75,8 @@ private void populateRefs(){
 
           if (!KBComponent.has(component, 'publisher')) {
             canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
-          } else {
+          }
+          else {
             def norm_id = Identifier.normalizeIdentifier(ci.value)
             def ns = IdentifierNamespace.findByValueIlike(namespace_val)
             canonical_identifier = Identifier.findByNamespaceAndNormnameIlike(ns, norm_id)
@@ -89,7 +90,8 @@ private void populateRefs(){
               log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
               def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
               hasChanged = true
-            } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
+            }
+            else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
               reviewRequestService.raise(
@@ -101,13 +103,15 @@ private void populateRefs(){
                 null,
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
               )
-            } else {
+            }
+            else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")
             }
 
             // Add the value for comparison.
             ids << testKey
-          } else {
+          }
+          else {
             log.debug("Could not find or create Identifier!")
           }
         }
@@ -192,7 +196,8 @@ private void populateRefs(){
             def new_combo = new Combo(fromComponent: component, toComponent: group, type: combo_type_cg, status: combo_active).save(flush: true, failOnError: true)
             hasChanged = true
             groups << [id: group.id, name: group.name]
-          } else {
+          }
+          else {
             log.debug("Could not find linked group ${name}!")
           }
         }
@@ -208,7 +213,8 @@ private void populateRefs(){
           }
         }
       }
-    } else {
+    }
+    else {
       log.debug("Skipping CG handling ..")
     }
 
