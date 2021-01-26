@@ -336,7 +336,10 @@ select tipp.id,
        title.status,
        tipp.series,
        tipp.subjectArea,
-       tipp.name
+       tipp.name,
+       tipp.publisherName,
+       tipp.dateFirstInPrint,
+       tipp.dateFirstOnline
     from TitleInstancePackagePlatform as tipp,
          Combo as hostPlatformCombo,
          Combo as titleCombo,
@@ -504,6 +507,9 @@ select tipp.id,
               builder.'lastUpdated'(tipp[11] ? dateFormatService.formatIsoTimestamp(tipp[11]) : null)
               builder.'series'(tipp[16])
               builder.'subjectArea'(tipp[17])
+              builder.'publisherName'(tipp[19])
+              builder.'dateFirstInPrint'(tipp[20])
+              builder.'dateFirstOnline'(tipp[21])
               builder.'medium'(tipp[9]?.value)
               builder.'title'(['id': tipp[2], 'uuid': tipp[13]]) {
                 builder.'name'(tipp[1]?.trim())

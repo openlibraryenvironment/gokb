@@ -752,7 +752,7 @@ class CleanupService {
 
       result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)",[component:batch])
 
-      j.setProgress(result.num_expunged, result.num_requested)
+      j?.setProgress(result.num_expunged, result.num_requested)
     }
 
     result

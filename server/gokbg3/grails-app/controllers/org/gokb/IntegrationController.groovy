@@ -1419,8 +1419,6 @@ class IntegrationController {
                     }
                     if (!cancelled) {
                       if (!update && existing_tipps.size() > 0) {
-
-
                         tipps_to_delete.eachWithIndex { ttd, idx ->
 
                           def to_retire = TitleInstancePackagePlatform.get(ttd)

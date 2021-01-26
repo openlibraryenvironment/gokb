@@ -61,6 +61,7 @@ class OaiSpec extends Specification {
 
     def tipp1 = new TitleInstancePackagePlatform(name:"testTIPP")
     tipp1.setPrice("list", "1234.56 EUR")
+    tipp1.setPublisherName("test Publisher")
 
     new Combo(fromComponent: test_pkg, toComponent: tipp1, type: RefdataCategory.lookup('Combo.Type', 'Package.Tipps'), status: RefdataCategory.lookup('Combo.Status', 'Active')).save(flush: true)
     new Combo(fromComponent: test_plt, toComponent: tipp1, type: RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps'), status: RefdataCategory.lookup('Combo.Status', 'Active')).save(flush: true)
@@ -109,6 +110,7 @@ class OaiSpec extends Specification {
     then:
     log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'name'?.text()}")
     resp.xml.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'title'.'TIPPs'.'TIPP'.'prices'.'price'.'type'.'list'.text() != null
+    resp.xml.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'title'.'TIPPs'.'TIPP'.'publisherName'.text() != null
   }
 
   void "test GetRecord org response"() {
