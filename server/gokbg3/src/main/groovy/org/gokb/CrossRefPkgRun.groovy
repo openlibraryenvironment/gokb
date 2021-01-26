@@ -9,13 +9,14 @@ import grails.plugin.springsecurity.SpringSecurityService
 import grails.util.Holders
 import grails.validation.ValidationException
 import org.apache.commons.lang.RandomStringUtils
+import org.gokb.cred.BookInstance
 import org.gokb.cred.Imprint
 import org.gokb.cred.KBComponent
 import org.gokb.cred.Package
 import org.gokb.cred.Platform
 import org.gokb.cred.RefdataCategory
-import org.gokb.cred.ReviewRequest
 import org.gokb.cred.Role
+import org.gokb.cred.Source
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
 import org.gokb.cred.UpdateToken
@@ -24,6 +25,8 @@ import org.gokb.exceptions.MultipleComponentsMatchedException
 
 import groovy.util.logging.*
 import org.hibernate.SessionFactory
+
+import java.time.LocalDate
 
 @Slf4j
 class CrossRefPkgRun {
@@ -39,6 +42,7 @@ class CrossRefPkgRun {
   def rjson // request JSON
   boolean addOnly
   boolean fullsync
+  boolean autoUpdate
   Locale locale
   User user
   def jsonResult = [result: "SUCCESS"]
@@ -56,199 +60,196 @@ class CrossRefPkgRun {
   def status_retired
   def status_expected
   def rr_deleted
-  def rr_noncurrent
+  def rr_nonCurrent
   def rr_TIPPs_retired
   def status_ip
 
-  public CrossRefPkgRun(def json, Boolean add, Boolean full, Locale loc, User u) {
+  public CrossRefPkgRun(def json, Boolean add, Boolean full, Boolean isAutoUpdate, Locale loc, User u) {
     rjson = json
     addOnly = add
     fullsync = full
     locale = loc
     user = u
+    autoUpdate = isAutoUpdate
   }
 
-  // @Transactional
   def work(Job aJob) {
+    log.info("start CrossrefPackage $rjson.packageHeader.name with ${rjson.tipps.size()} tipps")
     job = aJob ?: job
     boolean cancelled = false
     int total = 0
     try {
-      KBComponent.withNewSession {
-        status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-        status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-        status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-        status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-        rr_deleted = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Status Deleted')
-        rr_noncurrent = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent')
-        rr_TIPPs_retired = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
-        status_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+      status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+      status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+      status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+      status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+      rr_deleted = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Status Deleted')
+      rr_nonCurrent = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent')
+      rr_TIPPs_retired = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
+      status_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
 
-        springSecurityService.reauthenticate(user.username)
-        user = User.get(user.id)
-        job?.ownerId = user.id
+      springSecurityService.reauthenticate(user.username)
+      user = User.get(user.id)
+      job?.ownerId = user.id
 
-        // check permissions
-        if (!(user?.apiUserStatus)) {
-          globalError([code   : 403,
-                       message: messageService.resolveCode('crossRef.package.error.apiRole', [], locale)]
-          )
-          //
-        }
-        // validate and upsert header pkg
-        if (!(rjson?.packageHeader?.name)) {
-          globalError([code   : 400,
-                       message: messageService.resolveCode('crossRef.package.error.apiRole', [], locale)]
-          )
-          job?.endTime = new Date()
-          return jsonResult
-        }
-        // Package Validation
-        pkg_validation = packageService.validateDTO(rjson.packageHeader, locale)
-        if (!pkg_validation.valid) {
-          globalError([code   : 403,
-                       message: messageService.resolveCode('crossRef.package.error.validation.global', null, locale),
-                       errors : pkg_validation.errors]
-          )
-          job?.endTime = new Date()
-          return jsonResult
-        }
-        def proxy = packageService.upsertDTO(rjson.packageHeader, user)
-        if (!proxy) {
-          globalError([code   : 400,
-                       message: messageService.resolveCode('crossRef.package.error', null, locale),
-          ])
-          job?.endTime = new Date()
-          return jsonResult
-        }
-        pkg = Package.get(proxy.id)
-        jsonResult.pkgId = pkg.id
-        job?.linkedItem = [name: pkg.name,
-                           type: "Package",
-                           id  : pkg.id,
-                           uuid: pkg.uuid]
-        job?.message("Starting upsert for Package ${pkg.name} (uuid: ${pkg.uuid})")
-
-        handleUpdateToken()
-        // Package.withTransaction { status ->
-        existing_tipp_ids = TitleInstance.executeQuery(
-          "select tipp.id from TitleInstancePackagePlatform tipp, Combo combo " +
-            "where tipp.status = :status " +
-            "and combo.toComponent = tipp " +
-            "and combo.fromComponent = :package",
-          [package: pkg, status: status_current])
-        log.debug("Matched package has ${pkg.tipps.size()} TIPPs")
-        total = rjson.tipps.size() + (addOnly ? 0 : existing_tipp_ids.size())
+      // check permissions
+      if (!(user?.apiUserStatus)) {
+        globalError([code   : 403,
+                     message: messageService.resolveCode('crossRef.package.error.apiRole', [], locale)]
+        )
       }
+      // validate and upsert header pkg
+      if (!(rjson?.packageHeader?.name)) {
+        globalError([code   : 400,
+                     message: messageService.resolveCode('crossRef.package.error', [], locale)]
+        )
+        job?.endTime = new Date()
+        return jsonResult
+      }
+      // Package Validation
+      pkg_validation = packageService.validateDTO(rjson.packageHeader, locale)
+      if (!pkg_validation.valid) {
+        globalError([code   : 403,
+                     message: messageService.resolveCode('crossRef.package.error.validation.global', null, locale),
+                     errors : pkg_validation.errors]
+        )
+        job?.endTime = new Date()
+        return jsonResult
+      }
+      def proxy = packageService.upsertDTO(rjson.packageHeader, user)
+      if (!proxy) {
+        globalError([code   : 400,
+                     message: messageService.resolveCode('crossRef.package.error', null, locale),
+        ])
+        job?.endTime = new Date()
+        return jsonResult
+      }
+      pkg = Package.get(proxy.id)
+      jsonResult.pkgId = pkg.id
+      job?.linkedItem = [name: pkg.name,
+                         type: "Package",
+                         id  : pkg.id,
+                         uuid: pkg.uuid]
+      job?.message("Starting upsert for Package ${pkg.name} (uuid: ${pkg.uuid})")
+
+      handleUpdateToken()
+      existing_tipp_ids = TitleInstance.executeQuery(
+        "select tipp.id from TitleInstancePackagePlatform tipp, Combo combo " +
+          "where tipp.status = :status " +
+          "and combo.toComponent = tipp " +
+          "and combo.fromComponent = :package",
+        [package: pkg, status: status_current])
+      log.debug("Matched package has ${pkg.tipps.size()} TIPPs")
+      total = rjson.tipps.size() + (addOnly ? 0 : existing_tipp_ids.size())
 
       for (int idx = 0; idx < rjson.tipps.size(); idx++) {
-        KBComponent.withNewSession {
-          def json_tipp = rjson.tipps[idx]
-          log.info("Crossreferencing #$idx title ${json_tipp.name ?: json_tipp.title.name}")
-          handleTitle(json_tipp)
-          if (!invalidTipps.contains(json_tipp)) {
-            handlePlt(json_tipp)
+        def json_tipp = rjson.tipps[idx]
+        log.info("Crossreferencing #$idx title ${json_tipp.name ?: json_tipp.title.name}")
+        handleTitle(json_tipp)
+        if (!invalidTipps.contains(json_tipp)) {
+          handlePlt(json_tipp)
+        }
+        if (!invalidTipps.contains(json_tipp)) {
+          if ((json_tipp.package == null) && (pkg.id)) {
+            json_tipp.package = [internalId: pkg.id]
           }
-          if (!invalidTipps.contains(json_tipp)) {
-            if ((json_tipp.package == null) && (pkg.id)) {
-              json_tipp.package = [internalId: pkg.id]
-            }
-            else {
-              log.error("No package")
-              tippError(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale)])
-              invalidTipps << json_tipp
-            }
+          else {
+            log.error("No package")
+            tippError(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale)])
+            invalidTipps << json_tipp
           }
-          if (!invalidTipps.contains(json_tipp)) {
-            handleTIPP(json_tipp)
-          }
-          if (Thread.currentThread().isInterrupted()) {
-            log.debug("cancelling Job #${job?.id}")
-            cancelled = true
-            job?.message("the Job was canceled")
-            job?.endTime = new Date()
-            jsonResult.result = "ERROR"
-          }
-          job?.setProgress(idx, total)
-          if (idx % 50 == 0) {
-            log.info("Clean up");
-            // Get the current session.
-            /*  def session = sessionFactory.currentSession
-              // flush and clear the session.
-              session.flush()
-              session.clear()*/
-            System.gc()
-          }
+        }
+        if (!invalidTipps.contains(json_tipp)) {
+          handleTIPP(json_tipp)
+        }
+        if (Thread.currentThread().isInterrupted()) {
+          log.debug("cancelling Job #${job?.id}")
+          cancelled = true
+          job?.message("the Job was canceled")
+          job?.endTime = new Date()
+          jsonResult.result = "ERROR"
+        }
+        job?.setProgress(idx, total)
+        if (idx % 50 == 0) {
+          log.info("Clean up");
+          // Get the current session.
+          def session = sessionFactory.currentSession
+          // flush and clear the session.
+          session.flush()
+          session.clear()
+          System.gc()
         }
       }
-      KBComponent.withNewSession {
-        pkg = Package.get(pkg.id)
-        if (invalidTipps.size() > 0) {
-          String msg = messageService.resolveCode('crossRef.package.tipps.ignored', [invalidTipps.size()], locale)
-          log.warn(msg)
-          jsonResult.result = "WARNING"
-          jsonResult.message = msg
-          errors.global.add([message: msg, baddata: rjson.packageHeader])
-          job?.message(msg)
-        }
-        if (rjson.tipps?.size() > 0 && rjson.tipps.size() > invalidTipps.size()) {
-          if (pkg.status == status_current && pkg?.listStatus != status_ip) {
-            pkg.listStatus = status_ip
-            pkg.merge(flush: true)
-          }
-        }
-        else {
-          log.debug("imported Package $pkg.name contains no valid TIPPs")
-        }
-        if (!addOnly && existing_tipp_ids.size() > 0) {
-          existing_tipp_ids.eachWithIndex { ttd, idx ->
-            def to_retire = TitleInstancePackagePlatform.get(ttd)
-            if (to_retire?.isCurrent()) {
-              if (fullsync) {
-                to_retire.deleteSoft()
-              }
-              else {
-                to_retire.retire()
-              }
-              to_retire.save(failOnError: true)
-              if (idx % 50 == 0) {
-                log.debug("Clean up GORM");
-                // Get the current session.
-                def session = sessionFactory.currentSession
-                // flush and clear the session.
-                session.flush()
-                session.clear()
-              }
-              removedNum++
-              job?.setProgress(removedNum + rjson.tipps.size(), total)
-            }
-          }
-          if (removedNum > 0) {
-            def additionalInfo = [:]
-            additionalInfo.vars = [pkg.id, removedNum]
-            reviewRequestService.raise(
-              pkg,
-              "TIPPs retired.",
-              "An update to package ${pkg.id} did not contain ${removedNum} previously existing TIPPs.",
-              user,
-              null,
-              (additionalInfo as JSON).toString(),
-              rr_TIPPs_retired
-            )
-          }
-        }
-        log.debug("Found ${removedNum} TIPPS to delete/retire from the matched package!")
-        jsonResult.result = 'OK'
-        def msg = messageService.resolveCode('crossRef.package.success', [rjson.packageHeader.name, rjson.tipps.size(), existing_tipp_ids.size(), removedNum], locale)
+
+      pkg = Package.get(pkg.id)
+      if (invalidTipps.size() > 0) {
+        String msg = messageService.resolveCode('crossRef.package.tipps.ignored', [invalidTipps.size()], locale)
+        log.warn(msg)
+        jsonResult.result = "WARNING"
         jsonResult.message = msg
+        errors.global.add([message: msg, baddata: rjson.packageHeader])
         job?.message(msg)
-        if (pkg.status != status_deleted) {
-          pkg.lastUpdateComment = jsonResult.message
+      }
+      if (rjson.tipps?.size() > 0 && rjson.tipps.size() > invalidTipps.size()) {
+        if (pkg.status == status_current && pkg?.listStatus != status_ip) {
+          pkg.listStatus = status_ip
           pkg.merge(flush: true)
         }
-      } // end: KBComponent.withNewSession
+      }
+      else {
+        log.debug("imported Package $pkg.name contains no valid TIPPs")
+      }
+      if (!addOnly && existing_tipp_ids.size() > 0) {
+        existing_tipp_ids.eachWithIndex { ttd, idx ->
+          def to_retire = TitleInstancePackagePlatform.get(ttd)
+          if (to_retire?.isCurrent()) {
+            if (fullsync) {
+              to_retire.deleteSoft()
+            }
+            else {
+              to_retire.retire()
+            }
+            to_retire.merge(flush: true, failOnError: true)
+            removedNum++
+            job?.setProgress(removedNum + rjson.tipps.size(), total)
+          }
+        }
+        if (removedNum > 0) {
+          def additionalInfo = [:]
+          additionalInfo.vars = [pkg.id, removedNum]
+          reviewRequestService.raise(
+            pkg,
+            "TIPPs retired.",
+            "An update to package ${pkg.id} did not contain ${removedNum} previously existing TIPPs.",
+            user,
+            null,
+            (additionalInfo as JSON).toString(),
+            rr_TIPPs_retired
+          )
+        }
+      }
+      log.debug("Found ${removedNum} TIPPS to delete/retire from the matched package!")
+      jsonResult.result = 'OK'
+      def msg = messageService.resolveCode('crossRef.package.success', [rjson.packageHeader.name, rjson.tipps.size(), existing_tipp_ids.size(), removedNum], locale)
+      jsonResult.message = msg
+      job?.message(msg)
+      if (pkg.status != status_deleted) {
+        pkg = Package.get(pkg.id)
+        pkg.lastUpdateComment = jsonResult.message
+        pkg.merge(flush: true)
+      }
+      if (autoUpdate){
+        Source src = Source.get(pkg.source.id)
+        src.lastRun = new Date()
+        src.merge(flush:true)
+      }
+        log.debug("final flush");
+        // Get the current session.
+        def session = sessionFactory.currentSession
+        // flush and clear the session.
+        session.flush()
+        session.clear()
     } catch (Exception e) {
-      // status.setRollbackOnly()
       log.error("exception caught: ", e)
       jsonResult.result = "ERROR"
       jsonResult.code = 500
@@ -414,15 +415,12 @@ class CrossRefPkgRun {
 
         if (title_class_name == 'org.gokb.cred.BookInstance') {
           log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
-          def mg_change = IntegrationController.addMonographFields(ti, titleObj)
-
-          // TODO: Here we will have to add authors and editors, like addPerson() in TSVIngestionService
-          if (mg_change) {
-            title_changed = true
-          }
+          title_changed |= addMonographFields(ti, titleObj)
         }
 
-        ti = ti.merge(flush: true)
+        if (title_changed) {
+          ti = ti.merge(flush: true)
+        }
         titleLookupService.addPublisherHistory(ti, titleObj.publisher_history)
         tippJson.title.internalId = ti.id
       }
@@ -590,7 +588,7 @@ class CrossRefPkgRun {
             user,
             null,
             (additionalInfo as JSON).toString(),
-            rr_noncurrent
+            rr_nonCurrent
           )
         }
       }
@@ -604,5 +602,26 @@ class CrossRefPkgRun {
         tippError(tipp_error)
       }
     }
+  }
+
+  private boolean addMonographFields(BookInstance bi, titleObj) {
+    def book_changed = false
+
+    ["editionNumber", "editionDifferentiator",
+     "editionStatement", "volumeNumber",
+     "summaryOfContent", "firstAuthor",
+     "firstEditor"].each { stringPropertyName ->
+      if (titleObj[stringPropertyName] && titleObj[stringPropertyName].toString().trim().length() > 0) {
+        book_changed |= ClassUtils.setStringIfDifferent(bi, stringPropertyName, titleObj[stringPropertyName])
+      }
+    }
+
+    def dfip = GOKbTextUtils.completeDateString(titleObj.dateFirstInPrint)
+    book_changed |= ClassUtils.setDateIfPresent(dfip, bi, 'dateFirstInPrint')
+
+    def dfo = GOKbTextUtils.completeDateString(titleObj.dateFirstOnline, false)
+    book_changed |= ClassUtils.setDateIfPresent(dfo, bi, 'dateFirstOnline')
+
+    book_changed
   }
 }

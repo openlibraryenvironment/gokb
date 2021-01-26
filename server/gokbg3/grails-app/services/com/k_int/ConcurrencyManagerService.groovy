@@ -91,7 +91,7 @@ class ConcurrencyManagerService {
      */
     @Override
     public synchronized boolean isDone() {
-      task.done
+      task?.done ?: false
     }
 
     @Override
@@ -287,16 +287,16 @@ class ConcurrencyManagerService {
     allJobs.each { k, v ->
       if (v.ownerId == user_id) {
         selected << [
-          id         : v.id,
-          progress   : v.progress,
-          messages   : v.messages,
-          description: v.description,
-          type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
-          begun      : v.begun,
-          linkedItem : v.linkedItem,
-          startTime  : v.startTime,
-          endTime    : v.endTime,
-          cancelled  : v.isCancelled()
+            id         : v.id,
+            progress   : v.progress,
+            messages   : v.messages,
+            description: v.description,
+            type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
+            begun      : v.begun,
+            linkedItem : v.linkedItem,
+            startTime  : v.startTime,
+            endTime    : v.endTime,
+            cancelled  : v.isCancelled()
         ]
       }
     }
@@ -335,16 +335,16 @@ class ConcurrencyManagerService {
     allJobs.each { k, v ->
       if (v.groupId == group_id) {
         selected << [
-          id         : v.id,
-          progress   : v.progress,
-          messages   : v.messages,
-          description: v.description,
-          type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
-          begun      : v.begun,
-          linkedItem : v.linkedItem,
-          startTime  : v.startTime,
-          endTime    : v.endTime,
-          cancelled  : v.isCancelled()
+            id         : v.id,
+            progress   : v.progress,
+            messages   : v.messages,
+            description: v.description,
+            type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
+            begun      : v.begun,
+            linkedItem : v.linkedItem,
+            startTime  : v.startTime,
+            endTime    : v.endTime,
+            cancelled  : v.isCancelled()
         ]
       }
     }

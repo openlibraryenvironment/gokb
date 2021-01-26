@@ -354,7 +354,7 @@ class IntegrationController {
       }
 
       componentUpdateService.setAllRefdata([
-        'software', 'service'
+          'software', 'service'
       ], jsonOrg, located_or_new_org)
 
       if (jsonOrg.mission) {
@@ -386,10 +386,10 @@ class IntegrationController {
         // Located a component.
         if ((located_component != null)) {
           def combo = new Combo(
-            type: RefdataCategory.lookup('Combo.Type', c.linkType),
-            fromComponent: located_or_new_org,
-            toComponent: located_component,
-            startDate: new Date()).save(flush: true, failOnError: true);
+              type: RefdataCategory.lookup('Combo.Type', c.linkType),
+              fromComponent: located_or_new_org,
+              toComponent: located_component,
+              startDate: new Date()).save(flush: true, failOnError: true);
         } else {
           log.error("Problem resolving from(${located_or_new_org}) or to(${located_component}) org for combo");
         }
@@ -482,7 +482,7 @@ class IntegrationController {
           ClassUtils.setStringIfDifferent(located_or_new_source, 'ruleset', data.ruleset)
 
           componentUpdateService.setAllRefdata([
-            'software', 'service'
+              'software', 'service'
           ], source_data, located_or_new_source)
 
           ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
@@ -640,7 +640,7 @@ class IntegrationController {
 
     // Core refdata.
     hasChanged |= setAllRefdata([
-      'status', 'editStatus',
+        'status', 'editStatus',
     ], data, component)
 
     // Identifiers
@@ -674,13 +674,13 @@ class IntegrationController {
 
             log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
             reviewRequestService.raise(
-              component,
-              "Review ID status.",
-              "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
-              user,
-              null,
-              (additionalInfo as JSON).toString(),
-              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
+                component,
+                "Review ID status.",
+                "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
+                user,
+                null,
+                (additionalInfo as JSON).toString(),
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
             )
           } else {
             log.debug("Identifier combo is already present, probably via titleLookupService.")
@@ -713,7 +713,7 @@ class IntegrationController {
       log.debug("Adding tag ${t.type},${t.value}")
 
       component.addToTags(
-        RefdataCategory.lookupOrCreate(t.type, t.value)
+          RefdataCategory.lookupOrCreate(t.type, t.value)
       )
     }
 
@@ -732,7 +732,7 @@ class IntegrationController {
         // Single properties.
         file.with {
           (name, uploadName, uploadMimeType, filesize, doctype) = [
-            fa.uploadName, fa.uploadName, fa.uploadMimeType, fa.filesize, fa.doctype
+              fa.uploadName, fa.uploadName, fa.uploadMimeType, fa.filesize, fa.doctype
           ]
 
           // The contents of the file.
@@ -852,7 +852,7 @@ class IntegrationController {
     component.ensureVariantName(variant_name)
   }
 
-  @Secured(value=["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  // @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def crossReferencePackage() {
     def result = ['result': 'OK']
     def async = params.async ? params.boolean('async') : false
@@ -863,13 +863,18 @@ class IntegrationController {
     UpdateToken updateToken = null
     User request_user = null
     def fullsync = false
+    def token = null
 
     log.debug("crossReferencePackage (${request_locale})")
 
     if (springSecurityService.isLoggedIn()) {
       request_user = springSecurityService.currentUser
-    } else if (params.updateToken?.trim() || rjson.updateToken?.trim()) {
-      def token = params.updateToken ?: rjson.updateToken
+    }
+    else if (params.user && params.password) {
+      request_user = springSecurityService.reauthenticate(params.user, params.password)
+    }
+    else if (params.updateToken?.trim() || rjson.updateToken?.trim()) {
+      token = params.updateToken ?: rjson.updateToken
       updateToken = UpdateToken.findByValue(token)
 
       if (updateToken) {
@@ -884,7 +889,8 @@ class IntegrationController {
         response.setStatus(400)
         result.result = "ERROR"
       }
-    } else {
+    }
+    else {
       response.setStatus(401)
       response.setHeader('WWW-Authenticate', 'Basic realm="gokb"')
     }
@@ -894,14 +900,16 @@ class IntegrationController {
     }
 
     if (!async) {
-      result = crossReferenceService.xRefPkg(rjson, addOnly as boolean, fullsync as boolean, request_locale, request_user) as JSON
+      result = crossReferenceService.xRefPkg(rjson,
+          addOnly as boolean, fullsync as boolean, token != null,
+          request_locale, request_user) as JSON
       log.debug("xRefPkg Result:\n$result")
       render result
-    }
-    else {
+    } else {
       // start xRef Job
       Job background_job = concurrencyManagerService.createJob { Job job ->
-        crossReferenceService.xRefPkg(rjson, addOnly as boolean, fullsync as boolean, request_locale, request_user, job)
+        crossReferenceService.xRefPkg(rjson, addOnly as boolean, fullsync as boolean,
+            token != null, request_locale, request_user, job)
       }
       log.debug("Starting job ${background_job}..")
       background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
@@ -910,9 +918,9 @@ class IntegrationController {
                                    type: "Package"]
       background_job.startOrQueue()
       background_job.startTime = new Date()
-      result.job_id = background_job.id
-      // TODO: key info is deprecated
-      result.info.job_id = background_job.id
+      result << [job_id: background_job.id,
+                 // TODO: key info is deprecated
+                 info  : [job_id: background_job.id]]
       render result as JSON
     }
   }
@@ -943,7 +951,7 @@ class IntegrationController {
           log.debug("created or looked up platform ${p}!")
 
           componentUpdateService.setAllRefdata([
-            'software', 'service'
+              'software', 'service'
           ], platformJson, p)
           ClassUtils.setRefdataIfPresent(platformJson.authentication, p, 'authentication', 'Platform.AuthMethod')
 
@@ -1029,7 +1037,7 @@ class IntegrationController {
       }
 
       componentUpdateService.setAllRefdata([
-        'type'
+          'type'
       ], data, l)
 
 
@@ -1042,36 +1050,36 @@ class IntegrationController {
     render result as JSON
   }
 
-  /**
-   *  Cross reference an incoming title with the database. See an example of calling this controller method
-   *  in GOKB_PROJECT slash scripts slash sync_gokb_titles.groovy
-   *
-   *  Cross reference record::
-   *
-   *{*    'title':'the_title',
-   *    'publisher':'the_publisher',
-   *    'identifiers':[
-   *{type:'namespace',value:'value'},
-   *{type:'isbn', value:'1234-5678'}*    ]
-   *    'type':'Serial'|'Monograph',
-   *    'variantNames':[
-   *      'Array Of Strings - one for each variant name'
-   *    ],
-   *    'imprint':'the_publisher',
-   *    'publishedFrom':'yyyy-MM-dd' 'HH:mm:ss.SSS',
-   *    'publishedTo':'yyyy-MM-dd' 'HH:mm:ss.SSS',
-   *    'editStatus':'edit_status_value',
-   *    'status':'status_value',
-   *    'historyEvents':[
-   *    ],
-   *    'series':'series_name',
-   *    'subjectArea':'subject_area_name',
-   *    'prices':[
-   *{*       'type':'list',
-   *       'currency':'EUR',
-   *       'amount':12.89
-   *}*    ]
-   *}*/
+/**
+ *  Cross reference an incoming title with the database. See an example of calling this controller method
+ *  in GOKB_PROJECT slash scripts slash sync_gokb_titles.groovy
+ *
+ *  Cross reference record::
+ *
+ *{*    'title':'the_title',
+ *    'publisher':'the_publisher',
+ *    'identifiers':[
+ *{type:'namespace',value:'value'},
+ *{type:'isbn', value:'1234-5678'}*    ]
+ *    'type':'Serial'|'Monograph',
+ *    'variantNames':[
+ *      'Array Of Strings - one for each variant name'
+ *    ],
+ *    'imprint':'the_publisher',
+ *    'publishedFrom':'yyyy-MM-dd' 'HH:mm:ss.SSS',
+ *    'publishedTo':'yyyy-MM-dd' 'HH:mm:ss.SSS',
+ *    'editStatus':'edit_status_value',
+ *    'status':'status_value',
+ *    'historyEvents':[
+ *    ],
+ *    'series':'series_name',
+ *    'subjectArea':'subject_area_name',
+ *    'prices':[
+ *{*       'type':'list',
+ *       'currency':'EUR',
+ *       'amount':12.89
+ *}*    ]
+ *}*/
   @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def crossReferenceTitle() {
     User user = springSecurityService.currentUser
@@ -1171,13 +1179,13 @@ class IntegrationController {
 
         try {
           def title = titleLookupService.findOrCreate(
-            titleObj.name,
-            titleObj.publisher,
-            titleObj.identifiers,
-            user,
-            null,
-            title_class_name,
-            titleObj.uuid
+              titleObj.name,
+              titleObj.publisher,
+              titleObj.identifiers,
+              user,
+              null,
+              title_class_name,
+              titleObj.uuid
           )
 
           if (title && !title.hasErrors()) {
@@ -1197,9 +1205,9 @@ class IntegrationController {
             componentUpdateService.ensureCoreData(title, titleObj, fullsync, user)
 
             title_changed |= componentUpdateService.setAllRefdata([
-              'OAStatus', 'medium',
-              'pureOA', 'continuingSeries',
-              'reasonRetired'
+                'OAStatus', 'medium',
+                'pureOA', 'continuingSeries',
+                'reasonRetired'
             ], titleObj, title)
 
             def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
@@ -1369,10 +1377,8 @@ class IntegrationController {
 
             if (idMatch) {
               if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
-              }
-              else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
-              }
-              else {
+              } else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
+              } else {
                 found = true
               }
             }
@@ -1391,21 +1397,21 @@ class IntegrationController {
 
             if (propName == "toComponent") {
               combo = new Combo(
-                type: (type),
-                status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-                startDate: pub_add_sd,
-                endDate: pub_add_ed,
-                toComponent: publisher,
-                fromComponent: ti
+                  type: (type),
+                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                  startDate: pub_add_sd,
+                  endDate: pub_add_ed,
+                  toComponent: publisher,
+                  fromComponent: ti
               )
             } else {
               combo = new Combo(
-                type: (type),
-                status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-                startDate: pub_add_sd,
-                endDate: pub_add_ed,
-                fromComponent: publisher,
-                toComponent: ti
+                  type: (type),
+                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                  startDate: pub_add_sd,
+                  endDate: pub_add_ed,
+                  fromComponent: publisher,
+                  toComponent: ti
               )
             }
 
@@ -1424,8 +1430,8 @@ class IntegrationController {
               publisher_combos.add(combo)
 
               log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
-                (combo.startDate ? ' from ' + combo.startDate : '') +
-                (combo.endDate ? ' to ' + combo.endDate : '')
+                  (combo.startDate ? ' from ' + combo.startDate : '') +
+                  (combo.endDate ? ' to ' + combo.endDate : '')
             } else {
               log.error("Could not create publisher Combo..")
             }
@@ -1509,7 +1515,7 @@ class IntegrationController {
 
             if (job.endTime || job.isCancelled() || job.isDone()) {
               result.finished = true
-              result.endTime = job.endTime?:new Date()
+              result.endTime = job.endTime ?: new Date()
               try {
                 result.job_result = job.get()
               }
@@ -1600,8 +1606,8 @@ class IntegrationController {
     }
 
     if ((col_positions.'title' != -1) &&
-      ((col_positions.'identifier.pissn' != -1) ||
-        (col_positions.'identifier.eissn' != -1))) {
+        ((col_positions.'identifier.pissn' != -1) ||
+            (col_positions.'identifier.eissn' != -1))) {
 
       // So long as we have at least one identifier...
       String[] nl = r.readNext()
@@ -1615,14 +1621,14 @@ class IntegrationController {
             def candidate_identifiers = []
 
             if ((col_positions.'identifier.pissn' != -1) &&
-              (nl[col_positions.'identifier.pissn']?.length() > 0) &&
-              (nl[col_positions.'identifier.pissn'].toLowerCase() != 'null')) {
+                (nl[col_positions.'identifier.pissn']?.length() > 0) &&
+                (nl[col_positions.'identifier.pissn'].toLowerCase() != 'null')) {
               candidate_identifiers.add([type: 'issn', value: nl[col_positions.'identifier.pissn']]);
             }
 
             if ((col_positions.'identifier.eissn' != -1) &&
-              (nl[col_positions.'identifier.eissn']?.length() > 0) &&
-              (nl[col_positions.'identifier.eissn'].toLowerCase() != 'null')) {
+                (nl[col_positions.'identifier.eissn']?.length() > 0) &&
+                (nl[col_positions.'identifier.eissn'].toLowerCase() != 'null')) {
               candidate_identifiers.add([type: 'eissn', value: nl[col_positions.'identifier.eissn']]);
             }
 
@@ -1661,4 +1667,5 @@ class IntegrationController {
     session.flush()
     session.clear()
   }
+
 }

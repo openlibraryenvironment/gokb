@@ -29,10 +29,10 @@ if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST 
 
   logger ('org.gokb.DomainClassExtender', WARN)
   logger ('org.gokb.ClassExaminationService', WARN)
-  logger ('org.gokb.IntegrationController', ERROR)
+  logger ('org.gokb.IntegrationController', INFO)
   logger ('org.gokb.CrossReferenceService', DEBUG)
-  logger ('org.gokb.CrossRefPkgRun', ERROR)
-  logger ('org.gokb.PackageService', ERROR)
+  logger ('org.gokb.CrossRefPkgRun', INFO)
+  logger ('org.gokb.PackageService', INFO)
   logger ('org.gokb.ComponentUpdateService', ERROR)
   logger ('org.gokb.ComponentStatisticService', ERROR)
   logger ('org.gokb.ComponentLookupService', ERROR)
@@ -50,10 +50,7 @@ if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST 
   logger ('com.k_int', INFO)
   logger ('org.gokb', INFO)
   logger ('gokbg3', INFO)
-
-  logger ('org.gokb.CrossRefPkgRun', ERROR)
 }
-
 
 def targetDir = BuildSettings.TARGET_DIR
 if (Environment.isDevelopmentMode() && targetDir != null) {
