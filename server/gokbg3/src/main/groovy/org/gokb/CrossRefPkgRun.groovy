@@ -168,6 +168,7 @@ class CrossRefPkgRun {
           job?.message("the Job was canceled")
           job?.endTime = new Date()
           jsonResult.result = "ERROR"
+          jsonResult.code = "500"
           break
         }
         job?.setProgress(idx, total)
