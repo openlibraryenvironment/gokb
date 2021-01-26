@@ -275,6 +275,7 @@ class ConcurrencyManagerService {
     def allJobs = getJobs()
     def selected = []
     def result = [:]
+    def total = null
 
     if (user_id == null) {
       return null
@@ -298,13 +299,19 @@ class ConcurrencyManagerService {
       }
     }
 
-    result.total = selected.size()
+    total = selected.size()
 
     if (offset > 0) {
       selected = selected.drop(offset)
     }
 
-    result.records = selected.take(max)
+    result.data = selected.take(max)
+
+    result._pagination = [
+      total: total,
+      limit: max,
+      offset: offset
+    ]
 
     // Return the jobs.
     result
@@ -321,6 +328,7 @@ class ConcurrencyManagerService {
     def allJobs = getJobs()
     def selected = []
     def result = [:]
+    def total = null
 
     if (group_id == null) {
       return null
@@ -346,13 +354,19 @@ class ConcurrencyManagerService {
       }
     }
 
-    result.total = selected.size()
+    total = selected.size()
 
     if (offset > 0) {
       selected = selected.drop(offset)
     }
 
-    result.records = selected.take(max)
+    result.data = selected.take(max)
+
+    result._pagination = [
+      total: total,
+      limit: max,
+      offset: offset
+    ]
 
     // Return the jobs.
     result
