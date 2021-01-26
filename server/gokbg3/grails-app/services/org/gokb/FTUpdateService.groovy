@@ -437,14 +437,18 @@ class FTUpdateService {
         // title history for all title types
         if (kbc.title?.hasProperty("historyEvents")){
           result.titleHistory = []
-          kbc.title?.historyEvents?.each{ he ->
+          kbc.title?.titleHistory?.each{ he ->
             if (he.date){
               def event = [:]
               event.date = dateFormatService.formatIsoTimestamp(he.date)
               event.from = []
-              event.from.addAll(he.from)
+              if (he.from) {
+                event.from.addAll(he.from.collect { fe -> [id: fe.id, uuid: fe.uuid, name: fe.name ]})
+              }
               event.to = []
-              event.to.addAll(he.to)
+              if (he.to){
+                event.to.addAll(he.to.collect{ te -> [id: te.id, uuid: te.uuid, name: te.name] })
+              }
               event.id = he.id ?: ""
               result.titleHistory.add(event)
             }
