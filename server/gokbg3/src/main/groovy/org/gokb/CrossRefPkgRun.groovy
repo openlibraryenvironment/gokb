@@ -165,10 +165,9 @@ class CrossRefPkgRun {
         if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
           log.debug("cancelling Job #${job?.id}")
           cancelled = true
-          job?.message("the Job was canceled")
+          def msg = "the Job was canceled"
+          globalError([message: msg, code: 500])
           job?.endTime = new Date()
-          jsonResult.result = "ERROR"
-          jsonResult.code = "500"
           break
         }
         job?.setProgress(idx, total)
