@@ -162,7 +162,7 @@ class CrossRefPkgRun {
         if (!invalidTipps.contains(json_tipp)) {
           handleTIPP(json_tipp)
         }
-        if (Thread.currentThread().isInterrupted()) {
+        if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
           log.debug("cancelling Job #${job?.id}")
           cancelled = true
           job?.message("the Job was canceled")
