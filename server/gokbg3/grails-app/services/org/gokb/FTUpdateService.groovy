@@ -84,8 +84,16 @@ class FTUpdateService {
         result.scope = kbc.scope ? kbc.scope.value : ""
         result.listVerifiedDate = kbc.listVerifiedDate ? dateFormatService.formatTimestamp(kbc.listVerifiedDate) : ""
 
-        if (kbc.source)
-          result.source = [frequency: kbc.source.frequency, id: kbc.source.id]
+        if (kbc.source){
+          result.source = [
+              id                : kbc.source.id,
+              name              : kbc.source.name,
+              automaticUpdates  : kbc.source.automaticUpdates,
+              url               : kbc.source.url,
+              frequency         : kbc.source.frequency,
+              lastRun           : dateFormatService.formatIsoTimestamp(kbc.source.lastRun)
+          ]
+        }
 
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
