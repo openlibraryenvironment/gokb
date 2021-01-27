@@ -139,6 +139,15 @@ class FTUpdateService {
 
         result.componentType = kbc.class.simpleName
 
+        result.platforms = []
+        kbc.providedPlatforms?.each { plt ->
+          def platform = [:]
+          platform.uuid = plt.uuid ?: ""
+          platform.url = plt.primaryUrl ?: ""
+          platform.name = plt.name ?: ""
+          result.platforms.add(platform)
+        }
+
         result
       }
 
@@ -397,6 +406,82 @@ class FTUpdateService {
         }
 
         result.componentType = kbc.class.simpleName
+        result.tippTitleMedium = kbc.title ? kbc.title.medium : ""
+
+        result.accessStartDate = kbc.accessStartDate ? dateFormatService.formatIsoTimestamp(kbc.accessStartDate) : ""
+        result.accessEndDate = kbc.accessEndDate ? dateFormatService.formatIsoTimestamp(kbc.accessEndDate) : ""
+
+        result.subjectArea = kbc.subjectArea ?: ""
+        result.series = kbc.series ?: ""
+
+        if (kbc.title?.niceName == 'Book'){
+
+          // edition for eBooks
+          def edition = [:]
+          if (kbc.title?.editionNumber){
+            edition.number = kbc.title.editionNumber
+          }
+          if (kbc.title?.editionDifferentiator){
+            edition.differentiator = kbc.title.editionDifferentiator
+          }
+          if (kbc.title?.editionStatement){
+            edition.statement = kbc.title.editionStatement
+          }
+          if (!edition.isEmpty()){
+            result.titleEdition = edition
+          }
+
+          // simple eBook fields
+          result.titleVolumeNumber = kbc.title?.volumeNumber ?: ""
+          result.titleDateFirstInPrint = kbc.title?.dateFirstInPrint ?
+              dateFormatService.formatIsoTimestamp(kbc.title.dateFirstInPrint) : ""
+          result.titleDateFirstOnline = kbc.title?.dateFirstOnline ?
+              dateFormatService.formatIsoTimestamp(kbc.title.dateFirstOnline) : ""
+          result.titleFirstEditor = kbc.title?.firstEditor ?: ""
+          result.titleFirstAuthor = kbc.title?.firstAuthor ?: ""
+          result.titleImprint = kbc.title?.imprint?.name ?: ""
+        }
+
+        // title history for all title types
+        result.titleHistory = []
+        kbc.title?.titleHistory?.each{ he ->
+          if (he.date){
+            def event = [:]
+            event.date = dateFormatService.formatIsoTimestamp(he.date)
+            event.from = []
+            if (he.from) {
+              event.from.addAll(he.from.collect { fe -> [id: fe.id, uuid: fe.uuid, name: fe.name ]})
+            }
+            event.to = []
+            if (he.to){
+              event.to.addAll(he.to.collect{ te -> [id: te.id, uuid: te.uuid, name: te.name] })
+            }
+            event.id = he.id ?: ""
+            result.titleHistory.add(event)
+          }
+        }
+
+        // publishers for all title types
+        result.titlePublishers = []
+        kbc.title?.publisher?.each { pub ->
+          def publisher = [:]
+          publisher.name = pub.name ?: ""
+          publisher.id = pub.id ?: ""
+          publisher.uuid = pub.uuid ?: ""
+          result.titlePublishers.add(publisher)
+        }
+
+        // prices for all title types
+        result.prices = []
+        kbc.prices?.each { p ->
+          def price = [:]
+          price.type = p.priceType?.value ?: ""
+          price.amount = String.valueOf(p.price) ?: ""
+          price.currency = p.currency?.value ?: ""
+          price.startDate = p.startDate ? dateFormatService.formatIsoTimestamp(p.startDate) : ""
+          price.endDate = p.endDate ? dateFormatService.formatIsoTimestamp(p.endDate) : ""
+          result.prices.add(price)
+        }
 
         result
       }
@@ -405,7 +490,6 @@ class FTUpdateService {
     catch (Exception e) {
       log.error("Problem", e);
     }
-
     running = false;
   }
 

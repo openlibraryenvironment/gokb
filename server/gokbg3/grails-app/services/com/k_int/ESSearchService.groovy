@@ -443,35 +443,41 @@ class ESSearchService{
     def esClient = ESWrapperService.getClient()
     def errors = [:]                              // TODO: use errors
 
-    QueryBuilder scrollQuery = QueryBuilders.boolQuery()
-    if (params.component_type){
-      QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
-      scrollQuery.must(typeFilter)
-    }
-    addStatusQuery(scrollQuery, errors, params.status)
-
-    // addDateQueries(scrollQuery, errors, params)
-    // TODO: add this after upgrade to Elasticsearch 7
-
-    // TODO: alternative query builders for scroll searches with q
-
     ActionFuture<SearchResponse> response
     if (!params.scrollId){
+      QueryBuilder scrollQuery = QueryBuilders.boolQuery()
+      if (params.component_type){
+        QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
+        scrollQuery.must(typeFilter)
+      }
+      addStatusQuery(scrollQuery, errors, params.status)
+      // addDateQueries(scrollQuery, errors, params)
+      // TODO: add this after upgrade to Elasticsearch 7
+      // TODO: alternative query builders for scroll searches with q
+
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       searchSourceBuilder.query(scrollQuery)
       searchSourceBuilder.size(scrollSize)
       SearchRequest searchRequest = new SearchRequest(grailsApplication.config.gokb.es.index)
       searchRequest.scroll("1m")
-      searchRequest.source(searchSourceBuilder)
       // ... set scroll interval to 1 minute
+      searchRequest.source(searchSourceBuilder)
       response = esClient.search(searchRequest)
+      result.lastPage = 0
     }
     else{
       SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
       scrollRequest.scroll("1m")
       response = esClient.searchScroll(scrollRequest)
+      try{
+        if (params.lastPage && Integer.valueOf(params.lastPage) > -1){
+          result.lastPage = Integer.valueOf(params.lastPage)+1
+        }
+      }
+      catch (Exception e){
+        log.debug("Could not process page information on scroll request.")
+      }
     }
-    log.debug("scrollId : " + response.actionGet().getScrollId())
     result.scrollId = response.actionGet().getScrollId()
     SearchHit[] searchHits = response.actionGet().getHits().getHits()
     result.hasMoreRecords = searchHits.length == scrollSize
