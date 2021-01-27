@@ -205,7 +205,6 @@ class RestMappingService {
         else {
           if( embed_active.contains(cp) ) {
             result['_embedded'][cp] = []
-            log.debug("Mapping ManyByCombo ${cp} ${obj[cp]}")
 
             def combos = obj.getCombosByPropertyName(cp)
             boolean reverse = obj.isComboReverse(cp)
