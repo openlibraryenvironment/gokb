@@ -72,7 +72,7 @@
                 params="${[ctype: ctype, id: params.id]}"
                 next="Next"
                 prev="Prev"
-                max="${tiMax}"
+                max="${max}"
                 total="${titleCount}"
               />
             </g:if>
@@ -119,7 +119,7 @@
                 params="${[ctype: ctype, id: params.id]}"
                 next="Next"
                 prev="Prev"
-                max="${idMax}"
+                max="${max}"
                 total="${idsCount}"
               />
             </g:if>

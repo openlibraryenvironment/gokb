@@ -20,10 +20,12 @@ class ComponentController {
 
     def result = [result:'OK', dispersedIds: [], singleTitles: []]
     User user = springSecurityService.currentUser
-    def max = params.int('max') ?: 10
+    def max = params.int('max') ?: user.defaultPageSize
     def offset = params.int('offset') ?: 0
     def components = []
     def dupe_ids = []
+
+    result.max = max
 
     if (params.id) {
       IdentifierNamespace ns = genericOIDService.resolveOID(params.id)
