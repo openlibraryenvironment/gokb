@@ -2248,13 +2248,16 @@ class WorkflowController {
           }
 
           if (pkgObj?.isEditable() && (is_curator || !curated_pkg  || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))) {
-            def started = packageService.updateFromSource(pkgObj, user)
+            def result = packageService.updateFromSource(pkgObj, user)
 
-            if (started) {
+            if (result == 'OK') {
               flash.success = "Update successfully started!"
             }
+            else if (result == 'ALREADY_RUNNING') {
+              flash.warning = "Another update is already running. Please try again later."
+            }
             else {
-              flash.error = "Another update is already running. Please try again later."
+              flash.error = "There have been errors running the job. Please check Source & Package info."
             }
           }
           else {
