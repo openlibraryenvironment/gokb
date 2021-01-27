@@ -430,7 +430,7 @@ class CrossRefPkgRun {
         }
 
         if (title_changed) {
-          ti = ti.merge(flush: true)
+          ti.merge(flush: true)
         }
         titleLookupService.addPublisherHistory(ti, titleObj.publisher_history)
         tippJson.title.internalId = ti.id
@@ -491,8 +491,9 @@ class CrossRefPkgRun {
           pl = Platform.upsertDTO(tippPlt, user)
           if (pl) {
             pltCache[tippPlt.name] = pl
+//            pl.save()
             pl.merge(flush: true)
-            componentUpdateService.ensureCoreData(pl, tippPlt, fullsync)
+            componentUpdateService.ensureCoreData(pl, tippPlt, fullsync, user)
           }
           else {
             log.error("Could not find/create ${tippPlt}")
@@ -535,8 +536,8 @@ class CrossRefPkgRun {
       try {
         upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tippJson, user)
         log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp?.url}")
-        upserted_tipp.merge(flush: true)
-        componentUpdateService.ensureCoreData(upserted_tipp, tippJson, fullsync)
+        upserted_tipp.merge(flush:true)
+        componentUpdateService.ensureCoreData(upserted_tipp, tippJson, fullsync, user)
       }
       catch (grails.validation.ValidationException ve) {
         log.error("ValidationException attempting to cross reference TIPP", ve)
@@ -573,7 +574,7 @@ class CrossRefPkgRun {
         }
         else if (upserted_tipp.status != status_current && (!tippJson.status || tippJson.status == "Current")) {
           if (upserted_tipp.isDeleted() && !fullsync) {
-            //upserted_tipp.merge(flush: true)
+            // upserted_tipp.merge(flush: true)
             reviewRequestService.raise(
                 upserted_tipp,
                 "Matched TIPP was marked as Deleted.",
@@ -586,8 +587,8 @@ class CrossRefPkgRun {
           }
           upserted_tipp.status = status_current
         }
+//        upserted_tipp.save()
         upserted_tipp.merge(flush: true)
-
         if (upserted_tipp.isCurrent() && upserted_tipp.hostPlatform?.status != status_current) {
           def additionalInfo = [:]
           additionalInfo.vars = [upserted_tipp.hostPlatform.name, upserted_tipp.hostPlatform.status?.value]

@@ -98,7 +98,7 @@ class DummyKbartDownloadController {
       record.publisher_name = "publisher name $randomCode"
       record.date_monograph_published_print = timeline[0].format(plain)
       record.date_monograph_published_online = timeline[1].format(plain)
-      record.monograph_volume = randomCode
+      record.monograph_volume = ThreadLocalRandom.current().nextInt(89)
       record.monograph_edition = randomCode
       record.first_editor = "first editor $randomCode"
       record.parent_publication_title_id = ""

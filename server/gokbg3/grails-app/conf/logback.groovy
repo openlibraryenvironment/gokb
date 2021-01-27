@@ -1,3 +1,4 @@
+import ch.qos.logback.classic.Level
 import grails.util.BuildSettings
 import grails.util.Environment
 import org.springframework.boot.logging.logback.ColorConverter
@@ -29,7 +30,7 @@ if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST 
 
   logger ('org.gokb.DomainClassExtender', WARN)
   logger ('org.gokb.ClassExaminationService', WARN)
-  logger ('org.gokb.IntegrationController', INFO)
+  logger ('org.gokb.IntegrationController', WARN)
   logger ('org.gokb.CrossReferenceService', DEBUG)
   logger ('org.gokb.CrossRefPkgRun', INFO)
   logger ('org.gokb.PackageService', INFO)
@@ -43,6 +44,9 @@ if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST 
   logger ('org.gokb.FTUpdateService', ERROR)
   logger ('org.gokb.ESUpdateJob', ERROR)
   logger ('org.gokb.cred', ERROR)
+  logger ('org.gokb.cred.BookInstance', ERROR)
+  logger ('org.gokb.cred.JournalInstance', ERROR)
+  logger ('org.gokb.cred.RefdataCategory', ERROR)
   logger ('gokbg3.RestMappingService', ERROR)
   logger ('gokbg3.UserDetailsInterceptor', ERROR)
   logger ('gokbg3.PreferencesInterceptor', ERROR)

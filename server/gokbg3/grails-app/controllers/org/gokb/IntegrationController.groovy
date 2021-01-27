@@ -48,7 +48,8 @@ class IntegrationController {
       log.debug("No platform with normname ${normname} - create");
       def new_platform = new org.gokb.cred.Platform(name: name, normname: normname).save()
       result.message = "Added new platform"
-    } else {
+    }
+    else {
       result.message = "Entity with that name already exists.."
     }
     render result as JSON
@@ -66,7 +67,8 @@ class IntegrationController {
 
     if (!group) {
       group = CuratoryGroup.findByNormname(normname)
-    } else {
+    }
+    else {
       result.message = "Group ${group.name} matched by uuid!"
     }
 
@@ -76,14 +78,16 @@ class IntegrationController {
       if (group.validate()) {
         group.save(flush: true)
         result.message = "Created new group ${name}!"
-      } else {
+      }
+      else {
         result.message = "Could not reference group ${name}"
         result.errors = group.errors
         result.result = 'ERROR'
 
         render result as JSON
       }
-    } else {
+    }
+    else {
       result.message = "Group ${group.name} matched by name!"
     }
 
@@ -111,7 +115,8 @@ class IntegrationController {
     if (group) {
       group.save(flush: true)
       result.groupId = group.id
-    } else {
+    }
+    else {
       result.message = "Could not reference group ${name}"
       result.result = 'ERROR'
     }
@@ -140,14 +145,16 @@ class IntegrationController {
         if (located_entries?.size() == 1) {
           log.debug("Identified record..");
           enrichJsonLDOrg(located_entries[0], request.JSON)
-        } else if (located_entries?.size() == 0) {
+        }
+        else if (located_entries?.size() == 0) {
 
           log.debug("Not identified - try sameAs relations");
 
           if (request.JSON.'owl:sameAs' != null) {
             log.debug("Attempt lookup by sameAs : ${request.JSON.'owl:sameAs' as String[]} ");
             located_entries = KBComponent.lookupByIdentifierValue((request.JSON.'owl:sameAs') as String[])
-          } else {
+          }
+          else {
             log.debug("No owl:sameAs entries found");
           }
 
@@ -164,30 +171,38 @@ class IntegrationController {
               if (located_entries?.size() == 0) {
 
                 createJsonLDOrg(request.JSON);
-              } else if (located_entries?.size() == 1) {
+              }
+              else if (located_entries?.size() == 1) {
                 log.debug("Exact match on normalised variantname ${variant_normname} - good enough");
                 enrichJsonLDOrg(located_entries[0], request.JSON)
-              } else {
+              }
+              else {
                 log.error("Multiple matches on normalised variant name... abandon all hope");
               }
-            } else if (located_entries?.size() == 1) {
+            }
+            else if (located_entries?.size() == 1) {
               log.debug("Exact match on normalised name ${normname} - good enough");
               enrichJsonLDOrg(located_entries[0], request.JSON)
-            } else {
+            }
+            else {
               log.error("Multiple matches on normalised name... abandon all hope");
             }
 
-          } else if (located_entries?.size() == 1) {
+          }
+          else if (located_entries?.size() == 1) {
             log.debug("Located identifier");
-          } else {
+          }
+          else {
             log.error("set of SameAs identifiers locate more that one component");
           }
-        } else {
+        }
+        else {
           log.error("Unique identifier finds multiple components.");
         }
 
         result.status = 'OK'
-      } else {
+      }
+      else {
         log.error("skipping org [ ${request.JSON.'@id'}] due to null name");
       }
     }
@@ -225,7 +240,8 @@ class IntegrationController {
       if (existing_usage == null) {
         def identifier = componentLookupService.lookupOrCreateCanonicalIdentifier('global', said)
         new_org.ids.add(identifier)
-      } else {
+      }
+      else {
         log.error("Not adding identifer to a second item...");
       }
     }
@@ -245,7 +261,8 @@ class IntegrationController {
 
     if (new_org.save(flush: true, failOnError: true)) {
       log.debug("Saved ok");
-    } else {
+    }
+    else {
       log.error("Problem saving new org. ${new_org.errors}");
     }
   }
@@ -308,7 +325,8 @@ class IntegrationController {
               located_or_new_org = candidate_orgs[0]
 
               log.debug("Matched Org on variant name!");
-            } else if (candidate_orgs.size() == 0) {
+            }
+            else if (candidate_orgs.size() == 0) {
 
               log.debug("Create new org name will be \"${jsonOrg.name}\" (${jsonOrg.name?.length()})");
 
@@ -318,24 +336,30 @@ class IntegrationController {
 
               if (located_or_new_org.save(flush: true, failOnError: true)) {
                 log.debug("Saved ok");
-              } else {
+              }
+              else {
                 assert_errors = true;
               }
-            } else {
+            }
+            else {
               log.debug("Multiple matches via variant name, skipping Org!");
               assert_errors = true;
             }
-          } else if (org_by_name.size == 1) {
+          }
+          else if (org_by_name.size == 1) {
             log.debug("Matched Org by normname!")
-          } else {
+          }
+          else {
             log.debug("Multiple matches for org via normname!")
             assert_errors = true;
           }
-        } else {
+        }
+        else {
           log.warn("Provided Org has no name!");
           assert_errors = true;
         }
-      } else {
+      }
+      else {
         log.debug("Located existing record.. Still update...");
       }
 
@@ -390,7 +414,8 @@ class IntegrationController {
               fromComponent: located_or_new_org,
               toComponent: located_component,
               startDate: new Date()).save(flush: true, failOnError: true);
-        } else {
+        }
+        else {
           log.error("Problem resolving from(${located_or_new_org}) or to(${located_component}) org for combo");
         }
       }
@@ -415,7 +440,8 @@ class IntegrationController {
         log.debug("Saved ok");
         result.message = "Added/Updated org: ${located_or_new_org.id} ${located_or_new_org.name}";
         result.orgId = located_or_new_org.id
-      } else {
+      }
+      else {
         log.debug("Save failed ${located_or_new_org}");
         result.errors = []
         located_or_new_org.errors.each { e ->
@@ -666,7 +692,8 @@ class IntegrationController {
             log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
             def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
             hasChanged = true
-          } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
+          }
+          else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
             def additionalInfo = [:]
 
@@ -682,7 +709,8 @@ class IntegrationController {
                 (additionalInfo as JSON).toString(),
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
             )
-          } else {
+          }
+          else {
             log.debug("Identifier combo is already present, probably via titleLookupService.")
           }
 
@@ -781,7 +809,8 @@ class IntegrationController {
           }
         }
       }
-    } else {
+    }
+    else {
       log.debug("Skipping CG handling ..")
     }
 
@@ -883,7 +912,8 @@ class IntegrationController {
         if (rjson.packageHeader) {
           rjson.packageHeader.uuid = updateToken.pkg.uuid
         }
-      } else {
+      }
+      else {
         log.error("Unable to reference update token!")
         result.message = "Unable to reference update token!"
         response.setStatus(400)
@@ -905,7 +935,8 @@ class IntegrationController {
           request_locale, request_user) as JSON
       log.debug("xRefPkg Result:\n$result")
       render result
-    } else {
+    }
+    else {
       // start xRef Job
       Job background_job = concurrencyManagerService.createJob { Job job ->
         crossReferenceService.xRefPkg(rjson, addOnly as boolean, fullsync as boolean,
@@ -960,7 +991,8 @@ class IntegrationController {
 
             if (platformJson.provider instanceof String) {
               prov = Org.findByNormname(Org.generateNormname(platformJson.provider))
-            } else {
+            }
+            else {
               if (platformJson.provider.uuid) {
                 prov = Org.findByUuid(platformJson.provider.uuid)
               }
@@ -973,7 +1005,8 @@ class IntegrationController {
             if (prov) {
               log.debug("Adding Provider ${prov} to platform ${p}!")
               p.provider = prov
-            } else {
+            }
+            else {
               log.debug("No provider found for ${platformJson.provider}!")
             }
           }
@@ -988,7 +1021,8 @@ class IntegrationController {
           result.message = "Created/Updated platform ${p}"
 
           result.platformId = p.id;
-        } else {
+        }
+        else {
           log.debug("No platform matched for ${platformJson}")
           result.message = "Could not crossreference platform ${platformJson}"
           response.setStatus(500)
@@ -1001,7 +1035,8 @@ class IntegrationController {
         response.setStatus(500)
         result.result = "ERROR"
       }
-    } else {
+    }
+    else {
       log.debug("Missing Platform info for ${platformJson}")
       result.message = "Platform ${platformJson} is missing required information ('name' or 'platformUrl')!"
       response.setStatus(400)
@@ -1099,7 +1134,8 @@ class IntegrationController {
       result = crossReferenceSingleTitle(rjson, user.id, fullsync, request_locale)
 
       cleanUpGorm()
-    } else {
+    }
+    else {
       log.debug("Starting crossReferenceTitle Job")
       Job background_job = concurrencyManagerService.createJob { Job job ->
         def json = rjson
@@ -1140,7 +1176,8 @@ class IntegrationController {
 
       if (async == false) {
         result = background_job.get()
-      } else {
+      }
+      else {
         result = [job_id: background_job.id]
       }
     }
@@ -1165,7 +1202,8 @@ class IntegrationController {
         result.message = messageService.resolveCode('crossRef.title.error.preValidation', [titleObj.name], locale)
         result.baddata = titleObj
         result.errors = title_validation.errors
-      } else {
+      }
+      else {
         def title_class_name = determineTitleClass(titleObj)
 
         if (!title_class_name) {
@@ -1194,7 +1232,8 @@ class IntegrationController {
             if (titleObj.imprint) {
               if (title.imprint?.name == titleObj.imprint) {
                 // Imprint already set
-              } else {
+              }
+              else {
                 def imprint = Imprint.findByName(titleObj.imprint) ?: new Imprint(name: titleObj.imprint).save(flush: true, failOnError: true);
                 title.imprint = imprint;
                 title_changed = true
@@ -1247,7 +1286,8 @@ class IntegrationController {
             result.cls = title.class.name
             result.titleId = title.id
             result.uuid = title.uuid
-          } else if (title) {
+          }
+          else if (title) {
             result.result = "ERROR"
             result.baddata = titleObj
             log.error("Cross Reference Title failed: ${titleObj}");
@@ -1258,10 +1298,12 @@ class IntegrationController {
               result.uuid = title.uuid
               result.message = messageService.resolveCode('crossRef.title.error.existing', [title.name, title.id], locale)
               log.error("CrossReference Matched existing title (${title.id}) with errors: ${title.errors}")
-            } else {
+            }
+            else {
               result.message = "Cross Reference of title ${titleObj.name} failed";
             }
-          } else {
+          }
+          else {
             result.result = "ERROR"
             result.baddata = titleObj.identifiers
             result.message = messageService.resolveCode('crossRef.title.error.dupes', [title.name], locale)
@@ -1324,7 +1366,8 @@ class IntegrationController {
           return null
           break;
       }
-    } else {
+    }
+    else {
       return null
     }
   }
@@ -1377,8 +1420,10 @@ class IntegrationController {
 
             if (idMatch) {
               if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
-              } else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
-              } else {
+              }
+              else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
+              }
+              else {
                 found = true
               }
             }
@@ -1404,7 +1449,8 @@ class IntegrationController {
                   toComponent: publisher,
                   fromComponent: ti
               )
-            } else {
+            }
+            else {
               combo = new Combo(
                   type: (type),
                   status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
@@ -1432,15 +1478,18 @@ class IntegrationController {
               log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
                   (combo.startDate ? ' from ' + combo.startDate : '') +
                   (combo.endDate ? ' to ' + combo.endDate : '')
-            } else {
+            }
+            else {
               log.error("Could not create publisher Combo..")
             }
 
-          } else {
+          }
+          else {
             log.debug "Publisher ${publisher.name} already set against '${ti.name}'"
           }
 
-        } else {
+        }
+        else {
           log.debug "Could not find org name: ${pub_to_add.name}, with normname: ${norm_pub_name}"
         }
       }
@@ -1482,21 +1531,25 @@ class IntegrationController {
       result.result = "ERROR"
       response.setStatus(400)
       result.message = "Request is missing an id parameter."
-    } else {
+    }
+    else {
       if (springSecurityService.isLoggedIn()) {
         user = springSecurityService.currentUser
-      } else if (params.updateToken?.trim()) {
+      }
+      else if (params.updateToken?.trim()) {
         def updateToken = UpdateToken.findByValue(params.updateToken)
 
         if (updateToken) {
           user = updateToken.updateUser
-        } else {
+        }
+        else {
           log.error("Unable to reference update token!")
           result.message = "Unable to reference update token!"
           response.setStatus(400)
           result.result = "ERROR"
         }
-      } else {
+      }
+      else {
         response.setStatus(401)
         response.setHeader('WWW-Authenticate', 'Basic realm="gokb"')
       }
@@ -1522,16 +1575,19 @@ class IntegrationController {
               catch (CancellationException ce) {
                 result.cancelled = true
               }
-            } else {
+            }
+            else {
               result.finished = false
               result.progress = job.progress
             }
-          } else {
+          }
+          else {
             result.result = "ERROR"
             response.setStatus(403)
             result.message = "No permission to view job with ID ${id}."
           }
-        } else {
+        }
+        else {
           result.result = "ERROR"
           response.setStatus(404)
           result.message = "Could not find job with ID ${id}."
@@ -1576,7 +1632,8 @@ class IntegrationController {
           m.save(flush: true, failOnError: true)
           log.info "Created/Updated macro with id ${m.id}"
           ret["Row ${rowctr}"] = "Created Macro with ID ${m.id}"
-        } else {
+        }
+        else {
           log.error("Unable to parse row ${rowctr}..")
           ret["Row ${rowctr}"] = "Failed to parse"
         }
@@ -1635,7 +1692,8 @@ class IntegrationController {
             if (candidate_identifiers.size() > 0) {
               log.debug("Looking up ${candidate_identifiers} - ${nl[col_positions.'title']}");
               // def existing_component = titleLookupService.find (nl[col_positions.'title'], null, candidate_identifiers)
-            } else {
+            }
+            else {
               log.debug("No candidate identifiers: ${nl}");
             }
           }
