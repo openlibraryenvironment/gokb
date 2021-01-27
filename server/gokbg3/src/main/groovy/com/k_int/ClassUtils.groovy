@@ -17,10 +17,14 @@ import org.gokb.cred.KBComponent
 
 class ClassUtils {
 
+
+  public static final DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
+  public static final DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']").withResolverStyle(ResolverStyle.STRICT)
+
   @groovy.transform.CompileStatic
   public static <T> T deproxy(Object proxied) {
 
-    T entity = proxied;
+    T entity = (T)proxied;
 
     if (entity instanceof HibernateProxy) {
       Hibernate.initialize(entity);
@@ -37,8 +41,6 @@ class ClassUtils {
    */
   public static boolean setDateIfPresent(def value, obj, prop) {
     LocalDateTime ldt = null
-    DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
-    DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']").withResolverStyle(ResolverStyle.STRICT)
 
     if (value && value.toString().trim()) {
       if (value instanceof LocalDateTime) {
@@ -76,8 +78,6 @@ class ClassUtils {
 
   public static boolean updateDateField(def value, obj, prop) {
     LocalDateTime ldt = null
-    DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
-    DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']").withResolverStyle(ResolverStyle.STRICT)
 
     if (value && value.toString().trim()) {
       if (value instanceof LocalDateTime) {
