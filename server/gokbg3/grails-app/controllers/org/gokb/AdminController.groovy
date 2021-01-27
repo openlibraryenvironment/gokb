@@ -360,7 +360,7 @@ class AdminController {
   }
 
   def cancelJob() {
-    Job j = concurrencyManagerService.getJob(params.int('id'))
+    Job j = concurrencyManagerService.getJob(params.id)
 
     j?.forceCancel()
     render(view: "logViewer", model: logViewer())

@@ -149,8 +149,8 @@ class SourcesController {
     User user = User.get(springSecurityService.principal.id)
     boolean editable = true
 
-    if ( !user.hasRole('ROLE_ADMIN') && obj.curatoryGroups && obj.curatoryGroups.size() > 0 ) {
-      def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
+    if ( !user.hasRole('ROLE_ADMIN') && source.curatoryGroups && source.curatoryGroups.size() > 0 ) {
+      def cur = user.curatoryGroups?.id.intersect(source.curatoryGroups?.id)
 
       if (!cur) {
         editable = false

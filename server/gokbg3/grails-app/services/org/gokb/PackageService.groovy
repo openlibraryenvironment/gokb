@@ -1519,17 +1519,18 @@ class PackageService {
 
   def synchronized updateFromSource(Package p, def user = null) {
     log.debug("updateFromSource")
+    def result = null
     boolean started = false
     if (running == false) {
       running = true
-      started = startSourceUpdate(p, user)
-      running = false
       log.debug("UpdateFromSource started")
-      return started
+      result = startSourceUpdate(p, user) ? 'OK' : 'ERROR'
+      running = false
     } else {
       log.debug("update skipped - already running")
-      return started
+      result = 'ALREADY_RUNNING'
     }
+    result
   }
 
   /**
@@ -1586,12 +1587,17 @@ class PackageService {
             }
             def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
 
-            while (processing) {
+            while (processing == true) {
               log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId}")
               statusService.request(GET) { req ->
                 response.success = { statusResp, statusData ->
                   log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => success")
                   log.debug("status of Ygor ${statusData.status} gokbJob #${statusData.gokbJobId}")
+                  if (statusData.status == 'FINISHED_UNDEFINED' ) {
+                    processing = false
+                    log.debug("No valid URLs found.")
+                  }
+
                   if (statusData.gokbJobId) {
                     processing = false
                     task {
@@ -1619,9 +1625,9 @@ class PackageService {
                     this.wait(10000) // 10 sec
                   }
                 }
-                response.failure = { statusResp ->
+                response.failure = { statusResp, statusData ->
                   log.error("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => failure")
-                  log.error("ygor response: $statusResp")
+                  log.error("ygor response message: $statusData.message")
                   processing = false
                   error = true
                 }

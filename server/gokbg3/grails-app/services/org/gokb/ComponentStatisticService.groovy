@@ -31,6 +31,7 @@ class ComponentStatisticService {
 
     log.debug("Ensuring stats for ${months} months with offset ${offset}.")
     Calendar calendar = Calendar.getInstance()
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
     months = ( months > 3 ? months : 3 )
     offset = ( offset > 0 ? offset : 0 )

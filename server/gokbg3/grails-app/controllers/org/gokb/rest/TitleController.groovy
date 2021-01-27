@@ -712,20 +712,31 @@ class TitleController {
     def errors = [:]
 
     if (reqBody.ids || reqBody.identifiers) {
-      def id_map = reqBody.ids ?: reqBody.identifiers
-      def id_errors = restMappingService.updateIdentifiers(obj, id_map, remove)
+      def id_list = reqBody.ids
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+      if (id_list == null) {
+        id_list = reqBody.identifiers
+      }
+
+      if (id_list != null) {
+        def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+
+        if (id_errors.size() > 0) {
+          errors.ids = id_errors
+        }
+      }
+      else {
+        log.debug("Parameter should be List, but was 'null': ${reqBody.ids} - ${reqBody.identifiers}")
       }
     }
-
-    if (reqBody.publisher) {
-      def pub_errors = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
-
-      if (pub_errors.size() > 0)
-        errors.publisher = pub_errors
+    else {
+      log.debug("No IDs in ${reqBody}")
     }
+
+    def pub_errors = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
+
+    if (pub_errors.size() > 0)
+      errors.publisher = pub_errors
 
     errors
   }

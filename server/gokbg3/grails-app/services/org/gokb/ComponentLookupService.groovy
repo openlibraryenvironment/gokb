@@ -204,7 +204,7 @@ class ComponentLookupService {
   public def restLookup (user, cls, params, def context = null) {
     def result = [:]
     def hqlQry = "from ${cls.simpleName} as p".toString()
-    def qryParams = [:]
+    def qryParams = new HashMap()
     def max = params.limit ? params.long('limit') : 10
     def offset = params.offset ? params.long('offset') : 0
     def first = true
@@ -266,7 +266,7 @@ class ComponentLookupService {
                 }
 
                 if (!addedLong && a instanceof String && a?.trim() ) {
-                  validStr.add(a)
+                  validStr.add(a.toLowerCase())
                 }
               }
 
@@ -282,7 +282,7 @@ class ComponentLookupService {
                     paramStr += " OR "
                   }
                   paramStr += "${c}.uuid IN :${c}_str OR "
-                  paramStr += "${c}.${c == 'ids' ? 'value' : 'name'} IN :${c}_str"
+                  paramStr += "lower(${c}.${c == 'ids' ? 'value' : 'name'}) IN :${c}_str"
                   qryParams["${c}_str"] = validStr
                 }
                 paramStr += ")"
@@ -298,27 +298,47 @@ class ComponentLookupService {
       }
 
       if (genericTerm?.trim()) {
-        comboJoinStr += " join p.outgoingCombos as idq_combo"
-        comboJoinStr += " join idq_combo.toComponent as idq"
+        log.debug("Using generic term search with '${genericTerm}'..")
+
+        def validLong = null
+
+        try {
+          validLong = Long.valueOf(genericTerm)
+        }
+        catch (java.lang.NumberFormatException nfe) {
+        }
 
         if (first) {
           comboFilterStr += " WHERE "
+        }
+        else {
+          comboFilterStr += " AND ("
+        }
+
+        comboFilterStr += "lower(p.name) like lower(:qname) OR p.uuid = :idqval"
+        comboFilterStr += " OR EXISTS (select ci from Combo as ci where ci.type = :idtype and ci.fromComponent = p and lower(ci.toComponent.value) like lower(:idqval) and ci.status = :idqstatus)"
+        comboFilterStr += " OR EXISTS (select an from KBComponentVariantName as an where lower(an.variantName) like lower(:qname) and an.owner = p)"
+
+        if (validLong) {
+          qryParams["qid"] = validLong
+          comboFilterStr += " OR p.id = :qid"
+        }
+
+        if (first) {
           first = false
         }
         else {
-          comboFilterStr += " AND "
+          comboFilterStr += ")"
         }
 
-        comboFilterStr += "(lower(p.name) like :qname OR ("
-        qryParams['qname'] = "${genericTerm.toLowerCase()}%"
-        comboFilterStr += "idq_combo.type = :idqtype AND "
-        qryParams["idqtype"] = RefdataCategory.lookupOrCreate ( "Combo.Type", 'KBComponent.Ids')
-        comboFilterStr += "idq_combo.status = :idqstatus AND "
-        qryParams["idqstatus"] = RefdataCategory.lookup("Combo.Status", "Active")
-        comboFilterStr += "idq.value = :idqval"
-        qryParams["idqval"] = genericTerm
-        comboFilterStr += ") OR EXISTS (select an from KBComponentVariantName as an where lower(an.variantName) like :qname and an.owner = p))"
+        qryParams['qname'] = "%${genericTerm}%"
+        qryParams['idqval'] = genericTerm
+        qryParams['idtype'] = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
+        qryParams['idqstatus'] = RefdataCategory.lookup('Combo.Status', 'Active')
       }
+
+      log.debug("comboFilterString: ${comboFilterStr}")
+      log.debug("Params: ${qryParams}")
 
       hqlQry += comboJoinStr + comboFilterStr
     }
@@ -389,8 +409,8 @@ class ComponentLookupService {
           paramStr += "p.${p.name} IN :${p.name}"
         }
         else if ( p.name == 'name' ){
-          paramStr += "lower(p.${p.name}) like :${p.name}"
-          qryParams[p.name] = "%${params[p.name].toLowerCase()}%"
+          paramStr += "lower(p.${p.name}) like lower(:${p.name})"
+          qryParams[p.name] = "%${params[p.name]}%"
         }
         else {
           paramStr += "p.${p.name} = :${p.name}"

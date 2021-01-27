@@ -5,6 +5,8 @@ import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+import org.gokb.cred.JobResult
+import org.gokb.cred.KBComponent
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import grails.plugin.springsecurity.annotation.Secured
@@ -112,7 +114,35 @@ class ProfileController {
     User user = User.get(springSecurityService.principal.id)
     def errors = [:]
 
-    result = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+    if (params.boolean('archived') == true) {
+      result.data = []
+      def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?", [user.id])[0]
+      def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ? order by jr.startTime desc", [user.id], [max: max, offset: offset])
+
+      jobs.each { j ->
+        def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+        // No JsonObject for list view
+
+        result.data << [
+          uuid: j.uuid,
+          description: j.description,
+          type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+          linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+          startTime: j.startTime,
+          endTime: j.endTime,
+          status: j.statusText
+        ]
+      }
+
+      result['_pagination'] = [
+        offset: offset,
+        limit: max,
+        total: hqlTotal
+      ]
+    }
+    else {
+      result = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+    }
 
     render result as JSON
   }

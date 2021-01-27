@@ -3,6 +3,8 @@ package org.gokb
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 import org.apache.commons.lang.RandomStringUtils
 import org.springframework.web.servlet.support.RequestContextUtils
 import org.gokb.cred.*
@@ -935,11 +937,13 @@ class IntegrationController {
           Job background_job = concurrencyManagerService.createJob { Job job ->
             def json = rjson
             def invalidTipps = []
-            def job_result = [:]
+            def job_result = [result:'OK']
             def ctr = 0
             def errors = [global: [], tipps: []]
 
             Package.withNewSession {
+              job.startTime = new Date()
+
               def user = User.get(request_user.id)
               def locale = request_locale
               springSecurityService.reauthenticate(request_user.username)
@@ -1144,7 +1148,7 @@ class IntegrationController {
                           baddata: tipp_plt_dto,
                           errors : valid_plt.errors
                         ]
-                        errors.tipps.add([plt_errors])
+                        errors.tipps.add(plt_errors)
                       }
                       else {
                         def pl = null
@@ -1513,29 +1517,51 @@ class IntegrationController {
               cleanUpGorm()
             }
 
-              if (!cancelled) {
-                job.message(job_result.message.toString())
-                job.setProgress(100)
-                job.endTime = new Date()
-              }
+            job.endTime = new Date()
 
-              if (errors.global.size() > 0 || errors.tipps.size() > 0) {
-                job_result.errors = errors
-              }
-
-              log.debug("xRefPackage job result: $job_result")
-              return job_result
+            if (!cancelled) {
+              job.message(job_result.message.toString())
+              job.setProgress(100)
             }
-            log.debug("Starting job ${background_job}..")
-            background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
-            background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
-            background_job.linkedItem = [name: upserted_pkg.name,
-                                         type: "Package",
-                                         id  : upserted_pkg.id,
-                                         uuid: upserted_pkg.uuid]
-            background_job.message("Starting upsert for Package ${upserted_pkg.name} (uuid: ${upserted_pkg.uuid})".toString())
-            background_job.startOrQueue()
-            background_job.startTime = new Date()
+
+            if (errors.global.size() > 0 || errors.tipps.size() > 0) {
+              job_result.errors = errors
+            }
+
+            JobResult.withNewSession {
+              def result_object = JobResult.findByUuid(job.uuid)
+
+              if (!result_object) {
+                def job_map = [
+                  uuid: (job.uuid),
+                  description: (job.description),
+                  resultObject: (job_result as JSON).toString(),
+                  type: (job.type),
+                  statusText: (job_result?.result),
+                  ownerId: (job.ownerId),
+                  groupId: (job.groupId),
+                  startTime: (job.startTime),
+                  endTime: (job.endTime),
+                  linkedItemId: (job.linkedItem?.id)
+                ]
+
+                result_object = new JobResult(job_map).save(flush: true, failOnError: true)
+              }
+            }
+
+            log.debug("xRefPackage job result: $job_result")
+            return job_result
+          }
+
+          log.debug("Starting job ${background_job}..")
+          background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
+          background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
+          background_job.linkedItem = [name: upserted_pkg.name,
+                                        type: "Package",
+                                        id  : upserted_pkg.id,
+                                        uuid: upserted_pkg.uuid]
+          background_job.message("Starting upsert for Package ${upserted_pkg.name} (uuid: ${upserted_pkg.uuid})".toString())
+          background_job.startOrQueue()
 
           if (async == false) {
             def job_final = null
@@ -1545,7 +1571,7 @@ class IntegrationController {
             }
             catch (CancellationException ce) {
               result.result = 'ERROR'
-              result.job_id = background_job.id
+              result.job_id = background_job.uuid
               result.message = "The import job was cancelled before completion."
             }
 
@@ -1553,7 +1579,7 @@ class IntegrationController {
               result = job_final
             }
           } else {
-            result.job_id = background_job.id
+            result.job_id = background_job.uuid
           }
         } else {
           result.result = 'ERROR'
@@ -1804,6 +1830,26 @@ class IntegrationController {
         job.setProgress(100)
         job.message("Finished processing ${job_result?.results?.size()} titles.".toString())
 
+        JobResult.withNewSession {
+          def result_object = JobResult.findByUuid(job.uuid)
+
+          if (!result_object) {
+            def job_map = [
+              uuid: (job.uuid),
+              description: (job.description),
+              resultObject: (job_result as JSON).toString(),
+              type: (job.type),
+              statusText: (job_result?.result),
+              ownerId: (job.ownerId),
+              groupId: (job.groupId),
+              startTime: (job.startTime),
+              endTime: (job.endTime)
+            ]
+
+            result_object = new JobResult(job_map).save(flush: true, failOnError: true)
+          }
+        }
+
         return job_result
       }
       log.debug("Starting job ${background_job}..")
@@ -1817,7 +1863,7 @@ class IntegrationController {
         result = background_job.get()
       }
       else {
-        result = [job_id: background_job.id]
+        result = [job_id: background_job.uuid]
       }
     }
 
@@ -2164,9 +2210,9 @@ class IntegrationController {
   def getJobInfo() {
     def result = ['result': 'OK', 'params': params]
     User user = null
-    Integer id = params.int('id')
+    String uuid = params.id
 
-    if (id == null) {
+    if (uuid == null) {
       result.result = "ERROR"
       response.setStatus(400)
       result.message = "Request is missing an id parameter."
@@ -2194,7 +2240,7 @@ class IntegrationController {
       }
 
       if (user) {
-        Job job = concurrencyManagerService?.jobs?.containsKey(id) ? concurrencyManagerService.jobs[id] : null
+        Job job = concurrencyManagerService.getJob(uuid)
 
         if (job) {
           log.debug("${job}")
@@ -2225,11 +2271,36 @@ class IntegrationController {
             response.setStatus(403)
             result.message = "No permission to view job with ID ${id}."
           }
-        }
-        else {
-          result.result = "ERROR"
-          response.setStatus(404)
-          result.message = "Could not find job with ID ${id}."
+        } else {
+          def persistedResult = JobResult.findByUuid(uuid)
+
+          if (persistedResult) {
+            def linkedItemMap = null
+
+            if (persistedResult.linkedItemId) {
+              def linkedItem = KBComponent.get(persistedResult.linkedItemId)
+
+              if (linkedItem) {
+                linkedItemMap = [id: linkedItem.id, name: linkedItem.name, uuid: linkedItem.uuid, type: linkedItem.niceName]
+              }
+            }
+
+            result.description = persistedResult.description
+            result.type = persistedResult.type ? [value: persistedResult.type.value, id: persistedResult.type.id] : null
+            result.linkedItem = linkedItemMap
+            result.startTime = persistedResult.startTime
+            result.endTime = persistedResult.endTime
+            result.job_result = new JsonSlurper().parseText(persistedResult.resultObject)
+            result.finished = true
+
+            if (result.job_result?.result == 'CANCELLED') {
+              result.cancelled = true
+            }
+          } else {
+            result.result = "ERROR"
+            response.setStatus(404)
+            result.message = "Could not find job with ID ${id}."
+          }
         }
       }
     }
