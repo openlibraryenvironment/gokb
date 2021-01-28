@@ -347,22 +347,13 @@ class PackageController {
     def errors = [:]
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
-      def id_list = reqBody.ids
+      def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      if (id_list == null) {
-        id_list = reqBody.identifiers
+      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+
+      if (id_errors.size() > 0) {
+        errors.ids = id_errors
       }
-
-      if (id_list != null) {
-        def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
-
-        if (id_errors.size() > 0) {
-          errors.ids = id_errors
-        }
-      }
-    }
-    else {
-      log.debug("No IDs in ${reqBody}")
     }
 
     if (reqBody.curatoryGroups) {

@@ -273,8 +273,10 @@ class OrgController {
     log.debug("Updating package combos ..")
     def errors = [:]
 
-    if (reqBody.ids instanceof Collection) {
-      def id_errors = restMappingService.updateIdentifiers(obj, reqBody.ids, remove)
+    if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
+      def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
+
+      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
 
       if (id_errors.size() > 0) {
         errors.ids = id_errors
