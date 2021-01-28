@@ -346,7 +346,7 @@ class PackageController {
     log.debug("Updating package combos ..")
     def errors = [:]
 
-    if (reqBody.ids || reqBody.identifiers) {
+    if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids
 
       if (id_list == null) {

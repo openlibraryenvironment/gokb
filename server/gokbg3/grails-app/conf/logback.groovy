@@ -40,6 +40,7 @@ if ( Environment.isDevelopmentMode() || Environment.current == Environment.TEST 
   logger ('org.gokb.cred', ERROR)
   logger ('gokbg3.UserDetailsInterceptor', ERROR)
   logger ('gokbg3.PreferencesInterceptor', ERROR)
+  logger ('gokbg3.RestMappingService', ERROR)
 }else{
   logger ('com.k_int', INFO)
   logger ('org.gokb', INFO)
