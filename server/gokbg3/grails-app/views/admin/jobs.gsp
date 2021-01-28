@@ -52,7 +52,7 @@
             </g:else>
           </td>
           <td>${v.endTime}</td>
-          <td><g:if test="${!v.isCancelled() && !v.isDone()}"><g:link controller="admin" action="cancelJob" onclick="return confirm('Are you sure?')" id="${v.id}">Cancel</g:link></g:if></td>
+          <td><g:if test="${!v.isCancelled() && !v.isDone()}"><g:link controller="admin" action="cancelJob" onclick="return confirm('Are you sure?')" id="${v.uuid}">Cancel</g:link></g:if></td>
         </tr>
         <tr>
           <td colspan="6">

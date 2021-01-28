@@ -144,7 +144,7 @@ class OrgController {
         log.debug("Updating ${obj}")
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        if( obj.validate() ) {
+        if ( obj.validate() ) {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
             obj.save()
@@ -273,11 +273,22 @@ class OrgController {
     def errors = [:]
 
     if (reqBody.ids || reqBody.identifiers) {
-      def idmap = reqBody.ids ?: reqBody.identifiers
-      def id_errors = restMappingService.updateIdentifiers(obj, idmap)
+      def id_list = reqBody.ids
 
-      if (id_errors.size > 0)
-        errors['ids'] = id_errors
+      if (id_list == null) {
+        id_list = reqBody.identifiers
+      }
+
+      if (id_list != null) {
+        def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+
+        if (id_errors.size() > 0) {
+          errors.ids = id_errors
+        }
+      }
+    }
+    else {
+      log.debug("No IDs in ${reqBody}")
     }
 
     if (reqBody.providedPlatforms) {

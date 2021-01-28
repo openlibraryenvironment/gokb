@@ -34,7 +34,7 @@ class TippController {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -63,7 +63,7 @@ class TippController {
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -118,7 +118,12 @@ class TippController {
           def obj = TitleInstancePackagePlatform.upsertDTO(reqBody, user)
 
           if( obj?.validate() ) {
-            result = restMappingService.mapObjectToJson(obj, params, user)
+
+            errors << updateCombos(obj, reqBody)
+
+            if (errors.size() == 0) {
+              result = restMappingService.mapObjectToJson(obj, params, user)
+            }
           }
           else {
             result.result = 'ERROR'
@@ -184,6 +189,7 @@ class TippController {
 
           obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
+          errors << updateCombos(obj, reqBody)
           obj = updateCoverage(obj, reqBody)
 
           if( obj?.validate() ) {
@@ -226,6 +232,33 @@ class TippController {
       result.error = errors
     }
     render result as JSON
+  }
+
+  @Transactional
+  private def updateCombos(obj, reqBody, boolean remove = true) {
+    log.debug("Updating title combos ..")
+    def errors = [:]
+
+    if (reqBody.ids || reqBody.identifiers) {
+      def id_list = reqBody.ids
+
+      if (id_list == null) {
+        id_list = reqBody.identifiers
+      }
+
+      if (id_list != null) {
+        def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+
+        if (id_errors.size() > 0) {
+          errors.ids = id_errors
+        }
+      }
+    }
+    else {
+      log.debug("No IDs in ${reqBody}")
+    }
+
+    errors
   }
 
   private def updateCoverage(tipp, reqBody) {
@@ -361,7 +394,7 @@ class TippController {
 
     if ( obj?.pkg && obj.isEditable() ) {
       def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
-      
+
       if ( curator || user.isAdmin() ) {
         obj.retire()
       }

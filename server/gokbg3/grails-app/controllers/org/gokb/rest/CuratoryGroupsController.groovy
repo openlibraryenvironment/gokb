@@ -6,6 +6,8 @@ import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.JobResult
+import org.gokb.cred.KBComponent
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Org
@@ -221,7 +223,35 @@ class CuratoryGroupsController {
     def errors = [:]
 
     if (group && (group.users.contains(user) || user.isAdmin())) {
-      result = concurrencyManagerService.getGroupJobs(group.id as int, max, offset)
+      if (params.boolean('archived') == true) {
+        result.data = []
+        def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?", [group.id])[0]
+        def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ? order by jr.startTime desc", [group.id], [max: max, offset: offset])
+
+        jobs.each { j ->
+          def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+          // No JsonObject for list view
+
+          result.datas << [
+            uuid: j.uuid,
+            description: j.description,
+            type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+            linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+            startTime: j.startTime,
+            endTime: j.endTime,
+            status: j.statusText
+          ]
+        }
+
+        result['_pagination'] = [
+          offset: offset,
+          limit: max,
+          total: hqlTotal
+        ]
+      }
+      else {
+        result = concurrencyManagerService.getGroupJobs(group.id as int, max, offset)
+      }
     }
     log.debug("Return ${result}")
 

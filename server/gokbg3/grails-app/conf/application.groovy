@@ -1181,6 +1181,36 @@ globalSearchTemplates = [
       ]
     ]
   ],
+  'JobResult':[
+    baseclass:'org.gokb.cred.JobResult',
+    title:'Job Results',
+    group:'Secondary',
+    defaultSort:'id',
+    defaultOrder:'desc',
+    qbeConfig:[
+      qbeForm:[
+       [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'Job.Type',
+          prompt:'Type',
+          qparam:'qp_type',
+          placeholder:'Type of Job',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'type']
+        ],
+      ],
+      qbeGlobals:[
+        ['ctxtp':'filter', 'prop':'ownerId', 'comparator' : 'eq', 'value':'__USERID', 'default':'on', 'qparam':'qp_owner', 'type':'java.lang.Long', 'hidden':true]
+      ],
+      qbeResults:[
+        [heading:'Description', property:'description', link:[controller:'resource', action:'show', id:'x.r.uuid'] ],
+        [heading:'Type', property:'type?.value', sort:'type'],
+        [heading:'Status', property:'statusText'],
+        [heading:'Start Time', property:'startTime',sort:'startTime'],
+        [heading:'End Time', property:'endTime',sort:'endTime'],
+      ]
+    ]
+  ],
 
 ]
 

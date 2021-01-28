@@ -11,6 +11,7 @@ import grails.validation.ValidationException
 import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.BookInstance
 import org.gokb.cred.Imprint
+import org.gokb.cred.JobResult
 import org.gokb.cred.KBComponent
 import org.gokb.cred.Package
 import org.gokb.cred.Platform
@@ -271,6 +272,25 @@ class CrossRefPkgRun {
     }
     if (!cancelled) {
       job?.setProgress(100)
+    }
+    JobResult.withNewSession {
+      def result_object = JobResult.findByUuid(job.uuid)
+
+      if (!result_object) {
+        def job_map = [
+            uuid: (job?.uuid),
+            description: (job?.description),
+            resultObject: (jsonResult as JSON).toString(),
+            type: (job?.type),
+            statusText: (jsonResult.result),
+            ownerId: (job?.ownerId),
+            groupId: (job?.groupId),
+            startTime: (job?.startTime),
+            endTime: (job?.endTime),
+            linkedItemId: (job?.linkedItem?.id)
+        ]
+        result_object = new JobResult(job_map).save(flush: true, failOnError: true)
+      }
     }
     log.info("xRefPackage job result: $jsonResult")
     if (errors.global.size() > 0) {

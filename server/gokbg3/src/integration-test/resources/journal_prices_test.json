@@ -59,6 +59,9 @@
             "amount": 43.12,
             "startDate": "2020-01-01"
          }
-      ]
+      ],
+      "publisherName": "Fringe Pub Co.",
+      "dateFirstInPrint": "2020-02-02",
+      "dateFirstOnline": "2020-03-03"
    }
 ]

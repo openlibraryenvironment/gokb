@@ -121,7 +121,7 @@ class OrgService {
   }
 
   def upsert(orgDTO, def user = null) {
-    log.info("Upsert package with header ${orgDTO}");
+    log.info("Upsert org with header ${orgDTO}");
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     def org_normname = Org.generateNormname(orgDTO.name)
 

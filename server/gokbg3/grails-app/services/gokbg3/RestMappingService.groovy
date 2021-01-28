@@ -205,7 +205,6 @@ class RestMappingService {
         else {
           if( embed_active.contains(cp) ) {
             result['_embedded'][cp] = []
-            log.debug("Mapping ManyByCombo ${cp} ${obj[cp]}")
 
             def combos = obj.getCombosByPropertyName(cp)
             boolean reverse = obj.isComboReverse(cp)
@@ -495,7 +494,7 @@ class RestMappingService {
     def errors = []
     Set new_ids = []
 
-    if (obj && ids instanceof Collection) {
+    if (obj && ids) {
       ids.each { i ->
         Identifier id = null
         def valid = true
@@ -576,6 +575,7 @@ class RestMappingService {
 
         if (remove) {
           Iterator items = id_combos.iterator();
+          List removedIds = []
           Object element;
           while (items.hasNext()) {
             element = items.next();
@@ -583,7 +583,18 @@ class RestMappingService {
               // Remove.
               log.debug("Removing newly missing ID ${element.toComponent}")
               element.status = combo_deleted
+              removedIds.add(element.toComponent)
             }
+          }
+
+          if (removedIds) {
+            def idString = ""
+
+            removedIds.each {
+              idString += "${it.namespace.value}:${it.value} "
+            }
+
+            obj.lastUpdateComment = "Removed Ids: ${idString}"
           }
         }
       }

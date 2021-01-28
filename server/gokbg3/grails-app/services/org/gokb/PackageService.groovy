@@ -90,8 +90,7 @@ class PackageService {
 
       log.error("No package found for package string supplied via refine. This should not happen as all packages should be looked up.")
 
-    }
-    else {
+    } else {
 
       // If this is a new package then we should retire the current one.
       if (!incremental) {
@@ -124,7 +123,7 @@ class PackageService {
 
           // New package.
           pkg = new Package(
-              name: original_name
+            name: original_name
           )
 
           // Add all the ids.
@@ -180,13 +179,13 @@ class PackageService {
       Package master = c.get {
         and {
           c.add(
-              "scope",
-              "eq",
-              getMasterScope())
+            "scope",
+            "eq",
+            getMasterScope())
           c.add(
-              "provider",
-              "eq",
-              provider)
+            "provider",
+            "eq",
+            provider)
         }
       }
 
@@ -197,8 +196,7 @@ class PackageService {
         log.debug("Found package ${master.id} for ${provider.name}")
 
         delta = delta ? master.lastUpdated : false
-      }
-      else {
+      } else {
 
         // Set delta to false...
         delta = false
@@ -228,20 +226,20 @@ class PackageService {
       Set<Package> pkgs = c.list {
         c.and {
           c.add(
-              "id",
-              "ne",
-              master.id)
+            "id",
+            "ne",
+            master.id)
 
           c.add(
-              "provider.id",
-              "eq",
-              provider_id)
+            "provider.id",
+            "eq",
+            provider_id)
 
           if (delta) {
             c.add(
-                "lastUpdated",
-                "gt",
-                delta)
+              "lastUpdated",
+              "gt",
+              delta)
           }
         }
       } as Set
@@ -271,8 +269,7 @@ class PackageService {
             // Do we need to update this tipp.
             if (!delta || (delta && tipp.lastUpdated > delta)) {
               TitleInstancePackagePlatform mt = setOrUpdateMasterTippFor(tipp.id, master.id)
-            }
-            else {
+            } else {
               log.debug("TIPP ${tipp.id} has not been updated since last run. Skipping.")
             }
             log.debug("TIPP ${counter} of ${tipps.size()} examined.")
@@ -313,7 +310,7 @@ class PackageService {
       // Now let's try and read an existing tipp from the master package.
       def mtp = master.getTipps().find {
         (it.title == tipp.getTitle()) &&
-            (it.hostPlatform == tipp.getHostPlatform())
+          (it.hostPlatform == tipp.getHostPlatform())
       }
       master_tipp = (mtp ? KBComponent.deproxy(mtp) : null)
     }
@@ -322,8 +319,7 @@ class PackageService {
       // Create a new master tipp.
       master_tipp = tipp.clone().save(failOnError: true)
       log.debug("Added master tipp ${master_tipp.id} to tipp ${tipp.id}")
-    }
-    else {
+    } else {
 
       log.debug("Found master tipp ${master_tipp.id} to tipp ${tipp.id}")
       master_tipp = tipp.sync(master_tipp)
@@ -367,9 +363,9 @@ class PackageService {
     def providers = c.list {
       and {
         c.add(
-            "status",
-            "eq",
-            RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT))
+          "status",
+          "eq",
+          RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT))
       }
     }.each {
 
@@ -391,8 +387,7 @@ class PackageService {
 
     if (!pkg_id) {
       pkg_list = Package.executeQuery("select id from Package where contentType is null")
-    }
-    else {
+    } else {
       pkg_list << pkg_id
     }
 
@@ -414,23 +409,18 @@ class PackageService {
         if (has_db && !has_journal && !has_book) {
           pkg_obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Database')
           result.db++
-        }
-        else if (has_journal && !has_db && !has_book) {
+        } else if (has_journal && !has_db && !has_book) {
           pkg_obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Journal')
           result.journal++
-        }
-        else if (has_book && !has_db && !has_journal) {
+        } else if (has_book && !has_db && !has_journal) {
           pkg_obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Book')
           result.book++
-        }
-        else if (has_book && has_journal) {
+        } else if (has_book && has_journal) {
           pkg_obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Mixed')
           result.mixed++
-        }
-        else if (!has_book && !has_journal && !has_db) {
+        } else if (!has_book && !has_journal && !has_db) {
           log.debug("No content to categorize for ${pkg_obj.name}")
-        }
-        else {
+        } else {
           def msg = "Found illegal package composition for ${pkg_obj.name} (journals: ${has_journal}, db: ${has_db}, book: ${has_book})!"
           log.warn(msg)
           result.errors++
@@ -487,16 +477,14 @@ class PackageService {
 
         if (rid instanceof Integer) {
           the_id = Identifier.get(rid)
-        }
-        else {
+        } else {
           def ns_field = rid.type ?: rid.namespace
           def ns = null
 
           if (ns_field) {
             if (ns_field instanceof Integer) {
               ns = IdentifierNamespace.get(ns_field)
-            }
-            else {
+            } else {
               ns = IdentifierNamespace.findByValueIlike(ns_field)
             }
 
@@ -532,8 +520,7 @@ class PackageService {
 
         if (it instanceof String) {
           variant = it.trim()
-        }
-        else if (it instanceof Map) {
+        } else if (it instanceof Map) {
           variant = it.variantName?.trim() ?: null
         }
 
@@ -596,28 +583,24 @@ class PackageService {
         if (id_ns instanceof String) {
           log.debug("Default namespace handling for ${id_ns}..")
           ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
-        }
-        else if (id_ns) {
+        } else if (id_ns) {
           log.debug("Handling namespace def ${id_ns}")
           ns_obj = IdentifierNamespace.get(id_ns)
         }
 
         if (!ns_obj) {
           id_errors.add([message: messageService.resolveCode('default.not.found.message', ["Namespace", id_ns], locale)])
-        }
-        else {
+        } else {
           id_def.type = ns_obj.value
         }
-      }
-      else if (idobj instanceof Integer) {
+      } else if (idobj instanceof Integer) {
         Identifier the_id = Identifier.get(id_inc)
 
         if (!the_id) {
           id_errors.add([message: messageService.resolveCode('crossRef.error.lookup', ["Identifier", "ID"], locale), baddata: idobj])
           result.valid = false
         }
-      }
-      else {
+      } else {
         log.warn("Missing information in id object ${idobj}")
         id_errors.add([message: messageService.resolveCode('crossRef.error.format', ["Identifiers"], locale), baddata: idobj])
         result.valid = false
@@ -629,12 +612,10 @@ class PackageService {
             log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
             id_errors.add([message: messageService.resolveCode('identifier.validate.error', [ns_obj.value, id_def.value], locale), baddata: idobj])
             result.valid = false
-          }
-          else {
+          } else {
             log.debug("New identifier ..")
           }
-        }
-        else {
+        } else {
           log.debug("Found existing identifier ..")
         }
       }
@@ -678,8 +659,7 @@ class PackageService {
 
             if (var_pkg) {
               log.debug("Found existing package name for variantName ${it}")
-            }
-            else {
+            } else {
 
               def variant_normname = GOKbTextUtils.normaliseString(it)
               def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
@@ -787,21 +767,17 @@ class PackageService {
       if (full_matches.size() == 1) {
         log.debug("Matched package by name + identifier!")
         result = full_matches[0]
-      }
-      else if (full_matches.size() == 0 && name_candidates.size() == 1) {
+      } else if (full_matches.size() == 0 && name_candidates.size() == 1) {
         result = name_candidates[0]
         log.debug("Found a single match by name!")
-      }
-      else {
+      } else {
         log.warn("Found multiple possible matches for package! Aborting..")
         return result
       }
-    }
-    else if (!result && name_candidates.size() == 1) {
+    } else if (!result && name_candidates.size() == 1) {
       log.debug("Matched package by name!")
       result = name_candidates[0]
-    }
-    else if (result && result.name != packageHeaderDTO.name) {
+    } else if (result && result.name != packageHeaderDTO.name) {
       def current_name = result.name
 
       changed |= ClassUtils.setStringIfDifferent(result, 'name', packageHeaderDTO.name)
@@ -831,8 +807,7 @@ class PackageService {
 
           if (result) {
             log.debug("Found existing package name for variantName ${it}")
-          }
-          else {
+          } else {
 
             def variant_normname = GOKbTextUtils.normaliseString(it)
             def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
@@ -858,8 +833,7 @@ class PackageService {
       }
 
       result.save(flush: true, failOnError: true)
-    }
-    else if (user && !user.hasRole('ROLE_SUPERUSER') && result.curatoryGroups && result.curatoryGroups?.size() > 0) {
+    } else if (user && !user.hasRole('ROLE_SUPERUSER') && result.curatoryGroups && result.curatoryGroups?.size() > 0) {
       def cur = user.curatoryGroups?.id.intersect(result.curatoryGroups?.id)
 
       if (!cur) {
@@ -888,8 +862,7 @@ class PackageService {
       if (looked_up_user && ((result.userListVerifier == null) || (result.userListVerifier?.id != looked_up_user?.id))) {
         result.userListVerifier = looked_up_user
         changed = true
-      }
-      else {
+      } else {
         log.warn("Unable to find username for list verifier ${packageHeaderDTO.userListVerifier}");
       }
     }
@@ -901,11 +874,9 @@ class PackageService {
 
       if (packageHeaderDTO.nominalPlatform instanceof String && packageHeaderDTO.nominalPlatform.trim()) {
         platformDTO['name'] = packageHeaderDTO.nominalPlatform
-      }
-      else if (packageHeaderDTO.nominalPlatform instanceof Integer) {
+      } else if (packageHeaderDTO.nominalPlatform instanceof Integer) {
         platformDTO['id'] = (Long) packageHeaderDTO.nominalPlatform
-      }
-      else if (packageHeaderDTO.nominalPlatform.name && packageHeaderDTO.nominalPlatform.name.trim().size() > 0) {
+      } else if (packageHeaderDTO.nominalPlatform.name && packageHeaderDTO.nominalPlatform.name.trim().size() > 0) {
         platformDTO = packageHeaderDTO.nominalPlatform
       }
 
@@ -914,11 +885,9 @@ class PackageService {
 
         if (platformDTO.uuid) {
           np = Platform.findByUuid(platformDTO.uuid)
-        }
-        else if (platformDTO.id) {
+        } else if (platformDTO.id) {
           np = Platform.get(platformDTO.id)
-        }
-        else if (platformDTO.name) {
+        } else if (platformDTO.name) {
           np = Platform.findByName(platformDTO.name)
         }
 
@@ -930,16 +899,13 @@ class PackageService {
           if (result.nominalPlatform != np) {
             result.nominalPlatform = np;
             changed = true
-          }
-          else {
+          } else {
             log.debug("Platform already set")
           }
-        }
-        else {
+        } else {
           log.warn("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}");
         }
-      }
-      else {
+      } else {
         log.warn("Could not extract platform information from JSON!")
       }
     }
@@ -952,8 +918,7 @@ class PackageService {
 
       if (packageHeaderDTO.nominalProvider instanceof String && packageHeaderDTO.nominalProvider.trim()) {
         providerDTO['name'] = packageHeaderDTO.nominalProvider
-      }
-      else if (packageHeaderDTO.nominalProvider.name && packageHeaderDTO.nominalProvider.name.trim()) {
+      } else if (packageHeaderDTO.nominalProvider.name && packageHeaderDTO.nominalProvider.name.trim()) {
         providerDTO = packageHeaderDTO.nominalProvider
       }
 
@@ -976,12 +941,10 @@ class PackageService {
 
           if (candidate_orgs.size() == 1) {
             prov = candidate_orgs[0]
-          }
-          else if (candidate_orgs.size() == 0) {
+          } else if (candidate_orgs.size() == 0) {
             log.debug("No org match for provider ${packageHeaderDTO.nominalProvider}. Creating new org..")
             prov = new Org(name: providerDTO.name, normname: norm_prov_name, uuid: providerDTO.uuid ?: null).save(flush: true, failOnError: true);
-          }
-          else {
+          } else {
             log.warn("Multiple org matches for provider ${packageHeaderDTO.nominalProvider}. Skipping..");
           }
         }
@@ -993,13 +956,11 @@ class PackageService {
 
           log.debug("Provider ${prov.name} set.")
           changed = true
-        }
-        else {
+        } else {
           log.debug("No provider change")
         }
       }
-    }
-    else {
+    } else {
       log.debug("No provider found!")
     }
 
@@ -1021,17 +982,14 @@ class PackageService {
 
       if (it instanceof Integer) {
         cg = CuratoryGroup.get(it)
-      }
-      else if (it instanceof String) {
+      } else if (it instanceof String) {
         String normname = CuratoryGroup.generateNormname(it)
         cgname = it
 
         cg = CuratoryGroup.findByNormname(normname)
-      }
-      else if (it.id) {
+      } else if (it.id) {
         cg = CuratoryGroup.get(it.id)
-      }
-      else if (it.name) {
+      } else if (it.name) {
         String normname = CuratoryGroup.generateNormname(it.name)
         cgname = it.name
 
@@ -1040,14 +998,12 @@ class PackageService {
 
       if (cg) {
         if (result.curatoryGroups.find { it.name == cg.name }) {
-        }
-        else {
+        } else {
 
           result.curatoryGroups.add(cg)
           changed = true;
         }
-      }
-      else if (cgname) {
+      } else if (cgname) {
         def new_cg = new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
         result.curatoryGroups.add(new_cg)
         changed = true
@@ -1059,14 +1015,12 @@ class PackageService {
 
       if (packageHeaderDTO.source instanceof Integer) {
         src = Source.get(packageHeaderDTO.source)
-      }
-      else if (packageHeaderDTO.source instanceof Map) {
+      } else if (packageHeaderDTO.source instanceof Map) {
         def sourceMap = packageHeaderDTO.source
 
         if (sourceMap.id) {
           src = Source.get(sourceMap.id)
-        }
-        else {
+        } else {
           def namespace = null
 
           if (sourceMap.targetNamespace instanceof Integer) {
@@ -1075,13 +1029,13 @@ class PackageService {
 
           if (!result.source || result.source.name != result.name) {
             def source_config = [
-                name           : result.name,
-                url            : sourceMap.url,
-                frequency      : sourceMap.frequency,
-                ezbMatch       : (sourceMap.ezbMatch ?: false),
-                zdbMatch       : (sourceMap.zdbMatch ?: false),
-                automaticUpdate: (sourceMap.automaticUpdate ?: false),
-                targetNamespace: namespace
+              name           : result.name,
+              url            : sourceMap.url,
+              frequency      : sourceMap.frequency,
+              ezbMatch       : (sourceMap.ezbMatch ?: false),
+              zdbMatch       : (sourceMap.zdbMatch ?: false),
+              automaticUpdate: (sourceMap.automaticUpdate ?: false),
+              targetNamespace: namespace
             ]
 
             src = new Source(source_config).save(flush: true)
@@ -1089,8 +1043,7 @@ class PackageService {
             result.curatoryGroups.each { cg ->
               src.curatoryGroups.add(cg)
             }
-          }
-          else {
+          } else {
             src = result.source
 
             changed |= ClassUtils.setStringIfDifferent(src, 'frequency', sourceMap.frequency)
@@ -1116,7 +1069,9 @@ class PackageService {
     }
 
     result.save(flush: true)
-    return result
+
+
+    result
   }
 
 
@@ -1146,33 +1101,33 @@ class PackageService {
           // As per spec header at top of file / section
           // II: Need to add in preceding_publication_title_id
           writer.write('publication_title\t' +
-              'print_identifier\t' +
-              'online_identifier\t' +
-              'date_first_issue_online\t' +
-              'num_first_vol_online\t' +
-              'num_first_issue_online\t' +
-              'date_last_issue_online\t' +
-              'num_last_vol_online\t' +
-              'num_last_issue_online\t' +
-              'title_url\t' +
-              'first_author\t' +
-              'title_id\t' +
-              'embargo_info\t' +
-              'coverage_depth\t' +
-              'coverage_notes\t' +
-              'publisher_name\t' +
-              'preceding_publication_title_id\t' +
-              'date_monograph_published_print\t' +
-              'date_monograph_published_online\t' +
-              'monograph_volume\t' +
-              'monograph_edition\t' +
-              'first_editor\t' +
-              'parent_publication_title_id\t' +
-              'publication_type\t' +
-              'access_type\t' +
-              'zdb_id\t' +
-              'gokb_tipp_uid\t' +
-              'gokb_title_uid\n');
+            'print_identifier\t' +
+            'online_identifier\t' +
+            'date_first_issue_online\t' +
+            'num_first_vol_online\t' +
+            'num_first_issue_online\t' +
+            'date_last_issue_online\t' +
+            'num_last_vol_online\t' +
+            'num_last_issue_online\t' +
+            'title_url\t' +
+            'first_author\t' +
+            'title_id\t' +
+            'embargo_info\t' +
+            'coverage_depth\t' +
+            'coverage_notes\t' +
+            'publisher_name\t' +
+            'preceding_publication_title_id\t' +
+            'date_monograph_published_print\t' +
+            'date_monograph_published_online\t' +
+            'monograph_volume\t' +
+            'monograph_edition\t' +
+            'first_editor\t' +
+            'parent_publication_title_id\t' +
+            'publication_type\t' +
+            'access_type\t' +
+            'zdb_id\t' +
+            'gokb_tipp_uid\t' +
+            'gokb_title_uid\n');
 
           def session = sessionFactory.getCurrentSession()
           def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
@@ -1204,8 +1159,7 @@ class PackageService {
                 if (oid) {
                   online_id = oid
                 }
-              }
-              else {
+              } else {
                 def pid = tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')
                 def oid = tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')
 
@@ -1220,68 +1174,67 @@ class PackageService {
               if (tipp.coverageStatements?.size() > 0) {
                 tipp.coverageStatements.each { cst ->
                   writer.write(
-                      sanitize(tipp.name ?: tipp.title.name) + '\t' +
-                          print_id + '\t' +
-                          online_id + '\t' +
-                          sanitize(cst.startDate) + '\t' +
-                          sanitize(cst.startVolume) + '\t' +
-                          sanitize(cst.startIssue) + '\t' +
-                          sanitize(cst.endDate) + '\t' +
-                          sanitize(cst.endVolume) + '\t' +
-                          sanitize(cst.endIssue) + '\t' +
-                          sanitize(tipp.url) + '\t' +
-                          (tipp.title.hasProperty('firstAuthor') ? sanitize(tipp.title.firstAuthor) : '') + '\t' +
-                          sanitize(tipp.title.getId()) + '\t' +
-                          sanitize(cst.embargo) + '\t' +
-                          sanitize(cst.coverageDepth).toLowerCase() + '\t' +
-                          sanitize(cst.coverageNote) + '\t' +
-                          sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
-                          sanitize(tipp.title.getPrecedingTitleId()) + '\t' +
-                          (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.dateFirstInPrint) : '') + '\t' +
-                          (tipp.title.hasProperty('dateFirstOnline') ? sanitize(tipp.title.dateFirstOnline) : '') + '\t' +
-                          (tipp.title.hasProperty('volumeNumber') ? sanitize(tipp.title.volumeNumber) : '') + '\t' +
-                          (tipp.title.hasProperty('editionStatement') ? sanitize(tipp.title.editionStatement) : '') + '\t' +
-                          (tipp.title.hasProperty('firstEditor') ? sanitize(tipp.title.firstEditor) : '') + '\t' +
-                          '\t' +  // parent_publication_title_id
-                          sanitize(pub_type) + '\t' +  // publication_type
-                          sanitize(tipp.paymentType?.value) + '\t' +  // access_type
-                          sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
-                          sanitize(tipp.uuid) + '\t' +
-                          sanitize(tipp.title.uuid) +
-                          '\n');
-                }
-              }
-              else {
-                writer.write(
                     sanitize(tipp.name ?: tipp.title.name) + '\t' +
-                        print_id + '\t' +
-                        online_id + '\t' +
-                        sanitize(tipp.startDate) + '\t' +
-                        sanitize(tipp.startVolume) + '\t' +
-                        sanitize(tipp.startIssue) + '\t' +
-                        sanitize(tipp.endDate) + '\t' +
-                        sanitize(tipp.endVolume) + '\t' +
-                        sanitize(tipp.endIssue) + '\t' +
-                        sanitize(tipp.url) + '\t' +
-                        (tipp.title.hasProperty('firstAuthor') ? sanitize(tipp.title.firstAuthor) : '') + '\t' +
-                        sanitize(tipp.title.getId()) + '\t' +
-                        sanitize(tipp.embargo) + '\t' +
-                        sanitize(tipp.coverageDepth).toLowerCase() + '\t' +
-                        sanitize(tipp.coverageNote) + '\t' +
-                        sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
-                        sanitize(tipp.title.getPrecedingTitleId()) + '\t' +
-                        (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.dateFirstInPrint) : '') + '\t' +
-                        (tipp.title.hasProperty('dateFirstOnline') ? sanitize(tipp.title.dateFirstOnline) : '') + '\t' +
-                        (tipp.title.hasProperty('volumeNumber') ? sanitize(tipp.title.volumeNumber) : '' + '\t') +
-                        (tipp.title.hasProperty('editionStatement') ? sanitize(tipp.title.editionStatement) : '') + '\t' +
-                        (tipp.title.hasProperty('firstEditor') ? sanitize(tipp.title.firstEditor) : '') + '\t' +
-                        '\t' +  // parent_publication_title_id
-                        sanitize(pub_type) + '\t' +  // publication_type
-                        sanitize(tipp.paymentType?.value) + '\t' +  // access_type
-                        sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
-                        sanitize(tipp.uuid) + '\t' +
-                        sanitize(tipp.title.uuid) +
-                        '\n');
+                      print_id + '\t' +
+                      online_id + '\t' +
+                      sanitize(cst.startDate) + '\t' +
+                      sanitize(cst.startVolume) + '\t' +
+                      sanitize(cst.startIssue) + '\t' +
+                      sanitize(cst.endDate) + '\t' +
+                      sanitize(cst.endVolume) + '\t' +
+                      sanitize(cst.endIssue) + '\t' +
+                      sanitize(tipp.url) + '\t' +
+                      (tipp.title.hasProperty('firstAuthor') ? sanitize(tipp.title.firstAuthor) : '') + '\t' +
+                      sanitize(tipp.title.getId()) + '\t' +
+                      sanitize(cst.embargo) + '\t' +
+                      sanitize(cst.coverageDepth).toLowerCase() + '\t' +
+                      sanitize(cst.coverageNote) + '\t' +
+                      sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
+                      sanitize(tipp.title.getPrecedingTitleId()) + '\t' +
+                      (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.dateFirstInPrint) : '') + '\t' +
+                      (tipp.title.hasProperty('dateFirstOnline') ? sanitize(tipp.title.dateFirstOnline) : '') + '\t' +
+                      (tipp.title.hasProperty('volumeNumber') ? sanitize(tipp.title.volumeNumber) : '') + '\t' +
+                      (tipp.title.hasProperty('editionStatement') ? sanitize(tipp.title.editionStatement) : '') + '\t' +
+                      (tipp.title.hasProperty('firstEditor') ? sanitize(tipp.title.firstEditor) : '') + '\t' +
+                      '\t' +  // parent_publication_title_id
+                      sanitize(pub_type) + '\t' +  // publication_type
+                      sanitize(tipp.paymentType?.value) + '\t' +  // access_type
+                      sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                      sanitize(tipp.uuid) + '\t' +
+                      sanitize(tipp.title.uuid) +
+                      '\n');
+                }
+              } else {
+                writer.write(
+                  sanitize(tipp.name ?: tipp.title.name) + '\t' +
+                    print_id + '\t' +
+                    online_id + '\t' +
+                    sanitize(tipp.startDate) + '\t' +
+                    sanitize(tipp.startVolume) + '\t' +
+                    sanitize(tipp.startIssue) + '\t' +
+                    sanitize(tipp.endDate) + '\t' +
+                    sanitize(tipp.endVolume) + '\t' +
+                    sanitize(tipp.endIssue) + '\t' +
+                    sanitize(tipp.url) + '\t' +
+                    (tipp.title.hasProperty('firstAuthor') ? sanitize(tipp.title.firstAuthor) : '') + '\t' +
+                    sanitize(tipp.title.getId()) + '\t' +
+                    sanitize(tipp.embargo) + '\t' +
+                    sanitize(tipp.coverageDepth).toLowerCase() + '\t' +
+                    sanitize(tipp.coverageNote) + '\t' +
+                    sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
+                    sanitize(tipp.title.getPrecedingTitleId()) + '\t' +
+                    (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.dateFirstInPrint) : '') + '\t' +
+                    (tipp.title.hasProperty('dateFirstOnline') ? sanitize(tipp.title.dateFirstOnline) : '') + '\t' +
+                    (tipp.title.hasProperty('volumeNumber') ? sanitize(tipp.title.volumeNumber) : '' + '\t') +
+                    (tipp.title.hasProperty('editionStatement') ? sanitize(tipp.title.editionStatement) : '') + '\t' +
+                    (tipp.title.hasProperty('firstEditor') ? sanitize(tipp.title.firstEditor) : '') + '\t' +
+                    '\t' +  // parent_publication_title_id
+                    sanitize(pub_type) + '\t' +  // publication_type
+                    sanitize(tipp.paymentType?.value) + '\t' +  // access_type
+                    sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                    sanitize(tipp.uuid) + '\t' +
+                    sanitize(tipp.title.uuid) +
+                    '\n');
               }
             }
           }
@@ -1322,46 +1275,46 @@ class PackageService {
           writer.write("GOKb Export : ${pkg.provider?.name} : ${pkg.name} : ${export_date}\n");
 
           writer.write('TIPP ID\t' +
-              'TIPP URL\t' +
-              'Title ID\t' +
-              'Title\t' +
-              'TIPP Status\t' +
-              '[TI] Publisher\t' +
-              '[TI] Imprint\t' +
-              '[TI] Published From\t' +
-              '[TI] Published to\t' +
-              '[TI] Medium\t' +
-              '[TI] OA Status\t' +
-              '[TI] Continuing series\t' +
-              '[TI] ISSN\t' +
-              '[TI] EISSN\t' +
-              '[TI] ZDB-ID\t' +
-              'Package\t' +
-              'Package ID\t' +
-              'Package URL\t' +
-              'Platform\t' +
-              'Platform URL\t' +
-              'Platform ID\t' +
-              'Reference\t' +
-              'Edit Status\t' +
-              'Access Start Date\t' +
-              'Access End Date\t' +
-              'Coverage Start Date\t' +
-              'Coverage Start Volume\t' +
-              'Coverage Start Issue\t' +
-              'Coverage End Date\t' +
-              'Coverage End Volume\t' +
-              'Coverage End Issue\t' +
-              'Embargo\t' +
-              'Coverage depth\t' +
-              'Coverage note\t' +
-              'Host Platform URL\t' +
-              'Format\t' +
-              'Payment Type\t' +
-              '[TI] DOI\t' +
-              '[TI] ISBN\t' +
-              '[TI] pISBN' +
-              '\n');
+            'TIPP URL\t' +
+            'Title ID\t' +
+            'Title\t' +
+            'TIPP Status\t' +
+            '[TI] Publisher\t' +
+            '[TI] Imprint\t' +
+            '[TI] Published From\t' +
+            '[TI] Published to\t' +
+            '[TI] Medium\t' +
+            '[TI] OA Status\t' +
+            '[TI] Continuing series\t' +
+            '[TI] ISSN\t' +
+            '[TI] EISSN\t' +
+            '[TI] ZDB-ID\t' +
+            'Package\t' +
+            'Package ID\t' +
+            'Package URL\t' +
+            'Platform\t' +
+            'Platform URL\t' +
+            'Platform ID\t' +
+            'Reference\t' +
+            'Edit Status\t' +
+            'Access Start Date\t' +
+            'Access End Date\t' +
+            'Coverage Start Date\t' +
+            'Coverage Start Volume\t' +
+            'Coverage Start Issue\t' +
+            'Coverage End Date\t' +
+            'Coverage End Volume\t' +
+            'Coverage End Issue\t' +
+            'Embargo\t' +
+            'Coverage depth\t' +
+            'Coverage note\t' +
+            'Host Platform URL\t' +
+            'Format\t' +
+            'Payment Type\t' +
+            '[TI] DOI\t' +
+            '[TI] ISBN\t' +
+            '[TI] pISBN' +
+            '\n');
 
           def session = sessionFactory.getCurrentSession()
           def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
@@ -1383,90 +1336,89 @@ class PackageService {
               if (tipp.coverageStatements?.size() > 0) {
                 tipp.coverageStatements.each { tcs ->
                   writer.write(
-                      sanitize(tipp.getId()) + '\t' +
-                          sanitize(tipp.url) + '\t' +
-                          sanitize(tipp.title.getId()) + '\t' +
-                          sanitize(tipp.name ?: tipp.title.name) + '\t' +
-                          sanitize(tipp.status.value) + '\t' +
-                          sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
-                          sanitize(tipp.title.imprint?.name) + '\t' +
-                          sanitize(tipp.title.publishedFrom) + '\t' +
-                          sanitize(tipp.title.publishedTo) + '\t' +
-                          sanitize(tipp.title.medium?.value) + '\t' +
-                          sanitize(tipp.title.OAStatus?.value) + '\t' +
-                          sanitize(tipp.title.continuingSeries?.value) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
-                          sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
-                          '\t' +
-                          sanitize(tipp.hostPlatform.name) + '\t' +
-                          sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
-                          sanitize(tipp.hostPlatform.getId()) + '\t' +
-                          '\t' +
-                          sanitize(tipp.editStatus?.value) + '\t' +
-                          sanitize(tipp.accessStartDate) + '\t' +
-                          sanitize(tipp.accessEndDate) + '\t' +
-                          sanitize(tcs.startDate) + '\t' +
-                          sanitize(tcs.startVolume) + '\t' +
-                          sanitize(tcs.startIssue) + '\t' +
-                          sanitize(tcs.endDate) + '\t' +
-                          sanitize(tcs.endVolume) + '\t' +
-                          sanitize(tcs.endIssue) + '\t' +
-                          sanitize(tcs.embargo) + '\t' +
-                          sanitize(tcs.coverageDepth) + '\t' +
-                          sanitize(tcs.coverageNote) + '\t' +
-                          sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
-                          sanitize(tipp.format?.value) + '\t' +
-                          sanitize(tipp.paymentType?.value) + '\t' +
-                          sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title.getIdentifierValue('DOI')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')) +
-                          '\n');
-                }
-              }
-              else {
-                writer.write(
                     sanitize(tipp.getId()) + '\t' +
-                        sanitize(tipp.url) + '\t' +
-                        sanitize(tipp.title.getId()) + '\t' +
-                        sanitize(tipp.name ?: tipp.title.name) + '\t' +
-                        sanitize(tipp.status.value) + '\t' +
-                        sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
-                        sanitize(tipp.title.imprint?.name) + '\t' +
-                        sanitize(tipp.title.publishedFrom) + '\t' +
-                        sanitize(tipp.title.publishedTo) + '\t' +
-                        sanitize(tipp.title.medium?.value) + '\t' +
-                        sanitize(tipp.title.OAStatus?.value) + '\t' +
-                        sanitize(tipp.title.continuingSeries?.value) + '\t' +
-                        sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
-                        sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
-                        '\t' +
-                        sanitize(tipp.hostPlatform?.name) + '\t' +
-                        sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
-                        sanitize(tipp.hostPlatform?.getId()) + '\t' +
-                        '\t' +
-                        sanitize(tipp.editStatus?.value) + '\t' +
-                        sanitize(tipp.accessStartDate) + '\t' +
-                        sanitize(tipp.accessEndDate) + '\t' +
-                        sanitize(tipp.startDate) + '\t' +
-                        sanitize(tipp.startVolume) + '\t' +
-                        sanitize(tipp.startIssue) + '\t' +
-                        sanitize(tipp.endDate) + '\t' +
-                        sanitize(tipp.endVolume) + '\t' +
-                        sanitize(tipp.endIssue) + '\t' +
-                        sanitize(tipp.embargo) + '\t' +
-                        sanitize(tipp.coverageDepth) + '\t' +
-                        sanitize(tipp.coverageNote) + '\t' +
-                        sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
-                        sanitize(tipp.format?.value) + '\t' +
-                        sanitize(tipp.paymentType?.value) + '\t' +
-                        sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title.getIdentifierValue('DOI')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')) +
-                        '\n');
+                      sanitize(tipp.url) + '\t' +
+                      sanitize(tipp.title.getId()) + '\t' +
+                      sanitize(tipp.name ?: tipp.title.name) + '\t' +
+                      sanitize(tipp.status.value) + '\t' +
+                      sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
+                      sanitize(tipp.title.imprint?.name) + '\t' +
+                      sanitize(tipp.title.publishedFrom) + '\t' +
+                      sanitize(tipp.title.publishedTo) + '\t' +
+                      sanitize(tipp.title.medium?.value) + '\t' +
+                      sanitize(tipp.title.OAStatus?.value) + '\t' +
+                      sanitize(tipp.title.continuingSeries?.value) + '\t' +
+                      sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                      sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
+                      '\t' +
+                      sanitize(tipp.hostPlatform.name) + '\t' +
+                      sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                      sanitize(tipp.hostPlatform.getId()) + '\t' +
+                      '\t' +
+                      sanitize(tipp.editStatus?.value) + '\t' +
+                      sanitize(tipp.accessStartDate) + '\t' +
+                      sanitize(tipp.accessEndDate) + '\t' +
+                      sanitize(tcs.startDate) + '\t' +
+                      sanitize(tcs.startVolume) + '\t' +
+                      sanitize(tcs.startIssue) + '\t' +
+                      sanitize(tcs.endDate) + '\t' +
+                      sanitize(tcs.endVolume) + '\t' +
+                      sanitize(tcs.endIssue) + '\t' +
+                      sanitize(tcs.embargo) + '\t' +
+                      sanitize(tcs.coverageDepth) + '\t' +
+                      sanitize(tcs.coverageNote) + '\t' +
+                      sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                      sanitize(tipp.format?.value) + '\t' +
+                      sanitize(tipp.paymentType?.value) + '\t' +
+                      sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title.getIdentifierValue('DOI')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')) +
+                      '\n');
+                }
+              } else {
+                writer.write(
+                  sanitize(tipp.getId()) + '\t' +
+                    sanitize(tipp.url) + '\t' +
+                    sanitize(tipp.title.getId()) + '\t' +
+                    sanitize(tipp.name ?: tipp.title.name) + '\t' +
+                    sanitize(tipp.status.value) + '\t' +
+                    sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
+                    sanitize(tipp.title.imprint?.name) + '\t' +
+                    sanitize(tipp.title.publishedFrom) + '\t' +
+                    sanitize(tipp.title.publishedTo) + '\t' +
+                    sanitize(tipp.title.medium?.value) + '\t' +
+                    sanitize(tipp.title.OAStatus?.value) + '\t' +
+                    sanitize(tipp.title.continuingSeries?.value) + '\t' +
+                    sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                    sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
+                    '\t' +
+                    sanitize(tipp.hostPlatform?.name) + '\t' +
+                    sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
+                    sanitize(tipp.hostPlatform?.getId()) + '\t' +
+                    '\t' +
+                    sanitize(tipp.editStatus?.value) + '\t' +
+                    sanitize(tipp.accessStartDate) + '\t' +
+                    sanitize(tipp.accessEndDate) + '\t' +
+                    sanitize(tipp.startDate) + '\t' +
+                    sanitize(tipp.startVolume) + '\t' +
+                    sanitize(tipp.startIssue) + '\t' +
+                    sanitize(tipp.endDate) + '\t' +
+                    sanitize(tipp.endVolume) + '\t' +
+                    sanitize(tipp.endIssue) + '\t' +
+                    sanitize(tipp.embargo) + '\t' +
+                    sanitize(tipp.coverageDepth) + '\t' +
+                    sanitize(tipp.coverageNote) + '\t' +
+                    sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
+                    sanitize(tipp.format?.value) + '\t' +
+                    sanitize(tipp.paymentType?.value) + '\t' +
+                    sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title.getIdentifierValue('DOI')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')) +
+                    '\n');
               }
               tipp.discard();
             }
@@ -1567,18 +1519,19 @@ class PackageService {
 
   def synchronized updateFromSource(Package p, def user = null) {
     log.debug("updateFromSource")
+    def result = null
     boolean started = false
     if (running == false) {
       running = true
-      started = startSourceUpdate(p, user)
+      log.debug("UpdateFromSource started")
+      result = startSourceUpdate(p, user) ? 'OK' : 'ERROR'
       running = false
-      if (started)
-        return started
     }
     else {
       log.debug("update skipped - already running")
-      return started
+      result = 'ALREADY_RUNNING'
     }
+    result
   }
 
   /**
@@ -1609,7 +1562,7 @@ class PackageService {
         currentToken.delete(flush: true)
       }
 
-      new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush: true)
+      def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush: true)
     }
 
     if (tokenValue && ygorBaseUrl) {
@@ -1630,7 +1583,55 @@ class PackageService {
                 log.error("ygor message: ${respData.message}")
               }
               processing = false
-              return true
+              return
+            }
+            def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
+
+            while (processing == true) {
+              log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId}")
+              statusService.request(GET) { req ->
+                response.success = { statusResp, statusData ->
+                  log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => success")
+                  log.debug("status of Ygor ${statusData.status} gokbJob #${statusData.gokbJobId}")
+                  if (statusData.status == 'FINISHED_UNDEFINED' ) {
+                    processing = false
+                    log.debug("No valid URLs found.")
+                  }
+
+                  if (statusData.gokbJobId) {
+                    processing = false
+                    task {
+                      log.debug("task start...")
+                      Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
+                      while (!job.isDone() && job.get() == null) {
+                        this.wait(5000) // 5 sec
+                        log.debug("checking xRefPackage status...")
+                      }
+                      log.debug("xRefPackage Job done!")
+                      def xRefResult = job.get()
+                      if (xRefResult) {
+                        if (xRefResult.result == "OK") {
+                          log.debug("xRefPackage result OK")
+                          Package.withNewSession {
+                            def pkg = Package.get(xRefResult.pkgId)
+                            pkg.source.lastRun = new Date()
+                            pkg.source.save(flush: true)
+                          }
+                          log.debug("set ${p.source.getNormname()}.lastRun = now")
+                        }
+                      }
+                    }
+                  } else {
+                    this.wait(10000) // 10 sec
+                  }
+                }
+                response.failure = { statusResp, statusData ->
+                  log.error("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => failure")
+                  log.error("ygor response message: $statusData.message")
+                  processing = false
+                  error = true
+                }
+              }
             }
           }
           response.failure = { resp ->
@@ -1643,8 +1644,7 @@ class PackageService {
         log.error("SourceUpdate Exception:", e);
         error = true
       }
-    }
-    else {
+    } else {
       log.debug("No user provided and no existing updateToken found!")
     }
     return !error
@@ -1655,10 +1655,9 @@ class PackageService {
     StringBuilder name = new StringBuilder()
     if (type == ExportType.KBART) {
       name.append(toCamelCase(pkg.provider?.name ? pkg.provider.name : "unknown Provider")).append('_')
-          .append(toCamelCase(pkg.global.value)).append('_')
-          .append(toCamelCase(pkg.name))
-    }
-    else {
+        .append(toCamelCase(pkg.global.value)).append('_')
+        .append(toCamelCase(pkg.name))
+    } else {
       name.append("GoKBPackage-").append(pkg.id)
     }
     name.append('_').append(lastUpdate).append('.tsv')
@@ -1676,7 +1675,7 @@ class PackageService {
     before.split("\\W").each { word ->
       if (word.length() > 0)
         ret.append(word.substring(0, 1).toUpperCase())
-            .append(word.substring(1, word.length()).toLowerCase())
+          .append(word.substring(1, word.length()).toLowerCase())
     }
     ret.toString()
   }
