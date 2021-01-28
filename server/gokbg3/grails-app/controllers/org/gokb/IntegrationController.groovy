@@ -1241,7 +1241,7 @@ class IntegrationController {
                       def validation_result = TitleInstancePackagePlatform.validateDTO(json_tipp)
 
                       if (validation_result && !validation_result.valid) {
-                        Tipps.add(json_tipp)
+                        invalidTipps.add(json_tipp)
                         log.debug("TIPP Validation failed on ${json_tipp}")
                         allTippsValid = false
                         def tipp_error = [

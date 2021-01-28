@@ -66,10 +66,10 @@
 			<g:xEditableBoolean owner="${d}" field="zdbMatch" />
 		</dd>
 		<dt>
-			<g:annotatedLabel owner="${d}" property="zdbMatch">Last Run</g:annotatedLabel>
+			<g:annotatedLabel owner="${d}" property="lastRun">Last Run</g:annotatedLabel>
 		</dt>
 		<dd>
-			${d.lastRun ?: 'Never'}
+			<g:xEditable class="ipe" owner="${d}" type="date" field="lastRun" />
 		</dd>
 	</dl>
 </g:if>
