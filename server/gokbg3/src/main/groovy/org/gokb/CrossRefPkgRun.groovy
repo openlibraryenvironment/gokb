@@ -373,7 +373,7 @@ class CrossRefPkgRun {
     def ti = null
     def titleObj = tippJson.title.name ? tippJson.title : tippJson
     def title_changed = false
-    def title_class_name = IntegrationController.determineTitleClass(titleObj);
+    def title_class_name = IntegrationController.determineTitleClass(titleObj)
 
     try {
       ti = titleLookupService.findOrCreate(

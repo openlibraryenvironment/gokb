@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import org.gokb.IntegrationController
+
 import java.time.LocalDateTime
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
@@ -705,6 +707,17 @@ class TitleInstance extends KBComponent {
         else {
           log.debug("Found existing identifier ..")
         }
+      }
+    }
+
+    // VolumeNumber must be numeric, as enforced thru the DataModel.
+    if (IntegrationController.determineTitleClass(titleDTO) == 'org.gokb.cred.BookInstance'&&
+    titleDTO.containsKey('volumeNumber')){
+      try {
+        Integer.parseInt(titleDTO.volumeNumber)
+      }catch(NumberFormatException nfe){
+        result.errors.volumeNumber = [[message:"volumeNumber is not numeric", baddata: titleDTO.volumeNumber]]
+        result.valid = false
       }
     }
 
