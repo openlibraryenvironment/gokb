@@ -146,26 +146,28 @@ class CrossRefPkgRun {
       log.debug("Matched package has ${pkg.tipps.size()} TIPPs")
       total = rjson.tipps.size() + (addOnly ? 0 : existing_tipp_ids.size())
 
-      for (int idx = 0; idx < rjson.tipps.size(); idx++) {
-        def json_tipp = rjson.tipps[idx]
+      int idx = 0
+      for (def json_tipp : rjson.tipps) {
+        idx++
         log.info("Crossreferencing #$idx title ${json_tipp.name ?: json_tipp.title.name}")
-        // Upsert TitleInstance
-        handleTitle(json_tipp)
+        if ((json_tipp.package == null) && (pkg.id)) {
+          json_tipp.package = [internalId: pkg.id]
+        }
+        else {
+          log.error("No package")
+          tippError(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale)])
+          invalidTipps << json_tipp
+        }
         if (!invalidTipps.contains(json_tipp)) {
-          // Upsert PlatformInstance
+          // validate and upsert TitleInstance
+          handleTitle(json_tipp)
+        }
+        if (!invalidTipps.contains(json_tipp)) {
+          // validate and upsert PlatformInstance
           handlePlt(json_tipp)
         }
         if (!invalidTipps.contains(json_tipp)) {
-          if ((json_tipp.package == null) && (pkg.id)) {
-            json_tipp.package = [internalId: pkg.id]
-          }
-          else {
-            log.error("No package")
-            tippError(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale)])
-            invalidTipps << json_tipp
-          }
-        }
-        if (!invalidTipps.contains(json_tipp)) {
+          // validate and upsert TIPP
           handleTIPP(json_tipp)
         }
         if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
@@ -206,7 +208,7 @@ class CrossRefPkgRun {
           log.debug("imported Package $pkg.name contains no valid TIPPs")
         }
         if (!addOnly && existing_tipp_ids.size() > 0) {
-          existing_tipp_ids.eachWithIndex { ttd, idx ->
+          existing_tipp_ids.eachWithIndex { ttd, ix ->
             def to_retire = TitleInstancePackagePlatform.get(ttd)
             if (to_retire?.isCurrent()) {
               if (fullsync) {
@@ -215,7 +217,7 @@ class CrossRefPkgRun {
               else {
                 to_retire.retire()
               }
-              log.info("${fullsync ? 'delete' : 'retire'} TIPP [$idx]")
+              log.info("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
               to_retire.save(failOnError: true)
               if ((++removedNum) %50 ==0){
                 log.debug("flush session");
