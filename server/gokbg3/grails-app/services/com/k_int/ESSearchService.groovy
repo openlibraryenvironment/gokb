@@ -44,6 +44,8 @@ class ESSearchService{
       ],
       complex: [
           "identifier",
+          "ids",
+          "identifiers",
           "status",
           "componentType",
           "platform",
@@ -332,7 +334,7 @@ class ESSearchService{
   }
 
 
-  private void addIdentifierQuery(query,errors, qpars) {
+  private void addIdentifierQuery(query, errors, qpars) {
     def id_params = [:]
     def val = null
 
@@ -353,6 +355,8 @@ class ESSearchService{
       }else{
         id_params['identifiers.value'] = val
       }
+
+      log.debug("Query ids for ${id_params}")
       query.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.None))
     }
   }
@@ -362,8 +366,9 @@ class ESSearchService{
 
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
 
-      labelQuery.should(QueryBuilders.matchQuery('name', qpars.label))
-      labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label))
+      labelQuery.should(QueryBuilders.matchQuery('name', qpars.label).boost(3))
+      labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label).boost(1.5))
+      labelQuery.should(QueryBuilders.matchQuery('suggest',qpars.label))
       labelQuery.minimumNumberShouldMatch(1)
 
       query.must(labelQuery)
@@ -384,9 +389,10 @@ class ESSearchService{
       QueryBuilder genericQuery = QueryBuilders.boolQuery()
       def id_params = ['identifiers.value': qpars.q]
 
-      genericQuery.should(QueryBuilders.matchQuery('name',qpars.q))
-      genericQuery.should(QueryBuilders.matchQuery('altname',qpars.q))
-      // genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.None))
+      genericQuery.should(QueryBuilders.matchQuery('name',qpars.q).boost(3))
+      genericQuery.should(QueryBuilders.matchQuery('altname',qpars.q).boost(1.5))
+      genericQuery.should(QueryBuilders.matchQuery('suggest',qpars.q))
+      genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.None).boost(10))
       genericQuery.minimumNumberShouldMatch(1)
 
       query.must(genericQuery)
@@ -549,7 +555,7 @@ class ESSearchService{
       addDateQueries(exactQuery, errors, params)
       processNameFields(exactQuery, errors, params)
       processGenericFields(exactQuery, errors, params)
-      addIdentifierQuery(exactQuery,errors, params)
+      addIdentifierQuery(exactQuery, errors, params)
       specifyQueryWithParams(params, exactQuery, errors, unknown_fields)
 
       if(unknown_fields.size() > 0){
@@ -842,7 +848,7 @@ class ESSearchService{
         }
         else if (!toSkip) {
           log.debug("Transfering unmapped field ${field}:${val}")
-          if (val?.trim()) {
+          if (val) {
             domainMapping[field] =  val
           }
           else {
@@ -893,15 +899,12 @@ class ESSearchService{
       if (vals instanceof String[]) {
         selfLink.removeQueryParam(p)
         vals.each { val ->
-          if (val.trim()) {
+          if (val?.trim()) {
             log.debug("Val: ${val} -- ${val.class.name}")
             selfLink.addQueryParam(p, val)
           }
         }
         log.debug("${selfLink.toString()}")
-      }
-      else if (!p.trim()) {
-        selfLink.removeQueryParam(p)
       }
     }
     if(params.controller) {
