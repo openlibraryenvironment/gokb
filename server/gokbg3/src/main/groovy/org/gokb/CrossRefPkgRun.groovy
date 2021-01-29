@@ -266,19 +266,26 @@ class CrossRefPkgRun {
       // flush and clear the session.
       session.flush()
       session.clear()
+
+      if (!cancelled) {
+        job?.setProgress(100)
+      }
     } catch (Exception e) {
       log.error("exception caught: ", e)
       String msg = messageService.resolveCode('crossRef.package.error.unknown', [e], locale)
       globalError([message: msg, code: 500])
       job?.endTime = new Date()
-      cancelled = true
     }
-    if (!cancelled) {
-      job?.setProgress(100)
+    if (errors.global.size() > 0) {
+      jsonResult << [errors: [global: errors.global]]
     }
+    if (errors.tipps.size() > 0) {
+      jsonResult << [errors: [tipps: errors.tipps]]
+    }
+    job?.endTime = new Date()
+
     JobResult.withNewSession {
       def result_object = JobResult.findByUuid(job?.uuid)
-
       if (!result_object) {
         def job_map = [
             uuid        : (job?.uuid),
@@ -296,13 +303,6 @@ class CrossRefPkgRun {
       }
     }
     log.info("xRefPackage job result: $jsonResult")
-    if (errors.global.size() > 0) {
-      jsonResult << [errors: [global: errors.global]]
-    }
-    if (errors.tipps.size() > 0) {
-      jsonResult << [errors: [tipps: errors.tipps]]
-    }
-    job?.endTime = new Date()
 
     return jsonResult
   }
