@@ -1256,7 +1256,7 @@ class PackageController {
                     reviewRequestService.raise(
                       the_pkg,
                       "Invalid TIPPs.",
-                      "An update for this package failed because of invalid TIPP information (JOB ${job.id}).",
+                      "An update for this package failed because of invalid TIPP information (JOB ${job.uuid}).",
                       user,
                       null,
                       (additionalInfo as JSON).toString(),
@@ -1300,7 +1300,7 @@ class PackageController {
           result = background_job.get()
         }
         else {
-          result.job_id = background_job.id
+          result.job_id = background_job.uuid
         }
       }
       else if (request_user) {

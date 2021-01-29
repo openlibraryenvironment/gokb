@@ -43,10 +43,10 @@ class ConcurrencyManagerService {
   public class Job implements Promise, Future {
     String uuid
     private Promise task
+    private Closure work
     int progress
     Date startTime
     Date endTime
-    private Closure work
     boolean begun = false;
     String description
     List messages = []
@@ -71,7 +71,7 @@ class ConcurrencyManagerService {
 
     /**
      * Cancel the job.
-     * @see java.util.concurrent.FutureTask#cancel()
+     * @see java.util.concurrent.FutureTask#cancel(boolean)
      */
     public synchronized boolean cancel () {
       cancel (false)

@@ -934,7 +934,6 @@ class IntegrationController {
           addOnly as boolean, fullsync as boolean, token != null,
           request_locale, request_user) as JSON
       log.debug("xRefPkg Result:\n$result")
-      render result
     }
     else {
       // start xRef Job
@@ -946,17 +945,15 @@ class IntegrationController {
       background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
       background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
       background_job.linkedItem = [name: rjson.packageHeader.name,
-                                   type: "Package",
-                                   id  : upserted_pkg.id,
-                                   uuid: upserted_pkg.uuid]
-      background_job.message("Starting upsert for Package ${upserted_pkg.name} (uuid: ${upserted_pkg.uuid})".toString())
+                                   type: "Package"]
+      background_job.message("Starting upsert for Package ${rjson.packageHeader.name}")
       background_job.startOrQueue()
       background_job.startTime = new Date()
       result << [job_id: background_job.uuid,
                  // TODO: remove key 'info' as it is deprecated
                  info  : [job_id: background_job.uuid]]
-      render result as JSON
     }
+    render result as JSON
   }
 
   @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')

@@ -143,7 +143,7 @@ class JobsController {
 
         rawJobs.each { k, v ->
           selected << [
-            id: v.id,
+            id: v.uuid,
             progress: v.progress,
             messages: v.messages,
             description: v.description,
@@ -290,7 +290,7 @@ class JobsController {
       if (user.superUserStatus || job.ownerId == user.id) {
         if (job.isDone()) {
           def removed = concurrencyManagerService.getJob(params.id, true)
-          log.debug("Removed job with id ${removed.id}")
+          log.debug("Removed job with id ${removed.uuid}")
         }
         else {
           result.result = 'ERROR'

@@ -134,15 +134,15 @@ class CrossRefPkgRun {
                          type: "Package",
                          id  : pkg.id,
                          uuid: pkg.uuid]
-      job?.message("Starting upsert for Package ${pkg.name} (uuid: ${pkg.uuid})")
+      job?.message("found Package ${pkg.name} (uuid: ${pkg.uuid})")
 
       handleUpdateToken()
       existing_tipp_ids = TitleInstance.executeQuery(
-          "select tipp.id from TitleInstancePackagePlatform tipp, Combo combo " +
-              "where tipp.status = :status " +
-              "and combo.toComponent = tipp " +
-              "and combo.fromComponent = :package",
-          [package: pkg, status: status_current])
+          "select tipp.id from TitleInstancePackagePlatform tipp, Combo combo where " +
+              "tipp.status in :status and " +
+              "combo.toComponent = tipp and " +
+              "combo.fromComponent = :package",
+          [package: pkg, status: [status_current, status_expected]])
       log.debug("Matched package has ${pkg.tipps.size()} TIPPs")
       total = rjson.tipps.size() + (addOnly ? 0 : existing_tipp_ids.size())
 
@@ -169,7 +169,7 @@ class CrossRefPkgRun {
           handleTIPP(json_tipp)
         }
         if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
-          log.debug("cancelling Job #${job?.id}")
+          log.debug("cancelling Job #${job?.uuid}")
           cancelled = true
           def msg = "the Job was canceled"
           globalError([message: msg, code: 500])
