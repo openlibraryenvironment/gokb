@@ -1550,7 +1550,7 @@ class IntegrationController {
     if (uuid == null) {
       result.result = "ERROR"
       response.setStatus(400)
-      result.message = "Request is missing an id parameter."
+      result.message = "Request has no id parameter."
     }
     else {
       if (springSecurityService.isLoggedIn()) {
@@ -1604,7 +1604,7 @@ class IntegrationController {
           else {
             result.result = "ERROR"
             response.setStatus(403)
-            result.message = "No permission to view job with ID ${id}."
+            result.message = "No permission to view job with ID ${uuid}."
           }
         }
         else {
@@ -1636,7 +1636,7 @@ class IntegrationController {
           else {
             result.result = "ERROR"
             response.setStatus(404)
-            result.message = "Could not find job with ID ${id}."
+            result.message = "Could not find job with ID ${uuid}."
           }
         }
       }
