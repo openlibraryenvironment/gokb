@@ -173,7 +173,6 @@ class CrossRefPkgRun {
           cancelled = true
           def msg = "the Job was canceled"
           globalError([message: msg, code: 500])
-          job?.endTime = new Date()
           break
         }
         job?.setProgress(idx, total)
