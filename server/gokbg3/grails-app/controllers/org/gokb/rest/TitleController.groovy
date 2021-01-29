@@ -40,6 +40,7 @@ class TitleController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
+    log.debug("Index with params: ${params}")
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     User user = null
@@ -711,26 +712,14 @@ class TitleController {
     log.debug("Updating title combos ..")
     def errors = [:]
 
-    if (reqBody.ids || reqBody.identifiers) {
-      def id_list = reqBody.ids
+    if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
+      def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      if (id_list == null) {
-        id_list = reqBody.identifiers
-      }
+      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_list != null) {
-        def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
-
-        if (id_errors.size() > 0) {
-          errors.ids = id_errors
-        }
+      if (id_errors.size() > 0) {
+        errors.ids = id_errors
       }
-      else {
-        log.debug("Parameter should be List, but was 'null': ${reqBody.ids} - ${reqBody.identifiers}")
-      }
-    }
-    else {
-      log.debug("No IDs in ${reqBody}")
     }
 
     def pub_errors = restMappingService.updatePublisher(obj, reqBody.publisher, remove)

@@ -569,6 +569,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         }
 
         changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', trimmed_url)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'name', tipp_dto.name)
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessStartDate, tipp, 'accessStartDate')
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate, tipp, 'accessEndDate')
 

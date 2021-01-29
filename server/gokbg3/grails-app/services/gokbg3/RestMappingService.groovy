@@ -494,7 +494,7 @@ class RestMappingService {
     def errors = []
     Set new_ids = []
 
-    if (obj && ids) {
+    if (obj && ids instanceof Collection) {
       ids.each { i ->
         Identifier id = null
         def valid = true

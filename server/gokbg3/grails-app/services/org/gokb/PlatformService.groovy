@@ -12,11 +12,11 @@ class PlatformService {
 
   def restLookup(platformDTO, def user = null) {
 
-    def result = [to_create: true];
+    def result = [to_create: true]
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-    def matches = [:]
-    Boolean viable_url = false;
+    def matches = new HashMap()
+    Boolean viable_url = false
 
     if (platformDTO.name.startsWith("http")) {
       try {
@@ -42,14 +42,14 @@ class PlatformService {
       }
     }
 
-    def name_candidates = Platform.executeQuery("from Platform where name = ? and status != ? ", [platformDTO.name, status_deleted]);
+    def name_candidates = Platform.executeQuery("from Platform where name = ? and status != ? ", [platformDTO.name, status_deleted])
 
     name_candidates.each {
-      if (!matches["${it.id}"]) {
-        matches["${it.id}"] = []
+      if (!matches[it.id]) {
+        matches[it.id] = []
       }
 
-      matches["${it.id}"] << ['field': 'name', value: platformDTO.name, message:"The provided name matched an existing platform!"]
+      matches[it.id] << ['field': 'name', value: platformDTO.name, message:"The provided name matched an existing platform!"]
     }
 
     if (platformDTO.primaryUrl && platformDTO.primaryUrl.trim().size() > 0) {
@@ -75,10 +75,10 @@ class PlatformService {
           }
 
           url_candidates.each { um ->
-            if (!matches["${um.id}"])
-              matches["${um.id}"] = []
+            if (!matches[um.id])
+              matches[um.id] = []
 
-            matches["${um.id}"] << ['field': 'primaryUrl', value: platformDTO.primaryUrl, message:"The provided URL matched an existing platform!"]
+            matches[um.id] << ['field': 'primaryUrl', value: platformDTO.primaryUrl, message:"The provided URL matched an existing platform!"]
           }
         }
       } catch (MalformedURLException ex) {
@@ -91,10 +91,10 @@ class PlatformService {
     def variant_matches = Platform.executeQuery("select distinct pl from Platform as pl join pl.variantNames as v where v.normVariantName = ? and pl.status = ? ", [variant_normname, status_current])
 
     variant_matches.each { vm ->
-      if (!matches["${vm.id}"])
-        matches["${vm.id}"] = []
+      if (!matches[vm.id])
+        matches[vm.id] = []
 
-      matches["${vm.id}"] << ['field': 'name', value: platformDTO.name, message:"Provided name matched a variant of an existing platform!"]
+      matches[vm.id] << ['field': 'name', value: platformDTO.name, message:"Provided name matched a variant of an existing platform!"]
     }
 
     if( platformDTO.variantNames?.size() > 0 ){
@@ -113,28 +113,28 @@ class PlatformService {
           def name_matches = Platform.findAllByName(variant)
 
           name_matches.each { nm ->
-            if (!matches["${nm.id}"])
-              matches["${nm.id}"] = []
+            if (!matches[nm.id])
+              matches[nm.id] = []
 
-            matches["${nm.id}"] << [field: 'variantNames', value: variant, message:"Provided variant matched the title of an existing platform!"]
+            matches[nm.id] << [field: 'variantNames', value: variant, message:"Provided variant matched the title of an existing platform!"]
           }
 
           def variant_nn = GOKbTextUtils.normaliseString(variant)
-          def variant_candidates = Platform.executeQuery("select distinct p from Platform as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ",[variant_nn, status_deleted]);
+          def variant_candidates = Platform.executeQuery("select distinct p from Platform as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ",[variant_nn, status_deleted])
 
           variant_candidates.each { vc ->
             log.debug("Found existing Platform variant name for variantName ${variant}")
-            if (!matches["${vc.id}"])
-              matches["${vc.id}"] = []
+            if (!matches[vc.id])
+              matches[vc.id] = []
 
-            matches["${vc.id}"] << [field: 'variantNames', value: variant, message:"Provided variant matched that of an existing platform!"]
+            matches[vc.id] << [field: 'variantNames', value: variant, message:"Provided variant matched that of an existing platform!"]
           }
         }
       }
     }
 
-    if (matches.size() > 0) {
-      to_create = false
+    if (matches) {
+      result.to_create = false
       result.matches = matches
     }
 
