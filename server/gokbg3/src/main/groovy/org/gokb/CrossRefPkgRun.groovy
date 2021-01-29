@@ -293,32 +293,26 @@ class CrossRefPkgRun {
       // flush and clear the session.
       session.flush()
       session.clear()
+
+      if (!cancelled) {
+        job?.setProgress(100)
+      }
     } catch (Exception e) {
       log.error("exception caught: ", e)
       String msg = messageService.resolveCode('crossRef.package.error.unknown', [e], locale)
       globalError([message: msg, code: 500])
       job?.endTime = new Date()
-      cancelled = true
     }
-    if (!cancelled) {
-      job?.setProgress(100)
-    }
-
     if (errors.global.size() > 0) {
       jsonResult << [errors: [global: errors.global]]
     }
-
     if (errors.tipps.size() > 0) {
       jsonResult << [errors: [tipps: errors.tipps]]
     }
-
-    log.info("xRefPackage job result: $jsonResult")
-
     job?.endTime = new Date()
 
     JobResult.withNewSession {
       def result_object = JobResult.findByUuid(job?.uuid)
-
       if (!result_object) {
         def job_map = [
             uuid        : (job?.uuid),
@@ -345,14 +339,12 @@ class CrossRefPkgRun {
     jsonResult.code = error.code
     jsonResult.message = error.message
     errors.global.add(error)
-
     if (errors.tipps.size() > 0) {
       jsonResult.errors = errors
     }
     else {
       jsonResult.errors = [global: errors.global]
     }
-
     job?.message(error.message)
   }
 
@@ -360,24 +352,20 @@ class CrossRefPkgRun {
     log.error(error.message)
     jsonResult.message = error.message
     errors.tipps.add(error)
-
     if (errors.global.size() > 0) {
       jsonResult.errors = errors
     }
     else {
       jsonResult.errors = [tipps: errors.tipps]
     }
-
     job?.message(error.message)
   }
 
   private def handleUpdateToken() {
     boolean curated_pkg = false
     def curatory_group_ids = null
-
     if (pkg.curatoryGroups && pkg.curatoryGroups?.size() > 0) {
       curatory_group_ids = user.curatoryGroups?.id?.intersect(pkg.curatoryGroups?.id)
-
       if (curatory_group_ids?.size() == 1) {
         job?.groupId = curatory_group_ids[0]
       }
@@ -385,7 +373,6 @@ class CrossRefPkgRun {
         log.debug("Got more than one cg candidate!")
         job?.groupId = curatory_group_ids[0]
       }
-
       curated_pkg = true
     }
 
@@ -411,7 +398,6 @@ class CrossRefPkgRun {
 
   private void handleTitle(def tippJson) {
     def title_validation = TitleInstance.validateDTO(tippJson.title)
-
     if (title_validation && !title_validation.valid) {
       // remove invalid identifiers from JSON and revalidate
       for (iDerror in title_validation.errors.ids) {
@@ -419,16 +405,13 @@ class CrossRefPkgRun {
         tippJson.identifiers?.remove(iDerror.baddata)
         log.debug("removing invalid identifier $iDerror.baddata from $tippJson.title")
       }
-
       def preval_error = [
           message: messageService.resolveCode('crossRef.package.tipps.error.title.preValidation', [tippJson.title.name, title_validation.errors], locale),
           baddata: tippJson.title,
           errors : title_validation.errors
       ]
       title_validation = TitleInstance.validateDTO(tippJson.title)
-
       tippError(preval_error)
-
       if (title_validation && !title_validation.valid) {
         log.error("invalid title data $tippJson.title: $preval_error")
         invalidTipps << tippJson
@@ -498,7 +481,6 @@ class CrossRefPkgRun {
         if (title_changed) {
           ti.merge(flush: true)
         }
-
         titleLookupService.addPublisherHistory(ti, titleObj.publisher_history)
         tippJson.title.internalId = ti.id
       }
@@ -509,7 +491,6 @@ class CrossRefPkgRun {
                      'errors' : messageService.processValidationErrors(ti.errors)])
           ti.discard()
         }
-
         invalidTipps << tippJson
       }
     }
@@ -517,7 +498,6 @@ class CrossRefPkgRun {
       log.error("Handling MultipleComponentsMatchedException")
       invalidTipps << tippJson
       tippError(['message': messageService.resolveCode('crossRef.title.error.multipleMatches', [tippJson?.title?.name, mcme.matched_ids], locale)])
-
       return
     }
     catch (ValidationException ve) {
@@ -527,7 +507,6 @@ class CrossRefPkgRun {
                  'baddata': tippJson,
                  'errors' : messageService.processValidationErrors(ve.errors)
       ])
-
       return
     }
 
@@ -541,11 +520,9 @@ class CrossRefPkgRun {
   private void handlePlt(def tippJson) {
     def tippPlt = tippJson.hostPlatform ?: tippJson.platform
     def pl = pltCache[tippPlt.name]
-
     if (!pl) {
       log.debug("validating platform $tippPlt")
       def valid_plt = Platform.validateDTO(tippPlt)
-
       if (valid_plt && !valid_plt.valid) {
         log.error("platform ${tippPlt} invalid!")
         invalidTipps << tippJson
@@ -556,18 +533,15 @@ class CrossRefPkgRun {
             baddata: tippPlt,
             errors : valid_plt.errors
         ]
-
         tippError(plt_error)
       }
       else {
         try {
           pl = Platform.upsertDTO(tippPlt, user)
-
           if (pl) {
             pltCache[tippPlt.name] = pl
 //            pl.save()
             pl.merge(flush: true)
-
             componentUpdateService.ensureCoreData(pl, tippPlt, fullsync, user)
           }
           else {
@@ -585,7 +559,6 @@ class CrossRefPkgRun {
               baddata: tippPlt,
               errors : messageService.processValidationErrors(ve.errors, locale)
           ])
-
           return
         }
       }
@@ -596,7 +569,6 @@ class CrossRefPkgRun {
   private void handleTIPP(def tippJson) {
     def validation_result = TitleInstancePackagePlatform.validateDTO(tippJson)
     log.debug("validate TIPP ${tippJson.name ?: tippJson.title.name}")
-
     if (validation_result && !validation_result.valid) {
       invalidTipps << tippJson
       log.debug("TIPP Validation failed on ${tippJson.name ?: tippJson.title.name}")
@@ -605,13 +577,11 @@ class CrossRefPkgRun {
           baddata: tippJson,
           errors : validation_result.errors
       ]
-
       tippError(tipp_error)
     }
     else {
       log.debug("upsert TIPP ${tippJson.name ?: tippJson.title.name}")
       def upserted_tipp = null
-
       try {
         upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tippJson, user)
         log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp?.url}")
@@ -638,13 +608,11 @@ class CrossRefPkgRun {
         tippError(tipp_error)
         upserted_tipp?.discard()
       }
-
       if (upserted_tipp) {
         if (existing_tipp_ids.size() > 0 && existing_tipp_ids.contains(upserted_tipp.id)) {
           log.debug("Existing TIPP matched!")
           existing_tipp_ids.removeElement(upserted_tipp.id)
         }
-
         if (upserted_tipp.status != status_deleted && tippJson.status == "Deleted") {
           upserted_tipp.deleteSoft()
           removedNum++;
@@ -670,7 +638,6 @@ class CrossRefPkgRun {
         }
 //        upserted_tipp.save()
         upserted_tipp.merge(flush: true)
-
         if (upserted_tipp.isCurrent() && upserted_tipp.hostPlatform?.status != status_current) {
           def additionalInfo = [:]
           additionalInfo.vars = [upserted_tipp.hostPlatform.name, upserted_tipp.hostPlatform.status?.value]
