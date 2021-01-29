@@ -219,7 +219,7 @@ class CrossRefPkgRun {
               }
               log.info("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
               to_retire.save(failOnError: true)
-              if ((++removedNum) %50 ==0){
+              if ((++removedNum) % 50 == 0) {
                 log.debug("flush session");
                 // Get the current session.
                 def session = sessionFactory.currentSession
@@ -270,27 +270,29 @@ class CrossRefPkgRun {
       log.error("exception caught: ", e)
       String msg = messageService.resolveCode('crossRef.package.error.unknown', [e], locale)
       globalError([message: msg, code: 500])
+      job?.endTime = new Date()
+      cancelled = true
     }
     if (!cancelled) {
       job?.setProgress(100)
     }
     JobResult.withNewSession {
-      def result_object = JobResult.findByUuid(job.uuid)
+      def result_object = JobResult.findByUuid(job?.uuid)
 
       if (!result_object) {
         def job_map = [
-            uuid: (job?.uuid),
-            description: (job?.description),
+            uuid        : (job?.uuid),
+            description : (job?.description),
             resultObject: (jsonResult as JSON).toString(),
-            type: (job?.type),
-            statusText: (jsonResult.result),
-            ownerId: (job?.ownerId),
-            groupId: (job?.groupId),
-            startTime: (job?.startTime),
-            endTime: (job?.endTime),
+            type        : (job?.type),
+            statusText  : (jsonResult.result),
+            ownerId     : (job?.ownerId),
+            groupId     : (job?.groupId),
+            startTime   : (job?.startTime),
+            endTime     : (job?.endTime),
             linkedItemId: (job?.linkedItem?.id)
         ]
-        result_object = new JobResult(job_map).save(flush: true, failOnError: true)
+        new JobResult(job_map).save(flush: true, failOnError: true)
       }
     }
     log.info("xRefPackage job result: $jsonResult")
@@ -557,7 +559,7 @@ class CrossRefPkgRun {
       try {
         upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tippJson, user)
         log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp?.url}")
-        upserted_tipp.merge(flush:true)
+        upserted_tipp.merge(flush: true)
         componentUpdateService.ensureCoreData(upserted_tipp, tippJson, fullsync, user)
       }
       catch (grails.validation.ValidationException ve) {
