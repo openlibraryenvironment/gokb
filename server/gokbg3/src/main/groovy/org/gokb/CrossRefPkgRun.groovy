@@ -155,29 +155,32 @@ class CrossRefPkgRun {
       log.debug("Matched package has ${pkg.tipps.size()} TIPPs")
       total = rjson.tipps.size() + (addOnly ? 0 : existing_tipp_ids.size())
 
-      for (int idx = 0; idx < rjson.tipps.size(); idx++) {
-        def json_tipp = rjson.tipps[idx]
+      int idx = 0
+      for (def json_tipp : rjson.tipps) {
+        idx++
         log.info("Crossreferencing #$idx title ${json_tipp.name ?: json_tipp.title.name}")
-        // Upsert TitleInstance
-        handleTitle(json_tipp)
+
+        if ((json_tipp.package == null) && (pkg.id)) {
+          json_tipp.package = [internalId: pkg.id]
+        }
+        else {
+          log.error("No package")
+          tippError(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale)])
+          invalidTipps << json_tipp
+        }
 
         if (!invalidTipps.contains(json_tipp)) {
-          // Upsert PlatformInstance
+          // validate and upsert TitleInstance
+          handleTitle(json_tipp)
+        }
+
+        if (!invalidTipps.contains(json_tipp)) {
+          // validate and upsert PlatformInstance
           handlePlt(json_tipp)
         }
 
         if (!invalidTipps.contains(json_tipp)) {
-          if ((json_tipp.package == null) && (pkg.id)) {
-            json_tipp.package = [internalId: pkg.id]
-          }
-          else {
-            log.error("No package")
-            tippError(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale)])
-            invalidTipps << json_tipp
-          }
-        }
-
-        if (!invalidTipps.contains(json_tipp)) {
+          // validate and upsert TIPP
           handleTIPP(json_tipp)
         }
 
@@ -224,7 +227,7 @@ class CrossRefPkgRun {
         }
 
         if (!addOnly && existing_tipp_ids.size() > 0) {
-          existing_tipp_ids.eachWithIndex { ttd, idx ->
+          existing_tipp_ids.eachWithIndex { ttd, ix ->
             def to_retire = TitleInstancePackagePlatform.get(ttd)
 
             if (to_retire?.isCurrent()) {
@@ -235,10 +238,11 @@ class CrossRefPkgRun {
                 to_retire.retire()
               }
 
-              log.info("${fullsync ? 'delete' : 'retire'} TIPP [$idx]")
+              log.info("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
+
               to_retire.save(failOnError: true)
 
-              if ((++removedNum) %50 ==0){
+              if ((++removedNum) % 50 == 0) {
                 log.debug("flush session");
                 // Get the current session.
                 def session = sessionFactory.currentSession
@@ -293,27 +297,29 @@ class CrossRefPkgRun {
       log.error("exception caught: ", e)
       String msg = messageService.resolveCode('crossRef.package.error.unknown', [e], locale)
       globalError([message: msg, code: 500])
+      job?.endTime = new Date()
+      cancelled = true
     }
     if (!cancelled) {
       job?.setProgress(100)
     }
     JobResult.withNewSession {
-      def result_object = JobResult.findByUuid(job.uuid)
+      def result_object = JobResult.findByUuid(job?.uuid)
 
       if (!result_object) {
         def job_map = [
-            uuid: (job?.uuid),
-            description: (job?.description),
+            uuid        : (job?.uuid),
+            description : (job?.description),
             resultObject: (jsonResult as JSON).toString(),
-            type: (job?.type),
-            statusText: (jsonResult.result),
-            ownerId: (job?.ownerId),
-            groupId: (job?.groupId),
-            startTime: (job?.startTime),
-            endTime: (job?.endTime),
+            type        : (job?.type),
+            statusText  : (jsonResult.result),
+            ownerId     : (job?.ownerId),
+            groupId     : (job?.groupId),
+            startTime   : (job?.startTime),
+            endTime     : (job?.endTime),
             linkedItemId: (job?.linkedItem?.id)
         ]
-        result_object = new JobResult(job_map).save(flush: true, failOnError: true)
+        new JobResult(job_map).save(flush: true, failOnError: true)
       }
     }
     log.info("xRefPackage job result: $jsonResult")
@@ -606,7 +612,7 @@ class CrossRefPkgRun {
       try {
         upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tippJson, user)
         log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp?.url}")
-        upserted_tipp.merge(flush:true)
+        upserted_tipp.merge(flush: true)
         componentUpdateService.ensureCoreData(upserted_tipp, tippJson, fullsync, user)
       }
       catch (grails.validation.ValidationException ve) {
