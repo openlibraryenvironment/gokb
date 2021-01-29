@@ -79,6 +79,7 @@ class CrossRefPkgRun {
     job = aJob ?: job
     boolean cancelled = false
     int total = 0
+
     try {
       status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
       status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -99,6 +100,7 @@ class CrossRefPkgRun {
                      message: messageService.resolveCode('crossRef.package.error.apiRole', [], locale)]
         )
         job?.endTime = new Date()
+
         return jsonResult
       }
       // validate and upsert header pkg
@@ -107,27 +109,33 @@ class CrossRefPkgRun {
                      message: messageService.resolveCode('crossRef.package.error', [], locale)]
         )
         job?.endTime = new Date()
+
         return jsonResult
       }
       // Package Validation
       pkg_validation = packageService.validateDTO(rjson.packageHeader, locale)
+
       if (!pkg_validation.valid) {
         globalError([code   : 403,
                      message: messageService.resolveCode('crossRef.package.error.validation.global', null, locale),
                      errors : pkg_validation.errors]
         )
         job?.endTime = new Date()
+
         return jsonResult
       }
       // upsert Package
       def proxy = packageService.upsertDTO(rjson.packageHeader, user)
+
       if (!proxy) {
         globalError([code   : 400,
                      message: messageService.resolveCode('crossRef.package.error', null, locale),
         ])
         job?.endTime = new Date()
+
         return jsonResult
       }
+
       pkg = Package.get(proxy.id)
       jsonResult.pkgId = pkg.id
       job?.linkedItem = [name: pkg.name,
@@ -137,6 +145,7 @@ class CrossRefPkgRun {
       job?.message("found Package ${pkg.name} (uuid: ${pkg.uuid})")
 
       handleUpdateToken()
+
       existing_tipp_ids = TitleInstance.executeQuery(
           "select tipp.id from TitleInstancePackagePlatform tipp, Combo combo where " +
               "tipp.status in :status and " +
@@ -150,6 +159,7 @@ class CrossRefPkgRun {
       for (def json_tipp : rjson.tipps) {
         idx++
         log.info("Crossreferencing #$idx title ${json_tipp.name ?: json_tipp.title.name}")
+
         if ((json_tipp.package == null) && (pkg.id)) {
           json_tipp.package = [internalId: pkg.id]
         }
@@ -158,18 +168,22 @@ class CrossRefPkgRun {
           tippError(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale)])
           invalidTipps << json_tipp
         }
+
         if (!invalidTipps.contains(json_tipp)) {
           // validate and upsert TitleInstance
           handleTitle(json_tipp)
         }
+
         if (!invalidTipps.contains(json_tipp)) {
           // validate and upsert PlatformInstance
           handlePlt(json_tipp)
         }
+
         if (!invalidTipps.contains(json_tipp)) {
           // validate and upsert TIPP
           handleTIPP(json_tipp)
         }
+
         if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
           log.debug("cancelling Job #${job?.uuid}")
           cancelled = true
@@ -177,8 +191,10 @@ class CrossRefPkgRun {
           globalError([message: msg, code: 500])
           break
         }
+
         job?.setProgress(idx, total)
-        if (idx % 50 == 0) {
+
+        if (idx % 10 == 0) {
           log.info("Clean up");
           // Get the current session.
           def session = sessionFactory.currentSession
@@ -190,6 +206,7 @@ class CrossRefPkgRun {
 
       if (!cancelled) {
         pkg = Package.get(pkg.id)
+
         if (invalidTipps.size() > 0) {
           String msg = messageService.resolveCode('crossRef.package.tipps.ignored', [invalidTipps.size()], locale)
           log.warn(msg)
@@ -198,6 +215,7 @@ class CrossRefPkgRun {
           errors.global.add([message: msg, baddata: rjson.packageHeader])
           job?.message(msg)
         }
+
         if (rjson.tipps?.size() > 0 && rjson.tipps.size() > invalidTipps.size()) {
           if (pkg.status == status_current && pkg?.listStatus != status_ip) {
             pkg.listStatus = status_ip
@@ -207,9 +225,11 @@ class CrossRefPkgRun {
         else {
           log.debug("imported Package $pkg.name contains no valid TIPPs")
         }
+
         if (!addOnly && existing_tipp_ids.size() > 0) {
           existing_tipp_ids.eachWithIndex { ttd, ix ->
             def to_retire = TitleInstancePackagePlatform.get(ttd)
+
             if (to_retire?.isCurrent()) {
               if (fullsync) {
                 to_retire.deleteSoft()
@@ -217,8 +237,11 @@ class CrossRefPkgRun {
               else {
                 to_retire.retire()
               }
+
               log.info("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
+
               to_retire.save(failOnError: true)
+
               if ((++removedNum) % 50 == 0) {
                 log.debug("flush session");
                 // Get the current session.
@@ -230,6 +253,7 @@ class CrossRefPkgRun {
               job?.setProgress(removedNum + rjson.tipps.size(), total)
             }
           }
+
           if (removedNum > 0) {
             def additionalInfo = [:]
             additionalInfo.vars = [pkg.id, removedNum]
@@ -244,11 +268,13 @@ class CrossRefPkgRun {
             )
           }
         }
+
         log.debug("Removed ${removedNum} TIPPS from the matched package!")
         jsonResult.result = 'OK'
         def msg = messageService.resolveCode('crossRef.package.success', [rjson.packageHeader.name, rjson.tipps.size(), existing_tipp_ids.size(), removedNum], locale)
         jsonResult.message = msg
         job?.message(msg)
+
         if (pkg.status != status_deleted) {
           pkg = Package.get(pkg.id)
           pkg.lastUpdateComment = jsonResult.message
@@ -303,6 +329,15 @@ class CrossRefPkgRun {
       }
     }
     log.info("xRefPackage job result: $jsonResult")
+    if (errors.global.size() > 0) {
+      jsonResult << [errors: [global: errors.global]]
+    }
+
+    if (errors.tipps.size() > 0) {
+      jsonResult << [errors: [tipps: errors.tipps]]
+    }
+
+    job?.endTime = new Date()
 
     return jsonResult
   }
