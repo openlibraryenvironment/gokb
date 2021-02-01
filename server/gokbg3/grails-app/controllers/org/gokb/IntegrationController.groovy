@@ -932,7 +932,7 @@ class IntegrationController {
     if (!async) {
       result = crossReferenceService.xRefPkg(rjson,
           addOnly as boolean, fullsync as boolean, token != null,
-          request_locale, request_user) as JSON
+          request_locale, request_user)
       log.debug("xRefPkg Result:\n$result")
     }
     else {

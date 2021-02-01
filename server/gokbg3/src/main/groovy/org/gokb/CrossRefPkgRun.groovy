@@ -272,7 +272,8 @@ class CrossRefPkgRun {
           pkg.lastUpdateComment = jsonResult.message
           pkg.merge(flush: true)
         }
-        if (autoUpdate) {
+
+        if (autoUpdate && pkg.source) {
           Source src = Source.get(pkg.source.id)
           src.lastRun = new Date()
           src.merge(flush: true)
@@ -318,16 +319,6 @@ class CrossRefPkgRun {
         new JobResult(job_map).save(flush: true, failOnError: true)
       }
     }
-    log.info("xRefPackage job result: $jsonResult")
-    if (errors.global.size() > 0) {
-      jsonResult << [errors: [global: errors.global]]
-    }
-
-    if (errors.tipps.size() > 0) {
-      jsonResult << [errors: [tipps: errors.tipps]]
-    }
-
-    job?.endTime = new Date()
 
     return jsonResult
   }
