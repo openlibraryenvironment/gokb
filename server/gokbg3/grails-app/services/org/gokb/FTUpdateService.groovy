@@ -491,6 +491,11 @@ class FTUpdateService {
           result.prices.add(price)
         }
 
+        result.altname = []
+        kbc.title?.variantNames.each { vn ->
+          result.altname.add(vn.variantName)
+        }
+
         result
       }
 
