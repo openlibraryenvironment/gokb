@@ -713,6 +713,9 @@ class TitleInstance extends KBComponent {
         }
       }
     }
+    if (id_errors.size() > 0) {
+      result.errors.ids = id_errors
+    }
 
     if (IntegrationController.determineTitleClass(titleDTO) == 'org.gokb.cred.BookInstance') {
       // VolumeNumber of monographs must be numeric, as enforced thru the DataModel.
@@ -731,12 +734,11 @@ class TitleInstance extends KBComponent {
           if (titleDTO[key].size() > 255) {
             titleDTO[key] = titleDTO[key].substring(0, 251).concat(" ...")
             log.warn("value in key ’${key}’ was clipped to: ${titleDTO[key]}")
+            result.errors.volumeNumber = [[message: "volumeNumber is not numeric", baddata: titleDTO.volumeNumber]]
+            result.valid = false
           }
         }
       }
-    }
-    if (id_errors.size() > 0) {
-      result.errors.ids = id_errors
     }
     result
   }

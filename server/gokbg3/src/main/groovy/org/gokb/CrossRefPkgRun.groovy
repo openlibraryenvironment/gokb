@@ -1,33 +1,16 @@
 package org.gokb
 
 import com.k_int.ClassUtils
-import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
 import gokbg3.MessageService
 import grails.converters.JSON
 import grails.plugin.springsecurity.SpringSecurityService
 import grails.util.Holders
 import grails.validation.ValidationException
+import groovy.util.logging.Slf4j
 import org.apache.commons.lang.RandomStringUtils
-import org.gokb.cred.BookInstance
-import org.gokb.cred.Imprint
-import org.gokb.cred.JobResult
-import org.gokb.cred.KBComponent
-import org.gokb.cred.Package
-import org.gokb.cred.Platform
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.Role
-import org.gokb.cred.Source
-import org.gokb.cred.TitleInstance
-import org.gokb.cred.TitleInstancePackagePlatform
-import org.gokb.cred.UpdateToken
-import org.gokb.cred.User
+import org.gokb.cred.*
 import org.gokb.exceptions.MultipleComponentsMatchedException
-
-import groovy.util.logging.*
-import org.hibernate.SessionFactory
-
-import java.time.LocalDate
 
 @Slf4j
 class CrossRefPkgRun {
@@ -348,7 +331,15 @@ class CrossRefPkgRun {
     else {
       jsonResult.errors = [tipps: errors.tipps]
     }
-    job?.message(error.message)
+    String msg = error.message
+    if (error.errors?.size() > 0) {
+      error.errors.each { err, val ->
+        val.each { e ->
+          msg = e.message ? "${msg}\n${e.message}" : msg
+        }
+      }
+    }
+    job?.message(msg)
   }
 
   private def handleUpdateToken() {
