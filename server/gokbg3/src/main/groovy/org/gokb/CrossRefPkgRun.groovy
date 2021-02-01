@@ -38,7 +38,7 @@ class CrossRefPkgRun {
   ComponentUpdateService componentUpdateService = Holders.grailsApplication.mainContext.getBean('componentUpdateService')
   TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
   ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
-  SessionFactory sessionFactory = Holders.grailsApplication.mainContext.getBean('sessionFactory')
+  CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
 
   def rjson // request JSON
   boolean addOnly
@@ -187,7 +187,7 @@ class CrossRefPkgRun {
         if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
           log.debug("cancelling Job #${job?.uuid}")
           cancelled = true
-          def msg = "the Job was canceled"
+          def msg = "the job got cancelled"
           globalError([message: msg, code: 500])
           break
         }
@@ -196,11 +196,7 @@ class CrossRefPkgRun {
 
         if (idx % 10 == 0) {
           log.info("Clean up");
-          // Get the current session.
-          def session = sessionFactory.currentSession
-          // flush and clear the session.
-          session.flush()
-          session.clear()
+          cleanupService.cleanUpGorm()
         }
       }
 
@@ -244,11 +240,7 @@ class CrossRefPkgRun {
 
               if ((++removedNum) % 50 == 0) {
                 log.debug("flush session");
-                // Get the current session.
-                def session = sessionFactory.currentSession
-                // flush and clear the session.
-                session.flush()
-                session.clear()
+                cleanupService.cleanUpGorm()
               }
               job?.setProgress(removedNum + rjson.tipps.size(), total)
             }
@@ -287,11 +279,7 @@ class CrossRefPkgRun {
         }
       }
       log.debug("final flush");
-      // Get the current session.
-      def session = sessionFactory.currentSession
-      // flush and clear the session.
-      session.flush()
-      session.clear()
+      cleanupService.cleanUpGorm()
 
       if (!cancelled) {
         job?.setProgress(100)

@@ -121,7 +121,7 @@ class ConcurrencyManagerService {
     @Override
     public boolean cancel (boolean mayInterruptIfRunning) {
       this.task.cancel(mayInterruptIfRunning)
-      message("The job was cancelled.")
+      message("cancel Job ($uuid)")
       endTime = new Date()
     }
 

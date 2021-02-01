@@ -1,6 +1,5 @@
 package com.k_int
 
-import groovy.util.logging.Slf4j
 import org.hibernate.proxy.HibernateProxy
 import org.hibernate.proxy.LazyInitializer
 import org.hibernate.Hibernate
@@ -16,18 +15,16 @@ import java.time.LocalDate
 import java.time.ZoneId
 import org.gokb.cred.KBComponent
 
-@Slf4j
 class ClassUtils {
 
 
   public static final DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
   public static final DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']").withResolverStyle(ResolverStyle.STRICT)
 
-
   @groovy.transform.CompileStatic
   public static <T> T deproxy(Object proxied) {
 
-    T entity = (T) proxied;
+    T entity = (T)proxied;
 
     if (entity instanceof HibernateProxy) {
       Hibernate.initialize(entity);
@@ -195,12 +192,6 @@ class ClassUtils {
   public static boolean setStringIfDifferent(obj, prop, value) {
     if ((obj != null) && (prop != null) && (value) && (value.toString().length() > 0))
       if (obj[prop] != value) {
-        if (value.toString().length() > 255) {
-          String msg = value.toString() + " has been shortened to "
-          value = value.toString().substring(0, 251).concat(" ...")
-          msg += value
-          log.info(msg)
-        }
         obj[prop] = value
         return true
       }
