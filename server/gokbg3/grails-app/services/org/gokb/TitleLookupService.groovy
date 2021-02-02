@@ -486,6 +486,7 @@ class TitleLookupService {
     // The TitleInstance
     TitleInstance the_title = null
     Class ti_class = Class.forName(newTitleClassName)
+    def rr_map = [:]
     def title_created = false
 
     if (metadata.title == null) {
@@ -596,15 +597,12 @@ class TitleLookupService {
                 additionalInfo.cstring = combo_ids.sort().join('_')
                 additionalInfo.vars = [metadata.title, the_title.name]
 
-                reviewRequestService.raise(
-                    the_title,
-                    "'${metadata.title}' added as a variant of '${the_title.name}'.",
-                    "Title was matched via secondary id, but had a different name.",
-                    user,
-                    project,
-                    (additionalInfo as JSON).toString(),
-                    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Mismatch')
-                )
+                rr_map = [
+                  review: "'${metadata.title}' added as a variant of '${the_title.name}'.",
+                  cause: "Title was matched via secondary id, but had a different name.",
+                  additionalInfo: additionalInfo,
+                  type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Mismatch')
+                ]
               }
 
               if (the_title.validate()) {
@@ -648,15 +646,12 @@ class TitleLookupService {
 
               additionalInfo.cstring = combo_ids.sort().join('_')
 
-              reviewRequestService.raise(
-                  the_title,
-                  "New TI created.",
-                  "No matched components via IDs, but a title with a similar name already exists.",
-                  user,
-                  project,
-                  (additionalInfo as JSON).toString(),
-                  RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Similarity')
-              )
+              rr_map = [
+                review:  "New TI created.",
+                cause:  "No matched components via IDs, but a title with a similar name already exists.",
+                additionalInfo: additionalInfo,
+                type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Similarity')
+              ]
             }
           }
         }
@@ -676,16 +671,12 @@ class TitleLookupService {
           additionalInfo.vars = [data.suppliedNS, data.foundNS]
           additionalInfo.mismatches = ["${data.suppliedNS}": data.value]
 
-          // Fire the review request.
-          reviewRequestService.raise(
-              matches[0],
-              "Identifier type mismatch.",
-              "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
-              user,
-              project,
-              (additionalInfo as JSON).toString(),
-              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Mismatch')
-          )
+          rr_map = [
+            review:  "Identifier type mismatch.",
+            cause:  "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
+            additionalInfo: additionalInfo,
+            type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Mismatch')
+          ]
         }
 
         // If one identifier matches, but all other class ones are different, it is probably not a real match.
@@ -753,15 +744,12 @@ class TitleLookupService {
                 additionalInfo.mismatches = id_mm
                 additionalInfo.vars = [the_title.name, id_mm]
 
-                reviewRequestService.raise(
-                    the_title,
-                    "Identifier mismatch.",
-                    "Title ${the_title} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
-                    user,
-                    project,
-                    (additionalInfo as JSON).toString(),
-                    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Minor Identifier Mismatch')
-                )
+                rr_map = [
+                  review: "Identifier mismatch",
+                  cause: "Title ${the_title} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
+                  additionalInfo: additionalInfo,
+                  type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Minor Identifier Mismatch')
+                ]
               }
             }
             else {
@@ -816,15 +804,12 @@ class TitleLookupService {
                 additionalInfo.mismatches = id_mm
                 additionalInfo.vars = [matches[0].id, '(' + matches[0].name + ')']
 
-                reviewRequestService.raise(
-                    the_title,
-                    "New TI created.",
-                    "TitleInstance ${matches[0].id} ${matches[0].name ? '(' + matches[0].name + ')' : ''} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
-                    user,
-                    project,
-                    (additionalInfo as JSON).toString(),
-                    RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Major Identifier Mismatch')
-                )
+                rr_map = [
+                  review: "New TI created.",
+                  cause: "TitleInstance ${matches[0].id} ${matches[0].name ? '(' + matches[0].name + ')' : ''} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
+                  additionalInfo: additionalInfo,
+                  type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Major Identifier Mismatch')
+                ]
               }
               else {
                 // Now we can examine the text of the title.
@@ -898,15 +883,13 @@ class TitleLookupService {
 
             additionalInfo.cstring = combo_ids.sort().join('_')
 
-            reviewRequestService.raise(
-                the_title,
-                "New TI created.",
-                "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
-                user,
-                project,
-                (additionalInfo as JSON).toString(),
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Multiple Matches')
-            )
+            rr_map = [
+              review: "New TI created.",
+              cause: "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
+              additionalInfo: additionalInfo,
+              type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Multiple Matches')
+            ]
+
             break;
 
           case 1:
@@ -951,15 +934,12 @@ class TitleLookupService {
 
               additionalInfo.cstring = combo_ids.sort().join('_')
 
-              reviewRequestService.raise(
-                  the_title,
-                  "Check titles for duplicates.",
-                  "Multiple titles were matched on all identifiers.",
-                  user,
-                  project,
-                  (additionalInfo as JSON).toString(),
-                  RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Matches')
-              )
+              rr_map = [
+                review: "Check titles for duplicates.",
+                cause: "Multiple titles were matched on all identifiers.",
+                additionalInfo: additionalInfo,
+                type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Matches')
+              ]
 
             }
             break;
@@ -984,10 +964,24 @@ class TitleLookupService {
         log.debug("${the_title.ids}")
 
         if (title_created) {
-          the_title.save(flush: true)
+          the_title = the_title.save(flush: true)
         }
         else {
           the_title = the_title.merge(flush: true)
+        }
+
+        if (rr_map) {
+          log.info("New RR for title ${the_title}")
+
+          reviewRequestService.raise(
+            the_title,
+            rr_map.review,
+            rr_map.cause,
+            user,
+            project,
+            (rr_map.additionalInfo as JSON).toString(),
+            rr_map.type
+          )
         }
 
         if (results.other_types.size() > 0) {
