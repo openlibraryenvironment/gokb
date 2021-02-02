@@ -473,7 +473,7 @@ class ESSearchService{
     }
     else{
       SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
-      scrollRequest.scroll("1m")
+      scrollRequest.scroll("5m")
       response = esClient.searchScroll(scrollRequest)
       try{
         if (params.lastPage && Integer.valueOf(params.lastPage) > -1){
