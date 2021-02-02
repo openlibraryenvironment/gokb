@@ -324,7 +324,7 @@ kbart2.mappings= [
                 [field:'package_name', kbart:"package_name"],
               ]
      ],
-     
+
 ]
 
 kbart2.personCategory='SPR'

@@ -63,7 +63,7 @@
                   <li>${m}</li>
                 </g:if>
                 <g:else>
-                  <li>${m.message}</li>
+                  <li>${m?.message}</li>
                 </g:else>
               </g:each>
             </ul>

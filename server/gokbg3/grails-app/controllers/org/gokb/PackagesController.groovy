@@ -271,7 +271,7 @@ class PackagesController {
             background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'DepositDatafile')
             background_job.ownerId = user.id
             background_job.startOrQueue()
-            jobid = background_job.getId()
+            jobid = background_job.uuid
             log.debug("Background job started");
           } else {
             log.error("Missing parameters :: ${params}");

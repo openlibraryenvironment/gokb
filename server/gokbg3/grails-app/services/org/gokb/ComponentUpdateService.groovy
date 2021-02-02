@@ -15,17 +15,15 @@ import groovy.util.logging.*
 
 @Slf4j
 class ComponentUpdateService {
-  def grailsApplication
-  def restMappingService
   def componentLookupService
   def reviewRequestService
   def dateFormatService
 
+  private final Object findLock = new Object()
+
   public boolean ensureCoreData(KBComponent component, data, boolean sync = false, user) {
     return ensureSync(component, data, sync, user)
   }
-
-  private final findLock = new Object()
 
   @Synchronized("findLock")
   private boolean ensureSync(KBComponent component, data, boolean sync = false, user) {
@@ -67,7 +65,8 @@ class ComponentUpdateService {
 
           if (!KBComponent.has(component, 'publisher')) {
             canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
-          } else {
+          }
+          else {
             def norm_id = Identifier.normalizeIdentifier(ci.value)
             def ns = IdentifierNamespace.findByValueIlike(namespace_val)
             canonical_identifier = Identifier.findByNamespaceAndNormnameIlike(ns, norm_id)
@@ -81,7 +80,8 @@ class ComponentUpdateService {
               log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
               def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
               hasChanged = true
-            } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
+            }
+            else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
               reviewRequestService.raise(
@@ -93,13 +93,15 @@ class ComponentUpdateService {
                 null,
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
               )
-            } else {
+            }
+            else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")
             }
 
             // Add the value for comparison.
             ids << testKey
-          } else {
+          }
+          else {
             log.debug("Could not find or create Identifier!")
           }
         }
@@ -184,7 +186,8 @@ class ComponentUpdateService {
             def new_combo = new Combo(fromComponent: component, toComponent: group, type: combo_type_cg, status: combo_active).save(flush: true, failOnError: true)
             hasChanged = true
             groups << [id: group.id, name: group.name]
-          } else {
+          }
+          else {
             log.debug("Could not find linked group ${name}!")
           }
         }
@@ -200,7 +203,8 @@ class ComponentUpdateService {
           }
         }
       }
-    } else {
+    }
+    else {
       log.debug("Skipping CG handling ..")
     }
 
@@ -326,6 +330,7 @@ class ComponentUpdateService {
     }
     catch (Exception e) {
       e.printStackTrace()
+      result.error = e
     }
     result
   }

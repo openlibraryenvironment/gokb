@@ -43,10 +43,10 @@ class ConcurrencyManagerService {
   public class Job implements Promise, Future {
     String uuid
     private Promise task
-    int progress
-    Date startTime
-    Date endTime
     private Closure work
+    int progress
+    Date startTime = new Date()
+    Date endTime
     boolean begun = false;
     String description
     List messages = []
@@ -71,18 +71,18 @@ class ConcurrencyManagerService {
 
     /**
      * Cancel the job.
-     * @see java.util.concurrent.FutureTask#cancel()
+     * @see java.util.concurrent.FutureTask#cancel(boolean)
      */
     public synchronized boolean cancel () {
       cancel (false)
-    }
+     }
 
     /**
      * Attempt to force Cancel the job.
      * @see java.util.concurrent.FutureTask#cancel(boolean mayInterruptIfRunning)
      */
     public synchronized boolean forceCancel () {
-      task.cancel true
+      cancel(true)
     }
 
     /**
@@ -120,7 +120,9 @@ class ConcurrencyManagerService {
 
     @Override
     public boolean cancel (boolean mayInterruptIfRunning) {
-      this.task.cancel(mayInterruptIfRunning);
+      this.task.cancel(mayInterruptIfRunning)
+      message("cancel Job ($uuid)")
+      endTime = new Date()
     }
 
     @Override
@@ -143,6 +145,7 @@ class ConcurrencyManagerService {
         task = Promises.task(work as Closure)
 
         begun = true
+        startTime = new Date()
       }
 
       this
@@ -162,6 +165,7 @@ class ConcurrencyManagerService {
         task = ConcurrencyManagerService.pools.get ("${poolName}").createPromise(work as Closure)
 
         begun = true
+        startTime = new Date()
       }
 
       this
@@ -202,7 +206,7 @@ class ConcurrencyManagerService {
     new Job (["uuid" : the_id])
   }
 
-  public Map<Integer, Job> getJobs() {
+  public Map<String, Job> getJobs() {
     return map;
   }
 

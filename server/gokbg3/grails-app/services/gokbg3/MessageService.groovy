@@ -1,7 +1,7 @@
 package gokbg3
 
 import org.springframework.validation.FieldError
-import org.springframework.validation.ObjectError
+
 import java.text.MessageFormat
 
 class MessageService {
@@ -16,7 +16,7 @@ class MessageService {
       def field = 'object'
       def resolvedArgs = []
       def errorMessage = null
-      
+
       locale = locale ?: new Locale('en')
 
       if ( eo instanceof FieldError ){
@@ -33,7 +33,7 @@ class MessageService {
         if (ma && ma instanceof String) {
           String[] emptyArgs = []
           def arg = messageSource.resolveCode(ma, locale)
-          
+
           if (arg) {
             arg = arg.format(emptyArgs)
 
@@ -102,7 +102,7 @@ class MessageService {
       }
     }
     catch (Exception e) {
-      log.error("Exception resolving code!", e)
+      log.error("Exception resolving code: $code!", e)
     }
 
     return result

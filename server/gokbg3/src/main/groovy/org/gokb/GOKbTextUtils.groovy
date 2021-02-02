@@ -15,6 +15,8 @@ class GOKbTextUtils {
     "the",
     "from"
   ];
+  public static final DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
+  public static final DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd' 'HH:mm:ss.S]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']")
 
   public static int levenshteinDistance(String str1, String str2) {
     if ( ( str1 != null ) && ( str2 != null ) ) {
@@ -205,8 +207,6 @@ class GOKbTextUtils {
 
   public static LocalDateTime completeDateString(String datepart, boolean start = true) {
     def result = null
-    DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
-    DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd' 'HH:mm:ss.S]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']")
 
     if ( datepart?.trim() ) {
       try {

@@ -2227,7 +2227,7 @@ class WorkflowController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   private def triggerSourceUpdate(packages_to_update) {
-    log.debug("triggerSourceUpdate for Packages ${packages_to_update}..")
+    log.info("triggerSourceUpdate for Packages ${packages_to_update}..")
     def user = springSecurityService.currentUser
     def pars = [:]
     def denied = false
@@ -2272,7 +2272,7 @@ class WorkflowController {
         }
       }
     }
-
+    log.debug('triggerSourceUpdate() done - redirecting')
     redirect(url: request.getHeader('referer'));
   }
 }

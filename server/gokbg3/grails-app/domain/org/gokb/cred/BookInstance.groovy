@@ -73,7 +73,7 @@ class BookInstance extends TitleInstance {
   public String getNiceName() {
     return "Book";
   }
-  
+
   public static final String restPath = "/titles"
 
   /**

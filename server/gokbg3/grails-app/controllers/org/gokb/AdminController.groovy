@@ -309,7 +309,7 @@ class AdminController {
     log.debug("Jobs");
     def result = [:]
     log.debug("Sort");
-    result.jobs = concurrencyManagerService.jobs.sort { a, b -> b.key <=> a.key }
+    result.jobs = concurrencyManagerService.jobs.sort { a, b -> b.value.startTime <=> a.value.startTime }
     log.debug("concurrency manager service");
     result.cms = concurrencyManagerService
 
@@ -375,7 +375,7 @@ class AdminController {
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Housekeeping')
     j.startTime = new Date()
 
-    log.debug "Triggering housekeeping task. Started job #${j.id}"
+    log.debug "Triggering housekeeping task. Started job #${j.uuid}"
 
     render(view: "logViewer", model: logViewer())
   }
@@ -385,7 +385,7 @@ class AdminController {
       cleanupService.expungeDeletedComponents(j)
     }.startOrQueue()
 
-    log.debug "Triggering cleanup task. Started job #${j.id}"
+    log.debug "Triggering cleanup task. Started job #${j.uuid}"
 
     j.description = "Cleanup Deleted Components"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'CleanupDeletedComponents')
@@ -399,7 +399,7 @@ class AdminController {
       cleanupService.expungeRejectedComponents(j)
     }.startOrQueue()
 
-    log.debug "Triggering cleanup task. Started job #${j.id}"
+    log.debug "Triggering cleanup task. Started job #${j.uuid}"
 
     j.description = "Cleanup Rejected Components"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'CleanupRejectedComponents')
@@ -413,7 +413,7 @@ class AdminController {
       cleanupService.deleteOrphanedTipps(j)
     }.startOrQueue()
 
-    log.debug("Triggering cleanup task. Started job #${j.id}")
+    log.debug("Triggering cleanup task. Started job #${j.uuid}")
 
     j.description = "TIPP Cleanup"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'TIPPCleanup')
@@ -427,7 +427,7 @@ class AdminController {
       cleanupService.rejectWrongTitles(j)
     }.startOrQueue()
 
-    log.debug("Reject wrong titles. Started job #${j.id}")
+    log.debug("Reject wrong titles. Started job #${j.uuid}")
 
     j.description = "Set status of TitleInstances without package+history to 'Deleted'"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'DeleteTIWithoutHistory')
@@ -441,7 +441,7 @@ class AdminController {
       cleanupService.rejectNoIdTitles(j)
     }.startOrQueue()
 
-    log.debug("Reject wrong titles. Started job #${j.id}")
+    log.debug("Reject wrong titles. Started job #${j.uuid}")
 
     j.description = "Set status of TitleInstances without identifiers+tipps to 'Rejected'"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'RejectTIWithoutIdentifier')
@@ -455,7 +455,7 @@ class AdminController {
       cleanupService.deleteNoUrlPlatforms(j)
     }.startOrQueue()
 
-    log.debug("Triggering cleanup task. Started job #${j.id}")
+    log.debug("Triggering cleanup task. Started job #${j.uuid}")
 
     j.description = "Platform Cleanup"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'PlatformCleanup')
@@ -492,7 +492,7 @@ class AdminController {
       componentStatisticService.updateCompStats(12, 0, true)
     }.startOrQueue()
 
-    log.debug "Triggering statistics rewrite, job #${j.id}"
+    log.debug "Triggering statistics rewrite, job #${j.uuid}"
     j.description = "Recalculate Statistics"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'RecalculateStatistics')
     j.startTime = new Date()

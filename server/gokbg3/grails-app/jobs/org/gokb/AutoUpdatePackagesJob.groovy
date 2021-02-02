@@ -12,6 +12,7 @@ class AutoUpdatePackagesJob {
   static triggers = {
     // Cron timer.
     cron name: 'AutoUpdatePackageTrigger', cronExpression: "0 0 6 * * ? *" // daily at 6:00 am
+// for testing: every 5 minutes   cron name: 'AutoUpdatePackageTrigger', cronExpression: "0 1/5 * * * ? *" // daily at 6:00 am
   }
 
   def execute() {
