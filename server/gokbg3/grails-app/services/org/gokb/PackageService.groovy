@@ -499,7 +499,7 @@ class PackageService {
           int total = TitleInstancePackagePlatform.executeQuery("select count(*) from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])[0]
           int currentOffset = 0
 
-          while (currentOffset < total - 50) {
+          while (currentOffset < total) {
             def tipps = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])
 
             tipps.each { tipp ->
@@ -547,7 +547,7 @@ class PackageService {
           int total = TitleInstancePackagePlatform.executeQuery("select count(*) from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])[0]
           int currentOffset = 0
 
-          while (currentOffset < total - 50) {
+          while (currentOffset < total) {
             def tipps = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg], [max: 50, offset: currentOffset])
 
             tipps.each { tipp ->
