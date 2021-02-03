@@ -1,6 +1,6 @@
 package org.gokb.cred
 
-import org.gokb.IntegrationController
+import org.grails.web.json.JSONObject
 
 import java.time.LocalDateTime
 import javax.persistence.Transient
@@ -23,14 +23,14 @@ class TitleInstance extends KBComponent {
   String coverImage
 
   private static refdataDefaults = [
-    "medium"  : "Journal",
-    "pureOA"  : "No",
-    "OAStatus": "Unknown"
+          "medium"  : "Journal",
+          "pureOA"  : "No",
+          "OAStatus": "Unknown"
   ]
 
   static touchOnUpdate = [
-    "tipps",
-    "tipls"
+          "tipps",
+          "tipls"
   ]
 
   static mapping = {
@@ -47,29 +47,29 @@ class TitleInstance extends KBComponent {
   public static final String restPath = "/titles"
 
   static jsonMapping = [
-    'ignore'       : [
-      'pureOA',
-      'continuingSeries',
-      'reasonRetired',
-      'work',
-      'coverImage',
-      'issuer',
-      'translatedFrom',
-      'absorbedBy',
-      'mergedWith',
-      'renamedTo',
-      'splitFrom'
-    ],
-    'es'           : [
-      'publisherUuid': "publisher.uuid",
-      'publisherName': "publisher.name",
-      'publisher'    : "publisher.id"
-    ],
-    'defaultEmbeds': [
-      'ids',
-      'variantNames',
-      'publisher'
-    ]
+          'ignore'       : [
+                  'pureOA',
+                  'continuingSeries',
+                  'reasonRetired',
+                  'work',
+                  'coverImage',
+                  'issuer',
+                  'translatedFrom',
+                  'absorbedBy',
+                  'mergedWith',
+                  'renamedTo',
+                  'splitFrom'
+          ],
+          'es'           : [
+                  'publisherUuid': "publisher.uuid",
+                  'publisherName': "publisher.name",
+                  'publisher'    : "publisher.id"
+          ],
+          'defaultEmbeds': [
+                  'ids',
+                  'variantNames',
+                  'publisher'
+          ]
   ]
 
   // This map is used to convey information about the title in general processing. The initial usecase is so that we can attach
@@ -102,11 +102,11 @@ class TitleInstance extends KBComponent {
 
       if (!existing) {
         new KBComponentVariantName([
-          "variantType": (title_type),
-          "owner"      : this,
-          "locale"     : (locale_rd),
-          "status"     : RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
-          "variantName": (title)
+                "variantType": (title_type),
+                "owner"      : this,
+                "locale"     : (locale_rd),
+                "status"     : RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
+                "variantName": (title)
         ])
         return true
       }
@@ -123,20 +123,20 @@ class TitleInstance extends KBComponent {
   }
 
   static hasByCombo = [
-    issuer        : Org,
-    translatedFrom: TitleInstance,
-    absorbedBy    : TitleInstance,
-    mergedWith    : TitleInstance,
-    renamedTo     : TitleInstance,
-    splitFrom     : TitleInstance,
-    imprint       : Imprint
+          issuer        : Org,
+          translatedFrom: TitleInstance,
+          absorbedBy    : TitleInstance,
+          mergedWith    : TitleInstance,
+          renamedTo     : TitleInstance,
+          splitFrom     : TitleInstance,
+          imprint       : Imprint
   ]
 
   static manyByCombo = [
-    tipps    : TitleInstancePackagePlatform,
-    publisher: Org,
-    tipls    : TitleInstancePlatform
-    //        ids     :  Identifier
+          tipps    : TitleInstancePackagePlatform,
+          publisher: Org,
+          tipls    : TitleInstancePlatform
+          //        ids     :  Identifier
   ]
 
   static constraints = {
@@ -183,8 +183,8 @@ class TitleInstance extends KBComponent {
 
     publisher_combos.each { Combo pc ->
       if ((pc.endDate == null) ||
-        (highest_end_date == null) ||
-        (pc.endDate > highest_end_date)) {
+              (highest_end_date == null) ||
+              (pc.endDate > highest_end_date)) {
 
         if (isComboReverse('publisher')) {
           if (pc.fromComponent.status?.value == 'Deleted') {
@@ -238,9 +238,9 @@ class TitleInstance extends KBComponent {
         // Now create a new Combo
         RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue('publisher'))
         Combo combo = new Combo(
-          type: (type),
-          status: combo_active,
-          startDate: (null_start ? null : new Date())
+                type: (type),
+                status: combo_active,
+                startDate: (null_start ? null : new Date())
         )
 
         // Depending on where the combo is defined we need to add a combo.
@@ -296,11 +296,11 @@ class TitleInstance extends KBComponent {
 
   @Transient
   static def oaiConfig = [
-    id             : 'titles',
-    textDescription: 'Title repository for GOKb',
-    query          : " from TitleInstance as o ",
-    statusFilter   : ['Expected'],
-    pageSize       : 20
+          id             : 'titles',
+          textDescription: 'Title repository for GOKb',
+          query          : " from TitleInstance as o ",
+          statusFilter   : ['Expected'],
+          pageSize       : 20
   ]
 
   /**
@@ -484,30 +484,30 @@ class TitleInstance extends KBComponent {
                 if (cov_statements?.size() > 0) {
                   cov_statements.each { tcs ->
                     'coverage'(
-                      startDate: (tcs.startDate ? "${tcs.startDate.toInstant().toString()}" : null),
-                      startVolume: tcs.startVolume,
-                      startIssue: tcs.startIssue,
-                      endDate: (tcs.endDate ? "${tcs.endDate.toInstant().toString()}" : null),
-                      endVolume: tcs.endVolume,
-                      endIssue: tcs.endIssue,
-                      coverageDepth: tcs.coverageDepth?.value ?: tipp.coverageDepth?.value,
-                      coverageNote: tcs.coverageNote,
-                      embargo: tcs.embargo
+                            startDate: (tcs.startDate ? "${tcs.startDate.toInstant().toString()}" : null),
+                            startVolume: tcs.startVolume,
+                            startIssue: tcs.startIssue,
+                            endDate: (tcs.endDate ? "${tcs.endDate.toInstant().toString()}" : null),
+                            endVolume: tcs.endVolume,
+                            endIssue: tcs.endIssue,
+                            coverageDepth: tcs.coverageDepth?.value ?: tipp.coverageDepth?.value,
+                            coverageNote: tcs.coverageNote,
+                            embargo: tcs.embargo
                     )
                   }
                 }
                 else {
 
                   builder.'coverage'(
-                    startDate: (tipp.startDate ? "${tipp.startDate.toInstant().toString()}" : null),
-                    startVolume: tipp.startVolume,
-                    startIssue: tipp.startIssue,
-                    endDate: (tipp.endDate ? "${tipp.endDate.toInstant().toString()}" : null),
-                    endVolume: tipp.endVolume,
-                    endIssue: tipp.endIssue,
-                    coverageDepth: tipp.coverageDepth?.value,
-                    coverageNote: tipp.coverageNote,
-                    embargo: tipp.embargo)
+                          startDate: (tipp.startDate ? "${tipp.startDate.toInstant().toString()}" : null),
+                          startVolume: tipp.startVolume,
+                          startIssue: tipp.startIssue,
+                          endDate: (tipp.endDate ? "${tipp.endDate.toInstant().toString()}" : null),
+                          endVolume: tipp.endVolume,
+                          endIssue: tipp.endIssue,
+                          coverageDepth: tipp.coverageDepth?.value,
+                          coverageNote: tipp.coverageNote,
+                          embargo: tipp.embargo)
                 }
                 if (tipp.url != null) {
                   'url'(tipp.url)
@@ -627,117 +627,110 @@ class TitleInstance extends KBComponent {
    *   type:'Serial' or 'Monograph'
    *}*/
   @Transient
-  public static def validateDTO(titleDTO) {
-    def result = ['valid': true, 'errors': [:]]
+  public static def validateDTO(JSONObject titleDTO) {
+    def result = ['valid': true]
+    def valErrors = []
 
     if (titleDTO?.name?.trim() == false) {
       result.valid = false
-      result.errors.name = [[message: "Missing title name!", baddata: titleDTO.name]]
-      return result
+      valErrors.add([name: [message: "Missing title name!", baddata: titleDTO.name]])
     }
+    else {
+      LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
+      LocalDateTime endDate = GOKbTextUtils.completeDateString(titleDTO.publishedTo, false)
 
-    def ids_list = titleDTO.identifiers ?: titleDTO.ids
-
-    LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
-    LocalDateTime endDate = GOKbTextUtils.completeDateString(titleDTO.publishedTo, false)
-
-    if (titleDTO.publishedFrom && !startDate) {
-      result.valid = false
-      result.errors.publishedFrom = [[message: "Unable to parse publishing start date ${titleDTO.publishedFrom}!", baddata: titleDTO.publishedFrom]]
-    }
-
-    if (titleDTO.publishedTo && !endDate) {
-      result.valid = false
-      result.errors.publishedTo = [[message: "Unable to parse publishing end date ${titleDTO.publishedTo}!", baddata: titleDTO.publishedTo]]
-    }
-
-    if (startDate && endDate && (endDate < startDate)) {
-      result.valid = false
-      result.errors.publishedTo = [[message: "Publishing end date must not be prior to its start date!", baddata: titleDTO.publishedTo]]
-    }
-
-    def id_errors = []
-
-    ids_list?.each { idobj ->
-      def id_def = [:]
-      def ns_obj = null
-
-      if (idobj instanceof Map) {
-        def id_ns = idobj.type ?: (idobj.namespace ?: null)
-
-        id_def.value = idobj.value
-
-        if (id_ns instanceof String) {
-          log.debug("Default namespace handling for ${id_ns}..")
-          ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
-        }
-        else if (id_ns) {
-          log.debug("Handling namespace def ${id_ns}")
-          ns_obj = IdentifierNamespace.get(id_ns)
-        }
-
-        if (!ns_obj) {
-          id_errors.add([message: "Unable to lookup identifier namespace ${id_ns}!", baddata: id_ns, code: 404])
-        }
-        else {
-          id_def.type = ns_obj.value
-        }
-      }
-      else if (idobj instanceof Integer) {
-        Identifier the_id = Identifier.get(id_inc)
-
-        if (!the_id) {
-          id_errors.add([message: "Unable to lookup identifier object by ID!", baddata: idobj])
-          result.valid = false
-        }
-      }
-      else {
-        log.warn("Missing information in id object ${idobj}")
-        id_errors.add([message: "Missing information for identifier object!", baddata: idobj])
+      if (titleDTO.publishedFrom && !startDate) {
         result.valid = false
+        valErrors.add([publishedFrom: [message: "Unable to parse publishing start date ${titleDTO.publishedFrom}!", baddata: titleDTO.publishedFrom]])
       }
 
-      if (ns_obj && id_def.size() > 0) {
-        if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
-          if (ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern)) {
-            log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
-            id_errors.add([message: "Validation for identifier ${id_def.type}:${id_def.value} failed!", baddata: idobj])
-            result.valid = false
+      if (titleDTO.publishedTo && !endDate) {
+        result.valid = false
+        valErrors.add([publishedTo: [message: "Unable to parse publishing end date ${titleDTO.publishedTo}!", baddata: titleDTO.publishedTo]])
+      }
+
+      if (startDate && endDate && (endDate < startDate)) {
+        result.valid = false
+        valErrors.add([publishedTo: [message: "Publishing end date must not be prior to its start date!", baddata: titleDTO.publishedTo]])
+      }
+
+      def id_errors = []
+      String idJsonKey = 'ids'
+      def ids_list = titleDTO[idJsonKey]
+      if (!ids_list) {
+        idJsonKey = 'identifiers'
+        ids_list = titleDTO[idJsonKey]
+      }
+
+      ids_list?.each { idobj ->
+        def id_def = [:]
+        def ns_obj = null
+
+        if (idobj instanceof Map) {
+          def id_ns = idobj.type ?: (idobj.namespace ?: null)
+
+          id_def.value = idobj.value
+
+          if (id_ns instanceof String) {
+            log.debug("Default namespace handling for ${id_ns}..")
+            ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
+          }
+          else if (id_ns) {
+            log.debug("Handling namespace def ${id_ns}")
+            ns_obj = IdentifierNamespace.get(id_ns)
+          }
+
+          if (!ns_obj) {
+            id_errors.add([message: "Unable to lookup identifier namespace ${id_ns}!", baddata: id_ns])
+            titleDTO[idJsonKey].remove(idobj)
           }
           else {
-            log.debug("New identifier ..")
+            id_def.type = ns_obj.value
+          }
+        }
+        else if (idobj instanceof Integer) {
+          Identifier the_id = Identifier.get(idobj)
+
+          if (!the_id) {
+            id_errors.add([message: "Unable to lookup identifier object by ID!", baddata: idobj])
+            titleDTO[idJsonKey].remove(idobj)
           }
         }
         else {
-          log.debug("Found existing identifier ..")
+          log.warn("Missing information in id object ${idobj}")
+          id_errors.add([message: "Missing information for identifier object!", baddata: idobj])
+          titleDTO[idJsonKey].remove(idobj)
         }
-      }
-    }
-    if (id_errors.size() > 0) {
-      result.errors.ids = id_errors
-    }
 
-    if (IntegrationController.determineTitleClass(titleDTO) == 'org.gokb.cred.BookInstance') {
-      // VolumeNumber of monographs must be numeric, as enforced thru the DataModel.
-      if (titleDTO.containsKey('volumeNumber')) {
-        try {
-          Integer.parseInt(titleDTO.volumeNumber)
-        } catch (NumberFormatException nfe) {
-          result.errors.volumeNumber = [[message: "volumeNumber is not numeric", baddata: titleDTO.volumeNumber]]
-          result.valid = false
-        }
-      }
-      // shortening some db fields with standard size of 255 if needed.
-      // does not invalidate the DTO!
-      ['firstAuthor', 'firstEditor'].each { key ->
-        if (titleDTO.containsKey(key)) {
-          if (titleDTO[key].size() > 255) {
-            titleDTO[key] = titleDTO[key].substring(0, 251).concat(" ...")
-            log.warn("value in key ’${key}’ was clipped to: ${titleDTO[key]}")
-            result.errors.volumeNumber = [[message: "volumeNumber is not numeric", baddata: titleDTO.volumeNumber]]
-            result.valid = false
+        if (ns_obj && id_def.size() > 0) {
+          if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
+            if (ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern)) {
+              log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
+              id_errors.add([message: "Validation for identifier ${id_def.type}:${id_def.value} failed!", baddata: idobj])
+              titleDTO[idJsonKey].remove(idobj)
+            }
+            else {
+              log.debug("New identifier ..")
+            }
+          }
+          else {
+            log.debug("Found existing identifier ..")
           }
         }
+      }
+      if (id_errors.size() > 0) {
+        valErrors.add(id_errors)
+        if (titleDTO[idJsonKey].size()==0){
+          valErrors.add([ids: [message: 'no valid Identifiers left']])
+        }
+      }
+    }
+    if (valErrors.size() > 0) {
+      if (result.errors) {
+        result.errors.add(valErrors)
+      }
+      else {
+        result.errors = valErrors
       }
     }
     result
@@ -778,13 +771,13 @@ class TitleInstance extends KBComponent {
 
     if (type) {
       result = titleLookupService.findOrCreate(titleDTO.name,
-        titleDTO.publisher,
-        titleDTO.identifiers,
-        user,
-        null,
-        type,
-        titleDTO.uuid,
-        fullsync
+              titleDTO.publisher,
+              titleDTO.identifiers,
+              user,
+              null,
+              type,
+              titleDTO.uuid,
+              fullsync
       )
       log.debug("Result of upsertDTO: ${result}");
     }
@@ -799,8 +792,8 @@ class TitleInstance extends KBComponent {
     // BKM:TITLE + then FIRSTAUTHOR if duplicates found
 
     if ((normname) &&
-      (normname.length() > 0) &&
-      (!normname.startsWith('unknown title'))) {
+            (normname.length() > 0) &&
+            (!normname.startsWith('unknown title'))) {
       // book bucket (Work) hashes are based on the normalised name.
       def h = GOKbTextUtils.generateComponentHash([normname]);
 

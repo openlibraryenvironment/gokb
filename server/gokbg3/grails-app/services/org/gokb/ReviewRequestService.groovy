@@ -8,6 +8,7 @@ class ReviewRequestService {
   def raise(KBComponent forComponent, String actionRequired, String cause = null, User rb = null, refineProject = null, additionalInfo = null, RefdataValue stdDesc = null, CuratoryGroup group = null) {
     User.withNewSession {
       def raisedBy = User.get(rb.id)
+      def compo = KBComponent.get(forComponent.id)
       // Create a request.
       ReviewRequest req = new ReviewRequest (
           status : RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
@@ -17,7 +18,7 @@ class ReviewRequestService {
           refineProject : (refineProject),
           stdDesc : (stdDesc),
           additionalInfo : (additionalInfo),
-          componentToReview : (forComponent)
+          componentToReview : (compo)
           ).save(flush:true, failOnError:true);
 
       if (req) {
@@ -31,13 +32,11 @@ class ReviewRequestService {
         }
         else if (KBComponent.has(forComponent, 'curatoryGroups')) {
           log.debug("Using Component groups for ${forComponent} -> ${forComponent.class?.name}..")
-          Package.withNewSession {
-            def comp = KBComponent.get(forComponent.id)
-            comp.curatoryGroups?.each { gr ->
+            compo.curatoryGroups?.each { gr ->
               CuratoryGroup cg = CuratoryGroup.get(gr.id)
               log.debug("Allocating Package Group ${gr} to review ${req}")
               AllocatedReviewGroup.create(cg, req, true)
-            }
+
           }
         }
         else if (forComponent.class == TitleInstancePackagePlatform && forComponent.pkg?.curatoryGroups?.size() > 0) {

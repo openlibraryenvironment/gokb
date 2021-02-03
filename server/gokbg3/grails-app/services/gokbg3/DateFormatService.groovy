@@ -9,7 +9,7 @@ import java.text.SimpleDateFormat
  * Collecting the Dateformatters which are scattered all over the application into one central entity that might be
  * updated to java.time later on.
  */
-@Transactional
+
 class DateFormatService {
   private static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd")
   private static DateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")

@@ -106,8 +106,8 @@ class DummyKbartDownloadController {
       record.access_type = accessType()
       record.zdb_id = ""// record.zdb_id = "${ThreadLocalRandom.current().nextLong(1000000000)}-${["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "x", "X"][ThreadLocalRandom.current().nextInt(12)]}"
       record.last_changed = timeline[4].format(dtf)
-      record.access_start_date = timeline[2].format(dtf)
-      record.access_end_date = timeline[3].format(dtf)
+      record.access_start_date = (timeline[2]<=timeline[3]?timeline[2]:timeline[3]).format(dtf)
+      record.access_end_date = (timeline[2]>timeline[3]?timeline[2]:timeline[3]).format(dtf)
       record.listprice_eur = price(100)
       record.listprice_gbp = price(80)
       record.listprice_usd = price(120)
@@ -146,8 +146,8 @@ class DummyKbartDownloadController {
       record.access_type = accessType()
       record.zdb_id = record.zdb_id = "${ThreadLocalRandom.current().nextLong(1000000000)}-${["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "x", "X"][ThreadLocalRandom.current().nextInt(12)]}"
       record.last_changed = timeline[4].format(dtf)
-      record.access_start_date = timeline[2].format(dtf)
-      record.access_end_date = timeline[3].format(dtf)
+      record.access_start_date = (timeline[2]<=timeline[3]?timeline[2]:timeline[3]).format(dtf)
+      record.access_end_date = (timeline[2]>timeline[3]?timeline[2]:timeline[3]).format(dtf)
       record.listprice_eur = price(50)
       record.listprice_gbp = price(35)
       record.listprice_usd = price(65)
