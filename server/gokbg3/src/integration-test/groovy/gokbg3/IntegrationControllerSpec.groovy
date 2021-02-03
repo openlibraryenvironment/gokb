@@ -21,9 +21,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-/**
- * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
- */
 @Integration
 @Rollback
 class IntegrationControllerSpec extends Specification {
@@ -41,24 +38,34 @@ class IntegrationControllerSpec extends Specification {
   TitleLookupService titleLookupService
 
   def setup() {
-    def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1")
-    def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society")
-    def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org')
+    def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush: true)
+    def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush: true)
+    def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush: true)
+    def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush: true)
+    def test_upd_pkg = Package.findByName('TestTokenPackage') ?: new Package(name: 'TestTokenPackage').save(flush: true)
+    def user = User.findByUsername('ingestAgent')
+    if (!user.apiUserStatus) {
+      UserRole.create(user, Role.findByAuthority('ROLE_API'), true)
+    }
+    def pkg_token = UpdateToken.findByValue('TestUpdateToken') ?: new UpdateToken(value: 'TestUpdateToken', pkg: test_upd_pkg, updateUser: user).save(flush: true)
   }
 
   def cleanup() {
     CuratoryGroup.findByName('TestGroup1')?.expunge()
+    CuratoryGroup.findByName('TestGroup2')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
+    Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
+    Package pkg = Package.findByName('TestTokenPackage')
+    pkg?.expunge()
+    UpdateToken.findByValue('TestUpdateToken')?.delete()
     TitleInstance.findAllByName("Acta cytologica")?.each { title ->
-      ComponentPrice.findAllByOwner(title)?.each { price ->
-        price?.delete()
-      }
       title.expunge()
     }
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
       title.expunge()
     }
+    Identifier.findByValue('zdb:2256676-4')?.expunge()
   }
 
   void "Test assertGroup"() {
@@ -88,13 +95,13 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "identifiers" : [
+      "identifiers": [
         [
-            "type" : "global",
-            "value" : "org-test-id-acs"
+          "type" : "global",
+          "value": "org-test-id-acs"
         ]
       ],
-      "name" : "TestOrgAcs"
+      "name"       : "TestOrgAcs"
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertOrg") {
       auth('admin', 'admin')
@@ -105,7 +112,7 @@ class IntegrationControllerSpec extends Specification {
     resp.json.message != null
     resp.json.message.startsWith('Added')
     expect: "Find item by name only returns one item"
-    def matching_orgs = Org.executeQuery('select o from Org as o where o.name = :n',[n:json_record.name]);
+    def matching_orgs = Org.executeQuery('select o from Org as o where o.name = :n', [n: json_record.name]);
     matching_orgs.size() == 1
     matching_orgs[0].id == resp.json.orgId
     matching_orgs[0].ids?.size() == 1
@@ -115,8 +122,8 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "platformName" : "TestPlt1",
-      "name" : "TestPlt1",
+      "platformName": "TestPlt1",
+      "name"        : "TestPlt1",
       "platformUrl" : "https://acstest.url"
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePlatform") {
@@ -216,9 +223,8 @@ class IntegrationControllerSpec extends Specification {
     title != null
     title.publishedFrom?.toString() == "1953-01-01 00:00:00.0"
     title.publishedTo?.toString() == "2001-12-31 00:00:00.0"
-    def pub = title.getCombosByPropertyName('publisher')
-    if (pub.size>0)
-      pub[0].startDate?.toString() == "1953-01-01 00:00:00.0"
+    title.getCombosByPropertyName('publisher')?.size() == 1
+    title.getCombosByPropertyName('publisher')[0].startDate?.toString() == "1953-01-01 00:00:00.0"
   }
 
   void "Test crossReferenceTitle :: Journal with history"() {
@@ -325,6 +331,12 @@ class IntegrationControllerSpec extends Specification {
         [
           "accessEnd"  : "",
           "accessStart": "",
+          "identifiers": [
+            [
+              "type" : "global",
+              "value": "testTippId"
+            ]
+          ],
           "coverage"   : [
             [
               "coverageDepth": "Fulltext",
@@ -367,7 +379,8 @@ class IntegrationControllerSpec extends Specification {
       ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
+      "/integration/crossReferencePackage") {
       auth('admin', 'admin')
       body(json_record as JSON)
     }
@@ -381,6 +394,7 @@ class IntegrationControllerSpec extends Specification {
     matching_pkgs[0].id == resp.json.pkgId
     matching_pkgs[0].tipps?.size() == 1
     matching_pkgs[0].provider?.name == "American Chemical Society"
+    matching_pkgs[0].ids?.size() == 1
   }
 
   void "Test crossReferencePackage with incomplete coverage dates"() {
@@ -409,9 +423,9 @@ class IntegrationControllerSpec extends Specification {
       ],
       "tipps"        : [
         [
-          "accessEnd"  : "",
-          "accessStart": "",
-          "coverage"   : [
+          "accessEnd"   : "",
+          "accessStart" : "",
+          "coverage"    : [
             [
               "coverageDepth": "Fulltext",
               "coverageNote" : "NL-DE;  1.1953 - 43.1995",
@@ -424,12 +438,12 @@ class IntegrationControllerSpec extends Specification {
               "startVolume"  : "1"
             ]
           ],
-          "hostPlatform" : [
-            "name" : "ACS Publications",
-            "primaryUrl" : "https://pubs.acs.org"
+          "hostPlatform": [
+            "name"      : "ACS Publications",
+            "primaryUrl": "https://pubs.acs.org"
           ],
-          "status"     : "Current",
-          "title"      : [
+          "status"      : "Current",
+          "title"       : [
             "identifiers": [
               [
                 "type" : "zdb",
@@ -447,7 +461,7 @@ class IntegrationControllerSpec extends Specification {
             "name"       : "Journal of agricultural and food chemistry",
             "type"       : "Serial"
           ],
-          "url"        : "http://pubs.acs.org/journal/jafcau"
+          "url"         : "http://pubs.acs.org/journal/jafcau"
         ]
       ]
     ]
@@ -654,77 +668,93 @@ class IntegrationControllerSpec extends Specification {
     resp.status == 200
 
     expect: "prices are set correctly"
-    def title = TitleInstance.findById(resp.json.results.titleId)
-    title.prices.size() == 2
-    title.subjectArea
-    title.series
+    sleep(400)
+    def title = TitleInstance.findById(resp.json.results[0].titleId)
+    title.prices?.size() == 2
   }
 
   void "Test package update"() {
     given:
     def json_record = [
-      "packageHeader" : [
-        "breakable" : "No",
-        "consistent" : "Yes",
-        "editStatus" : "In Progress",
-        "listStatus": "Checked",
-        "fixed" : "No",
-        "global" : "Consortium",
-        "identifiers" : [
+      "packageHeader": [
+        "breakable"      : "No",
+        "consistent"     : "Yes",
+        "editStatus"     : "In Progress",
+        "listStatus"     : "Checked",
+        "fixed"          : "No",
+        "global"         : "Consortium",
+        "identifiers"    : [
           [
             "type" : "isil",
-            "value" : "ZDB-1-ACS"
+            "value": "ZDB-1-ACS"
           ]
         ],
-        "name" : "American Chemical Society: ACS Legacy Archives: UpdateListStatus",
-        "nominalPlatform" : [
-          "name" : "ACS Publications",
-          "primaryUrl" : "https://pubs.acs.org"
+        "name"           : "American Chemical Society: ACS Legacy Archives: UpdateListStatus",
+        "nominalPlatform": [
+          "name"      : "ACS Publications",
+          "primaryUrl": "https://pubs.acs.org"
         ],
-        "nominalProvider" : "American Chemical Society"
+        "nominalProvider": "American Chemical Society"
       ],
-      "tipps" : [
+      "tipps"        : [
         [
-          "accessEnd" : "",
-          "accessStart" : "",
-          "coverage" : [
+          "accessEnd"  : "",
+          "accessStart": "",
+          "coverage"   : [
+            [
+              "coverageDepth": "Fulltext",
+              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+              "embargo"      : "",
+              "endDate"      : "1995",
+              "endIssue"     : "",
+              "endVolume"    : "43",
+              "startDate"    : "1953-01",
+              "startIssue"   : "",
+              "startVolume"  : "1"
+            ]
+          ],
+          "medium"     : "Electronic",
+          "name"       : "TIPP Name",
+          "platform"   : [
+            "name"      : "ACS Publications",
+            "primaryUrl": "https://pubs.acs.org"
+          ],
+          "prices"     : [
+            [
+              "type"     : "list",
+              "currency" : "EUR",
+              "amount"   : 123.45,
+              "startDate": "2010-01-31"
+            ],
+            [
+              "type"     : "topup",
+              "currency" : "USD",
+              "amount"   : 43.12,
+              "startDate": "2020-01-01"
+            ]
+          ],
+          "series"     : "Mystery Cloud",
+          "status"     : "Current",
+          "subjectArea": "Fringe",
+          "title"      : [
+            "identifiers": [
               [
-                "coverageDepth" : "Fulltext",
-                "coverageNote" : "NL-DE;  1.1953 - 43.1995",
-                "embargo" : "",
-                "endDate" : "1995",
-                "endIssue" : "",
-                "endVolume" : "43",
-                "startDate" : "1953-01",
-                "startIssue" : "",
-                "startVolume" : "1"
-              ]
-          ],
-          "medium" : "Electronic",
-          "platform" : [
-            "name" : "ACS Publications",
-            "primaryUrl" : "https://pubs.acs.org"
-          ],
-          "status" : "Current",
-          "title" : [
-              "identifiers" : [
-                [
-                    "type" : "zdb",
-                    "value" : "1483109-0"
-                ],
-                [
-                    "type" : "eissn",
-                    "value" : "1520-5118"
-                ],
-                [
-                    "type" : "issn",
-                    "value" : "0021-8561"
-                ]
+                "type" : "zdb",
+                "value": "1483109-0"
               ],
-              "name" : "Journal of agricultural and food chemistry",
-              "type" : "Serial"
+              [
+                "type" : "eissn",
+                "value": "1520-5118"
+              ],
+              [
+                "type" : "issn",
+                "value": "0021-8561"
+              ]
+            ],
+            "name"       : "Journal of agricultural and food chemistry",
+            "type"       : "Serial"
           ],
-          "url" : "http://pubs.acs.org/journal/jafcau"
+          "url"        : "http://pubs.acs.org/journal/jafcau"
         ]
       ]
     ]
@@ -746,6 +776,208 @@ class IntegrationControllerSpec extends Specification {
     expect: "The TIPP coverage dates are correctly set"
     def pkg = Package.get(resp1.json.pkgId)
     pkg.tipps?.size() == 1
+    pkg.tipps[0].name == "TIPP Name"
+    pkg.tipps[0].subjectArea == "Fringe"
+    pkg.tipps[0].prices.size() == 2
     pkg.listStatus?.value == "In Progress"
+  }
+
+  void "test update package via token"() {
+    given:
+    def json_record = [
+      "updateToken"  : "TestUpdateToken",
+      "packageHeader": [
+        "breakable"      : "No",
+        "consistent"     : "Yes",
+        "editStatus"     : "In Progress",
+        "listStatus"     : "Checked",
+        "fixed"          : "No",
+        "global"         : "Consortium",
+        "identifiers"    : [
+          [
+            "type" : "isil",
+            "value": "ZDB-1-ACS"
+          ]
+        ],
+        "name"           : "TestTokenPackageUpdate",
+        "nominalPlatform": [
+          "name"      : "ACS Publications",
+          "primaryUrl": "https://pubs.acs.org"
+        ],
+        "nominalProvider": "American Chemical Society"
+      ],
+      "tipps"        : [
+        [
+          "accessEnd"  : "",
+          "accessStart": "",
+          "coverage"   : [
+            [
+              "coverageDepth": "Fulltext",
+              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+              "embargo"      : "",
+              "endDate"      : "1995",
+              "endIssue"     : "",
+              "endVolume"    : "43",
+              "startDate"    : "1953-01",
+              "startIssue"   : "",
+              "startVolume"  : "1"
+            ]
+          ],
+          "medium"     : "Electronic",
+          "name"       : "TippName for Journal of agricultural and food chemistry",
+          "platform"   : [
+            "name"      : "ACS Publications",
+            "primaryUrl": "https://pubs.acs.org"
+          ],
+          "status"     : "Current",
+          "prices"     : [
+            [
+              "type"     : "list",
+              "currency" : "EUR",
+              "amount"   : 123.45,
+              "startDate": "2010-01-31"
+            ],
+            [
+              "type"     : "topup",
+              "currency" : "USD",
+              "amount"   : 43.12,
+              "startDate": "2020-01-01"
+            ]
+          ],
+          "status"     : "Current",
+          "series"     : "Mystery Cloud",
+          "subjectArea": "Fringe",
+          "title"      : [
+            "identifiers"      : [
+              [
+                "type" : "zdb",
+                "value": "1483109-0"
+              ],
+              [
+                "type" : "eissn",
+                "value": "1520-5118"
+              ],
+              [
+                "type" : "issn",
+                "value": "0021-8561"
+              ]
+            ],
+            "publisher_history": [
+              [
+                "endDate"  : "",
+                "name"     : "ACS TestOrg",
+                "startDate": "1990",
+                "status"   : ""
+              ]
+            ],
+            "name"             : "Journal of agricultural and food chemistry",
+            "type"             : "Serial"
+          ],
+          "url"        : "http://pubs.acs.org/journal/jafcau"
+        ]
+      ]
+    ]
+    when: "Caller asks for this record to be cross referenced"
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
+      body(json_record as JSON)
+    }
+
+    then: "The request is sucessfully processed"
+    resp.json?.message?.startsWith('Created')
+    expect: "The Package updater is set correctly"
+    sleep(200)
+    def pkg = Package.get(resp.json.pkgId)
+    pkg.tipps?.size() == 1
+    pkg.tipps[0].name.startsWith("TippName")
+    pkg.lastUpdatedBy == User.findByUsername('ingestAgent')
+    pkg.name == "TestTokenPackageUpdate"
+    def title = JournalInstance.findByName("Journal of agricultural and food chemistry")
+    title.publisher?.size() == 1
+    title.publisher[0].name == "ACS TestOrg"
+  }
+
+  void "Update Title remove VariantName via fullsync"() {
+    when: "Caller asks for this record to be cross referenced"
+    def json_record = [
+      "identifiers"    : [
+        [
+          "type" : "isbn",
+          "value": "978-13-12232-23-8"
+        ]
+      ],
+      "variantNames"   : [
+        "TestVariantBookName"
+      ],
+      "type"           : "Monograph",
+      "name"           : "Test Book 1",
+      "editionNumber"  : "4",
+      "volumeNumber"   : "3",
+      "firstAuthor"    : "J. Smith",
+      "dateFirstOnline": "2019-01-01 00:00:00.000"
+    ]
+
+    def json_update_record = [
+      "identifiers"    : [
+        [
+          "type" : "isbn",
+          "value": "978-13-12232-23-8"
+        ]
+      ],
+      "type"           : "Monograph",
+      "name"           : "Test Book 1",
+      "editionNumber"  : "4",
+      "volumeNumber"   : "3",
+      "firstAuthor"    : "J. Smith",
+      "dateFirstOnline": "2019-01-01 00:00:00.000"
+    ]
+
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
+      auth('admin', 'admin')
+      body(json_record as JSON)
+    }
+
+    RestResponse update_resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle?fullsync=true") {
+      auth('admin', 'admin')
+      body(json_update_record as JSON)
+    }
+
+    then: "Item is created in the database"
+    resp.json.message.startsWith('Created')
+    update_resp.json.message.startsWith('Created')
+    expect: "Find item by ID can now locate that item and the discriminator is set correctly"
+    resp.json.titleId == update_resp.json.titleId
+    def bookInstance = BookInstance.get(update_resp.json.titleId)
+    bookInstance?.variantNames?.size() == 0
+  }
+
+  void "Create Title with problematic characters"() {
+    when: "Caller asks for this record to be cross referenced"
+    def json_record = [
+      "identifiers"    : [
+        [
+          "type" : "isbn",
+          "value": "978-13-12112-23-2"
+        ]
+      ],
+      "type"           : "Monograph",
+      "name"           : "TestVariantBookName \"Quotes Test\"",
+      "editionNumber"  : "4",
+      "volumeNumber"   : "3",
+      "firstAuthor"    : "J. Smith",
+      "dateFirstOnline": "2019-01-01 00:00:00.000"
+    ]
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
+      auth('admin', 'admin')
+      body(json_record as JSON)
+    }
+
+    then: "Item is created in the database"
+    resp.json.message.startsWith('Created')
+    expect: "Find item by ID can now locate that item and the discriminator is set correctly"
+    def bookInstance = BookInstance.get(resp.json.titleId)
+    bookInstance?.name == 'TestVariantBookName "Quotes Test"'
   }
 }

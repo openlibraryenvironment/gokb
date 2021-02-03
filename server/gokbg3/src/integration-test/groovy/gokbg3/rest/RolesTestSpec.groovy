@@ -4,7 +4,6 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
-import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import org.gokb.cred.UserRole
@@ -21,9 +20,11 @@ class RolesTestSpec extends AbstractAuthSpec {
   }
 
   void "test GET /rest/roles"() {
+    given:
+      def urlPath = getUrlPath()
     when:
     String token = getAccessToken("rolesUser", "rolesUser")
-    RestResponse resp = rest.get("http://localhost:$serverPort/gokb/rest/roles") {
+    RestResponse resp = rest.get("$urlPath/rest/roles") {
       // headers
       accept('application/json')
       auth("Bearer $token")

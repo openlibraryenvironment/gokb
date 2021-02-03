@@ -11,57 +11,57 @@ class CleanupService {
   def sessionFactory
   def ESWrapperService
   def grailsApplication
-  
+
   def tidyMissnamedPublishers () {
-    
+
     try {
-    
+
       log.debug("Tidy the missnamed publishers")
       def matches = Org.executeQuery('from Org as o where o.name LIKE :pattern', [pattern: '%::{Org:%}'])
       final def toDelete = []
-      
+
       for (Org original : matches) {
-        
+
         Org.withNewTransaction {
           String name = original.name
           log.debug("Considering ${name}")
-          
+
           // Strip the formatting noise.
           String idStr = name.replaceAll(/.*\:\:\{Org\:(\d+)\}/, '$1')
           Long theId = (idStr.isLong() ? idStr.toLong() : null )
-          
+
           if (theId) {
             if (theId != original.id) {
-            
+
               Org newTarget = Org.read(theId)
-              
+
               log.debug("Move the publisher entries to ${newTarget}")
-              
+
               // Unsaved components can't have combo relations
               final RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, Org.getComboTypeValueFor(TitleInstance, "publisher"))
               final String direction = Org.isComboReverseFor(TitleInstance, 'publisher') ? 'from' : 'to'
               final String opp_dir = direction == 'to' ? 'from' : 'to'
               String hql_query = "from Combo where type=:type and ${direction}Component=:original"
-              
+
               def hql_params = ['type': type, 'original': original]
               def allCombos = Combo.executeQuery(hql_query,hql_params)
-              
+
               // In most cases we don't want to update the target of the combo, but instead reinstate the previous entry and completely remove this
               // entry.
               for (Combo c : allCombos) {
                 // Lets see if there is a combo already existing that points to the intended target that was mistakenly replace during ingest.
                 Date start = c.startDate.clearTime()
-                
+
                 // Query for the combo that was replaced.
                 hql_query = "from Combo where type=:type and ${opp_dir}Component=:linkComp and ${direction}Component=:newTarget and endDate >= :dayStart AND endDate < :nextDay"
                 hql_params = ['type': type, 'linkComp': c."${opp_dir}Component", 'newTarget': newTarget, 'dayStart': start, 'nextDay': (start + 1)]
                 def toReinstate = Combo.executeQuery(hql_query,hql_params)
-                
+
                 if (toReinstate) {
                   // Just reinstate the first.
                   toReinstate[0].endDate = null
                   toReinstate[0].save( failOnError:true )
-                  
+
                   // This combo should be removed by the expunge process later on.
       //            c.delete( flush: true, failOnError:true )
                 } else {
@@ -70,15 +70,15 @@ class CleanupService {
                   c.save(  flush: true, failOnError:true )
                 }
               }
-              
+
               // Remove the duplicate publisher.
               toDelete << original.id
-              
+
             } else {
               // Publisher was a brand new one. Just rename the publisher.
               log.debug("Correct component with incorrect title. Leave the relationship in place but rename the org.")
               String theName = name.replaceAll(/(.*)\:\:\{Org\:\d+\}/, '$1')
-              
+
               // Strange things happening when attempting to rename "original" reload from the id.
               Org rnm = Org.get(original.id)
               rnm.name = theName
@@ -89,24 +89,25 @@ class CleanupService {
           }
         }
       }
-      
+
       expungeByIds(toDelete)
-      
+
     } catch (Throwable t) {
       log.error("Error tidying duplicated (missnamed) orgs. ${t}")
     }
   }
-  
+
   private def expungeByIds ( ids, Job j = null ) {
-    
+
     def result = [report: []]
     def esclient = ESWrapperService.getClient()
     def idx = 0
-    
+
     for (component_id in ids) {
 
       if ( Thread.currentThread().isInterrupted() ) {
         log.debug("Job cancelling ..")
+        j.endTime = new Date()
         break;
       }
 
@@ -138,7 +139,7 @@ class CleanupService {
       }
     }
     j?.message("Finished deleting ${idx} components.")
-    
+
     return result
   }
 
@@ -164,7 +165,7 @@ class CleanupService {
     log.debug("Done");
     return new Date();
   }
-  
+
   @Transactional
   def expungeDeletedComponents(Job j = null) {
 
@@ -329,6 +330,7 @@ class CleanupService {
 
         if ( Thread.currentThread().isInterrupted() ) {
           log.debug("Job cancelling ..")
+          j.endTime = new Date()
           break;
         }
 
@@ -403,7 +405,7 @@ class CleanupService {
       result
     }
   }
-  
+
   def housekeeping(Job j = null) {
     log.debug("Housekeeping")
 
@@ -414,16 +416,16 @@ class CleanupService {
 
         def unused = Identifier.executeQuery("select i.id from Identifier as i where not exists (select c from Combo as c where c.toComponent = i)")
 
-        def rem_unused = KBComponent.expungeAll(unused)
+        def rem_unused = expungeAll(unused, j)
 
         log.debug("Removed ${rem_unused.num_expunged} unused identifiers")
         j?.message("Removed ${rem_unused.num_expunged} unused identifiers".toString())
 
-        def dupes_vals = Identifier.executeQuery("select count(*), i.value, i.namespace.id from Identifier as i group by i.value, i.namespace.id having count(*) > 1")
+        def dupes_vals = Identifier.executeQuery("select count(*), i.normname, i.namespace.id from Identifier as i group by i.normname, i.namespace.id having count(*) > 1")
         def dupes_to_remove = []
 
         dupes_vals?.each { d ->
-          def duplicates = Identifier.executeQuery("from Identifier as i where i.value = :val and i.namespace.id = :ns", [val: d[1], ns: d[2]])
+          def duplicates = Identifier.executeQuery("from Identifier as i where i.normname = :val and i.namespace.id = :ns", [val: d[1], ns: d[2]])
           def first = duplicates[0]
 
           duplicates.eachWithIndex { dui, idx ->
@@ -434,7 +436,7 @@ class CleanupService {
           }
         }
 
-        def rem_dupes = KBComponent.expungeAll(dupes_to_remove)
+        def rem_dupes = expungeAll(dupes_to_remove, j)
 
         log.debug("Removed ${rem_dupes.num_expunged} linked identifiers")
         j?.message("Removed ${rem_dupes.num_expunged} linked identifiers".toString())
@@ -449,73 +451,73 @@ class CleanupService {
 
     j?.endTime = new Date()
   }
-  
+
   private final def duplicateIdentifierCleanup = {
     log.debug("Beginning duplicate identifier tidyup.")
-    
+
     // Lookup the Ids refdata element name.
     final long id_combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids').id
-    
+
     def start_time = System.currentTimeMillis()
-    
+
     final session = sessionFactory.currentSession
-    
+
     // Query string with :startId as parameter placeholder.
     String query = 'SELECT c.combo_id, dups.combo_from_fk, dups.combo_to_fk, dups.occurances FROM combo c join ' +
       '(SELECT combo_from_fk, combo_to_fk, count(*) as occurances FROM combo WHERE combo_type_rv_fk=:rdvId GROUP BY combo_from_fk, combo_to_fk HAVING count(*) > 1) dups ' +
       'on c.combo_from_fk = dups.combo_from_fk AND c.combo_to_fk = dups.combo_to_fk;'
-      
+
     // Create native SQL query.
     def sqlQuery = session.createSQLQuery(query)
 
     // Use Groovy with() method to invoke multiple methods
     // on the sqlQuery object.
       final results = sqlQuery.with {
- 
+
         // Set value for parameter startId.
       setLong('rdvId', id_combo_type_id)
-      
+
       // Get all results.
       list()
     }
-    
+
     int total = results.size()
     long projected_deletes = 0
     def to_delete = []
     for (int i=0; i<total; i++) {
       def result = results[i]
-      
+
       // 0 = combo_id
       long cid = result[0]
-      
+
       // 1 = from_component
       long from_id = result[1]
-      
+
       // 2 = to_component
       long to_id = result[2]
-      
+
       // 3 = Number of occurances
       projected_deletes += (result[3] - 1)
       while (i<(total - 1) && from_id == results[i+1][1] && to_id == results[i+1][2]) {
-        
+
         // Increment i here so we keep the index up to date for the outer loop too!
         i++
         to_delete << results[i][0]
       }
     }
-      
+
     // We can also check the number of occurances from the query as an added safety check.
     log.debug("Projected deletions = ${projected_deletes}")
     log.debug("Collected deletions = ${to_delete.size()}")
     if (to_delete.size() != projected_deletes) {
       log.error("Missmatch in duplicate combo deletion, backing out...")
     } else {
-    
+
       if (projected_deletes > 0) {
         log.debug("Matched number of deletions and projected number, delete...")
-        
+
         query = 'DELETE FROM Combo c WHERE c.combo_id IN (:delete_ids)'
-        
+
         while(to_delete.size() > 0){
           def to_delete_size = to_delete.size();
           def qrySize = (to_delete.size() > 50) ? 50 : to_delete.size();
@@ -539,7 +541,7 @@ class CleanupService {
         log.debug("No duplicates to delete...")
       }
     }
-    
+
     log.debug("Finished cleaning identifiers elapsed = ${System.currentTimeMillis() - start_time}")
   }
 
@@ -566,6 +568,7 @@ class CleanupService {
 
         if ( Thread.currentThread().isInterrupted() ) {
           log.debug("Job cancelling ..")
+          j.endTime = new Date()
           break;
         }
 
@@ -703,5 +706,55 @@ class CleanupService {
       job.message("${res} titles set to editStatus 'Rejected'")
     }
     job.endTime = new Date()
+  }
+
+  def expungeAll(List components, Job j = null) {
+    log.debug("Component bulk expunge");
+    def result = [num_requested: components.size(), num_expunged: 0]
+    log.debug("Expunging ${result.num_requested} components")
+    def esclient = ESWrapperService.getClient()
+    def remaining = components
+
+    while (remaining.size() > 0) {
+      def batch = remaining.take(50)
+      remaining = remaining.drop(50)
+
+      Combo.executeUpdate("delete from Combo as c where c.fromComponent.id IN (:component) or c.toComponent.id IN (:component)",[component:batch])
+      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)",[component:batch])
+      KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)",[component:batch]);
+      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)",[component:batch]);
+
+      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))",[component:batch]);
+      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant.id IN (:component)",[component:batch])
+
+      events_to_delete.each {
+        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = ?",[it])
+        ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
+      }
+
+      ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)",[component:batch]);
+      ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)",[component:batch]);
+      ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)",[component:batch]);
+      ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)",[component:batch]);
+      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)",[component:batch])
+      ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
+
+      batch.each {
+        def kbc = KBComponent.get(it)
+        def oid = "${kbc.class.name}:${it}"
+
+        DeleteRequest req = new DeleteRequest(grailsApplication.config.gokb?.es?.index ?: "gokbg3")
+              .type('component')
+              .id(oid)
+
+        def es_response = esclient.delete(req)
+      }
+
+      result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)",[component:batch])
+
+      j?.setProgress(result.num_expunged, result.num_requested)
+    }
+
+    result
   }
 }

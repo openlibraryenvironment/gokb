@@ -31,6 +31,7 @@ class ComponentStatisticService {
 
     log.debug("Ensuring stats for ${months} months with offset ${offset}.")
     Calendar calendar = Calendar.getInstance()
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
     months = ( months > 3 ? months : 3 )
     offset = ( offset > 0 ? offset : 0 )
@@ -66,17 +67,13 @@ class ComponentStatisticService {
 
         if ( !existing_stats || existing_stats.size() == 0 || ( offset == 0 && i == to_substract ) || force_update ) {
 
-          def query_params = [:]
-
-          query_params.enddate = period_end_date
-
-          def fetch_all = "select count(o.id) from ${c} as o where dateCreated < :enddate"
-          def fetch_new = "select count(o.id) from ${c} as o where dateCreated > :startdate and dateCreated < :enddate"
-
+          def query_params = [enddate: period_end_date,
+                              forbiddenStatus : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)]
+          def fetch_all = "select count(o.id) from ${c} as o where dateCreated < :enddate and status != :forbiddenStatus"
           def stats_total_count = KBComponent.executeQuery(fetch_all.toString(), query_params, [readOnly: true])[0]
 
           query_params.startdate = period_start_date
-
+          def fetch_new = "select count(o.id) from ${c} as o where dateCreated > :startdate and dateCreated < :enddate and status != :forbiddenStatus"
           def stats_new_count = KBComponent.executeQuery(fetch_new.toString(), query_params, [readOnly: true])[0]
 
           if (existing_stats && existing_stats.size() > 0 && ( ( offset == 0 && i == to_substract ) || force_update ) ) {

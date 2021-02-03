@@ -7,8 +7,11 @@ import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 import grails.util.Holders
+import groovy.transform.Synchronized
+import grails.validation.ValidationException
+import groovy.util.logging.*
 
-
+@Slf4j
 class ComponentLookupService {
   def grailsApplication
   def restMappingService
@@ -115,6 +118,82 @@ class ComponentLookupService {
     comp
   }
 
+  @Synchronized
+  static def lookupOrCreateCanonicalIdentifier(String ns, String value, boolean ns_create = true) {
+    return findOrCreateId(ns, value, ns_create)
+  }
+
+  private static def findOrCreateId(String ns, String value, boolean ns_create = true) {
+    // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
+    def namespace = null
+    def identifier = null
+    def namespaces = IdentifierNamespace.findAllByValueIlike(ns)
+
+    switch ( namespaces.size() ) {
+      case 0:
+        if (ns_create) {
+          namespace = new IdentifierNamespace(value:ns.toLowerCase()).save(failOnError:true);
+        }
+        break;
+      case 1:
+        namespace = namespaces[0]
+        break;
+      default:
+        throw new RuntimeException("Multiple Namespaces with value ${ns}");
+        break;
+    }
+
+    if (namespace) {
+      def norm_id = Identifier.normalizeIdentifier(value)
+      def existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
+      log.debug("Found ID: ${existing}")
+
+      if ( existing?.size() == 1 ) {
+        identifier = existing[0]
+      }
+      else if ( existing?.size() > 1 ) {
+        log.error("Conflicting identifiers found: ${existing}")
+        throw new RuntimeException("Found duplicates for Identifier: ${existing}");
+      }
+      else {
+        log.debug("No matches: ${existing}")
+        def final_val = value
+
+        if (!identifier) {
+          if (namespace.family == 'isxn') {
+            final_val = final_val.replaceAll("x","X")
+          }
+          log.debug("Creating new Identifier ${namespace}:${value} ..")
+
+          try {
+            identifier = new Identifier(namespace: namespace, value: final_val, normname: norm_id).save(flush:true, failOnError:true)
+          }
+          catch (org.springframework.orm.hibernate5.HibernateOptimisticLockingFailureException lfe) {
+            log.error("Locking failure", lfe)
+            def ex = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
+            log.debug("After LFE: ${ex}")
+          }
+          catch (ValidationException ve) {
+            log.debug("Caught validation exception: ${ve.message}")
+            if (ve.message.contains('already exists')) {
+              def dupe = Identifier.executeQuery("from Identifier where normname = ? and namespace = ?",[norm_id, namespace])
+
+              if (dupe.size() == 1) {
+                identifier = dupe[0]
+              }
+              log.error("Thread synchronization failed for ID ${dupe} ...")
+            }
+            else {
+              throw new ValidationException(ve.message, ve.errors)
+            }
+          }
+        }
+      }
+    }
+
+    identifier
+  }
+
   /**
    *  restLookup : Look up components via HQL query.
    * @param cls : The Class of objects to be searched for
@@ -125,7 +204,7 @@ class ComponentLookupService {
   public def restLookup (user, cls, params, def context = null) {
     def result = [:]
     def hqlQry = "from ${cls.simpleName} as p".toString()
-    def qryParams = [:]
+    def qryParams = new HashMap()
     def max = params.limit ? params.long('limit') : 10
     def offset = params.offset ? params.long('offset') : 0
     def first = true
@@ -135,109 +214,131 @@ class ComponentLookupService {
     def order = params['_order']?.toLowerCase() == 'desc' ? 'desc' : 'asc'
     def genericTerm = params.q ?: null
 
-    if ( cls != KBComponent && KBComponent.isAssignableFrom(cls) ) {
-      def comboProps = cls_obj.allComboPropertyNames
+    if ( KBComponent.isAssignableFrom(cls) ) {
       def comboJoinStr = ""
       def comboFilterStr = ""
 
       // Check params for known combo properties
+      if (cls != KBComponent) {
+        def comboProps = cls_obj.allComboPropertyNames
 
-      comboProps.each { c ->
+        comboProps.each { c ->
 
-        if (params[c] || params['_sort'] == c) {
-          boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
-          log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
+          if (params[c] || params['_sort'] == c) {
+            boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
+            log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
 
-          if (incoming) {
-            comboJoinStr += " join p.incomingCombos as ${c}_combo"
-            comboJoinStr += " join ${c}_combo.fromComponent as ${c}"
-          }
-          else {
-            comboJoinStr += " join p.outgoingCombos as ${c}_combo"
-            comboJoinStr += " join ${c}_combo.toComponent as ${c}"
-          }
-
-          if (first) {
-            comboFilterStr += " WHERE "
-            first = false
-          }
-          else {
-            comboFilterStr += " AND "
-          }
-
-          comboFilterStr += "${c}_combo.type = :${c}type AND "
-          qryParams["${c}type"] = RefdataCategory.lookupOrCreate ( "Combo.Type", cls.getComboTypeValueFor(cls, c))
-          comboFilterStr += "${c}_combo.status = :${c}status "
-          qryParams["${c}status"] = RefdataCategory.lookup("Combo.Status", "Active")
-
-          def validLong = []
-          def validStr = []
-          def paramStr = ""
-
-          if (params[c]) {
-            params.list(c)?.each { a ->
-              def addedLong = false
-
-              try {
-                validLong.add(Long.valueOf(a))
-                addedLong = true
-              }
-              catch (java.lang.NumberFormatException nfe) {
-              }
-
-              if (!addedLong && a instanceof String && a?.trim() ) {
-                validStr.add(a)
-              }
+            if (incoming) {
+              comboJoinStr += " join p.incomingCombos as ${c}_combo"
+              comboJoinStr += " join ${c}_combo.fromComponent as ${c}"
+            }
+            else {
+              comboJoinStr += " join p.outgoingCombos as ${c}_combo"
+              comboJoinStr += " join ${c}_combo.toComponent as ${c}"
             }
 
-            if (validStr.size() > 0 || validLong.size() > 0) {
-              paramStr += " AND ("
+            if (first) {
+              comboFilterStr += " WHERE "
+              first = false
+            }
+            else {
+              comboFilterStr += " AND "
+            }
 
-              if (validLong.size() > 0) {
-                paramStr += "${c}.id IN :${c}"
-                qryParams["${c}"] = validLong
-              }
-              if (validStr.size() > 0) {
-                if (validLong.size() > 0) {
-                  paramStr += " OR "
+            comboFilterStr += "${c}_combo.type = :${c}type AND "
+            qryParams["${c}type"] = RefdataCategory.lookupOrCreate ( "Combo.Type", cls.getComboTypeValueFor(cls, c))
+            comboFilterStr += "${c}_combo.status = :${c}status "
+            qryParams["${c}status"] = RefdataCategory.lookup("Combo.Status", "Active")
+
+            def validLong = []
+            def validStr = []
+            def paramStr = ""
+
+            if (params[c]) {
+              params.list(c)?.each { a ->
+                def addedLong = false
+
+                try {
+                  validLong.add(Long.valueOf(a))
+                  addedLong = true
                 }
-                paramStr += "${c}.uuid IN :${c}_str OR "
-                paramStr += "${c}.${c == 'ids' ? 'value' : 'name'} IN :${c}_str"
-                qryParams["${c}_str"] = validStr
+                catch (java.lang.NumberFormatException nfe) {
+                }
+
+                if (!addedLong && a instanceof String && a?.trim() ) {
+                  validStr.add(a.toLowerCase())
+                }
               }
-              paramStr += ")"
-              comboFilterStr += paramStr
+
+              if (validStr.size() > 0 || validLong.size() > 0) {
+                paramStr += " AND ("
+
+                if (validLong.size() > 0) {
+                  paramStr += "${c}.id IN :${c}"
+                  qryParams["${c}"] = validLong
+                }
+                if (validStr.size() > 0) {
+                  if (validLong.size() > 0) {
+                    paramStr += " OR "
+                  }
+                  paramStr += "${c}.uuid IN :${c}_str OR "
+                  paramStr += "lower(${c}.${c == 'ids' ? 'value' : 'name'}) IN :${c}_str"
+                  qryParams["${c}_str"] = validStr
+                }
+                paramStr += ")"
+                comboFilterStr += paramStr
+              }
             }
-          }
-          else {
-            sortField = "${c}.name"
-            sort = " order by ${c}.name ${order ?: ''}"
+            else {
+              sortField = "${c}.name"
+              sort = " order by ${c}.name ${order ?: ''}"
+            }
           }
         }
       }
 
       if (genericTerm?.trim()) {
-        comboJoinStr += " join p.outgoingCombos as idq_combo"
-        comboJoinStr += " join idq_combo.toComponent as idq"
+        log.debug("Using generic term search with '${genericTerm}'..")
+
+        def validLong = null
+
+        try {
+          validLong = Long.valueOf(genericTerm)
+        }
+        catch (java.lang.NumberFormatException nfe) {
+        }
 
         if (first) {
           comboFilterStr += " WHERE "
+        }
+        else {
+          comboFilterStr += " AND ("
+        }
+
+        comboFilterStr += "lower(p.name) like lower(:qname) OR p.uuid = :idqval"
+        comboFilterStr += " OR EXISTS (select ci from Combo as ci where ci.type = :idtype and ci.fromComponent = p and lower(ci.toComponent.value) like lower(:idqval) and ci.status = :idqstatus)"
+        comboFilterStr += " OR EXISTS (select an from KBComponentVariantName as an where lower(an.variantName) like lower(:qname) and an.owner = p)"
+
+        if (validLong) {
+          qryParams["qid"] = validLong
+          comboFilterStr += " OR p.id = :qid"
+        }
+
+        if (first) {
           first = false
         }
         else {
-          comboFilterStr += " AND "
+          comboFilterStr += ")"
         }
 
-        comboFilterStr += "(lower(p.name) like :qname OR ("
-        qryParams['qname'] = "${genericTerm.toLowerCase()}%"
-        comboFilterStr += "idq_combo.type = :idqtype AND "
-        qryParams["idqtype"] = RefdataCategory.lookupOrCreate ( "Combo.Type", 'KBComponent.Ids')
-        comboFilterStr += "idq_combo.status = :idqstatus AND "
-        qryParams["idqstatus"] = RefdataCategory.lookup("Combo.Status", "Active")
-        comboFilterStr += "idq.value = :idqval"
-        qryParams["idqval"] = genericTerm
-        comboFilterStr += "))"
+        qryParams['qname'] = "%${genericTerm}%"
+        qryParams['idqval'] = genericTerm
+        qryParams['idtype'] = RefdataCategory.lookup('Combo.Type','KBComponent.Ids')
+        qryParams['idqstatus'] = RefdataCategory.lookup('Combo.Status', 'Active')
       }
+
+      log.debug("comboFilterString: ${comboFilterStr}")
+      log.debug("Params: ${qryParams}")
 
       hqlQry += comboJoinStr + comboFilterStr
     }
@@ -308,8 +409,8 @@ class ComponentLookupService {
           paramStr += "p.${p.name} IN :${p.name}"
         }
         else if ( p.name == 'name' ){
-          paramStr += "lower(p.${p.name}) like :${p.name}"
-          qryParams[p.name] = "${params[p.name].toLowerCase()}%"
+          paramStr += "lower(p.${p.name}) like lower(:${p.name})"
+          qryParams[p.name] = "%${params[p.name]}%"
         }
         else {
           paramStr += "p.${p.name} = :${p.name}"
@@ -323,7 +424,7 @@ class ComponentLookupService {
 
       if (params['_sort'] == p.name) {
         sortField = "p.${p.name}"
-        sort = " order by ${p.name} ${order ?: ''}"
+        sort = " order by p.${p.name} ${order ?: ''}"
       }
     }
 
@@ -353,8 +454,37 @@ class ComponentLookupService {
       qryParams['status'] = RefdataCategory.lookup("ReviewRequest.Status", "Deleted")
     }
 
-    def hqlCount = "select count(p.id) ${hqlQry}".toString()
-    def hqlFinal = "select p ${sort ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
+    if (cls == ReviewRequest && params['allocatedGroups']) {
+      def cgs = params.list('allocatedGroups')
+      def validCgs = []
+
+      cgs.each { cg ->
+        try {
+          validCgs.add(CuratoryGroup.get(Long.valueOf(cg)))
+        }
+        catch (java.lang.NumberFormatException nfe) {
+          log.debug("Received illegal value ${cg}' for curatoryGroups filter!")
+        }
+      }
+
+      if (validCgs.size() > 0 ) {
+        log.debug("Filtering for CGs: ${validCgs}")
+
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+
+        hqlQry += "exists (select alg from AllocatedReviewGroup as alg where alg.review = p and alg.group IN :alg)"
+        qryParams['alg'] = validCgs
+      }
+    }
+
+    def hqlCount = "select ${genericTerm ? 'distinct': ''} count(p.id) ${hqlQry}".toString()
+    def hqlFinal = "select ${genericTerm ? 'distinct': ''} p ${sortField ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
     log.debug("Final qry: ${hqlFinal}")
 

@@ -30,12 +30,11 @@
           </th>
           <th>Scope</th>
           <th>ListStatus</th>
-          <th>Number of Titles (TIPPs)</th>
+          <th>Number of TIPPs</th>
         </tr>
       </thead>
       <tbody>
         <g:each in="${packages}" var="pkg">
-          <g:set var="titles" value="${pkg.getTitles(true, 0).size()}" />
           <tr>
             <td>
               <g:link controller="resource" action="show" id="${pkg?.getClassName()+':'+pkg?.id}">
@@ -47,7 +46,7 @@
             <td>${pkg.lastUpdated}</td>
             <td style="white-space:nowrap;">${pkg.scope?.value}</td>
             <td style="white-space:nowrap;">${pkg.listStatus?.value}</td>
-            <td style="white-space:nowrap;">${titles} (${pkg.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'})</td>
+            <td style="white-space:nowrap;">${pkg.currentTippCount}</td>
           </tr>
         </g:each>
       </tbody>
@@ -61,11 +60,21 @@
     <table class="table table-striped table-condensed table-bordered">
       <thead>
         <tr>
-          <th>Component</th>
+          <th>
+            <g:link params="${params+[rr_sort:'name',rr_sort_order:('desc'== params.rr_sort_order?'asc':'desc')]}">
+              Component
+              <i class="fas fa-sort"></i>
+            </g:link>
+          </th>
           <th>Cause</th>
           <th>Review Request</th>
           <th>Request Status</th>
-          <th>Days open</th>
+          <th>
+            <g:link params="${params+[rr_sort:'dateCreated',rr_sort_order:('asc'== params.rr_sort_order?'desc':'asc')]}">
+              Days Open
+              <i class="fas fa-sort"></i>
+            </g:link>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -74,8 +83,8 @@
               <td>
                 <g:link controller="resource" action="show" id="${rr.componentToReview?.getClassName()+':'+rr.componentToReview?.id}">${rr.componentToReview}</g:link>
               </td>
-              <td>${rr.descriptionOfCause}</td>
-              <td>${rr.reviewRequest}</td>
+              <td><g:link controller="resource" action="show" id="${'org.gokb.cred.ReviewRequest:' + rr.id}">${rr.descriptionOfCause}</g:link></td>
+              <td><g:link controller="resource" action="show" id="${'org.gokb.cred.ReviewRequest:' + rr.id}">${rr.reviewRequest}</g:link></td>
               <td>${rr.status}</td>
               <td>${Math.round((new Date().getTime()-rr.dateCreated.getTime())/(1000*60*60*24))}</td>
             </tr>

@@ -1,11 +1,8 @@
 package gokbg3
 
 import com.k_int.ClassUtils
-import grails.core.GrailsClass
 
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 import org.gokb.cred.*
 import org.gokb.GOKbTextUtils
@@ -21,6 +18,7 @@ class RestMappingService {
   def componentLookupService
   def messageSource
   def messageService
+  def dateFormatService
 
   def defaultIgnore = [
     'bucketHash',
@@ -28,7 +26,6 @@ class RestMappingService {
     'normname',
     'people',
     'lastSeen',
-    'additionalProperties',
     'updateBenchmark',
     'systemComponent',
     'insertBenchmark',
@@ -39,6 +36,13 @@ class RestMappingService {
     'componentDiscriminator',
     'incomingCombos',
     'outgoingCombos'
+  ]
+
+  def defaultEmbed = [
+    'ids',
+    'variantNames',
+    'additionalProperties',
+    'reviewRequests'
   ]
 
   def defaultImmmutable = [
@@ -60,11 +64,12 @@ class RestMappingService {
   def mapObjectToJson(obj, params, def user = null) {
     log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
     def result = [:]
-    def sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
     def embed_active = params['_embed']?.split(',') ?: []
     def include_list = params['_include']?.split(',') ?: null
     def exclude_list = params['_exclude']?.split(',') ?: null
+    def nested = params['nested'] ? true : false
     def base = grailsApplication.config.serverURL + "/rest"
+    def curatedClass = obj.respondsTo('curatoryGroups')
     def jsonMap = null
     def is_curator = true
 
@@ -76,7 +81,7 @@ class RestMappingService {
       result['_links'] = [:]
       result['_links']['self'] = ['href': base + obj.restPath + "/${obj.id}"]
 
-      if (obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0) {
+      if (curatedClass && obj.curatoryGroups?.size() > 0) {
         is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
       }
 
@@ -84,22 +89,30 @@ class RestMappingService {
         is_curator = obj.pkg.curatoryGroups?.size() > 0 ? user?.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
       }
 
-      if (is_curator || user?.isAdmin()) {
-        result._links.update = ['href': base + obj.restPath + "/${obj.id}"]
-        result._links.delete = ['href': base + obj.restPath + "/${obj.id}"]
+      result.type = obj.niceName
 
-        if (KBComponent.isAssignableFrom(obj.class)) {
-          result._links.retire = ['href': base + obj.restPath + "/${obj.id}/retire"]
-        }
+      def href = (obj.isEditable() && is_curator) || user?.isAdmin() ? base + obj.restPath + "/${obj.id}" : null
+      result._links.update = ['href': href]
+      result._links.delete = ['href': href]
+
+      if (KBComponent.isAssignableFrom(obj.class)) {
+        result._links.retire = ['href': href ? href + "/retire" : null]
       }
     }
 
-    if (embed_active.size() > 0 || jsonMap?.defaultEmbeds?.size() > 0) {
-      result['_embedded'] = [:]
-    }
+    result['_embedded'] = [:]
 
-    if (embed_active.size() == 0 && jsonMap?.defaultEmbeds?.size() > 0) {
-      embed_active = jsonMap.defaultEmbeds
+    if (embed_active.size() == 0 && !nested) {
+      if (KBComponent.isAssignableFrom(obj.class)) {
+        embed_active = defaultEmbed
+      }
+      if (jsonMap?.defaultEmbeds?.size() > 0) {
+        jsonMap.defaultEmbeds.each {
+          if (!embed_active.contains(it)) {
+            embed_active.add(it)
+          }
+        }
+      }
     }
 
     result['id'] = obj.id
@@ -111,12 +124,17 @@ class RestMappingService {
             // Set ref property
             if (user?.isAdmin() || p.type != User) {
               if (obj[p.name]) {
-                def label = selectPreferredLabel(obj[p.name])
+                def label = selectJsonLabel(obj[p.name])
 
                 result[p.name] = [
                   'name': label,
+                  'type': obj[p.name].niceName,
                   'id'  : obj[p.name].id
                 ]
+
+                if (p.name == 'namespace') {
+                  result['namespace']['value'] = obj['namespace'].value
+                }
 
                 if (embed_active.contains(p.name)) {
                   result['_embedded'][p.name] = getEmbeddedJson(obj[p.name], user)
@@ -126,7 +144,7 @@ class RestMappingService {
               }
             }
           } else {
-            if (embed_active.contains(p.name) && (user?.isAdmin() || p.type != User)) {
+            if ( (embed_active.contains(p.name) && (user?.isAdmin() || p.type != User))  || (!nested && p.name == 'reviewRequests' && user?.editorStatus) ) {
               result['_embedded'][p.name] = []
 
               obj[p.name].each {
@@ -141,7 +159,7 @@ class RestMappingService {
               break;
 
             case Date.class:
-              result[p.name] = obj[p.name] ? sdf.format(obj[p.name]) : null
+              result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
               break;
             default:
               result[p.name] = obj[p.name]
@@ -159,32 +177,66 @@ class RestMappingService {
           def cval = null
 
           if ( (include_list && include_list?.contains(cp)) || (!include_list && jsonMap?.defaultLinks?.contains(cp)) ) {
+            RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', obj.getComboTypeValue(cp))
+            def chql = null
+            def reverse = obj.isComboReverse(cp)
 
-            cval = obj[cp]
+            if (reverse) {
+              chql = "from Combo as c where c.toComponent = ? and c.type = ?"
+            }
+            else {
+              chql = "from Combo as c where c.fromComponent = ? and c.type = ?"
+            }
+            def combo = Combo.executeQuery(chql, [obj, combo_type])
 
-            if (cval == null) {
+            if (combo.size() == 0) {
               result[cp] = null
             } else {
-              result[cp] = ['id': cval.id, 'name': cval.name, 'uuid': cval.uuid]
+              cval = reverse ? combo[0].fromComponent : combo[0].toComponent
+              result[cp] = ['id': cval.id, 'name': cval.name, 'type': cval.niceName, 'uuid': cval.uuid]
             }
           }
 
           if ( embed_active.contains(cp) ) {
             cval = obj[cp]
-            result['_embedded'][cp] = getEmbeddedJson(cval, user)
+            result['_embedded'][cp] = cval ? getEmbeddedJson(cval, user) : null
           }
         }
         else {
           if( embed_active.contains(cp) ) {
             result['_embedded'][cp] = []
-            log.debug("Mapping ManyByCombo ${cp} ${obj[cp]}")
-            obj[cp].each {
-              result['_embedded'][cp] << getEmbeddedJson(it, user)
+
+            def combos = obj.getCombosByPropertyName(cp)
+            boolean reverse = obj.isComboReverse(cp)
+
+            combos.each { c ->
+              def linked_obj = getEmbeddedJson(reverse ? c.fromComponent : c.toComponent, user)
+
+              if (c.status?.value == 'Active') {
+                result['_embedded'][cp] << linked_obj
+              }
+              else {
+                log.debug("Skipping ${c.status.value} combo..")
+              }
             }
+          }
+
+          if (include_list?.contains('publisher') && TitleInstance.isAssignableFrom(obj.class)) {
+            def pub = obj.currentPublisher
+
+            result.publisher = pub ? getEmbeddedJson(pub, user) : null
           }
         }
       }
     }
+    else if (obj.class == ReviewRequest && embed_active.contains('allocatedGroups')) {
+      result.allocatedGroups = []
+
+      obj.allocatedGroups?.each {
+        result.allocatedGroups << [name: it.group.name, id: it.group.id]
+      }
+    }
+
     result
   }
 
@@ -205,7 +257,7 @@ class RestMappingService {
     log.debug("Ignore: ${toIgnore}, Immutable: ${immutable}")
     pent.getPersistentProperties().each { p -> // list of PersistentProperties
       def newVal = reqBody[p.name]
-      if (!toIgnore.contains(p.name) && !immutable.contains(p.name) && reqBody[p.name]) {
+      if (!toIgnore.contains(p.name) && !immutable.contains(p.name) && reqBody.keySet().contains(p.name)) {
         log.debug("${p.name} (assoc=${p instanceof Association}) (oneToMany=${p instanceof OneToMany}) (ManyToOne=${p instanceof ManyToOne}) (OneToOne=${p instanceof OneToOne})");
 
         if (p instanceof Association) {
@@ -249,7 +301,7 @@ class RestMappingService {
         } else {
           String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
 
-          if (catName && catName != 'KBComponent.Status') {
+          if (catName) {
             def cat = RefdataCategory.findByDesc(catName)
 
             if (val instanceof Integer) {
@@ -257,11 +309,27 @@ class RestMappingService {
 
               if (rdv) {
                 if (rdv in cat.values) {
-                  obj[prop] = rdv
+                  if (catName == 'KBComponent.Status') {
+                    if (rdv.value == 'Deleted') {
+                      obj.deleteSoft()
+                    }
+                    else if (rdv.value == 'Retired') {
+                      obj.retire()
+                    }
+                    else if (rdv.value == 'Current') {
+                      obj.setActive()
+                    }
+                    else if (rdv.value == 'Expected') {
+                      obj.setExpected()
+                    }
+                  }
+                  else {
+                    obj[prop] = rdv
+                  }
                 } else {
                   obj.errors.reject(
                     'rdc.values.notFound',
-                    [linkObj.id, cat] as Object[],
+                    [rdv, cat] as Object[],
                     '[Value {0} is not valid for category {1}!]'
                   )
                   obj.errors.rejectValue(
@@ -282,6 +350,88 @@ class RestMappingService {
                 )
               }
             }
+            else if (val instanceof Map) {
+              if (val.id) {
+                rdv = RefdataValue.get(val.id)
+
+                if (rdv) {
+                  if (rdv in cat.values) {
+                    if (catName == 'KBComponent.Status') {
+                      if (rdv.value == 'Deleted') {
+                        obj.deleteSoft()
+                      }
+                      else if (rdv.value == 'Retired') {
+                        obj.retire()
+                      }
+                      else if (rdv.value == 'Current') {
+                        obj.setActive()
+                      }
+                      else if (rdv.value == 'Expected') {
+                        obj.setExpected()
+                      }
+                    }
+                    else {
+                      obj[prop] = rdv
+                    }
+                  } else {
+                    obj.errors.reject(
+                      'rdc.values.notFound',
+                      [rdv, cat] as Object[],
+                      '[Value {0} is not valid for category {1}!]'
+                    )
+                    obj.errors.rejectValue(
+                      prop,
+                      'rdc.values.notFound'
+                    )
+                  }
+                }
+                else {
+                  obj.errors.reject(
+                    'default.not.found.message',
+                    [ptype, val.id] as Object[],
+                    '[{0} not found with id {1}]'
+                  )
+                  obj.errors.rejectValue(
+                    prop,
+                    'default.not.found.message'
+                  )
+                }
+              }
+              else if (val.name) {
+                rdv = RefdataCategory.lookup(catName, val.name)
+
+                if (!rdv) {
+                  obj.errors.reject(
+                    'rdc.values.notFound',
+                    [val.name, prop] as Object[],
+                    '[{0} is not a valid value for property {1}!]'
+                  )
+                  obj.errors.rejectValue(
+                    prop,
+                    'rdc.values.notFound'
+                  )
+                }
+                else {
+                  if (catName == 'KBComponent.Status') {
+                    if (rdv.value == 'Deleted') {
+                      obj.deleteSoft()
+                    }
+                    else if (rdv.value == 'Retired') {
+                      obj.retire()
+                    }
+                    else if (rdv.value == 'Current') {
+                      obj.setActive()
+                    }
+                    else if (rdv.value == 'Expected') {
+                      obj.setExpected()
+                    }
+                  }
+                  else {
+                    obj[prop] = rdv
+                  }
+                }
+              }
+            }
             else {
               rdv = RefdataCategory.lookup(catName, val)
 
@@ -300,10 +450,8 @@ class RestMappingService {
                 obj[prop] = rdv
               }
             }
-          } else if (!catname) {
-            log.error("Could not resolve category (${obj.niceName}.${p.name})!")
           } else {
-            log.debug("Status updating denied in general PUT/PATCH request!")
+            log.error("Could not resolve category (${obj.niceName}.${p.name})!")
           }
         }
       } else {
@@ -332,16 +480,16 @@ class RestMappingService {
       }
     }
     else {
-      obj[p.name] = null
+      obj[prop] = null
     }
   }
 
   @Transactional
   public def updateIdentifiers(obj, ids, boolean remove = true) {
     log.debug("updating ids ${ids}")
-    RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    RefdataValue combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
-    RefdataValue combo_expired = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_EXPIRED)
+    def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
     def id_combos = obj.getCombosByPropertyName('ids')
     def errors = []
     Set new_ids = []
@@ -369,16 +517,16 @@ class RestMappingService {
 
             try {
               if (ns) {
-                id = Identifier.lookupOrCreateCanonicalIdentifier(ns, i.value)
+                id = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, i.value)
               }
             }
             catch (grails.validation.ValidationException ve) {
               log.debug("Could not create ID ${ns}:${i.value}")
 
-              errors << messageService.processValidationErrors(ve)
+              errors << messageService.processValidationErrors(ve.errors)
             }
           } else {
-            errors << [message: message(code:'identifier.value.IllegalIDForm'), baddata: i]
+            errors << [message: messageService.resolveCode('identifier.value.IllegalIDForm', null, null), baddata: i]
             valid = false
           }
         }
@@ -403,11 +551,13 @@ class RestMappingService {
           def dupe = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?",[combo_id_type, obj, i])
 
           if (dupe.size() == 0) {
-            obj.ids.add(i)
+            def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush:true)
           }
           else if (dupe.size() == 1 ) {
             if (dupe[0].status == combo_deleted) {
               log.debug("Matched ID combo was marked as deleted!")
+              dupe[0].delete(flush:true)
+              def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush:true)
             }
             else {
               log.debug("Not adding duplicate ..")
@@ -425,13 +575,26 @@ class RestMappingService {
 
         if (remove) {
           Iterator items = id_combos.iterator();
+          List removedIds = []
           Object element;
           while (items.hasNext()) {
             element = items.next();
             if (!new_ids.contains(element.toComponent)) {
               // Remove.
+              log.debug("Removing newly missing ID ${element.toComponent}")
               element.status = combo_deleted
+              removedIds.add(element.toComponent)
             }
+          }
+
+          if (removedIds) {
+            def idString = ""
+
+            removedIds.each {
+              idString += "${it.namespace.value}:${it.value} "
+            }
+
+            obj.lastUpdateComment = "Removed Ids: ${idString}"
           }
         }
       }
@@ -460,6 +623,9 @@ class RestMappingService {
       } else if (cg instanceof Integer){
         cg_obj = CuratoryGroup.get(cg)
       }
+      else if (cg instanceof Map) {
+        cg_obj = CuratoryGroup.get(cg.id)
+      }
 
       if (cg_obj) {
         new_cgs << cg_obj
@@ -471,12 +637,12 @@ class RestMappingService {
     if (errors.size() == 0) {
       new_cgs.each { c ->
         if (!obj.curatoryGroups.contains(c)) {
-          obj.curatoryGroups.add(c)
+          def new_combo = new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush:true)
         } else {
           log.debug("Existing cg ${c}..")
         }
       }
-      
+
       if (remove) {
         Iterator items = current_cgs.iterator();
         Object element;
@@ -493,15 +659,16 @@ class RestMappingService {
     errors
   }
 
-  @Transactional
   public def updateVariantNames(obj, vals, boolean remove = true) {
-    log.debug("Update Variants ..")
+    log.debug("Update Variants ${vals} ..")
     def remaining = []
     def notFound = []
+    def toRemove = []
 
     try {
       vals.each {
         def newVariant = null
+
         if (it instanceof String) {
           if (it.trim()) {
             def nvn = GOKbTextUtils.normaliseString(it)
@@ -542,7 +709,7 @@ class RestMappingService {
           }
         } else if (it instanceof Map) {
           if (it.id && it.id instanceof Integer) {
-            newVariant = KBComponentVariantName.get(it)
+            newVariant = KBComponentVariantName.get(it.id)
 
             if (newVariant && newVariant.owner == obj) {
               remaining << newVariant
@@ -556,8 +723,9 @@ class RestMappingService {
 
             if (dupes) {
               log.debug("Not adding duplicate variant")
+              remaining << dupes
             } else {
-              newVariant = obj.ensureVariantName(it)
+              newVariant = obj.ensureVariantName(it.variantName)
 
               if (newVariant) {
                 log.debug("Added variant ${newVariant}")
@@ -588,12 +756,28 @@ class RestMappingService {
               }
             }
           }
+          else {
+            log.debug("Unable to process map ${it}!")
+          }
         }
       }
 
       if (notFound.size() == 0) {
         if (!obj.hasErrors() && remove) {
-          obj.variantNames.retainAll(remaining)
+          obj.variantNames.each { vn ->
+            if (!remaining.contains(vn)) {
+              toRemove.add(vn.id)
+            }
+          }
+
+          toRemove.each {
+            obj.removeFromVariantNames(KBComponentVariantName.get(it))
+          }
+
+          log.debug("New List has ${obj.variantNames.size()} items!")
+        }
+        else {
+          log.debug("Not removing: (remove: ${remove} - errors: ${obj.errors})")
         }
       } else {
         log.debug("Unable to look up variants ..")
@@ -627,6 +811,7 @@ class RestMappingService {
   public def updatePublisher(obj, new_pubs, boolean remove = true) {
     def errors = []
     def publisher_combos = obj.getCombosByPropertyName('publisher')
+    def combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
 
     String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
     String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
@@ -643,12 +828,12 @@ class RestMappingService {
       }
     }
     else {
-        if (!pubs_to_add.collect { it.id == new_pubs}) {
-          pubs_to_add << Org.get(new_pubs)
-        }
-        else {
-          log.warn("Duplicate for incoming publisher ${new_pubs}!")
-        }
+      if (!pubs_to_add.collect { it.id == new_pubs}) {
+        pubs_to_add << Org.get(new_pubs)
+      }
+      else {
+        log.warn("Duplicate for incoming publisher ${new_pubs}!")
+      }
     }
 
     pubs_to_add.each { publisher ->
@@ -663,7 +848,7 @@ class RestMappingService {
       }
 
       if (!found) {
-        obj.publisher.add(publisher)
+        def new_combo = new Combo(fromComponent: obj, toComponent: publisher, type: combo_type).save(flush: true)
       } else {
         log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
       }
@@ -731,17 +916,19 @@ class RestMappingService {
    * @param obj : The object to be examined
    */
 
-  private String selectPreferredLabel(obj) {
+  private String selectJsonLabel(obj) {
     def obj_label = null
 
-    if (obj.hasProperty('username')) {
-      obj_label = obj.username
-    } else if (obj.hasProperty('name')) {
-      obj_label = obj.name
+    if (obj.hasProperty('jsonLabel')) {
+      obj_label = obj[obj.jsonLabel]
     } else if (obj.hasProperty('value')) {
       obj_label = obj.value
+    } else if (obj.hasProperty('name')) {
+      obj_label = obj.name
     } else if (obj.hasProperty('variantName')) {
       obj_label = obj.variantName
+    } else if (obj.hasProperty('propertyName')) {
+      obj_label = obj.propertyName
     }
 
     return obj_label
@@ -753,7 +940,7 @@ class RestMappingService {
    */
 
   public def getEmbeddedJson(obj, user) {
-    def pars = ['_embed': null]
+    def pars = ['nested': true]
     log.debug("Embedded object ${obj}")
     mapObjectToJson(obj, pars, user)
   }

@@ -70,6 +70,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/**/images/**',            access: ['permitAll']],
   [pattern: '/**/favicon.ico',          access: ['permitAll']],
   [pattern: '/api/find',                access: ['permitAll']],
+  [pattern: '/api/scroll',              access: ['permitAll']],
   [pattern: '/api/suggest',             access: ['permitAll']],
   [pattern: '/api/esconfig',            access: ['permitAll']],
   [pattern: '/api/capabilities',        access: ['permitAll']],
@@ -81,6 +82,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/api/show',                access: ['ROLE_USER']],
   [pattern: '/api/namespaces',          access: ['permitAll']],
   [pattern: '/api/groups',              access: ['permitAll']],
+  [pattern: '/integration/**',          access: ['permitAll']],
   [pattern: '/fwk/**',                  access: ['ROLE_USER']],
   [pattern: '/user/**',                 access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/user/search',             access: ['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY']],
@@ -609,7 +611,16 @@ globalSearchTemplates = [
           qparam:'qp_cause',
           placeholder:'Cause',
           contextTree:['ctxtp':'qry', 'comparator' : 'like', 'prop':'descriptionOfCause']
-        ]
+        ],
+        [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'ReviewRequest.StdDesc',
+          prompt:'Type',
+          qparam:'qp_desc',
+          placeholder:'Standard description',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'stdDesc']
+        ],
       ],
       qbeGlobals:[
       ],
@@ -892,9 +903,11 @@ globalSearchTemplates = [
       qbeGlobals:[
       ],
       qbeResults:[
-        [heading:'Name', property:'value', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Value', property:'value', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Name', property:'name' ],
         [heading:'RDF Datatype', property:'datatype?.value'],
-        [heading:'Category', property:'family']
+        [heading:'Category', property:'family'],
+        [heading:'Target Type', property:'targetType.value']
       ]
     ]
   ],
@@ -1165,6 +1178,36 @@ globalSearchTemplates = [
       qbeResults:[
         [heading:'Name/Title', property:'displayName', link:[controller:'resource', action:'show',      id:'x.r.linkedItem.class.name+\':\'+x.r.linkedItem.id'] ],
         [heading:'Availability', property:'linkedItem.tipps?.size()?:"none"'],
+      ]
+    ]
+  ],
+  'JobResult':[
+    baseclass:'org.gokb.cred.JobResult',
+    title:'Job Results',
+    group:'Secondary',
+    defaultSort:'id',
+    defaultOrder:'desc',
+    qbeConfig:[
+      qbeForm:[
+       [
+          type:'lookup',
+          baseClass:'org.gokb.cred.RefdataValue',
+          filter1:'Job.Type',
+          prompt:'Type',
+          qparam:'qp_type',
+          placeholder:'Type of Job',
+          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'type']
+        ],
+      ],
+      qbeGlobals:[
+        ['ctxtp':'filter', 'prop':'ownerId', 'comparator' : 'eq', 'value':'__USERID', 'default':'on', 'qparam':'qp_owner', 'type':'java.lang.Long', 'hidden':true]
+      ],
+      qbeResults:[
+        [heading:'Description', property:'description', link:[controller:'resource', action:'show', id:'x.r.uuid'] ],
+        [heading:'Type', property:'type?.value', sort:'type'],
+        [heading:'Status', property:'statusText'],
+        [heading:'Start Time', property:'startTime',sort:'startTime'],
+        [heading:'End Time', property:'endTime',sort:'endTime'],
       ]
     ]
   ],

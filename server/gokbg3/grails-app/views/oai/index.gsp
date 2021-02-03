@@ -20,6 +20,9 @@
                         <li><g:link controller='oai' action='index' id='packages' params="${[verb:'Identify']}">Identify Packages</g:link></li>
                         <li><g:link controller='oai' action='index' id='packages' params="${[verb:'ListRecords',metadataPrefix:'gokb']}">Get [full] Packages</g:link></li>
                         <li><g:link controller='oai' action='index' id='packages' params="${[verb:'ListRecords',metadataPrefix:'oai_dc']}">Get [oai_dc] Packages</g:link></li>
+                        <li><g:link controller='oai' action='index' id='tipps' params="${[verb:'Identify']}">Identify TIPPs</g:link></li>
+                        <li><g:link controller='oai' action='index' id='tipps' params="${[verb:'ListRecords',metadataPrefix:'gokb']}">Get [full] TIPPs</g:link></li>
+                        <li><g:link controller='oai' action='index' id='tipps' params="${[verb:'ListRecords',metadataPrefix:'oai_dc']}">Get [oai_dc] TIPPs</g:link></li>
                         <li><g:link controller='oai' action='index' id='titles' params="${[verb:'Identify']}">Identify Titles</g:link></li>
                         <li><g:link controller='oai' action='index' id='titles' params="${[verb:'ListRecords',metadataPrefix:'gokb']}">Get [full] Titles</g:link></li>
                         <li><g:link controller='oai' action='index' id='titles' params="${[verb:'ListRecords',metadataPrefix:'oai_dc']}">Get [oai_dc] Titles</g:link></li>

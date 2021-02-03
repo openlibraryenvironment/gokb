@@ -23,11 +23,15 @@ class SourcesController {
   def restMappingService
   def componentLookupService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     def start_db = LocalDateTime.now()
     result = componentLookupService.restLookup(user, Source, params)
@@ -36,13 +40,17 @@ class SourcesController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
     def obj = null
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     if (params.oid || params.id) {
       obj = Source.findByUuid(params.id)
@@ -83,28 +91,40 @@ class SourcesController {
     Source source = null
     def result = [:]
     def errors = [:]
+    def reqBody = request.JSON
     User user = User.get(springSecurityService.principal.id)
 
-    if (request.JSON?.name) {
+    if (reqBody?.name) {
       try {
-        source = new Source(name: request.JSON.name)
+        source = new Source(name: reqBody.name)
 
         def jsonMap = [:]
 
-        source = restMappingService.updateObject(source, jsonMap, request.JSON)
+        source = restMappingService.updateObject(source, jsonMap, reqBody)
       }
       catch (grails.validation.ValidationException ve) {
         errors = ve.errors
       }
     }
     else {
-      errors = [result: 'ERROR', message:'Missing name for source!', badData:[request.JSON]]
+      errors = [result: 'ERROR', message:'Missing name for source!', badData:[reqBody]]
     }
 
     if (!errors) {
       if ( source.validate() ) {
         source.save(flush: true)
-        result.data = restMappingService.mapObjectToJson(source, params, user)
+
+        errors << updateCombos(source, reqBody, false)
+
+        if (!errors) {
+          response.setStatus(201)
+          result = restMappingService.mapObjectToJson(source, params, user)
+        }
+        else {
+          response.setStatus(400)
+          result.errors = errors
+          result.result = 'ERROR'
+        }
       } else {
         result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
         response.setStatus(409)
@@ -112,9 +132,69 @@ class SourcesController {
       }
     } else {
       response.setStatus(400)
-      result = errors
+      result.errors = errors
       result.result = 'ERROR'
     }
     render result as JSON
+  }
+
+  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def update() {
+    Source source = Source.get(genericOIDService.oidToId(params.id))
+    def result = [:]
+    def errors = [:]
+    def reqBody = request.JSON
+    def remove = (request.method == 'PUT')
+    User user = User.get(springSecurityService.principal.id)
+    boolean editable = true
+
+    if ( !user.hasRole('ROLE_ADMIN') && source.curatoryGroups && source.curatoryGroups.size() > 0 ) {
+      def cur = user.curatoryGroups?.id.intersect(source.curatoryGroups?.id)
+
+      if (!cur) {
+        editable = false
+      }
+    }
+
+    if (editable) {
+      source = restMappingService.updateObject(source, null, reqBody)
+
+      errors << updateCombos(source, reqBody, remove)
+
+      if (!errors) {
+        if ( source.validate() ) {
+          source = source.merge(flush: true)
+          result = restMappingService.mapObjectToJson(source, params, user)
+        } else {
+          result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
+          response.setStatus(409)
+          source?.discard()
+        }
+      } else {
+        response.setStatus(400)
+        result.errors = errors
+        result.result = 'ERROR'
+      }
+    }
+    else {
+
+    }
+    render result as JSON
+  }
+
+  private def updateCombos(obj, reqBody, boolean remove = true) {
+    log.debug("Updating package combos ..")
+    def errors = [:]
+
+    if (reqBody.curatoryGroups) {
+      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+
+      if (cg_errors.size() > 0) {
+        errors['curatoryGroups'] = cg_errors
+      }
+    }
+
+    errors
   }
 }

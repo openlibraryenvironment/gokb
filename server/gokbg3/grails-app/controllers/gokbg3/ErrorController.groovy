@@ -16,9 +16,9 @@ class ErrorController {
 
   def serverError() {
     def resp = [code: 500, message:'Server Error']
-    def exception = request.exception.cause
+    def exception = request.exception?.cause ?: null
 
-    if ( Environment.current == Environment.DEVELOPMENT ) {
+    if ( exception && Environment.current == Environment.DEVELOPMENT ) {
       resp.exception = exception
     }
 

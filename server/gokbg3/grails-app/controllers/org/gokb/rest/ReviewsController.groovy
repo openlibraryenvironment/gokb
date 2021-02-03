@@ -4,6 +4,8 @@ package org.gokb.rest
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.User
 
@@ -44,15 +46,7 @@ class ReviewsController {
     if (obj?.isReadable()) {
       result = restMappingService.mapObjectToJson(obj, params, user)
       result._links = generateLinks(obj, user)
-      result.allocatedGroups = []
-
-      obj.allocatedGroups?.each {
-        result.allocatedGroups << [name: it.group.name, id: it.group.id]
-      }
-
-      if (includes.contains('additionalInfo')) {
-        result.additionalInfo = obj.additional
-      }
+      result.additionalInfo = obj.additional
     }
     else if (!obj) {
       result.message = "Object ID could not be resolved!"
@@ -114,7 +108,7 @@ class ReviewsController {
 
           if (reqBody.stdDesc instanceof Integer) {
             def rdc = RefdataCategory.findByDesc("ReviewRequest.StdDesc")
-            def rdv = RefdataValue.get(reqBody.status)
+            def rdv = RefdataValue.get(reqBody.stdDesc)
 
             if (rdv?.owner == rdc) {
               rdv_desc = rdv
@@ -173,13 +167,11 @@ class ReviewsController {
         }
 
         if (reqBody.descriptionOfCause?.trim()) {
-          obj.reviewRequest = reqBody.reviewRequest.trim()
+          obj.descriptionOfCause = reqBody.descriptionOfCause.trim()
         }
 
-        immutable.each {
-          if (reqBody[it] && reqBody[it] != obj[it]?.id ) {
-            errors[it] = [[message: "Property ${it} is immutable", baddata: reqBody[it]]]
-          }
+        if (reqBody.componentToReview && reqBody.componentToReview != obj.componentToReview.id) {
+          errors.componentToReview = [[message: "Changing the connected component of an existing review is not allowed!", baddata: reqBody.componentToReview]]
         }
 
         if( obj.validate() ) {
@@ -238,10 +230,10 @@ class ReviewsController {
       ]
 
       if (reqBody.reviewRequest?.trim())
-        pars.reviewRequest = reqBody.reviewRequest
-      
+        pars.reviewRequest = reqBody.reviewRequest.trim()
+
       if (reqBody.descriptionOfCause?.trim())
-        pars.descriptionOfCause = reqBody.descriptionOfCause
+        pars.descriptionOfCause = reqBody.descriptionOfCause.trim()
 
       if (reqBody.componentToReview instanceof Integer) {
         def comp = KBComponent.get(reqBody.componentToReview)
@@ -268,11 +260,12 @@ class ReviewsController {
         }
       }
 
-      if (reqBody.stdDesc) {
+      if (reqBody.stdDesc || reqBody.type) {
         def desc = null
+        def reqDesc = reqBody?.stdDesc ?: reqBody.type
         def cat = RefdataCategory.findByLabel('ReviewRequest.StdDesc')
 
-        if (reqBody.stdDesc instanceof Integer) {
+        if (reqDesc instanceof Integer) {
           def rdv = RefdataValue.get(reqBody.stdDesc)
 
           if (rdv && rdv in cat.values) {
@@ -280,14 +273,14 @@ class ReviewsController {
           }
         }
         else {
-          desc = RefdataCategory.lookup('ReviewRequest.StdDesc', reqBody.stdDesc)
+          desc = RefdataCategory.lookup('ReviewRequest.StdDesc', reqDesc)
         }
 
         if (desc) {
           pars.stdDesc = desc
         }
         else {
-          errors.stdDesc = [[message: "Illegal value for standard description provided!", baddata: reqBody.stdDesc]]
+          errors.stdDesc = [[message: "Illegal value for standard description provided!", baddata: reqDesc]]
         }
       }
 
@@ -320,7 +313,7 @@ class ReviewsController {
       result.message = "User is not allowed to delete this component!"
     }
     render result as JSON
-  } 
+  }
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
@@ -359,7 +352,7 @@ class ReviewsController {
 
     if (obj.allocatedTo == user) {
       curator = true
-    } 
+    }
     else if (obj.allocatedGroups?.id.intersect(user.curatoryGroups?.id)) {
       curator = true
     }

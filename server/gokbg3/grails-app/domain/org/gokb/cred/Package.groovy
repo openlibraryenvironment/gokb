@@ -2,9 +2,6 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 import groovy.util.logging.*
-import org.gokb.GOKbTextUtils
-import org.gokb.DomainClassExtender
-import com.k_int.ClassUtils
 import groovy.time.TimeCategory
 
 
@@ -12,6 +9,8 @@ import org.gokb.refine.*
 
 @Slf4j
 class Package extends KBComponent {
+
+  def dateFormatService
 
   // Owens defaults:
   // Status default to 'Current'
@@ -32,6 +31,7 @@ class Package extends KBComponent {
   RefdataValue paymentType
   RefdataValue global
   RefineProject lastProject
+  String globalNote
   String listVerifier
   User userListVerifier
   Date listVerifiedDate
@@ -69,6 +69,8 @@ class Package extends KBComponent {
     successor: 'previous',
   ]
 
+  static hasOne = [updateToken: UpdateToken]
+
   static mapping = {
     includes KBComponent.mapping
     listStatus column: 'pkg_list_status_rv_fk'
@@ -79,6 +81,7 @@ class Package extends KBComponent {
     fixed column: 'pkg_fixed_rv_fk'
     paymentType column: 'pkg_payment_type_rv_fk'
     global column: 'pkg_global_rv_fk'
+    globalNote column: 'pkg_global_note'
     listVerifier column: 'pkg_list_verifier'
     userListVerifier column: 'pkg_list_verifier_user_fk'
     descriptionURL column: 'pkg_descr_url'
@@ -93,6 +96,7 @@ class Package extends KBComponent {
     fixed(nullable: true, blank: false)
     paymentType(nullable: true, blank: false)
     global(nullable: true, blank: false)
+    globalNote(nullable: true, blank: true)
     lastProject(nullable: true, blank: false)
     descriptionURL(nullable: true, blank: true)
     name(validator: { val, obj ->
@@ -117,7 +121,8 @@ class Package extends KBComponent {
 
   static jsonMapping = [
     'ignore'       : [
-      'lastProject'
+      'lastProject',
+      'updateToken'
     ],
     'es'           : [
       'nominalPlatformUuid': "nominalPlatform.uuid",
@@ -134,7 +139,6 @@ class Package extends KBComponent {
       'scope'              : "refdata"
     ],
     'defaultLinks' : [
-      'tipps',
       'provider',
       'nominalPlatform',
       'curatoryGroups'
@@ -211,7 +215,7 @@ class Package extends KBComponent {
   public getCurrentTitleCount() {
     def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current');
 
-    int result = TitleInstance.executeQuery('''select count(title.id)
+    int result = TitleInstance.executeQuery('''select count(distinct title.id)
       from TitleInstance as title,
         Combo as pkgCombo,
         Combo as titleCombo,
@@ -329,7 +333,13 @@ select tipp.id,
        tipp.uuid,
        title.uuid,
        plat.uuid,
-       title.status
+       title.status,
+       tipp.series,
+       tipp.subjectArea,
+       tipp.name,
+       tipp.publisherName,
+       tipp.dateFirstInPrint,
+       tipp.dateFirstOnline
     from TitleInstancePackagePlatform as tipp,
          Combo as hostPlatformCombo,
          Combo as titleCombo,
@@ -396,6 +406,7 @@ select tipp.id,
       [code: 'exportPackage', label: 'TSV Export'],
       [code: 'kbartExport', label: 'KBART Export'],
       [code: 'verifyTitleList', label: 'Verify Title List'],
+      [code: 'packageUrlUpdate', label: 'Trigger Update']
       // [code:'method::registerWebhook', label:'Register Web Hook']
     ]
   }
@@ -436,8 +447,6 @@ select tipp.id,
 
     log.debug("toGoKBXml... ${this.class.name}:${id}");
 
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-
     def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
 
     def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps');
@@ -463,6 +472,7 @@ select tipp.id,
         'fixed'(fixed?.value)
         'paymentType'(paymentType?.value)
         'global'(global?.value)
+        'globalNote'(globalNote)
         'contentType'(contentType?.value)
 
         if (nominalPlatform) {
@@ -477,7 +487,8 @@ select tipp.id,
             'name'(provider.name)
           }
         }
-        'listVerifiedDate'(listVerifiedDate ? sdf.format(listVerifiedDate) : null)
+
+        'listVerifiedDate'(listVerifiedDate ? dateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
 
         builder.'curatoryGroups' {
           curatoryGroups.each { cg ->
@@ -486,36 +497,48 @@ select tipp.id,
             }
           }
         }
-        'dateCreated'(sdf.format(dateCreated))
+
+        'dateCreated'(dateFormatService.formatIsoTimestamp(dateCreated))
         'TIPPs'(count: tipps?.size()) {
           tipps.each { tipp ->
             builder.'TIPP'(['id': tipp[0], 'uuid': tipp[12]]) {
               builder.'status'(tipp[6]?.value)
-              builder.'lastUpdated'(tipp[11] ? sdf.format(tipp[11]) : null)
+              builder.'name'(tipp[18])
+              builder.'lastUpdated'(tipp[11] ? dateFormatService.formatIsoTimestamp(tipp[11]) : null)
+              builder.'series'(tipp[16])
+              builder.'subjectArea'(tipp[17])
+              builder.'publisherName'(tipp[19])
+              builder.'dateFirstInPrint'(tipp[20])
+              builder.'dateFirstOnline'(tipp[21])
               builder.'medium'(tipp[9]?.value)
               builder.'title'(['id': tipp[2], 'uuid': tipp[13]]) {
                 builder.'name'(tipp[1]?.trim())
                 builder.'type'(getTitleClass(tipp[2]))
-                builder.'status'(tipp[15])
+                builder.'status'(tipp[15]?.value)
                 builder.'identifiers' {
                   getTitleIds(tipp[2]).each { tid ->
-                    builder.'identifier'('namespace': tid[0], 'value': tid[1], 'type': tid[2])
+                    builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
                   }
+                }
+              }
+              builder.'identifiers' {
+                getTippIds(tipp[0]).each { tid ->
+                  builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
                 }
               }
               'platform'([id: tipp[4], 'uuid': tipp[14]]) {
                 'primaryUrl'(tipp[10]?.trim())
                 'name'(tipp[3]?.trim())
               }
-              'access'(start: tipp[7] ? sdf.format(tipp[7]) : null, end: tipp[8] ? sdf.format(tipp[8]) : null)
+              'access'(start: tipp[7] ? dateFormatService.formatIsoTimestamp(tipp[7]) : null, end: tipp[8] ? dateFormatService.formatIsoTimestamp(tipp[8]) : null)
               def cov_statements = getCoverageStatements(tipp[0])
               if (cov_statements?.size() > 0) {
                 cov_statements.each { tcs ->
                   'coverage'(
-                    startDate: (tcs.startDate ? sdf.format(tcs.startDate) : null),
+                    startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
                     startVolume: (tcs.startVolume),
                     startIssue: (tcs.startIssue),
-                    endDate: (tcs.endDate ? sdf.format(tcs.endDate) : null),
+                    endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
                     endVolume: (tcs.endVolume),
                     endIssue: (tcs.endIssue),
                     coverageDepth: (tcs.coverageDepth?.value ?: null),
@@ -538,7 +561,15 @@ select tipp.id,
   private static getTitleIds(Long title_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [title_id, refdata_ids, status_active], [readOnly: true]);
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [title_id, refdata_ids, status_active], [readOnly: true]);
+    result
+  }
+
+  @Transient
+  private static getTippIds(Long tipp_id) {
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [tipp_id, refdata_ids, status_active], [readOnly: true]);
     result
   }
 
@@ -599,442 +630,6 @@ select tipp.id,
     }
 
     return result;
-  }
-
-  /**
-   * Definitive rules for a valid package header
-   */
-  @Transient
-  public static def validateDTO(packageHeaderDTO) {
-    def result = [valid: true, errors:[:]]
-
-    if (!packageHeaderDTO.name?.trim()) {
-      result.valid = false
-      result.errors.name = [[message: "Missing package name!", baddata: packageHeaderDTO.name]]
-    }
-
-    def ids_list = packageHeaderDTO.identifiers ?: packageHeaderDTO.ids
-    def id_errors = []
-
-    ids_list?.each { idobj ->
-      def id_def = [:]
-      def ns_obj = null
-
-      if (idobj instanceof Map) {
-        def id_ns = idobj.type ?: (idobj.namespace ?: null)
-
-        id_def.value = idobj.value
-
-        if (id_ns instanceof String) {
-          log.debug("Default namespace handling for ${id_ns}..")
-          ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
-        }
-        else if (id_ns) {
-          log.debug("Handling namespace def ${id_ns}")
-          ns_obj = IdentifierNamespace.get(id_ns)
-        }
-
-        if (!ns_obj) {
-          id_errors.add([message: message(code: 'default.not.found.message', args: ["Namespace", id_ns], default:"unable to lookup identifier namespace ${id_ns}!")])
-        }
-        else {
-          id_def.type = ns_obj.value
-        }
-      }
-      else if (idobj instanceof Integer){
-        Identifier the_id = Identifier.get(id_inc)
-
-        if (!the_id) {
-          id_errors.add([message:"Unable to lookup identifier object by ID!", baddata: idobj])
-          result.valid = false
-        }
-      }
-      else {
-        log.warn("Missing information in id object ${idobj}")
-        id_errors.add([message:"Missing information for identifier object!", baddata: idobj])
-        result.valid = false
-      }
-
-      if (ns_obj && id_def.size() > 0) {
-        if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
-          if ( ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern) ) {
-            log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
-            id_errors.add([message:"Validation for identifier ${id_def.type}:${id_def.value} failed!", baddata: idobj])
-            result.valid = false
-          }
-          else {
-            log.debug("New identifier ..")
-          }
-        }
-        else {
-          log.debug("Found existing identifier ..")
-        }
-      }
-    }
-
-    if (id_errors.size() > 0) {
-      result.errors.ids = id_errors
-    }
-
-    if (packageHeaderDTO.provider && packageHeaderDTO.provider instanceof Integer) {
-      def prov = Org.get(packageHeaderDTO.provider)
-
-      if (!prov) {
-        result.errors.provider = [[message: "Unable to find provider via ID", baddata: packageHeaderDTO.provider]]
-        result.valid =false
-      }
-    }
-
-    if (packageHeaderDTO.nominalPlatform && packageHeaderDTO.nominalPlatform instanceof Integer) {
-      def prov = Platform.get(packageHeaderDTO.nominalPlatform)
-
-      if (!prov) {
-        result.errors.nominalPlatform = [[message: "Unable to find platform via ID", baddata: packageHeaderDTO.nominalPlatform]]
-        result.valid = false
-      }
-    }
-
-    result
-  }
-
-  /**
-   * Definitive rules for taking a package header DTO and inserting or updating an existing package based on package name
-   *
-   * listStatus:'Checked',
-   * status:'Current',
-   * breakable:'Unknown',
-   * consistent:'Unknown',
-   * fixed:'Unknown',
-   * paymentType:'Unknown',
-   * global:'Global',
-   * nominalPlatform:54678
-   * provider:4325
-   * listVerifier:'',
-   * userListVerifier:'benjamin_ahlborn'
-   * listVerifierDate:'2015-06-19T00:00:00Z'
-   * source:[
-   *   url:'http://www.zeitschriftendatenbank.de'
-   *   defaultAccessURL:''
-   *   explanationAtSource:''
-   *   contextualNotes:''
-   *   frequency:''
-   *   ruleset:''
-   *   defaultSupplyMethod:'Other'
-   *   defaultDataFormat:'Other'
-   *   responsibleParty:''
-   * ]
-   * name:'Campus: All Journals'
-   * curatoryGroups:[
-   *   curatoryGroup:"SuUB Bremen"
-   * ]
-   * variantNames : [
-   *   variantName:"Campus: All Journals"
-   * ]
-   */
-  @Transient
-  public static upsertDTO(packageHeaderDTO, def user = null) {
-    log.info("Upsert package with header ${packageHeaderDTO}");
-    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-    def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
-
-    log.debug("Checking by normname ${pkg_normname} ..")
-    def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ?", [pkg_normname, status_deleted])
-    def full_matches = []
-    def created = false
-    def result = packageHeaderDTO.uuid ? Package.findByUuid(packageHeaderDTO.uuid) : null;
-    boolean changed = false;
-
-    if (!result && name_candidates.size() > 0 && packageHeaderDTO.identifiers?.size() > 0) {
-      log.debug("Got ${name_candidates.size()} matches by name. Checking against identifiers!")
-      name_candidates.each { mp ->
-        if (mp.ids.size() > 0) {
-          def id_match = false;
-
-          packageHeaderDTO.identifiers.each { rid ->
-
-            Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(rid.type, rid.value);
-
-            if (mp.ids.contains(the_id)) {
-              id_match = true
-            }
-          }
-
-          if (id_match && !full_matches.contains(mp)) {
-            full_matches.add(mp)
-          }
-        }
-      }
-
-      if (full_matches.size() == 1) {
-        log.debug("Matched package by name + identifier!")
-        result = full_matches[0]
-      } else if (full_matches.size() == 0 && name_candidates.size() == 1) {
-        result = name_candidates[0]
-        log.debug("Found a single match by name!")
-      } else {
-        log.warn("Found multiple possible matches for package! Aborting..")
-        return result
-      }
-    } else if (!result && name_candidates.size() == 1) {
-      log.debug("Matched package by name!")
-      result = name_candidates[0]
-    } else if (result && result.name != packageHeaderDTO.name) {
-      def current_name = result.name
-      changed |= ClassUtils.setStringIfDifferent(result, 'name', packageHeaderDTO.name)
-      if (!result.variantNames.find { it.variantName == current_name }) {
-        def new_variant = new KBComponentVariantName(owner: result, variantName: current_name).save(flush: true, failOnError: true)
-      }
-    }
-
-    if (!result) {
-      log.debug("Did not find a match via name, trying existing variantNames..")
-      def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
-      def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
-
-      if (variant_candidates.size() == 1) {
-        result = variant_candidates[0]
-        log.debug("Package matched via existing variantName.")
-      }
-    }
-
-    if (!result && packageHeaderDTO.variantNames?.size() > 0) {
-      log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
-      packageHeaderDTO.variantNames.each {
-
-        if (it.trim().size() > 0) {
-          result = Package.findByName(it)
-
-          if (result) {
-            log.debug("Found existing package name for variantName ${it}")
-          } else {
-
-            def variant_normname = GOKbTextUtils.normaliseString(it)
-            def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
-
-            if (variant_candidates.size() == 1) {
-              log.debug("Found existing package variant name for variantName ${it}")
-              result = variant_candidates[0]
-            }
-          }
-        }
-      }
-    }
-
-    if (!result) {
-      log.debug("No existing package matched. Creating new package..")
-
-      result = new Package(name: packageHeaderDTO.name, normname: pkg_normname)
-
-      created = true
-
-      if (packageHeaderDTO.uuid && packageHeaderDTO.uuid.trim().size() > 0) {
-        result.uuid = packageHeaderDTO.uuid
-      }
-
-      result.save(flush: true, failOnError: true)
-    } else if (user && !user.hasRole('ROLE_SUPERUSER') && result.curatoryGroups && result.curatoryGroups?.size() > 0) {
-      def cur = user.curatoryGroups?.id.intersect(result.curatoryGroups?.id)
-
-      if (!cur) {
-        log.debug("No curator!")
-        return result
-      }
-    }
-
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.listStatus, result, 'listStatus')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.status, result, 'status')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.editStatus, result, 'editStatus')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.scope, result, 'scope')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.breakable, result, 'breakable')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.consistent, result, 'consistent')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.fixed, result, 'fixed')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.paymentType, result, 'paymentType')
-    changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result, 'global')
-    changed |= ClassUtils.setStringIfDifferent(result, 'listVerifier', packageHeaderDTO.listVerifier?.toString())
-    // User userListVerifier
-    changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate');
-
-    // ListVerifier
-
-    if (packageHeaderDTO.userListVerifier) {
-      def looked_up_user = User.findByUsername(packageHeaderDTO.userListVerifier)
-      if (looked_up_user && ((result.userListVerifier == null) || (result.userListVerifier?.id != looked_up_user?.id))) {
-        result.userListVerifier = looked_up_user
-        changed = true
-      } else {
-        log.warn("Unable to find username for list verifier ${packageHeaderDTO.userListVerifier}");
-      }
-    }
-
-    // Platform
-
-    if (packageHeaderDTO.nominalPlatform) {
-      def platformDTO = [:];
-
-      if (packageHeaderDTO.nominalPlatform instanceof String && packageHeaderDTO.nominalPlatform.trim()) {
-        platformDTO['name'] = packageHeaderDTO.nominalPlatform
-      } else if (packageHeaderDTO.nominalPlatform instanceof Integer) {
-        platformDTO['id'] = (Long) packageHeaderDTO.nominalPlatform
-      } else if (packageHeaderDTO.nominalPlatform.name && packageHeaderDTO.nominalPlatform.name.trim().size() > 0) {
-        platformDTO = packageHeaderDTO.nominalPlatform
-      }
-
-      if (platformDTO) {
-        def np = null
-
-        if (platformDTO.uuid) {
-          np = Platform.findByUuid(platformDTO.uuid)
-        } else if (platformDTO.id) {
-          np = Platform.get(platformDTO.id)
-        } else if (platformDTO.name) {
-          np = Platform.findByName(platformDTO.name)
-        }
-
-        if (!np && platformDTO.name) {
-          np = Platform.upsertDTO(platformDTO)
-        }
-
-        if (np) {
-          if (result.nominalPlatform != np) {
-            result.nominalPlatform = np;
-            changed = true
-          } else {
-            log.debug("Platform already set")
-          }
-        } else {
-          log.warn("Unable to locate nominal platform ${packageHeaderDTO.nominalPlatform}");
-        }
-      } else {
-        log.warn("Could not extract platform information from JSON!")
-      }
-    }
-
-    // Provider
-
-    if (packageHeaderDTO.nominalProvider) {
-
-      def providerDTO = [:]
-
-      if (packageHeaderDTO.nominalProvider instanceof String && packageHeaderDTO.nominalProvider.trim()) {
-        providerDTO['name'] = packageHeaderDTO.nominalProvider
-      } else if (packageHeaderDTO.nominalProvider.name && packageHeaderDTO.nominalProvider.name.trim()) {
-        providerDTO = packageHeaderDTO.nominalProvider
-      }
-
-      log.debug("Trying to set package provider.. ${providerDTO}")
-      def prov = null
-
-      if (providerDTO?.uuid) {
-        prov = Org.findByUuid(providerDTO.uuid)
-      }
-
-      if (providerDTO && !prov) {
-        def norm_prov_name = KBComponent.generateNormname(providerDTO.name)
-
-        prov = Org.findByNormname(norm_prov_name)
-
-        if (!prov) {
-          log.debug("None found by Normname ${norm_prov_name}, trying variants")
-          def variant_normname = GOKbTextUtils.normaliseString(providerDTO.name)
-          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status = ?", [variant_normname, status_deleted]);
-
-          if (candidate_orgs.size() == 1) {
-            prov = candidate_orgs[0]
-          } else if (candidate_orgs.size() == 0) {
-            log.debug("No org match for provider ${packageHeaderDTO.nominalProvider}. Creating new org..")
-            prov = new Org(name: providerDTO.name, normname: norm_prov_name, uuid: providerDTO.uuid ?: null).save(flush: true, failOnError: true);
-          } else {
-            log.warn("Multiple org matches for provider ${packageHeaderDTO.nominalProvider}. Skipping..");
-          }
-        }
-      }
-
-      if (prov) {
-        if (result.provider != prov) {
-          result.provider = prov;
-
-          log.debug("Provider ${prov.name} set.")
-          changed = true
-        } else {
-          log.debug("No provider change")
-        }
-      }
-    } else {
-      log.debug("No provider found!")
-    }
-
-    // Source
-
-    if (packageHeaderDTO.source) {
-      def src = null
-
-      if (packageHeaderDTO.source instanceof Integer) {
-        src = Source.get(packageHeaderDTO.source)
-      }
-      else if (packageHeaderDTO.source.id) {
-        src = Source.get(packageHeaderDTO.source.id)
-      }
-      else if (packageHeaderDTO.source.url) {
-        src = Source.findByUrl(packageHeaderDTO.source.url)
-      }
-
-      if (src && result.source != src) {
-        result.source = src
-        changed = true
-      }
-    }
-
-    // variantNames are handled in ComponentUpdateService
-    // packageHeaderDTO.variantNames?.each {
-    //   if ( it.trim().size() > 0 ) {
-    //     result.ensureVariantName(it)
-    //     changed=true
-    //   }
-    // }
-
-    // CuratoryGroups
-
-    packageHeaderDTO.curatoryGroups?.each {
-      def cg = null
-      def cgname = null
-
-      if (it instanceof Integer) {
-        cg = CuratoryGroup.get(it)
-      }
-      else if (it instanceof String) {
-        String normname = CuratoryGroup.generateNormname(it)
-        cgname = it
-
-        cg = CuratoryGroup.findByNormname(normname)
-      }
-      else if (it.id){
-        cg = CuratoryGroup.get(it.id)
-      }
-      else if (it.name) {
-        String normname = CuratoryGroup.generateNormname(it.name)
-        cgname = it.name
-
-        cg = CuratoryGroup.findByNormname(normname)
-      }
-
-      if (cg) {
-        if (result.curatoryGroups.find { it.name == cg.name }) {
-        } else {
-
-          result.curatoryGroups.add(cg)
-          changed = true;
-        }
-      } else if (cgname) {
-        def new_cg = new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
-        result.curatoryGroups.add(new_cg)
-        changed = true
-      }
-    }
-
-    result.save(flush:true)
-
-
-    result
   }
 
   public void addCuratoryGroupIfNotPresent(String cgname) {

@@ -13,21 +13,20 @@ import grails.util.Holders
 
 import groovy.util.logging.*
 
-import java.text.SimpleDateFormat
-
 @Slf4j
 class ComponentUpdateService {
-  def grailsApplication
-  def restMappingService
+  def componentLookupService
+  def reviewRequestService
+  def dateFormatService
 
-  public boolean ensureCoreData(KBComponent component, data, boolean sync = false) {
-    return ensureSync(component, data, sync)
+  private final Object findLock = new Object()
+
+  public boolean ensureCoreData(KBComponent component, data, boolean sync = false, user) {
+    return ensureSync(component, data, sync, user)
   }
 
-  private final findLock = new Object()
-
   @Synchronized("findLock")
-  private boolean ensureSync(KBComponent component, data, boolean sync = false) {
+  private boolean ensureSync(KBComponent component, data, boolean sync = false, user) {
 
     // Set the name.
     def hasChanged = false
@@ -56,18 +55,20 @@ class ComponentUpdateService {
     RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
     data.identifiers.each { ci ->
-      String testKey = "${ci.type}|${ci.value}".toString()
+      def namespace_val = ci.type ?: ci.namespace
+      String testKey = "${namespace_val}|${ci.value}".toString()
 
-      if (ci.type && ci.value && ci.type.toLowerCase() != "originediturl") {
+      if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {
 
         if (!ids.contains(testKey)) {
           def canonical_identifier = null
 
           if (!KBComponent.has(component, 'publisher')) {
-            canonical_identifier = Identifier.lookupOrCreateCanonicalIdentifier(ci.type, ci.value)
-          } else {
+            canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
+          }
+          else {
             def norm_id = Identifier.normalizeIdentifier(ci.value)
-            def ns = IdentifierNamespace.findByValueIlike(ci.type)
+            def ns = IdentifierNamespace.findByValueIlike(namespace_val)
             canonical_identifier = Identifier.findByNamespaceAndNormnameIlike(ns, norm_id)
           }
 
@@ -76,25 +77,31 @@ class ComponentUpdateService {
             def duplicate = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [canonical_identifier, component])
 
             if (duplicate.size() == 0) {
-              log.debug("adding identifier(${ci.type},${ci.value})(${canonical_identifier.id})")
+              log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
               def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
               hasChanged = true
-            } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
+            }
+            else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
-              ReviewRequest.raise(
+              reviewRequestService.raise(
                 component,
                 "Review ID status.",
                 "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
-                user
+                user,
+                null,
+                null,
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
               )
-            } else {
+            }
+            else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")
             }
 
             // Add the value for comparison.
             ids << testKey
-          } else {
+          }
+          else {
             log.debug("Could not find or create Identifier!")
           }
         }
@@ -127,7 +134,7 @@ class ComponentUpdateService {
     }
 
     // handle the source.
-    if (!component.source && data.source && data.source?.size() > 0) {
+    if (!component.source && data.source) {
       component.source = createOrUpdateSource(data.source)?.get('component')
     }
 
@@ -179,7 +186,8 @@ class ComponentUpdateService {
             def new_combo = new Combo(fromComponent: component, toComponent: group, type: combo_type_cg, status: combo_active).save(flush: true, failOnError: true)
             hasChanged = true
             groups << [id: group.id, name: group.name]
-          } else {
+          }
+          else {
             log.debug("Could not find linked group ${name}!")
           }
         }
@@ -195,7 +203,8 @@ class ComponentUpdateService {
           }
         }
       }
-    } else {
+    }
+    else {
       log.debug("Skipping CG handling ..")
     }
 
@@ -215,6 +224,7 @@ class ComponentUpdateService {
             }
 
             component.refresh()
+            hasChanged = true
             def prop = new KBComponentAdditionalProperty()
             prop.propertyDefn = pType
             prop.apValue = it.value
@@ -238,6 +248,7 @@ class ComponentUpdateService {
           // Add to collection.
           if (new_variant_name) {
             variants << [id: new_variant_name.id, variantName: new_variant_name.variantName]
+            hasChanged = true
           }
         }
       }
@@ -247,19 +258,19 @@ class ComponentUpdateService {
       variants.each { vn ->
         if (!data.variantNames || !data.variantNames.contains(vn.variantName)) {
           def vobj = KBComponentVariantName.get(vn.id)
-          vobj.delete()
-          component.refresh()
+          component.removeFromVariantNames(vobj)
           hasChanged = true
         }
       }
     }
 
     // Prices.
-    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
     if (data.prices) {
       for (def priceData : data.prices) {
-        component.setPrice(priceData.type, "${priceData.amount} $priceData.currency")
-        hasChanged = true
+        if (priceData.amount != null && priceData.currency) {
+          component.setPrice(priceData.type, "${priceData.amount} ${priceData.currency}", priceData.startDate ? dateFormatService.parseDate(priceData.startDate) : null, priceData.endDate ? dateFormatService.parseDate(priceData.endDate) : null)
+          hasChanged = true
+        }
       }
     }
 
@@ -319,6 +330,7 @@ class ComponentUpdateService {
     }
     catch (Exception e) {
       e.printStackTrace()
+      result.error = e
     }
     result
   }

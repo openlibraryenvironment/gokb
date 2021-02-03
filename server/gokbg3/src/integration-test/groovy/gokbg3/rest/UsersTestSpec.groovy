@@ -124,6 +124,12 @@ class UsersTestSpec extends AbstractAuthSpec {
 
   void "test PUT /rest/users/{id}"() {
     def urlPath = getUrlPath()
+    def contributorRole = Role.findByAuthority('ROLE_CONTRIBUTOR')
+    def userRole = Role.findByAuthority('ROLE_USER')
+    def editorRole = Role.findByAuthority('ROLE_EDITOR')
+    def adminRole = Role.findByAuthority('ROLE_ADMIN')
+    def apiRole = Role.findByAuthority('ROLE_API')
+
     // use the bearerToken to write to /rest/user
     when:
     String accessToken = getAccessToken()
@@ -136,7 +142,7 @@ class UsersTestSpec extends AbstractAuthSpec {
                     accountLocked   : false,
                     passwordExpired : false,
                     defaultPageSize : 15,
-                    roleIds         : [2, 3, 4, 6, 7]
+                    roleIds         : [contributorRole.id, userRole.id, editorRole.id, apiRole.id]
     ]
     RestResponse resp = rest.put("${urlPath}/rest/users/$altUser.id") {
       // headers
@@ -150,13 +156,17 @@ class UsersTestSpec extends AbstractAuthSpec {
     resp.json.data.defaultPageSize == 15
     sleep(500)
     def checkUser = User.findById(altUser.id)
-    !checkUser.authorities.contains(Role.findByAuthority("ROLE_ADMIN"))
-    checkUser.authorities.contains(Role.findByAuthority("ROLE_USER"))
+    !checkUser.authorities.contains(adminRole)
+    checkUser.authorities.contains(userRole)
     checkUser.email == "nobody@localhost"
   }
 
   void "test PATCH /rest/users/{id}"() {
     def urlPath = getUrlPath()
+    def contributorRole = Role.findByAuthority('ROLE_CONTRIBUTOR')
+    def userRole = Role.findByAuthority('ROLE_USER')
+    def editorRole = Role.findByAuthority('ROLE_EDITOR')
+
     when:
     String accessToken = getAccessToken()
     Map bodyData = [
@@ -164,7 +174,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       password        : "someOther",
       enabled         : false,
       defaultPageSize : 18,
-      roleIds         : [2, 3, 5],
+      roleIds         : [contributorRole.id, userRole.id, editorRole.id],
       curatoryGroupIds: []
     ]
 
@@ -187,6 +197,9 @@ class UsersTestSpec extends AbstractAuthSpec {
 
   void "test PATCH /rest/users/{id} with invalid data"() {
     def urlPath = getUrlPath()
+    def contributorRole = Role.findByAuthority('ROLE_CONTRIBUTOR')
+    def userRole = Role.findByAuthority('ROLE_USER')
+    def editorRole = Role.findByAuthority('ROLE_EDITOR')
     when:
     String accessToken = getAccessToken()
     Map bodyData = [
@@ -194,7 +207,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       password        : "someOther",
       enabled         : false,
       defaultPageSize : 18,
-      roleIds         : [2, 3, 5],
+      roleIds         : [contributorRole.id, userRole.id, editorRole.id],
       curatoryGroupIds: [],
       organisation    : 666
     ]
@@ -218,6 +231,9 @@ class UsersTestSpec extends AbstractAuthSpec {
 
   void "test POST /rest/users"() {
     def urlPath = getUrlPath()
+    def contributorRole = Role.findByAuthority('ROLE_CONTRIBUTOR')
+    def userRole = Role.findByAuthority('ROLE_USER')
+    def editorRole = Role.findByAuthority('ROLE_EDITOR')
     when:
     String accessToken = getAccessToken()
     Map bodyData = [
@@ -227,8 +243,7 @@ class UsersTestSpec extends AbstractAuthSpec {
       displayName     : "DisplayName",
       enabled         : true,
       defaultPageSize : 18,
-      roleIds         : [Role.findByAuthority("ROLE_CONTRIBUTOR").id,
-                         Role.findByAuthority("ROLE_EDITOR").id],
+      roleIds         : [contributorRole.id, editorRole.id],
       curatoryGroupIds: [cg.id]
     ]
     RestResponse resp = rest.post("${urlPath}/rest/users") {

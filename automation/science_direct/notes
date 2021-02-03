@@ -1,2 +1,0 @@
-wget -O sd_34_ddmmyyyy.tsv "http://holdings.sciencedirect.com/holdings/productReport.url?packageId=&productId=34"
-

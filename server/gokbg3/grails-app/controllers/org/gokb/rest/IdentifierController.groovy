@@ -26,12 +26,17 @@ class IdentifierController {
   def messageService
   def restMappingService
   def componentLookupService
+  def targetTypeMap = [:]
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
     def start_db = LocalDateTime.now()
 
 
@@ -43,13 +48,17 @@ class IdentifierController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
     def obj = null
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     if (params.oid || params.id) {
       obj = Identifier.findByUuid(params.id)
@@ -58,7 +67,7 @@ class IdentifierController {
         obj = Identifier.get(genericOIDService.oidToId(params.id))
       }
 
-      if (obj?.isReadable()) {
+      if (obj) {
 
         params['_embed'] = params['_embed'] ?: 'identifiedComponents'
 
@@ -66,15 +75,10 @@ class IdentifierController {
 
         // result['_currentTipps'] = obj.currentTippCount
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
-      } else if (!obj) {
+      } else {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
-        result.result = 'ERROR'
-      } else {
-        result.message = "Access to object was denied!"
-        response.setStatus(403)
-        result.code = 403
         result.result = 'ERROR'
       }
     } else {
@@ -110,7 +114,7 @@ class IdentifierController {
         Identifier obj = null
 
         try {
-          obj = Identifier.lookupOrCreateCanonicalIdentifier(ns, reqBody.value, false)
+          obj = componentLookupService.lookupOrCreateCanonicalIdentifier(ns.value, reqBody.value,false)
         }
         catch (grails.validation.ValidationException ve) {
           log.debug("Identifier ${reqBody} has failed validation!")
@@ -224,17 +228,36 @@ class IdentifierController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def namespace() {
-    def result = [_links:[:]]
+    if (targetTypeMap.size() == 0) {
+      fillTargetMap()
+    }
+    def result = [_links: [:]]
     def data = []
     params << [_exclude:"_links"]
-    def user = User.get(springSecurityService.principal.id)
     def base = grailsApplication.config.serverURL + "/rest"
-    List<IdentifierNamespace> nss = IdentifierNamespace.all
+    List<IdentifierNamespace> nss = []
+    if (params.targetType != null) {
+      nss = IdentifierNamespace.findAllByTargetType(targetTypeMap[params.targetType])
+      if (params.targetType in ['Book', 'Journal', 'Database', 'Other']) {
+        IdentifierNamespace.findAllByTargetType(targetTypeMap['Title'])
+          .each { ns -> nss << ns }
+      } else if (params.targetType == 'Title') {
+        IdentifierNamespace.findAllByTargetTypeInList([targetTypeMap['Book'], targetTypeMap['Journal'], targetTypeMap['Database'], targetTypeMap['Other']])
+          .each { ns -> nss << ns }
+      }
+    } else {
+      nss = IdentifierNamespace.all
+    }
+
+    if (params.q?.trim()) {
+      nss = nss.collect { it.name.startsWith(params.q.trim()) }
+    }
+
     nss.each { ns ->
       data << [
-        name:ns.value,
+        name:ns.name,
         value:ns.value,
         id: ns.id,
         pattern: ns.pattern,
@@ -244,5 +267,12 @@ class IdentifierController {
     result.data=data
     result['_links']['self'] = ['href': base + "/identifier-namespaces"]
     render result as JSON
+  }
+
+  private void fillTargetMap() {
+    RefdataValue.findAllByOwner(RefdataCategory.findByLabel('IdentifierNamespace.TargetType'))
+      .each { refVal ->
+        targetTypeMap.put((refVal.value), refVal)
+      }
   }
 }

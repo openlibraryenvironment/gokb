@@ -27,13 +27,28 @@ class TitleController {
   def messageService
   def restMappingService
   def titleLookupService
+  def titleHistoryService
   def componentLookupService
+  def dateFormatService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+  def getTypes() {
+    def result = ["serial","monograph","database"]
+
+    return result as JSON
+  }
+
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
+    log.debug("Index with params: ${params}")
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
+
     def es_search = params.es ? true : false
     Class type = setType(params)
 
@@ -82,7 +97,7 @@ class TitleController {
     return type
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
     def obj = null
@@ -90,7 +105,11 @@ class TitleController {
     def embeds = params['_embed'] ? params['_embed'].split(',') : []
     def is_curator = true
     Class type = setType(params)
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     if (type && (params.oid || params.id)) {
       obj = type.findByUuid(params.id)
@@ -99,7 +118,7 @@ class TitleController {
         obj = type.get(genericOIDService.oidToId(params.id))
       }
 
-      if (obj?.isReadable()) {
+      if (obj) {
         result = restMappingService.mapObjectToJson(obj, params, user)
 
         if ( (params.history && params.history == 'true') || includes.contains('history') || embeds.contains('history') ) {
@@ -111,16 +130,10 @@ class TitleController {
           }
         }
       }
-      else if (!obj) {
+      else {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
-        result.result = 'ERROR'
-      }
-      else {
-        result.message = "Access to object was denied!"
-        response.setStatus(403)
-        result.code = 403
         result.result = 'ERROR'
       }
     }
@@ -140,7 +153,7 @@ class TitleController {
     def result = ['result':'OK', 'params': params]
     def reqBody = request.JSON
     def errors = [:]
-    Class type = setType(params)
+    Class type = setType(reqBody?.type ? reqBody : params)
     def obj = null
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
@@ -196,7 +209,7 @@ class TitleController {
                   obj,
                   "New TI created.",
                   "There have been possible conflicts with other existing titles.",
-                  user, 
+                  user,
                   null,
                   (additionalInfo as JSON).toString()
                 )
@@ -254,6 +267,7 @@ class TitleController {
     }
 
     if (errors.size() > 0) {
+      log.debug("Errors: ${errors}")
       result.result = 'ERROR'
       response.setStatus(400)
       result.error = errors
@@ -262,7 +276,7 @@ class TitleController {
     render result as JSON
   }
 
-  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
+  @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='GET')
   def getHistory() {
     def result = [:]
     def user = User.get(springSecurityService.principal.id)
@@ -290,17 +304,320 @@ class TitleController {
     render result as JSON
   }
 
-  private def getDirectHistory(obj, params, user) {
+  @Transactional
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
+  def addHistory() {
+    def result = [:]
+    def errors = [:]
+    def reqBody = request.JSON
+    def ti = null
+
+    if (params.id) {
+      ti = TitleInstance.findByUuid(params.id)
+
+      if (!ti) {
+        ti = TitleInstance.get(genericOIDService.oidToId(params.id))
+      }
+    }
+
+    if ( ti && (reqBody.from || reqBody.to) && reqBody.date) {
+      def add_result = titleHistoryService.addNewEvent(ti, reqBody)
+
+      if (add_result.errors) {
+        errors << add_result
+      }
+    }
+    else if (!ti) {
+      result.result = "ERROR"
+      response.status = 404
+      result.message = "Unable to look up title with ID ${params.id}!"
+    }
+    else if (!reqBody.date) {
+      result.result = "ERROR"
+      response.status = 400
+      result.message = "Missing event date!"
+    }
+    else {
+      result.result = "ERROR"
+      response.status = 400
+      result.message = "Missing history partner!"
+    }
+
+    if (errors.size() > 0) {
+      result.result = "ERROR"
+      result.errors = errors
+      response.status = 400
+    }
+    else {
+      result.data = getDirectHistory(ti, [:])
+    }
+
+    render result as JSON
+  }
+
+  @Transactional
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
+  def updateHistory() {
+    log.debug("Updating history ..")
+    def result = [:]
+    def errors = [:]
+    def remove = (request.method == 'PUT')
+    def reqBody = request.JSON
+    def ti = null
+
+    if (params.id) {
+      ti = TitleInstance.findByUuid(params.id)
+
+      if (!ti) {
+        ti = TitleInstance.get(genericOIDService.oidToId(params.id))
+      }
+    }
+
+    if (ti) {
+      def current_history = ti.titleHistory
+      def events = []
+
+      log.debug("Current history: ${current_history}")
+
+      if (reqBody instanceof List) {
+        log.debug("Got list of events")
+
+        reqBody.each { event ->
+          log.debug("Event ${event}")
+          def parts = [from: [], to: []]
+
+          if (event.id) {
+            def matched_event = current_history.find { it.id == event.id }
+
+            if (event.date && matched_event && event.date != dateFormatService.formatDate(matched_event.eventDate)) {
+              def he_obj = ComponentHistoryEvent.get(matched_event.id)
+
+              if (he_obj) {
+                def parsed_date = null
+
+                try {
+                  parsed_date = dateFormatService.parseDate(event.date)
+                }
+                catch (Exception e){
+                  log.debug("Illegal date value ${event.date}!")
+
+                  if (!errors.date)
+                    errors.date = []
+
+                  errors.date << [message: "Unable to parse event date!", baddate: event]
+                }
+
+                if (errors.size() == 0 && parsed_date) {
+                  he_obj.eventDate = parsed_date
+                  log.debug("Updated date of existing event!")
+                }
+
+                events.add(he_obj.id)
+              }
+              else {
+                log.debug("Unable to lookup event by id!")
+                if (!errors.id)
+                  errors.id = []
+
+                errors.id << [message: "Unable to lookup event for ID ${event.id}", baddata: event]
+              }
+            }
+          }
+          else {
+            if (event.from instanceof List && !event.from.contains(ti.id)) {
+              event.from.each { entry ->
+                def cti = TitleInstance.get(entry)
+
+                if (cti) {
+                  def addResult = ensureSingleParticipant(ti, 'from', cti, event.date)
+
+                  if (addResult.errors) {
+                    errors << addResult.errors
+                  }
+                  else {
+                    log.debug("New event ${addResult}")
+                    events.add(addResult.id)
+                  }
+                }
+                else {
+                  if (!errors.id)
+                    errors.from = []
+
+                  errors.id << [message: "Unable to lookup title for ID ${from_entry.id}", baddata: entry, code: 404]
+                }
+              }
+            }
+
+            if (event.to instanceof List && !event.to.contains(ti.id)) {
+              event.to.each { entry ->
+                def cti = TitleInstance.get(entry)
+
+                if (cti) {
+                  def addResult = ensureSingleParticipant(ti, 'to', cti, event.date)
+
+                  if (addResult.errors) {
+                    errors << addResult.errors
+                  }
+                  else {
+                    log.debug("New event ${addResult}")
+                    events.add(addResult.id)
+                  }
+                }
+                else {
+                  if (!errors.id)
+                    errors.from = []
+
+                  errors.id << [message: "Unable to lookup title for ID ${from_entry.id}", baddata: entry, code: 404]
+                }
+              }
+            }
+
+            if (event.from instanceof Integer && event.from != ti.id) {
+              def cti = TitleInstance.get(event.from)
+
+              if (cti) {
+                def addResult = ensureSingleParticipant(ti, 'from', cti, event.date)
+
+                if (addResult.errors) {
+                  errors << addResult.errors
+                }
+                else {
+                  log.debug("New event ${addResult}")
+                  events.add(addResult.id)
+                }
+              }
+              else {
+                if (!errors.id)
+                  errors.from = []
+
+                errors.id << [message: "Unable to lookup title for ID ${from_entry.id}", baddata: entry, code: 404]
+              }
+            } else if (event.to instanceof Integer && event.to != ti.id) {
+              def cti = TitleInstance.get(event.from)
+
+              if (cti) {
+                def addResult = ensureSingleParticipant(ti, 'from', cti, event.date)
+
+                if (addResult.errors) {
+                  errors << addResult.errors
+                }
+                else {
+                  log.debug("New event ${addResult}")
+                  events.add(addResult.id)
+                }
+              }
+              else {
+                if (!errors.id)
+                  errors.from = []
+
+                errors.id << [message: "Unable to lookup title for ID ${from_entry.id}", baddata: entry, code: 404]
+              }
+            }
+          }
+        }
+
+        if (errors.size() > 0) {
+          result.result = 'ERROR'
+          result.message = "There were errors updating the title history!"
+          response.status = 400
+          result.errors = errors
+        }
+        else if (remove) {
+          current_history.each { ce ->
+            if (!events.contains(ce.id)) {
+              def event = ComponentHistoryEvent.get(ce.id)
+              event.delete(flush:true, failOnError:true)
+            }
+          }
+        }
+        result.data = getDirectHistory(ti, [:])
+      }
+      else {
+        log.debug("Found illegal payload format!")
+        result.result = 'ERROR'
+        result.message = "Unexpected payload format, expected array of events!"
+        response.status = 400
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      result.message = "Unable to lookup title!"
+      response.status = 404
+    }
+
+    render result as JSON
+  }
+
+  @Transactional
+  private ensureSingleParticipant(ti, type, participant, date) {
+    def result = [:]
+    def dupe_hql = '''select che from ComponentHistoryEvent as che where exists
+    (select pf.id from ComponentHistoryEventParticipant as pf where pf.participant = :from and pf.participantRole = 'in' and pf.event = che)
+    AND exists (select pt.id from ComponentHistoryEventParticipant as pt where pt.participant = :to and pt.participantRole = 'out' and pt.event = che)'''
+
+    def pars = [:]
+
+    if (type == 'from') {
+      pars = [from: participant, to: ti]
+    } else {
+      pars = [from: ti, to: participant]
+    }
+
+    def dupe = ComponentHistoryEvent.executeQuery(dupe_hql, pars)
+
+    if (!dupe) {
+      def req = [date: date]
+
+      if (type == 'from') {
+        req.from = [participant.id]
+      } else {
+        req.to = [participant.id]
+      }
+
+      def add_result = titleHistoryService.addNewEvent(ti, req)
+
+      if (add_result.errors) {
+        result.errors = add_result.errors
+      }
+      else {
+        result.id = add_result.new_events[0]
+      }
+    }
+    else {
+      if (dupe.size() == 1) {
+        result.id = dupe[0].id
+      }
+      else {
+        log.error("Got multiple history events between two titles ${dupe}!")
+      }
+    }
+
+    result
+  }
+
+  @Transactional
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
+  def deleteHistoryEvent() {
+    def event = ComponentHistoryEvent.get(params.id)
+
+    if (event) {
+      event.delete(flush:true, failOnError:true)
+    }
+    else {
+      response.status = 404
+    }
+  }
+
+  private def getDirectHistory(obj, params, User user = null) {
     def result = []
     def embeds = params['_embed'] ? params['_embed'].split(',') : []
-    def sdf = new SimpleDateFormat("yyyy-MM-dd")
 
     if (obj) {
       def history = obj.titleHistory
 
       if (history) {
         history.each { he ->
-          def mapped_event = [id: he.id, date: sdf.format(he.date), from: [], to: []]
+          def mapped_event = [id: he.id, date: dateFormatService.formatDate(he.date), from: [], to: []]
 
           he.from.each { f ->
             if (embeds.contains('history')) {
@@ -346,15 +663,6 @@ class TitleController {
 
       if (editable) {
         obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
-
-        if ( reqBody.status ) {
-          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          RefdataValue newStatus = RefdataValue.get(reqBody.status)
-
-          if ( status_deleted != newStatus || obj.isDeletable() ) {
-            obj.status = newStatus
-          }
-        }
 
         if ( obj.validate() ) {
           log.debug("No errors.. updating combos..")
@@ -404,21 +712,20 @@ class TitleController {
     log.debug("Updating title combos ..")
     def errors = [:]
 
-    if (reqBody.ids || reqBody.identifiers) {
-      def id_map = reqBody.ids ?: reqBody.identifiers
-      def id_errors = restMappingService.updateIdentifiers(obj, id_map, remove)
+    if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
+      def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
+
+      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
 
       if (id_errors.size() > 0) {
         errors.ids = id_errors
       }
     }
 
-    if (reqBody.publisher) {
-      def pub_errors = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
+    def pub_errors = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
 
-      if (pub_errors.size() > 0)
-        errors.publisher = pub_errors
-    }
+    if (pub_errors.size() > 0)
+      errors.publisher = pub_errors
 
     errors
   }
@@ -505,4 +812,59 @@ class TitleController {
     }
     result
   }
+
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+  def tipps() {
+    def result = [:]
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
+    log.debug("tipps :: ${params}")
+    def obj = TitleInstance.findByUuid(params.id)
+
+    if (!obj) {
+      obj = TitleInstance.get(genericOIDService.oidToId(params.id))
+    }
+
+    log.debug("TIPPs for Title: ${obj}")
+
+    if (obj) {
+      def context = "/titles/" + params.id + "/tipps"
+      def base = grailsApplication.config.serverURL + "/rest"
+      def es_search = params.es ? true : false
+
+      params.remove('id')
+      params.remove('uuid')
+      params.remove('es')
+      params.title = obj.id
+
+      def esParams = new HashMap(params)
+      esParams.remove('componentType')
+      esParams.componentType = "TIPP" // Tells ESSearchService what to look for
+
+      log.debug("New ES params: ${esParams}")
+      log.debug("New DB params: ${params}")
+
+      if (es_search) {
+        def start_es = LocalDateTime.now()
+        result = ESSearchService.find(esParams, context)
+        log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+      }
+      else {
+        def start_db = LocalDateTime.now()
+        result = componentLookupService.restLookup(user, TitleInstancePackagePlatform, params, context)
+        log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      result.message = "Title id ${params.id} could not be resolved!"
+      response.setStatus(404)
+    }
+
+    render result as JSON
+  }
+
 }

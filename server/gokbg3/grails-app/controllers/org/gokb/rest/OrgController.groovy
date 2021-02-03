@@ -28,12 +28,18 @@ class OrgController {
   def componentLookupService
   def componentUpdateService
   def orgService
+  def platformService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
+    log.debug("Org index query: ${params}")
     def result = [:]
     def base = grailsApplication.config.serverURL + "/rest"
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
     def es_search = params.es ? true : false
 
     params.componentType = "Org" // Tells ESSearchService what to look for
@@ -53,13 +59,17 @@ class OrgController {
     render result as JSON
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
     def obj = null
     def base = grailsApplication.config.serverURL + "/rest"
     def is_curator = true
-    User user = User.get(springSecurityService.principal.id)
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     if (params.oid || params.id) {
       obj = Org.findByUuid(params.id)
@@ -72,19 +82,13 @@ class OrgController {
         obj = Org.get(params.long('id'))
       }
 
-      if (obj?.isReadable()) {
+      if (obj) {
         result = restMappingService.mapObjectToJson(obj, params, user)
       }
-      else if (!obj) {
+      else {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
-        result.result = 'ERROR'
-      }
-      else {
-        result.message = "Access to object was denied!"
-        response.setStatus(403)
-        result.code = 403
         result.result = 'ERROR'
       }
     }
@@ -141,7 +145,7 @@ class OrgController {
         log.debug("Updating ${obj}")
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        if( obj.validate() ) {
+        if ( obj.validate() ) {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
             obj.save()
@@ -269,20 +273,22 @@ class OrgController {
     log.debug("Updating package combos ..")
     def errors = [:]
 
-    if (reqBody.ids || reqBody.identifiers) {
-      def idmap = reqBody.ids ?: reqBody.identifiers
-      def id_errors = restMappingService.updateIdentifiers(obj, idmap)
+    if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
+      def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      if (id_errors.size > 0)
-        errors['ids'] = id_errors
+      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+
+      if (id_errors.size() > 0) {
+        errors.ids = id_errors
+      }
     }
 
-    if (reqBody.providedPlatforms) {
-      def plt_list = reqBody.providedPlatforms ?: reqBody.platforms
+    if (reqBody.providedPlatforms instanceof Collection) {
+      def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
       Set new_plts = []
 
-      plt_list.each { plt ->
-        def plt_obj = null
+      reqBody.providedPlatforms.each { plt ->
+        Platform plt_obj = null
 
         if (plt instanceof String) {
           plt_obj = Platform.findByNameIlike(plt)
@@ -290,11 +296,44 @@ class OrgController {
         else if (plt instanceof Integer){
           plt_obj = Platform.findById(plt)
         }
-        else if (plt instanceof Map && plt.id) {
-          plt_obj = Platform.findById(plt.id)
-        }
-        else {
-          log.debug("Not processing value of type ${plt.class.name}")
+        else if (plt instanceof Map) {
+          if (plt.id) {
+            log.debug("Getting Platform by ID ${plt.id}..")
+            plt_obj = Platform.findById(plt.id)
+          }
+          else {
+            def lookup = platformService.restLookup(plt, null)
+            log.debug("Result of platform lookup: ${lookup}")
+
+            if (lookup.to_create) {
+              plt_obj = Platform.upsertDTO(plt)
+            }
+            else {
+              lookup.matches?.each { mid, info ->
+                log.debug("Handling platform with ID ${mid}..")
+                if (!plt_obj && !errors.providedPlatforms) {
+                  def plt_candidate = Platform.get(mid)
+
+                  if (plt_candidate && plt_candidate.provider == null) {
+                    plt_obj = plt_candidate
+                  }
+                  else if (!plt_candidate) {
+                    errors.providedPlatforms << [message: "Unable to lookup platform!", code: 404, baddata: plt]
+                  }
+                  else {
+                    errors.providedPlatforms << [message: "Matched Platform already has a Provider!", code: 409, baddata: plt]
+                  }
+                }
+                else {
+                  log.debug("Not overwriting or adding while errors exist!")
+                }
+              }
+
+              if (lookup.matches?.size() > 1) {
+                log.warn("Multiple matches for platform info ${plt}!")
+              }
+            }
+          }
         }
 
         if (plt_obj) {
@@ -304,15 +343,7 @@ class OrgController {
           if (!errors.providedPlatforms) {
             errors.providedPlatforms = []
           }
-          errors.providedPlatforms << [message: "Unable to lookup platform!", baddata: plt]
-        }
-      }
-
-      if (reqBody.curatoryGroups) {
-        def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
-
-        if (cg_errors.size() > 0) {
-          errors['curatoryGroups'] = cg_errors
+          errors.providedPlatforms << [message: "Unable to lookup platform!", code: 404, baddata: plt]
         }
       }
 
@@ -320,7 +351,7 @@ class OrgController {
         new_plts.each { c ->
           if (!obj.providedPlatforms.contains(c)) {
             log.debug("Adding new platform ${c}..")
-            obj.providedPlatforms.add(c)
+            def new_combo = new Combo(fromComponent: c, toComponent: obj, type: plt_combo_type).save(flush: true)
           }
           else {
             log.debug("Existing platform ${c}..")
@@ -332,6 +363,14 @@ class OrgController {
         }
       }
       log.debug("New cgs: ${obj.providedPlatforms}")
+    }
+
+    if (reqBody.curatoryGroups instanceof Collection) {
+      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+
+      if (cg_errors.size() > 0) {
+        errors['curatoryGroups'] = cg_errors
+      }
     }
 
     log.debug("After update: ${obj}")

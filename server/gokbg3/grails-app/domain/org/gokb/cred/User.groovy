@@ -33,8 +33,12 @@ class User extends Party {
   RefdataValue showQuickView
   RefdataValue showInfoIcon
 
+  // used by @gokbg3.RestMappingService.selectJsonLabel
+  public static final String jsonLabel = "username"
+
   static hasMany = [
     curatoryGroups : CuratoryGroup,
+    updateTokens: UpdateToken
   ]
 
   static mappedBy = [curatoryGroups: "users"]

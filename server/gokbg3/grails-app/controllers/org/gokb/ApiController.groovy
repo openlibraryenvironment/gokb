@@ -1,29 +1,20 @@
 package org.gokb
 
 import com.k_int.ConcurrencyManagerService
-import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ExtendedHibernateDetachedCriteria
-import com.k_int.TextUtils
 import com.k_int.TsvSuperlifterService
 import grails.converters.JSON
 import grails.util.GrailsNameUtils
-import grails.util.Holders
 import groovy.util.logging.*
-import org.elasticsearch.action.search.*
-import org.elasticsearch.index.query.*
-import org.elasticsearch.search.sort.*
 import org.gokb.cred.*
-import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
 import org.hibernate.criterion.CriteriaSpecification
 import org.hibernate.criterion.Subqueries
 import org.springframework.security.access.annotation.Secured
 import org.springframework.web.multipart.MultipartHttpServletRequest
-import org.apache.lucene.search.join.ScoreMode
 
 import java.security.SecureRandom
 
-import static java.util.UUID.randomUUID
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
  *
@@ -191,7 +182,7 @@ class ApiController {
     }
 
     all_ns.each { ns ->
-      result.add([value: ns.value, category: ns.family ?: ""])
+      result.add([value: ns.value, namespaceName:ns.name, category: ns.family ?: ""])
     }
 
     apiReturn(result)
@@ -377,7 +368,6 @@ class ApiController {
   /**
    * find : Query the Elasticsearch index via ESSearchService
   **/
-
   def find() {
     def result = [:]
     def searchParams = params
@@ -391,14 +381,34 @@ class ApiController {
 
     try {
       result = ESSearchService.find(searchParams)
-    }finally {
+    }
+    finally {
       if (result.errors) {
         response.setStatus(400)
       }
     }
-
     render result as JSON
   }
+
+
+  /**
+    * scroll : Deliver huge amounts of Elasticsearch data
+    **/
+  def scroll() {
+    def result = [:]
+    try {
+      result = ESSearchService.scroll(params)
+    }
+    catch(Exception e){
+      result.result = "ERROR"
+      result.message = e.message
+      result.cause = e.cause
+      log.error("Could not process scroll request. Exception was: ${e.message}")
+      response.setStatus(400)
+    }
+    render result as JSON
+  }
+
 
   private def buildQuery(params) {
 

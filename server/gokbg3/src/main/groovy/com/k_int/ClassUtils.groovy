@@ -17,10 +17,14 @@ import org.gokb.cred.KBComponent
 
 class ClassUtils {
 
+
+  public static final DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
+  public static final DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']").withResolverStyle(ResolverStyle.STRICT)
+
   @groovy.transform.CompileStatic
   public static <T> T deproxy(Object proxied) {
 
-    T entity = proxied;
+    T entity = (T)proxied;
 
     if (entity instanceof HibernateProxy) {
       Hibernate.initialize(entity);
@@ -37,8 +41,6 @@ class ClassUtils {
    */
   public static boolean setDateIfPresent(def value, obj, prop) {
     LocalDateTime ldt = null
-    DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
-    DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']").withResolverStyle(ResolverStyle.STRICT)
 
     if (value && value.toString().trim()) {
       if (value instanceof LocalDateTime) {
@@ -76,8 +78,6 @@ class ClassUtils {
 
   public static boolean updateDateField(def value, obj, prop) {
     LocalDateTime ldt = null
-    DateTimeFormatter dateformatter = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
-    DateTimeFormatter datetimeformatter = DateTimeFormatter.ofPattern("" + "[uuuu-MM-dd' 'HH:mm:ss.SSS]" + "[uuuu-MM-dd'T'HH:mm:ss'Z']").withResolverStyle(ResolverStyle.STRICT)
 
     if (value && value.toString().trim()) {
       if (value instanceof LocalDateTime) {
@@ -152,7 +152,7 @@ class ClassUtils {
         v = RefdataCategory.lookup(cat, value)
       }
     }
-    else if (value && cat) {
+    else if (value instanceof Integer && cat) {
       try {
         def candidate = RefdataValue.get(value)
 
@@ -162,6 +162,23 @@ class ClassUtils {
       }
       catch (Exception e) {
 
+      }
+    }
+    else if (value instanceof Map && cat) {
+      if (value.id) {
+        try {
+          def candidate = RefdataCategory.get(value)
+
+          if (candidate && candidate.owner == cat) {
+            v = candidate
+          }
+        }
+        catch (Exception e) {
+
+        }
+      }
+      else if (value.name || value.value) {
+        v = RefdataCategory.lookup(cat, (value.name ?: value.value))
       }
     }
 
@@ -178,6 +195,16 @@ class ClassUtils {
         obj[prop] = value
         return true
       }
+    return false
+  }
+
+  public static boolean setBooleanIfDifferent(obj, prop, value) {
+    if ((obj != null) && (prop != null) && (value != null)) {
+      if (obj[prop] != value) {
+        obj[prop] = value
+        return true
+      }
+    }
     return false
   }
 }

@@ -143,11 +143,6 @@
           ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()}
         </span>
       </a></li>
-      <li><a href="#subjectarea" data-toggle="tab">Subject Area </a></li>
-      <li><a href="#series" data-toggle="tab">Series </a></li>
-      <li><a href="#prices" data-toggle="tab">Prices
-        <span class="badge badge-warning">${d?.prices?.size()?: '0'}</span>
-      </a></li>
       <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}" >
         <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       </g:if>
@@ -297,7 +292,7 @@
             <h4>
               <g:annotatedLabel owner="${d}" property="addIdentifier">Add new Identifier</g:annotatedLabel>
             </h4>
-            <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers']}"/>
+            <g:render template="/apptemplates/addIdentifier" model="${[d:d, hash:'#identifiers', targetType:'book']}"/>
           </g:if>
         </dd>
       </dl>
@@ -312,32 +307,6 @@
       <g:render template="/apptemplates/revreqtab"
         model="${[d:d]}" />
     </div>
-
-    <div class="tab-pane" id="subjectarea">
-
-      <dl class="dl-horizontal">
-        <dt>
-          <g:annotatedLabel owner="${d}" property="subjectArea">Subject Area</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:xEditable owner="${d}" field="subjectArea"/>
-        </dd>
-      </dl>
-    </div>
-
-    <div class="tab-pane" id="series">
-
-      <dl class="dl-horizontal">
-        <dt>
-          <g:annotatedLabel owner="${d}" property="series">Series</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:xEditable owner="${d}" field="series"/>
-        </dd>
-      </dl>
-    </div>
-
-    <g:render template="/tabTemplates/showPrices" model="${[d: displayobj, showActions: true]}"/>
 
     <div class="tab-pane" id="ds">
       <g:render template="/apptemplates/dstab" model="${[d:d]}" />

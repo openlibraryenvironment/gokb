@@ -5,6 +5,10 @@ grails:
             - ~/.grails/gokb-config.groovy
             - ~/.grails/gokb-config.yml
             - ~/.grails/gokb-config.properties
+    cors:
+        enabled: true
+        mappings:
+            /rest/**: inherit
 
     profile: web
     codegen:
@@ -95,7 +99,7 @@ info:
     app:
         name: '@info.app.name@'
         version: '@info.app.version@'
-        grailsVersion: '@info.app.grailsVersion@'
+        grailsVersion: '@info.grails.version@'
 
 spring:
     main:
@@ -147,9 +151,13 @@ environments:
             mail:
                 port: 3025
         gokb:
+            ygorUrl: null
+            packageUpdate:
+                enabled: false
             es:
                 index: gokbg3dev
                 cluster: gokbg3-dev
+            tsvExportTempDirectory: /tmp/gokb/export
         cache:
             headers:
                 enabled: false
@@ -174,6 +182,9 @@ environments:
                 validationQuery: select 1
                 defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
         gokb:
+            ygorUrl: null
+            packageUpdate:
+                enabled: false
             es:
                 index: gokbg3test
                 cluster: gokbg3-test
@@ -212,6 +223,9 @@ environments:
                 greenmail:
                     disabled: true
         gokb:
+            packageUpdate:
+                enabled: false
+            ygorUrl: null
             es:
                 index: gokbg3
                 cluster: gokbg3-prod
@@ -219,7 +233,7 @@ environments:
 gokb:
     defaultCuratoryGroup: Local
     ftupdate_enabled: true
-    decisionSupport: 
+    decisionSupport:
         active: false
         otherVoters: false
     costInfo: false

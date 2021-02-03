@@ -118,12 +118,6 @@
     </span></a></li>
     <li><a href="#review" data-toggle="tab">Review Tasks <span
         class="badge badge-warning">${d.reviewRequests?.size() ?: '0'}</span></a></li>
-    <li><a href="#subjectgroup" data-toggle="tab">Subject Group</a></li>
-    <li><a href="#series" data-toggle="tab">Series</a></li>
-    <li><a href="#prices" data-toggle="tab">Prices
-      <span class="badge badge-warning">${d?.prices?.size() ?: '0'}</span>
-    </a></li>
-
   </ul>
 
   <div id="my-tab-content" class="tab-content">
@@ -353,33 +347,6 @@
       <g:render template="/apptemplates/revreqtab"
                 model="${[d: d]}"/>
     </div>
-
-    <div class="tab-pane" id="subjectgroup">
-
-      <dl class="dl-horizontal">
-        <dt>
-          <g:annotatedLabel owner="${d}" property="subjectGroup">Subject Group</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:xEditable owner="${d}" field="subjectGroup"/>
-        </dd>
-      </dl>
-    </div>
-
-    <div class="tab-pane" id="series">
-
-      <dl class="dl-horizontal">
-        <dt>
-          <g:annotatedLabel owner="${d}" property="series">Series</g:annotatedLabel>
-        </dt>
-        <dd>
-          <g:xEditable owner="${d}" field="series"/>
-        </dd>
-      </dl>
-    </div>
-
-    <g:render template="/tabTemplates/showPrices" model="${[d: displayobj, showActions: true]}"/>
-
   </div>
   <g:render template="/apptemplates/componentStatus"
             model="${[d: displayobj, rd: refdata_properties, dtype: 'KBComponent']}"/>

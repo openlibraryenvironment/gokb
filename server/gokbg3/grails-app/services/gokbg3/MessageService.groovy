@@ -1,7 +1,7 @@
 package gokbg3
 
 import org.springframework.validation.FieldError
-import org.springframework.validation.ObjectError
+
 import java.text.MessageFormat
 
 class MessageService {
@@ -16,7 +16,7 @@ class MessageService {
       def field = 'object'
       def resolvedArgs = []
       def errorMessage = null
-      
+
       locale = locale ?: new Locale('en')
 
       if ( eo instanceof FieldError ){
@@ -33,7 +33,7 @@ class MessageService {
         if (ma && ma instanceof String) {
           String[] emptyArgs = []
           def arg = messageSource.resolveCode(ma, locale)
-          
+
           if (arg) {
             arg = arg.format(emptyArgs)
 
@@ -75,5 +75,36 @@ class MessageService {
       }
     }
     result
+  }
+
+  def resolveCode(code, args, locale) {
+    log.debug("Resolve ${code} with args ${args} (${locale})")
+    def result = null
+    String[] messageArgs = []
+
+    try {
+      if (args && args.size() > 0) {
+        messageArgs = args
+        result = messageSource.resolveCode(code, locale)?.format(messageArgs)
+
+        if (!result) {
+          log.error("Unable to resolve code ${code} for ${locale}!")
+          result = messageSource.resolveCode(code, Locale.ENGLISH)?.format(messageArgs)
+        }
+      }
+      else {
+        result = messageSource.resolveCodeWithoutArguments(code, locale)
+
+        if (!result) {
+          log.error("Unable to resolve code ${code} for ${locale}!")
+          result = messageSource.resolveCodeWithoutArguments(code, Locale.ENGLISH)
+        }
+      }
+    }
+    catch (Exception e) {
+      log.error("Exception resolving code: $code!", e)
+    }
+
+    return result
   }
 }

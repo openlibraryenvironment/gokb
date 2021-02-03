@@ -89,6 +89,9 @@ class ReviewRequest implements Auditable {
       'refineProject',
       'additionalInfo',
       'needsNotify'
+    ],
+    'defaultEmbeds': [
+      'allocatedGroups'
     ]
   ]
 

@@ -187,6 +187,7 @@ class UsersController {
       result.errors = errors
     }
     if (result.errors?.size() >0){
+      log.debug("${result.errors}")
       response.status = 400
     }
     render result as JSON

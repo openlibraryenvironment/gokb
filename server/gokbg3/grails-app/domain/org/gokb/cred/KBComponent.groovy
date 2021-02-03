@@ -11,6 +11,8 @@ import grails.plugins.orm.auditable.Auditable
 import grails.plugins.orm.auditable.AuditEventType
 import org.gokb.GOKbTextUtils
 
+import java.text.SimpleDateFormat
+
 /**
  * Abstract base class for GoKB Components.
  */
@@ -19,16 +21,16 @@ import org.gokb.GOKbTextUtils
 @grails.gorm.dirty.checking.DirtyCheck
 abstract class KBComponent implements Auditable {
 
-  static final String RD_STATUS         = "KBComponent.Status"
-  static final String STATUS_CURRENT       = "Current"
-  static final String STATUS_DELETED       = "Deleted"
-  static final String STATUS_EXPECTED       = "Expected"
-  static final String STATUS_RETIRED       = "Retired"
+  static final String RD_STATUS = "KBComponent.Status"
+  static final String STATUS_CURRENT = "Current"
+  static final String STATUS_DELETED = "Deleted"
+  static final String STATUS_EXPECTED = "Expected"
+  static final String STATUS_RETIRED = "Retired"
 
-  static final String RD_EDIT_STATUS      = "KBComponent.EditStatus"
-  static final String EDIT_STATUS_APPROVED    = "Approved"
-  static final String EDIT_STATUS_IN_PROGRESS  = "In Progress"
-  static final String EDIT_STATUS_REJECTED    = "Rejected"
+  static final String RD_EDIT_STATUS = "KBComponent.EditStatus"
+  static final String EDIT_STATUS_APPROVED = "Approved"
+  static final String EDIT_STATUS_IN_PROGRESS = "In Progress"
+  static final String EDIT_STATUS_REJECTED = "Rejected"
 
   static final String CURRENT_PRICE_HQL = '''
 select cp
@@ -39,39 +41,39 @@ where cp.owner = :c
 '''
 
   private static refdataDefaults = [
-    "status"     : STATUS_CURRENT,
-    "editStatus"  : EDIT_STATUS_IN_PROGRESS
+    "status"    : STATUS_CURRENT,
+    "editStatus": EDIT_STATUS_IN_PROGRESS
   ]
 
   private static final Map fullDefaultsForClass = [:]
 
   @Override
   Collection<AuditEventType> getLogIgnoreEvents() {
-      [AuditEventType.INSERT, AuditEventType.DELETE]
+    [AuditEventType.INSERT, AuditEventType.DELETE]
   }
 
   @Override
   Collection<String> getLogExcluded() {
-      [
-        'version',
-        'lastUpdated',
-        'lastUpdatedBy',
-        'bucketHash',
-        'componentHash',
-        'componentDiscriminator',
-        'normname',
-        'lastSeen',
-        'shortcode',
-        'systemComponent',
-        'insertBenchmark',
-        'componentHash',
-        'incomingCombos',
-        'outgoingCombos'
-      ]
+    [
+      'version',
+      'lastUpdated',
+      'lastUpdatedBy',
+      'bucketHash',
+      'componentHash',
+      'componentDiscriminator',
+      'normname',
+      'lastSeen',
+      'shortcode',
+      'systemComponent',
+      'insertBenchmark',
+      'componentHash',
+      'incomingCombos',
+      'outgoingCombos'
+    ]
   }
 
   String getLogEntityId() {
-      "${this.class.name}:${id}"
+    "${this.class.name}:${id}"
   }
 
   @Transient
@@ -91,7 +93,7 @@ where cp.owner = :c
   }
 
   @Transient
-  protected void touchAllDependants () {
+  protected void touchAllDependants() {
 
     //TODO: SO - This really needs to be reviewed. There must be an easy way to do this without hibernate freaking out. Commenting out for now.
     log.debug("Update dependent objects for ${this}..")
@@ -99,7 +101,7 @@ where cp.owner = :c
     // The update closure.
     def doUpdate = { obj, Date stamp ->
       try {
-        def saveParams = [failOnError:true]
+        def saveParams = [failOnError: true]
 
         obj.lastSeen = stamp.getTime()
         obj.save(saveParams)
@@ -116,14 +118,14 @@ where cp.owner = :c
       this.touchOnUpdate.each { dep_name ->
 
         // Get the dependant.
-        def deps = this."${dep_name}"
+        def deps = this.getProperty(dep_name)
 
         log.debug("Got ${dep_name}: ${deps}")
 
         if (deps) {
           if (deps instanceof Map) {
 
-            deps.each { k,obj ->
+            deps.each { k, obj ->
               doUpdate(obj, this.lastUpdated)
             }
 
@@ -142,7 +144,7 @@ where cp.owner = :c
   }
 
   @Transient
-  private ensureDefaults () {
+  private ensureDefaults() {
 
     try {
 
@@ -167,12 +169,12 @@ where cp.owner = :c
           try {
             // Read the classMap
             classMap = metaclass_of_this_component.getProperty(
-                rootClass,
-                theClass,
-                "refdataDefaults",
-                false,
-                true
-                )
+              rootClass,
+              theClass,
+              "refdataDefaults",
+              false,
+              true
+            )
           } catch (MissingPropertyException e) {
             // Catch the error and just set to null.
             // log.error("MissingPropertyExceptiono - clearing out classMap",e);
@@ -209,47 +211,48 @@ where cp.owner = :c
             def lone_property = property
             def rdc = null
 
-            if(lone_property.contains('.')) {
+            if (lone_property.contains('.')) {
               def split_prop = lone_property.split("\\.")
 
               rdc = split_prop[0]
               lone_property = split_prop[1]
             }
 
-            if ( lone_property?.length() > 0 && thisComponent."${lone_property}" == null ) {
+            if (lone_property?.length() > 0 && thisComponent."${lone_property}" == null) {
 
               // Get the type defined against the class.
               PersistentProperty propertyDef = dClass.getPropertyByName(lone_property)
               String propType = propertyDef?.getType()?.getName()
 
               if (propType) {
-
+                log.debug("Setting prop ${propType} ${lone_property}")
                 switch (propType) {
-                  case RefdataValue.class.getName() :
+                  case RefdataValue.class.getName():
 
-                        final String ucProp = GrailsNameUtils.getClassName(lone_property);
-                        final String key = "${rdc ?: className}.${ucProp}"
+                    final String ucProp = GrailsNameUtils.getClassName(lone_property);
+                    final String key = "${rdc ?: className}.${ucProp}"
 
-                        if (values instanceof Collection) {
-                          values.each { val ->
-                            def v= RefdataCategory.lookupOrCreate(key, val)
-                            // log.debug("lookupOrCreate-1(${key},${val}) - ${v.id}");
-                            thisComponent."addTo${ucProp}" ( v )
-                          }
-                        } else {
-                          // Set the default.
-                          def v = RefdataCategory.lookupOrCreate(key, values)
-                          // log.debug("lookupOrCreate-2(${key},${values}) - ${v.id}");
-                          thisComponent."${lone_property}" = v
-                        }
-                      break
-                  default :
+                    log.debug("Final config: ${key}:${values}")
+
+                    if (values instanceof Collection) {
+                      values.each { val ->
+                        def v = RefdataCategory.lookupOrCreate(key, val)
+                        // log.debug("lookupOrCreate-1(${key},${val}) - ${v.id}");
+                        thisComponent."addTo${ucProp}"(v)
+                      }
+                    } else {
+                      // Set the default.
+                      def v = RefdataCategory.lookupOrCreate(key, values)
+                      // log.debug("lookupOrCreate-2(${key},${values}) - ${v.id}");
+                      thisComponent."${lone_property}" = v
+                    }
+                    break
+                  default:
                     // Just treat as a normal prop
                     thisComponent."${lone_property}" = values
                     break
                 }
-              }
-              else {
+              } else {
                 log.debug("Could not find property ${lone_property} for class ${dClass.getName()}")
               }
             }
@@ -257,8 +260,8 @@ where cp.owner = :c
         }
       }
     }
-    catch ( Exception e ) {
-      log.error("Problem initializing defaults",e);
+    catch (Exception e) {
+      log.error("Problem initializing defaults", e);
     }
   }
 
@@ -369,85 +372,84 @@ where cp.owner = :c
 
   // ids moved to combos.
   static manyByCombo = [
-    ids : Identifier,
-    fileAttachments : DataFile,
+    ids            : Identifier,
+    fileAttachments: DataFile,
   ]
 
   static mappedBy = [
-    outgoingCombos: 'fromComponent',
-    incomingCombos:'toComponent',
+    outgoingCombos      : 'fromComponent',
+    incomingCombos      : 'toComponent',
     additionalProperties: 'fromComponent',
-    variantNames: 'owner',
-    reviewRequests:'componentToReview',
-    people:'component',
-    subjects:'component',
-    prices: 'owner'
+    variantNames        : 'owner',
+    reviewRequests      : 'componentToReview',
+    people              : 'component',
+    subjects            : 'component',
+    prices              : 'owner'
   ]
 
   static hasMany = [
     // tags:RefdataValue,
-    outgoingCombos:Combo,
-    incomingCombos:Combo,
-    additionalProperties:KBComponentAdditionalProperty,
-    variantNames:KBComponentVariantName,
-    reviewRequests:ReviewRequest,
-    people:ComponentPerson,
-    subjects:ComponentSubject,
-    prices: ComponentPrice
+    outgoingCombos      : Combo,
+    incomingCombos      : Combo,
+    additionalProperties: KBComponentAdditionalProperty,
+    variantNames        : KBComponentVariantName,
+    reviewRequests      : ReviewRequest,
+    people              : ComponentPerson,
+    subjects            : ComponentSubject,
+    prices              : ComponentPrice
   ]
-
-
 
 
   static mapping = {
     tablePerHierarchy false
-    id column:'kbc_id'
-    uuid column:'kbc_uuid', type:'text', index:'kbc_uuid_idx'
-    version column:'kbc_version'
-    name column:'kbc_name', type:'text', index:'kbc_name_idx'
+    id column: 'kbc_id'
+    uuid column: 'kbc_uuid', type: 'text', index: 'kbc_uuid_idx'
+    version column: 'kbc_version'
+    name column: 'kbc_name', type: 'text', index: 'kbc_name_idx'
     // Removed auto creation of norm_id_value_idx from here and identifier - MANUALLY CREATE
     // create index norm_id_value_idx on kbcomponent(kbc_normname(64),id_namespace_fk);
-    normname column:'kbc_normname', type:'text', index:'kbc_normname_idx'
-    description column:'kbc_description', type:'text'
-    source column:'kbc_source_fk'
-    status column:'kbc_status_rv_fk', index:'kbc_status_idx'
-    shortcode column:'kbc_shortcode', index:'kbc_shortcode_idx'
+    normname column: 'kbc_normname', type: 'text', index: 'kbc_normname_idx'
+    description column: 'kbc_description', type: 'text'
+    source column: 'kbc_source_fk'
+    status column: 'kbc_status_rv_fk', index: 'kbc_status_idx'
+    shortcode column: 'kbc_shortcode', index: 'kbc_shortcode_idx'
     // tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
-    dateCreated column:'kbc_date_created', index:'kbc_date_created_idx'
-    lastUpdated column:'kbc_last_updated', index:'kbc_last_updated_idx'
-    duplicateOf column:'kbc_duplicate_of'
+    dateCreated column: 'kbc_date_created', index: 'kbc_date_created_idx'
+    lastUpdated column: 'kbc_last_updated', index: 'kbc_last_updated_idx'
+    duplicateOf column: 'kbc_duplicate_of'
     reviewRequests sort: 'id', order: 'asc'
-    lastSeen column:'kbc_last_seen'
-    insertBenchmark column:'kbc_insert_benchmark'
-    updateBenchmark column:'kbc_update_benchmark'
-    lastUpdateComment column:'kbc_last_update_comment'
-    componentHash column:'kbc_component_hash', index:'kbc_component_hash_idx'
-    bucketHash column:'kbc_bucket_hash', index:'kbc_bucket_hash_idx'
-    componentDiscriminator column:'kbc_component_descriminator'
+    lastSeen column: 'kbc_last_seen'
+    insertBenchmark column: 'kbc_insert_benchmark'
+    updateBenchmark column: 'kbc_update_benchmark'
+    lastUpdateComment column: 'kbc_last_update_comment'
+    componentHash column: 'kbc_component_hash', index: 'kbc_component_hash_idx'
+    bucketHash column: 'kbc_bucket_hash', index: 'kbc_bucket_hash_idx'
+    componentDiscriminator column: 'kbc_component_descriminator'
     incomingCombos batchSize: 10
     outgoingCombos batchSize: 10
+    variantNames cascade: "all,delete-orphan", lazy: false
     //dateCreatedYearMonth formula: "DATE_FORMAT(kbc_date_created, '%Y-%m')"
     //lastUpdatedYearMonth formula: "DATE_FORMAT(kbc_last_updated, '%Y-%m')"
 
   }
 
   static constraints = {
-    uuid    (nullable:true, unique:true, blank:false, maxSize:2048)
-    name    (nullable:true, blank:false, maxSize:2048)
-    shortcode  (nullable:true, blank:false, maxSize:128)
-    description  (nullable:true, blank:false)
-    duplicateOf  (nullable:true, blank:false)
-    normname  (nullable:true, blank:false, maxSize:2048)
-    status    (nullable:true, blank:false)
-    editStatus  (nullable:true, blank:false)
-    source (nullable:true, blank:false)
-    lastSeen (nullable:true, blank:false)
-    lastUpdateComment (nullable:true, blank:false)
-    insertBenchmark (nullable:true, blank:false)
-    updateBenchmark (nullable:true, blank:false)
-    bucketHash (nullable:true, blank:false)
-    componentDiscriminator (nullable:true, blank:false)
-    componentHash (nullable:true, blank:false)
+    uuid(nullable: true, unique: true, blank: false, maxSize: 2048)
+    name(nullable: true, blank: false, maxSize: 2048)
+    shortcode(nullable: true, blank: false, maxSize: 128)
+    description(nullable: true, blank: false)
+    duplicateOf(nullable: true, blank: false)
+    normname(nullable: true, blank: false, maxSize: 2048)
+    status(nullable: true, blank: false)
+    editStatus(nullable: true, blank: false)
+    source(nullable: true, blank: false)
+    lastSeen(nullable: true, blank: false)
+    lastUpdateComment(nullable: true, blank: false)
+    insertBenchmark(nullable: true, blank: false)
+    updateBenchmark(nullable: true, blank: false)
+    bucketHash(nullable: true, blank: false)
+    componentDiscriminator(nullable: true, blank: false)
+    componentHash(nullable: true, blank: false)
   }
 
   /**
@@ -455,14 +457,14 @@ where cp.owner = :c
    * their own way of generating a shortcode.
    * @return
    */
-  protected def generateShortcode () {
+  protected def generateShortcode() {
     if (!shortcode && name) {
       // Generate the short code.
       shortcode = generateShortcode(name)
     }
   }
 
-  protected def generateUuid () {
+  protected def generateUuid() {
     if (!uuid) {
       uuid = UUID.randomUUID().toString()
     }
@@ -470,23 +472,23 @@ where cp.owner = :c
 
 
   static def generateShortcode(String text) {
-    def candidate = text.trim().replaceAll(" ","_")
+    def candidate = text.trim().replaceAll(" ", "_")
 
-    if ( candidate.length() > 100 )
-      candidate = candidate.substring(0,100)
+    if (candidate.length() > 100)
+      candidate = candidate.substring(0, 100)
 
     return incUntilUnique(candidate);
   }
 
   static def incUntilUnique(name) {
     def result = name;
-    def l = KBComponent.executeQuery('select id from KBComponent where shortcode = :n',[n:name]);
+    def l = KBComponent.executeQuery('select id from KBComponent where shortcode = :n', [n: name]);
     // if ( KBComponent.findWhere([shortcode : (name)]) ) {
-    if ( l.size() > 0 ) {
+    if (l.size() > 0) {
       // There is already a shortcode for that identfier
       int i = 2;
       // while ( KBComponent.findWhere([shortcode : "${name}_${i}"]) ) {
-      while ( KBComponent.executeQuery('select id from KBComponent where shortcode = :n',[n:"${name}_${i}"]).size() > 0 ) {
+      while (KBComponent.executeQuery('select id from KBComponent where shortcode = :n', [n: "${name}_${i}"]).size() > 0) {
         i++
       }
       result = "${name}_${i}"
@@ -496,11 +498,11 @@ where cp.owner = :c
   }
 
   @Transient
-  static <T extends KBComponent> T lookupByIO(String idtype, String idvalue) {
+  static KBComponent lookupByIO(String idtype, String idvalue) {
     // println("lookupByIO(${idtype},${idvalue})");
     // Component(ids) -> (fromComponent) Combo (toComponent) -> (identifiedComponents) Identifier
     def result = null
-    def crit = T.createCriteria()
+    def crit = KBComponent.createCriteria()
     def db_results = crit.list {
 
       createAlias('outgoingCombos', 'ogc')
@@ -524,8 +526,8 @@ where cp.owner = :c
     }
 
     switch (db_results.size()) {
-      case 1 :
-        result = T.get(db_results[0])
+      case 1:
+        result = KBComponent.get(db_results[0])
         break
 //      case {it > 1} :
 //        // Error. Should only match 1...
@@ -590,18 +592,19 @@ where cp.owner = :c
    *  ignore any namespace or type - see if we can find a componenet where a linked identifier has the specified value
    *  @return LIST of all components with this identifier as a value
    */
+
   static def lookupByIdentifierValue(String[] idvalue) {
 
     def result = []
 
-    if ( idvalue != null ) {
+    if (idvalue != null) {
       def crit = Identifier.createCriteria()
       // def combotype = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
 
       def lr = crit.list {
         or {
           idvalue.each {
-            if ( ( it != null ) && ( it.trim().length() > 0 ) ) {
+            if ((it != null) && (it.trim().length() > 0)) {
               eq('value', it)
             }
           }
@@ -610,7 +613,7 @@ where cp.owner = :c
 
       lr?.each { id ->
         id.identifiedComponents.each { component ->
-          result.add ( component )
+          result.add(component)
         }
       }
     }
@@ -629,10 +632,10 @@ where cp.owner = :c
     ql = Class.forName(params.baseClass).findAllByNameIlikeAndStatusNotEqual("${params.q}%", status_deleted, params)
 //    ql = KBComponent.findAllByNameIlike("${params.q}%",params)
 
-    if ( ql ) {
+    if (ql) {
       ql.each { t ->
-        if( !params.filter1 || t.status?.value == params.filter1 ) {
-          result.add([id:"${t.class.name}:${t.id}",text:"${t.name}", status:"${t.status?.value}"])
+        if (!params.filter1 || t.status?.value == params.filter1) {
+          result.add([id: "${t.class.name}:${t.id}", text: "${t.name}", status: "${t.status?.value}"])
         }
       }
     }
@@ -642,17 +645,17 @@ where cp.owner = :c
 
 
   /** Added here so that everyone who wants a normalised component name can
-      call this function, then we have a single place to call or change to pivot the norm rules */
-  public static def generateNormname (str_to_norm) {
+   call this function, then we have a single place to call or change to pivot the norm rules */
+  public static def generateNormname(str_to_norm) {
     def r = GOKbTextUtils.norm2(str_to_norm);
 
-    if ( r.length() == 0 )
+    if (r.length() == 0)
       r = null;
 
     return r
   }
 
-  protected def generateNormname () {
+  protected def generateNormname() {
     log.debug("checking for normname")
     this.normname = generateNormname(name);
   }
@@ -699,8 +702,8 @@ where cp.owner = :c
 
   def beforeUpdate() {
     log.debug("beforeUpdate for ${this}")
-    if ( name ) {
-      if ( !shortcode ) {
+    if (name) {
+      if (!shortcode) {
         this.shortcode = generateShortcode(name);
       }
       generateNormname();
@@ -712,7 +715,7 @@ where cp.owner = :c
     }
 
     def user = springSecurityService?.currentUser
-    if ( user != null ) {
+    if (user != null) {
       this.lastUpdatedBy = user
     }
   }
@@ -727,29 +730,28 @@ where cp.owner = :c
   }
 
   @Transient
-  public List getOtherIncomingCombos () {
+  public List getOtherIncomingCombos() {
 
     def combs = null
     // Only run this query id this is not a transient object. This must have an ID for this method to work
-    if ( this.id ) {
+    if (this.id) {
       Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
 
       combs = Combo.createCriteria().list {
         and {
-          eq ("toComponent", this)
+          eq("toComponent", this)
           type {
             and {
               owner {
-                eq ("desc", 'Combo.Type')
+                eq("desc", 'Combo.Type')
               }
-              not { 'in' ("value", comboPropTypes) }
+              not { 'in'("value", comboPropTypes) }
             }
 
           }
         }
       }
-    }
-    else {
+    } else {
       combs = []
     }
 
@@ -757,75 +759,74 @@ where cp.owner = :c
   }
 
   @Transient
-  public List getOtherOutgoingCombos () {
+  public List getOtherOutgoingCombos() {
 
 
     def combs = null
 
-    if ( this.id != null ) {
+    if (this.id != null) {
       Set comboPropTypes = getAllComboTypeValuesFor(this.getClass());
 
       combs = Combo.createCriteria().list {
         and {
-          eq ("fromComponent", this)
+          eq("fromComponent", this)
           type {
             and {
               owner {
-                eq ("desc", 'Combo.Type')
+                eq("desc", 'Combo.Type')
               }
-              not { 'in' ("value", comboPropTypes) }
+              not { 'in'("value", comboPropTypes) }
             }
           }
         }
       }
-    }
-    else {
+    } else {
       combs = null;
     }
 
     combs
   }
 
-  public void deleteSoft (context) {
+  public void deleteSoft(context) {
     // Set the status to deleted.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
-    save(flush:true, failOnError:true)
+    save(flush: true, failOnError: true)
   }
 
-  public void retire (def context = null) {
+  public void retire(def context = null) {
     log.debug("KBComponent::retire");
     // Set the status to retired.
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
-    save(flush:true, failOnError:true)
+    save(flush: true, failOnError: true)
   }
 
-  public void setActive (context) {
+  public void setActive(context) {
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
-    save(flush:true, failOnError:true)
+    save(flush: true, failOnError: true)
   }
 
-  public void setExpected (context) {
+  public void setExpected(context) {
     setStatus(RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_EXPECTED))
-    save(flush:true, failOnError:true)
+    save(flush: true, failOnError: true)
   }
 
   @Transient
-  public boolean isRetired () {
+  public boolean isRetired() {
     return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_RETIRED))
   }
 
   @Transient
-  public boolean isDeleted () {
+  public boolean isDeleted() {
     return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_DELETED))
   }
 
   @Transient
-  public boolean isCurrent () {
+  public boolean isCurrent() {
     return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_CURRENT))
   }
 
   @Transient
-  public boolean isExpected () {
+  public boolean isExpected() {
     return (getStatus() == RefdataCategory.lookupOrCreate(RD_STATUS, STATUS_EXPECTED))
   }
 
@@ -834,13 +835,13 @@ where cp.owner = :c
    *  Needed for editing start/end dates. Initially on publisher, but probably on other things too later on.
    */
   @Transient
-   public List<Combo> getCombosByPropertyName(propertyName) {
+  public List<Combo> getCombosByPropertyName(propertyName) {
 
-    return getCombosByPropertyNameAndStatus(propertyName,null)
+    return getCombosByPropertyNameAndStatus(propertyName, null)
   }
 
   @Transient
-  public List<Combo> getCombosByPropertyNameAndStatus(propertyName,status) {
+  public List<Combo> getCombosByPropertyNameAndStatus(propertyName, status) {
 //     log.debug("KBComponent::getCombosByPropertyNameAndStatus::${propertyName}|${status}")
 
     def combos
@@ -848,11 +849,11 @@ where cp.owner = :c
     def hql_query
     def hql_params = []
 
-    if ( this.getId() != null ) {
+    if (this.getId() != null) {
       // Unsaved components can't have combo relations
       RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue(propertyName))
 
-      if(status && status!="null") status_ref = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, status);
+      if (status && status != "null") status_ref = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, status);
 
       hql_query = "from Combo where type=? "
       hql_params += type
@@ -863,17 +864,16 @@ where cp.owner = :c
         hql_query += " and fromComponent=?"
         hql_params += this
       }
-      if(status_ref){
+      if (status_ref) {
         hql_query += " and status=?"
         hql_params += status_ref
       }
 
 
-      combos = Combo.executeQuery(hql_query,hql_params)
+      combos = Combo.executeQuery(hql_query, hql_params)
 
 //       log.debug("Qry: ${hql_query}, Params:${hql_params} : result.size=${combos?.size()}");
-    }
-    else {
+    } else {
       log.debug("This.id == null");
     }
 
@@ -888,16 +888,17 @@ where cp.owner = :c
   @Override
   public boolean equals(Object obj) {
     Object o = KBComponent.deproxy(obj)
-    if ( o != null ) {
+    if (o != null) {
       // Deproxy the object first to ensure it isn't a hibernate proxy.
-      return (this.getClassName() == o.getClass().name) && (this.getId() == o.getId())
+      boolean r = (this.getClassName() == o.getClass().name) && (this.getId() == o.getId())
+      return r
     }
 
     // Return false if we get here.
     false
   }
 
-  public void appendToAdditionalProperty (String prop_name, String val) {
+  public void appendToAdditionalProperty(String prop_name, String val) {
 
     // Only need to add if a name and value has been supplied.
     if (prop_name && val) {
@@ -905,28 +906,28 @@ where cp.owner = :c
       // Find the KBComponentAdditionalProperty
       KBComponentAdditionalProperty prop = additionalProperties.find { KBComponentAdditionalProperty prop ->
         prop.getPropertyDefn().getPropertyName() == prop_name &&
-            prop.getApValue()?.equalsIgnoreCase(val)
+          prop.getApValue()?.equalsIgnoreCase(val)
       }
 
       // Only add a prop if we haven't already got one matching the value and definition.
       if (!prop) {
 
         // Add a new property.
-        def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName:prop_name).save(failOnError:true)
+        def prop_defn = AdditionalPropertyDefinition.findByPropertyName(prop_name) ?: new AdditionalPropertyDefinition(propertyName: prop_name).save(failOnError: true)
 
         // Add to the additional properties.
         addToAdditionalProperties(
-            new KBComponentAdditionalProperty (
-            propertyDefn : prop_defn,
-            apValue : val
-            )
-            )
+          new KBComponentAdditionalProperty(
+            propertyDefn: prop_defn,
+            apValue: val
+          )
+        )
       }
     }
   }
 
   public String toString() {
-    "${name?:''} (${getNiceName()} ${this.id})".toString()
+    "${name ?: ''} (${getNiceName()} ${this.id})".toString()
   }
 
   public String getNiceName() {
@@ -987,7 +988,7 @@ where cp.owner = :c
 
       switch (val) {
 
-        case {it instanceof Collection} :
+        case { it instanceof Collection }:
           def newVals = []
           for (el in val) {
 
@@ -1004,7 +1005,7 @@ where cp.owner = :c
 
           props["${prop}"] = newVals
           break
-        default :
+        default:
           props["${prop}"] = KBComponent.deproxy(val)
       }
     }
@@ -1058,7 +1059,7 @@ where cp.owner = :c
 
       switch (val) {
 
-        case {it instanceof Collection} :
+        case { it instanceof Collection }:
           def newVals = []
           for (el in val) {
 
@@ -1070,7 +1071,7 @@ where cp.owner = :c
 
           props["${prop}"] = newVals
           break
-        default :
+        default:
           props["${prop}"] = processPropVal(val)
       }
     }
@@ -1087,24 +1088,20 @@ where cp.owner = :c
 
       if (newVal.hasProperty('username')) {
         obj_label = newVal.username
-      }
-      else if (newVal.hasProperty('name')) {
+      } else if (newVal.hasProperty('name')) {
         obj_label = newVal.name
-      }
-      else if (newVal.hasProperty('value')) {
+      } else if (newVal.hasProperty('value')) {
         obj_label = newVal.value
-      }
-      else if (newVal.hasProperty('variantName')) {
+      } else if (newVal.hasProperty('variantName')) {
         obj_label = newVal.variantName
       }
 
       result = ['oid': "${newVal.class.name}:${newVal.id}", 'label': obj_label]
 
-      if ( newVal.class.name == 'org.gokb.cred.RefdataValue' ) {
+      if (newVal.class.name == 'org.gokb.cred.RefdataValue') {
         result.category = newVal.owner.label
       }
-    }
-    else {
+    } else {
       result = newVal
     }
     result
@@ -1116,18 +1113,18 @@ where cp.owner = :c
    * with the exception of the id as this will be set on save.
    */
   @Transient
-  public <T extends KBComponent> T clone () {
+  public <T extends KBComponent> T clone() {
 
     // Now we have a map of all properties and values we should create our new instance.
     T comp = this."class".newInstance()
-    sync (comp)
+    sync(comp)
   }
 
   /**
    * This method copies the values from this component to the supplied.
    */
   @Transient
-  public <T extends KBComponent> T sync (T to) {
+  public <T extends KBComponent> T sync(T to) {
     if (to) {
 
       T me = this
@@ -1142,17 +1139,17 @@ where cp.owner = :c
           def toHas = has(to, "${p}")
 
           if (toHas) {
-            log.debug ("\t...sending value ${v.toString()}")
+            log.debug("\t...sending value ${v.toString()}")
             to."${p}" = v
           } else {
-            log.debug ("\t...target doesn't support '${p}'")
+            log.debug("\t...target doesn't support '${p}'")
           }
 
 
         } else {
           log.debug("\t...value is null")
         }
-        count ++
+        count++
       }
     }
 
@@ -1164,7 +1161,7 @@ where cp.owner = :c
    * Similar to the respondsTo method but checks for methods properties and combos.
    */
   @Transient
-  public static boolean has (Object ob, String op) {
+  public static boolean has(Object ob, String op) {
 
     // The flag value.
     boolean hasOp = false
@@ -1172,8 +1169,8 @@ where cp.owner = :c
     if (ob) {
       // Check properties.
       hasOp = ob.hasProperty(op) ||
-          (ob.respondsTo(op)?.size() > 0) ||
-          (ob instanceof KBComponent && ob.allComboPropertyNames.contains(op))
+        (ob.respondsTo(op)?.size() > 0) ||
+        (ob instanceof KBComponent && ob.allComboPropertyNames.contains(op))
     }
 
     hasOp
@@ -1186,9 +1183,9 @@ where cp.owner = :c
       def normname = generateNormname(name)
 
       // Check that name is not already a name or a variant, if so, add it.
-      def existing_component = KBComponent.findByNormname( normname )
+      def existing_component = KBComponent.findByNormname(normname)
 
-      if ( existing_component == null ) {
+      if (existing_component == null) {
 
         // Variant names use different normalisation method.
         normname = GOKbTextUtils.normaliseString(name)
@@ -1196,52 +1193,18 @@ where cp.owner = :c
         // not already a name
         // Make sure not already a variant name
         def existing_variants = KBComponentVariantName.findAllByNormVariantName(normname)
-        if ( existing_variants.size() == 0 ) {
-          result = new KBComponentVariantName( owner:this, variantName:name ).save()
-        }
-        else {
+        if (existing_variants.size() == 0) {
+          result = new KBComponentVariantName(owner: this, variantName: name).save()
+        } else {
           log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
         }
 
-      }
-      else {
+      } else {
         log.debug("Unable to add ${name} as an alternate name to ${id} - it's already name for ${existing_component.id}");
       }
-    }
-    else {
+    } else {
       log.error("No viable variant name supplied!")
     }
-    result
-  }
-
-  /**
-   *  Accept a map of namespace:x,identifier:y pairs. Every identifier which does match something must match the same component
-   *  Non-matches are OK
-   */
-  @Transient
-  static def secureIdentifierLookup(candidate_identifiers) {
-
-    def result = null;
-
-    def base_query = "select distinct c.fromComponent from Combo as c where c.toComponent in ( :l )"
-    def identifier_list = []
-
-    candidate_identifiers.each { id ->
-      identifier_list.add(Identifier.lookupOrCreateCanonicalIdentifier(id.namespace, id.value))
-    }
-
-    def qresult = Combo.executeQuery(base_query,[l:identifier_list],[readOnly:true]);
-
-    if ( qresult.size() == 1 ) {
-      result = qresult[0]
-    }
-    else if ( qresult.size() == 0 ) {
-    }
-    else {
-      def matching_identifiers = qresult.collect{it.id}
-      throw new Exception("secureIdentifierLookup found multiple (${qresult.size()}) matching components (${matching_identifiers}) for a supposedly unique set of identifiers: ${candidate_identifiers}");
-    }
-
     result
   }
 
@@ -1256,7 +1219,7 @@ where cp.owner = :c
   }
 
   @Transient
-  def getDecisionSupportLines(filter=null) {
+  def getDecisionSupportLines(filter = null) {
 
     // Return an array consisting of DS Categories, in each category the Criterion and then null or the currently selected value
     def result = [:]
@@ -1264,164 +1227,164 @@ where cp.owner = :c
 
     // N.B. for steve.. saying "if id != null" always fails - id is hibernate injected - should investigate this
     if (getId() != null) {
-          // N.B. Long standing bug in hibernate means that dsac.appliedTo = ? throws a 'can only ref props in the driving table' exception
-          // Workaround is to use the id directly
-          log.debug("Package being processed (KB COMPONENT): ${getId()}")
-          criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left outer join c.appliedCriterion as dsac with dsac.appliedTo.id = ?', getId());
-          def currentUser = springSecurityService.currentUser
+      // N.B. Long standing bug in hibernate means that dsac.appliedTo = ? throws a 'can only ref props in the driving table' exception
+      // Workaround is to use the id directly
+      log.debug("Package being processed (KB COMPONENT): ${getId()}")
+      criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left outer join c.appliedCriterion as dsac with dsac.appliedTo.id = ?', getId());
+      def currentUser = springSecurityService.currentUser
 
-          def criterionMap = [:] //Convert results to group many DSAppliedCriterion's (Val) to a DSCriterion (Key)
-          criterion.each{ c ->
-              if (!criterionMap.containsKey(c[0]))
-                  criterionMap.put(c[0], []);
-              if (c[1])
-                  criterionMap[c[0]].add(c[1])
+      def criterionMap = [:] //Convert results to group many DSAppliedCriterion's (Val) to a DSCriterion (Key)
+      criterion.each { c ->
+        if (!criterionMap.containsKey(c[0]))
+          criterionMap.put(c[0], []);
+        if (c[1])
+          criterionMap[c[0]].add(c[1])
+      }
+
+      Closure dates = { a, b -> a.lastUpdated <= b.lastUpdated ? 1 : -1 }
+      criterionMap.each { c, acrit ->
+
+        def cat_code = c.owner.code //e.g. Fromat,Access - Read Online, etc.
+
+        if (result[cat_code] == null)
+          result[cat_code] = [description  : c.owner.description,
+                              id           : c.owner.id,
+                              criterion    : [:],
+                              comment_count: 0,
+                              vote_count   : 0,
+                              vote_y_count : 0,
+                              vote_n_count : 0,
+                              vote_o_count : 0] //criterion now a map
+
+        // Add criteria title, current value if present, a string of componentId:CriteriaId (For setter/getter)
+        if (!result[cat_code].criterion[c.id]) {
+          // Set all params.
+          //use criterion key instead for id
+          result[cat_code].criterion[c.id] = [
+            "title"       : c.title,         //Downloadable PDF, Embedded PDF, etc.
+            "description" : c.description,   //Downloadable PDF, Embedded PDF, etc.
+            "explanation" : c.explanation,   //Downloadable PDF, Embedded PDF, etc.
+            "title"       : c.title,         //Downloadable PDF, Embedded PDF, etc.
+            "appliedTo"   : getId(),         //Package extends KBComponent
+            "yourVote"    : [],              //logged in users vote
+            "otherVotes"  : [],              //Every else minus logged in & master vote
+            "voteCounter" : [0, 0, 0, 0],       //Red,Amber,Green,Unknown
+            "notes"       : [],              //Comments organised
+            "deletedNotes": []               //Comments organised
+          ]
+        }
+
+        //ORDERING
+        def liveOrg = [] //Live comments by logged in user domain, in date order (last updated)
+        def deleted = [] //Remaining deleted comments by last updated
+        acrit.each { ac ->
+
+          //Your votes placeholder
+          if (currentUser == ac?.user) {
+            // Current users vote.
+            result[cat_code].criterion[c.id]['yourVote'] = [
+              ac?.value?.value, //colour
+              ac,               //dsac
+              ac.user           //user
+            ]
+          } else {
+            //Has there been any other vote
+            result[cat_code].criterion[c.id]['otherVotes'] << [
+              ac?.value?.value,
+              ac,
+              ac?.user
+            ]
           }
 
-          Closure dates = { a, b -> a.lastUpdated <= b.lastUpdated? 1 : -1 }
-          criterionMap.each { c, acrit ->
-
-              def cat_code = c.owner.code //e.g. Fromat,Access - Read Online, etc.
-
-              if (result[cat_code] == null)
-                  result[cat_code] = [description: c.owner.description,
-                                      id:c.owner.id,
-                                      criterion: [:],
-                                      comment_count:0,
-                                      vote_count:0,
-                                      vote_y_count:0,
-                                      vote_n_count:0,
-                                      vote_o_count:0 ] //criterion now a map
-
-              // Add criteria title, current value if present, a string of componentId:CriteriaId (For setter/getter)
-              if (!result[cat_code].criterion[c.id]) {
-                  // Set all params.
-                  //use criterion key instead for id
-                  result[cat_code].criterion[c.id] = [
-                          "title"        : c.title,         //Downloadable PDF, Embedded PDF, etc.
-                          "description"  : c.description,   //Downloadable PDF, Embedded PDF, etc.
-                          "explanation"  : c.explanation,   //Downloadable PDF, Embedded PDF, etc.
-                          "title"        : c.title,         //Downloadable PDF, Embedded PDF, etc.
-                          "appliedTo"    : getId(),         //Package extends KBComponent
-                          "yourVote"     : [],              //logged in users vote
-                          "otherVotes"   : [],              //Every else minus logged in & master vote
-                          "voteCounter"  : [0,0,0,0],       //Red,Amber,Green,Unknown
-                          "notes"        : [],              //Comments organised
-                          "deletedNotes" : []               //Comments organised
-                  ]
-              }
-
-              //ORDERING
-              def liveOrg = [] //Live comments by logged in user domain, in date order (last updated)
-              def deleted = [] //Remaining deleted comments by last updated
-              acrit.each { ac ->
-
-                  //Your votes placeholder
-                  if (currentUser == ac?.user) {
-                      // Current users vote.
-                      result[cat_code].criterion[c.id]['yourVote'] = [
-                              ac?.value?.value, //colour
-                              ac,               //dsac
-                              ac.user           //user
-                      ]
-                  }
-                  else {
-                      //Has there been any other vote
-                      result[cat_code].criterion[c.id]['otherVotes'] << [
-                              ac?.value?.value,
-                              ac,
-                              ac?.user
-                      ]
-                  }
-
-                  //DSAppliedCriterion level, not possible to check if deleted unless loop through each individual note
-                  //colour value is per vote, additional checks will need to be made
-                  switch (ac?.value?.value) {
-                      case 'Red':
-                          result[cat_code].criterion[c.id]['voteCounter'][0]++;
-                          result[cat_code].vote_n_count++;
-                          result[cat_code].vote_count++;
-                          break
-                      case 'Amber':
-                          result[cat_code].criterion[c.id]['voteCounter'][1]++;
-                          result[cat_code].vote_o_count++;
-                          result[cat_code].vote_count++;
-                          break
-                      case 'Green':
-                          result[cat_code].criterion[c.id]['voteCounter'][2]++;
-                          result[cat_code].vote_y_count++;
-                          result[cat_code].vote_count++;
-                          break
-                      default:
-                          result[cat_code].criterion[c.id]['voteCounter'][3]++;
-                          break
-                  }
-
-                  //Notes processing, for ordering and separation of deleted notes
-                  ac?.notes?.each { note ->
-                    result[cat_code].comment_count++;
-
-                    def comment_user_is_curator = note.criterion.user.curatoryGroups?.id.intersect(this.curatoryGroups?.id)
-                    def group_intersection = note.criterion.user.groupMemberships?.intersect(currentUser.groupMemberships)
-
-                    // Control comment inclusion based on filter
-                    if (
-                           ( filter == null ) || ( filter=='all' ) || ( filter == '' ) ||                                // NO filter == everything
-                         ( ( filter == 'mylib' )    && ((  note.criterion.user.org == currentUser.org ) || group_intersection )) ||              // User only wants comments from their own org
-                         ( ( filter == 'otherlib' ) && ( note.criterion.user.org != currentUser.org ) && !group_intersection ) ||               // HEIs other than the users
-                         ( ( filter == 'vendor' )   && ( note.criterion.user.org?.mission?.value == 'Commercial' || note.criterion.user.groupMemberships?.collect { it.mission?.value == 'Commercial'} )) ||  // Filter to vendor comments
-                         ( ( filter == 'curator' )  && comment_user_is_curator )                                         // User is a curator
-                       ) {
-                      if (!note.isDeleted )
-                          liveOrg.add(note)
-                      else if (note.isDeleted)
-                          deleted.add(note)
-                      else
-                          liveOrg.add(note)
-                    }
-                  }
-
-              }
-              //End of DSAppliedCriterion processing for current criterion. Now to sort the notes...
-
-              liveOrg.sort(true,dates)
-              result[cat_code].criterion[c.id]['notes'].addAll(liveOrg)
-
-              deleted.sort(true,dates)
-              result[cat_code].criterion[c.id]['deletedNotes'].addAll(deleted)
+          //DSAppliedCriterion level, not possible to check if deleted unless loop through each individual note
+          //colour value is per vote, additional checks will need to be made
+          switch (ac?.value?.value) {
+            case 'Red':
+              result[cat_code].criterion[c.id]['voteCounter'][0]++;
+              result[cat_code].vote_n_count++;
+              result[cat_code].vote_count++;
+              break
+            case 'Amber':
+              result[cat_code].criterion[c.id]['voteCounter'][1]++;
+              result[cat_code].vote_o_count++;
+              result[cat_code].vote_count++;
+              break
+            case 'Green':
+              result[cat_code].criterion[c.id]['voteCounter'][2]++;
+              result[cat_code].vote_y_count++;
+              result[cat_code].vote_count++;
+              break
+            default:
+              result[cat_code].criterion[c.id]['voteCounter'][3]++;
+              break
           }
 
-          return result
+          //Notes processing, for ordering and separation of deleted notes
+          ac?.notes?.each { note ->
+            result[cat_code].comment_count++;
+
+            def comment_user_is_curator = note.criterion.user.curatoryGroups?.id.intersect(this.curatoryGroups?.id)
+            def group_intersection = note.criterion.user.groupMemberships?.intersect(currentUser.groupMemberships)
+
+            // Control comment inclusion based on filter
+            if (
+            (filter == null) || (filter == 'all') || (filter == '') ||                                // NO filter == everything
+              ((filter == 'mylib') && ((note.criterion.user.org == currentUser.org) || group_intersection)) ||              // User only wants comments from their own org
+              ((filter == 'otherlib') && (note.criterion.user.org != currentUser.org) && !group_intersection) ||               // HEIs other than the users
+              ((filter == 'vendor') && (note.criterion.user.org?.mission?.value == 'Commercial' || note.criterion.user.groupMemberships?.collect { it.mission?.value == 'Commercial' })) ||  // Filter to vendor comments
+              ((filter == 'curator') && comment_user_is_curator)                                         // User is a curator
+            ) {
+              if (!note.isDeleted)
+                liveOrg.add(note)
+              else if (note.isDeleted)
+                deleted.add(note)
+              else
+                liveOrg.add(note)
+            }
+          }
+
+        }
+        //End of DSAppliedCriterion processing for current criterion. Now to sort the notes...
+
+        liveOrg.sort(true, dates)
+        result[cat_code].criterion[c.id]['notes'].addAll(liveOrg)
+
+        deleted.sort(true, dates)
+        result[cat_code].criterion[c.id]['deletedNotes'].addAll(deleted)
+      }
+
+      return result
     }
   }
 
   def expunge() {
     log.debug("Component expunge");
-    def result = [deleteType:this.class.name, deleteId:this.id]
+    def result = [deleteType: this.class.name, deleteId: this.id]
     log.debug("Removing all components");
-    Combo.executeUpdate("delete from Combo as c where c.fromComponent=:component or c.toComponent=:component",[component:this])
-    ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component=:component",[component:this])
-    KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent=:component",[component:this]);
-    KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner=:component",[component:this]);
+    Combo.executeUpdate("delete from Combo as c where c.fromComponent=:component or c.toComponent=:component", [component: this])
+    ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component=:component", [component: this])
+    KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner=:component", [component: this])
 
-    ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)",[component:this]);
-    def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this])
+    ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)", [component: this]);
+    AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup as g where g.review in ( select r from ReviewRequest as r where r.componentToReview=:component)", [component: this]);
+
+    def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: this])
 
     events_to_delete.each {
-      ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = ?",[it])
+      ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = ?", [it])
       ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
     }
 //     ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this]);
     if (this?.class == CuratoryGroup) {
       AllocatedReviewGroup.removeAll(this)
     }
-    ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview=:component",[component:this]);
-    ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component",[component:this]);
-    ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component",[component:this]);
-    ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component",[component:this]);
-    KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component",[component:this])
-
-    this.delete(flush:true, failOnError:true)
+    ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview=:component", [component: this]);
+    ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component", [component: this]);
+    ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component", [component: this]);
+    ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component", [component: this]);
+    KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component", [component: this])
+    KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: this])
+    this.delete(failOnError: true)
     result;
   }
 
@@ -1435,58 +1398,59 @@ where cp.owner = :c
       def batch = remaining.take(50)
       remaining = remaining.drop(50)
 
-      Combo.executeUpdate("delete from Combo as c where c.fromComponent.id IN (:component) or c.toComponent.id IN (:component)",[component:batch])
-      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)",[component:batch])
-      KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)",[component:batch]);
-      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)",[component:batch]);
+      Combo.executeUpdate("delete from Combo as c where c.fromComponent.id IN (:component) or c.toComponent.id IN (:component)", [component: batch])
+      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)", [component: batch])
+      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)", [component: batch]);
 
-      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))",[component:batch]);
-      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant.id IN (:component)",[component:batch])
+      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))", [component: batch]);
+      AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup as g where g.review in ( select r from ReviewRequest as r where r.componentToReview in (:component))", [component: batch]);
+      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant.id IN (:component)", [component: batch])
 
       events_to_delete.each {
-        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = ?",[it])
+        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = ?", [it])
         ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
       }
 
-      ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)",[component:batch]);
-      ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)",[component:batch]);
-      ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)",[component:batch]);
-      ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)",[component:batch]);
-      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)",[component:batch])
+      ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)", [component: batch]);
+      ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)", [component: batch]);
+      ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)", [component: batch]);
+      ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)", [component: batch]);
+      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)", [component: batch])
+      ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
 
-      result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)",[component:batch])
+      result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)", [component: batch])
     }
     result;
   }
 
   @Transient
   def addCoreGOKbXmlFields(builder, attr) {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids')
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def cids = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?",[this,refdata_ids,status_active],[readOnly:true])
+    def cids = Identifier.executeQuery("select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [this, refdata_ids, status_active], [readOnly: true])
     String cName = this.class.name
 
     // Singel props.
-    builder.'name' (name)
-    builder.'status' (status?.value)
-    builder.'editStatus' (editStatus?.value)
-    builder.'shortcode' (shortcode)
+    builder.'name'(name)
+    builder.'status'(status?.value)
+    builder.'editStatus'(editStatus?.value)
+    builder.'shortcode'(shortcode)
 
     // Identifiers
     builder.'identifiers' {
       cids?.each { tid ->
-        builder.'identifier' ('namespace':tid[0], 'value':tid[1], 'type':tid[2])
+        builder.'identifier'('namespace': tid[0], 'namespaceName': tid[1], 'value': tid[2], 'type': tid[3])
       }
-      if ( grailsApplication.config.serverUrl || grailsApplication.config.baseUrl ) {
-        builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl ?: grailsApplication.config.baseUrl}/resource/show/${cName}:${id}")
+      if (grailsApplication.config.serverUrl || grailsApplication.config.baseUrl) {
+        builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.serverUrl ?: grailsApplication.config.baseUrl}/resource/show/${cName}:${id}")
       }
     }
 
     // Variant Names
-    if ( variantNames ) {
+    if (variantNames) {
       builder.'variantNames' {
         variantNames.each { vn ->
-          builder.'variantName' ( vn.variantName )
+          builder.'variantName'(vn.variantName)
         }
       }
     }
@@ -1505,7 +1469,7 @@ where cp.owner = :c
         additionalProperties.each { prop ->
           String pName = prop.propertyDefn?.propertyName
           if (pName && prop.apValue) {
-            builder.'additionalProperty' ('name':pName, 'value':prop.apValue)
+            builder.'additionalProperty'('name': pName, 'value': prop.apValue)
           }
         }
       }
@@ -1514,12 +1478,12 @@ where cp.owner = :c
       builder.'fileAttachments' {
         fileAttachments.each { fa ->
           builder.'fileAttachment' {
-            builder.'guid' (fa.guid)
-            builder.'md5' (fa.md5)
-            builder.'uploadName' (fa.uploadName)
-            builder.'uploadMimeType' (fa.uploadMimeType)
-            builder.'filesize' (fa.filesize)
-            builder.'doctype' (fa.doctype)
+            builder.'guid'(fa.guid)
+            builder.'md5'(fa.md5)
+            builder.'uploadName'(fa.uploadName)
+            builder.'uploadMimeType'(fa.uploadMimeType)
+            builder.'filesize'(fa.filesize)
+            builder.'doctype'(fa.doctype)
             builder.'content' {
               builder.'mkp'.yieldUnescaped "<![CDATA[${fa.fileData.encodeBase64().toString()}]]>"
             }
@@ -1534,32 +1498,23 @@ where cp.owner = :c
 
           addCoreGOKbXmlFields(builder, attr)
 
-          builder.'url' (url)
-          builder.'defaultAccessURL' (defaultAccessURL)
-          builder.'explanationAtSource' (explanationAtSource)
-          builder.'contextualNotes' (contextualNotes)
-          builder.'frequency' (frequency)
-          builder.'ruleset' (ruleset)
-          if ( defaultSupplyMethod ) {
-            builder.'defaultSupplyMethod' ( defaultSupplyMethod.value )
+          builder.'url'(url)
+          builder.'defaultAccessURL'(defaultAccessURL)
+          builder.'explanationAtSource'(explanationAtSource)
+          builder.'contextualNotes'(contextualNotes)
+          builder.'frequency'(frequency)
+          builder.'ruleset'(ruleset)
+          if (defaultSupplyMethod) {
+            builder.'defaultSupplyMethod'(defaultSupplyMethod.value)
           }
-          if ( defaultDataFormat ) {
-            builder.'defaultDataFormat' ( defaultDataFormat.value )
+          if (defaultDataFormat) {
+            builder.'defaultDataFormat'(defaultDataFormat.value)
           }
-          if ( responsibleParty ) {
+          if (responsibleParty) {
             builder.'responsibleParty' {
-              builder.'name' (responsibleParty.name)
+              builder.'name'(responsibleParty.name)
             }
           }
-        }
-      }
-    }
-    // Prices
-    ComponentPrice[] cps = ComponentPrice.findAllByOwner(this)
-    if (cps) {
-      builder.'prices' {
-        cps.each { cp ->
-          builder.'price'(type:cp.priceType, amount:cp.price, currency:cp.currency, startDate: cp.startDate, endDate: cp.endDate)
         }
       }
     }
@@ -1571,17 +1526,15 @@ where cp.owner = :c
     String result = null;
     String price_type = type ?: 'list'
     Date now = new Date()
-    def cpresult = ComponentPrice.executeQuery(CURRENT_PRICE_HQL,[t:price_type, c:this, d:now]);
-    if ( cpresult.size() == 1 ) {
-      result = String.format('%.2f',cpresult.get(0).price);
-      if ( cpresult.get(0).currency != null ) {
+    def cpresult = ComponentPrice.executeQuery(CURRENT_PRICE_HQL, [t: price_type, c: this, d: now]);
+    if (cpresult.size() == 1) {
+      result = String.format('%.2f', cpresult.get(0).price);
+      if (cpresult.get(0).currency != null) {
         result += " ${cpresult.get(0).currency.value}"
       }
-    }
-    else if ( cpresult.size() == 0 ) {
+    } else if (cpresult.size() == 0) {
       // No matches - return null
-    }
-    else {
+    } else {
       throw new RuntimeException("Multiple prices match for component ${this.id} price type ${price_type}");
     }
 
@@ -1591,35 +1544,44 @@ where cp.owner = :c
   /**
    * Set a price formatted as "nnnn.nn" or "nnnn.nn CUR"
    */
-  public void setPrice(String type, String price) {
+  public void setPrice(String type, String price, Date startDate = null, Date endDate = null) {
     Float f = null;
     RefdataValue rdv_type = null;
     RefdataValue rdv_currency = null;
 
-    if ( price ) {
-      Date now = new Date();
+    if (price) {
+      Date today = todayNoTime()
+      Date start = startDate ?: today
+      Date end = endDate
 
       String[] price_components = price.trim().split(' ');
       f = Float.parseFloat(price_components[0])
-      rdv_type = RefdataCategory.lookupOrCreate('Price.type',type?:'list').save(flush:true, failOnError:true)
+      rdv_type = RefdataCategory.lookupOrCreate('Price.type', type ?: 'list').save(flush: true, failOnError: true)
 
-      if ( price_components.length == 2 ) {
-        rdv_currency = RefdataCategory.lookupOrCreate('Currency',price_components[1].trim()).save(flush:true, failOnError:true)
+      if (price_components.length == 2) {
+        rdv_currency = RefdataCategory.lookupOrCreate('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
       }
 
-      // Close out any existing component prices
-      ComponentPrice.executeUpdate('update ComponentPrice set endDate=:now where owner=:t and endDate is null and priceType=:pt',[t:this, now:now, pt:rdv_type]);
-
-      // Create the new component price
       ComponentPrice cp = new ComponentPrice(
-                                             owner:this,
-                                             priceType:rdv_type,
-                                             currency:rdv_currency ,
-                                             startDate:now,
-                                             endDate:null,
-                                             price:f).save(flush:true, failOnError:true);
+        owner: this,
+        priceType: rdv_type,
+        currency: rdv_currency,
+        startDate: start,
+        endDate: end,
+        price: f)
+      prices = prices ?: []
+      // does this price exist already?
+      if (!prices.contains(cp)) {
+        // set the end date for the current price(s)
+        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:tipp and (endDate is null or endDate>:start) and priceType=:type and currency=:currency' , [start: cp.startDate, tipp: this, type: cp.priceType, currency:cp.currency])
+        cp.save()
+        // enter the new price
+        prices << cp
+        save()
+      }
     }
   }
+
   @Transient
   public userAvailableActions() {
     def user = springSecurityService.currentUser
@@ -1631,16 +1593,23 @@ where cp.owner = :c
 
       allActions.each { ao ->
         if (ao.perm == "delete" && !this.isDeletable()) {
-        }
-        else if (ao.perm == "admin" && !this.isAdministerable()) {
-        }
-        else if (ao.perm == "su" && !user.hasRole('ROLE_SUPERUSER')) {
-        }
-        else {
+        } else if (ao.perm == "admin" && !this.isAdministerable()) {
+        } else if (ao.perm == "su" && !user.hasRole('ROLE_SUPERUSER')) {
+        } else {
           result.add(ao)
         }
       }
     }
     result
+  }
+
+  private static Date todayNoTime() {
+    Calendar calendar = Calendar.getInstance();
+    calendar.set(Calendar.HOUR_OF_DAY, 0);
+    calendar.set(Calendar.MINUTE, 0);
+    calendar.set(Calendar.SECOND, 0);
+    calendar.set(Calendar.MILLISECOND, 0);
+
+    return calendar.getTime();
   }
 }

@@ -20,7 +20,7 @@ while ( moredata ) {
       println("Record ${index + 1}")
       def resourceFieldMap = [
         packageHeader : directAddFields (data, ['scope', 'listStatus', 'breakable' ,'consistent', 'fixed', 'paymentType',
-        'global', 'listVerifier', 'userListVerifier', 'listVerifiedDate'], addCoreItems ( data ) )
+        'global', 'globalNote', 'listVerifier', 'userListVerifier', 'listVerifiedDate'], addCoreItems ( data ) )
       ]
 
       resourceFieldMap.packageHeader['nominalPlatform'] = [name: data.nominalPlatform.name.text(),
@@ -39,7 +39,7 @@ while ( moredata ) {
         data.TIPPs.TIPP.each { xmltipp ->
 
           // TIPP.
-          def newtipp = directAddFields (xmltipp, ['medium', 'url'], addCoreItems ( xmltipp ))
+          def newtipp = directAddFields (xmltipp, ['medium', 'url', 'series', 'subjectArea'], addCoreItems ( xmltipp ))
           newtipp.accessStartDate = cleanText( xmltipp.access.'@start'.text() )
           newtipp.accessEndDate = cleanText( xmltipp.access.'@end'.text() )
 

@@ -9,6 +9,8 @@ import au.com.bytecode.opencsv.bean.CsvToBean
 import au.com.bytecode.opencsv.bean.HeaderColumnNameMappingStrategy
 import au.com.bytecode.opencsv.bean.HeaderColumnNameTranslateMappingStrategy
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
@@ -53,6 +55,9 @@ class TSVIngestionService {
 
   def grailsApplication
   def componentLookupService
+  def componentUpdateService
+  def reviewRequestService
+  def titleLookupService
   def refdataCategory
   def sessionFactory
 
@@ -116,7 +121,7 @@ class TSVIngestionService {
           id_value = grailsApplication.config.identifiers.formatters[id_def.type](id_value)
         }
 
-        Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_value)
+        Identifier the_id = componentLookupService.lookupOrCreateCanonicalIdentifier(id_def.type, id_value)
         // Add the id.
 
         result['ids'] << the_id
@@ -298,7 +303,7 @@ class TSVIngestionService {
       // If we made a good match on a class one identifier, but the title in the DB starts with
       // Unknown title, then this is a title whos identifier has come from loading a file of identifiers
       // we should use the title given instead.
-      if ( ( matches[0] ) && 
+      if ( ( matches[0] ) &&
            ( ( matches[0].name?.startsWith('Unknown Title') && ( title?.length() > 0 ) ) || ( matches[0].name == null ) ) ) {
         log.debug("${matches[0].name} is an unknown title - updating to ${title}");
         the_title = matches[0]
@@ -519,7 +524,7 @@ class TSVIngestionService {
     double threshold = grailsApplication.config.cosine.good_threshold
 
     // Work out the distance between the 2 title strings.
-    double distance = 0; 
+    double distance = 0;
 
     // Don't f-about if the title exactly matches the one from the DB we are all-systems-go.
     if ( ti.getName().equalsIgnoreCase(title) ) {
@@ -703,16 +708,31 @@ class TSVIngestionService {
 
     if ( ingest_cfg == null ) {
       ingest_cfg = [
-                     defaultTypeName: kbart_cfg?.defaultTypeName ?: 'org.gokb.cred.JournalInstance',
-                     identifierMap: kbart_cfg?.identifierMap ?: [ 'print_identifier':'issn', 'online_identifier':'eissn', ],
-                     defaultMedium: kbart_cfg?.defaultMedium ?: 'Journal',
-                     providerIdentifierNamespace:providerIdentifierNamespace?.value,
-                     inconsistent_title_id_behavior:'reject',
-                     quoteChar:'"',
-                     discriminatorColumn: kbart_cfg?.discriminatorColumn,
-                     discriminatorFunction: kbart_cfg?.discriminatorFunction,
-                     polymorphicRows:kbart_cfg?.polymorphicRows
-                   ]
+        defaultTypeName: kbart_cfg?.defaultTypeName ?: 'org.gokb.cred.JournalInstance',
+        identifierMap: kbart_cfg?.identifierMap ?: [ 'print_identifier':'issn', 'online_identifier':'eissn', ],
+        defaultMedium: kbart_cfg?.defaultMedium ?: 'Journal',
+        providerIdentifierNamespace:providerIdentifierNamespace?.value,
+        inconsistent_title_id_behavior:'reject',
+        quoteChar:'"',
+        discriminatorColumn: kbart_cfg?.discriminatorColumn ?: 'publication_type',
+        discriminatorFunction: kbart_cfg?.discriminatorFunction,
+        polymorphicRows:kbart_cfg?.polymorphicRows
+      ]
+
+      if (!ingest_cfg.polymorphicRows) {
+        ingest_cfg.polymorphicRows = [
+          'Serial':[
+            identifierMap:[ 'print_identifier':'issn', 'online_identifier':'eissn' ],
+            defaultMedium:'Serial',
+            defaultTypeName:'org.gokb.cred.JournalInstance'
+          ],
+          'Monograph':[
+            identifierMap:[ 'print_identifier':'pisbn', 'online_identifier':'isbn' ],
+            defaultMedium:'Book',
+            defaultTypeName:'org.gokb.cred.BookInstance'
+          ]
+        ]
+      }
     }
 
     try {
@@ -756,7 +776,7 @@ class TSVIngestionService {
           def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
           editor_role_id = editor_role.id
 
- 
+
           if ( other_params.curatoryGroup ) {
             the_package.addCuratoryGroupIfNotPresent(other_params.curatoryGroup)
             the_package.save(flush:true, failOnError:true);
@@ -826,7 +846,7 @@ class TSVIngestionService {
                                'from TitleInstancePackagePlatform as tipp, Combo as c '+
                                'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
                               [pkg:the_package_id,dt:ingest_systime]);
-  
+
               q.each { tipp ->
                 log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}");
                 // tipp.deleteSoft()
@@ -851,7 +871,7 @@ class TSVIngestionService {
             job.message(it)
           }
         }
- 
+
         long processing_elapsed = System.currentTimeMillis()-startTime
         def average_milliseconds_per_row = kbart_beans.size() > 0 ? processing_elapsed.intdiv(kbart_beans.size()) : 0;
         // 3600 seconds in an hour, * 1000ms in a second
@@ -872,7 +892,7 @@ class TSVIngestionService {
             def update_agent = User.findByUsername('IngestAgent')
             // insertBenchmark updateBenchmark
             def p = Package.lock(the_package_id)
-            if ( p.insertBenchmark == null ) 
+            if ( p.insertBenchmark == null )
               p.insertBenchmark=processing_elapsed;
             p.lastUpdateComment="Direct ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
             p.lastUpdatedBy=update_agent
@@ -993,7 +1013,7 @@ class TSVIngestionService {
         log.debug(the_kbart.online_identifier)
 
         def identifiers = []
-        if ( ( the_kbart.online_identifier ) && ( the_kbart.online_identifier.trim().length() > 0 ) ) 
+        if ( ( the_kbart.online_identifier ) && ( the_kbart.online_identifier.trim().length() > 0 ) )
           identifiers << [type:row_specific_config.identifierMap.online_identifier, value:the_kbart.online_identifier]
 
         if ( the_kbart.print_identifier && ( the_kbart.print_identifier.trim().length() > 0 ) )
@@ -1008,7 +1028,7 @@ class TSVIngestionService {
         if ( ( the_kbart.title_id ) && ( the_kbart.title_id.trim().length() > 0 ) ) {
           log.debug("title_id ${the_kbart.title_id}");
           if ( ingest_cfg.providerIdentifierNamespace ) {
-            identifiers << [type:ingest_cfg.providerIdentifierNamespace, value:the_kbart.title_id]
+            identifiers << [type:ingest_cfg.providerIdentifierNamespace.value, value:the_kbart.title_id]
           }
           else {
             identifiers << [type:'title_id', value:the_kbart.title_id]
@@ -1029,19 +1049,19 @@ class TSVIngestionService {
         }
 
         if ( identifiers.size() > 0 ) {
-
-          def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_config, user, the_kbart.publication_type)
-          // should be def title = titleLookupService.find([title:the_kbart.publication_title, 
-          //                                                identifiers:identifiers,
-          //                                                publisher_name:the_kbart.publisher_name],
-          //                                                null/*user*/, null/*project*/, row_specific_config.defaultTypeName)
-
+          def title = titleLookupService.findOrCreate(the_kbart.publication_title, the_kbart.publisher_name, identifiers, user, null, row_specific_config.defaultTypeName)
 
           if ( title ) {
 
             log.debug("title found: for ${the_kbart.publication_title}:${title}")
 
             if (title) {
+              def sync_obj = [
+                'name': the_kbart.publication_title,
+                'identifiers': identifiers
+              ]
+
+              componentUpdateService.ensureCoreData(title, sync_obj, false, user)
 
               // The title.save s are necessary as adding to the combos collection dirties the title object
               // These should be rewritten to manually create combo objects instead.
@@ -1082,7 +1102,8 @@ class TSVIngestionService {
                                title,
                                platform,
                                ingest_date,
-                               ingest_systime)
+                               ingest_systime,
+                               identifiers)
 
             } else {
                log.warn("problem getting the title...")
@@ -1131,7 +1152,8 @@ class TSVIngestionService {
                        the_title,
                        the_platform,
                        ingest_date,
-                       ingest_systime) {
+                       ingest_systime,
+                       identifiers) {
 
     log.debug("TSVIngestionService::manualUpsertTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
 
@@ -1140,12 +1162,12 @@ class TSVIngestionService {
     def tipp_values = [
       url:the_kbart.title_url?:'',
       embargo:the_kbart.embargo_info?:'',
-      coverageDepth:RefdataCategory.lookup('TitleInstancePackagePlatform.CoverageDepth', the_kbart.coverageDepth),
+      coverageDepth:the_kbart.coverageDepth?:'',
       coverageNote:the_kbart.coverage_note?:'',
-      startDate:parseDate(the_kbart.date_first_issue_online),
+      startDate:the_kbart.date_first_issue_online,
       startVolume:the_kbart.num_first_vol_online,
       startIssue:the_kbart.num_first_issue_online,
-      endDate:parseDate(the_kbart.date_last_issue_online),
+      endDate:the_kbart.date_last_issue_online,
       endVolume:the_kbart.num_last_vol_online,
       endIssue:the_kbart.num_last_issue_online,
       source:the_source,
@@ -1156,17 +1178,54 @@ class TSVIngestionService {
     def tipp = null;
 
     log.debug("Lookup existing TIPP");
+    def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+    def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
     def tipps = TitleInstance.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
                                            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=? '+
                                            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ? '+
                                            'and title_combo.toComponent=tipp and title_combo.fromComponent = ? ',
                                           [the_package,the_platform,the_title])
-    if ( tipps.size() == 1 ) {
-      log.debug("found");
-      tipp = tipps[0]
-    }
-    else {
-      log.debug("tipp lookup found ${tipps.size()} entries");
+    if ( tipps.size() > 0 ) {
+      switch (tipps.size()) {
+        case 1:
+          log.debug("found");
+
+          if (the_kbart.title_url && the_kbart.title_url.size() > 0) {
+            if (!tipps[0].url || tipps[0].url == trimmed_url) {
+              tipp = tipps[0]
+            } else {
+              log.debug("matched tipp has a different url..")
+            }
+          } else {
+            tipp = tipps[0]
+          }
+          break;
+        case 0:
+          log.debug("not found");
+
+          break;
+        default:
+          if (the_kbart.title_url && the_kbart.title_url.size() > 0) {
+            tipps = tipps.findAll { !it.url || it.url == trimmed_url };
+            log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
+          }
+
+          def cur_tipps = tipps.findAll { it.status == status_current };
+          def ret_tipps = tipps.findAll { it.status == status_retired };
+
+          if (cur_tipps.size() > 0) {
+            tipp = cur_tipps[0]
+
+            log.warn("found ${cur_tipps.size()} current TIPPs!")
+          } else if (ret_tipps.size() > 0) {
+            tipp = ret_tipps[0]
+
+            log.warn("found ${ret_tipps.size()} retired TIPPs!")
+          } else {
+            log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
+          }
+          break;
+      }
     }
 
 
@@ -1176,69 +1235,153 @@ class TSVIngestionService {
       // These are immutable for a TIPP - only set at creation time
       // We are going to create tipl objects at the end instead if per title inline.
       // tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
-      def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
 
       // Copy the new tipp_values from the file into our new object
-      tipp = new TitleInstancePackagePlatform(tipp_values)
+      def tipp_fields = [
+        pkg: the_package,
+        title: the_title,
+        hostPlatform: the_platform,
+        url: the_kbart.title_url,
+        name: the_kbart.publication_title
+      ]
 
-      tipp.status = status_current;
+      tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
+    }
 
-      // log.debug("Created");
+    Set<String> ids = tipp.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
+    RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
-      // because pkg is not a real property, but a hasByCombo, passing the value in the map constuctor
-      // won't actually get this set. So do it manually. Ditto the other fields
-      // tipp.pkg = the_package;
-      // tipp.title = the_title;
-      // tipp.hostPlatform = the_platform;
-      // tipp.source = the_source;
+    identifiers.each { ci ->
+      def namespace_val = ci.type ?: ci.namespace
+      String testKey = "${ci.type}|${ci.value}".toString()
 
-      log.debug("save tipp")
-      tipp.save(failOnError:true, flush:true)
+      if (namespace_val && ci.value && ci.type.toLowerCase() != "originediturl") {
 
-      def status_active = RefdataCategory.lookupOrCreate('Combo.Status', 'Active')
-      def tipp_title_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-      def tipp_package_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
-      def tipp_platform_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
+        if (!ids.contains(testKey)) {
+          def canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
 
-      Combo tipp_title_combo = new Combo(
-                                         fromComponent:the_title,
-                                         toComponent:tipp,
-                                         status:status_active,
-                                         type:tipp_title_combo_type).save(flush:true, failOnError:true);    // TitleInstance.Tipps
-      Combo tipp_package_combo = new Combo(
-                                         fromComponent:the_package,
-                                         toComponent:tipp,
-                                         status:status_active,
-                                         type:tipp_package_combo_type).save(flush:true, failOnError:true);  // Package.Tipps
-      Combo tipp_platform_combo = new Combo(
-                                         fromComponent:the_platform,
-                                         toComponent:tipp,
-                                         status:status_active,
-                                         type:tipp_platform_combo_type).save(flush:true, failOnError:true);  // Platform.HostedTipps
-      
+          log.debug("Checking identifiers of component ${tipp.id}")
+          if (canonical_identifier) {
+            def duplicate = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [canonical_identifier, tipp])
 
-    } else {
-      log.debug("found a tipp to update")
+            if (duplicate.size() == 0) {
+              log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
+              def new_id = new Combo(fromComponent: tipp, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
+            } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
-      // Set all properties on the object.
-      tipp_values.each { prop, value ->
-        // Only update if we actually have a change to make
-
-        // WE SHOULD NOT UPDATE ANY ACCESS_FROM_DATE - as we are seeing the tipp in the file again
-        // Previous functions will add the access from date as today. We need to ignore it.
-        if ( tipp_properties_to_ignore_when_updating.contains(prop) ) {
-        }
-        else {
-          if ( tipp."${prop}" != value ) {
-            // Only set the property if we have a value.
-            if (value != null && value != "") {
-              tipp."${prop}" = value
+              log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
+              reviewRequestService.raise(
+                component,
+                "Review ID status.",
+                "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
+                user,
+                null,
+                null,
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
+              )
+            } else {
+              log.debug("Identifier combo is already present, probably via titleLookupService.")
             }
+
+            // Add the value for comparison.
+            ids << testKey
+          } else {
+            log.debug("Could not find or create Identifier!")
           }
         }
       }
-      log.debug("save tipp")
-      tipp.save(failOnError:true, flush:true)
+    }
+
+    def parsedStart = GOKbTextUtils.completeDateString(tipp_values.startDate)
+    def parsedEnd = GOKbTextUtils.completeDateString(tipp_values.endDate, false)
+
+    def cs_match = false
+    def conflict = false
+    def startAsDate = (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+    def endAsDate = (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+    def conflicting_statements = []
+
+    tipp.coverageStatements?.each { tcs ->
+      if ( !cs_match ) {
+        if (!tcs.endDate && !endAsDate) {
+          conflict = true
+        }
+        else if (tcs.startVolume && tcs.startVolume == tipp_values.startVolume) {
+          log.debug("Matched CoverageStatement by startVolume")
+          cs_match = true
+        }
+        else if (tcs.startDate && tcs.startDate == startAsDate) {
+          log.debug("Matched CoverageStatement by startDate")
+          cs_match = true
+        }
+        else if (!tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate) {
+          log.debug("Matched CoverageStatement with unspecified values")
+          cs_match = true
+        }
+        else if (tcs.startDate && tcs.endDate) {
+          if (startAsDate && startAsDate > tcs.startDate && startAsDate < tcs.endDate) {
+            conflict = true
+          }
+          else if (endAsDate && endAsDate > tcs.startDate && endAsDate < tcs.endDate) {
+            conflict = true
+          }
+        }
+
+        if (conflict) {
+          conflicting_statements.add(tcs)
+        }
+        else if (cs_match) {
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', tipp_values.startIssue)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', tipp_values.startVolume)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', tipp_values.endVolume)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', tipp_values.endIssue)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', tipp_values.embargo)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', tipp_values.coverageNote)
+          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tcs,'startDate')
+          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tcs,'endDate')
+          changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_values.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
+        }
+      }
+      else {
+        log.warn("Multiple coverage statements matched!")
+      }
+    }
+
+    for (def cst : conflicting_statements) {
+      tipp.removeFromCoverageStatements(cst)
+    }
+
+    if (!cs_match) {
+
+      def cov_depth = null
+
+      if (tipp_values.coverageDepth instanceof String) {
+        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', tipp_values.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+      } else if (tipp_values.coverageDepth instanceof Integer) {
+        cov_depth = RefdataValue.get(c.coverageDepth)
+      } else if (tipp_values.coverageDepth instanceof Map) {
+        if (tipp_values.coverageDepth.id) {
+          cov_depth = RefdataValue.get(tipp_values.coverageDepth.id)
+        } else {
+          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (tipp_values.coverageDepth.name ?: tipp_values.coverageDepth.value))
+        }
+      }
+
+      def new_tcs = [
+        'startVolume': tipp_values.startVolume,
+        'startIssue': tipp_values.startIssue,
+        'endVolume': tipp_values.endVolume,
+        'endIssue': tipp_values.endIssue,
+        'embargo': tipp_values.embargo,
+        'coverageDepth': cov_depth,
+        'coverageNote': tipp_values.coverageNote,
+        'startDate': startAsDate,
+        'endDate': endAsDate
+      ]
+
+      tipp.addToCoverageStatements(new_tcs)
     }
 
     // log.debug("Values updated, set lastSeen");
@@ -1276,7 +1419,7 @@ class TSVIngestionService {
 
 
         // If we don't currently have a value OR we have a value which is not the same as the one supplied
-        if ( ( current_value == null ) || 
+        if ( ( current_value == null ) ||
              ( ! current_value.equals(value_from_file) ) ) {
           log.debug("${current_value} !=  ${value_from_file} so set...");
           tipp."set${field}"(proptype, value_from_file)
@@ -1315,7 +1458,8 @@ class TSVIngestionService {
     def result;
     def norm_pkg_name = KBComponent.generateNormname(packageName)
     log.debug("Attempt package match by normalised name: ${norm_pkg_name}");
-    def packages=Package.executeQuery("select p from Package as p where p.normname=?",[norm_pkg_name],[readonly:false])
+    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+    def packages=Package.executeQuery("select p from Package as p where p.normname=? and p.status != ?",[norm_pkg_name, status_deleted],[readonly:false])
 
     switch (packages.size()) {
       case 0:
@@ -1326,9 +1470,9 @@ class TSVIngestionService {
 
         def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
         def newpkg = new Package(
-                                 name:packageName, 
-                                 normname:norm_pkg_name, 
-                                 source:source, 
+                                 name:packageName,
+                                 normname:norm_pkg_name,
+                                 source:source,
                                  status: status_current,
                                  description:other_params?.description)
 
@@ -1340,7 +1484,7 @@ class TSVIngestionService {
             def providers = org.gokb.cred.Org.findAllByNormname(norm_provider_name)
             if ( providers.size() == 0 )
               provider = new Org(name:providerName, normname:norm_provider_name).save(flush:true, failOnError:true);
-            else if ( providers.size() == 1 ) 
+            else if ( providers.size() == 1 )
               provider = providers[0]
             else
               log.error("Multiple orgs with name ${providerName}/${norm_provider_name} -- unable to set package provider");
@@ -1374,7 +1518,7 @@ class TSVIngestionService {
     }
 
     // The request can now have additional package level properties that we need to process.
-    // other_params can contain 'pkg.' properties. 
+    // other_params can contain 'pkg.' properties.
     handlePackageProperties(result, other_params)
 
     log.debug("handlePackage returns ${result}");
@@ -1385,7 +1529,7 @@ class TSVIngestionService {
     def package_changed = false;
     packageProperties.each { pp ->
       // consider See if pp.regex matches any of the properties
-      props.keySet().grep(pp.regex).each { prop -> 
+      props.keySet().grep(pp.regex).each { prop ->
         log.debug("Property ${prop} matched config ${pp}");
         switch ( pp.type ) {
           case 'typeValueFunction':
@@ -1677,9 +1821,9 @@ class TSVIngestionService {
 
             if (fileRule.additional!=null && !done) {
               if ( data ) {
-                if ( result[fileRule.additional] == null ) 
+                if ( result[fileRule.additional] == null )
                   result[fileRule.additional] = []
-  
+
                 result[fileRule.additional] << data
               }
             } else {
@@ -1692,14 +1836,14 @@ class TSVIngestionService {
         }
       }
 
-      
+
       log.debug("Processing ${unmapped_cols.size()} unmapped columns");
       unmapped_cols.each { unmapped_col_idx ->
         if ( ( unmapped_col_idx < nl.size() ) && ( unmapped_col_idx < header.size() ) ) {
           log.debug("Setting unmapped column idx ${unmapped_col_idx} ${header[unmapped_col_idx]} to ${nl[unmapped_col_idx]}");
           // result.unmapped.add([header[unmapped_col_idx], nl[unmapped_col_idx]]);
           result.unmapped.add([
-                                name:header[unmapped_col_idx], 
+                                name:header[unmapped_col_idx],
                                 value:nl[unmapped_col_idx],
                                 index:unmapped_col_idx
                               ]);
@@ -1838,10 +1982,10 @@ class TSVIngestionService {
 
   // Preflight works through a file adding and verifying titles and platforms, and posing questions which need to be resolved
   // before the ingest proper. We record parameters used so that after recording any corrections we can re-process the file.
-  def preflight( kbart_beans, 
-                 ingest_cfg, 
-                 source, 
-                 packageName, 
+  def preflight( kbart_beans,
+                 ingest_cfg,
+                 source,
+                 packageName,
                  providerName  ) {
     log.debug("preflight");
 
@@ -1888,7 +2032,7 @@ class TSVIngestionService {
         if ( ( the_kbart.title_id ) && ( the_kbart.title_id.trim().length() > 0  ) ) {
           log.debug("title_id ${the_kbart.title_id}");
           if ( ingest_cfg.providerIdentifierNamespace ) {
-            identifiers << [type:ingest_cfg.providerIdentifierNamespace, value:the_kbart.title_id]
+            identifiers << [type:ingest_cfg.providerIdentifierNamespace.value, value:the_kbart.title_id]
           }
           else {
             identifiers << [type:'title_id', value:the_kbart.title_id]
@@ -1936,7 +2080,7 @@ class TSVIngestionService {
             }
             else {
               log.debug("No matching rule for fingerprint ${rule_fingerprint}");
-         
+
               result.passed = false;
               result.problems.add (
                 [
@@ -1972,7 +2116,7 @@ class TSVIngestionService {
    */
   def addCustprops(obj, props, prefix) {
     boolean changed = false
-    props.each { k,v -> 
+    props.each { k,v ->
       if ( k.toString().startsWith(prefix) ) {
         log.debug("Got custprop match : ${k} = ${v}");
         def trimmed_name = m.name.substring(prefix.length());

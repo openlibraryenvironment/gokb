@@ -25,9 +25,9 @@ class InplaceTagLib {
     boolean cur = request.curator != null ? request.curator.size() > 0 : true
 
     // Default editable value.
-    boolean tl_editable = owner?.isEditable() ?: true
+    boolean tl_editable = owner?.isEditable()
 
-    if ( !tl_editable && owner?.class?.name == 'org.gokb.cred.User') {
+    if (owner?.class?.name == 'org.gokb.cred.User') {
       tl_editable = user.equals(owner)
     }
 
@@ -87,7 +87,7 @@ class InplaceTagLib {
 
     def oid = owner.id != null ? "${owner.class.name}:${owner.id}" : ''
     def id = attrs.id ?: "${oid}:${attrs.field}"
-    def dformat = attrs."data-format"?:'yyyy-MM-dd'
+    def dformat = attrs."data-format"?:'yyyy-mm-dd'
 
     // Default the format.
 
@@ -107,15 +107,15 @@ class InplaceTagLib {
     def data_link = null
     switch ( attrs.type ) {
       case 'date':
-        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date', dateFormat: (dformat)])
-        out << " data-type='date' data-inputclass='form-control form-date' data-format='${dformat}' data-datepicker='{minYear : 1900,smartDays:true}' data-viewformat='yyyy-mm-dd'"
+        data_link = createLink(controller:'ajaxSupport', action: 'editableSetValue', params:[type:'date', dateFormat: (dformat.replace('mm', 'MM'))])
+        out << " data-type='date' data-inputclass='form-control form-date' data-format='${dformat}' data-datepicker='{minYear: 1500, smartDays: true, clearBtn: true}' data-viewformat='yyyy-mm-dd'"
         def dv = attrs."data-value"
 
         if (!dv) {
           if (owner[attrs.field]) {
 
             // Date format.
-            def sdf = new java.text.SimpleDateFormat(dformat)
+            def sdf = new java.text.SimpleDateFormat(dformat.replace('mm', 'MM'))
             dv = sdf.format(owner[attrs.field])
           } else {
             dv = ""
@@ -212,12 +212,67 @@ class InplaceTagLib {
     out << "</span>"
   }
 
+  def xEditableBoolean = { attrs, body ->
+
+    User user = springSecurityService.currentUser
+    boolean isAdmin = user.getAuthorities().find { Role role ->
+      "ROLE_ADMIN".equalsIgnoreCase(role.authority)
+    }
+
+    // The check editable should output the read only version so we should just exit
+    // if read only.
+    if (!checkEditable(attrs, body, out)) return;
+
+    def owner = ClassUtils.deproxy( attrs.remove("owner") )
+
+    // out << "editable many to one: <div id=\"${attrs.id}\" class=\"xEditableManyToOne\" data-type=\"select2\" data-config=\"${attrs.config}\" />"
+    def data_link = createLink(controller:'ajaxSupport', action: 'getRefdata', params:[id:'boolean',format:'json'])
+    def update_link = createLink(controller:'ajaxSupport', action: 'genericSetRel', params:[type: 'boolean'])
+    def oid = owner.id != null ? "${owner.class.name}:${owner.id}" : ''
+    def id = attrs.remove("id") ?: "${oid}:${attrs.field}"
+    def field = attrs.remove("field")
+    attrs['class'] = ["xEditableManyToOne"]
+
+    out << "<span>"
+
+    // Output an editable link
+    out << "<span id=\"${id}\" "
+    if ( ( owner != null ) && ( owner.id != null ) ) {
+      out << "data-pk=\"${oid}\" "
+    }
+
+    out << "data-url=\"${update_link}\" "
+
+    def attributes = attrs.collect({k, v ->
+
+      if (v instanceof Collection) {
+        v = v.collect({ val ->
+          "${val}"
+        }).join(" ")
+      }
+      "${k}=\"${v.encodeAsHTML()}\""
+    }).join(" ")
+    out << "data-type=\"select\" data-name=\"${field}\" data-source=\"${data_link}\" ${attributes}>"
+
+    // Here we can register different ways of presenting object references. The most pressing need to be
+    // outputting a span containing an icon for refdata fields.
+    out << renderObjectValue(owner[field])
+
+    out << "</span>"
+
+    // If the caller specified an rdc attribute then they are describing a refdata category.
+    // We want to add a link to the category edit page IF the annotation is editable.
+
+    out << "</span>"
+  }
+
   /**
    * ToDo: This function is a duplicate of the one found in AjaxController, both should be moved to a shared static utility
    */
   def renderObjectValue(value) {
     def result=''
-    if ( value ) {
+    if ( value != null ) {
+      log.debug("${value.class}")
       switch ( value.class ) {
         case org.gokb.cred.RefdataValue.class:
           if ( value.icon != null ) {
@@ -226,6 +281,9 @@ class InplaceTagLib {
           else {
             result=value.value
           }
+          break;
+        case Boolean.class:
+          result = (value == true ? 'Yes' : 'No')
           break;
         default:
           result=value.toString();

@@ -1,9 +1,15 @@
 package org.gokb.rest
 
+import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.JobResult
+import org.gokb.cred.KBComponent
 import org.gokb.cred.ReviewRequest
+import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Org
 import org.gokb.cred.Role
 import org.gokb.cred.User
@@ -19,10 +25,21 @@ class CuratoryGroupsController {
   def restMappingService
   def springSecurityService
   def componentLookupService
+  ConcurrencyManagerService concurrencyManagerService
 
-  @Secured(['IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def curGroups = CuratoryGroup.findAll()
+    def status_filter = RefdataCategory.lookup('KBComponent.Status', 'Current')
+
+    if (params.status) {
+      def status = RefdataCategory.lookup('KBComponent.Status', params.status)
+
+      if (status) {
+        status_filter = status
+      }
+    }
+
+    def curGroups = CuratoryGroup.findAllByStatus(status_filter)
 
     String sortField = null, sortOrder = null
     if (params._sort) {
@@ -48,11 +65,16 @@ class CuratoryGroupsController {
     render result as JSON
   }
 
-  @Secured(['IS_AUTHENTICATED_FULLY'])
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
     def curGroup = null
     def base = grailsApplication.config.serverURL + "/rest"
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
 
     if (params.oid || params.id) {
       curGroup = CuratoryGroup.findByUuid(params.id)
@@ -65,7 +87,7 @@ class CuratoryGroupsController {
       }
 
       if (curGroup) {
-        result.data = restMappingService.mapObjectToJson(curGroup, params, null)
+        result.data = restMappingService.mapObjectToJson(curGroup, params, user)
       } else {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
@@ -105,7 +127,7 @@ class CuratoryGroupsController {
         if (params.status instanceof Integer) {
           def cat = RefdataCategory.findByLabel('ReviewRequest.Status')
           def val = RefdataValue.get(params.status)
-          
+
           if (val && val in cat.values) {
             status = val
           }
@@ -184,6 +206,54 @@ class CuratoryGroupsController {
       result.message = "Unable to lookup group for ID ${params.id}!"
       response.setStatus(404)
     }
+
+    render result as JSON
+  }
+
+  @Secured("hasAnyRole('ROLE_CONTRIBUTOR', 'ROLE_EDITOR', 'ROLE_ADMIN') and isAuthenticated()")
+  def getJobs() {
+    def result = [:]
+    def max = params.limit ? params.long('limit') : 10
+    def offset = params.offset ? params.long('offset') : 0
+    def base = grailsApplication.config.serverURL + "/rest"
+    def sort = params._sort ?: null
+    def order = params._order ?: null
+    def group = CuratoryGroup.get(params.id)
+    User user = User.get(springSecurityService.principal.id)
+    def errors = [:]
+
+    if (group && (group.users.contains(user) || user.isAdmin())) {
+      if (params.boolean('archived') == true) {
+        result.data = []
+        def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?", [group.id])[0]
+        def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ? order by jr.startTime desc", [group.id], [max: max, offset: offset])
+
+        jobs.each { j ->
+          def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+          // No JsonObject for list view
+
+          result.datas << [
+            uuid: j.uuid,
+            description: j.description,
+            type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+            linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+            startTime: j.startTime,
+            endTime: j.endTime,
+            status: j.statusText
+          ]
+        }
+
+        result['_pagination'] = [
+          offset: offset,
+          limit: max,
+          total: hqlTotal
+        ]
+      }
+      else {
+        result = concurrencyManagerService.getGroupJobs(group.id as int, max, offset)
+      }
+    }
+    log.debug("Return ${result}")
 
     render result as JSON
   }
