@@ -6,6 +6,12 @@
           ${d.id?:'New record'}&nbsp;
         </dd>
         <dt>
+          <g:annotatedLabel owner="${d}" property="type">Type</g:annotatedLabel>
+        </dt>
+        <dd>
+          ${d.stdDesc ?  d.stdDesc.value : 'None'}
+        </dd>
+        <dt>
           <g:annotatedLabel owner="${d}" property="cause">Cause</g:annotatedLabel>
         </dt>
         <dd style="max-width:60%">
