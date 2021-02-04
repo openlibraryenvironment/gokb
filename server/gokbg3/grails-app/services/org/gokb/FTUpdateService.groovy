@@ -458,11 +458,11 @@ class FTUpdateService {
             event.date = dateFormatService.formatIsoTimestamp(he.date)
             event.from = []
             if (he.from) {
-              event.from.addAll(he.from.collect { fe -> [id: fe.id, uuid: fe.uuid, name: fe.name ]})
+              event.from.addAll(he.from.collect { fe -> [id: fe?.id, uuid: fe?.uuid, name: fe?.name ]})
             }
             event.to = []
             if (he.to){
-              event.to.addAll(he.to.collect{ te -> [id: te.id, uuid: te.uuid, name: te.name] })
+              event.to.addAll(he.to.collect{ te -> [id: te?.id, uuid: te?.uuid, name: te?.name] })
             }
             event.id = he.id ?: ""
             result.titleHistory.add(event)
