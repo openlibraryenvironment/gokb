@@ -143,8 +143,8 @@ class CrossRefPkgRun {
         idx++
         log.info("Crossreferencing #$idx title ${json_tipp.name ?: json_tipp.title.name}")
 
-        if ((json_tipp.package == null) && (pkg.id)) {
-          json_tipp.package = [internalId: pkg.id]
+        if ((json_tipp.package == null) && (pkg)) {
+          json_tipp.package = pkg
         }
         else {
           log.error("No package")
@@ -461,7 +461,7 @@ class CrossRefPkgRun {
           ti.merge(flush: true)
         }
         titleLookupService.addPublisherHistory(ti, titleObj.publisher_history)
-        tippJson.title.internalId = ti.id
+        tippJson.title= ti
       }
       else {
         if (ti != null) {
@@ -489,7 +489,7 @@ class CrossRefPkgRun {
       return
     }
 
-    if (!invalidTipps.contains(tippJson) && tippJson.title.internalId == null) {
+    if (!invalidTipps.contains(tippJson) && tippJson.title.id == null) {
       invalidTipps << tippJson
       log.error("Failed to locate a title for ${tippJson?.title} when attempting to create TIPP")
       tippError(['message': messageService.resolveCode('crossRef.package.tipps.error.title', [tippJson.title.name], locale)])
@@ -497,7 +497,7 @@ class CrossRefPkgRun {
   }
 
   private void handlePlt(def tippJson) {
-    def tippPlt = tippJson.hostPlatform ?: tippJson.platform
+    def tippPlt = tippJson.platform ?: tippJson.hostPlatform
     def pl = pltCache[tippPlt.name]
     if (!pl) {
       log.debug("validating platform $tippPlt")
@@ -542,7 +542,7 @@ class CrossRefPkgRun {
         }
       }
     }
-    tippJson << [hostPlatform: [internalId: pl.id]]
+    tippJson.platform=pl
   }
 
   private void handleTIPP(def tippJson) {
