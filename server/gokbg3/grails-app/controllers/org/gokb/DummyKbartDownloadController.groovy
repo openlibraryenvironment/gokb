@@ -38,7 +38,7 @@ class DummyKbartDownloadController {
       render data.toString()
     }
     else {
-      response.status = 404
+      response.status=404
     }
   }
 
@@ -50,8 +50,7 @@ class DummyKbartDownloadController {
       title.each { column, value ->
         if (!first) {
           line.append("\t")
-        }
-        else {
+        } else {
           first = false
         }
         line.append(column)
@@ -69,8 +68,7 @@ class DummyKbartDownloadController {
       lineData.each { column, value ->
         if (!first) {
           line.append("\t")
-        }
-        else {
+        } else {
           first = false
         }
         line.append(value)
@@ -108,8 +106,7 @@ class DummyKbartDownloadController {
       record.parent_publication_title_id = ""
       record.preceding_publication_title_id = ""
       record.access_type = accessType()
-      record.zdb_id = ""
-// record.zdb_id = "${ThreadLocalRandom.current().nextLong(1000000000)}-${["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "x", "X"][ThreadLocalRandom.current().nextInt(12)]}"
+      record.zdb_id = ""// record.zdb_id = "${ThreadLocalRandom.current().nextLong(1000000000)}-${["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "x", "X"][ThreadLocalRandom.current().nextInt(12)]}"
       record.last_changed = timeline[4].format(dtf)
       record.access_start_date = (timeline[2] <= timeline[3] ? timeline[2] : timeline[3]).format(dtf)
       record.access_end_date = (timeline[2] > timeline[3] ? timeline[2] : timeline[3]).format(dtf)
@@ -272,16 +269,15 @@ class DummyKbartDownloadController {
       while (!ok) {
         if (pre == 979) {
           grp = [8, 10, 11, 12][ThreadLocalRandom.current().nextInt(4)]
-        }
-        else {
+        } else {
           switch (ThreadLocalRandom.current().nextInt(5)) {
             case 0: grp = [0, 1, 2, 3, 4, 5, 7][ThreadLocalRandom.current().nextInt(7)]
               break
             case 1: grp = ThreadLocalRandom.current().nextInt(80, 95)
               break
             case 2: grp = ThreadLocalRandom.current().nextBoolean() ?
-                ThreadLocalRandom.current().nextInt(600, 650) :
-                ThreadLocalRandom.current().nextInt(950, 990)
+              ThreadLocalRandom.current().nextInt(600, 650) :
+              ThreadLocalRandom.current().nextInt(950, 990)
               break
             case 3: grp = ThreadLocalRandom.current().nextInt(9900, 9990)
               break
@@ -316,9 +312,9 @@ class DummyKbartDownloadController {
     }
 
     private String issn() {
-      long num = ThreadLocalRandom.current().nextLong(1, 9999999)
-      def cmp = "000000$num"
-      cmp = cmp.substring(cmp.length() - 8, cmp.length() - 1)
+      long num = ThreadLocalRandom.current().nextLong(1,9999999)
+      def cmp ="000000$num"
+        cmp=cmp.substring(cmp.length()-8, cmp.length()-1)
       int z1 = Integer.parseInt(cmp[0])
       int z2 = Integer.parseInt(cmp[1])
       int z3 = Integer.parseInt(cmp[2])
@@ -326,8 +322,8 @@ class DummyKbartDownloadController {
       int z5 = Integer.parseInt(cmp[4])
       int z6 = Integer.parseInt(cmp[5])
       int z7 = Integer.parseInt(cmp[6])
-      int chk = (8 * z1 + 7 * z2 + 6 * z3 + 5 * z4 + 4 * z5 + 3 * z6 + 2 * z7) % 11
-      String fin = "$z1$z2$z3$z4-$z5$z6$z7${chk < 10 ? chk : 'X'}"
+      int chk = (8*z1 + 7*z2 + 6*z3 + 5*z4 + 4*z5 + 3*z6 + 2*z7)%11
+      String fin = "$z1$z2$z3$z4-$z5$z6$z7${chk<10?chk:'X'}"
       return fin
     }
 

@@ -143,7 +143,7 @@ class CrossRefPkgRun {
         idx++
         log.info("Crossreferencing #$idx title ${json_tipp.name ?: json_tipp.title.name}")
 
-        if ((json_tipp.package == null) && (pkg)) {
+        if ((json_tipp.package == null) && (pkg.id)) {
           json_tipp.package = [internalId: pkg.id]
         }
         else {

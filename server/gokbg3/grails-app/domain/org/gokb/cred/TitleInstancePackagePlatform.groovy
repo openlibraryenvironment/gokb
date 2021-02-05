@@ -42,91 +42,91 @@ class TitleInstancePackagePlatform extends KBComponent {
   private static SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
 
   private static refdataDefaults = [
-          "format"       : "Electronic",
-          "delayedOA"    : "Unknown",
-          "hybridOA"     : "Unknown",
-          "primary"      : "No",
-          "paymentType"  : "Paid",
-          "coverageDepth": "Fulltext"
+    "format"       : "Electronic",
+    "delayedOA"    : "Unknown",
+    "hybridOA"     : "Unknown",
+    "primary"      : "No",
+    "paymentType"  : "Paid",
+    "coverageDepth": "Fulltext"
   ]
 
   static jsonMapping = [
-          'ignore'       : [
-                  'format',
-                  'paymentType',
-                  'startIssue',
-                  'delayedOA',
-                  'hybridOA',
-                  'coverageNote',
-                  'primary',
-                  'delayedOAEmbargo',
-                  'coverageDepth',
-                  'startVolume',
-                  'endDate',
-                  'embargo',
-                  'startDate',
-                  'endIssue',
-                  'endVolume',
-                  'description',
-                  'hybridOAUrl'
-          ],
-          'es'           : [
-                  'hostPlatformUuid': "hostPlatform.uuid",
-                  'hostPlatformName': "hostPlatform.name",
-                  'hostPlatform'    : "hostPlatform.id",
-                  'tippTitleUuid'   : "title.uuid",
-                  'tippTitleName'   : "title.name",
-                  'tippTitle'       : "title.id",
-                  'tippPackageUuid' : "pkg.uuid",
-                  'tippPackageName' : "pkg.name",
-                  'tippPackage'     : "pkg.id",
-                  'titleType'       : "title.niceName",
-                  'coverage'        : "coverageStatements",
-                  'publisherName'   : "publisherName",
-                  'dateFirstInPrint': "dateFirstInPrint",
-                  'dateFirstOnline' : "dateFirstOnline"
-          ],
-          'defaultLinks' : [
-                  'pkg',
-                  'title',
-                  'hostPlatform'
-          ],
-          'defaultEmbeds': [
-                  'coverageStatements'
-          ]
+    'ignore'       : [
+      'format',
+      'paymentType',
+      'startIssue',
+      'delayedOA',
+      'hybridOA',
+      'coverageNote',
+      'primary',
+      'delayedOAEmbargo',
+      'coverageDepth',
+      'startVolume',
+      'endDate',
+      'embargo',
+      'startDate',
+      'endIssue',
+      'endVolume',
+      'description',
+      'hybridOAUrl'
+    ],
+    'es'           : [
+      'hostPlatformUuid': "hostPlatform.uuid",
+      'hostPlatformName': "hostPlatform.name",
+      'hostPlatform'    : "hostPlatform.id",
+      'tippTitleUuid'   : "title.uuid",
+      'tippTitleName'   : "title.name",
+      'tippTitle'       : "title.id",
+      'tippPackageUuid' : "pkg.uuid",
+      'tippPackageName' : "pkg.name",
+      'tippPackage'     : "pkg.id",
+      'titleType'       : "title.niceName",
+      'coverage'        : "coverageStatements",
+      'publisherName'   : "publisherName",
+      'dateFirstInPrint': "dateFirstInPrint",
+      'dateFirstOnline' : "dateFirstOnline"
+    ],
+    'defaultLinks' : [
+      'pkg',
+      'title',
+      'hostPlatform'
+    ],
+    'defaultEmbeds': [
+      'coverageStatements'
+    ]
   ]
 
   static touchOnUpdate = [
-          "pkg"
+    "pkg"
   ]
 
   static hasByCombo = [
-          pkg         : Package,
-          hostPlatform: Platform,
-          title       : TitleInstance,
-          derivedFrom : TitleInstancePackagePlatform,
-          masterTipp  : TitleInstancePackagePlatform,
+    pkg         : Package,
+    hostPlatform: Platform,
+    title       : TitleInstance,
+    derivedFrom : TitleInstancePackagePlatform,
+    masterTipp  : TitleInstancePackagePlatform,
   ]
 
   static mappedByCombo = [
-          pkg                : 'tipps',
-          hostPlatform       : 'hostedTipps',
-          additionalPlatforms: 'linkedTipps',
-          title              : 'tipps',
-          derivatives        : 'derivedFrom'
+    pkg                : 'tipps',
+    hostPlatform       : 'hostedTipps',
+    additionalPlatforms: 'linkedTipps',
+    title              : 'tipps',
+    derivatives        : 'derivedFrom'
   ]
 
   static manyByCombo = [
-          derivatives        : TitleInstancePackagePlatform,
-          additionalPlatforms: Platform,
+    derivatives        : TitleInstancePackagePlatform,
+    additionalPlatforms: Platform,
   ]
 
   static hasMany = [
-          coverageStatements: TIPPCoverageStatement
+    coverageStatements: TIPPCoverageStatement
   ]
 
   static mappedBy = [
-          coverageStatements: 'owner'
+    coverageStatements: 'owner'
   ]
 
   public getPersistentId() {
@@ -233,8 +233,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
 
       TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
-    }
-    else {
+    } else {
       log.error("TIPP creation failed!")
     }
 
@@ -265,17 +264,12 @@ class TitleInstancePackagePlatform extends KBComponent {
     else {
       def pkg = null
 
-      if (pkgLink instanceof Package) {
-        pkg = pkgLink
+      if (pkgLink instanceof Map) {
+        pkg = Package.get(pkgLink.id ?: pkgLink.internalId)
+      } else {
+        pkg = Package.get(pkgLink)
       }
-      else {
-        if (pkgLink instanceof Map) {
-          pkg = Package.get(pkgLink.id ?: pkgLink.internalId)
-        }
-        else {
-          pkg = Package.get(pkgLink)
-        }
-      }
+
       if (!pkg) {
         result.valid = false
         errors.pkg = [[message: "Could not resolve package id!", baddata: pkgLink, code: 404]]
@@ -288,17 +282,13 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
     else {
       def plt = null
-      if (pltLink instanceof Platform) {
-        plt = pltLink
+
+      if (pltLink instanceof Map) {
+        plt = Platform.get(pltLink.id ?: pltLink.internalId)
+      } else {
+        plt = Platform.get(pltLink)
       }
-      else {
-        if (pltLink instanceof Map) {
-          plt = Platform.get(pltLink.id ?: pltLink.internalId)
-        }
-        else {
-          plt = Platform.get(pltLink)
-        }
-      }
+
       if (!plt) {
         result.valid = false
         errors.hostPlatform = [[message: "Could not resolve platform id!", baddata: pltLink, code: 404]]
@@ -311,17 +301,14 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
     else {
       def ti = null
-      if (tiLink instanceof TitleInstance) {
-        ti = tiLink
-      }
-      else {
+
         if (tiLink instanceof Map) {
           ti = TitleInstance.get(tiLink.id ?: tiLink.internalId)
         }
         else {
           ti = TitleInstance.get(tiLink)
         }
-      }
+
       if (!ti) {
         result.valid = false
         errors.title = [[message: "Could not resolve title id!", baddata: tiLink, code: 404]]
@@ -385,8 +372,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           } catch (Exception e) {
             log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Integer")
           }
-        }
-        else if (coverage.coverageDepth instanceof Map) {
+        } else if (coverage.coverageDepth instanceof Map) {
           if (coverage.coverageDepth.id) {
             try {
               def candidate = RefdataValue.get(coverage.coverageDepth.id)
@@ -402,8 +388,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             } catch (Exception e) {
               log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Map")
             }
-          }
-          else if (coverage.coverageDepth.value || coverage.coverageDepth.name) {
+          } else if (coverage.coverageDepth.value || coverage.coverageDepth.name) {
             if (!['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase())) {
               if (!errors.coverageDepth) {
                 errors.coverageDepth = []
@@ -445,49 +430,37 @@ class TitleInstancePackagePlatform extends KBComponent {
 
     if (tipp_dto.pkg || tipp_dto.package) {
       def pkg_info = tipp_dto.package ?: tipp_dto.pkg
-      if (pkg_info instanceof Package) {
-        pkg = pkg_info
+
+      if (pkg_info instanceof Map) {
+        pkg = Package.get(pkg_info.id ?: pkg_info.internalId)
+      } else {
+        pkg = Package.get(pkg_info)
       }
-      else {
-        if (pkg_info instanceof Map) {
-          pkg = Package.get(pkg_info.id ?: pkg_info.internalId)
-        }
-        else {
-          pkg = Package.get(pkg_info)
-        }
-      }
+
       log.debug("Package lookup: ${pkg}")
     }
 
     if (tipp_dto.hostPlatform || tipp_dto.platform) {
       def plt_info = tipp_dto.hostPlatform ?: tipp_dto.platform
-      if (plt_info instanceof Platform) {
-        plt = plt_info
+
+      if (plt_info instanceof Map) {
+        plt = Platform.get(plt_info.id ?: plt_info.internalId)
+      } else {
+        plt = Platform.get(plt_info)
       }
-      else {
-        if (plt_info instanceof Map) {
-          plt = Platform.get(plt_info.id ?: plt_info.internalId)
-        }
-        else {
-          plt = Platform.get(plt_info)
-        }
-      }
+
       log.debug("Platform lookup: ${plt}")
     }
 
     if (tipp_dto.title) {
       def title_info = tipp_dto.title
-      if (title_info instanceof TitleInstance) {
-        ti = title_info
+
+      if (title_info instanceof Map) {
+        ti = TitleInstance.get(title_info.id ?: title_info.internalId)
+      } else {
+        ti = TitleInstance.get(title_info)
       }
-      else {
-        if (title_info instanceof Map) {
-          ti = TitleInstance.get(title_info.id ?: title_info.internalId)
-        }
-        else {
-          ti = TitleInstance.get(title_info)
-        }
-      }
+
       log.debug("Title lookup: ${ti}")
     }
 
@@ -499,10 +472,10 @@ class TitleInstancePackagePlatform extends KBComponent {
     if (pkg && plt && ti && curator) {
       log.debug("See if we already have a tipp")
       def tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
-              'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
-              'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
-              'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
-              [pkg, plt, ti])
+        'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
+        'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
+        'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
+        [pkg, plt, ti])
       def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
       def tipp = null
 
@@ -518,12 +491,10 @@ class TitleInstancePackagePlatform extends KBComponent {
             if (trimmed_url && trimmed_url.size() > 0) {
               if (!tipps[0].url || tipps[0].url == trimmed_url) {
                 tipp = tipps[0]
-              }
-              else {
+              } else {
                 log.debug("matched tipp has a different url..")
               }
-            }
-            else {
+            } else {
               tipp = tipps[0]
             }
             break;
@@ -544,13 +515,11 @@ class TitleInstancePackagePlatform extends KBComponent {
               tipp = cur_tipps[0]
 
               log.warn("found ${cur_tipps.size()} current TIPPs!")
-            }
-            else if (ret_tipps.size() > 0) {
+            } else if (ret_tipps.size() > 0) {
               tipp = ret_tipps[0]
 
               log.warn("found ${ret_tipps.size()} retired TIPPs!")
-            }
-            else {
+            } else {
               log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
             }
             break;
@@ -560,14 +529,14 @@ class TitleInstancePackagePlatform extends KBComponent {
       if (!tipp) {
         log.debug("Creating new TIPP..")
         def tmap = [
-                'pkg'         : pkg,
-                'title'       : ti,
-                'hostPlatform': plt,
-                'url'         : trimmed_url,
-                'uuid'        : (tipp_dto.uuid ?: null),
-                'status'      : (tipp_dto.status ?: null),
-                'name'        : (tipp_dto.name ?: null),
-                'editStatus'  : (tipp_dto.editStatus ?: null)
+          'pkg'         : pkg,
+          'title'       : ti,
+          'hostPlatform': plt,
+          'url'         : trimmed_url,
+          'uuid'        : (tipp_dto.uuid ?: null),
+          'status'      : (tipp_dto.status ?: null),
+          'name'        : (tipp_dto.name ?: null),
+          'editStatus'  : (tipp_dto.editStatus ?: null)
         ]
 
         tipp = tiplAwareCreate(tmap)
@@ -576,8 +545,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         if (!tipp) {
           log.error("TIPP creation failed!")
         }
-      }
-      else {
+      } else {
         TitleInstancePlatform.ensure(ti, plt, trimmed_url)
       }
 
@@ -598,11 +566,9 @@ class TitleInstancePackagePlatform extends KBComponent {
 
           if (tipp_dto.paymentType == 'P') {
             payment_statement = 'Paid'
-          }
-          else if (tipp_dto.paymentType == 'F') {
+          } else if (tipp_dto.paymentType == 'F') {
             payment_statement = 'OA'
-          }
-          else {
+          } else {
             payment_statement = tipp_dto.paymentType
           }
 
@@ -642,8 +608,8 @@ class TitleInstancePackagePlatform extends KBComponent {
 
           def cs_match = false
           def conflict = false
-          def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-          def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+          def startAsDate = (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+          def endAsDate = (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
           def conflicting_statements = []
 
           tipp.coverageStatements?.each { tcs ->
@@ -656,13 +622,13 @@ class TitleInstancePackagePlatform extends KBComponent {
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-              changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tcs, 'startDate')
-              changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tcs, 'endDate')
+              changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tcs,'startDate')
+              changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tcs,'endDate')
               changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
               cs_match = true
             }
-            else if (!cs_match) {
+            else if ( !cs_match ) {
               if (!tcs.endDate && !endAsDate) {
                 conflict = true
               }
@@ -697,8 +663,8 @@ class TitleInstancePackagePlatform extends KBComponent {
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
                 changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-                changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tcs, 'startDate')
-                changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tcs, 'endDate')
+                changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tcs,'startDate')
+                changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tcs,'endDate')
                 changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
               }
             }
@@ -717,28 +683,25 @@ class TitleInstancePackagePlatform extends KBComponent {
 
             if (c.coverageDepth instanceof String) {
               cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
-            }
-            else if (c.coverageDepth instanceof Integer) {
+            } else if (c.coverageDepth instanceof Integer) {
               cov_depth = RefdataValue.get(c.coverageDepth)
-            }
-            else if (c.coverageDepth instanceof Map) {
+            } else if (c.coverageDepth instanceof Map) {
               if (c.coverageDepth.id) {
                 cov_depth = RefdataValue.get(c.coverageDepth.id)
-              }
-              else {
+              } else {
                 cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
               }
             }
 
-            tipp.addToCoverageStatements('startVolume': c.startVolume,        \
-                   'startIssue': c.startIssue,        \
-                   'endVolume': c.endVolume,        \
-                   'endIssue': c.endIssue,        \
-                   'embargo': c.embargo,        \
-                   'coverageDepth': cov_depth,        \
-                   'coverageNote': c.coverageNote,        \
-                   'startDate': startAsDate,        \
-                   'endDate': endAsDate
+            tipp.addToCoverageStatements('startVolume': c.startVolume,   \
+              'startIssue': c.startIssue,   \
+              'endVolume': c.endVolume,   \
+              'endIssue': c.endIssue,   \
+              'embargo': c.embargo,   \
+              'coverageDepth': cov_depth,   \
+              'coverageNote': c.coverageNote,   \
+              'startDate': startAsDate,   \
+              'endDate': endAsDate
             )
           }
           // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
@@ -771,11 +734,10 @@ class TitleInstancePackagePlatform extends KBComponent {
         com.k_int.ClassUtils.setDateIfPresent(online, tipp, 'dateFirstOnline')
       }
 
-      tipp.save(flush: true, failOnError: true);
+      tipp.save(flush:true, failOnError:true);
 
       result = tipp
-    }
-    else {
+    } else {
       log.debug("Not able to reference TIPP: ${tipp_dto}")
     }
     result
@@ -784,11 +746,11 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Transient
   static def oaiConfig = [
-          id             : 'tipps',
-          textDescription: 'TIPP repository for GOKb',
-          pkg            : 'Package.Tipps',
-          query          : " from TitleInstancePackagePlatform as o ",
-          pageSize       : 10
+    id             : 'tipps',
+    textDescription: 'TIPP repository for GOKb',
+    pkg            : 'Package.Tipps',
+    query          : " from TitleInstancePackagePlatform as o ",
+    pageSize       : 10
   ]
 
   /**
@@ -809,8 +771,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     def linked_pkg = getPkg()
     def ti = getTitle()
 
-    builder.'gokb'(attr) {
-      builder.'tipp'([id: (id), uuid: (uuid)]) {
+    builder.'gokb' (attr) {
+      builder.'tipp' ([id:(id), uuid:(uuid)]) {
 
         addCoreGOKbXmlFields(builder, attr)
         builder.'lastUpdated'(lastUpdated ? dateFormatService.formatIsoTimestamp(lastUpdated) : null)
@@ -822,10 +784,10 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'publisherName'(publisherName?.trim())
         builder.'dateFirstInPrint'(dateFirstInPrint?.trim())
         builder.'dateFirstOnline'(dateFirstOnline?.trim())
-        builder.'title'([id: ti.id, uuid: ti.uuid]) {
-          builder.'name'(ti.name?.trim())
-          builder.'type'(titleClass)
-          builder.'status'(ti.status?.value)
+        builder.'title' ([id:ti.id, uuid:ti.uuid]) {
+          builder.'name' (ti.name?.trim())
+          builder.'type' (titleClass)
+          builder.'status' (ti.status?.value)
           builder.'identifiers' {
             titleIds.each { tid ->
               builder.'identifier'([namespace: tid[0], namespaceName: tid[3], value: tid[1], type: tid[2]])

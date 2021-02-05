@@ -23,14 +23,14 @@ class TitleInstance extends KBComponent {
   String coverImage
 
   private static refdataDefaults = [
-      "medium"  : "Journal",
-      "pureOA"  : "No",
-      "OAStatus": "Unknown"
+    "medium"  : "Journal",
+    "pureOA"  : "No",
+    "OAStatus": "Unknown"
   ]
 
   static touchOnUpdate = [
-      "tipps",
-      "tipls"
+    "tipps",
+    "tipls"
   ]
 
   static mapping = {
@@ -47,29 +47,29 @@ class TitleInstance extends KBComponent {
   public static final String restPath = "/titles"
 
   static jsonMapping = [
-      'ignore'       : [
-          'pureOA',
-          'continuingSeries',
-          'reasonRetired',
-          'work',
-          'coverImage',
-          'issuer',
-          'translatedFrom',
-          'absorbedBy',
-          'mergedWith',
-          'renamedTo',
-          'splitFrom'
-      ],
-      'es'           : [
-          'publisherUuid': "publisher.uuid",
-          'publisherName': "publisher.name",
-          'publisher'    : "publisher.id"
-      ],
-      'defaultEmbeds': [
-          'ids',
-          'variantNames',
-          'publisher'
-      ]
+    'ignore'       : [
+      'pureOA',
+      'continuingSeries',
+      'reasonRetired',
+      'work',
+      'coverImage',
+      'issuer',
+      'translatedFrom',
+      'absorbedBy',
+      'mergedWith',
+      'renamedTo',
+      'splitFrom'
+    ],
+    'es'           : [
+      'publisherUuid': "publisher.uuid",
+      'publisherName': "publisher.name",
+      'publisher'    : "publisher.id"
+    ],
+    'defaultEmbeds': [
+      'ids',
+      'variantNames',
+      'publisher'
+    ]
   ]
 
   // This map is used to convey information about the title in general processing. The initial usecase is so that we can attach
@@ -102,11 +102,11 @@ class TitleInstance extends KBComponent {
 
       if (!existing) {
         new KBComponentVariantName([
-            "variantType": (title_type),
-            "owner"      : this,
-            "locale"     : (locale_rd),
-            "status"     : RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
-            "variantName": (title)
+          "variantType": (title_type),
+          "owner"      : this,
+          "locale"     : (locale_rd),
+          "status"     : RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
+          "variantName": (title)
         ])
         return true
       }
@@ -123,20 +123,20 @@ class TitleInstance extends KBComponent {
   }
 
   static hasByCombo = [
-      issuer        : Org,
-      translatedFrom: TitleInstance,
-      absorbedBy    : TitleInstance,
-      mergedWith    : TitleInstance,
-      renamedTo     : TitleInstance,
-      splitFrom     : TitleInstance,
-      imprint       : Imprint
+    issuer        : Org,
+    translatedFrom: TitleInstance,
+    absorbedBy    : TitleInstance,
+    mergedWith    : TitleInstance,
+    renamedTo     : TitleInstance,
+    splitFrom     : TitleInstance,
+    imprint       : Imprint
   ]
 
   static manyByCombo = [
-      tipps    : TitleInstancePackagePlatform,
-      publisher: Org,
-      tipls    : TitleInstancePlatform
-      //        ids     :  Identifier
+    tipps    : TitleInstancePackagePlatform,
+    publisher: Org,
+    tipls    : TitleInstancePlatform
+    //        ids     :  Identifier
   ]
 
   static constraints = {
@@ -183,8 +183,8 @@ class TitleInstance extends KBComponent {
 
     publisher_combos.each { Combo pc ->
       if ((pc.endDate == null) ||
-          (highest_end_date == null) ||
-          (pc.endDate > highest_end_date)) {
+        (highest_end_date == null) ||
+        (pc.endDate > highest_end_date)) {
 
         if (isComboReverse('publisher')) {
           if (pc.fromComponent.status?.value == 'Deleted') {
@@ -238,9 +238,9 @@ class TitleInstance extends KBComponent {
         // Now create a new Combo
         RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue('publisher'))
         Combo combo = new Combo(
-            type: (type),
-            status: combo_active,
-            startDate: (null_start ? null : new Date())
+          type: (type),
+          status: combo_active,
+          startDate: (null_start ? null : new Date())
         )
 
         // Depending on where the combo is defined we need to add a combo.
@@ -296,11 +296,11 @@ class TitleInstance extends KBComponent {
 
   @Transient
   static def oaiConfig = [
-      id             : 'titles',
-      textDescription: 'Title repository for GOKb',
-      query          : " from TitleInstance as o ",
-      statusFilter   : ['Expected'],
-      pageSize       : 20
+    id             : 'titles',
+    textDescription: 'Title repository for GOKb',
+    query          : " from TitleInstance as o ",
+    statusFilter   : ['Expected'],
+    pageSize       : 20
   ]
 
   /**
@@ -484,30 +484,30 @@ class TitleInstance extends KBComponent {
                 if (cov_statements?.size() > 0) {
                   cov_statements.each { tcs ->
                     'coverage'(
-                        startDate: (tcs.startDate ? "${tcs.startDate.toInstant().toString()}" : null),
-                        startVolume: tcs.startVolume,
-                        startIssue: tcs.startIssue,
-                        endDate: (tcs.endDate ? "${tcs.endDate.toInstant().toString()}" : null),
-                        endVolume: tcs.endVolume,
-                        endIssue: tcs.endIssue,
-                        coverageDepth: tcs.coverageDepth?.value ?: tipp.coverageDepth?.value,
-                        coverageNote: tcs.coverageNote,
-                        embargo: tcs.embargo
+                      startDate: (tcs.startDate ? "${tcs.startDate.toInstant().toString()}" : null),
+                      startVolume: tcs.startVolume,
+                      startIssue: tcs.startIssue,
+                      endDate: (tcs.endDate ? "${tcs.endDate.toInstant().toString()}" : null),
+                      endVolume: tcs.endVolume,
+                      endIssue: tcs.endIssue,
+                      coverageDepth: tcs.coverageDepth?.value ?: tipp.coverageDepth?.value,
+                      coverageNote: tcs.coverageNote,
+                      embargo: tcs.embargo
                     )
                   }
                 }
                 else {
 
                   builder.'coverage'(
-                      startDate: (tipp.startDate ? "${tipp.startDate.toInstant().toString()}" : null),
-                      startVolume: tipp.startVolume,
-                      startIssue: tipp.startIssue,
-                      endDate: (tipp.endDate ? "${tipp.endDate.toInstant().toString()}" : null),
-                      endVolume: tipp.endVolume,
-                      endIssue: tipp.endIssue,
-                      coverageDepth: tipp.coverageDepth?.value,
-                      coverageNote: tipp.coverageNote,
-                      embargo: tipp.embargo)
+                    startDate: (tipp.startDate ? "${tipp.startDate.toInstant().toString()}" : null),
+                    startVolume: tipp.startVolume,
+                    startIssue: tipp.startIssue,
+                    endDate: (tipp.endDate ? "${tipp.endDate.toInstant().toString()}" : null),
+                    endVolume: tipp.endVolume,
+                    endIssue: tipp.endIssue,
+                    coverageDepth: tipp.coverageDepth?.value,
+                    coverageNote: tipp.coverageNote,
+                    embargo: tipp.embargo)
                 }
                 if (tipp.url != null) {
                   'url'(tipp.url)
@@ -841,13 +841,13 @@ class TitleInstance extends KBComponent {
 
     if (type) {
       result = titleLookupService.findOrCreate(titleDTO.name,
-          titleDTO.publisher,
-          titleDTO.identifiers,
-          user,
-          null,
-          type,
-          titleDTO.uuid,
-          fullsync
+        titleDTO.publisher,
+        titleDTO.identifiers,
+        user,
+        null,
+        type,
+        titleDTO.uuid,
+        fullsync
       )
       if (titleDTO.medium) {
         result.medium = determineMediumRef(titleDTO)
@@ -865,8 +865,8 @@ class TitleInstance extends KBComponent {
     // BKM:TITLE + then FIRSTAUTHOR if duplicates found
 
     if ((normname) &&
-        (normname.length() > 0) &&
-        (!normname.startsWith('unknown title'))) {
+      (normname.length() > 0) &&
+      (!normname.startsWith('unknown title'))) {
       // book bucket (Work) hashes are based on the normalised name.
       def h = GOKbTextUtils.generateComponentHash([normname]);
 

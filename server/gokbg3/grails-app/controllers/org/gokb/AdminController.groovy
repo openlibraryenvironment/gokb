@@ -63,8 +63,7 @@ class AdminController {
               log.debug("Got a publisher combo");
               if (nmo.parent != null) {
                 def new_pub_combo = new Combo(fromComponent: ic.fromComponent, toComponent: nmo.parent, type: ic.type, status: ic.status).save();
-              }
-              else {
+              } else {
                 def authorized_rdv = RefdataCategory.lookupOrCreate('Org.Authorized', 'Y')
                 log.debug("No parent set.. try and find an authorised org with the appropriate name(${ic.toComponent.name})");
                 def authorized_orgs = Org.executeQuery("select distinct o from Org o join o.variantNames as vn where ( o.name = ? or vn.variantName = ?) AND ? in elements(o.tags)", [ic.toComponent.name, ic.toComponent.name, authorized_rdv]);
@@ -122,8 +121,7 @@ class AdminController {
                 ic.fromComponent.summaryStatement = uploadAnalysisService.generateSummary(source_file);
                 ic.fromComponent.save(flush: true);
                 log.debug("Completed regeneration... size is ${ic.fromComponent.summaryStatement?.length()}");
-              }
-              else {
+              } else {
                 log.error("No file data attached to DataFile ${df.guid}")
               }
             }
@@ -308,9 +306,9 @@ class AdminController {
   }
 
   def jobs() {
-    log.debug("Jobs")
+    log.debug("Jobs");
     def result = [:]
-    log.debug("Sort")
+    log.debug("Sort");
     result.jobs = concurrencyManagerService.jobs.sort { a, b -> b.value.startTime <=> a.value.startTime }
     log.debug("concurrency manager service");
     result.cms = concurrencyManagerService
@@ -479,10 +477,10 @@ class AdminController {
       }
     })?.each { CuratoryGroup group ->
       result["${group.name}"] = [
-          users     : group.users.collect { it.username },
-          owner     : group.owner?.username,
-          status    : group.status?.value,
-          editStatus: group.editStatus?.value
+              users     : group.users.collect { it.username },
+              owner     : group.owner?.username,
+              status    : group.status?.value,
+              editStatus: group.editStatus?.value
       ]
     }
 
