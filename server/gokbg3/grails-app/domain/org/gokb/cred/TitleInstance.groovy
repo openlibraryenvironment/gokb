@@ -754,6 +754,10 @@ class TitleInstance extends KBComponent {
       switch (titleObj.medium.toLowerCase()) {
         case "audio":
           return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Audio")
+        case "database":
+        case "fulltext database":
+        case "Volltextdatenbank":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Book")
         case "dataset":
         case "datenbestand":
           return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Dataset")
