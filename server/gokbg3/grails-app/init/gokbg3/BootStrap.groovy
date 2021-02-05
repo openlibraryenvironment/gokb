@@ -539,7 +539,7 @@ class BootStrap {
 
     ["A & I Database", "Audio", "Book", "Database", "Dataset", "Film", "Image", "Journal",
      "Other", "Published Score", "Article", "Software", "Statistics", "Market Data", "Standards",
-     "Biography", "Legal Text", "Cartography", "Miscellaneous"].each { med ->
+     "Biography", "Legal Text", "Cartography", "Miscellaneous", "Other"].each { med ->
       RefdataCategory.lookupOrCreate("TitleInstance.Medium", med).save(flush: true, failOnError: true) }
 
     RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Unknown").save(flush: true, failOnError: true)

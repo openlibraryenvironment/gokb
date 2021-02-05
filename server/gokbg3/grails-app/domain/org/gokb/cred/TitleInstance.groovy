@@ -804,6 +804,8 @@ class TitleInstance extends KBComponent {
         case "miscellaneous":
         case "sonstiges":
           return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Miscellaneous")
+        case "other":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Other")
         default:
           return null
       }
