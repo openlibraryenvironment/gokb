@@ -6,7 +6,7 @@ import com.k_int.ClassUtils
 class ReviewRequestService {
 
   def raise(KBComponent forComponent, String actionRequired, String cause = null, User rb = null, refineProject = null, additionalInfo = null, RefdataValue stdDesc = null, CuratoryGroup group = null) {
-    User.withNewSession {
+    //User.withNewSession {
       def raisedBy = User.get(rb.id)
       def compo = KBComponent.get(forComponent.id)
       // Create a request.
@@ -57,8 +57,7 @@ class ReviewRequestService {
           }
         }
       }
-
-      req
-    }
+    req
+//    }
   }
 }

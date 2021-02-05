@@ -14,27 +14,30 @@ class OtherInstance extends TitleInstance {
   def titleLookupService
 
   String summaryOfContent
+  private static refdataDefaults = [
+      "TitleInstance.medium": "Other"
+  ]
 
- static mapping = {
+  static mapping = {
     includes TitleInstance.mapping
-         summaryOfContent column:'bk_summaryOfContent'
+    summaryOfContent column: 'bk_summaryOfContent'
   }
 
   static constraints = {
-         summaryOfContent (nullable:true, blank:false)
+    summaryOfContent(nullable: true, blank: false)
   }
 
   /**
    * Auditable plugin, on change
    *
    * See if properties that might impact the mapping of this instance to a work have changed.
-   * If so, fire the appropriate event to cause a remap. 
+   * If so, fire the appropriate event to cause a remap.
    */
 
   def afterUpdate() {
 
     // Currently, serial items are mapped based on the name of the journal. We may need to add a discriminator property
-    if ( hasChanged('name') ) {
+    if (hasChanged('name')) {
       log.debug("Detected an update to properties for ${id} that might change the work mapping. Looking up");
       submitRemapWorkTask();
     }
@@ -50,10 +53,10 @@ class OtherInstance extends TitleInstance {
     def map_work_task = task {
       // Wait for the onSave to complete, and the system to release the session, thus freeing the data to
       // other transactions
-      synchronized(this) {
+      synchronized (this) {
         Thread.sleep(3000);
       }
-      tls.remapTitleInstance('org.gokb.cred.OtherInstance:'+this.id)
+      tls.remapTitleInstance('org.gokb.cred.OtherInstance:' + this.id)
     }
 
     // We cannot wait for the task to complete as the transaction has to complete in order
