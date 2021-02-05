@@ -467,7 +467,7 @@ class CrossRefPkgRun {
         if (ti != null) {
           tippError(['message': messageService.resolveCode('crossRef.package.tipps.error.title.validation', [ti], locale),
                      'baddata': tippJson.title,
-                     'errors' : messageService.processValidationErrors(ti.errors)])
+                     'errors' : [messageService.processValidationErrors(ti.errors)]])
           ti.discard()
         }
         invalidTipps << tippJson
@@ -484,7 +484,7 @@ class CrossRefPkgRun {
       invalidTipps << tippJson
       tippError(['message': messageService.resolveCode('crossRef.package.tipps.error.title.validation', [tippJson?.title?.name], locale),
                  'baddata': tippJson,
-                 'errors' : messageService.processValidationErrors(ve.errors)
+                 'errors' : [messageService.processValidationErrors(ve.errors)]
       ])
       return
     }
@@ -542,7 +542,7 @@ class CrossRefPkgRun {
               code   : 400,
               message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tippPlt], request_locale),
               baddata: tippPlt,
-              errors : messageService.processValidationErrors(ve.errors, locale)
+              errors : [messageService.processValidationErrors(ve.errors, locale)]
           ])
           return
         }
@@ -578,7 +578,7 @@ class CrossRefPkgRun {
         def tipp_error = [
             message: messageService.resolveCode('crossRef.package.tipps.error.validation', [tippJson.title.name], locale),
             baddata: tippJson,
-            errors : messageService.processValidationErrors(ve.errors)
+            errors : [messageService.processValidationErrors(ve.errors)]
         ]
         tippError(tipp_error)
         upserted_tipp?.discard()
