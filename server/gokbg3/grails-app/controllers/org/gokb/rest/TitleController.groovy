@@ -389,7 +389,7 @@ class TitleController {
           if (event.id) {
             def matched_event = current_history.find { it.id == event.id }
 
-            if (event.date && matched_event && event.date != dateFormatService.formatDate(matched_event.eventDate)) {
+            if (event.date && matched_event && event.date != dateFormatService.formatDate(matched_event.date)) {
               def he_obj = ComponentHistoryEvent.get(matched_event.id)
 
               if (he_obj) {
@@ -421,6 +421,16 @@ class TitleController {
 
                 errors.id << [message: "Unable to lookup event for ID ${event.id}", baddata: event]
               }
+            }
+            else if (!matched_event) {
+              log.debug("Matched event is not connected to this title!")
+              if (!errors.id)
+                errors.id = []
+
+              errors.id << [message: "Existing event with ID ${event.id} is not connected to this title!", baddata: event]
+            }
+            else {
+              events.add(matched_event.id)
             }
           }
           else {
@@ -524,7 +534,7 @@ class TitleController {
         }
         else if (remove) {
           current_history.each { ce ->
-            if (!events.contains(ce.id)) {
+            if (!events.find { it == ce.id }) {
               def event = ComponentHistoryEvent.get(ce.id)
               event.delete(flush:true, failOnError:true)
             }

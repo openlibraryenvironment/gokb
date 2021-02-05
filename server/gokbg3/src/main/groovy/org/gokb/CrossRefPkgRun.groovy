@@ -20,6 +20,7 @@ class CrossRefPkgRun {
   SpringSecurityService springSecurityService = Holders.grailsApplication.mainContext.getBean('springSecurityService')
   ComponentUpdateService componentUpdateService = Holders.grailsApplication.mainContext.getBean('componentUpdateService')
   TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
+  TitleHistoryService titleHistoryService = Holders.grailsApplication.mainContext.getBean('titleHistoryService')
   ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
   CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
 
