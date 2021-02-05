@@ -333,8 +333,15 @@ class CrossRefPkgRun {
     }
     job?.message(error)
     if (error.errors?.size() > 0) {
-      error.errors.each { errorMap ->
-        job?.message(errorMap)
+      error.errors.each { Map errorMap ->
+        if (errorMap.containsKey('message')) {
+          job?.message(errorMap)
+        }
+        else {
+          errorMap.each { field, desc ->
+            job?.message(desc)
+          }
+        }
       }
     }
   }
