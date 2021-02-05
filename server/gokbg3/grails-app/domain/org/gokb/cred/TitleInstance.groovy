@@ -752,12 +752,15 @@ class TitleInstance extends KBComponent {
   public static determineMediumRef(titleObj) {
     if (titleObj.medium) {
       switch (titleObj.medium.toLowerCase()) {
+        case "a & i database":
+        case "abstract- & indexdatenbank":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "A & I Database")
         case "audio":
           return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Audio")
         case "database":
         case "fulltext database":
         case "Volltextdatenbank":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Book")
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Database")
         case "dataset":
         case "datenbestand":
           return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Dataset")
