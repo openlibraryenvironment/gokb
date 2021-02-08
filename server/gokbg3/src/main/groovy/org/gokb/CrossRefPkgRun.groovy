@@ -339,7 +339,12 @@ class CrossRefPkgRun {
         }
         else {
           errorMap.each { field, desc ->
-            job?.message(desc)
+            if (desc instanceof Map) {
+              job?.message(desc)
+            }
+            else if (desc instanceof List) {
+              desc.each { e -> job.message(e) }
+            }
           }
         }
       }
