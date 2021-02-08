@@ -343,7 +343,7 @@ class CrossRefPkgRun {
               job?.message(desc)
             }
             else if (desc instanceof List) {
-              desc.each { e -> job.message(e) }
+              desc.each { e -> job?.message(e) }
             }
           }
         }
