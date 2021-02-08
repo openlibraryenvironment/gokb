@@ -740,7 +740,7 @@ class TitleInstance extends KBComponent {
 
     if (valErrors.size() > 0) {
       if (result.errors) {
-        result.errors.add(valErrors)
+        result.errors.addAll(valErrors)
       }
       else {
         result.errors = valErrors
