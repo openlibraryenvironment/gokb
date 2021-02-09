@@ -1,6 +1,6 @@
 package org.gokb.cred
 
-import org.gokb.IntegrationController
+import org.grails.web.json.JSONObject
 
 import java.time.LocalDateTime
 import javax.persistence.Transient
@@ -627,120 +627,192 @@ class TitleInstance extends KBComponent {
    *   type:'Serial' or 'Monograph'
    *}*/
   @Transient
-  public static def validateDTO(titleDTO) {
-    def result = ['valid': true, 'errors': [:]]
+  public static def validateDTO(JSONObject titleDTO) {
+    def result = ['valid': true]
+    def valErrors = []
 
     if (titleDTO?.name?.trim() == false) {
       result.valid = false
-      result.errors.name = [[message: "Missing title name!", baddata: titleDTO.name]]
-      return result
+      valErrors.add([name: [message: "Missing title name!", baddata: titleDTO.name]])
     }
+    else {
+      LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
+      LocalDateTime endDate = GOKbTextUtils.completeDateString(titleDTO.publishedTo, false)
 
-    def ids_list = titleDTO.identifiers ?: titleDTO.ids
-
-    LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
-    LocalDateTime endDate = GOKbTextUtils.completeDateString(titleDTO.publishedTo, false)
-
-    if (titleDTO.publishedFrom && !startDate) {
-      result.valid = false
-      result.errors.publishedFrom = [[message: "Unable to parse publishing start date ${titleDTO.publishedFrom}!", baddata: titleDTO.publishedFrom]]
-    }
-
-    if (titleDTO.publishedTo && !endDate) {
-      result.valid = false
-      result.errors.publishedTo = [[message: "Unable to parse publishing end date ${titleDTO.publishedTo}!", baddata: titleDTO.publishedTo]]
-    }
-
-    if (startDate && endDate && (endDate < startDate)) {
-      result.valid = false
-      result.errors.publishedTo = [[message: "Publishing end date must not be prior to its start date!", baddata: titleDTO.publishedTo]]
-    }
-
-    def id_errors = []
-
-    ids_list?.each { idobj ->
-      def id_def = [:]
-      def ns_obj = null
-
-      if (idobj instanceof Map) {
-        def id_ns = idobj.type ?: (idobj.namespace ?: null)
-
-        id_def.value = idobj.value
-
-        if (id_ns instanceof String) {
-          log.debug("Default namespace handling for ${id_ns}..")
-          ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
-        }
-        else if (id_ns) {
-          log.debug("Handling namespace def ${id_ns}")
-          ns_obj = IdentifierNamespace.get(id_ns)
-        }
-
-        if (!ns_obj) {
-          id_errors.add([message: "Unable to lookup identifier namespace ${id_ns}!", baddata: id_ns, code: 404])
-        }
-        else {
-          id_def.type = ns_obj.value
-        }
-      }
-      else if (idobj instanceof Integer) {
-        Identifier the_id = Identifier.get(id_inc)
-
-        if (!the_id) {
-          id_errors.add([message: "Unable to lookup identifier object by ID!", baddata: idobj])
-          result.valid = false
-        }
-      }
-      else {
-        log.warn("Missing information in id object ${idobj}")
-        id_errors.add([message: "Missing information for identifier object!", baddata: idobj])
+      if (titleDTO.publishedFrom && !startDate) {
         result.valid = false
+        valErrors.add([publishedFrom: [message: "Unable to parse publishing start date ${titleDTO.publishedFrom}!", baddata: titleDTO.publishedFrom]])
       }
 
-      if (ns_obj && id_def.size() > 0) {
-        if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
-          if (ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern)) {
-            log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
-            id_errors.add([message: "Validation for identifier ${id_def.type}:${id_def.value} failed!", baddata: idobj])
-            result.valid = false
+      if (titleDTO.publishedTo && !endDate) {
+        result.valid = false
+        valErrors.add([publishedTo: [message: "Unable to parse publishing end date ${titleDTO.publishedTo}!", baddata: titleDTO.publishedTo]])
+      }
+
+      if (startDate && endDate && (endDate < startDate)) {
+        result.valid = false
+        valErrors.add([publishedTo: [message: "Publishing end date must not be prior to its start date!", baddata: titleDTO.publishedTo]])
+      }
+
+      def id_errors = []
+      def to_remove = []
+      String idJsonKey = 'ids'
+      def ids_list = titleDTO[idJsonKey]
+      if (!ids_list) {
+        idJsonKey = 'identifiers'
+        ids_list = titleDTO[idJsonKey]
+      }
+      ids_list?.each { idobj ->
+        def id_def = [:]
+        def ns_obj = null
+
+        if (idobj instanceof Map) {
+          def id_ns = idobj.type ?: (idobj.namespace ?: null)
+
+          id_def.value = idobj.value
+
+          if (id_ns instanceof String) {
+            log.debug("Default namespace handling for ${id_ns}..")
+            ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
+          }
+          else if (id_ns) {
+            log.debug("Handling namespace def ${id_ns}")
+            ns_obj = IdentifierNamespace.get(id_ns)
+          }
+
+          if (!ns_obj) {
+            id_errors.add([message: "Unable to lookup identifier namespace ${id_ns}!", baddata: id_ns])
+            to_remove.add(idobj)
           }
           else {
-            log.debug("New identifier ..")
+            id_def.type = ns_obj.value
+          }
+        }
+        else if (idobj instanceof Integer) {
+          Identifier the_id = Identifier.get(idobj)
+
+          if (!the_id) {
+            id_errors.add([message: "Unable to lookup identifier object by ID!", baddata: idobj])
+            to_remove.add(idobj)
           }
         }
         else {
-          log.debug("Found existing identifier ..")
+          log.warn("Missing information in id object ${idobj}")
+          id_errors.add([message: "Missing information for identifier object!", baddata: idobj])
+          to_remove.add(idobj)
         }
-      }
-    }
-    if (id_errors.size() > 0) {
-      result.errors.ids = id_errors
-    }
 
-    if (IntegrationController.determineTitleClass(titleDTO) == 'org.gokb.cred.BookInstance') {
-      // VolumeNumber of monographs must be numeric, as enforced thru the DataModel.
-      if (titleDTO.containsKey('volumeNumber')) {
-        try {
-          Integer.parseInt(titleDTO.volumeNumber)
-        } catch (NumberFormatException nfe) {
-          result.errors.volumeNumber = [[message: "volumeNumber is not numeric", baddata: titleDTO.volumeNumber]]
-          result.valid = false
-        }
-      }
-      // shortening some db fields with standard size of 255 if needed.
-      // does not invalidate the DTO!
-      ['firstAuthor', 'firstEditor'].each { key ->
-        if (titleDTO.containsKey(key)) {
-          if (titleDTO[key].size() > 255) {
-            titleDTO[key] = titleDTO[key].substring(0, 251).concat(" ...")
-            log.warn("value in key ’${key}’ was clipped to: ${titleDTO[key]}")
-            result.errors.volumeNumber = [[message: "volumeNumber is not numeric", baddata: titleDTO.volumeNumber]]
-            result.valid = false
+        if (ns_obj && id_def.size() > 0) {
+          if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
+            if (ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern)) {
+              log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
+              id_errors.add([message: "Validation for identifier ${id_def.type}:${id_def.value} failed!", baddata: idobj])
+              to_remove.add(idobj)
+            }
+            else {
+              log.debug("New identifier ..")
+            }
+          }
+          else {
+            log.debug("Found existing identifier ..")
           }
         }
+      }
+      titleDTO[idJsonKey].removeAll(to_remove)
+      if (id_errors.size() > 0) {
+        valErrors.add([ids: id_errors])
+        if (titleDTO[idJsonKey].size() == 0) {
+          valErrors.add([ids: [message: 'no valid Identifiers left']])
+        }
+      }
+    }
+
+    if (titleDTO.medium) {
+      RefdataValue medRef = determineMediumRef(titleDTO)
+      if (medRef) {
+        titleDTO.medium = medRef.value
+      }
+      else {
+        valErrors.add([medium: [message: "cannot parse medium:'${titleDTO.medium}'", baddata: titleDTO.medium]])
+        titleDTO.remove(titleDTO.medium)
+      }
+    }
+
+    if (valErrors.size() > 0) {
+      if (result.errors) {
+        result.errors.addAll(valErrors)
+      }
+      else {
+        result.errors = valErrors
       }
     }
     result
+  }
+
+  public static determineMediumRef(titleObj) {
+    if (titleObj.medium) {
+      switch (titleObj.medium.toLowerCase()) {
+        case "a & i database":
+        case "abstract- & indexdatenbank":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "A & I Database")
+        case "audio":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Audio")
+        case "database":
+        case "fulltext database":
+        case "Volltextdatenbank":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Database")
+        case "dataset":
+        case "datenbestand":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Dataset")
+        case "film":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Film")
+        case "image":
+        case "bild":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Image")
+        case "journal":
+        case "zeitschrift":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Journal")
+        case "book":
+        case "buch":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Book")
+        case "published score":
+        case "musiknoten":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Published Score")
+        case "article":
+        case "artikel":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Article")
+        case "software":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Software")
+        case "statistics":
+        case "statistiken":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Statistics")
+        case "market data":
+        case "marktdaten":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Market Data")
+        case "standards":
+        case "normen":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Standards")
+        case "biography":
+        case "biografie":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Biography")
+        case "legal text":
+        case "gesetzestext/urteil":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Legal Text")
+        case "cartography":
+        case "kartenwerk":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Cartography")
+        case "miscellaneous":
+        case "sonstiges":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Miscellaneous")
+        case "other":
+          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Other")
+        default:
+          return null
+      }
+    }
+    else {
+      return null
+    }
   }
 
   @Transient
@@ -786,6 +858,9 @@ class TitleInstance extends KBComponent {
         titleDTO.uuid,
         fullsync
       )
+      if (titleDTO.medium) {
+        result.medium = determineMediumRef(titleDTO)
+      }
       log.debug("Result of upsertDTO: ${result}");
     }
     result;

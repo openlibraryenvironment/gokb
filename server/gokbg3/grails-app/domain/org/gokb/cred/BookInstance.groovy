@@ -1,9 +1,15 @@
 package org.gokb.cred
 
+import org.gokb.IntegrationController
+import org.grails.web.json.JSONObject
+
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
 import groovy.util.logging.*
+
+import java.time.LocalDateTime
+
 import static grails.async.Promises.*
 
 
@@ -144,4 +150,38 @@ class BookInstance extends TitleInstance {
     }
   }
 
+  public static def validateDTO(JSONObject titleDTO) {
+    def result = TitleInstance.validateDTO(titleDTO)
+    def valErrors = []
+
+    if (titleDTO.volumeNumber) {
+      try {
+        int i=Integer.parseInt(titleDTO.volumeNumber)
+      } catch (NumberFormatException nfe) {
+        valErrors.add([volumeNumber: [message: "volumeNumber '${titleDTO.volumeNumber}' is not numeric", baddata: titleDTO.volumeNumber]])
+        titleDTO.remove(titleDTO.volumeNumber)
+      }
+    }
+    // shortening some db fields with standard size of 255 if needed.
+    // does not invalidate the DTO!
+    ['firstAuthor', 'firstEditor'].each { key ->
+      if (titleDTO.containsKey(key)) {
+        if (titleDTO[key].size() > 255) {
+          valErrors.add(["$key": [message: "value ${titleDTO[key]} is too long for '$key'!", baddata: titleDTO[key]]])
+          titleDTO[key] = titleDTO[key].substring(0, 251).concat(" ...")
+          log.warn("value in key ’${key}’ was clipped to: ${titleDTO[key]}")
+        }
+      }
+    }
+
+    if (valErrors.size() > 0) {
+      if (result.errors) {
+        result.errors.add(valErrors)
+      }
+      else {
+        result.errors = valErrors
+      }
+    }
+    result
+  }
 }

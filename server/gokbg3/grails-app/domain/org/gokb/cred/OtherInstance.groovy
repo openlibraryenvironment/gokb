@@ -14,6 +14,9 @@ class OtherInstance extends TitleInstance {
   def titleLookupService
 
   String summaryOfContent
+  private static refdataDefaults = [
+      "TitleInstance.medium": "Other"
+  ]
 
   private static refdataDefaults = [
       "TitleInstance.medium": "Other"

@@ -207,7 +207,7 @@ class ConcurrencyManagerService {
   }
 
   public Map<String, Job> getJobs() {
-    return map;
+    return new ConcurrentHashMap<String, Job>(map)
   }
 
   GrailsApplication grailsApplication
