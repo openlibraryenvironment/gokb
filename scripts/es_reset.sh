@@ -63,7 +63,6 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -H 'Content-Type: app
           }
         }
       },
-,
       {
         "titleDateFirstInPrint": {
           "match": "titleDateFirstInPrint",
