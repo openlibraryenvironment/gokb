@@ -1264,9 +1264,7 @@ class IntegrationController {
             componentUpdateService.ensureCoreData(title, titleObj, fullsync, user)
 
             title_changed |= componentUpdateService.setAllRefdata([
-                'OAStatus', 'medium',
-                'pureOA', 'continuingSeries',
-                'reasonRetired'
+                'OAStatus', 'medium', 'pureOA', 'continuingSeries', 'reasonRetired'
             ], titleObj, title)
 
             def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
