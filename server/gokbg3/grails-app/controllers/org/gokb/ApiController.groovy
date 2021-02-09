@@ -872,4 +872,23 @@ class ApiController {
     apiReturn (resp)
     log.debug "lookup took ${System.currentTimeMillis() - start} milliseconds"
   }
+
+
+  /**
+   * See the service method {@link com.k_int.ESSearchService#getApiTunnel(def params)} for usage instructions.
+   */
+  def elasticsearchTunnel() {
+    def result = [:]
+    try {
+      result = ESSearchService.getApiTunnel(params)
+    }
+    catch(Exception e){
+      result.result = "ERROR"
+      result.message = e.message
+      result.cause = e.cause
+      log.error("Could not process Elasticsearch API request. Exception was: ${e.message}")
+      response.setStatus(400)
+    }
+    render result as JSON
+  }
 }
