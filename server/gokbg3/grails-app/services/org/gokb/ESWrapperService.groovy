@@ -86,7 +86,7 @@ class ESWrapperService {
           ],
           lastUpdatedDisplay: [
             type: "date",
-            format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
+            format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
           ],
           uuid: [
             type: "keyword"
@@ -110,18 +110,32 @@ class ESWrapperService {
         mapping: [type: "keyword"]
       ],
       dateFirstInPrint: [
-        match: "dateFirstInPrint",
-        mapping: [
-          type: "date",
-          format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
-        ]
+              match: "dateFirstInPrint",
+              mapping: [
+                      type: "date",
+                      format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
+              ]
       ],
       dateFirstOnline: [
-        match: "dateFirstOnline",
-        mapping: [
-          type: "date",
-          format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
-        ]
+              match: "dateFirstOnline",
+              mapping: [
+                      type: "date",
+                      format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
+              ]
+      ],
+      titleDateFirstInPrint: [
+              match: "titleDateFirstInPrint",
+              mapping: [
+                      type: "date",
+                      format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
+              ]
+      ],
+      titleDateFirstOnline: [
+              match: "titleDateFirstOnline",
+              mapping: [
+                      type: "date",
+                      format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
+              ]
       ],
       cpname: [
         match: "cpname",
