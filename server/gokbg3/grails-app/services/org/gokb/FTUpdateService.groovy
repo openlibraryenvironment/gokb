@@ -64,7 +64,7 @@ class FTUpdateService {
         result.sortname = kbc.name
         result.altname = []
         result.listStatus = kbc.listStatus?.value
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -83,16 +83,16 @@ class FTUpdateService {
         result.nominalPlatformUuid = kbc.nominalPlatform?.uuid ?: ""
 
         result.scope = kbc.scope ? kbc.scope.value : ""
-        result.listVerifiedDate = kbc.listVerifiedDate ? dateFormatService.formatIsoTimestamp(kbc.listVerifiedDate) : ""
+        result.listVerifiedDate = kbc.listVerifiedDate ? dateFormatService.formatTimestamp(kbc.listVerifiedDate) : ""
 
-        if (kbc.source){
+        if (kbc.source) {
           result.source = [
-              id                : kbc.source.id,
-              name              : kbc.source.name,
-              automaticUpdates  : kbc.source.automaticUpdates,
-              url               : kbc.source.url,
-              frequency         : kbc.source.frequency,
-              lastRun           : (kbc.source.lastRun ? dateFormatService.formatIsoTimestamp(kbc.source.lastRun) : "")
+                  id              : kbc.source.id,
+                  name            : kbc.source.name,
+                  automaticUpdates: kbc.source.automaticUpdates,
+                  url             : kbc.source.url,
+                  frequency       : kbc.source.frequency,
+                  lastRun         : (kbc.source.lastRun ? dateFormatService.formatTimestamp(kbc.source.lastRun) : "")
           ]
         }
 
@@ -125,7 +125,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         result.roles = []
         kbc.roles.each { role ->
@@ -172,7 +172,7 @@ class FTUpdateService {
 
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -219,7 +219,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
         result.status = kbc.status?.value
 
         result.identifiers = []
@@ -254,7 +254,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         result.status = kbc.status?.value
 
@@ -290,7 +290,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         result.status = kbc.status?.value
 
@@ -327,7 +327,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
         result.status = kbc.status?.value
 
         result.identifiers = []
@@ -357,7 +357,7 @@ class FTUpdateService {
 
         result.titleType = kbc.title?.niceName ?: 'Unknown'
 
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
 
         result.url = kbc.url
 
@@ -369,10 +369,10 @@ class FTUpdateService {
           coverage_src.each { tcs ->
             def cst = [:]
 
-            cst.startDate = tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : ""
+            cst.startDate = tcs.startDate ? dateFormatService.formatTimestamp(tcs.startDate) : ""
             cst.startVolume = tcs.startVolume ?: ""
             cst.startIssue = tcs.startIssue ?: ""
-            cst.endDate = tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : ""
+            cst.endDate = tcs.endDate ? dateFormatService.formatTimestamp(tcs.endDate) : ""
             cst.endVolume = tcs.endVolume ?: ""
             cst.endIssue = tcs.endIssue ?: ""
             cst.embargo = tcs.embargo ?: ""
@@ -408,41 +408,41 @@ class FTUpdateService {
           result.publisherName = kbc.publisherName
         }
 
-        result.dateFirstOnline = kbc.dateFirstOnline ? dateFormatService.formatIsoTimestamp(kbc.dateFirstOnline) : ""
-        result.dateFristInPrint = kbc.dateFirstInPrint ? edateFormatService.formatIsoTimestamp(kbc.dateFirstInPrint) : ""
+        result.dateFirstOnline = kbc.dateFirstOnline ? dateFormatService.formatTimestamp(kbc.dateFirstOnline) : ""
+        result.dateFristInPrint = kbc.dateFirstInPrint ? edateFormatService.formatTimestamp(kbc.dateFirstInPrint) : ""
 
         result.componentType = kbc.class.simpleName
         result.tippTitleMedium = kbc.title ? kbc.title.medium : ""
 
-        result.accessStartDate = kbc.accessStartDate ? dateFormatService.formatIsoTimestamp(kbc.accessStartDate) : ""
-        result.accessEndDate = kbc.accessEndDate ? dateFormatService.formatIsoTimestamp(kbc.accessEndDate) : ""
+        result.accessStartDate = kbc.accessStartDate ? dateFormatService.formatTimestamp(kbc.accessStartDate) : ""
+        result.accessEndDate = kbc.accessEndDate ? dateFormatService.formatTimestamp(kbc.accessEndDate) : ""
 
         result.subjectArea = kbc.subjectArea ?: ""
         result.series = kbc.series ?: ""
 
-        if (kbc.title?.niceName == 'Book'){
+        if (kbc.title?.niceName == 'Book') {
 
           // edition for eBooks
           def edition = [:]
-          if (kbc.title?.editionNumber){
+          if (kbc.title?.editionNumber) {
             edition.number = kbc.title.editionNumber
           }
-          if (kbc.title?.editionDifferentiator){
+          if (kbc.title?.editionDifferentiator) {
             edition.differentiator = kbc.title.editionDifferentiator
           }
-          if (kbc.title?.editionStatement){
+          if (kbc.title?.editionStatement) {
             edition.statement = kbc.title.editionStatement
           }
-          if (!edition.isEmpty()){
+          if (!edition.isEmpty()) {
             result.titleEdition = edition
           }
 
           // simple eBook fields
           result.titleVolumeNumber = kbc.title?.volumeNumber ?: ""
           result.titleDateFirstInPrint = kbc.title?.dateFirstInPrint ?
-              dateFormatService.formatIsoTimestamp(kbc.title.dateFirstInPrint) : ""
+                  dateFormatService.formatTimestamp(kbc.title.dateFirstInPrint) : ""
           result.titleDateFirstOnline = kbc.title?.dateFirstOnline ?
-              dateFormatService.formatIsoTimestamp(kbc.title.dateFirstOnline) : ""
+                  dateFormatService.formatTimestamp(kbc.title.dateFirstOnline) : ""
           result.titleFirstEditor = kbc.title?.firstEditor ?: ""
           result.titleFirstAuthor = kbc.title?.firstAuthor ?: ""
           result.titleImprint = kbc.title?.imprint?.name ?: ""
@@ -450,17 +450,17 @@ class FTUpdateService {
 
         // title history for all title types
         result.titleHistory = []
-        kbc.title?.titleHistory?.each{ he ->
-          if (he.date){
+        kbc.title?.titleHistory?.each { he ->
+          if (he.date) {
             def event = [:]
-            event.date = dateFormatService.formatIsoTimestamp(he.date)
+            event.date = dateFormatService.formatTimestamp(he.date)
             event.from = []
             if (he.from) {
-              event.from.addAll(he.from.collect { fe -> [id: fe?.id, uuid: fe?.uuid, name: fe?.name ]})
+              event.from.addAll(he.from.collect { fe -> [id: fe?.id, uuid: fe?.uuid, name: fe?.name] })
             }
             event.to = []
-            if (he.to){
-              event.to.addAll(he.to.collect{ te -> [id: te?.id, uuid: te?.uuid, name: te?.name] })
+            if (he.to) {
+              event.to.addAll(he.to.collect { te -> [id: te?.id, uuid: te?.uuid, name: te?.name] })
             }
             event.id = he.id ?: ""
             result.titleHistory.add(event)
@@ -484,8 +484,8 @@ class FTUpdateService {
           price.type = p.priceType?.value ?: ""
           price.amount = String.valueOf(p.price) ?: ""
           price.currency = p.currency?.value ?: ""
-          price.startDate = p.startDate ? dateFormatService.formatIsoTimestamp(p.startDate) : ""
-          price.endDate = p.endDate ? dateFormatService.formatIsoTimestamp(p.endDate) : ""
+          price.startDate = p.startDate ? dateFormatService.formatTimestamp(p.startDate) : ""
+          price.endDate = p.endDate ? dateFormatService.formatTimestamp(p.endDate) : ""
           result.prices.add(price)
         }
 
@@ -503,7 +503,6 @@ class FTUpdateService {
     }
     running = false;
   }
-
 
   def updateES(esclient, domain, recgen_closure) {
 
@@ -597,14 +596,14 @@ class FTUpdateService {
           cleanUpGorm();
           synchronized (this) {
             Thread.yield()
-          }
+          }*/
         }
       }
-
-      if (count > 0) {
-        def bulkFinalResponse = bulkRequest.get()
-        log.debug("Final BulkResponse: ${bulkFinalResponse}")
-      }
+      if (running) {
+        if (count > 0) {
+          def bulkFinalResponse = bulkRequest.get()
+          log.debug("Final BulkResponse: ${bulkFinalResponse}")
+        }
 
       // update timestamp
       FTControl.withNewTransaction {
