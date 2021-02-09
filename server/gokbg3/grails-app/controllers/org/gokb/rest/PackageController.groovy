@@ -398,13 +398,13 @@ class PackageController {
 
       if (prov) {
         if (!obj.hasErrors() && errors.size() == 0 && prov != obj.provider) {
-          def current_combo = Combo.findByFromComponentAndToComponent(obj, prov)
+          def combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Provider')
+          def current_combo = Combo.findByFromComponentAndType(obj, combo_type)
 
           if (current_combo) {
             current_combo.delete(flush:true)
           }
 
-          def combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Provider')
           def new_combo = new Combo(fromComponent: obj, toComponent: prov, type: combo_type).save(flush:true)
 
           obj.refresh()
@@ -429,13 +429,13 @@ class PackageController {
 
       if (plt) {
         if (!obj.hasErrors() && errors.size() == 0 && plt != obj.nominalPlatform) {
-          def current_combo = Combo.findByFromComponentAndToComponent(obj, plt)
+          def combo_type = RefdataCategory.lookup('Combo.Type', 'Package.NominalPlatform')
+          def current_combo = Combo.findByFromComponentAndType(obj, combo_type)
 
           if (current_combo) {
             current_combo.delete(flush:true)
           }
 
-          def combo_type = RefdataCategory.lookup('Combo.Type', 'Package.NominalPlatform')
           def new_combo = new Combo(fromComponent: obj, toComponent: plt, type: combo_type).save(flush:true)
 
           obj.refresh()
