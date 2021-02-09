@@ -34,7 +34,8 @@ class FTUpdateService {
       doFTUpdate()
       log.debug("FTUpdate done.")
       return new Date();
-    } else {
+    }
+    else {
       log.error("FTUpdate already running")
       return "Job cancelled – FTUpdate was already running!";
     }
@@ -50,7 +51,7 @@ class FTUpdateService {
 
     try {
 
-      updateES(esclient, org.gokb.cred.Package.class) { kbc ->
+      updateES(esclient, org.gokb.cred.Package.class) { org.gokb.cred.Package kbc ->
 
         def result = null
         result = [:]
@@ -63,7 +64,7 @@ class FTUpdateService {
         result.sortname = kbc.name
         result.altname = []
         result.listStatus = kbc.listStatus?.value
-        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
 
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -82,7 +83,7 @@ class FTUpdateService {
         result.nominalPlatformUuid = kbc.nominalPlatform?.uuid ?: ""
 
         result.scope = kbc.scope ? kbc.scope.value : ""
-        result.listVerifiedDate = kbc.listVerifiedDate ? dateFormatService.formatTimestamp(kbc.listVerifiedDate) : ""
+        result.listVerifiedDate = kbc.listVerifiedDate ? dateFormatService.formatIsoTimestamp(kbc.listVerifiedDate) : ""
 
         if (kbc.source){
           result.source = [
@@ -113,7 +114,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.Org.class) { kbc ->
+      updateES(esclient, org.gokb.cred.Org.class) { org.gokb.cred.Org kbc ->
         def result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
@@ -124,7 +125,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
 
         result.roles = []
         kbc.roles.each { role ->
@@ -159,7 +160,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.Platform.class) { kbc ->
+      updateES(esclient, org.gokb.cred.Platform.class) { org.gokb.cred.Platform kbc ->
         def result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
@@ -171,7 +172,7 @@ class FTUpdateService {
 
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
-        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
 
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -198,7 +199,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.JournalInstance.class) { kbc ->
+      updateES(esclient, org.gokb.cred.JournalInstance.class) { org.gokb.cred.JournalInstance kbc ->
 
         def result = null
         def current_pub = kbc.currentPublisher
@@ -218,7 +219,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
         result.status = kbc.status?.value
 
         result.identifiers = []
@@ -234,7 +235,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.DatabaseInstance.class) { kbc ->
+      updateES(esclient, org.gokb.cred.DatabaseInstance.class) { org.gokb.cred.DatabaseInstance kbc ->
 
         def result = null
         def current_pub = kbc.currentPublisher
@@ -253,7 +254,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
 
         result.status = kbc.status?.value
 
@@ -270,7 +271,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.OtherInstance.class) { kbc ->
+      updateES(esclient, org.gokb.cred.OtherInstance.class) { org.gokb.cred.OtherInstance kbc ->
 
         def result = null
         def current_pub = kbc.currentPublisher
@@ -289,7 +290,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
 
         result.status = kbc.status?.value
 
@@ -306,7 +307,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.BookInstance.class) { kbc ->
+      updateES(esclient, org.gokb.cred.BookInstance.class) { org.gokb.cred.BookInstance kbc ->
 
         def result = null
         def current_pub = kbc.currentPublisher
@@ -326,7 +327,7 @@ class FTUpdateService {
           result.altname.add(vn.variantName)
         }
 
-        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
         result.status = kbc.status?.value
 
         result.identifiers = []
@@ -342,7 +343,7 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class) { kbc ->
+      updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class) { org.gokb.cred.TitleInstancePackagePlatform kbc ->
 
         def result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
@@ -356,7 +357,7 @@ class FTUpdateService {
 
         result.titleType = kbc.title?.niceName ?: 'Unknown'
 
-        result.lastUpdatedDisplay = dateFormatService.formatTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
 
         result.url = kbc.url
 
@@ -368,10 +369,10 @@ class FTUpdateService {
           coverage_src.each { tcs ->
             def cst = [:]
 
-            cst.startDate = tcs.startDate ? dateFormatService.formatTimestamp(tcs.startDate) : ""
+            cst.startDate = tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : ""
             cst.startVolume = tcs.startVolume ?: ""
             cst.startIssue = tcs.startIssue ?: ""
-            cst.endDate = tcs.endDate ? dateFormatService.formatTimestamp(tcs.endDate) : ""
+            cst.endDate = tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : ""
             cst.endVolume = tcs.endVolume ?: ""
             cst.endIssue = tcs.endIssue ?: ""
             cst.embargo = tcs.embargo ?: ""
@@ -406,12 +407,9 @@ class FTUpdateService {
         if (org.apache.commons.lang.StringUtils.isNotEmpty(kbc.publisherName)) {
           result.publisherName = kbc.publisherName
         }
-        if (kbc.dateFirstOnline) {
-          result.dateFirstOnline = dateFormatService.formatTimestamp(kbc.dateFirstOnline)
-        }
-        if (kbc.dateFirstInPrint) {
-          result.dateFristInPrint = dateFormatService.formatTimestamp(kbc.dateFirstInPrint)
-        }
+
+        result.dateFirstOnline = kbc.dateFirstOnline ? dateFormatService.formatIsoTimestamp(kbc.dateFirstOnline) : ""
+        result.dateFristInPrint = kbc.dateFirstInPrint ? edateFormatService.formatIsoTimestamp(kbc.dateFirstInPrint) : ""
 
         result.componentType = kbc.class.simpleName
         result.tippTitleMedium = kbc.title ? kbc.title.medium : ""
@@ -527,7 +525,8 @@ class FTUpdateService {
         if (!latest_ft_record) {
           latest_ft_record = new FTControl(domainClassName: domain.name, activity: 'ESIndex', lastTimestamp: 0, lastId: 0).save(flush: true, failOnError: true)
           log.debug("Create new FT control record, as none available for ${domain.name}");
-        } else {
+        }
+        else {
           highest_timestamp = latest_ft_record.lastTimestamp
           log.debug("Got existing ftcontrol record for ${domain.name} max timestamp is ${highest_timestamp} which is ${new Date(highest_timestamp)}");
         }
@@ -590,7 +589,8 @@ class FTUpdateService {
               latest_ft_record.lastTimestamp = highest_timestamp
               latest_ft_record.lastId = highest_id
               latest_ft_record.save(flush: true, failOnError: true);
-            } else {
+            }
+            else {
               log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update");
             }
           }
@@ -641,7 +641,8 @@ class FTUpdateService {
         log.debug("Result: ${res}")
       }
       updateFTIndexes();
-    } else {
+    }
+    else {
       log.error("FTUpdate already running")
       return "Job cancelled – FTUpdate was already running!";
     }

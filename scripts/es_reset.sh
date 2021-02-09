@@ -63,6 +63,25 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -H 'Content-Type: app
           }
         }
       },
+,
+      {
+        "titleDateFirstInPrint": {
+          "match": "titleDateFirstInPrint",
+          "mapping": {
+            "type": "date",
+            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'\''T'\''HH:mm:ssZ||epoch_millis"
+          }
+        }
+      },
+      {
+        "titleDateFirstOnline": {
+          "match": "titleDateFirstOnline",
+          "mapping": {
+            "type": "date",
+            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'\''T'\''HH:mm:ssZ||epoch_millis"
+          }
+        }
+      },
       {
         "cpname": {
           "match": "cpname",
