@@ -15,6 +15,7 @@ class ESWrapperService {
 
   TransportClient esclient = null
   File mappingFile = new File("src${File.separator}elasticsearch${File.separator}es_mapping.json")
+  File settingsFile = new File("src${File.separator}elasticsearch${File.separator}es_settings.json")
 
   @javax.annotation.PostConstruct
   def init() {
@@ -22,34 +23,12 @@ class ESWrapperService {
   }
 
   def getSettings() {
-    def settings = [
-      number_of_shards: 1,
-      analysis: [
-        filter: [
-          autocomplete_filter: [
-            type: "edge_ngram",
-            min_gram: 1,
-            max_gram: 20
-          ]
-        ],
-        analyzer: [
-          autocomplete: [
-            type: "custom",
-            tokenizer: "standard",
-            filter: ["lowercase","autocomplete_filter"]
-          ]
-        ]
-      ]
-    ]
+    def settings = new JsonSlurper().parse(settingsFile)
     return settings
   }
 
   def getMapping() {
-    def mapping = new JsonSlurper().parse(new File(mappingFile))
-
-
-
-
+    def mapping = new JsonSlurper().parse(mappingFile)
     return mapping
   }
 
