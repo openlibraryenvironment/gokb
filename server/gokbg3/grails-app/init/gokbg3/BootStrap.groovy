@@ -923,6 +923,12 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Source.DataFormat', 'KBART').save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate('Source.DataFormat', 'Proprietary').save(flush: true, failOnError: true)
 
+    RefdataCategory.lookupOrCreate('Source.Frequency', 'Daily').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Source.Frequency', 'Weekly').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Source.Frequency', 'Monthly').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Source.Frequency', 'Quarterly').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Source.Frequency', 'Yearly').save(flush: true, failOnError: true)
+
     RefdataCategory.lookupOrCreate('RDFDataType', 'uri').save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate('RDFDataType', 'string').save(flush: true, failOnError: true)
 
