@@ -116,7 +116,7 @@ class ESSearchService{
         }
 
 
-        def es_index = grailsApplication.config.gokb?.es?.index ?: "gokbg3"
+        def es_index = grailsApplication.config.gokb?.es?.index
         log.debug("index:${es_index} query: ${query_str}");
 
         def search_results = null

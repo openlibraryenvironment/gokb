@@ -121,7 +121,7 @@ class CleanupService {
           def expunge_result = component.expunge();
           log.debug("${expunge_result}");
 
-          DeleteRequest req = Requests.deleteRequest(grailsApplication.config.gokb?.es?.index ?: "gokbg3")
+          DeleteRequest req = Requests.deleteRequest(grailsApplication.config.gokb?.es?.index)
                 .type('component')
                 .id(c_id)
 
@@ -144,7 +144,7 @@ class CleanupService {
   }
 
   def esDelete(oid) {
-    DeleteRequest req = Requests.deleteRequest(grailsApplication.config.gokb?.es?.index ?: "gokbg3")
+    DeleteRequest req = Requests.deleteRequest(grailsApplication.config.gokb?.es?.index)
           .type('component')
           .id(oid)
 
@@ -743,7 +743,7 @@ class CleanupService {
         def kbc = KBComponent.get(it)
         def oid = "${kbc.class.name}:${it}"
 
-        DeleteRequest req = new DeleteRequest(grailsApplication.config.gokb?.es?.index ?: "gokbg3")
+        DeleteRequest req = new DeleteRequest(grailsApplication.config.gokb?.es?.index)
               .type('component')
               .id(oid)
 

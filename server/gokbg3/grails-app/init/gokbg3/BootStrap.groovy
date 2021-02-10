@@ -1039,8 +1039,8 @@ class BootStrap {
     def ebsco_source = Source.findByName('EBSCO') ?: new Source(name: 'EBSCO').save(flush: true, failOnError: true)
   }
 
-  def DSConfig() {
 
+  def DSConfig() {
     [
         'accessdl': 'Access - Download',
         'accessol': 'Access - Read Online',
@@ -1110,23 +1110,22 @@ class BootStrap {
             explanation: crit[3]).save(flush: true, failOnError: true)
       }
       else {
-        log.error("Unable to locate category: ${crit[0]}");
+        log.error("Unable to locate category: ${crit[0]}")
       }
     }
-
     //log.debug(titleLookupService.getTitleFieldForIdentifier([[ns:'isbn',value:'9780195090017']],'publishedFrom'));
     //log.debug(titleLookupService.getTitleFieldForIdentifier([[ns:'isbn',value:'9780195090017']],'publishedTo'));
   }
 
-  def registerUsers() {
 
+  def registerUsers() {
     grailsApplication.config.sysusers.each { su ->
-      log.debug("test ${su.name} ${su.pass} ${su.display} ${su.roles}");
+      log.debug("test ${su.name} ${su.pass} ${su.display} ${su.roles}")
       def user = User.findByUsername(su.name)
       if (user) {
         if (user.password != su.pass) {
-          log.debug("Hard change of user password from config ${user.password} -> ${su.pass}");
-          user.password = su.pass;
+          log.debug("Hard change of user password from config ${user.password} -> ${su.pass}")
+          user.password = su.pass
           user.save(failOnError: true)
         }
         else {
@@ -1134,7 +1133,7 @@ class BootStrap {
         }
       }
       else {
-        log.debug("Create user...");
+        log.debug("Create user...")
         user = new User(
             username: su.name,
             password: su.pass,
@@ -1147,33 +1146,34 @@ class BootStrap {
       su.roles.each { r ->
         def role = Role.findByAuthority(r)
         if (!(user.authorities.contains(role))) {
-          log.debug("  -> adding role ${role}");
+          log.debug("  -> adding role ${role}")
           UserRole.create user, role
         }
         else {
-          log.debug("  -> ${role} already present");
+          log.debug("  -> ${role} already present")
         }
       }
     }
   }
 
+
   def ensureESIndex() {
-    def indexName = grailsApplication.config.gokb.es.index ?: (grailsApplication.config.gokb_es_index ?: "gokbg3")
+    def indexName = grailsApplication.config.gokb.es.index ?: (grailsApplication.config.gokb_es_index)
     log.debug("ensureESIndex for ${indexName}");
     def esclient = ESWrapperService.getClient()
-    IndicesAdminClient adminClient = esclient.admin().indices();
+    IndicesAdminClient adminClient = esclient.admin().indices()
 
     if (!adminClient.prepareExists(indexName).execute().actionGet().isExists()) {
       log.debug("ES index ${indexName} did not exist, creating..")
 
-      CreateIndexRequestBuilder createIndexRequestBuilder = adminClient.prepareCreate(indexName);
+      CreateIndexRequestBuilder createIndexRequestBuilder = adminClient.prepareCreate(indexName)
 
       log.debug("Adding index setttings..")
-      createIndexRequestBuilder.setSettings(indexSettings());
+      createIndexRequestBuilder.setSettings(indexSettings())
       log.debug("Adding index mappings..")
-      createIndexRequestBuilder.addMapping("component", indexMapping());
+      createIndexRequestBuilder.addMapping("component", indexMapping())
 
-      CreateIndexResponse indexResponse = createIndexRequestBuilder.execute().actionGet();
+      CreateIndexResponse indexResponse = createIndexRequestBuilder.execute().actionGet()
 
       if (indexResponse.isAcknowledged()) {
         log.debug("Index ${indexName} successfully created!")
@@ -1188,18 +1188,16 @@ class BootStrap {
     }
   }
 
-  def indexSettings() {
-    // get from File?
-    def settings = ESWrapperService.getSettings()
 
+  def indexSettings() {
+    def settings = ESWrapperService.getSettings()
     return settings
   }
 
+
   def indexMapping() {
-    // get from File?
-
     def mapping = ESWrapperService.getMapping()
-
     return mapping
   }
+
 }

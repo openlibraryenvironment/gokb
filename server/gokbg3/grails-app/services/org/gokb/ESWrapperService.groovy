@@ -10,9 +10,7 @@ import static groovy.json.JsonOutput.*
 class ESWrapperService {
 
   static transactional = false
-
   def grailsApplication
-
   TransportClient esclient = null
   File mappingFile = new File("server${File.separator}gokbg3${File.separator}src${File.separator}" +
       "elasticsearch${File.separator}es_mapping.json")
@@ -24,18 +22,20 @@ class ESWrapperService {
     log.debug("init ES wrapper service");
   }
 
+
   def getSettings() {
     def settings = new JsonSlurper().parse(settingsFile)
     return settings
   }
+
 
   def getMapping() {
     def mapping = new JsonSlurper().parse(mappingFile)
     return mapping
   }
 
-  private def ensureClient() {
 
+  private def ensureClient() {
     if ( esclient == null ) {
       def es_cluster_name = grailsApplication.config?.gokb?.es?.cluster
       def es_host_name = grailsApplication.config?.gokb?.es?.host
@@ -47,9 +47,9 @@ class ESWrapperService {
       esclient.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(es_host_name), 9300))
       log.debug("ES wrapper service init completed OK")
     }
-
     esclient
   }
+
 
   def index(index,typename,record_id, record) {
     log.debug("indexing ... ${typename},${record_id},...")
@@ -70,6 +70,7 @@ class ESWrapperService {
   def getClient() {
     return ensureClient()
   }
+
 
   @javax.annotation.PreDestroy
   def destroy() {
