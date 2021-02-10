@@ -157,6 +157,7 @@ environments:
             es:
                 index: gokbg3dev
                 cluster: gokbg3-dev
+                host: localhost
             tsvExportTempDirectory: /tmp/gokb/export
         cache:
             headers:
@@ -188,6 +189,7 @@ environments:
             es:
                 index: gokbg3test
                 cluster: gokbg3-test
+                host: localhost
         grails:
             mail:
                 port: 3025
@@ -229,7 +231,7 @@ environments:
             es:
                 index: gokbg3
                 cluster: gokbg3-prod
-
+                host: localhost
 gokb:
     defaultCuratoryGroup: Local
     ftupdate_enabled: true
