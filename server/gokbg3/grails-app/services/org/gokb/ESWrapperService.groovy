@@ -109,33 +109,13 @@ class ESWrapperService {
         match_mapping_type: "string",
         mapping: [type: "keyword"]
       ],
-      dateFirstInPrint: [
-              match: "dateFirstInPrint",
-              mapping: [
-                      type: "date",
-                      format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
-              ]
-      ],
-      dateFirstOnline: [
-              match: "dateFirstOnline",
-              mapping: [
-                      type: "date",
-                      format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
-              ]
-      ],
-      titleDateFirstInPrint: [
-              match: "titleDateFirstInPrint",
-              mapping: [
-                      type: "date",
-                      format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
-              ]
-      ],
-      titleDateFirstOnline: [
-              match: "titleDateFirstOnline",
-              mapping: [
-                      type: "date",
-                      format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
-              ]
+      date     : [
+        match  : "*date*",
+        match_mapping_type: "date",
+        mapping: [
+          type  : "date",
+          format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
+        ]
       ],
       cpname: [
         match: "cpname",
