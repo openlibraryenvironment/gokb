@@ -15,7 +15,11 @@ class OtherInstance extends TitleInstance {
 
   String summaryOfContent
 
- static mapping = {
+  private static refdataDefaults = [
+    "TitleInstance.medium"		: "Other"
+  ]
+
+  static mapping = {
     includes TitleInstance.mapping
          summaryOfContent column:'bk_summaryOfContent'
   }
