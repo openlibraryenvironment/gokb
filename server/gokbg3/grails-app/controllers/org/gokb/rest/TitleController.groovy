@@ -56,6 +56,7 @@ class TitleController {
 
     if (es_search) {
       params.remove('es')
+      params.remove('type')
       def start_es = LocalDateTime.now()
       result = ESSearchService.find(params)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
@@ -627,7 +628,7 @@ class TitleController {
 
       if (history) {
         history.each { he ->
-          def mapped_event = [id: he.id, date: dateFormatService.formatDate(he.date), from: [], to: []]
+          def mapped_event = [id: he.id, date: he.date ? dateFormatService.formatDate(he.date) : null, from: [], to: []]
 
           he.from.each { f ->
             if (embeds.contains('history')) {
