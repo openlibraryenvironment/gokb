@@ -1,16 +1,17 @@
 
 export INDEXNAME="${1:-gokb}"
-export MAPPING_FILE="src/elasticsearch/es_mapping.json"
-export SETTINGS_FILE="src/elasticsearch/es_settings.json"
+export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+export MAPPING_FILE=$SCRIPT_DIR"/../server/gokbg3/src/elasticsearch/es_mapping.json"
+export SETTINGS_FILE=$SCRIPT_DIR"/../server/gokbg3/src/elasticsearch/es_settings.json"
 
-echo Reset ES indexes for index name \"$INDEXNAME\"
+printf 'Reset ES indexes for index name \"$INDEXNAME\"\n'
 
-echo Drop old index
+printf "Drop old index\n"
 curl -XDELETE "http://localhost:9200/$INDEXNAME"
 
-echo \\nCreate index
+printf "\nCreate index\n"
 curl -X PUT "localhost:9200/$INDEXNAME" -H 'Content-Type: application/json' -d@$SETTINGS_FILE
 
-echo \\nCreate component mapping
+printf "\nCreate component mapping\n"
 curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -H "Content-Type: application/json" -d@$MAPPING_FILE
-echo \\n
+printf "\n\n"
