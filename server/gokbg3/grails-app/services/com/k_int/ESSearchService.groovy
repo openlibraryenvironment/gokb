@@ -755,6 +755,7 @@ class ESSearchService{
         typeQuery.should(QueryBuilders.termQuery('componentType', "JournalInstance"))
         typeQuery.should(QueryBuilders.termQuery('componentType', "DatabaseInstance"))
         typeQuery.should(QueryBuilders.termQuery('componentType', "BookInstance"))
+        typeQuery.should(QueryBuilders.termQuery('componentType', "OtherInstance"))
         typeQuery.minimumNumberShouldMatch(1)
         exactQuery.must(typeQuery)
       }
@@ -1022,13 +1023,15 @@ class ESSearchService{
         "TitleInstancePackagePlatform",
         "TIPP",
         "TitleInstance",
-        "Title"
+        "Title",
+        "OtherInstance",
+        "Other"
     ]
     def final_type = typeString.capitalize()
 
-    if(final_type in defined_types) {
+    if (final_type in defined_types) {
 
-      if(final_type== 'TIPP') {
+      if (final_type== 'TIPP') {
         final_type = 'TitleInstancePackagePlatform'
       }
       else if (final_type == 'Book') {
@@ -1042,6 +1045,9 @@ class ESSearchService{
       }
       else if (final_type == 'Title') {
         final_type = 'TitleInstance'
+      }
+      else if (final_type == 'Other') {
+        final_type = 'OtherInstance'
       }
 
       result = final_type
