@@ -411,7 +411,7 @@ class FTUpdateService {
         }
 
         if (kbc.dateFirstOnline) result.dateFirstOnline = dateFormatService.formatIsoTimestamp(kbc.dateFirstOnline)
-        if (kbc.dateFirstInPrint) result.dateFristInPrint = edateFormatService.formatIsoTimestamp(kbc.dateFirstInPrint)
+        if (kbc.dateFirstInPrint) result.dateFristInPrint = dateFormatService.formatIsoTimestamp(kbc.dateFirstInPrint)
 
         result.componentType = kbc.class.simpleName
         result.tippTitleMedium = kbc.title ? kbc.title.medium : ""
