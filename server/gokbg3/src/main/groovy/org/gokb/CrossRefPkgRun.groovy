@@ -97,7 +97,7 @@ class CrossRefPkgRun {
         return jsonResult
       }
       // Package Validation
-      pkg_validation = packageService.validateDTO(rjson.packageHeader, locale)
+      pkg_validation = Package.validateDTO(rjson.packageHeader, locale)
 
       if (!pkg_validation.valid) {
         globalError([code   : 403,
