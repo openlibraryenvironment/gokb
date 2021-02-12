@@ -758,58 +758,58 @@ class TitleInstance extends KBComponent {
       switch (titleObj.medium.toLowerCase()) {
         case "a & i database":
         case "abstract- & indexdatenbank":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "A & I Database")
+          return RefdataCategory.lookup("TitleInstance.Medium", "A & I Database")
         case "audio":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Audio")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Audio")
         case "database":
         case "fulltext database":
         case "Volltextdatenbank":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Database")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Database")
         case "dataset":
         case "datenbestand":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Dataset")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Dataset")
         case "film":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Film")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Film")
         case "image":
         case "bild":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Image")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Image")
         case "journal":
         case "zeitschrift":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Journal")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Journal")
         case "book":
         case "buch":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Book")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Book")
         case "published score":
         case "musiknoten":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Published Score")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Published Score")
         case "article":
         case "artikel":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Article")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Article")
         case "software":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Software")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Software")
         case "statistics":
         case "statistiken":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Statistics")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Statistics")
         case "market data":
         case "marktdaten":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Market Data")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Market Data")
         case "standards":
         case "normen":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Standards")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Standards")
         case "biography":
         case "biografie":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Biography")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Biography")
         case "legal text":
         case "gesetzestext/urteil":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Legal Text")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Legal Text")
         case "cartography":
         case "kartenwerk":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Cartography")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Cartography")
         case "miscellaneous":
         case "sonstiges":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Miscellaneous")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Miscellaneous")
         case "other":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Other")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Other")
         default:
           return null
       }
