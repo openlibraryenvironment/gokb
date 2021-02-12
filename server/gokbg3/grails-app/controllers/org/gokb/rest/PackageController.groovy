@@ -130,7 +130,7 @@ class PackageController {
 
     if (reqBody) {
       log.debug("Save package ${reqBody}")
-      def pkg_validation = packageService.validateDTO(reqBody, request_locale)
+      def pkg_validation = Package.validateDTO(reqBody, request_locale)
       def obj = null
 
       if (pkg_validation.valid) {

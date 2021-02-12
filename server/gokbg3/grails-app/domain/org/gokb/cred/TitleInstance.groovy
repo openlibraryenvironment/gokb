@@ -685,7 +685,7 @@ class TitleInstance extends KBComponent {
           }
 
           if (!ns_obj) {
-            id_errors.put('namespace': [message: "unable to lookup", baddata: idobj.namespace])
+            id_errors.put('namespace', [message: "unable to lookup", baddata: idobj.namespace])
             to_remove.add(idobj)
           }
           else {
