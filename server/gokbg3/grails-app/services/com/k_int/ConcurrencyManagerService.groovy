@@ -91,7 +91,7 @@ class ConcurrencyManagerService {
      */
     @Override
     public synchronized boolean isDone () {
-      task.done
+      this.task.done
     }
 
     @Override
