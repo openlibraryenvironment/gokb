@@ -549,19 +549,24 @@ class OaiController {
       }
 
       if ( params.pkg && result.oaiConfig.pkg ) {
-        def pkg = Package.findByUuid(params.pkg)
+        def linked_pkg = Package.findByUuid(params.pkg)
 
-        if (!pkg) {
-          pkg = Package.get(genericOIDService.oidToId(params.pkg))
+        if (!linked_pkg) {
+          try {
+            linked_pkg = Package.get(genericOIDService.oidToId(params.pkg))
+          }
+          catch (Exception e) {
+
+          }
         }
 
-        if (pkg) {
+        if (linked_pkg) {
 
           def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.pkg)
 
           query += ', Combo as pkgCombo, Package as pkg where pkgCombo.fromComponent = ? and pkgCombo.type = ? and pkgCombo.toComponent = o '
           wClause = true
-          query_params.add(pkg)
+          query_params.add(linked_pkg)
           query_params.add(comboType)
         }
         else {

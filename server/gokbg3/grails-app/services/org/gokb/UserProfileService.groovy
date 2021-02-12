@@ -195,7 +195,6 @@ class UserProfileService {
           'id'             : user.id,
           'username'       : user.username,
           'displayName'    : user.displayName,
-          'email'          : user.email,
           'enabled'        : user.enabled,
           'accountExpired' : user.accountExpired,
           'accountLocked'  : user.accountLocked,

@@ -85,8 +85,14 @@ class RestMappingService {
         is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
       }
 
-      if (obj.class.simpleName == TitleInstancePackagePlatform) {
+      if (obj.class.simpleName == 'TitleInstancePackagePlatform') {
         is_curator = obj.pkg.curatoryGroups?.size() > 0 ? user?.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
+      }
+
+      if (obj.class.simpleName == 'ReviewRequest') {
+        def allocated_groups = obj.allocatedGroups?.collect { arg -> [ id: arg.group.id ]} ?: []
+
+        is_curator = obj.allocatedGroups?.size() > 0 ? user?.curatoryGroups?.id.intersect(allocated_groups.id) : true
       }
 
       result.type = obj.niceName
