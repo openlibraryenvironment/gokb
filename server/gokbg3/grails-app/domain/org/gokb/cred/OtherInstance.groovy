@@ -14,11 +14,12 @@ class OtherInstance extends TitleInstance {
   def titleLookupService
 
   String summaryOfContent
+
   private static refdataDefaults = [
-      "TitleInstance.medium": "Other"
+    "TitleInstance.medium"		: "Other"
   ]
 
- static mapping = {
+  static mapping = {
     includes TitleInstance.mapping
          summaryOfContent column:'bk_summaryOfContent'
   }
