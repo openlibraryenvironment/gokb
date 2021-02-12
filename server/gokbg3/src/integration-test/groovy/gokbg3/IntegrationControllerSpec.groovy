@@ -1013,6 +1013,18 @@ class IntegrationControllerSpec extends Specification {
             [
               "type" : "global",
               "value": "testTippId"
+            ],
+            [
+              "type" : "zdb",
+              "value": "1483109-0X"
+            ],
+            [
+              "type" : "eissn",
+              "value": "1520-5118-XXX"
+            ],
+            [
+              "type" : "issn",
+              "value": "0021-8561"
             ]
           ],
           "coverage"   : [
@@ -1038,11 +1050,11 @@ class IntegrationControllerSpec extends Specification {
             "identifiers": [
               [
                 "type" : "zdb",
-                "value": "1483109-0X"
+                "value": "1483109-0"
               ],
               [
                 "type" : "eissn",
-                "value": "1520-5118-XXX"
+                "value": "1520-5118"
               ],
               [
                 "type" : "issn",
@@ -1050,8 +1062,8 @@ class IntegrationControllerSpec extends Specification {
               ]
             ],
             "name"       : "Book of agricultural and food chemistry",
-            "firstAuthor"       : "Autor, extralong                                                                                                                                                                                                                                                                   ",
-            "firstEditor"       : "Editor, too long as well                                                                                                                                                                                                                                                           ",
+            "firstAuthor": "Autor, extralong                                                                                                                                                                                                                                                                   ",
+            "firstEditor": "Editor, too long as well                                                                                                                                                                                                                                                           ",
             "type"       : "Monograph"
           ],
           "url"        : "http://pubs.acs.org/journal/jafcau"
@@ -1068,12 +1080,11 @@ class IntegrationControllerSpec extends Specification {
     then: "The item is created in the database because it does not exist"
     resp.json.message != null
     resp.json.message.startsWith('Created')
-    expect: "Find pkg by name, which is connected to the new TIPP"
-    def matching_pkgs = Package.findAllByName("American Chemical Society: ACS Legacy Archives")
-    matching_pkgs.size() == 1
-    matching_pkgs[0].id == resp.json.pkgId
-    matching_pkgs[0].tipps?.size() == 1
-    matching_pkgs[0].provider?.name == "American Chemical Society"
-    matching_pkgs[0].ids?.size() == 1
+    expect: "Find errors in teh response JSON"
+    resp.json.errors.tipps[0].index == 1
+    resp.json.errors.tipps[0].title.identifiers.issn.baddata == "0021-8561-XXX"
+    resp.json.errors.tipps[0].title.firstAuthor.message == "too long"
+    resp.json.errors.tipps[0].title.firstEditor.message == "too long"
+    resp.json.errors.tipps[0].tipp.value[0].baddata == "1483109-0X"
   }
 }
