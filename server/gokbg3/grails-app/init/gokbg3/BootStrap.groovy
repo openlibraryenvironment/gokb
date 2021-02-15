@@ -1,55 +1,25 @@
 package gokbg3;
 
 import grails.util.Environment
-import grails.util.GrailsNameUtils;
-
 import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
-
-
-import java.lang.reflect.Method
-
-import org.gokb.GOKbTextUtils
 
 import javax.servlet.http.HttpServletRequest
 
 import grails.plugin.springsecurity.acl.*
 
 import org.gokb.DomainClassExtender
-import org.gokb.ESWrapperService
 import org.gokb.ComponentStatisticService
 import org.gokb.cred.*
-import org.gokb.refine.RefineProject
 
 //import org.gokb.validation.types.*
 
 import com.k_int.apis.A_Api;
 import com.k_int.ConcurrencyManagerService.Job
-
-import static org.springframework.security.acls.domain.BasePermission.ADMINISTRATION
-import static org.springframework.security.acls.domain.BasePermission.DELETE
-import static org.springframework.security.acls.domain.BasePermission.READ
-import static org.springframework.security.acls.domain.BasePermission.WRITE
-import static org.springframework.security.acls.domain.BasePermission.CREATE
-
-import org.springframework.security.core.context.SecurityContextHolder as SCH
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.authority.AuthorityUtils
-
-import org.elasticsearch.client.Client
-import org.elasticsearch.client.AdminClient
 import org.elasticsearch.client.IndicesAdminClient
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse
-import static org.elasticsearch.common.xcontent.XContentFactory.*
-import org.elasticsearch.common.xcontent.XContentBuilder
-
 
 class BootStrap {
 
@@ -274,7 +244,7 @@ class BootStrap {
     registerUsers()
 
     log.debug("Ensuring ElasticSearch index")
-    ensureESIndex()
+    ensureEsIndices()
 
 
     Job hk_job = concurrencyManagerService.createJob {
@@ -1157,8 +1127,15 @@ class BootStrap {
   }
 
 
-  def ensureESIndex() {
-    def indexName = grailsApplication.config.gokb.es.index ?: (grailsApplication.config.gokb_es_index)
+  def ensureEsIndices() {
+    def esIndices = grailsApplication.config.gokb.es.indices
+    for (String indexName in esIndices.values()){
+      ensureEsIndex(indexName)
+    }
+  }
+
+
+  def ensureEsIndex(String indexName) {
     log.debug("ensureESIndex for ${indexName}");
     def esclient = ESWrapperService.getClient()
     IndicesAdminClient adminClient = esclient.admin().indices()
@@ -1168,10 +1145,10 @@ class BootStrap {
 
       CreateIndexRequestBuilder createIndexRequestBuilder = adminClient.prepareCreate(indexName)
 
-      log.debug("Adding index setttings..")
-      createIndexRequestBuilder.setSettings(indexSettings())
+      log.debug("Adding index settings..")
+      createIndexRequestBuilder.setSettings(ESWrapperService.getSettings())
       log.debug("Adding index mappings..")
-      createIndexRequestBuilder.addMapping("component", indexMapping())
+      createIndexRequestBuilder.addMapping("component", ESWrapperService.getMapping())
 
       CreateIndexResponse indexResponse = createIndexRequestBuilder.execute().actionGet()
 
@@ -1186,18 +1163,6 @@ class BootStrap {
       log.debug("ES index ${indexName} already exists..")
       // Validate settings & mappings
     }
-  }
-
-
-  def indexSettings() {
-    def settings = ESWrapperService.getSettings()
-    return settings
-  }
-
-
-  def indexMapping() {
-    def mapping = ESWrapperService.getMapping()
-    return mapping
   }
 
 }

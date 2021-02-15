@@ -12,10 +12,6 @@ class ESWrapperService {
   static transactional = false
   def grailsApplication
   TransportClient esclient = null
-  File mappingFile = new File("server${File.separator}gokbg3${File.separator}src${File.separator}" +
-      "elasticsearch${File.separator}es_mapping.json")
-  File settingsFile = new File("server${File.separator}gokbg3${File.separator}src${File.separator}" +
-      "elasticsearch${File.separator}es_settings.json")
 
   @javax.annotation.PostConstruct
   def init() {
@@ -24,14 +20,16 @@ class ESWrapperService {
 
 
   def getSettings() {
-    def settings = new JsonSlurper().parse(settingsFile)
-    return settings
+    File settingsFile = new File(getClass().getResource(
+        "${File.separator}elasticsearch${File.separator}es_settings.json").toURI())
+    return new JsonSlurper().parse(settingsFile)
   }
 
 
   def getMapping() {
-    def mapping = new JsonSlurper().parse(mappingFile)
-    return mapping
+    File mappingFile = new File(getClass().getResource(
+        "${File.separator}elasticsearch${File.separator}es_mapping.json").toURI())
+    return new JsonSlurper().parse(mappingFile)
   }
 
 
