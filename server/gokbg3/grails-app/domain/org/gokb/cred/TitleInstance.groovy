@@ -629,11 +629,11 @@ class TitleInstance extends KBComponent {
   @Transient
   public static def validateDTO(JSONObject titleDTO) {
     def result = ['valid': true]
-    def valErrors = []
+    def valErrors = [:]
 
     if (titleDTO?.name?.trim() == false) {
       result.valid = false
-      valErrors.add([name: [message: "Missing title name!", baddata: titleDTO.name]])
+      valErrors.put('name', [message: "missing", baddata: titleDTO.name])
     }
     else {
       LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
@@ -641,20 +641,24 @@ class TitleInstance extends KBComponent {
 
       if (titleDTO.publishedFrom && !startDate) {
         result.valid = false
-        valErrors.add([publishedFrom: [message: "Unable to parse publishing start date ${titleDTO.publishedFrom}!", baddata: titleDTO.publishedFrom]])
+        valErrors.put('publishedFrom': [message: "Unable to parse", baddata: titleDTO.remove('publishedFrom')])
       }
 
       if (titleDTO.publishedTo && !endDate) {
         result.valid = false
-        valErrors.add([publishedTo: [message: "Unable to parse publishing end date ${titleDTO.publishedTo}!", baddata: titleDTO.publishedTo]])
+        valErrors.put('publishedTo',[message: "Unable to parse", baddata: titleDTO.remove('publishedTo')])
       }
 
       if (startDate && endDate && (endDate < startDate)) {
         result.valid = false
-        valErrors.add([publishedTo: [message: "Publishing end date must not be prior to its start date!", baddata: titleDTO.publishedTo]])
+        valErrors.put('publishedTo', [message: "Publishing end date must not be prior to its start date!", baddata: titleDTO.publishedTo])
+        // switch dates
+        def tmp = titleDTO.publishedTo
+        titleDTO.publishedTo = titleDTO.publishedFrom
+        titleDTO.publishedFrom = tmp
       }
 
-      def id_errors = []
+      def id_errors = [:]
       def to_remove = []
       String idJsonKey = 'ids'
       def ids_list = titleDTO[idJsonKey]
@@ -681,7 +685,7 @@ class TitleInstance extends KBComponent {
           }
 
           if (!ns_obj) {
-            id_errors.add([message: "Unable to lookup identifier namespace ${id_ns}!", baddata: id_ns])
+            id_errors.put('namespace', [message: "unable to lookup", baddata: idobj.namespace])
             to_remove.add(idobj)
           }
           else {
@@ -692,13 +696,13 @@ class TitleInstance extends KBComponent {
           Identifier the_id = Identifier.get(idobj)
 
           if (!the_id) {
-            id_errors.add([message: "Unable to lookup identifier object by ID!", baddata: idobj])
+            id_errors.put(idobj.type,[message: "unable to lookup", baddata: idobj.value])
             to_remove.add(idobj)
           }
         }
         else {
           log.warn("Missing information in id object ${idobj}")
-          id_errors.add([message: "Missing information for identifier object!", baddata: idobj])
+          id_errors.put(idobj.type,[message: "missing information", baddata: idobj.value])
           to_remove.add(idobj)
         }
 
@@ -706,7 +710,7 @@ class TitleInstance extends KBComponent {
           if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
             if (ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern)) {
               log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
-              id_errors.add([message: "Validation for identifier ${id_def.type}:${id_def.value} failed!", baddata: idobj])
+              id_errors.put(idobj.type,[message: "validation failed", baddata: idobj.value])
               to_remove.add(idobj)
             }
             else {
@@ -720,9 +724,9 @@ class TitleInstance extends KBComponent {
       }
       titleDTO[idJsonKey].removeAll(to_remove)
       if (id_errors.size() > 0) {
-        valErrors.add([ids: id_errors])
+        valErrors.put(idJsonKey, id_errors)
         if (titleDTO[idJsonKey].size() == 0) {
-          valErrors.add([ids: [message: 'no valid Identifiers left']])
+          valErrors.put(message: 'no valid identifiers left')
         }
       }
     }
@@ -733,14 +737,14 @@ class TitleInstance extends KBComponent {
         titleDTO.medium = medRef.value
       }
       else {
-        valErrors.add([medium: [message: "cannot parse medium:'${titleDTO.medium}'", baddata: titleDTO.medium]])
+        valErrors.put('medium', [message: "cannot parse", baddata: titleDTO.medium])
         titleDTO.remove(titleDTO.medium)
       }
     }
 
     if (valErrors.size() > 0) {
       if (result.errors) {
-        result.errors.addAll(valErrors)
+        result.errors.putAll(valErrors)
       }
       else {
         result.errors = valErrors
@@ -754,58 +758,58 @@ class TitleInstance extends KBComponent {
       switch (titleObj.medium.toLowerCase()) {
         case "a & i database":
         case "abstract- & indexdatenbank":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "A & I Database")
+          return RefdataCategory.lookup("TitleInstance.Medium", "A & I Database")
         case "audio":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Audio")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Audio")
         case "database":
         case "fulltext database":
         case "Volltextdatenbank":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Database")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Database")
         case "dataset":
         case "datenbestand":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Dataset")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Dataset")
         case "film":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Film")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Film")
         case "image":
         case "bild":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Image")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Image")
         case "journal":
         case "zeitschrift":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Journal")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Journal")
         case "book":
         case "buch":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Book")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Book")
         case "published score":
         case "musiknoten":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Published Score")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Published Score")
         case "article":
         case "artikel":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Article")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Article")
         case "software":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Software")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Software")
         case "statistics":
         case "statistiken":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Statistics")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Statistics")
         case "market data":
         case "marktdaten":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Market Data")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Market Data")
         case "standards":
         case "normen":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Standards")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Standards")
         case "biography":
         case "biografie":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Biography")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Biography")
         case "legal text":
         case "gesetzestext/urteil":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Legal Text")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Legal Text")
         case "cartography":
         case "kartenwerk":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Cartography")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Cartography")
         case "miscellaneous":
         case "sonstiges":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Miscellaneous")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Miscellaneous")
         case "other":
-          return RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Other")
+          return RefdataCategory.lookup("TitleInstance.Medium", "Other")
         default:
           return null
       }
