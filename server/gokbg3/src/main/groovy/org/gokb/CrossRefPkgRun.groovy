@@ -565,13 +565,9 @@ class CrossRefPkgRun {
       }
       catch (grails.validation.ValidationException ve) {
         log.error("ValidationException attempting to cross reference TIPP", ve)
-        def tipp_error = [
-          message: messageService.resolveCode('crossRef.package.tipps.error.validation', [tippJson.title.name], locale),
-          baddata: tippJson,
-          errors : [messageService.processValidationErrors(ve.errors)]
-        ]
         upserted_tipp?.discard()
-        return messageService.processValidationErrors(ve.errors)
+        tippError.putAll(messageService.processValidationErrors(ve.errors))
+        return tippError
       }
       catch (Exception ge) {
         log.error("Exception attempting to cross reference TIPP:", ge)
