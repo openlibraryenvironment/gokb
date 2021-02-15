@@ -12,7 +12,7 @@ class Source extends KBComponent {
   String contextualNotes
   // Org combo -- What organisation - aggregator -- responsibleParty
   Boolean automaticUpdates = false
-  String frequency
+  RefdataValue frequency
   String ruleset
   // Default method refdata - email web ftp other
   // Default data Format KBART,Prop
