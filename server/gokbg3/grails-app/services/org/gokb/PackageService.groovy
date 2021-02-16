@@ -476,6 +476,7 @@ class PackageService {
     def titlesOne = [:]
     def titlesTwo = [:]
     def currentPkgNum = 0
+    boolean cancelled = false
 
     if (date) {
       if (date.before(new Date())) {
@@ -493,12 +494,11 @@ class PackageService {
     log.debug("Building titles map 1 ..")
 
     Package.withNewSession {
-
       listOne.each { p1 ->
         def pkg = Package.get(genericOIDService.oidToId(p1))
         currentPkgNum++
 
-        if (pkg) {
+        if (pkg && !cancelled) {
           int total = TitleInstancePackagePlatform.executeQuery("select count(*) from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])[0]
           int currentOffset = 0
 
@@ -534,11 +534,17 @@ class PackageService {
             cleanUpGorm()
           }
 
+          if (Thread.currentThread().isInterrupted() || j?.isCancelled()) {
+            log.debug("cancelling Job #${j?.uuid}")
+            cancelled = true
+            break
+          }
+
           if (j) {
             j.setProgress(currentPkgNum, (listOne.size() + listTwo.size()))
           }
         }
-        else {
+        else if (!pkg) {
           log.debug("Unable to resolve Package with id ${p1}")
         }
       }
@@ -551,7 +557,7 @@ class PackageService {
         def pkg = Package.get(genericOIDService.oidToId(p2))
         currentPkgNum++
 
-        if (pkg) {
+        if (pkg && !cancelled) {
           int total = TitleInstancePackagePlatform.executeQuery("select count(*) from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])[0]
           int currentOffset = 0
 
@@ -597,6 +603,12 @@ class PackageService {
 
           cleanUpGorm()
 
+          if (Thread.currentThread().isInterrupted() || j?.isCancelled()) {
+            log.debug("cancelling Job #${j?.uuid}")
+            cancelled = true
+            break
+          }
+
           if (j) {
             j.setProgress(currentPkgNum, (listOne.size() + listTwo.size()))
           }
@@ -606,34 +618,40 @@ class PackageService {
 
     log.debug("Finished collecting TIPPs. Starting comparison")
 
-    titlesOne.each { id, val ->
-      if (!titlesTwo[id]) {
-        if (full) {
-          result['missing'] << val
+    if (!cancelled) {
+      titlesOne.each { id, val ->
+        if (!titlesTwo[id]) {
+          if (full) {
+            result['missing'] << val
+          }
+          else {
+            result['missing']++
+          }
         }
         else {
-          result['missing']++
+          if (full) {
+            result['both'] << ['id': val.id, 'name': val.name, 'old': val.tipps, 'new': titlesTwo[id].tipps]
+          }
+          else {
+            result['both']++
+          }
         }
       }
-      else {
-        if (full) {
-          result['both'] << ['id': val.id, 'name': val.name, 'old': val.tipps, 'new': titlesTwo[id].tipps]
-        }
-        else {
-          result['both']++
+
+      titlesTwo.each { id, val ->
+        if (!titlesOne[id]) {
+          if (full) {
+            result['new'] << val
+          }
+          else {
+            result['new']++
+          }
         }
       }
     }
 
-    titlesTwo.each { id, val ->
-      if (!titlesOne[id]) {
-        if (full) {
-          result['new'] << val
-        }
-        else {
-          result['new']++
-        }
-      }
+    if (j) {
+      j.endTime = new Date()
     }
 
     log.debug("Added ${num2} titles with ${tnum2} TIPPs!")
