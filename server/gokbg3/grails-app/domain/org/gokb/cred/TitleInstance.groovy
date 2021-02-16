@@ -641,7 +641,7 @@ class TitleInstance extends KBComponent {
 
       if (titleDTO.publishedFrom && !startDate) {
         result.valid = false
-        valErrors.put('publishedFrom': [message: "Unable to parse", baddata: titleDTO.remove('publishedFrom')])
+        valErrors.put('publishedFrom', [message: "Unable to parse", baddata: titleDTO.remove('publishedFrom')])
       }
 
       if (titleDTO.publishedTo && !endDate) {
