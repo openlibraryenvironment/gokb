@@ -1170,15 +1170,15 @@ class IntegrationController {
 
           if (!result_object) {
             def job_map = [
-              uuid: (job.uuid),
-              description: (job.description),
-              resultObject: (job_result as JSON).toString(),
-              type: (job.type),
-              statusText: (job_result?.result),
-              ownerId: (job.ownerId),
-              groupId: (job.groupId),
-              startTime: (job.startTime),
-              endTime: (job.endTime)
+                uuid        : (job.uuid),
+                description : (job.description),
+                resultObject: (job_result as JSON).toString(),
+                type        : (job.type),
+                statusText  : (job_result?.result),
+                ownerId     : (job.ownerId),
+                groupId     : (job.groupId),
+                startTime   : (job.startTime),
+                endTime     : (job.endTime)
             ]
 
             result_object = new JobResult(job_map).save(flush: true, failOnError: true)
@@ -1264,9 +1264,7 @@ class IntegrationController {
             componentUpdateService.ensureCoreData(title, titleObj, fullsync, user)
 
             title_changed |= componentUpdateService.setAllRefdata([
-                'OAStatus', 'medium',
-                'pureOA', 'continuingSeries',
-                'reasonRetired'
+                'OAStatus', 'medium', 'pureOA', 'continuingSeries', 'reasonRetired'
             ], titleObj, title)
 
             def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
@@ -1546,7 +1544,7 @@ class IntegrationController {
     def result = ['result': 'OK', 'params': params]
     User user = null
     String uuid = params.id
-
+    log.info("getJobInfo($uuid)")
     if (uuid == null) {
       result.result = "ERROR"
       response.setStatus(400)

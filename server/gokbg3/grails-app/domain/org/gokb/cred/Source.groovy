@@ -12,7 +12,7 @@ class Source extends KBComponent {
   String contextualNotes
   // Org combo -- What organisation - aggregator -- responsibleParty
   Boolean automaticUpdates = false
-  String frequency
+  RefdataValue frequency
   String ruleset
   // Default method refdata - email web ftp other
   // Default data Format KBART,Prop
@@ -39,7 +39,7 @@ class Source extends KBComponent {
     defaultAccessURL(nullable:true, blank:true)
     explanationAtSource(nullable:true, blank:true)
     contextualNotes(nullable:true, blank:true)
-    frequency(nullable:true, blank:true, default: "1D")
+    frequency(nullable:true, blank:true)
     defaultSupplyMethod(nullable:true, blank:true)
     defaultDataFormat(nullable:true, blank:true)
     responsibleParty(nullable:true, blank:true)
@@ -145,36 +145,42 @@ class Source extends KBComponent {
     }
   }
 
-  public boolean needsUpdate() {
-    Source src = this
-    if (src.lastRun == null) {
-      return true;
-    }
-    if (src.frequency != null) {
-      Pattern pattern = Pattern.compile("\\s*(\\d*)\\s*([a-zA-Z]*)\\s*");
-      Matcher matcher = pattern.matcher(src.frequency);
-      int days
-      if (matcher.find()) {
-        def length = [
-          D: 1,
-          T: 1,
-          W: 7,
-          M: 30,
-          Q: 91,
-          H: 182,
-          J: 365,
-          Y: 365]
-        def interval = matcher.group(2)
-        def number = matcher.group(1)
-        days = Integer.parseInt(number) * length[interval.toUpperCase()]
 
-        Date today = new Date()
-        Date due = src.lastRun.plus(days)
-        if (due.before(today)) {
-          return true
-        }
+  boolean needsUpdate() {
+    if (lastRun == null) {
+      return true
+    }
+    if (frequency != null) {
+      Date today = new Date()
+      Date due = getUpdateDay(intervals.get(frequency))
+      if (today == due){
+        return true
       }
     }
     return false
   }
+
+
+  def getUpdateDay(int interval){
+    Date today = new Date()
+    // calculate from each first day of the year to not create a lag over the years
+    Calendar cal = Calendar.getInstance()
+    cal.set(Calendar.YEAR, Calendar.get(Calendar.YEAR))
+    cal.set(Calendar.DAY_OF_YEAR, 1)
+    Date nextUpdate = cal.getTime()
+    while (nextUpdate.before(today)){
+      nextUpdate = nextUpdate.plus(interval)
+    }
+    return nextUpdate
+  }
+
+
+  def intervals = [
+      "Daily"       : 1,
+      "Weekly"      : 7,
+      "Monthly"     : 30,
+      "Quarterly"   : 91,
+      "Yearly"      : 365,
+  ]
+
 }

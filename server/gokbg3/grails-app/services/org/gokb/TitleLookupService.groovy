@@ -685,7 +685,7 @@ class TitleLookupService {
         def id_matches = []
 
         results['ids'].each { rid ->
-          matches[0].ids.each { mid ->
+          matches[0].ids?.each { mid ->
             if (rid.namespace == mid.namespace && rid.value != mid.value) {
               if (!matches[0].ids.contains(rid)) {
                 id_mismatches.add(rid)

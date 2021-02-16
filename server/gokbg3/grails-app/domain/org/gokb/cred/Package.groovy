@@ -1,5 +1,9 @@
 package org.gokb.cred
 
+import com.k_int.ClassUtils
+import grails.gorm.transactions.Transactional
+import org.gokb.GOKbTextUtils
+
 import javax.persistence.Transient
 import groovy.util.logging.*
 import groovy.time.TimeCategory
@@ -11,6 +15,7 @@ import org.gokb.refine.*
 class Package extends KBComponent {
 
   def dateFormatService
+  static def messageService
 
   // Owens defaults:
   // Status default to 'Current'
@@ -643,5 +648,150 @@ select tipp.id,
       def cg = CuratoryGroup.findByName(cgname) ?: new CuratoryGroup(name: cgname).save(flush: true, failOnError: true);
       curatoryGroups.add(cg);
     }
+  }
+
+  /**
+   * Definitive rules for a valid package header
+   */
+  public static def validateDTO(packageHeaderDTO, locale) {
+    def result = [valid: true, errors: [:], match: false]
+
+    if (!packageHeaderDTO.name?.trim()) {
+      result.valid = false
+      result.errors.name = [[message: messageService.resolveCode('crossRef.package.error.name', null, locale), baddata: packageHeaderDTO.name]]
+    }
+
+    def ids_list = packageHeaderDTO.identifiers ?: packageHeaderDTO.ids
+    def id_errors = []
+
+    ids_list?.each { idobj ->
+      def id_def = [:]
+      def ns_obj = null
+
+      if (idobj instanceof Map) {
+        def id_ns = idobj.type ?: (idobj.namespace ?: null)
+
+        id_def.value = idobj.value
+
+        if (id_ns instanceof String) {
+          log.debug("Default namespace handling for ${id_ns}..")
+          ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
+        }
+        else if (id_ns) {
+          log.debug("Handling namespace def ${id_ns}")
+          ns_obj = IdentifierNamespace.get(id_ns)
+        }
+
+        if (!ns_obj) {
+          id_errors.add([message: messageService.resolveCode('default.not.found.message', ["Namespace", id_ns], locale)])
+        }
+        else {
+          id_def.type = ns_obj.value
+        }
+      }
+      else if (idobj instanceof Integer) {
+        Identifier the_id = Identifier.get(id_inc)
+
+        if (!the_id) {
+          id_errors.add([message: messageService.resolveCode('crossRef.error.lookup', ["Identifier", "ID"], locale), baddata: idobj])
+          result.valid = false
+        }
+      }
+      else {
+        log.warn("Missing information in id object ${idobj}")
+        id_errors.add([message: messageService.resolveCode('crossRef.error.format', ["Identifiers"], locale), baddata: idobj])
+        result.valid = false
+      }
+
+      if (ns_obj && id_def.size() > 0) {
+        if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
+          if (ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern)) {
+            log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
+            id_errors.add([message: messageService.resolveCode('identifier.validate.error', [ns_obj.value, id_def.value], locale), baddata: idobj])
+            result.valid = false
+          }
+          else {
+            log.debug("New identifier ..")
+          }
+        }
+        else {
+          log.debug("Found existing identifier ..")
+        }
+      }
+    }
+
+    if (id_errors.size() > 0) {
+      result.errors.ids = id_errors
+    }
+
+    if (result.valid) {
+      def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+      def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
+
+      def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ?", [pkg_normname, status_deleted])
+      def full_matches = []
+
+      if (packageHeaderDTO.uuid) {
+        result.match = Package.findByUuid(packageHeaderDTO.uuid) ? true : false
+      }
+
+      if (!result.match && name_candidates.size() == 1) {
+        result.match = true
+      }
+
+      if (!result.match) {
+        def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
+        def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
+
+        if (variant_candidates.size() == 1) {
+          result.match = true
+          log.debug("Package matched via existing variantName.")
+        }
+      }
+
+      if (!result.match) {
+        log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
+        packageHeaderDTO.variantNames.each {
+
+          if (it.trim().size() > 0) {
+            def var_pkg = Package.findByName(it)
+
+            if (var_pkg) {
+              log.debug("Found existing package name for variantName ${it}")
+            }
+            else {
+
+              def variant_normname = GOKbTextUtils.normaliseString(it)
+              def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
+
+              if (variant_candidates.size() == 1) {
+                log.debug("Found existing package variant name for variantName ${it}")
+                result.match = true
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (packageHeaderDTO.provider && packageHeaderDTO.provider instanceof Integer) {
+      def prov = Org.get(packageHeaderDTO.provider)
+
+      if (!prov) {
+        result.errors.provider = [[message: messageService.resolveCode('crossRef.error.lookup', ["Provider", "ID"], locale), code: 404, baddata: packageHeaderDTO.provider]]
+        result.valid = false
+      }
+    }
+
+    if (packageHeaderDTO.nominalPlatform && packageHeaderDTO.nominalPlatform instanceof Integer) {
+      def prov = Platform.get(packageHeaderDTO.nominalPlatform)
+
+      if (!prov) {
+        result.errors.nominalPlatform = [[message: messageService.resolveCode('crossRef.error.lookup', ["Platform", "ID"], locale), code: 404, baddata: packageHeaderDTO.nominalPlatform]]
+        result.valid = false
+      }
+    }
+
+    result
   }
 }

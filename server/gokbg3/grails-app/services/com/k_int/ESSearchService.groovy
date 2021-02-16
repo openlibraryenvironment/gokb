@@ -1,5 +1,7 @@
 package com.k_int
 
+import groovyx.net.http.HTTPBuilder
+import groovyx.net.http.Method
 import groovyx.net.http.URIBuilder
 
 import org.apache.lucene.search.join.ScoreMode
@@ -14,6 +16,7 @@ import org.elasticsearch.search.sort.*
 
 import org.gokb.cred.*
 
+import java.text.ParseException
 import java.text.SimpleDateFormat
 
 
@@ -489,7 +492,7 @@ class ESSearchService{
     }
     else{
       SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
-      scrollRequest.scroll("1m")
+      scrollRequest.scroll("5m")
       response = esClient.searchScroll(scrollRequest)
       try{
         if (params.lastPage && Integer.valueOf(params.lastPage) > -1){
@@ -521,12 +524,21 @@ class ESSearchService{
     List filteredHits = []
     SimpleDateFormat YYYY_MM_DD = new SimpleDateFormat("yyyy-MM-dd")
     SimpleDateFormat YYYY_MM_DD_HH_mm_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-    Date changedSince = parseDate(params.changedSince, YYYY_MM_DD_HH_mm_SS, YYYY_MM_DD)
+    SimpleDateFormat ISO = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    Date changedSince = parseDate(params.changedSince, YYYY_MM_DD_HH_mm_SS, YYYY_MM_DD, ISO)
     for (SearchHit hit in searchHitsArray){
       String dateString = hit.getSourceAsMap().get("lastUpdatedDisplay")
-      if (changedSince == null ||
-          dateString && !YYYY_MM_DD_HH_mm_SS.parse(dateString)?.before(changedSince)){
-        filteredHits.add(hit.getSourceAsMap())
+      Date date
+      if(dateString) {
+        try {
+          date = ISO.parse(dateString)
+        }
+        catch (ParseException ignored) {
+          date = YYYY_MM_DD_HH_mm_SS.parse(dateString)
+        }
+        if (changedSince == null || date && !date.before(changedSince)){
+          filteredHits.add(hit.getSourceAsMap())
+        }
       }
     }
     return filteredHits
@@ -1069,6 +1081,43 @@ class ESSearchService{
   @javax.annotation.PreDestroy
   def destroy() {
     log.debug("Destroy");
+  }
+
+
+  /**
+   * Tunnels the full query string to Elasticsearch and returns the full Elasticsearch result. Only GET operations
+   * are possible. The purpose of this endpoint is not to need to open the Elasticsearch port (usually 9200) for the
+   * outside world, in order to prevent non-GET operations.
+   * @param params The params necessary for this operation.
+   * @param params.q The query string for Elasticsearch
+   * @param params.size Optional parameter: The maximum size of the result.
+   * @return The exact Json response of the Elasticsearch GET operation.
+   * @throws Exception Any exception occuring.
+   */
+  def getApiTunnel(def params) throws Exception{
+    if (!params || !params.q){
+      return null
+    }
+    int port = grailsApplication.config.searchApi.port
+    String index = grailsApplication.config.gokb.es.index
+    String host = grailsApplication.config.gokb.es.host
+    String url = "http://${host}:${port}/${index}/_search?q=${params.q}"
+    if (params.size){
+      url = url + "&size=${params.size}"
+    }
+    HTTPBuilder httpBuilder = new HTTPBuilder(url)
+    httpBuilder.request(Method.GET){ req ->
+      response.success = { resp, html ->
+        return html
+      }
+      response.failure = { resp ->
+        return [
+            'error': "Could not process Elasticsearch request.",
+            'status': resp.statusLine,
+            'message': resp.message
+        ]
+      }
+    }
   }
 
 }
