@@ -469,10 +469,7 @@ class PackageService {
     def tipp_status = [status_current]
     Date checkDate = date ?: new Date()
     def tipp_params = [:]
-    def num1 = 0
-    def tnum1 = 0
-    def num2 = 0
-    def tnum2 = 0
+    def totals = [one: [tipps: 0, titles: 0], two: [tipps: 0, titles: 0]]
     def titlesOne = [:]
     def titlesTwo = [:]
     def currentPkgNum = 0
@@ -523,10 +520,10 @@ class PackageService {
               if (inRange) {
                 if (!titlesOne[tipp.title.id]){
                   titlesOne[tipp.title.id] = [id: tipp.title.id, name: tipp.title.name, tipps: []]
-                  num1++
+                  totals.one.titles++
                 }
 
-                tnum1++
+                totals.one.tipps++
                 titlesOne[tipp.title.id]['tipps'] << restMappingService.mapObjectToJson(tipp, tipp_params)
               }
               currentOffset++
@@ -549,7 +546,7 @@ class PackageService {
         }
       }
 
-      log.debug("Added ${num1} titles with ${tnum1} TIPPs!")
+      log.debug("Added ${totals.one.titles} titles with ${totals.one.tipps} TIPPs!")
 
       log.debug("Building titles map 2 ..")
 
@@ -582,10 +579,10 @@ class PackageService {
               if (inRange) {
                 if (!titlesTwo[tipp.title.id]){
                   titlesTwo[tipp.title.id] = [id: tipp.title.id, name: tipp.title.name, tipps: []]
-                  num2++
+                  totals.two.titles++
                 }
 
-                tnum2++
+                totals.two.tipps++
                 titlesTwo[tipp.title.id]['tipps'] << restMappingService.mapObjectToJson(tipp, tipp_params)
 
                 if (!titlesOne[tipp.title.id]) {
@@ -654,7 +651,7 @@ class PackageService {
       j.endTime = new Date()
     }
 
-    log.debug("Added ${num2} titles with ${tnum2} TIPPs!")
+    log.debug("Added ${totals.two.titles} titles with ${totals.two.tipps} TIPPs!")
     result
   }
 
