@@ -151,8 +151,8 @@ class BookInstance extends TitleInstance {
     }
   }
 
-  public static def validateDTO(JSONObject titleDTO) {
-    def result = TitleInstance.validateDTO(titleDTO)
+  public static def validateDTO(JSONObject titleDTO, locale) {
+    def result = TitleInstance.validateDTO(titleDTO, locale)
     def valErrors = [:]
 
     if (titleDTO.volumeNumber) {

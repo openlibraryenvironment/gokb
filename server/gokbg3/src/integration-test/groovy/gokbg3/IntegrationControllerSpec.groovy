@@ -1029,7 +1029,7 @@ class IntegrationControllerSpec extends Specification {
           ],
           "coverage"   : [
             [
-              "coverageDepth": "Fulltext",
+              "coverageDepth": "bof",
               "coverageNote" : "NL-DE;  1.1953 - 43.1995",
               "embargo"      : "",
               "endDate"      : "1995-12-31 00:00:00.000",
@@ -1085,6 +1085,6 @@ class IntegrationControllerSpec extends Specification {
     resp.json.errors.tipps[0].title.identifiers.issn.baddata == "0021-8561-XXX"
     resp.json.errors.tipps[0].title.firstAuthor.message == "too long"
     resp.json.errors.tipps[0].title.firstEditor.message == "too long"
-    resp.json.errors.tipps[0].tipp.value[0].baddata == "1483109-0X"
+    resp.json.errors.tipps[0].tipp.identifiers.zdb.baddata == "1483109-0X"
   }
 }
