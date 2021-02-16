@@ -16,14 +16,13 @@ import org.grails.web.json.JSONObject
 @Slf4j
 class CrossRefPkgRun {
 
-  MessageService messageService = Holders.grailsApplication.mainContext.getBean('messageService')
-  PackageService packageService = Holders.grailsApplication.mainContext.getBean('packageService')
-  SpringSecurityService springSecurityService = Holders.grailsApplication.mainContext.getBean('springSecurityService')
-  ComponentUpdateService componentUpdateService = Holders.grailsApplication.mainContext.getBean('componentUpdateService')
-  TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
-  TitleHistoryService titleHistoryService = Holders.grailsApplication.mainContext.getBean('titleHistoryService')
-  ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
-  CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
+  static MessageService messageService = Holders.grailsApplication.mainContext.getBean('messageService')
+  static PackageService packageService = Holders.grailsApplication.mainContext.getBean('packageService')
+  static SpringSecurityService springSecurityService = Holders.grailsApplication.mainContext.getBean('springSecurityService')
+  static ComponentUpdateService componentUpdateService = Holders.grailsApplication.mainContext.getBean('componentUpdateService')
+  static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
+  static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
+  static CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
 
   def rjson // request JSON
   boolean addOnly
@@ -375,7 +374,7 @@ class CrossRefPkgRun {
 
   private Map handleTitle(JSONObject tippJson) {
     Map titleErrorMap = [:] // [<jsonPropertyName>: [message: <msg>, baddata: <jsonPropertyValue>], ..]
-    def title_validation = Class.forName(IntegrationController.determineTitleClass(tippJson.title)).validateDTO(tippJson.title)
+    def title_validation = Class.forName(IntegrationController.determineTitleClass(tippJson.title)).validateDTO(tippJson.title, locale)
     if (title_validation && title_validation.errors?.size() > 0) {
       titleErrorMap.putAll(title_validation.errors)
       if (title_validation && !title_validation.valid) {
@@ -543,7 +542,7 @@ class CrossRefPkgRun {
 
   private Map handleTIPP(JSONObject tippJson) {
     Map tippError = [:]
-    def validation_result = TitleInstancePackagePlatform.validateDTO(tippJson)
+    def validation_result = TitleInstancePackagePlatform.validateDTO(tippJson, locale)
     log.debug("validate TIPP ${tippJson.name ?: tippJson.title.name}")
     if (validation_result && !validation_result.valid) {
       invalidTipps << tippJson

@@ -36,10 +36,11 @@ class OaiSpec extends Specification {
   def setup() {
     def http = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
     def kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
+    def freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
     Source testSource = Source.findByName("PackTestSource") ?: new Source(
       name: "PackTestSource",
       url: "https://org/package",
-      frequency: "w",
+      frequency: freq,
       defaultSupplyMethod: http,
       defaultDataFormat: kbart).save(flush: true)
     test_pkg = Package.findByName('Test Package 1')

@@ -1214,7 +1214,7 @@ class IntegrationController {
     TitleInstance.withNewSession {
       User user = User.get(userid)
 
-      def title_validation = TitleInstance.validateDTO(titleObj)
+      def title_validation = TitleInstance.validateDTO(titleObj, locale)
 
       if (title_validation && !title_validation.valid) {
         log.warn("Not valid after title validation ${titleObj}")

@@ -494,7 +494,7 @@ class PackageService {
     log.debug("Building titles map 1 ..")
 
     Package.withNewSession {
-      listOne.each { p1 ->
+      for (p1 in listOne) {
         def pkg = Package.get(genericOIDService.oidToId(p1))
         currentPkgNum++
 
@@ -553,7 +553,7 @@ class PackageService {
 
       log.debug("Building titles map 2 ..")
 
-      listTwo.each { p2 ->
+      for (p2 in listTwo) {
         def pkg = Package.get(genericOIDService.oidToId(p2))
         currentPkgNum++
 

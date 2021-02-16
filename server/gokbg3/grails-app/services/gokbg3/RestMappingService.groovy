@@ -86,7 +86,7 @@ class RestMappingService {
         is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
       }
 
-      if (obj.class.simpleName == 'TitleInstancePackagePlatform' && obj.pkg.curatoryGroups?.size() > 0) {
+      if (obj.class.simpleName == 'TitleInstancePackagePlatform' && obj.pkg?.curatoryGroups?.size() > 0) {
         is_curator = userGroups ? userGroups.id.intersect(obj.pkg.curatoryGroups?.id) : false
       }
 
