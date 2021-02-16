@@ -87,6 +87,18 @@ class ESSearchService{
       ]
   ]
 
+  Map indicesPerType = [
+      "JournalInstance" : "gokbtitles",
+      "DatabaseInstance" : "gokbtitles",
+      "OtherInstance" : "gokbtitles",
+      "BookInstance" : "gokbtitles",
+      "TitleInstancePackagePlatform" : "gokbtipps",
+      "Org" : "gokborgs",
+      "Package" : "gokbpackages",
+      "Platform" : "gokbplatforms"
+  ]
+
+
   def search(params){
     search(params,reversemap)
   }
@@ -115,16 +127,14 @@ class ESSearchService{
           params.remove("tempFQ") //remove from GSP access
         }
 
-
-        def es_index = grailsApplication.config.gokb?.es?.index
-        log.debug("index:${es_index} query: ${query_str}");
+        def es_indices = grailsApplication.config.gokb?.es?.indices?.values()
+        log.debug("start to build srb with indices: ${es_indices.join(",")} query: ${query_str}");
 
         def search_results = null
 
         try {
-          log.debug("start to build srb with index: " + es_index)
-          SearchRequestBuilder srb = esclient.prepareSearch(es_index)
-          log.debug("srb built: ${srb} sort=${params.sort}");
+          SearchRequestBuilder srb = esclient.prepareSearch(es_indices)
+          log.debug("srb built: ${srb} sort=${params.sort}")
           if (params.sort) {
             SortOrder order = SortOrder.ASC
             if (params.order) {
@@ -445,9 +455,15 @@ class ESSearchService{
    *         then the end of scrolling is reached.
    **/
   def scroll(params) throws Exception{
-
+    def result = [:]
+    def usedComponentTypes = getUsedComponentTypes(params, result)
+    if (result.error){
+      return result
+    }
+    // now search
     int scrollSize = 5000
-    def result = ["result" : "OK", "scrollSize" : scrollSize]
+    result.result = "OK"
+    result.scrollSize = scrollSize
     def esClient = ESWrapperService.getClient()
     def errors = [:]                              // TODO: use errors
 
@@ -466,7 +482,7 @@ class ESSearchService{
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       searchSourceBuilder.query(scrollQuery)
       searchSourceBuilder.size(scrollSize)
-      SearchRequest searchRequest = new SearchRequest(grailsApplication.config.gokb.es.index)
+      SearchRequest searchRequest = new SearchRequest(usedComponentTypes.values())
       searchRequest.scroll("1m")
       // ... set scroll interval to 1 minute
       searchRequest.source(searchSourceBuilder)
@@ -489,12 +505,38 @@ class ESSearchService{
     result.scrollId = response.actionGet().getScrollId()
     SearchHit[] searchHits = response.actionGet().getHits().getHits()
     result.hasMoreRecords = searchHits.length == scrollSize
-
     result.records = filterLastUpdatedDisplay(searchHits, params, errors, result)
     // TODO: remove this after upgrade to Elasticsearch 7
 
     result.size = result.records.size()
     result
+  }
+
+  private Map getUsedComponentTypes(params, LinkedHashMap<Object, Object> result){
+    [:] usedComponentTypes
+    if (!params.component_type){
+      result.result = "ERROR"
+      result.message = "Error. Needs 'component_type' specification."
+    }
+
+    if (params.component_type instanceof String){
+      usedComponentTypes."${params.component_type}" = null
+    }
+    else if (params.component_type instanceof List){
+      for (def componentType in params.component_type){
+        usedComponentTypes."${componentType}" = null
+      }
+    }
+    for (def ct in usedComponentTypes){
+      if (ct in indicesPerType.keys()){
+        usedComponentTypes."${ct}" = indicesPerType.get(ct)
+      }
+      else{
+        result.result = "ERROR"
+        result.message = "Error. Wrong 'component_type' specification: ${ct}"
+      }
+    }
+    return usedComponentTypes
   }
 
 
@@ -568,7 +610,7 @@ class ESSearchService{
         Client esclient = ESWrapperService.getClient()
         SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
 
-        es_request.setIndices(grailsApplication.config.gokb.es.index)
+        es_request.setIndices(grailsApplication.config.gokb.es.indices)
         es_request.setTypes(grailsApplication.config.globalSearch.types)
         es_request.setQuery(exactQuery)
 
@@ -874,7 +916,7 @@ class ESSearchService{
   }
 
   /**
-   *  convertEsLinks : Converts es response layout to conform with REST mapping.
+   *  convertEsLinks : Converts Elasticsearch response layout to conform with REST mapping.
    * @param es_result : The result object
    * @param params : Request parameters
    * @param component_endpoint : Possible URL path override
@@ -1061,9 +1103,9 @@ class ESSearchService{
       return null
     }
     int port = grailsApplication.config.searchApi.port
-    String index = grailsApplication.config.gokb.es.index
-    String host = grailsApplication.config.gokb.es.host
-    String url = "http://${host}:${port}/${index}/_search?q=${params.q}"
+    def indices = grailsApplication?.config?.gokb?.es?.indices?.values()
+    String host = grailsApplication?.config?.gokb?.es?.host
+    String url = "http://${host}:${port}/${indices.join(',')}/_search?q=${params.q}"
     if (params.size){
       url = url + "&size=${params.size}"
     }

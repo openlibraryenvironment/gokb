@@ -13,8 +13,6 @@ import org.gokb.DomainClassExtender
 import org.gokb.ComponentStatisticService
 import org.gokb.cred.*
 
-//import org.gokb.validation.types.*
-
 import com.k_int.apis.A_Api;
 import com.k_int.ConcurrencyManagerService.Job
 import org.elasticsearch.client.IndicesAdminClient
@@ -1128,8 +1126,8 @@ class BootStrap {
 
 
   def ensureEsIndices() {
-    def esIndices = grailsApplication.config.gokb.es.indices
-    for (String indexName in esIndices.values()){
+    def esIndices = grailsApplication.config.gokb.es.indices?.values()
+    for (String indexName in esIndices){
       ensureEsIndex(indexName)
     }
   }

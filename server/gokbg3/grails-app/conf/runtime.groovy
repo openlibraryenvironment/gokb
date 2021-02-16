@@ -3,9 +3,6 @@
 // in the classpath in ConfigSlurper format
 
 import com.k_int.TextUtils
-import org.gokb.cred.KBComponent
-//import org.gokb.validation.types.*
-import java.util.concurrent.Executors
 
 kbart2.mappings= [
   // Digital Archival Collections Ingest Format
@@ -569,7 +566,7 @@ cache.headers.presets = [
 ]
 
 globalSearch = [
-  'indices'     : 'gokbg3',
+  'indices'     : ['gokbtitles', 'gokbtipps', 'gokborgs', 'gokbpackages', 'gokbplatforms'],
   'types'       : 'component',
   'typingField' : 'componentType',
   'port'        : 9300
@@ -577,7 +574,7 @@ globalSearch = [
 
 searchApi = [
   'path'        : '/',
-  'indices'     : 'gokbg3',
+  'indices'     : ['gokbtitles', 'gokbtipps', 'gokborgs', 'gokbpackages', 'gokbplatforms'],
   'types'       : 'component',
   'typingField' : 'componentType',
   'port'        : 9200

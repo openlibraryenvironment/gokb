@@ -475,12 +475,12 @@ class FTUpdateService {
         Object r = domain.get(r_id)
         log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
         def idx_record = recgen_closure(r)
-        def es_index = grailsApplication.config.gokb?.es?.index
+        def es_indices = grailsApplication.config.gokb?.es?.indices.values()
         if (idx_record != null) {
           def recid = idx_record['_id'].toString()
           idx_record.remove('_id')
 
-          bulkRequest.add(esclient.prepareIndex(es_index, 'component', recid).setSource(idx_record))
+          bulkRequest.add(esclient.prepareIndex(es_indices, 'component', recid).setSource(idx_record))
         }
         if (r.lastUpdated?.getTime() > highest_timestamp) {
           highest_timestamp = r.lastUpdated?.getTime()

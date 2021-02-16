@@ -121,7 +121,7 @@ class CleanupService {
           def expunge_result = component.expunge();
           log.debug("${expunge_result}");
 
-          DeleteRequest req = Requests.deleteRequest(grailsApplication.config.gokb?.es?.index)
+          DeleteRequest req = Requests.deleteRequest(grailsApplication.config.gokb?.es?.indices?.values())
                 .type('component')
                 .id(c_id)
           def es_response = esclient.delete(req)
@@ -136,18 +136,9 @@ class CleanupService {
       }
     }
     j?.message("Finished deleting ${idx} components.")
-
     return result
   }
 
-  def esDelete(oid) {
-    DeleteRequest req = Requests.deleteRequest(grailsApplication.config.gokb?.es?.index)
-          .type('component')
-          .id(oid)
-
-    def es_response = esclient.delete(req)
-    return es_response
-  }
 
   @Transactional
   def deleteOrphanedTipps(Job j = null) {
@@ -405,14 +396,9 @@ class CleanupService {
 
   def housekeeping(Job j = null) {
     log.debug("Housekeeping")
-
     Identifier.withNewSession {
-      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-
       try {
-
         def unused = Identifier.executeQuery("select i.id from Identifier as i where not exists (select c from Combo as c where c.toComponent = i)")
-
         def rem_unused = expungeAll(unused, j)
 
         log.debug("Removed ${rem_unused.num_expunged} unused identifiers")
@@ -432,7 +418,6 @@ class CleanupService {
             }
           }
         }
-
         def rem_dupes = expungeAll(dupes_to_remove, j)
 
         log.debug("Removed ${rem_dupes.num_expunged} linked identifiers")
@@ -740,18 +725,14 @@ class CleanupService {
         def kbc = KBComponent.get(it)
         def oid = "${kbc.class.name}:${it}"
 
-        DeleteRequest req = new DeleteRequest(grailsApplication.config.gokb?.es?.index)
+        DeleteRequest req = new DeleteRequest(grailsApplication.config.gokb?.es?.indices.values())
               .type('component')
               .id(oid)
-
         def es_response = esclient.delete(req)
       }
-
       result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)",[component:batch])
-
       j?.setProgress(result.num_expunged, result.num_requested)
     }
-
     result
   }
 }
