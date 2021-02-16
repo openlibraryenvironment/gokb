@@ -113,7 +113,8 @@ class Package extends KBComponent {
           if (dupes?.size() > 0 && dupes.any { it != obj }) {
             return ['notUnique']
           }
-        } else {
+        }
+        else {
           return ['notNull']
         }
       }
@@ -199,7 +200,8 @@ class Package extends KBComponent {
             and tipp.status = ?
             and title.status = ?'''
           , [this, refdata_current, refdata_current], [max: max, offset: offset]);
-      } else {
+      }
+      else {
         all_titles = TitleInstance.executeQuery('''select distinct title
           from TitleInstance as title,
             Combo as pkgCombo,
@@ -273,7 +275,8 @@ class Package extends KBComponent {
             and rr.componentToReview = title
             and rr.status = ?'''
           , [this, refdata_current, refdata_open]);
-      } else {
+      }
+      else {
         all_rrs = ReviewRequest.executeQuery('''select distinct rr
           from ReviewRequest as rr,
             TitleInstance as title,
@@ -288,7 +291,8 @@ class Package extends KBComponent {
             and rr.status = ?'''
           , [this, refdata_open]);
       }
-    } else {
+    }
+    else {
       if (onlyCurrent) {
         all_rrs = ReviewRequest.executeQuery('''select rr
           from ReviewRequest as rr,
@@ -303,7 +307,8 @@ class Package extends KBComponent {
             and titleCombo.fromComponent=title
             and rr.componentToReview = title'''
           , [this, refdata_current]);
-      } else {
+      }
+      else {
         all_rrs = ReviewRequest.executeQuery('''select rr
           from ReviewRequest as rr,
             TitleInstance as title,
@@ -617,11 +622,14 @@ select tipp.id,
         changes.each {
           if (it.isDeleted()) {
             result.add([it, it.lastUpdated, 'Deleted (status)'])
-          } else if (it.isRetired()) {
+          }
+          else if (it.isRetired()) {
             result.add([it, it.lastUpdated, it.accessEndDate ? "Retired (${it.accessEndDate})" : 'Retired (status)'])
-          } else if (it.lastUpdated <= it.dateCreated + 1.minute) {
+          }
+          else if (it.lastUpdated <= it.dateCreated + 1.minute) {
             result.add([it, it.dateCreated, it.accessStartDate ? "Added (${it.accessStartDate})" : 'Newly Added'])
-          } else {
+          }
+          else {
             result.add([it, it.lastUpdated, 'Updated'])
           }
         }
@@ -661,69 +669,18 @@ select tipp.id,
       result.errors.name = [[message: messageService.resolveCode('crossRef.package.error.name', null, locale), baddata: packageHeaderDTO.name]]
     }
 
-    def ids_list = packageHeaderDTO.identifiers ?: packageHeaderDTO.ids
-    def id_errors = []
-
-    ids_list?.each { idobj ->
-      def id_def = [:]
-      def ns_obj = null
-
-      if (idobj instanceof Map) {
-        def id_ns = idobj.type ?: (idobj.namespace ?: null)
-
-        id_def.value = idobj.value
-
-        if (id_ns instanceof String) {
-          log.debug("Default namespace handling for ${id_ns}..")
-          ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
-        }
-        else if (id_ns) {
-          log.debug("Handling namespace def ${id_ns}")
-          ns_obj = IdentifierNamespace.get(id_ns)
-        }
-
-        if (!ns_obj) {
-          id_errors.add([message: messageService.resolveCode('default.not.found.message', ["Namespace", id_ns], locale)])
-        }
-        else {
-          id_def.type = ns_obj.value
-        }
-      }
-      else if (idobj instanceof Integer) {
-        Identifier the_id = Identifier.get(id_inc)
-
-        if (!the_id) {
-          id_errors.add([message: messageService.resolveCode('crossRef.error.lookup', ["Identifier", "ID"], locale), baddata: idobj])
-          result.valid = false
-        }
-      }
-      else {
-        log.warn("Missing information in id object ${idobj}")
-        id_errors.add([message: messageService.resolveCode('crossRef.error.format', ["Identifiers"], locale), baddata: idobj])
-        result.valid = false
-      }
-
-      if (ns_obj && id_def.size() > 0) {
-        if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
-          if (ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern)) {
-            log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
-            id_errors.add([message: messageService.resolveCode('identifier.validate.error', [ns_obj.value, id_def.value], locale), baddata: idobj])
-            result.valid = false
-          }
-          else {
-            log.debug("New identifier ..")
-          }
-        }
-        else {
-          log.debug("Found existing identifier ..")
-        }
+    String idJsonKey = 'ids'
+    def ids_list = packageHeaderDTO[idJsonKey]
+    if (!ids_list) {
+      idJsonKey = 'identifiers'
+      ids_list = packageHeaderDTO[idJsonKey]
+    }
+    if (ids_list) {
+      def id_errors = Identifier.validateDTOs(ids_list, locale)
+      if (id_errors.size() > 0) {
+        result.errors.put(idJsonKey, id_errors)
       }
     }
-
-    if (id_errors.size() > 0) {
-      result.errors.ids = id_errors
-    }
-
     if (result.valid) {
       def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
       def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
