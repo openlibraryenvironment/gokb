@@ -376,6 +376,9 @@ class ESSearchService{
           labelQuery.should(QueryBuilders.termQuery('uuid', oid).boost(10))
         }
       }
+      else {
+        labelQuery.should(QueryBuilders.termQuery('uuid', qpars.q).boost(10))
+      }
 
       labelQuery.should(QueryBuilders.matchQuery('name', qpars.label).boost(2))
       labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label).boost(1.3))
@@ -391,7 +394,7 @@ class ESSearchService{
       query.must(QueryBuilders.matchQuery('altname', qpars.altname))
     }
     else if (qpars.suggest) {
-      query.must(QueryBuilders.matchQuery('suggest', qpars.suggest))
+      query.must(QueryBuilders.matchQuery('suggest', qpars.suggest).boost(0.6))
     }
   }
 
@@ -407,10 +410,13 @@ class ESSearchService{
           genericQuery.should(QueryBuilders.termQuery('uuid', oid).boost(10))
         }
       }
+      else {
+        genericQuery.should(QueryBuilders.termQuery('uuid', qpars.q).boost(10))
+      }
 
       genericQuery.should(QueryBuilders.matchQuery('name', qpars.q).boost(2))
       genericQuery.should(QueryBuilders.matchQuery('altname', qpars.q).boost(1.3))
-      genericQuery.should(QueryBuilders.matchQuery('suggest', qpars.q))
+      genericQuery.should(QueryBuilders.matchQuery('suggest', qpars.q).boost(0.6))
       genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
       genericQuery.minimumNumberShouldMatch(1)
 
