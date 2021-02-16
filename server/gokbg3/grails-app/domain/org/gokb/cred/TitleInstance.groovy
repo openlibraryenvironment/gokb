@@ -641,7 +641,7 @@ class TitleInstance extends KBComponent {
 
       if (titleDTO.publishedFrom && !startDate) {
         result.valid = false
-        valErrors.put('publishedFrom': [message: "Unable to parse", baddata: titleDTO.remove('publishedFrom')])
+        valErrors.put('publishedFrom', [message: "Unable to parse", baddata: titleDTO.remove('publishedFrom')])
       }
 
       if (titleDTO.publishedTo && !endDate) {
@@ -696,13 +696,13 @@ class TitleInstance extends KBComponent {
           Identifier the_id = Identifier.get(idobj)
 
           if (!the_id) {
-            id_errors.put(idobj.type,[message: "unable to lookup", baddata: idobj.value])
+            id_errors.put(idobj.type, [message: "unable to lookup", baddata: idobj.value])
             to_remove.add(idobj)
           }
         }
         else {
           log.warn("Missing information in id object ${idobj}")
-          id_errors.put(idobj.type,[message: "missing information", baddata: idobj.value])
+          id_errors.put(idobj.type, [message: "missing information", baddata: idobj.value])
           to_remove.add(idobj)
         }
 
@@ -710,7 +710,7 @@ class TitleInstance extends KBComponent {
           if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
             if (ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern)) {
               log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
-              id_errors.put(idobj.type,[message: "validation failed", baddata: idobj.value])
+              id_errors.put(idobj.type, [message: "validation failed", baddata: idobj.value])
               to_remove.add(idobj)
             }
             else {
@@ -726,7 +726,7 @@ class TitleInstance extends KBComponent {
       if (id_errors.size() > 0) {
         valErrors.put(idJsonKey, id_errors)
         if (titleDTO[idJsonKey].size() == 0) {
-          valErrors.put(message: 'no valid identifiers left')
+          valErrors.put(idobj.type, [message: 'no valid identifiers left'])
         }
       }
     }
