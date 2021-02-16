@@ -458,6 +458,7 @@ class PackageService {
     }
   }
 
+  @Transactional
   def compareLists(listOne, listTwo, def full = true, Date date = null, Job j = null) {
     def result = [:]
     def sdf = new SimpleDateFormat("yyyy-MM-dd")
@@ -474,6 +475,7 @@ class PackageService {
     def tnum2 = 0
     def titlesOne = [:]
     def titlesTwo = [:]
+    def currentPkgNum = 0
 
     if (date) {
       if (date.before(new Date())) {
@@ -494,6 +496,7 @@ class PackageService {
 
       listOne.each { p1 ->
         def pkg = Package.get(genericOIDService.oidToId(p1))
+        currentPkgNum++
 
         if (pkg) {
           int total = TitleInstancePackagePlatform.executeQuery("select count(*) from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])[0]
@@ -530,6 +533,10 @@ class PackageService {
             }
             cleanUpGorm()
           }
+
+          if (j) {
+            j.setProgress(currentPkgNum, (listOne.size() + listTwo.size()))
+          }
         }
         else {
           log.debug("Unable to resolve Package with id ${p1}")
@@ -542,6 +549,7 @@ class PackageService {
 
       listTwo.each { p2 ->
         def pkg = Package.get(genericOIDService.oidToId(p2))
+        currentPkgNum++
 
         if (pkg) {
           int total = TitleInstancePackagePlatform.executeQuery("select count(*) from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])[0]
@@ -585,11 +593,18 @@ class PackageService {
               }
               currentOffset++
             }
-            cleanUpGorm()
+          }
+
+          cleanUpGorm()
+
+          if (j) {
+            j.setProgress(currentPkgNum, (listOne.size() + listTwo.size()))
           }
         }
       }
     }
+
+    log.debug("Finished collecting TIPPs. Starting comparison")
 
     titlesOne.each { id, val ->
       if (!titlesTwo[id]) {

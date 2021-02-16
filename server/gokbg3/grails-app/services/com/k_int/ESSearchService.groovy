@@ -382,7 +382,7 @@ class ESSearchService{
 
       labelQuery.should(QueryBuilders.matchQuery('name', qpars.label).boost(2))
       labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label).boost(1.3))
-      labelQuery.should(QueryBuilders.matchQuery('suggest', qpars.label))
+      labelQuery.should(QueryBuilders.matchQuery('suggest', qpars.label).boost(0.6))
       labelQuery.minimumNumberShouldMatch(1)
 
       query.must(labelQuery)

@@ -60,12 +60,28 @@ class PackagesController {
   def compareContents() {
     log.debug("compareContents")
     def sdf = new SimpleDateFormat("yyyy-MM-dd")
-    def result = [:]
+    def result = [params: params, result: 'OK']
+    def user = springSecurityService.currentUser
 
     if (params.one && params.two) {
       def date = params.date ? sdf.parse(params.date) : null
       def full = params.full ? params.boolean('full') : false
-      result = packageService.compareLists(params.list('one'),params.list('two'),full,date)
+      def listOne = params.list('one')
+      def listTwo = params.list('two')
+
+      if (params.wait) {
+        result = packageService.compareLists(listOne, listTwo, full, date)
+      }
+      else {
+        def background_job = concurrencyManagerService.createJob { Job job ->
+          packageService.compareLists(listOne, listTwo, full, date, job)
+        }.startOrQueue()
+
+        background_job.description = "Package comparison"
+        background_job.type = RefdataCategory.lookup('Job.Type', 'PackageComparison')
+        background_job.ownerId = user.id
+        result.job_id = background_job.uuid
+      }
     }
     else {
       log.debug("Missing info..")
