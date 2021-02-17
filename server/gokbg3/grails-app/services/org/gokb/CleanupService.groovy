@@ -1,6 +1,7 @@
 package org.gokb
 
 import com.k_int.ConcurrencyManagerService.Job
+import com.k_int.ESSearchService
 import grails.gorm.DetachedCriteria
 import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.delete.DeleteRequest
@@ -120,8 +121,7 @@ class CleanupService {
           def c_id = "${component.class.name}:${component.id}"
           def expunge_result = component.expunge();
           log.debug("${expunge_result}");
-
-          DeleteRequest req = Requests.deleteRequest(grailsApplication.config.gokb?.es?.indices?.values())
+          DeleteRequest req = Requests.deleteRequest(ESSearchService.indicesPerType.get(kbc['type']))
                 .type('component')
                 .id(c_id)
           def es_response = esclient.delete(req)
@@ -724,8 +724,7 @@ class CleanupService {
       batch.each {
         def kbc = KBComponent.get(it)
         def oid = "${kbc.class.name}:${it}"
-
-        DeleteRequest req = new DeleteRequest(grailsApplication.config.gokb?.es?.indices.values())
+        DeleteRequest req = new DeleteRequest(ESSearchService.indicesPerType.get(kbc['type']))
               .type('component')
               .id(oid)
         def es_response = esclient.delete(req)

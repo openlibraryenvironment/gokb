@@ -1,6 +1,6 @@
 package org.gokb
 
-
+import com.k_int.ESSearchService
 import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.bulk.BulkRequestBuilder
 import org.gokb.FTControl
@@ -343,7 +343,7 @@ class FTUpdateService {
           result.publisherName = kbc.publisherName
         }
         if (kbc.dateFirstOnline) result.dateFirstOnline = dateFormatService.formatIsoTimestamp(kbc.dateFirstOnline)
-        if (kbc.dateFirstInPrint) result.dateFristInPrint = edateFormatService.formatIsoTimestamp(kbc.dateFirstInPrint)
+        if (kbc.dateFirstInPrint) result.dateFristInPrint = dateFormatService.formatIsoTimestamp(kbc.dateFirstInPrint)
         result.componentType = kbc.class.simpleName
         result.tippTitleMedium = kbc.title ? kbc.title.medium : ""
         if (kbc.accessStartDate) result.accessStartDate = dateFormatService.formatIsoTimestamp(kbc.accessStartDate)
@@ -471,16 +471,14 @@ class FTUpdateService {
           running = false
           break
         }
-
         Object r = domain.get(r_id)
         log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
         def idx_record = recgen_closure(r)
-        def es_indices = grailsApplication.config.gokb?.es?.indices.values()
+        def es_index = ESSearchService.indicesPerType.get(idx_record['componentType'])
         if (idx_record != null) {
           def recid = idx_record['_id'].toString()
           idx_record.remove('_id')
-
-          bulkRequest.add(esclient.prepareIndex(es_indices, 'component', recid).setSource(idx_record))
+          bulkRequest.add(esclient.prepareIndex(es_index, 'component', recid).setSource(idx_record))
         }
         if (r.lastUpdated?.getTime() > highest_timestamp) {
           highest_timestamp = r.lastUpdated?.getTime()

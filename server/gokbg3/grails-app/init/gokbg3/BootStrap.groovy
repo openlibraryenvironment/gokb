@@ -1144,7 +1144,7 @@ class BootStrap {
       CreateIndexRequestBuilder createIndexRequestBuilder = adminClient.prepareCreate(indexName)
 
       log.debug("Adding index settings..")
-      createIndexRequestBuilder.setSettings(ESWrapperService.getSettings())
+      createIndexRequestBuilder.setSettings(ESWrapperService.getSettings().get("settings"))
       log.debug("Adding index mappings..")
       createIndexRequestBuilder.addMapping("component", ESWrapperService.getMapping())
 

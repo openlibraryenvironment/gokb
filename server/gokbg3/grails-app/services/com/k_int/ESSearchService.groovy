@@ -87,7 +87,7 @@ class ESSearchService{
       ]
   ]
 
-  Map indicesPerType = [
+  static Map indicesPerType = [
       "JournalInstance" : "gokbtitles",
       "DatabaseInstance" : "gokbtitles",
       "OtherInstance" : "gokbtitles",
@@ -128,12 +128,12 @@ class ESSearchService{
         }
 
         def es_indices = grailsApplication.config.gokb?.es?.indices?.values()
-        log.debug("start to build srb with indices: ${es_indices.join(",")} query: ${query_str}");
+        log.debug("start to build srb with indices: ${es_indices.join(", ")} query: ${query_str}");
 
         def search_results = null
 
         try {
-          SearchRequestBuilder srb = esclient.prepareSearch(es_indices)
+          SearchRequestBuilder srb = esclient.prepareSearch(es_indices as String[])
           log.debug("srb built: ${srb} sort=${params.sort}")
           if (params.sort) {
             SortOrder order = SortOrder.ASC
@@ -155,7 +155,7 @@ class ESSearchService{
           // log.debug("search results: " + search_results)
         }
         catch (Exception ex) {
-          log.error("Error processing ${es_index} ${query_str}",ex);
+          log.error("Error processing ${es_indices.join(", ")} ${query_str}",ex);
         }
 
         //TODO: change this part to represent what we really need if this is not it, see the final part of this method where hits are done
@@ -482,7 +482,7 @@ class ESSearchService{
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       searchSourceBuilder.query(scrollQuery)
       searchSourceBuilder.size(scrollSize)
-      SearchRequest searchRequest = new SearchRequest(usedComponentTypes.values())
+      SearchRequest searchRequest = new SearchRequest(usedComponentTypes.values() as String[])
       searchRequest.scroll("1m")
       // ... set scroll interval to 1 minute
       searchRequest.source(searchSourceBuilder)
@@ -513,7 +513,7 @@ class ESSearchService{
   }
 
   private Map getUsedComponentTypes(params, LinkedHashMap<Object, Object> result){
-    [:] usedComponentTypes
+    Map usedComponentTypes = new HashMap()
     if (!params.component_type){
       result.result = "ERROR"
       result.message = "Error. Needs 'component_type' specification."
@@ -527,8 +527,8 @@ class ESSearchService{
         usedComponentTypes."${componentType}" = null
       }
     }
-    for (def ct in usedComponentTypes){
-      if (ct in indicesPerType.keys()){
+    for (def ct in usedComponentTypes.keySet()){
+      if (ct in indicesPerType.keySet()){
         usedComponentTypes."${ct}" = indicesPerType.get(ct)
       }
       else{
@@ -610,7 +610,7 @@ class ESSearchService{
         Client esclient = ESWrapperService.getClient()
         SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
 
-        es_request.setIndices(grailsApplication.config.gokb.es.indices)
+        es_request.setIndices(grailsApplication.config.gokb.es.indices.values() as String[])
         es_request.setTypes(grailsApplication.config.globalSearch.types)
         es_request.setQuery(exactQuery)
 

@@ -44,7 +44,7 @@ class GlobalSearchController {
         log.debug("Using indices ${grailsApplication.config.gokb?.es?.indices?.values().join(", ")}")
 
         SearchRequestBuilder es_request = esclient.prepareSearch("globalSearch")
-            .setIndices(grailsApplication.config.gokb?.es?.indices?.values())
+            .setIndices(grailsApplication.config.gokb?.es?.indices?.values() as String[])
             .setTypes(grailsApplication.config.globalSearch.types ?: "component")
             .setSize(result.max)
             .setFrom(result.offset)
