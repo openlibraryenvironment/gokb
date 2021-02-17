@@ -13,10 +13,6 @@ import grails.converters.JSON
 import grails.core.GrailsClass
 import groovyx.net.http.URIBuilder
 
-import java.text.SimpleDateFormat
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 
@@ -28,6 +24,7 @@ import org.hibernate.Hibernate
 @Transactional(readOnly = true)
 class PackagesController {
 
+  def dateFormatService
   def genericOIDService
   def springSecurityService
   def concurrencyManagerService
@@ -64,7 +61,7 @@ class PackagesController {
     def user = springSecurityService.currentUser
 
     if (params.one && params.two) {
-      def date = params.date ? sdf.parse(params.date) : null
+      def date = params.date ? dateFormatService.parseDate(params.date)  : null
       def full = params.full ? params.boolean('full') : false
       def listOne = params.list('one')
       def listTwo = params.list('two')

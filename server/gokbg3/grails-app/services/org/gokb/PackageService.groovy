@@ -3,7 +3,6 @@ package org.gokb
 import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ClassUtils
 import grails.gorm.transactions.Transactional
-import java.text.SimpleDateFormat
 
 import grails.io.IOUtils
 import groovy.util.logging.Slf4j
@@ -461,7 +460,6 @@ class PackageService {
   @Transactional
   def compareLists(listOne, listTwo, def full = true, Date date = null, Job j = null) {
     def result = [:]
-    def sdf = new SimpleDateFormat("yyyy-MM-dd")
     def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
     def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
