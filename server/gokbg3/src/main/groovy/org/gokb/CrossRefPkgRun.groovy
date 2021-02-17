@@ -47,6 +47,7 @@ class CrossRefPkgRun {
   def rr_deleted
   def rr_nonCurrent
   def rr_TIPPs_retired
+  def rr_TIPPs_invalid
   def status_ip
 
   public CrossRefPkgRun(JSONObject json, Boolean add, Boolean full, Boolean isAutoUpdate, Locale loc, User u) {
@@ -72,6 +73,7 @@ class CrossRefPkgRun {
       rr_deleted = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Status Deleted')
       rr_nonCurrent = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent')
       rr_TIPPs_retired = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
+      rr_TIPPs_invalid = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs')
       status_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
 
       springSecurityService.reauthenticate(user.username)
@@ -150,7 +152,7 @@ class CrossRefPkgRun {
         }
         else {
           log.error("No package")
-          currentTippError.put(package:['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale), baddata: json_tipp.package])
+          currentTippError.put(package: ['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale), baddata: json_tipp.package])
           invalidTipps << json_tipp
         }
 
@@ -178,9 +180,23 @@ class CrossRefPkgRun {
           }
         }
 
-        if (currentTippError.size() > 1) {
+
+        if (invalidTipps.contains(json_tipp)) {
+          reviewRequestService.raise(
+            pkg,
+            "TIPP rejected",
+            "TIPP ${json_tipp.name ?: json_tipp.title.name} coudn't be imported. ${(currentTippError as JSON).toString()}",
+            user,
+            null,
+            null,
+            rr_TIPPs_invalid
+          )
+          job?.message("skipped invalid title ${(currentTippError as JSON).toString()}")
+        }
+        else if (currentTippError.size() > 1) {
           errors.tipps.add(currentTippError)
-          job?.message((currentTippError as JSON).toString())
+          String msg = "ignored data ${(currentTippError as JSON).toString()}"
+          job?.message(msg)
         }
 
         if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
@@ -378,8 +394,7 @@ class CrossRefPkgRun {
     if (title_validation && title_validation.errors?.size() > 0) {
       titleErrorMap.putAll(title_validation.errors)
       if (title_validation && !title_validation.valid) {
-        log.error("invalid title data $tippJson.title: $preval_error")
-        job?.message("Skipping invalid title $tippJson.title.name")
+        log.error("invalid title data $tippJson.title: ${title_validation.errors}")
         invalidTipps << tippJson
         return titleErrorMap
       }
@@ -434,8 +449,8 @@ class CrossRefPkgRun {
           def he_result = titleHistoryService.processHistoryEvents(ti, titleObj, title_class_name, user, fullsync, locale)
           if (he_result.errors) {
             currentTippError.put(historyEvents: [message: messageService.resolveCode('crossRef.package.tipps.error.title.history', null, locale),
-                       baddata: tippJson.title,
-                       errors : he_result.errors])
+                                                 baddata: tippJson.title,
+                                                 errors : he_result.errors])
           }
         }
 
@@ -461,10 +476,9 @@ class CrossRefPkgRun {
     catch (MultipleComponentsMatchedException mcme) {
       log.error("Handling MultipleComponentsMatchedException")
       invalidTipps << tippJson
-      titleErrorMap.add([
-        name: [
-          message: messageService.resolveCode('crossRef.title.error.multipleMatches', [tippJson?.title?.name, mcme.matched_ids], locale),
-          baddata: tippJson?.title?.name]])
+      titleErrorMap.put('name', [
+        message: messageService.resolveCode('crossRef.title.error.multipleMatches', [tippJson?.title?.name, mcme.matched_ids], locale),
+        baddata: tippJson?.title?.name])
       return titleErrorMap
     }
     catch (ValidationException ve) {
@@ -477,10 +491,9 @@ class CrossRefPkgRun {
     if (!invalidTipps.contains(tippJson) && tippJson.title.internalId == null) {
       invalidTipps << tippJson
       log.error("Failed to locate a title for ${tippJson?.title} when attempting to create TIPP")
-      titleErrorMap.puAll([
-        name: [
-          message: messageService.resolveCode('crossRef.package.tipps.error.title', [tippJson.title.name], locale),
-          baddata: tippJson?.title?.name]])
+      titleErrorMap.put('name', [
+        message: messageService.resolveCode('crossRef.package.tipps.error.title', [tippJson.title.name], locale),
+        baddata: tippJson?.title?.name])
     }
     return titleErrorMap
   }
@@ -501,37 +514,31 @@ class CrossRefPkgRun {
       if (valid_plt && !valid_plt.valid) {
         log.error("platform ${tippPlt} invalid!")
         invalidTipps << tippJson
-        pltError = [
-          message: messageService.resolveCode('crossRef.package.tipps.error.platform.preValidation', [tippPlt?.name], locale),
-          baddata: tippPlt,
-          errors : valid_plt.errors
-        ]
         return valid_plt.errors
       }
       else {
+        if (valid_plt.errors.size() > 0) {
+          pltError.putAll(valid_plt.errors)
+        }
         try {
           pl = Platform.upsertDTO(tippPlt, user)
           if (pl) {
             pltCache[tippPlt.name] = pl
-//            pl.save()
             pl.merge(flush: true)
             componentUpdateService.ensureCoreData(pl, tippPlt, fullsync, user)
           }
           else {
             log.error("Could not find/create ${tippPlt}")
             invalidTipps << tippJson
-            pltError=['message': messageService.resolveCode('crossRef.package.tipps.error.platform', [tippPlt.name], locale), baddata: tippPlt]
+            pltError.putAll([
+              message: messageService.resolveCode('crossRef.package.tipps.error.platform', [tippPlt.name], locale),
+              baddata: tippPlt])
             return pltError
           }
         }
         catch (grails.validation.ValidationException ve) {
           log.error("platform ValidationException attempting to cross reference TIPP $tippJson", ve)
           invalidTipps << tippJson
-          pltError =[
-            message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tippPlt], request_locale),
-            baddata: tippPlt,
-            errors : [messageService.processValidationErrors(ve.errors, locale)]
-          ]
           return messageService.processValidationErrors(ve.errors, locale)
         }
       }
@@ -547,11 +554,6 @@ class CrossRefPkgRun {
     if (validation_result && !validation_result.valid) {
       invalidTipps << tippJson
       log.debug("TIPP Validation failed on ${tippJson.name ?: tippJson.title.name}")
-      def tipp_error = [
-        message: messageService.resolveCode('crossRef.package.tipps.error.preValidation', [tippJson.title.name, validation_result.errors], locale),
-        baddata: tippJson,
-        errors : validation_result.errors
-      ]
       return validation_result.errors
     }
     else {
