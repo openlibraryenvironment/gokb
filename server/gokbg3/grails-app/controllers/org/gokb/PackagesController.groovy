@@ -56,7 +56,6 @@ class PackagesController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def compareContents() {
     log.debug("compareContents")
-    def sdf = new SimpleDateFormat("yyyy-MM-dd")
     def result = [params: params, result: 'OK']
     def user = springSecurityService.currentUser
 
