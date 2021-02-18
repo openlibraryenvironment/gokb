@@ -135,11 +135,11 @@
 
       </sec:ifLoggedIn>
       <sec:ifNotLoggedIn>
-        <li class="${params?.controller == "home" && params?.action == 'home' ? 'active' : ''}"><g:link controller="home"><i class="fa fa-home fa-fw"></i> Home</g:link></li>
-        <li class="${params?.controller == "register" ? 'active' : ''}"><g:link controller="register"><i class="fa fa-edit fa-fw"></i> Register</g:link></li>
+        <li class="${params?.controller == "public" && params?.action == 'public' ? 'active' : ''}"><g:link controller="public"><i class="fa fa-home fa-fw"></i> GOKb</g:link></li>
+        <li class="${params?.controller == "register" ? 'active' : ''}"><g:link controller="register" action="forgotPassword"><i class="fa fa-edit fa-fw"></i> Forgot Password</g:link></li>
         <li class="${params?.controller == "login" ? 'active' : ''}"><g:link controller="login"><i class="fa fa-sign-in fa-fw"></i> Sign in</g:link></li>
       </sec:ifNotLoggedIn>
-      <li><a href="https://github.com/openlibraryenvironment/gokb/wiki/API"><i class="fa fa-cogs fa-fw"></i> API Documentation</a></li>
+
     </ul>
   </div>
       <!-- /.sidebar-collapse -->

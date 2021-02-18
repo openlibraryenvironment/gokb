@@ -53,6 +53,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 	static final String VERIFY_REGISTRATION_TEMPLATE = "/register/_verifyRegistrationMail"
 
   @Override
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def register(RegisterCommand registerCommand) {
 
     def secResult
@@ -112,6 +113,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     }
   }
 
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def verifyRegistration() {
 
     String token = params.t

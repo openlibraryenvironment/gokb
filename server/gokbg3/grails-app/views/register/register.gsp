@@ -6,7 +6,7 @@
 
 <body>
 
-  <div class="container">
+  %{--<div class="container">
     <div class="row">
       <div class='col-md-12'>
         &nbsp;
@@ -117,7 +117,7 @@
         </g:else>
       </div>
     </div>
-  </div>
+  </div>--}%
 
 
 </body>

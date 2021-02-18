@@ -43,7 +43,7 @@
          </button>
          <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
          <a class="navbar-brand" href="${grailsApplication.config.server.contextPath ?: ''}/" style="font-weight:bold;">
-          <g:message code="gokb.appname" default="GOKb" />
+             <g:message code="gokb.appname" default="GOKb"/> v<g:meta name="info.app.version" />
           <g:if test="${grailsApplication.config.gokb.instance?.description}">
             – ${grailsApplication.config.gokb.instance?.description}
           </g:if>
@@ -51,15 +51,15 @@
        </div>
 
        <div class="nav navbar-nav navbar-right">
-          <g:if test="${grailsApplication.config.gokb.blogUrl}">
-            <li><a  style="font-weight:bold;" href ="${grailsApplication.config.gokb.blogUrl}">About GOKb</a></li>
+          <g:if test="${grailsApplication.config.gokb.ygorUrl}">
+            <li><a  style="font-weight:bold;" href ="${grailsApplication.config.gokb.ygorUrl}/ygor">Ygor</a></li>
           </g:if>
-          <li><a href="https://github.com/openlibraryenvironment/gokb/wiki/API"  style="font-weight:bold;">API Documentation</a></li>
+
           <li><span style="width:15px"></span></li>
           <li><g:link controller="home" action="index" style="font-weight:bold;">Login</g:link></li>
-          <g:if test="${grailsApplication.config.gokb.uiUrl}">
+          %{--<g:if test="${grailsApplication.config.gokb.uiUrl}">
             <li><a style="font-weight:bold;" href ="${grailsApplication.config.gokb.uiUrl}">GOKb Client</a></li>
-          </g:if>
+          </g:if>--}%
        </div>
 
      </div>
