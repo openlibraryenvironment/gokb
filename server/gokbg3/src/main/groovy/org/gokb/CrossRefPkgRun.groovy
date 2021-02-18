@@ -180,7 +180,6 @@ class CrossRefPkgRun {
           }
         }
 
-
         if (invalidTipps.contains(json_tipp)) {
           reviewRequestService.raise(
             pkg,
@@ -188,7 +187,7 @@ class CrossRefPkgRun {
             "TIPP ${json_tipp.name ?: json_tipp.title.name} coudn't be imported. ${(currentTippError as JSON).toString()}",
             user,
             null,
-            null,
+            (currentTippError as JSON).toString(),
             rr_TIPPs_invalid
           )
           job?.message("skipped invalid title ${(currentTippError as JSON).toString()}")
