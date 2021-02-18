@@ -766,7 +766,7 @@ class TitleInstance extends KBComponent {
     def type = null
 
     if (titleDTO.type) {
-      switch (titleDTO.type.tolowerCase()) {
+      switch (titleDTO.type.toLowerCase()) {
         case "serial":
         case "journal":
           type = "org.gokb.cred.JournalInstance"

@@ -152,7 +152,7 @@ class CrossRefPkgRun {
         }
         else {
           log.error("No package")
-          currentTippError.put(package: ['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale), baddata: json_tipp.package])
+          currentTippError.put('package', ['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale), baddata: json_tipp.package])
           invalidTipps << json_tipp
         }
 
@@ -448,9 +448,11 @@ class CrossRefPkgRun {
         if (titleObj.historyEvents?.size() > 0) {
           def he_result = titleHistoryService.processHistoryEvents(ti, titleObj, title_class_name, user, fullsync, locale)
           if (he_result.errors) {
-            currentTippError.put(historyEvents: [message: messageService.resolveCode('crossRef.package.tipps.error.title.history', null, locale),
-                                                 baddata: tippJson.title,
-                                                 errors : he_result.errors])
+            currentTippError.put('historyEvents', [
+              message: messageService.resolveCode('crossRef.package.tipps.error.title.history', null, locale),
+              baddata: tippJson.title,
+              errors : he_result.errors
+            ])
           }
         }
 
