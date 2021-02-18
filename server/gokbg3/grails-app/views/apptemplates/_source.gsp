@@ -12,12 +12,14 @@
 				&nbsp;<a href="${d.url}" target="new">Follow Link</a>
 			</g:if>
 		</dd>
+
 		<dt>
 			<g:annotatedLabel owner="${d}" property="frequency">Frequency</g:annotatedLabel>
 		</dt>
 		<dd>
-			<g:xEditable class="ipe" owner="${d}" field="frequency" />
+			<g:xEditableRefData owner="${d}" field="frequency" config='Source.Frequency' />
 		</dd>
+
 		<dt>
 			<g:annotatedLabel owner="${d}" property="defaultSupplyMethod">Default Supply Method</g:annotatedLabel>
 		</dt>

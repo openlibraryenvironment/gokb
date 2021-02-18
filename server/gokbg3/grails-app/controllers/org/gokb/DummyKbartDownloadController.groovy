@@ -61,7 +61,9 @@ class DummyKbartDownloadController {
 
     private String row() {
       StringBuilder line = new StringBuilder()
-      def lineData = ThreadLocalRandom.current().nextBoolean()?generateBook():generateSerial()
+      def lineData = ThreadLocalRandom.current().nextBoolean()
+          ? ThreadLocalRandom.current().nextBoolean() ? generateBook() : generateSerial()
+          : ThreadLocalRandom.current().nextBoolean() ? generateDatabase() : generateOther()
       boolean first = true
       lineData.each { column, value ->
         if (!first) {
@@ -106,8 +108,9 @@ class DummyKbartDownloadController {
       record.access_type = accessType()
       record.zdb_id = ""// record.zdb_id = "${ThreadLocalRandom.current().nextLong(1000000000)}-${["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "x", "X"][ThreadLocalRandom.current().nextInt(12)]}"
       record.last_changed = timeline[4].format(dtf)
-      record.access_start_date = timeline[2].format(dtf)
-      record.access_end_date = timeline[3].format(dtf)
+      record.access_start_date = (timeline[2] <= timeline[3] ? timeline[2] : timeline[3]).format(dtf)
+      record.access_end_date = (timeline[2] > timeline[3] ? timeline[2] : timeline[3]).format(dtf)
+      record.medium = ""
       record.listprice_eur = price(100)
       record.listprice_gbp = price(80)
       record.listprice_usd = price(120)
@@ -122,10 +125,10 @@ class DummyKbartDownloadController {
       record.publication_title = "dummy serial title $randomCode"
       record.print_identifier = issn()
       record.online_identifier = issn()
-      record.date_first_issue_online =  timeline[2].isBefore(timeline[3])?timeline[2].format(plain):timeline[3].format(plain)
+      record.date_first_issue_online = timeline[2].isBefore(timeline[3]) ? timeline[2].format(plain) : timeline[3].format(plain)
       record.num_first_vol_online = ThreadLocalRandom.current().nextInt(100)
       record.num_first_issue_online = ThreadLocalRandom.current().nextInt(100)
-      record.date_last_issue_online = timeline[2].isBefore(timeline[3])?timeline[3].format(plain):timeline[2].format(plain)
+      record.date_last_issue_online = timeline[2].isBefore(timeline[3]) ? timeline[3].format(plain) : timeline[2].format(plain)
       record.num_last_vol_online = ThreadLocalRandom.current().nextInt(100, 200)
       record.num_last_issue_online = ThreadLocalRandom.current().nextInt(100, 200)
       record.title_url = "http://some.host.de/$randomCode"
@@ -146,8 +149,91 @@ class DummyKbartDownloadController {
       record.access_type = accessType()
       record.zdb_id = record.zdb_id = "${ThreadLocalRandom.current().nextLong(1000000000)}-${["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "x", "X"][ThreadLocalRandom.current().nextInt(12)]}"
       record.last_changed = timeline[4].format(dtf)
-      record.access_start_date = timeline[2].format(dtf)
-      record.access_end_date = timeline[3].format(dtf)
+      record.access_start_date = (timeline[2] <= timeline[3] ? timeline[2] : timeline[3]).format(dtf)
+      record.access_end_date = (timeline[2] > timeline[3] ? timeline[2] : timeline[3]).format(dtf)
+      record.medium = ""
+      record.listprice_eur = price(50)
+      record.listprice_gbp = price(35)
+      record.listprice_usd = price(65)
+
+      return record
+    }
+
+    private def generateOther() {
+      def record = [:]
+      def randomCode = Long.toHexString(ThreadLocalRandom.current().nextLong())
+      LocalDate[] timeline = dateSequence(5)
+      record.publication_title = "dummy other title $randomCode"
+      record.print_identifier = issn()
+      record.online_identifier = issn()
+      record.date_first_issue_online = timeline[2].isBefore(timeline[3]) ? timeline[2].format(plain) : timeline[3].format(plain)
+      record.num_first_vol_online = ThreadLocalRandom.current().nextInt(100)
+      record.num_first_issue_online = ThreadLocalRandom.current().nextInt(100)
+      record.date_last_issue_online = timeline[2].isBefore(timeline[3]) ? timeline[3].format(plain) : timeline[2].format(plain)
+      record.num_last_vol_online = ThreadLocalRandom.current().nextInt(100, 200)
+      record.num_last_issue_online = ThreadLocalRandom.current().nextInt(100, 200)
+      record.title_url = "http://some.host.de/$randomCode"
+      record.first_author = "author $randomCode"
+      record.title_id = randomCode
+      record.embargo_info = ""
+      record.coverage_Depth = depth()
+      record.notes = "notes $randomCode"
+      record.publication_type = "other"
+      record.publisher_name = "publisher name $randomCode"
+      record.date_monograph_published_print = ""//timeline[0].format(plain)
+      record.date_monograph_published_online = ""//timeline[1].format(plain)
+      record.monograph_volume = ""
+      record.monograph_edition = ""
+      record.first_editor = "first editor $randomCode"
+      record.parent_publication_title_id = ""
+      record.preceding_publication_title_id = ""
+      record.access_type = accessType()
+      record.zdb_id = record.zdb_id = "${ThreadLocalRandom.current().nextLong(1000000000)}-${["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "x", "X"][ThreadLocalRandom.current().nextInt(12)]}"
+      record.last_changed = timeline[4].format(dtf)
+      record.access_start_date = (timeline[2] <= timeline[3] ? timeline[2] : timeline[3]).format(dtf)
+      record.access_end_date = (timeline[2] > timeline[3] ? timeline[2] : timeline[3]).format(dtf)
+      record.medium = ThreadLocalRandom.current().nextInt(3) == 1?medium():""
+      record.listprice_eur = price(50)
+      record.listprice_gbp = price(35)
+      record.listprice_usd = price(65)
+
+      return record
+    }
+
+    private def generateDatabase() {
+      def record = [:]
+      def randomCode = Long.toHexString(ThreadLocalRandom.current().nextLong())
+      LocalDate[] timeline = dateSequence(5)
+      record.publication_title = "dummy database title $randomCode"
+      record.print_identifier = issn()
+      record.online_identifier = issn()
+      record.date_first_issue_online = timeline[2].isBefore(timeline[3]) ? timeline[2].format(plain) : timeline[3].format(plain)
+      record.num_first_vol_online = ThreadLocalRandom.current().nextInt(100)
+      record.num_first_issue_online = ThreadLocalRandom.current().nextInt(100)
+      record.date_last_issue_online = timeline[2].isBefore(timeline[3]) ? timeline[3].format(plain) : timeline[2].format(plain)
+      record.num_last_vol_online = ThreadLocalRandom.current().nextInt(100, 200)
+      record.num_last_issue_online = ThreadLocalRandom.current().nextInt(100, 200)
+      record.title_url = "http://some.host.de/$randomCode"
+      record.first_author = "author $randomCode"
+      record.title_id = randomCode
+      record.embargo_info = ""
+      record.coverage_Depth = depth()
+      record.notes = "notes $randomCode"
+      record.publication_type = "other"
+      record.publisher_name = "publisher name $randomCode"
+      record.date_monograph_published_print = ""//timeline[0].format(plain)
+      record.date_monograph_published_online = ""//timeline[1].format(plain)
+      record.monograph_volume = ""
+      record.monograph_edition = ""
+      record.first_editor = "first editor $randomCode"
+      record.parent_publication_title_id = ""
+      record.preceding_publication_title_id = ""
+      record.access_type = accessType()
+      record.zdb_id = record.zdb_id = "${ThreadLocalRandom.current().nextLong(1000000000)}-${["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "x", "X"][ThreadLocalRandom.current().nextInt(12)]}"
+      record.last_changed = timeline[4].format(dtf)
+      record.access_start_date = (timeline[2] <= timeline[3] ? timeline[2] : timeline[3]).format(dtf)
+      record.access_end_date = (timeline[2] > timeline[3] ? timeline[2] : timeline[3]).format(dtf)
+      record.medium = medium()
       record.listprice_eur = price(50)
       record.listprice_gbp = price(35)
       record.listprice_usd = price(65)
@@ -249,7 +335,13 @@ class DummyKbartDownloadController {
       return ["P", "F"][ThreadLocalRandom.current().nextInt(2)]
     }
 
-    private String price(int max=100) {
+    private String medium() {
+      return ["A & I Database", "Audio", "Book", "Database", "Dataset", "Film", "Image", "Journal",
+              "Other", "Published Score", "Article", "Software", "Statistics", "Market Data", "Standards",
+              "Biography", "Legal Text", "Cartography", "Miscellaneous"][ThreadLocalRandom.current().nextInt(19)]
+    }
+
+    private String price(int max = 100) {
       return "${ThreadLocalRandom.current().nextInt(max)}.${ThreadLocalRandom.current().nextInt(100)}"
     }
 

@@ -86,7 +86,7 @@ class ESWrapperService {
           ],
           lastUpdatedDisplay: [
             type: "date",
-            format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
+            format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
           ],
           uuid: [
             type: "keyword"
@@ -109,18 +109,12 @@ class ESWrapperService {
         match_mapping_type: "string",
         mapping: [type: "keyword"]
       ],
-      dateFirstInPrint: [
-        match: "dateFirstInPrint",
+      date     : [
+        match  : "*date*",
+        match_mapping_type: "date",
         mapping: [
-          type: "date",
-          format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
-        ]
-      ],
-      dateFirstOnline: [
-        match: "dateFirstOnline",
-        mapping: [
-          type: "date",
-          format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ssZ||epoch_millis"
+          type  : "date",
+          format: "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
         ]
       ],
       cpname: [
