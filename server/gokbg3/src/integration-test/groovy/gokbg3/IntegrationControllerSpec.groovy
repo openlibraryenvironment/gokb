@@ -980,4 +980,111 @@ class IntegrationControllerSpec extends Specification {
     def bookInstance = BookInstance.get(resp.json.titleId)
     bookInstance?.name == 'TestVariantBookName "Quotes Test"'
   }
+
+  void "Test crossReferencePackage :: check response errors"() {
+
+    when: "Caller asks for this record to be cross referenced"
+    def json_record = [
+      "packageHeader": [
+        "breakable"      : "No",
+        "consistent"     : "Yes",
+        "editStatus"     : "In Progress",
+        "fixed"          : "No",
+        "global"         : "Consortium",
+        "identifiers"    : [
+          [
+            "type" : "isil",
+            "value": "ZDB-1-ACS"
+          ]
+        ],
+        "listStatus"     : "In Progress",
+        "name"           : "American Chemical Society: ACS Legacy Archives",
+        "nominalPlatform": [
+          "name"      : "ACS Publications",
+          "primaryUrl": "https://pubs.acs.org"
+        ],
+        "nominalProvider": "American Chemical Society"
+      ],
+      "tipps"        : [
+        [
+          "accessEnd"  : "1999-01-01",
+          "accessStart": "1999-02-02",
+          "identifiers": [
+            [
+              "type" : "global",
+              "value": "testTippId"
+            ],
+            [
+              "type" : "zdb",
+              "value": "1483109-0X"
+            ],
+            [
+              "type" : "eissn",
+              "value": "1520-5118-XXX"
+            ],
+            [
+              "type" : "issn",
+              "value": "0021-8561"
+            ]
+          ],
+          "coverage"   : [
+            [
+              "coverageDepth": "Fulltext",
+              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+              "embargo"      : "",
+              "endDate"      : "1995-12-31 00:00:00.000",
+              "endIssue"     : "",
+              "endVolume"    : "43",
+              "startDate"    : "1953-01-01 00:00:00.000",
+              "startIssue"   : "",
+              "startVolume"  : "1"
+            ]
+          ],
+          "medium"     : "Electronic",
+          "platform"   : [
+            "name"      : "ACS Publications",
+            "primaryUrl": "https://pubs.acs.org"
+          ],
+          "status"     : "Current",
+          "title"      : [
+            "identifiers": [
+              [
+                "type" : "zdb",
+                "value": "1483109-0"
+              ],
+              [
+                "type" : "eissn",
+                "value": "1520-5118"
+              ],
+              [
+                "type" : "issn",
+                "value": "0021-8561-XXX"
+              ]
+            ],
+            "name"       : "Book of agricultural and food chemistry",
+            "firstAuthor": "Autor, extralong                                                                                                                                                                                                                                                                   ",
+            "firstEditor": "Editor, too long as well                                                                                                                                                                                                                                                           ",
+            "type"       : "Monograph"
+          ],
+          "url"        : "http://pubs.acs.org/journal/jafcau"
+        ]
+      ]
+    ]
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
+      "/integration/crossReferencePackage") {
+      auth('admin', 'admin')
+      body(json_record as JSON)
+    }
+
+    then: "The item is created in the database because it does not exist"
+    resp.json.message != null
+    resp.json.message.startsWith('Created')
+    expect: "Find errors in teh response JSON"
+    resp.json.errors.tipps[0].index == 1
+    resp.json.errors.tipps[0].title.identifiers.issn.baddata == "0021-8561-XXX"
+    resp.json.errors.tipps[0].title.firstAuthor.message == "too long"
+    resp.json.errors.tipps[0].title.firstEditor.message == "too long"
+    resp.json.errors.tipps[0].tipp.identifiers.zdb.baddata == "1483109-0X"
+  }
 }

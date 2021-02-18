@@ -46,20 +46,12 @@ curl -X PUT "localhost:9200/$INDEXNAME/component/_mapping" -H 'Content-Type: app
         }
       },
       {
-        "dateFirstInPrint": {
-          "match": "dateFirstInPrint",
+        "date": {
+          "match": "*date*",
+          "match_mapping_type": "date",
           "mapping": {
             "type": "date",
-            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'\''T'\''HH:mm:ssZ||epoch_millis"
-          }
-        }
-      },
-      {
-        "dateFirstOnline": {
-          "match": "dateFirstOnline",
-          "mapping": {
-            "type": "date",
-            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'\''T'\''HH:mm:ssZ||epoch_millis"
+            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'\''T'\''HH:mm:ss'\''Z'\''||epoch_millis"
           }
         }
       },

@@ -16,6 +16,7 @@ import org.elasticsearch.search.sort.*
 
 import org.gokb.cred.*
 
+import java.text.ParseException
 import java.text.SimpleDateFormat
 
 
@@ -507,12 +508,21 @@ class ESSearchService{
     List filteredHits = []
     SimpleDateFormat YYYY_MM_DD = new SimpleDateFormat("yyyy-MM-dd")
     SimpleDateFormat YYYY_MM_DD_HH_mm_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-    Date changedSince = parseDate(params.changedSince, YYYY_MM_DD_HH_mm_SS, YYYY_MM_DD)
+    SimpleDateFormat ISO = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    Date changedSince = parseDate(params.changedSince, YYYY_MM_DD_HH_mm_SS, YYYY_MM_DD, ISO)
     for (SearchHit hit in searchHitsArray){
       String dateString = hit.getSourceAsMap().get("lastUpdatedDisplay")
-      if (changedSince == null ||
-          dateString && !YYYY_MM_DD_HH_mm_SS.parse(dateString)?.before(changedSince)){
-        filteredHits.add(hit.getSourceAsMap())
+      Date date
+      if(dateString) {
+        try {
+          date = ISO.parse(dateString)
+        }
+        catch (ParseException ignored) {
+          date = YYYY_MM_DD_HH_mm_SS.parse(dateString)
+        }
+        if (changedSince == null || date && !date.before(changedSince)){
+          filteredHits.add(hit.getSourceAsMap())
+        }
       }
     }
     return filteredHits

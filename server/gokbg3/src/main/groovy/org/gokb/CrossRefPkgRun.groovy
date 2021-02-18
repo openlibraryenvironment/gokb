@@ -11,17 +11,18 @@ import groovy.util.logging.Slf4j
 import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
 import org.gokb.exceptions.MultipleComponentsMatchedException
+import org.grails.web.json.JSONObject
 
 @Slf4j
 class CrossRefPkgRun {
 
-  MessageService messageService = Holders.grailsApplication.mainContext.getBean('messageService')
-  PackageService packageService = Holders.grailsApplication.mainContext.getBean('packageService')
-  SpringSecurityService springSecurityService = Holders.grailsApplication.mainContext.getBean('springSecurityService')
-  ComponentUpdateService componentUpdateService = Holders.grailsApplication.mainContext.getBean('componentUpdateService')
-  TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
-  ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
-  CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
+  static MessageService messageService = Holders.grailsApplication.mainContext.getBean('messageService')
+  static PackageService packageService = Holders.grailsApplication.mainContext.getBean('packageService')
+  static SpringSecurityService springSecurityService = Holders.grailsApplication.mainContext.getBean('springSecurityService')
+  static ComponentUpdateService componentUpdateService = Holders.grailsApplication.mainContext.getBean('componentUpdateService')
+  static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
+  static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
+  static CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
 
   def rjson // request JSON
   boolean addOnly
@@ -29,8 +30,8 @@ class CrossRefPkgRun {
   boolean autoUpdate
   Locale locale
   User user
-  def jsonResult = [result: "SUCCESS"]
-  def errors = [global: [], tipps: []]
+  Map jsonResult = [result: "SUCCESS"]
+  Map errors = [global: [], tipps: []]
   def existing_tipp_ids = []
   int removedNum = 0
   def invalidTipps = []
@@ -46,9 +47,10 @@ class CrossRefPkgRun {
   def rr_deleted
   def rr_nonCurrent
   def rr_TIPPs_retired
+  def rr_TIPPs_invalid
   def status_ip
 
-  public CrossRefPkgRun(def json, Boolean add, Boolean full, Boolean isAutoUpdate, Locale loc, User u) {
+  public CrossRefPkgRun(JSONObject json, Boolean add, Boolean full, Boolean isAutoUpdate, Locale loc, User u) {
     rjson = json
     addOnly = add
     fullsync = full
@@ -71,6 +73,7 @@ class CrossRefPkgRun {
       rr_deleted = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Status Deleted')
       rr_nonCurrent = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Platform Noncurrent')
       rr_TIPPs_retired = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
+      rr_TIPPs_invalid = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs')
       status_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
 
       springSecurityService.reauthenticate(user.username)
@@ -96,7 +99,7 @@ class CrossRefPkgRun {
         return jsonResult
       }
       // Package Validation
-      pkg_validation = packageService.validateDTO(rjson.packageHeader, locale)
+      pkg_validation = Package.validateDTO(rjson.packageHeader, locale)
 
       if (!pkg_validation.valid) {
         globalError([code   : 403,
@@ -141,6 +144,7 @@ class CrossRefPkgRun {
       int idx = 0
       for (def json_tipp : rjson.tipps) {
         idx++
+        def currentTippError = [index: idx]
         log.info("Crossreferencing #$idx title ${json_tipp.name ?: json_tipp.title.name}")
 
         if ((json_tipp.package == null) && (pkg.id)) {
@@ -148,23 +152,51 @@ class CrossRefPkgRun {
         }
         else {
           log.error("No package")
-          tippError(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale)])
+          currentTippError.put(package: ['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale), baddata: json_tipp.package])
           invalidTipps << json_tipp
         }
 
         if (!invalidTipps.contains(json_tipp)) {
           // validate and upsert TitleInstance
-          handleTitle(json_tipp)
+          Map titleErrorMap = handleTitle(json_tipp)
+          if (titleErrorMap.size() > 0) {
+            currentTippError.put('title', titleErrorMap)
+          }
         }
 
         if (!invalidTipps.contains(json_tipp)) {
           // validate and upsert PlatformInstance
-          handlePlt(json_tipp)
+          Map pltErrorMap = handlePlt(json_tipp)
+          if (pltErrorMap.size() > 0) {
+            currentTippError.put('platform', pltErrorMap)
+          }
         }
 
         if (!invalidTipps.contains(json_tipp)) {
           // validate and upsert TIPP
-          handleTIPP(json_tipp)
+          Map tippErrorMap = handleTIPP(json_tipp)
+          if (tippErrorMap.size() > 0) {
+            currentTippError.put('tipp', tippErrorMap)
+          }
+        }
+
+
+        if (invalidTipps.contains(json_tipp)) {
+          reviewRequestService.raise(
+            pkg,
+            "TIPP rejected",
+            "TIPP ${json_tipp.name ?: json_tipp.title.name} coudn't be imported. ${(currentTippError as JSON).toString()}",
+            user,
+            null,
+            null,
+            rr_TIPPs_invalid
+          )
+          job?.message("skipped invalid title ${(currentTippError as JSON).toString()}")
+        }
+        else if (currentTippError.size() > 1) {
+          errors.tipps.add(currentTippError)
+          String msg = "ignored data ${(currentTippError as JSON).toString()}"
+          job?.message(msg)
         }
 
         if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
@@ -306,7 +338,7 @@ class CrossRefPkgRun {
     return jsonResult
   }
 
-  private void globalError(def error) {
+  private void globalError(Map error) {
     log.error(error.message)
     jsonResult.result = "ERROR"
     jsonResult.code = error.code
@@ -319,27 +351,6 @@ class CrossRefPkgRun {
       jsonResult.errors = [global: errors.global]
     }
     job?.message(error.message)
-  }
-
-  private void tippError(def error) {
-    log.error(error.message)
-    jsonResult.message = error.message
-    errors.tipps.add(error)
-    if (errors.global.size() > 0) {
-      jsonResult.errors = errors
-    }
-    else {
-      jsonResult.errors = [tipps: errors.tipps]
-    }
-    String msg = error.message
-    if (error.errors?.size() > 0) {
-      error.errors.each { err, val ->
-        val.each { e ->
-          msg = e.message ? "${msg}\n${e.message}" : msg
-        }
-      }
-    }
-    job?.message(msg)
   }
 
   private def handleUpdateToken() {
@@ -377,26 +388,15 @@ class CrossRefPkgRun {
     }
   }
 
-  private void handleTitle(def tippJson) {
-    def title_validation = TitleInstance.validateDTO(tippJson.title)
-    if (title_validation && !title_validation.valid) {
-      // remove invalid identifiers from JSON and revalidate
-      for (iDerror in title_validation.errors.ids) {
-        tippJson.title.identifiers.remove(iDerror.baddata)
-        tippJson.identifiers?.remove(iDerror.baddata)
-        log.debug("removing invalid identifier $iDerror.baddata from $tippJson.title")
-      }
-      def preval_error = [
-        message: messageService.resolveCode('crossRef.package.tipps.error.title.preValidation', [tippJson.title.name, title_validation.errors], locale),
-        baddata: tippJson.title,
-        errors : title_validation.errors
-      ]
-      title_validation = TitleInstance.validateDTO(tippJson.title)
-      tippError(preval_error)
+  private Map handleTitle(JSONObject tippJson) {
+    Map titleErrorMap = [:] // [<jsonPropertyName>: [message: <msg>, baddata: <jsonPropertyValue>], ..]
+    def title_validation = Class.forName(IntegrationController.determineTitleClass(tippJson.title)).validateDTO(tippJson.title, locale)
+    if (title_validation && title_validation.errors?.size() > 0) {
+      titleErrorMap.putAll(title_validation.errors)
       if (title_validation && !title_validation.valid) {
-        log.error("invalid title data $tippJson.title: $preval_error")
+        log.error("invalid title data $tippJson.title: ${title_validation.errors}")
         invalidTipps << tippJson
-        return
+        return titleErrorMap
       }
     }
 
@@ -448,15 +448,15 @@ class CrossRefPkgRun {
         if (titleObj.historyEvents?.size() > 0) {
           def he_result = titleHistoryService.processHistoryEvents(ti, titleObj, title_class_name, user, fullsync, locale)
           if (he_result.errors) {
-            tippError([message: messageService.resolveCode('crossRef.package.tipps.error.title.history', null, locale),
-                       baddata: tippJson.title,
-                       errors : he_result.errors])
+            currentTippError.put(historyEvents: [message: messageService.resolveCode('crossRef.package.tipps.error.title.history', null, locale),
+                                                 baddata: tippJson.title,
+                                                 errors : he_result.errors])
           }
         }
 
         if (title_class_name == 'org.gokb.cred.BookInstance') {
           log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
-          title_changed |= addMonographFields(ti, titleObj)
+          title_changed |= ti.addMonographFields(titleObj)
         }
 
         if (title_changed) {
@@ -467,9 +467,7 @@ class CrossRefPkgRun {
       }
       else {
         if (ti != null) {
-          tippError(['message': messageService.resolveCode('crossRef.package.tipps.error.title.validation', [ti], locale),
-                     'baddata': tippJson.title,
-                     'errors' : messageService.processValidationErrors(ti.errors)])
+          titleErrorMap.putAll(messageService.processValidationErrors(ti.errors))
           ti.discard()
         }
         invalidTipps << tippJson
@@ -478,28 +476,37 @@ class CrossRefPkgRun {
     catch (MultipleComponentsMatchedException mcme) {
       log.error("Handling MultipleComponentsMatchedException")
       invalidTipps << tippJson
-      tippError(['message': messageService.resolveCode('crossRef.title.error.multipleMatches', [tippJson?.title?.name, mcme.matched_ids], locale)])
-      return
+      titleErrorMap.put('name', [
+        message: messageService.resolveCode('crossRef.title.error.multipleMatches', [tippJson?.title?.name, mcme.matched_ids], locale),
+        baddata: tippJson?.title?.name])
+      return titleErrorMap
     }
     catch (ValidationException ve) {
       log.error("ValidationException attempting to cross reference title", ve)
       invalidTipps << tippJson
-      tippError(['message': messageService.resolveCode('crossRef.package.tipps.error.title.validation', [tippJson?.title?.name], locale),
-                 'baddata': tippJson,
-                 'errors' : messageService.processValidationErrors(ve.errors)
-      ])
-      return
+      titleErrorMap.putAll(messageService.processValidationErrors(ve.errors))
+      return titleErrorMap
     }
 
     if (!invalidTipps.contains(tippJson) && tippJson.title.internalId == null) {
       invalidTipps << tippJson
       log.error("Failed to locate a title for ${tippJson?.title} when attempting to create TIPP")
-      tippError(['message': messageService.resolveCode('crossRef.package.tipps.error.title', [tippJson.title.name], locale)])
+      titleErrorMap.put('name', [
+        message: messageService.resolveCode('crossRef.package.tipps.error.title', [tippJson.title.name], locale),
+        baddata: tippJson?.title?.name])
     }
+    return titleErrorMap
   }
 
-  private void handlePlt(def tippJson) {
-    def tippPlt = tippJson.hostPlatform ?: tippJson.platform
+  private Map handlePlt(JSONObject tippJson) {
+    def pltKey = 'platform'
+    def tippPlt = tippJson[pltKey]
+    def pltError = [:]
+    if (!tippPlt) {
+      pltKey = 'hostPlatform'
+      tippPlt = tippJson[pltKey]
+    }
+
     def pl = pltCache[tippPlt.name]
     if (!pl) {
       log.debug("validating platform $tippPlt")
@@ -507,58 +514,47 @@ class CrossRefPkgRun {
       if (valid_plt && !valid_plt.valid) {
         log.error("platform ${tippPlt} invalid!")
         invalidTipps << tippJson
-        def plt_error = [
-          code   : 400,
-          idx    : idx,
-          message: messageService.resolveCode('crossRef.package.tipps.error.platform.preValidation', [tippPlt?.name], locale),
-          baddata: tippPlt,
-          errors : valid_plt.errors
-        ]
-        tippError(plt_error)
+        return valid_plt.errors
       }
       else {
+        if (valid_plt.errors.size() > 0) {
+          pltError.putAll(valid_plt.errors)
+        }
         try {
           pl = Platform.upsertDTO(tippPlt, user)
           if (pl) {
             pltCache[tippPlt.name] = pl
-//            pl.save()
             pl.merge(flush: true)
             componentUpdateService.ensureCoreData(pl, tippPlt, fullsync, user)
           }
           else {
             log.error("Could not find/create ${tippPlt}")
             invalidTipps << tippJson
-            tippError(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.platform', [tippPlt.name], locale)])
+            pltError.putAll([
+              message: messageService.resolveCode('crossRef.package.tipps.error.platform', [tippPlt.name], locale),
+              baddata: tippPlt])
+            return pltError
           }
         }
         catch (grails.validation.ValidationException ve) {
           log.error("platform ValidationException attempting to cross reference TIPP $tippJson", ve)
           invalidTipps << tippJson
-          tippError([
-            code   : 400,
-            message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tippPlt], request_locale),
-            baddata: tippPlt,
-            errors : messageService.processValidationErrors(ve.errors, locale)
-          ])
-          return
+          return messageService.processValidationErrors(ve.errors, locale)
         }
       }
     }
-    tippJson << [hostPlatform: [internalId: pl.id]]
+    tippJson[pltKey].internalId = pl.id
+    return pltError
   }
 
-  private void handleTIPP(def tippJson) {
-    def validation_result = TitleInstancePackagePlatform.validateDTO(tippJson)
+  private Map handleTIPP(JSONObject tippJson) {
+    Map tippError = [:]
+    def validation_result = TitleInstancePackagePlatform.validateDTO(tippJson, locale)
     log.debug("validate TIPP ${tippJson.name ?: tippJson.title.name}")
     if (validation_result && !validation_result.valid) {
       invalidTipps << tippJson
       log.debug("TIPP Validation failed on ${tippJson.name ?: tippJson.title.name}")
-      def tipp_error = [
-        message: messageService.resolveCode('crossRef.package.tipps.error.preValidation', [tippJson.title.name, validation_result.errors], locale),
-        baddata: tippJson,
-        errors : validation_result.errors
-      ]
-      tippError(tipp_error)
+      return validation_result.errors
     }
     else {
       log.debug("upsert TIPP ${tippJson.name ?: tippJson.title.name}")
@@ -571,13 +567,9 @@ class CrossRefPkgRun {
       }
       catch (grails.validation.ValidationException ve) {
         log.error("ValidationException attempting to cross reference TIPP", ve)
-        def tipp_error = [
-          message: messageService.resolveCode('crossRef.package.tipps.error.validation', [tippJson.title.name], locale),
-          baddata: tippJson,
-          errors : messageService.processValidationErrors(ve.errors)
-        ]
-        tippError(tipp_error)
         upserted_tipp?.discard()
+        tippError.putAll(messageService.processValidationErrors(ve.errors))
+        return tippError
       }
       catch (Exception ge) {
         log.error("Exception attempting to cross reference TIPP:", ge)
@@ -586,8 +578,8 @@ class CrossRefPkgRun {
           baddata: tippJson,
           errors : [message: ge.toString()]
         ]
-        tippError(tipp_error)
         upserted_tipp?.discard()
+        return tipp_error
       }
       if (upserted_tipp) {
         if (existing_tipp_ids.size() > 0 && existing_tipp_ids.contains(upserted_tipp.id)) {
@@ -640,29 +632,9 @@ class CrossRefPkgRun {
           message: messageService.resolveCode('crossRef.package.tipps.error', [tippJson.title.name], locale),
           baddata: tippJson
         ]
-        tippError(tipp_error)
+        return tipp_error
       }
     }
-  }
-
-  private boolean addMonographFields(BookInstance bi, titleObj) {
-    def book_changed = false
-
-    ["editionNumber", "editionDifferentiator",
-     "editionStatement", "volumeNumber",
-     "summaryOfContent", "firstAuthor",
-     "firstEditor"].each { stringPropertyName ->
-      if (titleObj[stringPropertyName] && titleObj[stringPropertyName].toString().trim().length() > 0) {
-        book_changed |= ClassUtils.setStringIfDifferent(bi, stringPropertyName, titleObj[stringPropertyName])
-      }
-    }
-
-    def dfip = GOKbTextUtils.completeDateString(titleObj.dateFirstInPrint)
-    book_changed |= ClassUtils.setDateIfPresent(dfip, bi, 'dateFirstInPrint')
-
-    def dfo = GOKbTextUtils.completeDateString(titleObj.dateFirstOnline, false)
-    book_changed |= ClassUtils.setDateIfPresent(dfo, bi, 'dateFirstOnline')
-
-    book_changed
+    return tippError
   }
 }

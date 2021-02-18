@@ -1,5 +1,9 @@
 package org.gokb.cred
 
+import com.k_int.ClassUtils
+import grails.gorm.transactions.Transactional
+import org.gokb.GOKbTextUtils
+
 import javax.persistence.Transient
 import groovy.util.logging.*
 import groovy.time.TimeCategory
@@ -11,6 +15,7 @@ import org.gokb.refine.*
 class Package extends KBComponent {
 
   def dateFormatService
+  static def messageService
 
   // Owens defaults:
   // Status default to 'Current'
@@ -108,7 +113,8 @@ class Package extends KBComponent {
           if (dupes?.size() > 0 && dupes.any { it != obj }) {
             return ['notUnique']
           }
-        } else {
+        }
+        else {
           return ['notNull']
         }
       }
@@ -194,7 +200,8 @@ class Package extends KBComponent {
             and tipp.status = ?
             and title.status = ?'''
           , [this, refdata_current, refdata_current], [max: max, offset: offset]);
-      } else {
+      }
+      else {
         all_titles = TitleInstance.executeQuery('''select distinct title
           from TitleInstance as title,
             Combo as pkgCombo,
@@ -268,7 +275,8 @@ class Package extends KBComponent {
             and rr.componentToReview = title
             and rr.status = ?'''
           , [this, refdata_current, refdata_open]);
-      } else {
+      }
+      else {
         all_rrs = ReviewRequest.executeQuery('''select distinct rr
           from ReviewRequest as rr,
             TitleInstance as title,
@@ -283,7 +291,8 @@ class Package extends KBComponent {
             and rr.status = ?'''
           , [this, refdata_open]);
       }
-    } else {
+    }
+    else {
       if (onlyCurrent) {
         all_rrs = ReviewRequest.executeQuery('''select rr
           from ReviewRequest as rr,
@@ -298,7 +307,8 @@ class Package extends KBComponent {
             and titleCombo.fromComponent=title
             and rr.componentToReview = title'''
           , [this, refdata_current]);
-      } else {
+      }
+      else {
         all_rrs = ReviewRequest.executeQuery('''select rr
           from ReviewRequest as rr,
             TitleInstance as title,
@@ -612,11 +622,14 @@ select tipp.id,
         changes.each {
           if (it.isDeleted()) {
             result.add([it, it.lastUpdated, 'Deleted (status)'])
-          } else if (it.isRetired()) {
+          }
+          else if (it.isRetired()) {
             result.add([it, it.lastUpdated, it.accessEndDate ? "Retired (${it.accessEndDate})" : 'Retired (status)'])
-          } else if (it.lastUpdated <= it.dateCreated + 1.minute) {
+          }
+          else if (it.lastUpdated <= it.dateCreated + 1.minute) {
             result.add([it, it.dateCreated, it.accessStartDate ? "Added (${it.accessStartDate})" : 'Newly Added'])
-          } else {
+          }
+          else {
             result.add([it, it.lastUpdated, 'Updated'])
           }
         }
@@ -643,5 +656,99 @@ select tipp.id,
       def cg = CuratoryGroup.findByName(cgname) ?: new CuratoryGroup(name: cgname).save(flush: true, failOnError: true);
       curatoryGroups.add(cg);
     }
+  }
+
+  /**
+   * Definitive rules for a valid package header
+   */
+  public static def validateDTO(packageHeaderDTO, locale) {
+    def result = [valid: true, errors: [:], match: false]
+
+    if (!packageHeaderDTO.name?.trim()) {
+      result.valid = false
+      result.errors.name = [[message: messageService.resolveCode('crossRef.package.error.name', null, locale), baddata: packageHeaderDTO.name]]
+    }
+
+    String idJsonKey = 'ids'
+    def ids_list = packageHeaderDTO[idJsonKey]
+    if (!ids_list) {
+      idJsonKey = 'identifiers'
+      ids_list = packageHeaderDTO[idJsonKey]
+    }
+    if (ids_list) {
+      def id_errors = Identifier.validateDTOs(ids_list, locale)
+      if (id_errors.size() > 0) {
+        result.errors.put(idJsonKey, id_errors)
+      }
+    }
+    if (result.valid) {
+      def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+      def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
+
+      def name_candidates = Package.executeQuery("from Package as p where p.normname = ? and p.status <> ?", [pkg_normname, status_deleted])
+      def full_matches = []
+
+      if (packageHeaderDTO.uuid) {
+        result.match = Package.findByUuid(packageHeaderDTO.uuid) ? true : false
+      }
+
+      if (!result.match && name_candidates.size() == 1) {
+        result.match = true
+      }
+
+      if (!result.match) {
+        def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
+        def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
+
+        if (variant_candidates.size() == 1) {
+          result.match = true
+          log.debug("Package matched via existing variantName.")
+        }
+      }
+
+      if (!result.match) {
+        log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
+        packageHeaderDTO.variantNames.each {
+
+          if (it.trim().size() > 0) {
+            def var_pkg = Package.findByName(it)
+
+            if (var_pkg) {
+              log.debug("Found existing package name for variantName ${it}")
+            }
+            else {
+
+              def variant_normname = GOKbTextUtils.normaliseString(it)
+              def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
+
+              if (variant_candidates.size() == 1) {
+                log.debug("Found existing package variant name for variantName ${it}")
+                result.match = true
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (packageHeaderDTO.provider && packageHeaderDTO.provider instanceof Integer) {
+      def prov = Org.get(packageHeaderDTO.provider)
+
+      if (!prov) {
+        result.errors.provider = [[message: messageService.resolveCode('crossRef.error.lookup', ["Provider", "ID"], locale), code: 404, baddata: packageHeaderDTO.provider]]
+        result.valid = false
+      }
+    }
+
+    if (packageHeaderDTO.nominalPlatform && packageHeaderDTO.nominalPlatform instanceof Integer) {
+      def prov = Platform.get(packageHeaderDTO.nominalPlatform)
+
+      if (!prov) {
+        result.errors.nominalPlatform = [[message: messageService.resolveCode('crossRef.error.lookup', ["Platform", "ID"], locale), code: 404, baddata: packageHeaderDTO.nominalPlatform]]
+        result.valid = false
+      }
+    }
+
+    result
   }
 }

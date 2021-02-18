@@ -15,7 +15,11 @@ class OtherInstance extends TitleInstance {
 
   String summaryOfContent
 
- static mapping = {
+  private static refdataDefaults = [
+    "TitleInstance.medium"		: "Other"
+  ]
+
+  static mapping = {
     includes TitleInstance.mapping
          summaryOfContent column:'bk_summaryOfContent'
   }
@@ -28,7 +32,7 @@ class OtherInstance extends TitleInstance {
    * Auditable plugin, on change
    *
    * See if properties that might impact the mapping of this instance to a work have changed.
-   * If so, fire the appropriate event to cause a remap. 
+   * If so, fire the appropriate event to cause a remap.
    */
 
   def afterUpdate() {
