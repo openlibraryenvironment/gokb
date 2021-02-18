@@ -447,10 +447,13 @@ class CrossRefPkgRun {
         if (titleObj.historyEvents?.size() > 0) {
           def he_result = titleHistoryService.processHistoryEvents(ti, titleObj, title_class_name, user, fullsync, locale)
           if (he_result.errors) {
-            currentTippError.addAll([title: [historyEvents: [
+            if (!currentTippError.title) {
+              currentTippError.title = [:]
+            }
+            currentTippError[title].put('historyEvents': [
               message: messageService.resolveCode('crossRef.package.tipps.error.title.history', null, locale),
               baddata: tippJson.title,
-              errors : he_result.errors]]])
+              errors : he_result.errors])
           }
         }
 
