@@ -627,13 +627,13 @@ class TitleInstance extends KBComponent {
    *   type:'Serial' or 'Monograph'
    *}*/
   @Transient
-  public static def validateDTO(JSONObject titleDTO) {
+  public static def validateDTO(JSONObject titleDTO, Locale locale) {
     def result = ['valid': true]
     def valErrors = [:]
 
-    if (titleDTO?.name?.trim() == false) {
+    if (!titleDTO.name||titleDTO.name.trim()=='') {
       result.valid = false
-      valErrors.put('name', [message: "missing", baddata: titleDTO.name])
+      valErrors.put('name', [message: "missing"])
     }
     else {
       LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
@@ -641,16 +641,15 @@ class TitleInstance extends KBComponent {
 
       if (titleDTO.publishedFrom && !startDate) {
         result.valid = false
-        valErrors.put('publishedFrom': [message: "Unable to parse", baddata: titleDTO.remove('publishedFrom')])
+        valErrors.put('publishedFrom', [message: "Unable to parse", baddata: titleDTO.remove('publishedFrom')])
       }
 
       if (titleDTO.publishedTo && !endDate) {
         result.valid = false
-        valErrors.put('publishedTo',[message: "Unable to parse", baddata: titleDTO.remove('publishedTo')])
+        valErrors.put('publishedTo', [message: "Unable to parse", baddata: titleDTO.remove('publishedTo')])
       }
 
       if (startDate && endDate && (endDate < startDate)) {
-        result.valid = false
         valErrors.put('publishedTo', [message: "Publishing end date must not be prior to its start date!", baddata: titleDTO.publishedTo])
         // switch dates
         def tmp = titleDTO.publishedTo
@@ -658,71 +657,13 @@ class TitleInstance extends KBComponent {
         titleDTO.publishedFrom = tmp
       }
 
-      def id_errors = [:]
-      def to_remove = []
       String idJsonKey = 'ids'
       def ids_list = titleDTO[idJsonKey]
       if (!ids_list) {
         idJsonKey = 'identifiers'
         ids_list = titleDTO[idJsonKey]
       }
-      ids_list?.each { idobj ->
-        def id_def = [:]
-        def ns_obj = null
-
-        if (idobj instanceof Map) {
-          def id_ns = idobj.type ?: (idobj.namespace ?: null)
-
-          id_def.value = idobj.value
-
-          if (id_ns instanceof String) {
-            log.debug("Default namespace handling for ${id_ns}..")
-            ns_obj = IdentifierNamespace.findByValueIlike(id_ns)
-          }
-          else if (id_ns) {
-            log.debug("Handling namespace def ${id_ns}")
-            ns_obj = IdentifierNamespace.get(id_ns)
-          }
-
-          if (!ns_obj) {
-            id_errors.put('namespace', [message: "unable to lookup", baddata: idobj.namespace])
-            to_remove.add(idobj)
-          }
-          else {
-            id_def.type = ns_obj.value
-          }
-        }
-        else if (idobj instanceof Integer) {
-          Identifier the_id = Identifier.get(idobj)
-
-          if (!the_id) {
-            id_errors.put(idobj.type,[message: "unable to lookup", baddata: idobj.value])
-            to_remove.add(idobj)
-          }
-        }
-        else {
-          log.warn("Missing information in id object ${idobj}")
-          id_errors.put(idobj.type,[message: "missing information", baddata: idobj.value])
-          to_remove.add(idobj)
-        }
-
-        if (ns_obj && id_def.size() > 0) {
-          if (!Identifier.findByNamespaceAndNormname(ns_obj, Identifier.normalizeIdentifier(id_def.value))) {
-            if (ns_obj.pattern && !(id_def.value ==~ ns_obj.pattern)) {
-              log.warn("Validation for ${id_def.type}:${id_def.value} failed!")
-              id_errors.put(idobj.type,[message: "validation failed", baddata: idobj.value])
-              to_remove.add(idobj)
-            }
-            else {
-              log.debug("New identifier ..")
-            }
-          }
-          else {
-            log.debug("Found existing identifier ..")
-          }
-        }
-      }
-      titleDTO[idJsonKey].removeAll(to_remove)
+      def id_errors = Identifier.validateDTOs(ids_list, locale)
       if (id_errors.size() > 0) {
         valErrors.put(idJsonKey, id_errors)
         if (titleDTO[idJsonKey].size() == 0) {
@@ -825,24 +766,18 @@ class TitleInstance extends KBComponent {
     def type = null
 
     if (titleDTO.type) {
-      switch (titleDTO.type) {
+      switch (titleDTO.type.tolowerCase()) {
         case "serial":
-        case "Serial":
-        case "Journal":
         case "journal":
           type = "org.gokb.cred.JournalInstance"
           break;
         case "monograph":
-        case "Monograph":
-        case "Book":
         case "book":
           type = "org.gokb.cred.BookInstance"
           break;
-        case "Database":
         case "database":
           type = "org.gokb.cred.DatabaseInstance"
           break;
-        case "Other":
         case "other":
           type = "org.gokb.cred.OtherInstance"
           break;

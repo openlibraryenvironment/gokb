@@ -99,7 +99,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
       auth("Bearer $accessToken")
       body([
         name           : 'Source AfterUpdate',
-        frequency      : '1M',
+        frequency      : 'Monthly',
         url            : "http://kbart-source.com/test-pkg",
         targetNamespace: namespace.id
       ] as JSON)
@@ -107,7 +107,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.name == "Source AfterUpdate"
-    resp.json.frequency == "1M"
+    resp.json.frequency.name == "Monthly"
     resp.json.url == "http://kbart-source.com/test-pkg"
     resp.json.targetNamespace.name == "TestSourceTitleNS"
     resp.json.automaticUpdates == false
