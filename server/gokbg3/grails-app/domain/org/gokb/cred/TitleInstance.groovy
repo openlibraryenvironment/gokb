@@ -660,21 +660,25 @@ class TitleInstance extends KBComponent {
 
       String idJsonKey = 'ids'
       def ids_list = titleDTO[idJsonKey]
+
       if (!ids_list) {
         idJsonKey = 'identifiers'
         ids_list = titleDTO[idJsonKey]
       }
+
       def id_errors = Identifier.validateDTOs(ids_list, locale)
+
       if (id_errors.size() > 0) {
         valErrors.put(idJsonKey, id_errors)
         if (titleDTO[idJsonKey].size() == 0) {
-          valErrors.put(message: 'no valid identifiers left')
+          valErrors.put(idJsonKey, [message: 'no valid identifiers left'])
         }
       }
     }
 
     if (titleDTO.medium) {
       RefdataValue medRef = determineMediumRef(titleDTO)
+
       if (medRef) {
         titleDTO.medium = medRef.value
       }

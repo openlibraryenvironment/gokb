@@ -72,6 +72,7 @@ class RestMappingService {
     def curatedClass = obj.respondsTo('curatoryGroups')
     def jsonMap = null
     def is_curator = true
+    def userGroups = user ? user.curatoryGroups : null
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
@@ -85,8 +86,14 @@ class RestMappingService {
         is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
       }
 
-      if (obj.class.simpleName == TitleInstancePackagePlatform) {
-        is_curator = obj.pkg.curatoryGroups?.size() > 0 ? user?.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
+      if (obj.class.simpleName == 'TitleInstancePackagePlatform' && obj.pkg?.curatoryGroups?.size() > 0) {
+        is_curator = userGroups ? userGroups.id.intersect(obj.pkg.curatoryGroups?.id) : false
+      }
+
+      if (obj.class.simpleName == 'ReviewRequest' && obj.allocatedGroups?.size() > 0) {
+        def allocated_groups = obj.allocatedGroups?.collect { arg -> [ id: arg.group.id ]} ?: []
+
+        is_curator = userGroups ? userGroups.id.intersect(allocated_groups.id) : false
       }
 
       result.type = obj.niceName
