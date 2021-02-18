@@ -155,14 +155,6 @@ class BookInstance extends TitleInstance {
     def result = TitleInstance.validateDTO(titleDTO, locale)
     def valErrors = [:]
 
-    if (titleDTO.volumeNumber) {
-      try {
-        int i = Integer.parseInt(titleDTO.volumeNumber)
-      } catch (NumberFormatException nfe) {
-        valErrors.put('volumeNumber', [message: "not numeric", baddata: titleDTO.remove('volumeNumber')])
-        log.warn("volumeNumber ${titleDTO.volumeNumber} is ignored")
-      }
-    }
     // shortening some db fields with standard size of 255 if needed.
     // does not invalidate the DTO!
     ['firstAuthor', 'firstEditor'].each { key ->
