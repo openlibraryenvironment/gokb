@@ -56,8 +56,7 @@
           </g:if>
           <li><a href="https://github.com/openlibraryenvironment/gokb/wiki/API"  style="font-weight:bold;">API Documentation</a></li>
           <li><span style="width:15px"></span></li>
-          <li><g:link controller="register" action="register" style="font-weight:bold;">Register</g:link></li>
-          <li><g:link controller="home" action="index" style="font-weight:bold;">Legacy UI</g:link></li>
+          <li><g:link controller="home" action="index" style="font-weight:bold;">Login</g:link></li>
           <g:if test="${grailsApplication.config.gokb.uiUrl}">
             <li><a style="font-weight:bold;" href ="${grailsApplication.config.gokb.uiUrl}">GOKb Client</a></li>
           </g:if>
