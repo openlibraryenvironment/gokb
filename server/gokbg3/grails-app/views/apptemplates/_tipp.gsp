@@ -86,7 +86,7 @@
     </dd>
 
     <dt>
-        <g:annotatedLabel owner="${d}" property="dateFirstInPrint">First in print Date</g:annotatedLabel>
+        <g:annotatedLabel owner="${d}" property="dateFirstInPrint">Date first in print</g:annotatedLabel>
     </dt>
     <dd>
         <g:xEditable class="ipe" owner="${d}" type="date"
@@ -94,11 +94,74 @@
     </dd>
 
     <dt>
-        <g:annotatedLabel owner="${d}" property="dateFirstOnline">First online Date</g:annotatedLabel>
+        <g:annotatedLabel owner="${d}" property="dateFirstOnline">Date first online</g:annotatedLabel>
     </dt>
     <dd>
         <g:xEditable class="ipe" owner="${d}" type="date"
                      field="dateFirstOnline"/>
+    </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="firstAuthor">First Author</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditable class="ipe" owner="${d}" field="firstAuthor"/>
+    </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="publicationType">Publication Type</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditableRefData owner="${d}" field="publicationType" config='Tipp.PublicationType'/>
+    </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="publisherName">Publisher</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditable class="ipe" owner="${d}" field="publisherName"/>
+    </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="volumeNumber">Volume Number</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditable class="ipe" owner="${d}" field="volumeNumber"/>
+    </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="editionStatement">Edition statement</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditable class="ipe" owner="${d}" field="editionStatement"/>
+    </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="parentPublicationTitleId">Parent publication title ID</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditable class="ipe" owner="${d}" field="parentPublicationTitleId"/>
+    </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="precedingPublicationTitleId">Preceding publication title ID</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditable class="ipe" owner="${d}" field="precedingPublicationTitleId"/>
+    </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="medium">Medium</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditableRefData owner="${d}" field="medium" config='TitleInstance.Medium'/>
+    </dd>
+
+    <dt>
+        <g:annotatedLabel owner="${d}" property="lastChangedExternal">Last external change</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditableRefData owner="${d}" field="lastChangedExternal" type='date'/>
     </dd>
 
 </dl>
