@@ -16,13 +16,14 @@ class AugmentJob {
 
   def aug() {
     log.debug("Attempting to augment titles");
+    def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
 
     // find the next 100 titles that don't have a suncat ID
-    def titles_without_suncat_id = TitleInstance.executeQuery("select ti from TitleInstance as ti where not exists ( Select ii from ti.ids as ii where ii.identifier.ns.ns = 'SUNCAT' )",[],[max:100])
+    def journals_without_zdb_id = JournalInstance.executeQuery("select ti from JournalInstance as ti where ti.status = :current and not exists ( Select ii from ti.ids as ii where ii.identifier.ns.ns = 'zdb' )",[current: status_current],[max:100])
 
-    log.debug("Processing ${titles_without_suncat_id.size()}");
+    log.debug("Processing ${journals_without_zdb_id.size()}");
 
-    titles_without_suncat_id.each { ti ->
+    journals_without_zdb_id.each { ti ->
       log.debug("Attempting augment on ${ti.id} ${ti.name}");
       titleAugmentService.augment(ti)
     }

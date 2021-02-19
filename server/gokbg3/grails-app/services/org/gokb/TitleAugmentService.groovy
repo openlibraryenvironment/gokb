@@ -19,42 +19,25 @@ class TitleAugmentService {
 
   def grailsApplication
   def componentLookupService
-  def edinaPublicationsAPIService
+  def reviewRequestService
+  def zdbAPIService
+  RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
 
   def augment(titleInstance) {
-      // If the title does have a suncat-id
-      if ( titleInstance.getIdentifierValue('SUNCAT' ) == null ) {
-        def lookupResult = edinaPublicationsAPIService.lookup(titleInstance.name)
-        if ( lookupResult ) {
-          def record = lookupResult.records.record
-          if ( record ) {
-            boolean matched = false;
-            def suncat_identifier = null;
-            record.modsCollection.mods.identifier.each { id ->
-              if ( id.text().equalsIgnoreCase(titleInstance.getIdentifierValue('ISSN')) || id.text().equalsIgnoreCase(titleInstance.getIdentifierValue('eISSN'))  ) {
-                matched = true
-              }
+    if ( titleInstance.class.name == 'JournalInstance' ) {
+      def candidates = zdbAPIService.lookup(titleInstance.name, titleInstance.ids)
 
-              if ( id.@type == 'suncat' ) {
-                suncat_identifier = id.text();
-              }
-            }
-            if ( matched && suncat_identifier ) {
-              log.debug("set suncat identifier to ${suncat_identifier}");
-              def canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier('SUNCAT',suncat_identifier);
-              titleInstance.addToIds(canonical_identifier);
-              titleInstance.save(flush:true);
-            }
-            else {
-              log.debug("No match for title ${titleInstance.name}, ${titleInstance.id}");
-            }
-          }
-          else {
-          }
+      if (candidates.size() == 1) {
+        def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0])
+
+        if (new_id.identifiedComponents?.size() > 0) {
+
         }
         else {
+          new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
         }
       }
+    }
   }
 
   def doEnrichment() {

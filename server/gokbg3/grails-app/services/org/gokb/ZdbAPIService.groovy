@@ -14,7 +14,7 @@ class ZdbAPIService {
 
   static transactional = false
   def endpoint
-  def target_service
+  def target_service = null
   def grailsApplication
   def kxpAccess = true
 
@@ -35,6 +35,10 @@ class ZdbAPIService {
       kxp: " and pica.bbg=O*",
       zdb: " and dnb.frm=O"
     ],
+    printOnly: [
+      kxp: " and pica.bbg=A*",
+      zdb: " and dnb.frm=A"
+    ],
     prefix: [
       kxp: "zs:",
       zdb: ""
@@ -44,12 +48,11 @@ class ZdbAPIService {
   @javax.annotation.PostConstruct
   def init() {
     log.debug("Initialising rest endpoint for ZDB service...");
-    kxpAccess = checkAccess()
-    endpoint = kxpAccess ? "http://sru.k10plus.de/k10plus" : "http://http://services.dnb.de/sru/zdb"
-    target_service = new RESTClient(endpoint)
+    // kxpAccess = checkKxpAccess()
+    target_service = new RESTClient("https://www.zeitschriftendatenbank.de/api/hydra").setHeaders(['User-Agent': 'gokb'])
   }
 
-  def checkAccess () {
+  def checkKxpAccess () {
     boolean result = true
     def testUrl = "http://sru.k10plus.de/k10plus"
     def testClient = new RESTClient(testUrl)
@@ -84,41 +87,35 @@ class ZdbAPIService {
   }
 
   def lookup(String name, def ids) {
-    def activeConfig = kxpAccess ? "kxp" : "zdb"
-    def prefix = config[activeConfig]['prefix']
     def candidate_ids = []
 
     ids.each { id ->
-      if (id.namespace.value == 'issn' || id.namespace.value == 'eissn') {
-        def qryString = config[activeConfig].issTerm + id.value + config[activeConfig].onlineOnly
-
+      if (id.namespace.value == 'eissn' || id.namespace.value == 'issn') {
         try {
-          target_service.request(GET, ContentType.XML) { request ->
+          new RESTClient("https://www.zeitschriftendatenbank.de/api/hydra").request(GET, ContentType.JSON) { request ->
             // uri.path='/'
             uri.query = [
-              version: config[activeConfig].version,
-              operation: "searchRetrieve",
-              recordSchema: config[activeConfig].recordSchema,
-              maximumRecords: "10",
-              query: qryString
+              q: "iss=" + id.value
             ]
 
             response.success = { resp, data ->
-              Integer num = data[prefix + "searchRetrieveResponse"][prefix + "numberOfRecords"].toInteger()
+              data.member?.each { rec ->
+                log.debug("Checking record ${rec}")
 
-              if (num > 0) {
-                def records = data[prefix + "searchRetrieveResponse"][prefix + "records"]
-
-                records.each { rec ->
-                  def zdb_info = kxpAccess ? getKxpInfo(rec) : getZdbInfo(rec)
+                if ((id.namespace.value == 'eissn' && rec.data['002@'][0][0][0].startsWith('O'))  || (id.namespace.value == 'issn' && rec.data['002@'][0][0][0].startsWith('A'))) {
+                  def zdb_info = getZdbInfo(rec, (id.namespace.value == 'eissn' ? true : false))
 
                   if (zdb_info && !candidate_ids.contains(zdb_info.id)) {
+                    log.debug("Found ID candidate ${zdb_info.id}")
                     candidate_ids.add(zdb_info.id)
                   }
+                  else {
+                    log.debug("Not adding ${zdb_info}")
+                  }
                 }
-              }
-              else {
-                log.debug("No ZDB candidate found for ${id}")
+                else {
+                  log.debug("Skipping parallel title")
+                }
               }
             }
             response.failure = { resp ->
@@ -135,20 +132,41 @@ class ZdbAPIService {
     candidate_ids
   }
 
-  def getKxpInfo(record) {
+  def getKxpInfo(record, isOnline) {
     def result = [:]
     def rec = record['zs:recordData']['record']
 
-    result.id = rec.'*'.find { it.@tag == '006Z' }['subfield'][0].text()
+    if (isOnline) {
+      result.id = rec.'*'.find { it.@tag == '006Z' }['subfield'][0].text()
+    }
+    else {
+      result.id = rec.'*'.find { it.@tag == '006Z' }['subfield'][0].text()
+    }
 
     result
   }
 
-  def getZdbInfo(record) {
+  def getZdbInfo(record, isOnline) {
     def result = [:]
-    def rec = record['recordData']['ppxml:record']['ppxml:global']
 
-    result.id = rec.'*'.find { it.@id == '006Z' }['ppxml:subf'][0].text()
+    if (isOnline) {
+      result.id = record.data['006Z'][0][0]
+    }
+    else {
+      def online_id = null
+
+      record.data['039D']?.each { field ->
+        field.each { pos ->
+          if (pos instanceof List) {
+            online_id = pos[0]
+          }
+        }
+      }
+
+      if (online_id) {
+        result.id = online_id
+      }
+    }
 
     result
   }
