@@ -554,12 +554,15 @@ class CrossRefPkgRun {
     Map tippError = [:]
     def validation_result = TitleInstancePackagePlatform.validateDTO(tippJson, locale)
     log.debug("validate TIPP ${tippJson.name ?: tippJson.title.name}")
-    if (validation_result && !validation_result.valid) {
+    if (!validation_result.valid) {
       invalidTipps << tippJson
       log.debug("TIPP Validation failed on ${tippJson.name ?: tippJson.title.name}")
       return validation_result.errors
     }
     else {
+      if (validation_result.errors?.size() > 0) {
+        tippError.putAll(validation_result.errors)
+      }
       log.debug("upsert TIPP ${tippJson.name ?: tippJson.title.name}")
       def upserted_tipp = null
       try {
