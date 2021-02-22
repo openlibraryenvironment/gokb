@@ -1749,7 +1749,8 @@ class WorkflowController {
                       'parent_publication_title_id\t'+
                       'publication_type\t'+
                       'access_type\t'+
-                      'zdb_id\n');
+                      'language\t'+
+                      'zdb_id\n')
 
           // scroll(ScrollMode.FORWARD_ONLY)
           def session = sessionFactory.getCurrentSession()
@@ -1761,89 +1762,64 @@ class WorkflowController {
           query.setParameter('ct', combo_tipps)
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
-
           while (tipps.next()) {
-            def tipp_id = tipps.get(0);
-
+            def tipp_id = tipps.get(0)
             TitleInstancePackagePlatform.withNewSession {
               def tipp = TitleInstancePackagePlatform.get(tipp_id)
 
               if (tipp.coverageStatements?.size() > 0) {
                 tipp.coverageStatements.each { cst ->
-                  writer.write(
-                              sanitize( tipp.title.name ) + '\t' +
-                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('pISBN') ) : sanitize( tipp.title.getIdentifierValue('ISSN') ) )+ '\t' +
-                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('ISBN') ) : sanitize( tipp.title.getIdentifierValue('eISSN') ) )+ '\t' +
-                              sanitize( cst.startDate ) + '\t' +
-                              sanitize( cst.startVolume ) + '\t' +
-                              sanitize( cst.startIssue ) + '\t' +
-                              sanitize( cst.endDate ) + '\t' +
-                              sanitize( cst.endVolume ) + '\t' +
-                              sanitize( cst.endIssue ) + '\t' +
-                              sanitize( tipp.url ) + '\t' +
-                              (tipp.title.hasProperty('firstAuthor') ? sanitize( tipp.title.firstAuthor ) : '') + '\t'+
-                              sanitize( tipp.title.getId() ) + '\t' +
-                              sanitize( cst.embargo ) + '\t' +
-                              sanitize( cst.coverageDepth ) + '\t' +
-                              sanitize( cst.coverageNote ) + '\t' +
-                              sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
-                              sanitize( tipp.title.getPrecedingTitleId() ) + '\t' +
-                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.dateFirstInPrint ) : '') + '\t' +
-                              (tipp.title.hasProperty('dateFirstOnline') ? sanitize( tipp.title.dateFirstOnline ) : '') + '\t' +
-                              (tipp.title.hasProperty('volumeNumber') ? sanitize( tipp.title.volumeNumber ) : '') + '\t' +
-                              (tipp.title.hasProperty('editionStatement') ? sanitize( tipp.title.editionStatement ) : '') + '\t' +
-                              (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
-                              '\t' +  // parent_publication_title_id
-                              sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
-                              sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
-                              sanitize( tipp.title.getIdentifierValue('ZDB') ) +
-                              '\n');
+                  writeExportLine(writer, sanitize, tipp, cst)
                 }
               }
               else {
-                  writer.write(
-                              sanitize( tipp.title.name ) + '\t' +
-                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('pISBN') ) : sanitize( tipp.title.getIdentifierValue('ISSN') ) )+ '\t' +
-                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.getIdentifierValue('ISBN') ) : sanitize( tipp.title.getIdentifierValue('eISSN') ) )+ '\t' +
-                              sanitize( tipp.startDate ) + '\t' +
-                              sanitize( tipp.startVolume ) + '\t' +
-                              sanitize( tipp.startIssue ) + '\t' +
-                              sanitize( tipp.endDate ) + '\t' +
-                              sanitize( tipp.endVolume ) + '\t' +
-                              sanitize( tipp.endIssue ) + '\t' +
-                              sanitize( tipp.url ) + '\t' +
-                              (tipp.title.hasProperty('firstAuthor') ? sanitize( tipp.title.firstAuthor ) : '') + '\t'+
-                              sanitize( tipp.title.getId() ) + '\t' +
-                              sanitize( tipp.embargo ) + '\t' +
-                              sanitize( tipp.coverageDepth ) + '\t' +
-                              sanitize( tipp.coverageNote ) + '\t' +
-                              sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
-                              sanitize( tipp.title.getPrecedingTitleId() ) + '\t' +
-                              (tipp.title.hasProperty('dateFirstInPrint') ? sanitize( tipp.title.dateFirstInPrint ) : '') + '\t' +
-                              (tipp.title.hasProperty('dateFirstOnline') ? sanitize( tipp.title.dateFirstOnline ) : '') + '\t' +
-                              (tipp.title.hasProperty('volumeNumber') ? sanitize( tipp.title.volumeNumber ) : '' + '\t') +
-                              (tipp.title.hasProperty('editionStatement') ? sanitize( tipp.title.editionStatement ) : '') + '\t' +
-                              (tipp.title.hasProperty('firstEditor') ? sanitize( tipp.title.firstEditor ) : '') + '\t' +
-                              '\t' +  // parent_publication_title_id
-                              sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
-                              sanitize( tipp.paymentType?.value ) + '\t' +  // access_type
-                              sanitize( tipp.title.getIdentifierValue('ZDB') ) +
-                              '\n');
+                writeExportLine(writer, sanitize, tipp, tipp)
               }
-              tipp.discard();
+              tipp.discard()
             }
           }
           tipps.close()
         }
-
-        writer.flush();
-        writer.close();
+        writer.flush()
+        writer.close()
       }
       out.close()
     }
     catch ( Exception e ) {
-      log.error("Problem with export",e);
+      log.error("Problem with export",e)
     }
+  }
+
+
+  private writeExportLine(Writer writer, Closure<String> sanitize, TitleInstancePackagePlatform tipp, def tippCoverageStatement){
+    writer.write(
+        sanitize(tipp.title.name) + '\t' +
+            (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.getIdentifierValue('pISBN')) : sanitize(tipp.title.getIdentifierValue('ISSN'))) + '\t' +
+            (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.getIdentifierValue('ISBN')) : sanitize(tipp.title.getIdentifierValue('eISSN'))) + '\t' +
+            sanitize(tippCoverageStatement.startDate) + '\t' +
+            sanitize(tippCoverageStatement.startVolume) + '\t' +
+            sanitize(tippCoverageStatement.startIssue) + '\t' +
+            sanitize(tippCoverageStatement.endDate) + '\t' +
+            sanitize(tippCoverageStatement.endVolume) + '\t' +
+            sanitize(tippCoverageStatement.endIssue) + '\t' +
+            sanitize(tipp.url) + '\t' +
+            (tipp.title.hasProperty('firstAuthor') ? sanitize(tipp.title.firstAuthor) : '') + '\t' +
+            sanitize(tipp.title.getId()) + '\t' +
+            sanitize(tippCoverageStatement.embargo) + '\t' +
+            sanitize(tippCoverageStatement.coverageDepth) + '\t' +
+            sanitize(tippCoverageStatement.coverageNote) + '\t' +
+            sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
+            sanitize(tipp.title.getPrecedingTitleId()) + '\t' +
+            (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.dateFirstInPrint) : '') + '\t' +
+            (tipp.title.hasProperty('dateFirstOnline') ? sanitize(tipp.title.dateFirstOnline) : '') + '\t' +
+            (tipp.title.hasProperty('volumeNumber') ? sanitize(tipp.title.volumeNumber) : '') + '\t' +
+            (tipp.title.hasProperty('editionStatement') ? sanitize(tipp.title.editionStatement) : '') + '\t' +
+            (tipp.title.hasProperty('firstEditor') ? sanitize(tipp.title.firstEditor) : '') + '\t' +
+            '\t' +  // parent_publication_title_id
+            sanitize(tipp.title?.medium?.value) + '\t' +  // publication_type
+            sanitize(tipp.paymentType?.value) + '\t' +  // access_type
+            sanitize(tipp.title.getIdentifierValue('ZDB')) +
+            '\n')
   }
 
 
