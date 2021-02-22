@@ -850,6 +850,15 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'publisherName'(publisherName?.trim())
         builder.'dateFirstInPrint'(dateFirstInPrint?.trim())
         builder.'dateFirstOnline'(dateFirstOnline?.trim())
+        builder.'firstAuthor'(firstAuthor?.trim())
+        builder.'publicationType'(publicationType.value.trim())
+        builder.'volumeNumber'(volumeNumber?.trim())
+        builder.'editionStatement'(editionStatement?.trim())
+        builder.'firstEditor'(firstEditor?.trim())
+        builder.'parentPublicationTitleId'(parentPublicationTitleId?.trim())
+        builder.'precedingPublicationTitleId'(precedingPublicationTitleId?.trim())
+        builder.'lastChangedExternal'(lastChangedExternal?.trim())
+        builder.'medium'(medium?.value.trim())
 
         builder.'title'([id: ti.id, uuid: ti.uuid]) {
           builder.'name'(ti.name?.trim())

@@ -496,11 +496,11 @@ class IntegrationControllerSpec extends Specification {
         "identifiers"    : [
           [
             "type" : "isil",
-            "value": "ZDB-1-ACS"
+            "value": "ZDB-5-ACS"
           ]
         ],
         "listStatus"     : "In Progress",
-        "name"           : "American Chemical Society: ACS Legacy Archives: CompleteDates",
+        "name"           : "American Chemical Society: additional Props",
         "nominalPlatform": [
           "name"      : "ACS Publications",
           "primaryUrl": "https://pubs.acs.org"
