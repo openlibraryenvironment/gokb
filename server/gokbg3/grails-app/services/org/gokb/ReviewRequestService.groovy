@@ -7,20 +7,20 @@ class ReviewRequestService {
 
   def raise(KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null, refineProject = null, additionalInfo = null, RefdataValue stdDesc = null, CuratoryGroup group = null) {
     // Create a request.
-    ReviewRequest req = new ReviewRequest (
-        status : RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
-        raisedBy : (raisedBy),
-        descriptionOfCause : (cause),
-        reviewRequest : (actionRequired),
-        refineProject : (refineProject),
-        stdDesc : (stdDesc),
-        additionalInfo : (additionalInfo),
-        componentToReview : (forComponent)
-        ).save();
+    ReviewRequest req = new ReviewRequest(
+      status: RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
+      raisedBy: (raisedBy),
+      descriptionOfCause: (cause),
+      reviewRequest: (actionRequired),
+      refineProject: (refineProject),
+      stdDesc: (stdDesc),
+      additionalInfo: (additionalInfo),
+      componentToReview: (forComponent)
+    ).save();
 
     if (req) {
       if (raisedBy) {
-        new ReviewRequestAllocationLog(allocatedTo: raisedBy, rr: req).save(flush:true,failOnError:true)
+        new ReviewRequestAllocationLog(allocatedTo: raisedBy, rr: req).save(flush: true, failOnError: true)
 
       }
 
@@ -29,10 +29,12 @@ class ReviewRequestService {
       }
       else if (KBComponent.has(forComponent, 'curatoryGroups')) {
         log.debug("Using Component groups for ${forComponent} -> ${forComponent.class?.name}..")
-        forComponent.curatoryGroups?.each { gr ->
-          CuratoryGroup cg = CuratoryGroup.get(gr.id)
-          log.debug("Allocating Package Group ${gr} to review ${req}")
-          AllocatedReviewGroup.create(cg, req, true)
+        CuratoryGroup.withSession {
+          forComponent.curatoryGroups?.each { gr ->
+            CuratoryGroup cg = CuratoryGroup.get(gr.id)
+            log.debug("Allocating Package Group ${gr} to review ${req}")
+            AllocatedReviewGroup.create(cg, req, true)
+          }
         }
       }
       else if (forComponent.class == TitleInstancePackagePlatform && forComponent.pkg?.curatoryGroups?.size() > 0) {

@@ -1029,7 +1029,7 @@ class IntegrationControllerSpec extends Specification {
           ],
           "coverage"   : [
             [
-              "coverageDepth": "bof",
+              "coverageDepth": "Fulltext",
               "coverageNote" : "NL-DE;  1.1953 - 43.1995",
               "embargo"      : "",
               "endDate"      : "1995-12-31 00:00:00.000",
