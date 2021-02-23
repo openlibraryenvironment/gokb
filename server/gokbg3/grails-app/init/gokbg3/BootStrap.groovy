@@ -1023,6 +1023,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Job.Type', 'RejectTIWithoutIdentifier').save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate('Job.Type', 'PlatformCleanup').save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate('Job.Type', 'RecalculateStatistics').save(flush: true, failOnError: true)
+    RefdataCategory.lookupOrCreate('Job.Type', 'PackageComparison').save(flush: true, failOnError: true)
 
 
     log.debug("Deleting any null refdata values");

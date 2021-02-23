@@ -631,9 +631,9 @@ class TitleInstance extends KBComponent {
     def result = ['valid': true]
     def valErrors = [:]
 
-    if (titleDTO?.name?.trim() == false) {
+    if (!titleDTO.name||titleDTO.name.trim()=='') {
       result.valid = false
-      valErrors.put('name', [message: "missing", baddata: titleDTO.name])
+      valErrors.put('name', [message: "missing"])
     }
     else {
       LocalDateTime startDate = GOKbTextUtils.completeDateString(titleDTO.publishedFrom)
@@ -650,7 +650,6 @@ class TitleInstance extends KBComponent {
       }
 
       if (startDate && endDate && (endDate < startDate)) {
-        result.valid = false
         valErrors.put('publishedTo', [message: "Publishing end date must not be prior to its start date!", baddata: titleDTO.publishedTo])
         // switch dates
         def tmp = titleDTO.publishedTo
@@ -660,21 +659,25 @@ class TitleInstance extends KBComponent {
 
       String idJsonKey = 'ids'
       def ids_list = titleDTO[idJsonKey]
+
       if (!ids_list) {
         idJsonKey = 'identifiers'
         ids_list = titleDTO[idJsonKey]
       }
+
       def id_errors = Identifier.validateDTOs(ids_list, locale)
+
       if (id_errors.size() > 0) {
         valErrors.put(idJsonKey, id_errors)
         if (titleDTO[idJsonKey].size() == 0) {
-          valErrors.put(message: 'no valid identifiers left')
+          valErrors.put(idJsonKey, [message: 'no valid identifiers left'])
         }
       }
     }
 
     if (titleDTO.medium) {
       RefdataValue medRef = determineMediumRef(titleDTO)
+
       if (medRef) {
         titleDTO.medium = medRef.value
       }
@@ -767,24 +770,18 @@ class TitleInstance extends KBComponent {
     def type = null
 
     if (titleDTO.type) {
-      switch (titleDTO.type) {
+      switch (titleDTO.type.toLowerCase()) {
         case "serial":
-        case "Serial":
-        case "Journal":
         case "journal":
           type = "org.gokb.cred.JournalInstance"
           break;
         case "monograph":
-        case "Monograph":
-        case "Book":
         case "book":
           type = "org.gokb.cred.BookInstance"
           break;
-        case "Database":
         case "database":
           type = "org.gokb.cred.DatabaseInstance"
           break;
-        case "Other":
         case "other":
           type = "org.gokb.cred.OtherInstance"
           break;

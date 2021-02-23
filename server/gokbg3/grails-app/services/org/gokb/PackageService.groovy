@@ -3,6 +3,7 @@ package org.gokb
 import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ClassUtils
 import grails.gorm.transactions.Transactional
+
 import grails.io.IOUtils
 import groovy.util.logging.Slf4j
 import groovyx.net.http.RESTClient
@@ -53,6 +54,8 @@ class PackageService {
   */
 
   def sessionFactory
+  def genericOIDService
+  def restMappingService
   ComponentLookupService componentLookupService
   def grailsApplication
   def messageService
@@ -452,6 +455,202 @@ class PackageService {
 
       j.endTime = new Date()
     }
+  }
+
+  @Transactional
+  def compareLists(listOne, listTwo, def full = true, Date date = null, Job j = null) {
+    def result = [:]
+    def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def tipp_status = [status_current]
+    Date checkDate = date ?: new Date()
+    def tipp_params = [:]
+    def totals = [one: [tipps: 0, titles: 0], two: [tipps: 0, titles: 0]]
+    def titlesOne = [:]
+    def titlesTwo = [:]
+    def currentPkgNum = 0
+    boolean cancelled = false
+
+    if (date) {
+      if (date.before(new Date())) {
+        tipp_status << status_retired
+      }
+    }
+
+    if (full) {
+      result = ['new': [], 'both':[], 'missing':[]]
+    }
+    else {
+      result = ['new': 0, 'both': 0, 'missing': 0]
+    }
+
+    log.debug("Building titles map 1 ..")
+
+    Package.withNewSession {
+      for (p1 in listOne) {
+        def pkg = Package.get(genericOIDService.oidToId(p1))
+        currentPkgNum++
+
+        if (pkg && !cancelled) {
+          int total = TitleInstancePackagePlatform.executeQuery("select count(*) from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])[0]
+          int currentOffset = 0
+
+          while (currentOffset < total) {
+            def tipps = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])
+
+            tipps.each { tipp ->
+              def inRange = true
+
+              if (tipp.accessEndDate && tipp.accessEndDate.before(checkDate)) {
+                inRange = false
+              }
+              else if (tipp.accessStartDate && tipp.accessStartDate.after(checkDate)) {
+                inRange = false
+              }
+              else if (tipp.status == status_retired) {
+                if (date && tipp.lastUpdated?.before(checkDate)) {
+                  inRange = false
+                }
+              }
+
+              if (inRange) {
+                if (!titlesOne[tipp.title.id]){
+                  titlesOne[tipp.title.id] = [id: tipp.title.id, name: tipp.title.name, tipps: []]
+                  totals.one.titles++
+                }
+
+                totals.one.tipps++
+                titlesOne[tipp.title.id]['tipps'] << restMappingService.mapObjectToJson(tipp, tipp_params)
+              }
+              currentOffset++
+            }
+            cleanUpGorm()
+          }
+
+          if (Thread.currentThread().isInterrupted() || j?.isCancelled()) {
+            log.debug("cancelling Job #${j?.uuid}")
+            cancelled = true
+            break
+          }
+
+          if (j) {
+            j.setProgress(currentPkgNum, (listOne.size() + listTwo.size()))
+          }
+        }
+        else if (!pkg) {
+          log.debug("Unable to resolve Package with id ${p1}")
+        }
+      }
+
+      log.debug("Added ${totals.one.titles} titles with ${totals.one.tipps} TIPPs!")
+
+      log.debug("Building titles map 2 ..")
+
+      for (p2 in listTwo) {
+        def pkg = Package.get(genericOIDService.oidToId(p2))
+        currentPkgNum++
+
+        if (pkg && !cancelled) {
+          int total = TitleInstancePackagePlatform.executeQuery("select count(*) from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])[0]
+          int currentOffset = 0
+
+          while (currentOffset < total) {
+            def tipps = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg], [max: 50, offset: currentOffset])
+
+            tipps.each { tipp ->
+              def inRange = true
+
+              if (tipp.accessEndDate && tipp.accessEndDate.before(checkDate)) {
+                inRange = false
+              }
+              else if (tipp.accessStartDate && tipp.accessStartDate.after(checkDate)) {
+                inRange = false
+              }
+              else if (tipp.status == status_retired) {
+                if (date && tipp.lastUpdated.before(checkDate)) {
+                  inRange = false
+                }
+              }
+
+              if (inRange) {
+                if (!titlesTwo[tipp.title.id]){
+                  titlesTwo[tipp.title.id] = [id: tipp.title.id, name: tipp.title.name, tipps: []]
+                  totals.two.titles++
+                }
+
+                totals.two.tipps++
+                titlesTwo[tipp.title.id]['tipps'] << restMappingService.mapObjectToJson(tipp, tipp_params)
+
+                if (!titlesOne[tipp.title.id]) {
+                  if (full) {
+                    result['new'] << restMappingService.mapObjectToJson(tipp, tipp_params)
+                  }
+                  else {
+                    result['new']++
+                  }
+                }
+              }
+              currentOffset++
+            }
+          }
+
+          cleanUpGorm()
+
+          if (Thread.currentThread().isInterrupted() || j?.isCancelled()) {
+            log.debug("cancelling Job #${j?.uuid}")
+            cancelled = true
+            break
+          }
+
+          if (j) {
+            j.setProgress(currentPkgNum, (listOne.size() + listTwo.size()))
+          }
+        }
+      }
+    }
+
+    log.debug("Finished collecting TIPPs. Starting comparison")
+
+    if (!cancelled) {
+      titlesOne.each { id, val ->
+        if (!titlesTwo[id]) {
+          if (full) {
+            result['missing'] << val
+          }
+          else {
+            result['missing']++
+          }
+        }
+        else {
+          if (full) {
+            result['both'] << ['id': val.id, 'name': val.name, 'old': val.tipps, 'new': titlesTwo[id].tipps]
+          }
+          else {
+            result['both']++
+          }
+        }
+      }
+
+      titlesTwo.each { id, val ->
+        if (!titlesOne[id]) {
+          if (full) {
+            result['new'] << val
+          }
+          else {
+            result['new']++
+          }
+        }
+      }
+    }
+
+    if (j) {
+      j.endTime = new Date()
+    }
+
+    log.debug("Added ${totals.two.titles} titles with ${totals.two.tipps} TIPPs!")
+    result
   }
 
   @javax.annotation.PreDestroy
