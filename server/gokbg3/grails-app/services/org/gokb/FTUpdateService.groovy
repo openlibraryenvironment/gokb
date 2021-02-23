@@ -88,11 +88,11 @@ class FTUpdateService {
 
         if (kbc.source) {
           result.source = [
-                  id              : kbc.source.id,
-                  name            : kbc.source.name,
-                  automaticUpdates: kbc.source.automaticUpdates,
-                  url             : kbc.source.url,
-                  frequency       : kbc.source.frequency,
+            id              : kbc.source.id,
+            name            : kbc.source.name,
+            automaticUpdates: kbc.source.automaticUpdates,
+            url             : kbc.source.url,
+            frequency       : kbc.source.frequency,
           ]
           if (kbc.source.lastRun)
             result.source.lastRun = dateFormatService.formatIsoTimestamp(kbc.source.lastRun)
@@ -351,6 +351,7 @@ class FTUpdateService {
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name ?: (kbc.title?.name ?: null)
+        result.componentType = kbc.class.simpleName
 
         result.curatoryGroups = []
         kbc.pkg?.curatoryGroups?.each { cg ->
@@ -384,44 +385,6 @@ class FTUpdateService {
             result.coverage.add(cst)
           }
         }
-
-        result.tippPackage = kbc.pkg ? kbc.pkg.getLogEntityId() : ""
-        result.tippPackageName = kbc.pkg ? kbc.pkg.name : ""
-        result.tippPackageUuid = kbc.pkg ? kbc.pkg.uuid : ""
-
-        result.tippTitle = kbc.title ? kbc.title.getLogEntityId() : ""
-        result.tippTitleName = kbc.title ? kbc.title.name : ""
-        result.tippTitleUuid = kbc.title ? kbc.title.uuid : ""
-
-        result.hostPlatform = kbc.hostPlatform ? kbc.hostPlatform.getLogEntityId() : ""
-        result.hostPlatformName = kbc.hostPlatform ? kbc.hostPlatform.name : ""
-        result.hostPlatformUuid = kbc.hostPlatform ? kbc.hostPlatform.uuid : ""
-
-        result.status = kbc.status?.value
-
-        result.identifiers = []
-        kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
-          result.identifiers.add([namespace    : idc.toComponent.namespace.value,
-                                  value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
-        }
-
-        if (org.apache.commons.lang.StringUtils.isNotEmpty(kbc.publisherName)) {
-          result.publisherName = kbc.publisherName
-        }
-
-        if (kbc.dateFirstOnline) result.dateFirstOnline = dateFormatService.formatIsoTimestamp(kbc.dateFirstOnline)
-        if (kbc.dateFirstInPrint) result.dateFristInPrint = dateFormatService.formatIsoTimestamp(kbc.dateFirstInPrint)
-
-        result.componentType = kbc.class.simpleName
-        result.tippTitleMedium = kbc.title ? kbc.title.medium : ""
-
-        if (kbc.accessStartDate) result.accessStartDate = dateFormatService.formatIsoTimestamp(kbc.accessStartDate)
-        if (kbc.accessEndDate) result.accessEndDate = dateFormatService.formatIsoTimestamp(kbc.accessEndDate)
-
-        result.subjectArea = kbc.subjectArea ?: ""
-        result.series = kbc.series ?: ""
-
         if (kbc.title?.niceName == 'Book') {
 
           // edition for eBooks
@@ -448,36 +411,85 @@ class FTUpdateService {
           result.titleImprint = kbc.title?.imprint?.name ?: ""
         }
 
-        // title history for all title types
+        if (kbc.pkg) {
+          result.tippPackage = kbc.pkg.getLogEntityId()
+          result.tippPackageName = kbc.pkg.name
+          result.tippPackageUuid = kbc.pkg.uuid
+        }
+
+        if (kbc.hostPlatform) {
+          result.hostPlatform = kbc.hostPlatform.getLogEntityId()
+          result.hostPlatformName = kbc.hostPlatform.name
+          result.hostPlatformUuid = kbc.hostPlatform.uuid
+        }
+
+        // title history
         result.titleHistory = []
-        kbc.title?.titleHistory?.each { he ->
-          if (he.date) {
-            def event = [:]
-            event.date = dateFormatService.formatIsoTimestamp(he.date)
-            event.from = []
-            if (he.from) {
-              event.from.addAll(he.from.collect { fe -> [id: fe?.id, uuid: fe?.uuid, name: fe?.name] })
+        // publishers
+        result.titlePublishers = []
+        // variant names
+        result.altname = []
+        if (kbc.title) {
+          result.tippTitle = kbc.title.getLogEntityId()
+          result.tippTitleName = kbc.title.name
+          result.tippTitleUuid = kbc.title.uuid
+          result.tippTitleMedium = kbc.title.medium.value
+          kbc.title.titleHistory?.each { he ->
+            if (he.date) {
+              def event = [:]
+              event.date = dateFormatService.formatIsoTimestamp(he.date)
+              event.from = []
+              if (he.from) {
+                event.from.addAll(he.from.collect { fe -> [id: fe?.id, uuid: fe?.uuid, name: fe?.name] })
+              }
+              event.to = []
+              if (he.to) {
+                event.to.addAll(he.to.collect { te -> [id: te?.id, uuid: te?.uuid, name: te?.name] })
+              }
+              event.id = he.id ?: ""
+              result.titleHistory.add(event)
             }
-            event.to = []
-            if (he.to) {
-              event.to.addAll(he.to.collect { te -> [id: te?.id, uuid: te?.uuid, name: te?.name] })
-            }
-            event.id = he.id ?: ""
-            result.titleHistory.add(event)
+          }
+          kbc.title.publisher?.each { pub ->
+            def publisher = [:]
+            publisher.name = pub.name ?: ""
+            publisher.id = pub.id ?: ""
+            publisher.uuid = pub.uuid ?: ""
+            result.titlePublishers.add(publisher)
+          }
+          kbc.title.variantNames.each { vn ->
+            result.altname.add(vn.variantName)
           }
         }
 
-        // publishers for all title types
-        result.titlePublishers = []
-        kbc.title?.publisher?.each { pub ->
-          def publisher = [:]
-          publisher.name = pub.name ?: ""
-          publisher.id = pub.id ?: ""
-          publisher.uuid = pub.uuid ?: ""
-          result.titlePublishers.add(publisher)
+        if (kbc.medium) result.medium = kbc.medium.value
+        if (kbc.status) result.status = kbc.status.value
+        if (kbc.publicationType) result.publicationType = kbc.publicationType.value
+
+        result.identifiers = []
+        kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+          result.identifiers.add([namespace    : idc.toComponent.namespace.value,
+                                  value        : idc.toComponent.value,
+                                  namespaceName: idc.toComponent.namespace.name])
         }
 
-        // prices for all title types
+        if (kbc.dateFirstOnline) result.dateFirstOnline = dateFormatService.formatIsoTimestamp(kbc.dateFirstOnline)
+        if (kbc.dateFirstInPrint) result.dateFristInPrint = dateFormatService.formatIsoTimestamp(kbc.dateFirstInPrint)
+        if (kbc.accessStartDate) result.accessStartDate = dateFormatService.formatIsoTimestamp(kbc.accessStartDate)
+        if (kbc.accessEndDate) result.accessEndDate = dateFormatService.formatIsoTimestamp(kbc.accessEndDate)
+        if (kbc.lastChangedExternal) result.lastChangedExternal = dateFormatService.formatIsoTimestamp(kbc.lastChangedExternal)
+
+        if (org.apache.commons.lang.StringUtils.isNotEmpty(kbc.publisherName)) result.publisherName = kbc.publisherName
+        if (kbc.subjectArea) result.subjectArea = kbc.subjectArea
+        if (kbc.series) result.series = kbc.series
+        if (kbc.volumeNumber) result.volumeNumber = kbc.volumeNumber
+        if (kbc.editionStatement) result.editionStatement = kbc.editionStatement
+        if (kbc.firstAuthor) result.firstAuthor = kbc.firstAuthor
+        if (kbc.firstEditor) result.firstEditor = kbc.firstEditor
+        if (kbc.parentPublicationTitleId) result.parentPublicationTitleId = kbc.parentPublicationTitleId
+        if (kbc.precedingPublicationTitleId) result.precedingPublicationTitleId = kbc.precedingPublicationTitleId
+
+        // prices
         result.prices = []
         kbc.prices?.each { p ->
           def price = [:]
@@ -491,21 +503,14 @@ class FTUpdateService {
           result.prices.add(price)
         }
 
-        result.altname = []
-        kbc.title?.variantNames.each { vn ->
-          result.altname.add(vn.variantName)
-        }
-
         result
       }
-
     }
     catch (Exception e) {
       log.error("Problem", e);
     }
     running = false;
   }
-
 
   def updateES(esclient, domain, recgen_closure) {
 
