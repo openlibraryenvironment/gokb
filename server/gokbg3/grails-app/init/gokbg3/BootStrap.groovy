@@ -1,55 +1,23 @@
 package gokbg3;
 
 import grails.util.Environment
-import grails.util.GrailsNameUtils;
-
 import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
-
-
-import java.lang.reflect.Method
-
-import org.gokb.GOKbTextUtils
 
 import javax.servlet.http.HttpServletRequest
 
 import grails.plugin.springsecurity.acl.*
 
 import org.gokb.DomainClassExtender
-import org.gokb.ESWrapperService
 import org.gokb.ComponentStatisticService
 import org.gokb.cred.*
-import org.gokb.refine.RefineProject
-
-//import org.gokb.validation.types.*
 
 import com.k_int.apis.A_Api;
 import com.k_int.ConcurrencyManagerService.Job
-
-import static org.springframework.security.acls.domain.BasePermission.ADMINISTRATION
-import static org.springframework.security.acls.domain.BasePermission.DELETE
-import static org.springframework.security.acls.domain.BasePermission.READ
-import static org.springframework.security.acls.domain.BasePermission.WRITE
-import static org.springframework.security.acls.domain.BasePermission.CREATE
-
-import org.springframework.security.core.context.SecurityContextHolder as SCH
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.authority.AuthorityUtils
-
-import org.elasticsearch.client.Client
-import org.elasticsearch.client.AdminClient
 import org.elasticsearch.client.IndicesAdminClient
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequestBuilder
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse
-import static org.elasticsearch.common.xcontent.XContentFactory.*
-import org.elasticsearch.common.xcontent.XContentBuilder
-
 
 class BootStrap {
 
@@ -102,32 +70,32 @@ class BootStrap {
       if (!adminUser) {
         log.error("No admin user found, create")
         adminUser = new User(
-          username: 'admin',
-          password: 'admin',
-          display: 'Admin',
-          email: 'admin@localhost',
-          enabled: true).save(failOnError: true)
+            username: 'admin',
+            password: 'admin',
+            display: 'Admin',
+            email: 'admin@localhost',
+            enabled: true).save(failOnError: true)
       }
 
       def ingestAgent = User.findByUsername('ingestAgent')
       if (!ingestAgent) {
         log.error("No ingestAgent user found, create")
         ingestAgent = new User(
-          username: 'ingestAgent',
-          password: 'ingestAgent',
-          display: 'Ingest Agent',
-          email: '',
-          enabled: false).save(failOnError: true)
+            username: 'ingestAgent',
+            password: 'ingestAgent',
+            display: 'Ingest Agent',
+            email: '',
+            enabled: false).save(failOnError: true)
       }
       def deletedUser = User.findByUsername('deleted')
       if (!deletedUser) {
         log.error("No deleted user found, create")
         deletedUser = new User(
-          username: 'deleted',
-          password: 'deleted',
-          display: 'Deleted User',
-          email: '',
-          enabled: false).save(failOnError: true)
+            username: 'deleted',
+            password: 'deleted',
+            display: 'Deleted User',
+            email: '',
+            enabled: false).save(failOnError: true)
       }
 
       if (Environment.current != Environment.PRODUCTION) {
@@ -135,11 +103,11 @@ class BootStrap {
         if (!tempUser) {
           log.error("No tempUser found, create")
           tempUser = new User(
-            username: 'tempUser',
-            password: 'tempUser',
-            display: 'Temp User',
-            email: '',
-            enabled: true).save(failOnError: true)
+              username: 'tempUser',
+              password: 'tempUser',
+              display: 'Temp User',
+              email: '',
+              enabled: true).save(failOnError: true)
         }
 
         if (!tempUser.authorities.contains(userRole)) {
@@ -186,7 +154,7 @@ class BootStrap {
         log.debug("Ensure curatory group: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
 
         def local_cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup) ?:
-          new CuratoryGroup(name: grailsApplication.config.gokb?.defaultCuratoryGroup).save(flush: true, failOnError: true);
+            new CuratoryGroup(name: grailsApplication.config.gokb?.defaultCuratoryGroup).save(flush: true, failOnError: true);
       }
     }
 
@@ -235,14 +203,14 @@ class BootStrap {
 
     log.info("Ensure default Identifier namespaces")
     def namespaces = [
-      [value: 'isbn', name: 'ISBN', family: 'isxn', pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
-      [value: 'pisbn', name: 'Print-ISBN', family: 'isxn', pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
-      [value: 'issn', name: 'p-ISSN', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
-      [value: 'eissn', name: 'e-ISSN', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
-      [value: 'issnl', name: 'ISSN-L', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
-      [value: 'doi', name: 'DOI'],
-      [value: 'zdb', name: 'ZDB-ID', pattern: "^\\d+-[\\dxX]\$"],
-      [value: 'isil', name: 'ISIL', pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
+        [value: 'isbn', name: 'ISBN', family: 'isxn', pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
+        [value: 'pisbn', name: 'Print-ISBN', family: 'isxn', pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
+        [value: 'issn', name: 'p-ISSN', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
+        [value: 'eissn', name: 'e-ISSN', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
+        [value: 'issnl', name: 'ISSN-L', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
+        [value: 'doi', name: 'DOI'],
+        [value: 'zdb', name: 'ZDB-ID', pattern: "^\\d+-[\\dxX]\$"],
+        [value: 'isil', name: 'ISIL', pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
     ]
 
     namespaces.each { ns ->
@@ -258,7 +226,8 @@ class BootStrap {
           ns_obj.name = ns.name
           ns_obj.save(flush: true)
         }
-      } else {
+      }
+      else {
         ns_obj = new IdentifierNamespace(ns).save(flush: true, failOnError: true)
       }
 
@@ -273,7 +242,7 @@ class BootStrap {
     registerUsers()
 
     log.debug("Ensuring ElasticSearch index")
-    ensureESIndex()
+    ensureEsIndices()
 
 
     Job hk_job = concurrencyManagerService.createJob {
@@ -298,7 +267,8 @@ class BootStrap {
       def existing_cfg = BulkLoaderConfig.findByCode(k)
       if (existing_cfg) {
         log.debug("Got existing config");
-      } else {
+      }
+      else {
         def cfg = v as JSON
         existing_cfg = new BulkLoaderConfig(code: k, cfg: cfg?.toString()).save(flush: true, failOnError: true)
       }
@@ -320,7 +290,8 @@ class BootStrap {
         if (df.save(flush: true)) {
           //success
           source_file.delete()
-        } else {
+        }
+        else {
           log.debug("Errors while trying to save DataFile fileData:")
           log.debug(df.errors)
         }
@@ -536,9 +507,8 @@ class BootStrap {
 
     ["A & I Database", "Audio", "Book", "Database", "Dataset", "Film", "Image", "Journal",
      "Other", "Published Score", "Article", "Software", "Statistics", "Market Data", "Standards",
-     "Biography", "Legal Text", "Cartography", "Miscellaneous"].each { med ->
-      RefdataCategory.lookupOrCreate("TitleInstance.Medium", med).save(flush: true, failOnError: true)
-    }
+     "Biography", "Legal Text", "Cartography", "Miscellaneous", "Other"].each { med ->
+      RefdataCategory.lookupOrCreate("TitleInstance.Medium", med).save(flush: true, failOnError: true) }
 
     RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Unknown").save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Full OA").save(flush: true, failOnError: true)
@@ -562,8 +532,6 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("Tipp.LinkType", "Comes With").save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate("Tipp.LinkType", "Parent").save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate("Tipp.LinkType", "Previous").save(flush: true, failOnError: true)
-
-    ['Monograph', 'Serial', 'Database', 'Other'].each { type -> RefdataCategory.lookupOrCreate("Tipp.PublicationType", type).save(flush: true, failOnError: true) }
 
     RefdataCategory.lookupOrCreate("TitleInstance.Rel", "Translated").save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate("TitleInstance.Rel", "Absorbed").save(flush: true, failOnError: true)
@@ -1023,7 +991,6 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Job.Type', 'RejectTIWithoutIdentifier').save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate('Job.Type', 'PlatformCleanup').save(flush: true, failOnError: true)
     RefdataCategory.lookupOrCreate('Job.Type', 'RecalculateStatistics').save(flush: true, failOnError: true)
-    RefdataCategory.lookupOrCreate('Job.Type', 'PackageComparison').save(flush: true, failOnError: true)
 
 
     log.debug("Deleting any null refdata values");
@@ -1040,161 +1007,160 @@ class BootStrap {
     def ebsco_source = Source.findByName('EBSCO') ?: new Source(name: 'EBSCO').save(flush: true, failOnError: true)
   }
 
-  def DSConfig() {
 
+  def DSConfig() {
     [
-      'accessdl': 'Access - Download',
-      'accessol': 'Access - Read Online',
-      'accbildl': 'Accessibility - Download',
-      'accbilol': 'Accessibility - Read Online',
-      'device'  : 'Device Requirements for Download',
-      'drm'     : 'DRM',
-      'format'  : 'Format',
-      'lic'     : 'Licensing',
-      'other'   : 'Other',
-      'ref'     : 'Referencing',
+        'accessdl': 'Access - Download',
+        'accessol': 'Access - Read Online',
+        'accbildl': 'Accessibility - Download',
+        'accbilol': 'Accessibility - Read Online',
+        'device'  : 'Device Requirements for Download',
+        'drm'     : 'DRM',
+        'format'  : 'Format',
+        'lic'     : 'Licensing',
+        'other'   : 'Other',
+        'ref'     : 'Referencing',
     ].each { k, v ->
       def dscat = DSCategory.findByCode(k) ?: new DSCategory(code: k, description: v).save(flush: true, failOnError: true)
     }
 
     [
-      ['format', 'Downloadable PDF', '', ''],
-      ['format', 'Embedded PDF', '', ''],
-      ['format', 'ePub', '', ''],
-      ['format', 'OeB', '', ''],
-      ['accessol', 'Book Navigation', '', ''],
-      ['accessol', 'Table of contents navigation', '', ''],
-      ['accessol', 'Pagination', '', ''],
-      ['accessol', 'Page Search', '', ''],
-      ['accessol', 'Search Within Book', '', ''],
-      ['accessdl', 'Download Extent', '', ''],
-      ['accessdl', 'Download Time', '', ''],
-      ['accessdl', 'Download Reading View Navigation', '', ''],
-      ['accessdl', 'Table of Contents Navigation', '', ''],
-      ['accessdl', 'Pagination', '', ''],
-      ['accessdl', 'Page Search', '', ''],
-      ['accessdl', 'Search Within Book', '', ''],
-      ['accessdl', 'Read Aloud or Listen Option', '', ''],
-      ['device', 'General', '', ''],
-      ['device', 'Android', '', ''],
-      ['device', 'iOS', '', ''],
-      ['device', 'Kindle Fire', '', ''],
-      ['device', 'PC', '', ''],
-      ['drm', 'Copying', '', ''],
-      ['drm', 'Printing', '', ''],
-      ['accbilol', 'Dictionary', '', ''],
-      ['accbilol', 'Text Resize', '', ''],
-      ['accbilol', 'Change Reading Colour', '', ''],
-      ['accbilol', 'Read aloud or Listen Option', '', ''],
-      ['accbilol', 'Integrated Help', '', ''],
-      ['accbildl', 'Copying', '', ''],
-      ['accbildl', 'Printing', '', ''],
-      ['accbildl', 'Add Notes', '', ''],
-      ['accbildl', 'Dictionary', '', ''],
-      ['accbildl', 'Text Resize', '', ''],
-      ['accbildl', 'Change Reading Colour', '', ''],
-      ['accbildl', 'Integrated Help', '', ''],
-      ['accbildl', 'Other Accessibility features or Support', '', ''],
-      ['ref', 'Export to bibliographic software', '', ''],
-      ['ref', 'Sharing / Social Media', '', ''],
-      ['other', 'Changes / Redevelopment in the near future', '', ''],
-      ['lic', 'Number of users', '', ''],
-      ['lic', 'Credit Payment Model', '', ''],
-      ['lic', 'Publishers Included', '', '']
+        ['format', 'Downloadable PDF', '', ''],
+        ['format', 'Embedded PDF', '', ''],
+        ['format', 'ePub', '', ''],
+        ['format', 'OeB', '', ''],
+        ['accessol', 'Book Navigation', '', ''],
+        ['accessol', 'Table of contents navigation', '', ''],
+        ['accessol', 'Pagination', '', ''],
+        ['accessol', 'Page Search', '', ''],
+        ['accessol', 'Search Within Book', '', ''],
+        ['accessdl', 'Download Extent', '', ''],
+        ['accessdl', 'Download Time', '', ''],
+        ['accessdl', 'Download Reading View Navigation', '', ''],
+        ['accessdl', 'Table of Contents Navigation', '', ''],
+        ['accessdl', 'Pagination', '', ''],
+        ['accessdl', 'Page Search', '', ''],
+        ['accessdl', 'Search Within Book', '', ''],
+        ['accessdl', 'Read Aloud or Listen Option', '', ''],
+        ['device', 'General', '', ''],
+        ['device', 'Android', '', ''],
+        ['device', 'iOS', '', ''],
+        ['device', 'Kindle Fire', '', ''],
+        ['device', 'PC', '', ''],
+        ['drm', 'Copying', '', ''],
+        ['drm', 'Printing', '', ''],
+        ['accbilol', 'Dictionary', '', ''],
+        ['accbilol', 'Text Resize', '', ''],
+        ['accbilol', 'Change Reading Colour', '', ''],
+        ['accbilol', 'Read aloud or Listen Option', '', ''],
+        ['accbilol', 'Integrated Help', '', ''],
+        ['accbildl', 'Copying', '', ''],
+        ['accbildl', 'Printing', '', ''],
+        ['accbildl', 'Add Notes', '', ''],
+        ['accbildl', 'Dictionary', '', ''],
+        ['accbildl', 'Text Resize', '', ''],
+        ['accbildl', 'Change Reading Colour', '', ''],
+        ['accbildl', 'Integrated Help', '', ''],
+        ['accbildl', 'Other Accessibility features or Support', '', ''],
+        ['ref', 'Export to bibliographic software', '', ''],
+        ['ref', 'Sharing / Social Media', '', ''],
+        ['other', 'Changes / Redevelopment in the near future', '', ''],
+        ['lic', 'Number of users', '', ''],
+        ['lic', 'Credit Payment Model', '', ''],
+        ['lic', 'Publishers Included', '', '']
     ].each { crit ->
       def cat = DSCategory.findByCode(crit[0]);
       if (cat) {
         def c = DSCriterion.findByOwnerAndTitle(cat, crit[1]) ?: new DSCriterion(
-          owner: cat,
-          title: crit[1],
-          description: crit[2],
-          explanation: crit[3]).save(flush: true, failOnError: true)
-      } else {
-        log.error("Unable to locate category: ${crit[0]}");
+            owner: cat,
+            title: crit[1],
+            description: crit[2],
+            explanation: crit[3]).save(flush: true, failOnError: true)
+      }
+      else {
+        log.error("Unable to locate category: ${crit[0]}")
       }
     }
-
     //log.debug(titleLookupService.getTitleFieldForIdentifier([[ns:'isbn',value:'9780195090017']],'publishedFrom'));
     //log.debug(titleLookupService.getTitleFieldForIdentifier([[ns:'isbn',value:'9780195090017']],'publishedTo'));
   }
 
-  def registerUsers() {
 
+  def registerUsers() {
     grailsApplication.config.sysusers.each { su ->
-      log.debug("test ${su.name} ${su.pass} ${su.display} ${su.roles}");
+      log.debug("test ${su.name} ${su.pass} ${su.display} ${su.roles}")
       def user = User.findByUsername(su.name)
       if (user) {
         if (user.password != su.pass) {
-          log.debug("Hard change of user password from config ${user.password} -> ${su.pass}");
-          user.password = su.pass;
+          log.debug("Hard change of user password from config ${user.password} -> ${su.pass}")
+          user.password = su.pass
           user.save(failOnError: true)
-        } else {
+        }
+        else {
           log.debug("${su.name} present and correct");
         }
-      } else {
-        log.debug("Create user...");
+      }
+      else {
+        log.debug("Create user...")
         user = new User(
-          username: su.name,
-          password: su.pass,
-          display: su.display,
-          email: su.email,
-          enabled: true).save(failOnError: true)
+            username: su.name,
+            password: su.pass,
+            display: su.display,
+            email: su.email,
+            enabled: true).save(failOnError: true)
       }
 
       log.debug("Add roles for ${su.name}");
       su.roles.each { r ->
         def role = Role.findByAuthority(r)
         if (!(user.authorities.contains(role))) {
-          log.debug("  -> adding role ${role}");
+          log.debug("  -> adding role ${role}")
           UserRole.create user, role
-        } else {
-          log.debug("  -> ${role} already present");
+        }
+        else {
+          log.debug("  -> ${role} already present")
         }
       }
     }
   }
 
-  def ensureESIndex() {
-    def indexName = grailsApplication.config.gokb.es.index ?: (grailsApplication.config.gokb_es_index ?: "gokbg3")
+
+  def ensureEsIndices() {
+    def esIndices = grailsApplication.config.gokb.es.indices?.values()
+    for (String indexName in esIndices){
+      ensureEsIndex(indexName)
+    }
+  }
+
+
+  def ensureEsIndex(String indexName) {
     log.debug("ensureESIndex for ${indexName}");
     def esclient = ESWrapperService.getClient()
-    IndicesAdminClient adminClient = esclient.admin().indices();
+    IndicesAdminClient adminClient = esclient.admin().indices()
 
     if (!adminClient.prepareExists(indexName).execute().actionGet().isExists()) {
       log.debug("ES index ${indexName} did not exist, creating..")
 
-      CreateIndexRequestBuilder createIndexRequestBuilder = adminClient.prepareCreate(indexName);
+      CreateIndexRequestBuilder createIndexRequestBuilder = adminClient.prepareCreate(indexName)
 
-      log.debug("Adding index setttings..")
-      createIndexRequestBuilder.setSettings(indexSettings());
+      log.debug("Adding index settings..")
+      createIndexRequestBuilder.setSettings(ESWrapperService.getSettings().get("settings"))
       log.debug("Adding index mappings..")
-      createIndexRequestBuilder.addMapping("component", indexMapping());
+      createIndexRequestBuilder.addMapping("component", ESWrapperService.getMapping())
 
-      CreateIndexResponse indexResponse = createIndexRequestBuilder.execute().actionGet();
+      CreateIndexResponse indexResponse = createIndexRequestBuilder.execute().actionGet()
 
       if (indexResponse.isAcknowledged()) {
         log.debug("Index ${indexName} successfully created!")
-      } else {
+      }
+      else {
         log.debug("Index creation failed: ${indexResponse}")
       }
-    } else {
+    }
+    else {
       log.debug("ES index ${indexName} already exists..")
       // Validate settings & mappings
     }
   }
 
-  def indexSettings() {
-    // get from File?
-    def settings = ESWrapperService.getSettings()
-
-    return settings
-  }
-
-  def indexMapping() {
-    // get from File?
-
-    def mapping = ESWrapperService.getMapping()
-
-    return mapping
-  }
 }

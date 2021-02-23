@@ -19,6 +19,8 @@ modules = {
     resource url:'js/bootstrap-editable.js'
     resource url:'css/security-styles.css'
     resource url:'js/select-all-multistate.js'
+    resource url:'elasticsearch/es_mapping.sh'
+    resource url:'elasticsearch/es_settings.sh'
   }
   editable {
     resource url:'css/select2.css'
