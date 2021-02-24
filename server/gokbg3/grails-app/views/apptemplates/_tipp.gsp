@@ -63,6 +63,13 @@
     </dd>
 
     <dt>
+        <g:annotatedLabel owner="${d}" property="language">Language</g:annotatedLabel>
+    </dt>
+    <dd>
+        <g:xEditableRefData owner="${d}" field="language" config='KBComponent.Language'/>
+    </dd>
+
+    <dt>
         <g:annotatedLabel owner="${d}" property="accessStartDate">Access Start Date</g:annotatedLabel>
     </dt>
     <dd>
