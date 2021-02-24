@@ -6,7 +6,6 @@ import grails.core.GrailsApplication
 import grails.converters.JSON
 
 import javax.servlet.http.HttpServletRequest
-
 import grails.plugin.springsecurity.acl.*
 
 import org.gokb.DomainClassExtender
@@ -409,15 +408,18 @@ class BootStrap {
     }
 
 
-    def destroy = {
-    }
+  def destroy = {
+  }
 
 
-    def refdataCats() {
-        RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT, '0').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED, '3').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED, '1').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED, '2').save(flush: true, failOnError: true)
+  def refdataCats() {
+        RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS,
+            [(KBComponent.STATUS_CURRENT)  : '0',
+             (KBComponent.STATUS_EXPECTED) : '1',
+             (KBComponent.STATUS_RETIRED)  : '2',
+             (KBComponent.STATUS_DELETED)  : '3'
+            ]
+        )
 
         RefdataCategory.lookupOrCreate(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED).save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_IN_PROGRESS).save(flush: true, failOnError: true)
@@ -996,11 +998,11 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Job.Type', 'RecalculateStatistics').save(flush: true, failOnError: true)
 
 
-        log.debug("Deleting any null refdata values");
-        RefdataValue.executeUpdate('delete from RefdataValue where value is null');
+        log.debug("Deleting any null refdata values")
+        RefdataValue.executeUpdate('delete from RefdataValue where value is null')
     }
 
-    def sourceObjects() {
+  def sourceObjects() {
         log.debug("Lookup or create source objects")
         def ybp_source = Source.findByName('YBP') ?: new Source(name: 'YBP').save(flush: true, failOnError: true)
         def cup_source = Source.findByName('CUP') ?: new Source(name: 'CUP').save(flush: true, failOnError: true)

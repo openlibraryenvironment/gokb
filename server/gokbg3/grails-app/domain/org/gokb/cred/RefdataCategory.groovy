@@ -184,6 +184,14 @@ class RefdataCategory {
     result
   }
 
+
+  static RefdataValue lookupOrCreate(String category_name, Map sortedValues) {
+    for (def entry in sortedValues){
+      lookupOrCreate(category_name, entry.getKey(), entry.getValue())
+    }
+  }
+
+
 //  def availableActions() {
 //    [ [ code:'object::delete' , label: 'Delete' ] ]
 //  }
