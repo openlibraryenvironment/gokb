@@ -417,7 +417,7 @@ class FTUpdateService {
         if (kbc.accessEndDate) result.accessEndDate = dateFormatService.formatIsoTimestamp(kbc.accessEndDate)
         if (kbc.lastChangedExternal) result.lastChangedExternal = dateFormatService.formatIsoTimestamp(kbc.lastChangedExternal)
 
-        if (org.apache.commons.lang.StringUtils.isNotEmpty(kbc.publisherName)) result.publisherName = kbc.publisherName
+        if (kbc.publisherName) result.publisherName = kbc.publisherName
         if (kbc.subjectArea) result.subjectArea = kbc.subjectArea
         if (kbc.series) result.series = kbc.series
         if (kbc.volumeNumber) result.volumeNumber = kbc.volumeNumber

@@ -457,7 +457,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
 
     if (tipp_dto.publicationType) {
-      RefdataValue[] pubTypes = RefdataCategory.lookup("Tipp.PublicationType")
+      RefdataValue[] pubTypes = RefdataCategory.lookup("TitleInstancePackagePlatform.PublicationType")
       if (!pubTypes*.value.contains(tipp_dto.publicationType))
         errors.put('publicationType', [message: "unknown", baddata: tipp_dto.remove('publicationType')])
     }
@@ -671,7 +671,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.dateFirstOnline, tipp, 'dateFirstOnline')
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.lastChangedExternal, tipp, 'lastChangedExternal')
         changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', 'TitleInstance.Medium')
-        changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.publicationType, tipp, 'publicationType', 'Tipp.PublicationType')
+        changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.publicationType, tipp, 'publicationType', 'TitleInstancePackagePlatform.PublicationType')
 
         if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
           tipp_dto.coverage = tipp_dto.coverageStatements

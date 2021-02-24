@@ -112,7 +112,7 @@
         <g:annotatedLabel owner="${d}" property="publicationType">Publication Type</g:annotatedLabel>
     </dt>
     <dd>
-        <g:xEditableRefData owner="${d}" field="publicationType" config='Tipp.PublicationType'/>
+        <g:xEditableRefData owner="${d}" field="publicationType" config='TitleInstancePackagePlatform.PublicationType'/>
     </dd>
 
     <dt>
@@ -154,14 +154,14 @@
         <g:annotatedLabel owner="${d}" property="medium">Medium</g:annotatedLabel>
     </dt>
     <dd>
-        <g:xEditableRefData owner="${d}" field="medium" config='TitleInstance.Medium'/>
+        <g:xEditableRefData owner="${d}" field="medium" config='TitleInstancePackagePlatform.Medium'/>
     </dd>
 
     <dt>
         <g:annotatedLabel owner="${d}" property="lastChangedExternal">Last external change</g:annotatedLabel>
     </dt>
     <dd>
-        <g:xEditableRefData owner="${d}" field="lastChangedExternal" type='date'/>
+        <g:xEditable class="ipe" owner="${d}" field="lastChangedExternal" type='date'/>
     </dd>
 
 </dl>
