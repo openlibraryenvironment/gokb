@@ -1420,7 +1420,7 @@ where cp.owner = :c
 
       result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)", [component: batch])
     }
-    result;
+    result
   }
 
   @Transient

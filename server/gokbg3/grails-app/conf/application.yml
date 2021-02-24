@@ -155,9 +155,14 @@ environments:
             packageUpdate:
                 enabled: false
             es:
-                index: gokbg3dev
                 cluster: gokbg3-dev
                 host: localhost
+                indices:
+                    titles: gokbtitles
+                    tipps: gokbtipps
+                    orgs: gokborgs
+                    packages: gokbpackages
+                    platforms: gokbplatforms
             tsvExportTempDirectory: /tmp/gokb/export
         cache:
             headers:
@@ -187,9 +192,14 @@ environments:
             packageUpdate:
                 enabled: false
             es:
-                index: gokbg3test
                 cluster: gokbg3-test
                 host: localhost
+                indices:
+                    titles: gokbtitles
+                    tipps: gokbtipps
+                    orgs: gokborgs
+                    packages: gokbpackages
+                    platforms: gokbplatforms
         grails:
             mail:
                 port: 3025
@@ -229,9 +239,14 @@ environments:
                 enabled: false
             ygorUrl: null
             es:
-                index: gokbg3
                 cluster: gokbg3-prod
                 host: localhost
+                indices:
+                    titles: gokbtitles
+                    tipps: gokbtipps
+                    orgs: gokborgs
+                    packages: gokbpackages
+                    platforms: gokbplatforms
 gokb:
     defaultCuratoryGroup: Local
     ftupdate_enabled: true

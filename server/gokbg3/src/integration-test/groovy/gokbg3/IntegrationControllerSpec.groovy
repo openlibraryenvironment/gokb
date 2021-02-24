@@ -483,6 +483,103 @@ class IntegrationControllerSpec extends Specification {
     coverageStatement.endDate == Date.from(LocalDate.of(1995, 12, 31).atStartOfDay(ZoneId.systemDefault()).toInstant())
   }
 
+  void "Test crossReferencePackage with additional TIPP props"() {
+
+    when: "Caller asks for this record to be cross referenced"
+    def json_record = [
+      "packageHeader": [
+        "breakable"      : "No",
+        "consistent"     : "Yes",
+        "editStatus"     : "In Progress",
+        "fixed"          : "No",
+        "global"         : "Consortium",
+        "identifiers"    : [
+          [
+            "type" : "isil",
+            "value": "ZDB-5-ACS"
+          ]
+        ],
+        "listStatus"     : "In Progress",
+        "name"           : "American Chemical Society: additional Props",
+        "nominalPlatform": [
+          "name"      : "ACS Publications",
+          "primaryUrl": "https://pubs.acs.org"
+        ],
+        "nominalProvider": "American Chemical Society"
+      ],
+      "tipps"        : [
+        [
+          "accessEnd"                  : "",
+          "accessStart"                : "",
+          "coverage"                   : [
+            [
+              "coverageDepth": "Fulltext",
+              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+              "embargo"      : "",
+              "endDate"      : "1995",
+              "endIssue"     : "",
+              "endVolume"    : "43",
+              "startDate"    : "1953-01",
+              "startIssue"   : "",
+              "startVolume"  : "1"
+            ]
+          ],
+          "hostPlatform"               : [
+            "name"      : "ACS Publications",
+            "primaryUrl": "https://pubs.acs.org"
+          ],
+          "status"                     : "Current",
+          "title"                      : [
+            "identifiers": [
+              [
+                "type" : "zdb",
+                "value": "1483109-0"
+              ],
+              [
+                "type" : "eissn",
+                "value": "1520-5118"
+              ],
+              [
+                "type" : "issn",
+                "value": "0021-8561"
+              ]
+            ],
+            "name"       : "Journal of agricultural and food chemistry",
+            "type"       : "Serial"
+          ],
+          "firstAuthor"                : "erster Autor",
+          "firstEditor"                : "erster Lektor",
+          "publisherName"              : "publisher",
+          "volumeNumber"               : "Volume 3",
+          "editionStatement"           : "dritte Auflage",
+          "parentPublicationTitleId"   : "elternPubTitelId",
+          "precedingPublicationTitleId": "vorgängerPubTitelId",
+          "publicationType"            : "Database",
+          "medium"                     : "Other",
+          "dateFirstInPrint"           : "2020-01-01",
+          "dateFirstOnline"            : "2020-01-02",
+          "lastChangedExternal"        : "2021-01-02",
+          "url"                        : "http://pubs.acs.org/journal/jafcau"
+        ]
+      ]
+    ]
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
+      auth('admin', 'admin')
+      body(json_record as JSON)
+    }
+
+    then: "The item is created in the database because it does not exist"
+    resp.json.message != null
+    resp.json.message.startsWith('Created')
+    expect: "The TIPP properties are correctly set"
+    def pkg = Package.get(resp.json.pkgId)
+    pkg.tipps?.size() == 1
+    pkg.tipps[0].dateFirstInPrint != null
+    pkg.tipps[0].medium.value == "Other"
+    pkg.tipps[0].publicationType.value == "Database"
+  }
+
   void "Test crossReferenceTitle BOOK Case 1"() {
 
     when: "Caller asks for this record to be cross referenced"

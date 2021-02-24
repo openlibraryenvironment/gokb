@@ -167,6 +167,20 @@ class BookInstance extends TitleInstance {
       }
     }
 
+    if (titleDTO.dateFirstInPrint) {
+      LocalDateTime dfip = GOKbTextUtils.completeDateString(titleDTO.dateFirstInPrint, false)
+      if (!dfip) {
+        valErrors.put('dateFirstInPrint', [message: "Unable to parse", baddata: titleDTO.remove('dateFirstInPrint')])
+      }
+    }
+
+    if (titleDTO.dateFirstOnline) {
+      LocalDateTime dfo = GOKbTextUtils.completeDateString(titleDTO.dateFirstOnline, false)
+      if (!dfo) {
+        valErrors.put('dateFirstOnline', [message: "Unable to parse", baddata: titleDTO.remove('dateFirstOnline')])
+      }
+    }
+
     if (valErrors.size() > 0) {
       if (result.errors) {
         result.errors.putAll(valErrors)
