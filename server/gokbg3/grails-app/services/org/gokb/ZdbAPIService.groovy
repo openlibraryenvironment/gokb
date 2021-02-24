@@ -13,10 +13,10 @@ import org.apache.http.protocol.*
 class ZdbAPIService {
 
   static transactional = false
-  def endpoint
+  def endpoint = 'zdb'
   def target_service = null
   def grailsApplication
-  def kxpAccess = true
+  def useHydra = false
 
   def config = [
     version: [
@@ -43,43 +43,51 @@ class ZdbAPIService {
       kxp: "zs:",
       zdb: ""
     ],
+    baseUrl: [
+      kxp: "http://sru.k10plus.de/k10plus",
+      zdb: "http://services.dnb.de/sru/zdb"
+    ]
   ]
 
   @javax.annotation.PostConstruct
   def init() {
     log.debug("Initialising rest endpoint for ZDB service...");
-    // kxpAccess = checkKxpAccess()
-    target_service = new RESTClient("https://www.zeitschriftendatenbank.de/api/hydra").setHeaders(['User-Agent': 'gokb'])
+    // endpoint = checkKxpAccess() ? 'kxp' : 'zdb'
   }
 
   def checkKxpAccess () {
     boolean result = true
-    def testUrl = "http://sru.k10plus.de/k10plus"
+    def testUrl = "https://sru.k10plus.de/k10plus"
     def testClient = new RESTClient(testUrl)
 
     try {
-      target_service.request(GET, ContentType.XML) { request ->
+      testClient.request(GET, ContentType.XML) { request ->
         uri.query = [
-          version: config.kxp.version,
+          version: config.version.kxp,
           operation: "searchRetrieve",
-          recordSchema: config.kxp.recordSchema,
+          recordSchema: config.recordSchema.kxp,
           maximumRecords: "10",
           query: "pica.zdb=2936849-2"
         ]
 
         response.success = { resp, data ->
-          if (data.'zs:searchRetrieveResponse'.'zs:diagnostics') {
+          if (data?.diagnostics.isEmpty()) {
+            log.debug("KXP access established ..")
+          }
+          else {
+            log.debug("KXP access denied ..")
             result = false
           }
         }
 
         response.failure = { resp, data ->
+          log.debug("KXP returned error status ${resp.status}")
           result = false
         }
       }
     }
     catch (Exception e) {
-      log.debug("No KXP access..")
+      log.debug("Exception trying to lookup KXP access..", e)
       result = false
     }
 
@@ -87,39 +95,76 @@ class ZdbAPIService {
   }
 
   def lookup(String name, def ids) {
-    def candidate_ids = []
+    def candidate_ids = [direct: [], parallel: []]
 
     ids.each { id ->
       if (id.namespace.value == 'eissn' || id.namespace.value == 'issn') {
         try {
-          new RESTClient("https://www.zeitschriftendatenbank.de/api/hydra").request(GET, ContentType.JSON) { request ->
-            // uri.path='/'
-            uri.query = [
-              q: "iss=" + id.value
-            ]
+          if (!useHydra) {
+            new RESTClient(config.baseUrl[endpoint]).request(GET, ContentType.XML) { request ->
+              uri.query = [
+                version: config.version[endpoint],
+                operation: "searchRetrieve",
+                recordSchema: config.recordSchema[endpoint],
+                maximumRecords: "10",
+                query: config.issTerm[endpoint] + id.value + (id.namespace.value == 'eissn' ? config.onlineOnly[endpoint] : config.printOnly[endpoint])
+              ]
 
-            response.success = { resp, data ->
-              data.member?.each { rec ->
-                log.debug("Checking record ${rec}")
+              response.success = { resp, data ->
+                log.debug("Got " + data.records.size() + " for " + id.namespace.value + ": " + id.value)
 
-                if ((id.namespace.value == 'eissn' && rec.data['002@'][0][0][0].startsWith('O'))  || (id.namespace.value == 'issn' && rec.data['002@'][0][0][0].startsWith('A'))) {
-                  def zdb_info = getZdbInfo(rec, (id.namespace.value == 'eissn' ? true : false))
+                if (!data.records.children().isEmpty()) {
+                  data.records.findAll { rec ->
+                    def zdb_info = null
 
-                  if (zdb_info && !candidate_ids.contains(zdb_info.id)) {
-                    log.debug("Found ID candidate ${zdb_info.id}")
-                    candidate_ids.add(zdb_info.id)
+                    if (endpoint == 'kxp') {
+                      zdb_info = getKxpInfo(rec, (id.namespace.value == 'eissn' ? true : false))
+                    }
+                    else {
+                      zdb_info = getZdbInfo(rec, (id.namespace.value == 'eissn' ? true : false))
+                    }
+
+                    if (zdb_info) {
+                      log.debug("Found ID candidate ${zdb_info.id}")
+                      if (id.namespace.value == 'eissn' && !candidate_ids.direct.contains(zdb_info.id)) {
+                        candidate_ids.direct.add(zdb_info.id)
+                      }
+                      else if (!candidate_ids.parallel.contains(zdb_info.id)) {
+                        candidate_ids.parallel.add(zdb_info.id)
+                      }
+                    }
                   }
-                  else {
-                    log.debug("Not adding ${zdb_info}")
-                  }
-                }
-                else {
-                  log.debug("Skipping parallel title")
                 }
               }
             }
-            response.failure = { resp ->
-              log.error("Error - ${resp}");
+          }
+          else {
+            new RESTClient("https://www.zeitschriftendatenbank.de/api/hydra").request(GET, ContentType.JSON) { request ->
+              // uri.path='/'
+              uri.query = [
+                q: "iss=" + id.value
+              ]
+
+              response.success = { resp, data ->
+                data.member?.each { rec ->
+                  if ((id.namespace.value == 'eissn' && rec.data['002@'][0][0][0].startsWith('O'))  || (id.namespace.value == 'issn' && rec.data['002@'][0][0][0].startsWith('A'))) {
+                    def zdb_info = getZdbInfo(rec, (id.namespace.value == 'eissn' ? true : false), true)
+
+                    if (zdb_info) {
+                      log.debug("Found ID candidate ${zdb_info.id}")
+                      if (id.namespace.value == 'eissn' && !candidate_ids.direct.contains(zdb_info.id)) {
+                        candidate_ids.direct.add(zdb_info.id)
+                      }
+                      else if (!candidate_ids.parallel.contains(zdb_info.id)) {
+                        candidate_ids.parallel.add(zdb_info.id)
+                      }
+                    }
+                  }
+                }
+              }
+              response.failure = { resp ->
+                log.error("Error - ${resp}");
+              }
             }
           }
         }
@@ -129,43 +174,97 @@ class ZdbAPIService {
       }
     }
 
-    candidate_ids
+    if (candidate_ids.direct.size() > 0) {
+      return candidate_ids.direct
+    }
+    else {
+      return candidate_ids.parallel
+    }
   }
 
   def getKxpInfo(record, isOnline) {
     def result = [:]
-    def rec = record['zs:recordData']['record']
+    def rec = record.record.recordData.record
 
     if (isOnline) {
-      result.id = rec.'*'.find { it.@tag == '006Z' }['subfield'][0].text()
+      result.id = rec.'*'.find { it.@tag == '006Z' }.subfield[0].text()
     }
     else {
-      result.id = rec.'*'.find { it.@tag == '006Z' }['subfield'][0].text()
+      rec.'*'.findAll { it.@tag == '039D' }.each { lf ->
+        def validLink = false
+        def idVal = null
+
+        lf.'*'.each { sf ->
+          if (sf.@code == 'R') {
+            validLink = sf.text().startsWith('O')
+          }
+          if (sf.@code == '7') {
+            idVal = sf.text().substring(5, sf.text().length())
+          }
+        }
+
+        if (validLink) {
+          result.id = idVal
+        }
+      }
     }
 
     result
   }
 
-  def getZdbInfo(record, isOnline) {
+  def getZdbInfo(record, isOnline, boolean useHydra = false) {
     def result = [:]
 
-    if (isOnline) {
-      result.id = record.data['006Z'][0][0]
+    if (!useHydra) {
+      def rec = record.record.recordData.record
+
+      if (isOnline) {
+        result.id = rec.global.'*'.find { it.@id == '006Z' }[0].text()
+      }
+      else {
+        rec.global.'*'.findAll { it.@id == '039D' }.each { lf ->
+          def validLink = false
+          def idVal = null
+
+          lf.'*'.each { sf ->
+            if (sf.@id == 'g') {
+              validLink = sf.text().startsWith('O')
+            }
+            if (sf.@id == '0') {
+              idVal = sf.text()
+            }
+          }
+
+          if (validLink) {
+            result.id = idVal
+          }
+        }
+      }
     }
     else {
-      def online_id = null
+      if (isOnline) {
+        result.id = record.data['006Z'][0][0][0]
+      }
+      else {
+        record.data['039D'].each { lf ->
+          def validLink = false
+          def idVal = null
 
-      record.data['039D']?.each { field ->
-        field.each { pos ->
-          if (pos instanceof List) {
-            online_id = pos[0]
+          lf.each { sf ->
+            if (sf instanceof List) {
+              idVal = sf[0]
+            }
+            else if (sf['g'] && sf['g'].startsWith('O')) {
+              validLink = true
+            }
+          }
+
+          if (validLink) {
+            result.id = idVal
           }
         }
       }
 
-      if (online_id) {
-        result.id = online_id
-      }
     }
 
     result
