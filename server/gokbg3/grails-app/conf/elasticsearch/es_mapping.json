@@ -179,7 +179,7 @@
         "type": "keyword"
       },
       "suggest" : {
-        "type" : "string",
+        "type" : "text",
         "analyzer" : "autocomplete",
         "search_analyzer" : "standard"
       }
