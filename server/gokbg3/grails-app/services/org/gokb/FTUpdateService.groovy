@@ -509,7 +509,6 @@ class FTUpdateService {
           count = 0
           log.debug("interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
           def bulkResponse = bulkRequest.get()
-          bulkRequest = esclient.prepareBulk()
           log.debug("BulkResponse: ${bulkResponse}")
           FTControl.withNewTransaction {
             latest_ft_record = FTControl.get(latest_ft_record.id)
