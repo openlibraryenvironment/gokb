@@ -155,14 +155,6 @@ class BookInstance extends TitleInstance {
     def result = TitleInstance.validateDTO(titleDTO, locale)
     def valErrors = [:]
 
-    if (titleDTO.volumeNumber) {
-      try {
-        int i = Integer.parseInt(titleDTO.volumeNumber)
-      } catch (NumberFormatException nfe) {
-        valErrors.put('volumeNumber', [message: "not numeric", baddata: titleDTO.remove('volumeNumber')])
-        log.warn("volumeNumber ${titleDTO.volumeNumber} is ignored")
-      }
-    }
     // shortening some db fields with standard size of 255 if needed.
     // does not invalidate the DTO!
     ['firstAuthor', 'firstEditor'].each { key ->
@@ -172,6 +164,20 @@ class BookInstance extends TitleInstance {
           titleDTO[key] = titleDTO[key].substring(0, 251).concat(" ...")
           log.warn("value in key ’${key}’ was clipped to: ${titleDTO[key]}")
         }
+      }
+    }
+
+    if (titleDTO.dateFirstInPrint) {
+      LocalDateTime dfip = GOKbTextUtils.completeDateString(titleDTO.dateFirstInPrint, false)
+      if (!dfip) {
+        valErrors.put('dateFirstInPrint', [message: "Unable to parse", baddata: titleDTO.remove('dateFirstInPrint')])
+      }
+    }
+
+    if (titleDTO.dateFirstOnline) {
+      LocalDateTime dfo = GOKbTextUtils.completeDateString(titleDTO.dateFirstOnline, false)
+      if (!dfo) {
+        valErrors.put('dateFirstOnline', [message: "Unable to parse", baddata: titleDTO.remove('dateFirstOnline')])
       }
     }
 

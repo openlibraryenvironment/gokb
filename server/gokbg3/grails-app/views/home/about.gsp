@@ -25,7 +25,7 @@
 	      <tr><th>Reloading active</th><td> ${grails.util.Environment.reloadingAgentEnabled}</td></tr>
 	      <tr><th>Build Date</th><td> <g:meta name="build.time"/></td></tr>
 	      <tr><th>ES Cluster</th><td>${grailsApplication.config.gokb?.es?.cluster}</td></tr>
-	      <tr><th>ES Index</th><td>${grailsApplication.config.gokb?.es?.index}</td></tr>
+	      <tr><th>ES Index</th><td>${grailsApplication.config.gokb?.es?.indices?.values().join(", ")}</td></tr>
 	    </table>
   	</div>
   </body>

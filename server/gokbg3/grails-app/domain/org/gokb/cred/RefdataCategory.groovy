@@ -10,6 +10,7 @@ import org.grails.datastore.mapping.model.*
 class RefdataCategory {
 
   public static rdv_cache = [:]
+  private static rdc_cache = [:]
 
   String desc
   String label
@@ -25,11 +26,11 @@ class RefdataCategory {
   }
 
   static hasMany = [
-      values: RefdataValue
+    values: RefdataValue
   ]
 
   static mappedBy = [
-      values: 'owner'
+    values: 'owner'
   ]
 
   static constraints = {
@@ -55,24 +56,20 @@ class RefdataCategory {
     def rdv_id = rdv_cache[rdv_cache_key]
     if (rdv_id && rdv_id instanceof Long) {
       result = RefdataValue.get(rdv_id);
-    }
-    else if (!rdv_id instanceof Long) {
+    } else if (!rdv_id instanceof Long) {
       throw new RuntimeException("Got a string value from rdv_cache for ${category_name}, ${value}!");
-    }
-    else {
+    } else {
       // The category.
       def cats = RefdataCategory.executeQuery('select c from RefdataCategory as c where lower(c.desc) = ?', category_name.toLowerCase());
       def cat = null;
 
       if (cats.size() == 0) {
         return result
-      }
-      else if (cats.size() == 1) {
+      } else if (cats.size() == 1) {
         cat = cats[0]
         // log.debug("Found existing category for ${category_name} : ${cat}");
         result = RefdataValue.findByOwnerAndValueIlike(cat, value)
-      }
-      else {
+      } else {
         throw new RuntimeException("Multiple matching refdata category names");
       }
 
@@ -82,6 +79,38 @@ class RefdataCategory {
     }
 
     // return the refdata value.
+    result
+  }
+
+  static RefdataValue[] lookup(category_name) {
+    if (category_name == null)
+      throw new RuntimeException("Request to lookup category ${category_name}");
+
+    def result = null;
+
+    def rdc_cache_key = category_name
+    def rdc_id = rdc_cache[rdc_cache_key]
+    if (rdc_id && rdc_id instanceof Long) {
+      // cache hit
+      result = RefdataValue.findAllByOwner(rdc_id);
+    } else if (!rdc_id instanceof Long) {
+      throw new RuntimeException("Got a wrong value from rdv_cache for ${category_name}!");
+    } else {
+      // The category.
+      def cat = RefdataCategory.executeQuery('select c from RefdataCategory as c where lower(c.desc) = ?', category_name.toLowerCase());
+
+      if (cat.size() == 0) {
+        return result
+      } else {
+        result = RefdataValue.findAllByOwner(cat)
+      }
+
+      if (result) {
+        rdc_cache[rdc_cache_key] = result.id
+      }
+    }
+
+    // return the refdata values.
     result
   }
 
@@ -102,11 +131,9 @@ class RefdataCategory {
     def rdv_id = rdv_cache[rdv_cache_key]
     if (rdv_id && rdv_id instanceof Long) {
       result = RefdataValue.get(rdv_id);
-    }
-    else if (!rdv_id instanceof Long) {
+    } else if (!rdv_id instanceof Long) {
       throw new RuntimeException("Got a string value from rdv_cache for ${category_name}, ${value}!");
-    }
-    else {
+    } else {
       // The category.
       // RefdataCategory.withTransaction { status ->
       def cats = RefdataCategory.executeQuery('select c from RefdataCategory as c where lower(c.desc) = ?', category_name.toLowerCase());
@@ -116,8 +143,7 @@ class RefdataCategory {
         // log.debug("Create new refdata category ${category_name}");
         cat = new RefdataCategory(desc: category_name, label: category_name)
         if (cat.save(failOnError: true, flush: true)) {
-        }
-        else {
+        } else {
           log.error("Problem creating new category ${category_name}");
           cat.errors.each {
             log.error("Problem: ${it}");
@@ -125,13 +151,11 @@ class RefdataCategory {
         }
 
         // log.debug("Create new refdataCategory(${category_name}) = ${cat.id}");
-      }
-      else if (cats.size() == 1) {
+      } else if (cats.size() == 1) {
         cat = cats[0]
         // log.debug("Found existing category for ${category_name} : ${cat}");
         result = RefdataValue.findByOwnerAndValueIlike(cat, value)
-      }
-      else {
+      } else {
         throw new RuntimeException("Multiple matching refdata category names");
       }
 
@@ -140,15 +164,13 @@ class RefdataCategory {
         // log.info("Attempt to create new refdataValue(${category_name},${value},${sortkey})");
         result = new RefdataValue(owner: cat, value: value, sortKey: sortkey)
         if (result.save(failOnError: true, flush: true)) {
-        }
-        else {
+        } else {
           // log.debug("Problem saving new refdata item");
           result.errors.each {
             log.error("Problem: ${it}");
           }
         }
-      }
-      else {
+      } else {
         // log.debug("Located existing refdata value.. ${value} ${result}");
         rdv_cache[rdv_cache_key] = result.id
       }
