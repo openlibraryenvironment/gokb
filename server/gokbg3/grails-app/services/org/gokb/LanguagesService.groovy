@@ -13,7 +13,12 @@ import static groovyx.net.http.Method.GET
 class LanguagesService{
 
   static Map languages = [:]
-  
+
+  /**
+   * Fills the RefdataCategory given by {@link org.gokb.cred.KBComponent.RD_LANGUAGE} with a list of all language codes
+   * provided in the ISO-639-2 map specified by the referenced languages microservice. See
+   * https://github.com/hbz/languages-microservice#get-the-whole-iso-639-2-list for details.
+   */
   static void initialize(){
     String uriString = "${Holders.grailsApplication.config.gokb.languagesUrl}/api/listIso639two"
     URI microserviceUrl = new URI(uriString)
