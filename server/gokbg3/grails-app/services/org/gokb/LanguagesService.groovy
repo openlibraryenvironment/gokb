@@ -12,14 +12,7 @@ import static groovyx.net.http.Method.GET
 @Transactional
 class LanguagesService{
 
-  static Map localesToLanguages = [
-      "DE" : "ger",
-      "EN" : "eng",
-      "FR" : "fre"
-  ]
-
   static Map languages = [:]
-
   
   static void initialize(){
     String uriString = "${Holders.grailsApplication.config.gokb.languagesUrl}/api/listIso639two"
