@@ -66,7 +66,7 @@
         <g:annotatedLabel owner="${d}" property="language">Language</g:annotatedLabel>
     </dt>
     <dd>
-        <g:xEditableRefData owner="${d}" field="language" config='KBComponent.Language'/>
+        <g:xEditableRefData owner="${d}" field="language" config="${org.gokb.cred.KBComponent.RD_LANGUAGE}"/>
     </dd>
 
     <dt>
