@@ -1,8 +1,11 @@
-package gokb
+package org.gokb
 
 import org.gokb.cred.*
+import org.gokb.TitleAugmentService
 
 class AugmentJob {
+
+  static concurrent = false
 
   def titleAugmentService
 

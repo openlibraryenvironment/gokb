@@ -24,18 +24,21 @@ class TitleAugmentService {
   def zdbAPIService
 
   def augment(titleInstance) {
-    if ( titleInstance.class.name == 'JournalInstance' ) {
+    log.debug("TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
+    if ( titleInstance.niceName == 'Journal' ) {
       def candidates = zdbAPIService.lookup(titleInstance.name, titleInstance.ids)
       RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+      RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
 
       if (candidates.size() == 1) {
         def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0])
-        def conflicts = Combo.executeQuery("from Combo as c where c.fromComponent IN (select ti from TitleInstance as ti where ti.status != :deleted) and c.fromComponent != :tic and c.toComponent = :idc and c.type = ctype", [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
+        def conflicts = Combo.executeQuery("from Combo as c where c.fromComponent IN (select ti from TitleInstance as ti where ti.status != :deleted) and c.fromComponent != :tic and c.toComponent = :idc and c.type = :ctype", [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
 
         if (conflicts.size() > 0) {
           log.debug("Matched ID ${new_id.namespace.value}:${new_id.value} is alread connected to other instances: ${new_id.identifiedComponents}")
         }
         else {
+          log.debug("Adding new ZDB-ID ${new_id}")
           new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
         }
       }
