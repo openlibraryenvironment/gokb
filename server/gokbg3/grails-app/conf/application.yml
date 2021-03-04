@@ -152,7 +152,7 @@ environments:
                 port: 3025
         gokb:
             ygorUrl: null
-            languagesUrl: null
+            languagesUrl : http://localhost:8070
             packageUpdate:
                 enabled: false
             es:
@@ -190,7 +190,7 @@ environments:
                 defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
         gokb:
             ygorUrl: null
-            languagesUrl: null
+            languagesUrl : http://localhost:8070
             packageUpdate:
                 enabled: false
             es:
@@ -240,7 +240,7 @@ environments:
             packageUpdate:
                 enabled: false
             ygorUrl: null
-            languagesUrl: null
+            languagesUrl : http://localhost:8070
             es:
                 cluster: gokbg3-prod
                 host: localhost
