@@ -126,11 +126,11 @@ class ZdbAPIService {
 
                     if (zdb_info) {
                       log.debug("Found ID candidate ${zdb_info.id}")
-                      if (id.namespace.value == 'eissn' && !candidate_ids.direct.contains(zdb_info.id)) {
-                        candidate_ids.direct.add(zdb_info.id)
+                      if (id.namespace.value == 'eissn' && !candidate_ids.direct.find { it.id == zdb_info.id }) {
+                        candidate_ids.direct.add(zdb_info)
                       }
-                      else if (!candidate_ids.parallel.contains(zdb_info.id)) {
-                        candidate_ids.parallel.add(zdb_info.id)
+                      else if (!candidate_ids.parallel.find { it.id == zdb_info.id }) {
+                        candidate_ids.parallel.add(zdb_info)
                       }
                     }
                   }
@@ -220,6 +220,15 @@ class ZdbAPIService {
 
       if (isOnline) {
         result.id = rec.global.'*'.find { it.@id == '006Z' }[0].text()
+
+        def fromDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'a'}
+        def toDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'b'}
+
+        if (fromDate)
+          result.publishedFrom = fromDate.text()
+
+        if (toDate)
+          result.publishedTo = toDate.text()
       }
       else {
         rec.global.'*'.findAll { it.@id == '039D' }.each { lf ->
@@ -244,6 +253,14 @@ class ZdbAPIService {
     else {
       if (isOnline) {
         result.id = record.data['006Z'][0][0][0]
+
+        if (record.data['011@'][0]['a']) {
+          result.publishedFrom = record.data['011@'][0]['a'][0] ?: null
+        }
+
+        if (record.data['011@'][0]['b']) {
+          result.publishedTo = record.data['011@'][0]['b'][0] ?: null
+        }
       }
       else {
         record.data['039D'].each { lf ->

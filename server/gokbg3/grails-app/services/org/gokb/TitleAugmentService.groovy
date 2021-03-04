@@ -31,15 +31,35 @@ class TitleAugmentService {
       RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
 
       if (candidates.size() == 1) {
-        def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0])
+        def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0].id)
         def conflicts = Combo.executeQuery("from Combo as c where c.fromComponent IN (select ti from TitleInstance as ti where ti.status != :deleted) and c.fromComponent != :tic and c.toComponent = :idc and c.type = :ctype", [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
 
         if (conflicts.size() > 0) {
-          log.debug("Matched ID ${new_id.namespace.value}:${new_id.value} is alread connected to other instances: ${new_id.identifiedComponents}")
+          log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${new_id.identifiedComponents}")
+
+          conflicts.each { cc ->
+            if (!cc.fromComponent.publishedFrom && candidates[0].publishedFrom) {
+              log.debug("Adding new start journal start date ..")
+              com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedFrom), cc.fromComponent, 'publishedFrom')
+            }
+            if (!cc.fromComponent.publishedTo && candidates[0].publishedTo) {
+              log.debug("Adding new start journal end date ..")
+              com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedTo), cc.fromComponent, 'publishedTo')
+            }
+          }
         }
         else {
           log.debug("Adding new ZDB-ID ${new_id}")
           new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
+        }
+
+        if (!titleInstance.publishedFrom && candidates[0].publishedFrom) {
+          log.debug("Adding new start journal start date ..")
+          com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedFrom), titleInstance, 'publishedFrom')
+        }
+        if (!titleInstance.publishedTo && candidates[0].publishedTo) {
+          log.debug("Adding new start journal end date ..")
+          com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedTo), titleInstance, 'publishedTo')
         }
       }
       else if (candidates.size == 0){

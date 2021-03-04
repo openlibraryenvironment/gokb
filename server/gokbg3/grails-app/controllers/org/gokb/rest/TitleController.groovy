@@ -82,16 +82,16 @@ class TitleController {
     Class type = TitleInstance
 
     if (params.type) {
-      if (params.type == 'journal' || params.type == 'serial' ) {
+      if (params.type.toLowerCase() == 'journal' || params.type.toLowerCase() == 'serial' ) {
         type = JournalInstance
       }
-      else if (params.type == 'book' || params.type == 'monograph') {
+      else if (params.type.toLowerCase() == 'book' || params.type.toLowerCase() == 'monograph') {
         type = BookInstance
       }
-      else if (params.type == 'database') {
+      else if (params.type.toLowerCase() == 'database') {
         type = DatabaseInstance
       }
-      else if (params.type == 'other') {
+      else if (params.type.toLowerCase() == 'other') {
         type = OtherInstance
       }
       else {
