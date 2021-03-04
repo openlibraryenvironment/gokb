@@ -103,7 +103,8 @@ class TitleInstancePackagePlatform extends KBComponent {
       'parentPublicationTitleId'   : "parentPublicationTitleId",
       'precedingPublicationId': "precedingPublicationId",
       'lastChangedExternal'     : "lastChangedExternal",
-      'medium'                : "medium"
+      'medium'                : "medium",
+      'language'              : "language"
     ],
     'defaultLinks' : [
       'pkg',
@@ -863,6 +864,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'precedingPublicationTitleId'(precedingPublicationTitleId?.trim())
         builder.'lastChangedExternal'(lastChangedExternal?.trim())
         builder.'medium'(medium?.value.trim())
+        builder.'language'(language?.value.trim())
 
         builder.'title'([id: ti.id, uuid: ti.uuid]) {
           builder.'name'(ti.name?.trim())

@@ -21,6 +21,7 @@ class TitleInstance extends KBComponent {
   Date publishedFrom
   Date publishedTo
   String coverImage
+  RefdataValue language
 
   private static refdataDefaults = [
     "medium"  : "Journal",
@@ -37,6 +38,7 @@ class TitleInstance extends KBComponent {
     // From TitleInstance
     includes KBComponent.mapping
     medium column: 'medium_id', index: 'ti_medium_idx'
+    language column: 'language_id', index: 'ti_language_idx'
   }
 
   @Override
@@ -142,6 +144,7 @@ class TitleInstance extends KBComponent {
   static constraints = {
 
     medium(nullable: true, blank: false)
+    language(nullable: true, blank: false)
     pureOA(nullable: true, blank: false)
     reasonRetired(nullable: true, blank: false)
     OAStatus(nullable: true, blank: false)
@@ -351,6 +354,7 @@ class TitleInstance extends KBComponent {
 
           builder.'imprint'(imprint?.name)
           builder.'medium'(medium?.value)
+          builder.'language'(language?.value)
           builder.'type'(this.class.simpleName)
           builder.'OAStatus'(OAStatus?.value)
           builder.'continuingSeries'(continuingSeries?.value)
@@ -627,7 +631,7 @@ class TitleInstance extends KBComponent {
    *   type:'Serial' or 'Monograph'
    *}*/
   @Transient
-  public static def validateDTO(JSONObject titleDTO, Locale locale) {
+  static def validateDTO(JSONObject titleDTO, Locale locale) {
     def result = ['valid': true]
     def valErrors = [:]
 
@@ -677,7 +681,6 @@ class TitleInstance extends KBComponent {
 
     if (titleDTO.medium) {
       RefdataValue medRef = determineMediumRef(titleDTO)
-
       if (medRef) {
         titleDTO.medium = medRef.value
       }
@@ -685,6 +688,11 @@ class TitleInstance extends KBComponent {
         valErrors.put('medium', [message: "cannot parse", baddata: titleDTO.medium])
         titleDTO.remove(titleDTO.medium)
       }
+    }
+
+    def ti_language = titleDTO.language ? RefdataCategory.lookup('KBComponent.Language', titleDTO.language) : null
+    if (ti_language){
+      titleDTO.language = ti_language
     }
 
     if (valErrors.size() > 0) {
@@ -698,7 +706,7 @@ class TitleInstance extends KBComponent {
     result
   }
 
-  public static determineMediumRef(titleObj) {
+  static determineMediumRef(titleObj) {
     if (titleObj.medium) {
       switch (titleObj.medium.toLowerCase()) {
         case "a & i database":
@@ -765,7 +773,7 @@ class TitleInstance extends KBComponent {
   }
 
   @Transient
-  public static TitleInstance upsertDTO(titleLookupService, titleDTO, user = null, fullsync = false) {
+  static TitleInstance upsertDTO(titleLookupService, titleDTO, user = null, fullsync = false) {
     def result = null;
     def type = null
 
@@ -804,6 +812,12 @@ class TitleInstance extends KBComponent {
       if (titleDTO.medium) {
         result.medium = determineMediumRef(titleDTO)
       }
+
+      def ti_language = titleDTO.language ? RefdataCategory.lookup('KBComponent.Language', titleDTO.language) : null
+      if (ti_language){
+        result.language = ti_language
+      }
+
       log.debug("Result of upsertDTO: ${result}");
     }
     result;
