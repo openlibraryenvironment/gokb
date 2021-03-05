@@ -63,7 +63,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   static jsonMapping = [
     'ignore'       : [
       'format',
-      'paymentType',
       'startIssue',
       'delayedOA',
       'hybridOA',

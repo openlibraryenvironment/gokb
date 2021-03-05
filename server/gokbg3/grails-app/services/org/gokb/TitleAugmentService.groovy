@@ -12,6 +12,7 @@ import org.apache.http.entity.mime.content.*
 import java.nio.charset.Charset
 import org.apache.http.*
 import org.apache.http.protocol.*
+import grails.converters.JSON
 
 
 
@@ -19,42 +20,68 @@ class TitleAugmentService {
 
   def grailsApplication
   def componentLookupService
-  def edinaPublicationsAPIService
+  def reviewRequestService
+  def zdbAPIService
 
   def augment(titleInstance) {
-      // If the title does have a suncat-id
-      if ( titleInstance.getIdentifierValue('SUNCAT' ) == null ) {
-        def lookupResult = edinaPublicationsAPIService.lookup(titleInstance.name)
-        if ( lookupResult ) {
-          def record = lookupResult.records.record
-          if ( record ) {
-            boolean matched = false;
-            def suncat_identifier = null;
-            record.modsCollection.mods.identifier.each { id ->
-              if ( id.text().equalsIgnoreCase(titleInstance.getIdentifierValue('ISSN')) || id.text().equalsIgnoreCase(titleInstance.getIdentifierValue('eISSN'))  ) {
-                matched = true
-              }
+    log.debug("TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
+    if ( titleInstance.niceName == 'Journal' ) {
+      def candidates = zdbAPIService.lookup(titleInstance.name, titleInstance.ids)
+      RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+      RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
 
-              if ( id.@type == 'suncat' ) {
-                suncat_identifier = id.text();
-              }
+      if (candidates.size() == 1) {
+        def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0].id)
+        def conflicts = Combo.executeQuery("from Combo as c where c.fromComponent IN (select ti from TitleInstance as ti where ti.status != :deleted) and c.fromComponent != :tic and c.toComponent = :idc and c.type = :ctype", [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
+
+        if (conflicts.size() > 0) {
+          log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${new_id.identifiedComponents}")
+
+          conflicts.each { cc ->
+            if (!cc.fromComponent.publishedFrom && candidates[0].publishedFrom) {
+              log.debug("Adding new start journal start date ..")
+              com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedFrom), cc.fromComponent, 'publishedFrom')
             }
-            if ( matched && suncat_identifier ) {
-              log.debug("set suncat identifier to ${suncat_identifier}");
-              def canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier('SUNCAT',suncat_identifier);
-              titleInstance.addToIds(canonical_identifier);
-              titleInstance.save(flush:true);
+            if (!cc.fromComponent.publishedTo && candidates[0].publishedTo) {
+              log.debug("Adding new start journal end date ..")
+              com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedTo), cc.fromComponent, 'publishedTo')
             }
-            else {
-              log.debug("No match for title ${titleInstance.name}, ${titleInstance.id}");
-            }
-          }
-          else {
           }
         }
         else {
+          log.debug("Adding new ZDB-ID ${new_id}")
+          new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
+        }
+
+        if (!titleInstance.publishedFrom && candidates[0].publishedFrom) {
+          log.debug("Adding new start journal start date ..")
+          com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedFrom), titleInstance, 'publishedFrom')
+        }
+        if (!titleInstance.publishedTo && candidates[0].publishedTo) {
+          log.debug("Adding new start journal end date ..")
+          com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedTo), titleInstance, 'publishedTo')
         }
       }
+      else if (candidates.size == 0){
+        log.debug("No ZDB result for ids of title ${titleInstance}")
+      }
+      else {
+        log.debug("Multiple ZDB-ID candidates for title ${titleInstance}")
+
+        def additionalInfo = [
+          candidates: candidates
+        ]
+
+        reviewRequestService.raise(
+          titleInstance,
+          "Choose correct the ZDB-ID from the list of candidates",
+          "Multiple ZDB-IDs found for ISSN ids",
+          null,
+          null,
+          (additionalInfo as JSON).toString()
+        )
+      }
+    }
   }
 
   def doEnrichment() {

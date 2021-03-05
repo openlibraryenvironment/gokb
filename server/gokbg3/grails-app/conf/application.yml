@@ -155,6 +155,8 @@ environments:
             languagesUrl : http://localhost:8070
             packageUpdate:
                 enabled: false
+            zdbAugment:
+                enabled: false
             es:
                 cluster: gokbg3-dev
                 host: localhost
@@ -192,6 +194,8 @@ environments:
             ygorUrl: null
             languagesUrl : http://localhost:8070
             packageUpdate:
+                enabled: false
+            zdbAugment:
                 enabled: false
             es:
                 cluster: gokbg3-test
@@ -238,6 +242,8 @@ environments:
                     disabled: true
         gokb:
             packageUpdate:
+                enabled: false
+            zdbAugment:
                 enabled: false
             ygorUrl: null
             languagesUrl : http://localhost:8070
