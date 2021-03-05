@@ -1,4 +1,4 @@
-package gokb
+package org.gokb
 
 import org.gokb.cred.*
 
