@@ -154,6 +154,8 @@ environments:
             ygorUrl: null
             packageUpdate:
                 enabled: false
+            zdbAugment:
+                enabled: false
             es:
                 cluster: gokbg3-dev
                 host: localhost
@@ -190,6 +192,8 @@ environments:
         gokb:
             ygorUrl: null
             packageUpdate:
+                enabled: false
+            zdbAugment:
                 enabled: false
             es:
                 cluster: gokbg3-test
@@ -236,6 +240,8 @@ environments:
                     disabled: true
         gokb:
             packageUpdate:
+                enabled: false
+            zdbAugment:
                 enabled: false
             ygorUrl: null
             es:

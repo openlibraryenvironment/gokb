@@ -454,7 +454,34 @@ class RestMappingService {
                 )
               }
               else {
-                obj[prop] = rdv
+                if (catName == 'KBComponent.Status') {
+                  if (val == 'Deleted') {
+                    obj.deleteSoft()
+                  }
+                  else if (val == 'Retired') {
+                    obj.retire()
+                  }
+                  else if (val == 'Current') {
+                    obj.setActive()
+                  }
+                  else if (val == 'Expected') {
+                    obj.setExpected()
+                  }
+                  else {
+                    obj.errors.reject(
+                      'rdc.values.notFound',
+                      [val] as Object[],
+                      '[{0} is not a valid status value!]'
+                    )
+                    obj.errors.rejectValue(
+                      prop,
+                      'rdc.values.notFound'
+                    )
+                  }
+                }
+                else {
+                  obj[prop] = rdv
+                }
               }
             }
           } else {
