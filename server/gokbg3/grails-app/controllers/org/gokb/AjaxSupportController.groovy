@@ -233,16 +233,6 @@ class AjaxSupportController {
       cols:['value'],
       format:'simple'
     ],
-    'TitleInstance.Language' : [
-        domain:'RefdataValue',
-        countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-        rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-        required:false,
-        qryParams:[],
-        rdvCat: "TitleInstance.Language",
-        cols:['value'],
-        format:'simple'
-    ],
     'TitleInstancePackagePlatform.CoverageDepth' : [
       domain:'RefdataValue',
       countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
