@@ -21,7 +21,6 @@ class TitleInstance extends KBComponent {
   Date publishedFrom
   Date publishedTo
   String coverImage
-  RefdataValue language
 
   private static refdataDefaults = [
     "medium"  : "Journal",

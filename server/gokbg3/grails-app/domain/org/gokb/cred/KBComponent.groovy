@@ -330,7 +330,7 @@ where cp.owner = :c
   /**
    * Component language. Linked to refdata table. Only applicable for TitleInstance and TitleInstancePackagePlatform.
    */
-  RefdataValue primaryLanguage
+  RefdataValue language
 
   String lastUpdateComment
 
@@ -419,7 +419,7 @@ where cp.owner = :c
     description column: 'kbc_description', type: 'text'
     source column: 'kbc_source_fk'
     status column: 'kbc_status_rv_fk', index: 'kbc_status_idx'
-    primaryLanguage column: 'kbc_language_rv_fk'
+    language column: 'kbc_language_rv_fk'
     shortcode column: 'kbc_shortcode', index: 'kbc_shortcode_idx'
     // tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
     dateCreated column: 'kbc_date_created', index: 'kbc_date_created_idx'
@@ -1442,7 +1442,7 @@ where cp.owner = :c
     builder.'name'(name)
     builder.'status'(status?.value)
     builder.'editStatus'(editStatus?.value)
-    builder.'primaryLanguage'(primaryLanguage?.value)
+    builder.'language'(language?.value)
     builder.'shortcode'(shortcode)
 
     // Identifiers

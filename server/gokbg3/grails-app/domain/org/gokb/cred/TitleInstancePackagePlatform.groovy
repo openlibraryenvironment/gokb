@@ -47,7 +47,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   String precedingPublicationTitleId
   Date lastChangedExternal
   RefdataValue medium
-  RefdataValue language
 
   private static SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
 
