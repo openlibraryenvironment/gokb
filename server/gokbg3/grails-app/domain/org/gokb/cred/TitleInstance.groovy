@@ -37,7 +37,6 @@ class TitleInstance extends KBComponent {
     // From TitleInstance
     includes KBComponent.mapping
     medium column: 'medium_id', index: 'ti_medium_idx'
-    language column: 'language_id', index: 'ti_language_idx'
   }
 
   @Override
@@ -143,7 +142,6 @@ class TitleInstance extends KBComponent {
   static constraints = {
 
     medium(nullable: true, blank: false)
-    language(nullable: true, blank: false)
     pureOA(nullable: true, blank: false)
     reasonRetired(nullable: true, blank: false)
     OAStatus(nullable: true, blank: false)
@@ -353,7 +351,6 @@ class TitleInstance extends KBComponent {
 
           builder.'imprint'(imprint?.name)
           builder.'medium'(medium?.value)
-          builder.'language'(language?.value)
           builder.'type'(this.class.simpleName)
           builder.'OAStatus'(OAStatus?.value)
           builder.'continuingSeries'(continuingSeries?.value)
