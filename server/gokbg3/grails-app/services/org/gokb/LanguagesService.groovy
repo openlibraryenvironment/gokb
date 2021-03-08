@@ -1,5 +1,6 @@
 package org.gokb
 
+import groovy.json.JsonSlurper
 import grails.gorm.transactions.Transactional
 import grails.util.Holders
 import groovyx.net.http.HTTPBuilder
@@ -20,19 +21,30 @@ class LanguagesService{
    * https://github.com/hbz/languages-microservice#get-the-whole-iso-639-2-list for details.
    */
   static void initialize(){
-    String uriString = "${Holders.grailsApplication.config.gokb.languagesUrl}/api/listIso639two"
-    URI microserviceUrl = new URI(uriString)
-    def httpBuilder = new HTTPBuilder(microserviceUrl)
-    httpBuilder.request(GET) { request ->
-      response.success = { statusResp, responseData ->
-        log.debug("GET ${uriString} => success")
-        languages = responseData
-      }
-      response.failure = { statusResp, statusData ->
-        log.debug("GET ${uriString} => failure => will be showing languages as shortcodes")
-        return
+
+    if (Holders.grailsApplication.config.gokb.languagesUrl) {
+      String uriString = "${Holders.grailsApplication.config.gokb.languagesUrl}/api/listIso639two"
+      URI microserviceUrl = new URI(uriString)
+      def httpBuilder = new HTTPBuilder(microserviceUrl)
+      httpBuilder.request(GET) { request ->
+        response.success = { statusResp, responseData ->
+          log.debug("GET ${uriString} => success")
+          languages = responseData
+        }
+        response.failure = { statusResp, statusData ->
+          log.debug("GET ${uriString} => failure => will be showing languages as shortcodes")
+          return
+        }
       }
     }
+    else {
+      File languageFile = new File(getClass().getResource(
+          "${File.separator}languages.json").toURI())
+
+      languages = new JsonSlurper().parse(languageFile)
+    }
+
+
     for (def entry in languages){
       RefdataCategory.lookupOrCreate(KBComponent.RD_LANGUAGE, entry.key, entry.key)
     }
