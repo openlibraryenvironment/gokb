@@ -867,7 +867,7 @@ class PackageController {
                               componentUpdateService.ensureCoreData(ti, titleObj, fullsync, user)
 
                               title_changed |= componentUpdateService.setAllRefdata([
-                                'OAStatus', 'medium',
+                                'OAStatus', 'medium', 'language',
                                 'pureOA', 'continuingSeries',
                                 'reasonRetired'
                               ], titleObj, ti)

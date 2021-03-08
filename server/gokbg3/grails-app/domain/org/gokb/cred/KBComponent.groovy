@@ -32,6 +32,8 @@ abstract class KBComponent implements Auditable {
   static final String EDIT_STATUS_IN_PROGRESS = "In Progress"
   static final String EDIT_STATUS_REJECTED = "Rejected"
 
+  static final String RD_LANGUAGE = "KBComponent.Language"
+
   static final String CURRENT_PRICE_HQL = '''
 select cp
 from ComponentPrice as cp
@@ -325,6 +327,11 @@ where cp.owner = :c
    */
   Source source
 
+  /**
+   * Component language. Linked to refdata table. Only applicable for TitleInstance and TitleInstancePackagePlatform.
+   */
+  RefdataValue language
+
   String lastUpdateComment
 
   // Set tags = []
@@ -412,6 +419,7 @@ where cp.owner = :c
     description column: 'kbc_description', type: 'text'
     source column: 'kbc_source_fk'
     status column: 'kbc_status_rv_fk', index: 'kbc_status_idx'
+    language column: 'kbc_language_rv_fk'
     shortcode column: 'kbc_shortcode', index: 'kbc_shortcode_idx'
     // tags joinTable: [name: 'kb_component_tags_value', key: 'kbctgs_kbc_id', column: 'kbctgs_rdv_id']
     dateCreated column: 'kbc_date_created', index: 'kbc_date_created_idx'
@@ -1434,6 +1442,7 @@ where cp.owner = :c
     builder.'name'(name)
     builder.'status'(status?.value)
     builder.'editStatus'(editStatus?.value)
+    builder.'language'(language?.value)
     builder.'shortcode'(shortcode)
 
     // Identifiers

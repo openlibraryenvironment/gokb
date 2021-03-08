@@ -927,7 +927,7 @@ class AjaxSupportController {
         log.debug("Saving... after assignment ${params.name} = ${target[params.name]}");
 
         if ( target.validate() ) {
-          target.save(flush:true)
+          target = target.merge(flush: true, failOnError: true)
 
           if ( params.resultProp ) {
             result = value ? value[params.resultProp] : ''

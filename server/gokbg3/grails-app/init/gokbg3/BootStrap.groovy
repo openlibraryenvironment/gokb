@@ -4,6 +4,7 @@ import grails.util.Environment
 import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
+import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
 
@@ -70,32 +71,32 @@ class BootStrap {
             if (!adminUser) {
                 log.error("No admin user found, create")
                 adminUser = new User(
-                        username: 'admin',
-                        password: 'admin',
-                        display: 'Admin',
-                        email: 'admin@localhost',
-                        enabled: true).save(failOnError: true)
+                    username: 'admin',
+                    password: 'admin',
+                    display: 'Admin',
+                    email: 'admin@localhost',
+                    enabled: true).save(failOnError: true)
             }
 
             def ingestAgent = User.findByUsername('ingestAgent')
             if (!ingestAgent) {
                 log.error("No ingestAgent user found, create")
                 ingestAgent = new User(
-                        username: 'ingestAgent',
-                        password: 'ingestAgent',
-                        display: 'Ingest Agent',
-                        email: '',
-                        enabled: false).save(failOnError: true)
+                    username: 'ingestAgent',
+                    password: 'ingestAgent',
+                    display: 'Ingest Agent',
+                    email: '',
+                    enabled: false).save(failOnError: true)
             }
             def deletedUser = User.findByUsername('deleted')
             if (!deletedUser) {
                 log.error("No deleted user found, create")
                 deletedUser = new User(
-                        username: 'deleted',
-                        password: 'deleted',
-                        display: 'Deleted User',
-                        email: '',
-                        enabled: false).save(failOnError: true)
+                    username: 'deleted',
+                    password: 'deleted',
+                    display: 'Deleted User',
+                    email: '',
+                    enabled: false).save(failOnError: true)
             }
 
             if (Environment.current != Environment.PRODUCTION) {
@@ -103,11 +104,11 @@ class BootStrap {
                 if (!tempUser) {
                     log.error("No tempUser found, create")
                     tempUser = new User(
-                            username: 'tempUser',
-                            password: 'tempUser',
-                            display: 'Temp User',
-                            email: '',
-                            enabled: true).save(failOnError: true)
+                        username: 'tempUser',
+                        password: 'tempUser',
+                        display: 'Temp User',
+                        email: '',
+                        enabled: true).save(failOnError: true)
                 }
 
                 if (!tempUser.authorities.contains(userRole)) {
@@ -154,7 +155,7 @@ class BootStrap {
                 log.debug("Ensure curatory group: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
 
                 def local_cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup) ?:
-                        new CuratoryGroup(name: grailsApplication.config.gokb?.defaultCuratoryGroup).save(flush: true, failOnError: true);
+                    new CuratoryGroup(name: grailsApplication.config.gokb?.defaultCuratoryGroup).save(flush: true, failOnError: true);
             }
         }
 
@@ -203,14 +204,14 @@ class BootStrap {
 
         log.info("Ensure default Identifier namespaces")
         def namespaces = [
-                [value: 'isbn', name: 'ISBN', family: 'isxn', pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
-                [value: 'pisbn', name: 'Print-ISBN', family: 'isxn', pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
-                [value: 'issn', name: 'p-ISSN', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
-                [value: 'eissn', name: 'e-ISSN', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
-                [value: 'issnl', name: 'ISSN-L', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
-                [value: 'doi', name: 'DOI'],
-                [value: 'zdb', name: 'ZDB-ID', pattern: "^\\d+-[\\dxX]\$"],
-                [value: 'isil', name: 'ISIL', pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
+            [value: 'isbn', name: 'ISBN', family: 'isxn', pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
+            [value: 'pisbn', name: 'Print-ISBN', family: 'isxn', pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
+            [value: 'issn', name: 'p-ISSN', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
+            [value: 'eissn', name: 'e-ISSN', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
+            [value: 'issnl', name: 'ISSN-L', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
+            [value: 'doi', name: 'DOI'],
+            [value: 'zdb', name: 'ZDB-ID', pattern: "^\\d+-[\\dxX]\$"],
+            [value: 'isil', name: 'ISIL', pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
         ]
 
         namespaces.each { ns ->
@@ -414,10 +415,13 @@ class BootStrap {
 
 
     def refdataCats() {
-        RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT, '0').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED, '3').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED, '1').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED, '2').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS,
+            [(KBComponent.STATUS_CURRENT)  : '0',
+             (KBComponent.STATUS_EXPECTED) : '1',
+             (KBComponent.STATUS_RETIRED)  : '2',
+             (KBComponent.STATUS_DELETED)  : '3'
+            ]
+        )
 
         RefdataCategory.lookupOrCreate(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED).save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_IN_PROGRESS).save(flush: true, failOnError: true)
@@ -995,6 +999,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Job.Type', 'PlatformCleanup').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'RecalculateStatistics').save(flush: true, failOnError: true)
 
+        LanguagesService.initialize()
 
         log.debug("Deleting any null refdata values");
         RefdataValue.executeUpdate('delete from RefdataValue where value is null');
@@ -1013,72 +1018,72 @@ class BootStrap {
 
     def DSConfig() {
         [
-                'accessdl': 'Access - Download',
-                'accessol': 'Access - Read Online',
-                'accbildl': 'Accessibility - Download',
-                'accbilol': 'Accessibility - Read Online',
-                'device'  : 'Device Requirements for Download',
-                'drm'     : 'DRM',
-                'format'  : 'Format',
-                'lic'     : 'Licensing',
-                'other'   : 'Other',
-                'ref'     : 'Referencing',
+            'accessdl': 'Access - Download',
+            'accessol': 'Access - Read Online',
+            'accbildl': 'Accessibility - Download',
+            'accbilol': 'Accessibility - Read Online',
+            'device'  : 'Device Requirements for Download',
+            'drm'     : 'DRM',
+            'format'  : 'Format',
+            'lic'     : 'Licensing',
+            'other'   : 'Other',
+            'ref'     : 'Referencing',
         ].each { k, v ->
             def dscat = DSCategory.findByCode(k) ?: new DSCategory(code: k, description: v).save(flush: true, failOnError: true)
         }
 
         [
-                ['format', 'Downloadable PDF', '', ''],
-                ['format', 'Embedded PDF', '', ''],
-                ['format', 'ePub', '', ''],
-                ['format', 'OeB', '', ''],
-                ['accessol', 'Book Navigation', '', ''],
-                ['accessol', 'Table of contents navigation', '', ''],
-                ['accessol', 'Pagination', '', ''],
-                ['accessol', 'Page Search', '', ''],
-                ['accessol', 'Search Within Book', '', ''],
-                ['accessdl', 'Download Extent', '', ''],
-                ['accessdl', 'Download Time', '', ''],
-                ['accessdl', 'Download Reading View Navigation', '', ''],
-                ['accessdl', 'Table of Contents Navigation', '', ''],
-                ['accessdl', 'Pagination', '', ''],
-                ['accessdl', 'Page Search', '', ''],
-                ['accessdl', 'Search Within Book', '', ''],
-                ['accessdl', 'Read Aloud or Listen Option', '', ''],
-                ['device', 'General', '', ''],
-                ['device', 'Android', '', ''],
-                ['device', 'iOS', '', ''],
-                ['device', 'Kindle Fire', '', ''],
-                ['device', 'PC', '', ''],
-                ['drm', 'Copying', '', ''],
-                ['drm', 'Printing', '', ''],
-                ['accbilol', 'Dictionary', '', ''],
-                ['accbilol', 'Text Resize', '', ''],
-                ['accbilol', 'Change Reading Colour', '', ''],
-                ['accbilol', 'Read aloud or Listen Option', '', ''],
-                ['accbilol', 'Integrated Help', '', ''],
-                ['accbildl', 'Copying', '', ''],
-                ['accbildl', 'Printing', '', ''],
-                ['accbildl', 'Add Notes', '', ''],
-                ['accbildl', 'Dictionary', '', ''],
-                ['accbildl', 'Text Resize', '', ''],
-                ['accbildl', 'Change Reading Colour', '', ''],
-                ['accbildl', 'Integrated Help', '', ''],
-                ['accbildl', 'Other Accessibility features or Support', '', ''],
-                ['ref', 'Export to bibliographic software', '', ''],
-                ['ref', 'Sharing / Social Media', '', ''],
-                ['other', 'Changes / Redevelopment in the near future', '', ''],
-                ['lic', 'Number of users', '', ''],
-                ['lic', 'Credit Payment Model', '', ''],
-                ['lic', 'Publishers Included', '', '']
+            ['format', 'Downloadable PDF', '', ''],
+            ['format', 'Embedded PDF', '', ''],
+            ['format', 'ePub', '', ''],
+            ['format', 'OeB', '', ''],
+            ['accessol', 'Book Navigation', '', ''],
+            ['accessol', 'Table of contents navigation', '', ''],
+            ['accessol', 'Pagination', '', ''],
+            ['accessol', 'Page Search', '', ''],
+            ['accessol', 'Search Within Book', '', ''],
+            ['accessdl', 'Download Extent', '', ''],
+            ['accessdl', 'Download Time', '', ''],
+            ['accessdl', 'Download Reading View Navigation', '', ''],
+            ['accessdl', 'Table of Contents Navigation', '', ''],
+            ['accessdl', 'Pagination', '', ''],
+            ['accessdl', 'Page Search', '', ''],
+            ['accessdl', 'Search Within Book', '', ''],
+            ['accessdl', 'Read Aloud or Listen Option', '', ''],
+            ['device', 'General', '', ''],
+            ['device', 'Android', '', ''],
+            ['device', 'iOS', '', ''],
+            ['device', 'Kindle Fire', '', ''],
+            ['device', 'PC', '', ''],
+            ['drm', 'Copying', '', ''],
+            ['drm', 'Printing', '', ''],
+            ['accbilol', 'Dictionary', '', ''],
+            ['accbilol', 'Text Resize', '', ''],
+            ['accbilol', 'Change Reading Colour', '', ''],
+            ['accbilol', 'Read aloud or Listen Option', '', ''],
+            ['accbilol', 'Integrated Help', '', ''],
+            ['accbildl', 'Copying', '', ''],
+            ['accbildl', 'Printing', '', ''],
+            ['accbildl', 'Add Notes', '', ''],
+            ['accbildl', 'Dictionary', '', ''],
+            ['accbildl', 'Text Resize', '', ''],
+            ['accbildl', 'Change Reading Colour', '', ''],
+            ['accbildl', 'Integrated Help', '', ''],
+            ['accbildl', 'Other Accessibility features or Support', '', ''],
+            ['ref', 'Export to bibliographic software', '', ''],
+            ['ref', 'Sharing / Social Media', '', ''],
+            ['other', 'Changes / Redevelopment in the near future', '', ''],
+            ['lic', 'Number of users', '', ''],
+            ['lic', 'Credit Payment Model', '', ''],
+            ['lic', 'Publishers Included', '', '']
         ].each { crit ->
             def cat = DSCategory.findByCode(crit[0]);
             if (cat) {
                 def c = DSCriterion.findByOwnerAndTitle(cat, crit[1]) ?: new DSCriterion(
-                        owner: cat,
-                        title: crit[1],
-                        description: crit[2],
-                        explanation: crit[3]).save(flush: true, failOnError: true)
+                    owner: cat,
+                    title: crit[1],
+                    description: crit[2],
+                    explanation: crit[3]).save(flush: true, failOnError: true)
             } else {
                 log.error("Unable to locate category: ${crit[0]}")
             }
@@ -1103,11 +1108,11 @@ class BootStrap {
             } else {
                 log.debug("Create user...")
                 user = new User(
-                        username: su.name,
-                        password: su.pass,
-                        display: su.display,
-                        email: su.email,
-                        enabled: true).save(failOnError: true)
+                    username: su.name,
+                    password: su.pass,
+                    display: su.display,
+                    email: su.email,
+                    enabled: true).save(failOnError: true)
             }
 
             log.debug("Add roles for ${su.name}");

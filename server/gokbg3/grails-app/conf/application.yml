@@ -152,6 +152,7 @@ environments:
                 port: 3025
         gokb:
             ygorUrl: null
+            languagesUrl : null
             packageUpdate:
                 enabled: false
             zdbAugment:
@@ -191,6 +192,7 @@ environments:
                 defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
         gokb:
             ygorUrl: null
+            languagesUrl : null
             packageUpdate:
                 enabled: false
             zdbAugment:
@@ -244,6 +246,7 @@ environments:
             zdbAugment:
                 enabled: false
             ygorUrl: null
+            languagesUrl : null
             es:
                 cluster: gokbg3-prod
                 host: localhost

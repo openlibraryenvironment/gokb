@@ -391,7 +391,8 @@ class PackagesController {
         packageService.sendFile(pkg, PackageService.ExportType.KBART, response)
       else
         log.error("Cant find package with ID ${params.id}")
-    } else if (request.method == "POST") {
+    }
+    else if (request.method == "POST") {
       def packs = []
       request.JSON.data.ids.each { id ->
         def pkg = Package.findByUuid(id) ?: genericOIDService.resolveOID(id)

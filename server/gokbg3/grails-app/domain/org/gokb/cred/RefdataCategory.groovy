@@ -120,8 +120,6 @@ class RefdataCategory {
 
   static RefdataValue lookupOrCreate(category_name, value, sortkey) {
 
-    // log.debug("lookupOrCreate(${category_name}, ${value}, ${sortkey})");
-
     if ((value == null) || (category_name == null))
       throw new RuntimeException("Request to lookupOrCreate null value in category ${category_name}");
 
@@ -183,6 +181,14 @@ class RefdataCategory {
     // return the refdata value.
     result
   }
+
+
+  static RefdataValue lookupOrCreate(String category_name, Map sortedValues) {
+    for (def entry in sortedValues){
+      lookupOrCreate(category_name, entry.getKey(), entry.getValue())
+    }
+  }
+
 
 //  def availableActions() {
 //    [ [ code:'object::delete' , label: 'Delete' ] ]

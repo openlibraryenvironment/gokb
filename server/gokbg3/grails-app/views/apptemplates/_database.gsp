@@ -43,6 +43,13 @@
   </dd>
 
   <dt>
+    <g:annotatedLabel owner="${d}" property="language">Language</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:xEditableRefData owner="${d}" field="language" config="${org.gokb.cred.KBComponent.RD_LANGUAGE}"/>
+  </dd>
+
+  <dt>
     <g:annotatedLabel owner="${d}" property="currentPubisher">Latest Publisher</g:annotatedLabel>
   </dt>
   <dd>
@@ -111,8 +118,8 @@
             ${d.additionalProperties?.size() ?: '0'}
         </span></a></li>
       <li><a href="#review" data-toggle="tab">Review Tasks (Open/Total)
-        <span class="badge badge-warning"> 
-          ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()} 
+        <span class="badge badge-warning">
+          ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()}
         </span>
       </a></li>
     </g:if>

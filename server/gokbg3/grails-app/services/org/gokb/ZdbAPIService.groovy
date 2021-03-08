@@ -57,6 +57,7 @@ class ZdbAPIService {
 
   def checkKxpAccess () {
     boolean result = true
+
     def testUrl = "https://sru.k10plus.de/k10plus"
     def testClient = new RESTClient(testUrl)
 
@@ -69,7 +70,6 @@ class ZdbAPIService {
           maximumRecords: "10",
           query: "pica.zdb=2936849-2"
         ]
-
         response.success = { resp, data ->
           if (data?.diagnostics.isEmpty()) {
             log.debug("KXP access established ..")
@@ -79,7 +79,6 @@ class ZdbAPIService {
             result = false
           }
         }
-
         response.failure = { resp, data ->
           log.debug("KXP returned error status ${resp.status}")
           result = false
@@ -90,7 +89,6 @@ class ZdbAPIService {
       log.debug("Exception trying to lookup KXP access..", e)
       result = false
     }
-
     result
   }
 

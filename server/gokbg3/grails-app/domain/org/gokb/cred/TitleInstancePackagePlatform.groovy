@@ -101,7 +101,8 @@ class TitleInstancePackagePlatform extends KBComponent {
       'parentPublicationTitleId'   : "parentPublicationTitleId",
       'precedingPublicationId': "precedingPublicationId",
       'lastChangedExternal'     : "lastChangedExternal",
-      'medium'                : "medium"
+      'medium'                : "medium",
+      'language'              : "language"
     ],
     'defaultLinks' : [
       'pkg',
@@ -239,14 +240,14 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   @Override
-  public String getNiceName() {
+  String getNiceName() {
     return "TIPP"
   }
 
   /**
    * Create a new TIPP being mindful of the need to create TIPLs
    */
-  public static tiplAwareCreate(tipp_fields = [:]) {
+  static tiplAwareCreate(tipp_fields = [:]) {
 
 //     def result = new TitleInstancePackagePlatform(tipp_fields)
 //     result.title = tipp_fields.title
@@ -254,7 +255,8 @@ class TitleInstancePackagePlatform extends KBComponent {
 //     result.pkg = tipp_fields.pkg
     def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
     def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
-    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid, status: tipp_status, editStatus: tipp_editstatus, name: tipp_fields.name).save(failOnError: true)
+    def tipp_language = tipp_fields.language ? RefdataCategory.lookup('KBComponent.Language', tipp_fields.language) : null
+    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid, status: tipp_status, editStatus: tipp_editstatus, name: tipp_fields.name, language: tipp_language).save(failOnError: true)
 
     if (result) {
 
@@ -611,7 +613,8 @@ class TitleInstancePackagePlatform extends KBComponent {
           'uuid'        : (tipp_dto.uuid ?: null),
           'status'      : (tipp_dto.status ?: null),
           'name'        : (tipp_dto.name ?: null),
-          'editStatus'  : (tipp_dto.editStatus ?: null)
+          'editStatus'  : (tipp_dto.editStatus ?: null),
+          'language'    : (tipp_dto.language ?: null)
         ]
 
         tipp = tiplAwareCreate(tmap)
@@ -637,7 +640,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
         if (tipp_dto.paymentType && tipp_dto.paymentType.length() > 0) {
 
-          def payment_statement = null
+          def payment_statement
 
           if (tipp_dto.paymentType == 'P') {
             payment_statement = 'Paid'
@@ -671,6 +674,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.lastChangedExternal, tipp, 'lastChangedExternal')
         changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', 'TitleInstance.Medium')
         changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.publicationType, tipp, 'publicationType', 'TitleInstancePackagePlatform.PublicationType')
+        changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.language, tipp, 'language')
 
         if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
           tipp_dto.coverage = tipp_dto.coverageStatements

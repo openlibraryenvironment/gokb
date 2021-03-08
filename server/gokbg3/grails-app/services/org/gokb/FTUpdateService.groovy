@@ -3,11 +3,6 @@ package org.gokb
 import com.k_int.ESSearchService
 import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.bulk.BulkRequestBuilder
-import org.gokb.FTControl
-import org.hibernate.ScrollMode
-import java.nio.charset.Charset
-import java.util.GregorianCalendar
-import org.gokb.cred.*
 
 @Transactional
 class FTUpdateService {
@@ -15,7 +10,6 @@ class FTUpdateService {
   def ESWrapperService
   def sessionFactory
   def dateFormatService
-  def grailsApplication
 
   public static boolean running = false
 

@@ -47,6 +47,13 @@
   </dd>
 
   <dt>
+    <g:annotatedLabel owner="${d}" property="language">Language</g:annotatedLabel>
+  </dt>
+  <dd>
+    <g:xEditableRefData owner="${d}" field="language" config="${org.gokb.cred.KBComponent.RD_LANGUAGE}"/>
+  </dd>
+
+  <dt>
     <g:annotatedLabel owner="${d}" property="currentPubisher">Latest Publisher</g:annotatedLabel>
   </dt>
   <dd>
