@@ -59,20 +59,15 @@ class SourcesController {
         obj = Source.get(genericOIDService.oidToId(params.id))
       }
 
-      if (obj?.isReadable()) {
+      if (obj) {
         result = restMappingService.mapObjectToJson(obj, params, user)
 
         // result['_currentTipps'] = obj.currentTippCount
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
-      } else if (!obj) {
+      } else {
         result.message = "Object ID could not be resolved!"
         response.setStatus(404)
         result.code = 404
-        result.result = 'ERROR'
-      } else {
-        result.message = "Access to object was denied!"
-        response.setStatus(403)
-        result.code = 403
         result.result = 'ERROR'
       }
     } else {
