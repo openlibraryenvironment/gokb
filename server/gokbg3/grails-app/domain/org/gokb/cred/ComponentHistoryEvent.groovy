@@ -9,6 +9,7 @@ class ComponentHistoryEvent implements Auditable {
   // Timestamps
   Date dateCreated
   Date lastUpdated
+  Long lastSeen
 
   static hasMany = [ participants:ComponentHistoryEventParticipant ]
   static mappedBy = [ participants:'event' ]
@@ -26,23 +27,26 @@ class ComponentHistoryEvent implements Auditable {
 
 
   def afterInsert() {
-    touchParticipants(lastUpdated)
+    lastSeen = new Date().getTime()
+    touchParticipants(lastSeen)
   }
 
 
   def afterUpdate() {
-    touchParticipants(lastUpdated)
+    lastSeen = new Date().getTime()
+    touchParticipants(lastSeen)
   }
 
 
   def beforeDelete() {
-    touchParticipants(new Date())
+    lastSeen = new Date().getTime()
+    touchParticipants(lastSeen)
   }
 
 
-  private void touchParticipants(Date timestamp){
+  private void touchParticipants(Long lastSeen){
     for (ComponentHistoryEventParticipant participant in participants){
-      participant.participant.lastUpdated = timestamp
+      participant.participant.lastSeen = lastSeen
     }
   }
 }
