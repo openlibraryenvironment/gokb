@@ -161,17 +161,17 @@ class CleanupService {
     def delete_candidates = new HashSet()
     delete_candidates.addAll(
         Identifier.executeQuery("SELECT id.id FROM Identifier AS id " +
-            "WHERE NOT EXISTS (SELECT 1 FROM Combo AS co WHERE co.toComponent.id = id.id)")
+            "WHERE NOT EXISTS (SELECT 1 FROM Combo AS co WHERE co.toComponent = id)")
     )
     delete_candidates.addAll(
         Identifier.executeQuery("SELECT id.id FROM Combo AS co, Identifier AS id, KBComponent AS kbc " +
-            "WHERE co.toComponent.id = id.id " +
-            "AND co.fromComponent.id = null")
+            "WHERE co.toComponent = id " +
+            "AND co.fromComponent = null")
     )
     delete_candidates.addAll(
         Identifier.executeQuery("SELECT id.id FROM Combo AS co, Identifier AS id " +
-            "WHERE co.toComponent.id = id.id " +
-            "AND NOT EXISTS (SELECT 1 FROM KBComponent AS kbc WHERE kbc.id = co.fromComponent.id)")
+            "WHERE co.toComponent = id " +
+            "AND NOT EXISTS (SELECT 1 FROM KBComponent AS kbc WHERE kbc = co.fromComponent)")
     )
     log.debug("... found ${delete_candidates.size()} Identifier(s) with missing links or missing linked components.")
     expungeByIds(delete_candidates, j)
