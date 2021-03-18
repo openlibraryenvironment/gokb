@@ -408,12 +408,13 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+
   def cleanupOrphanedTipps() {
     Job j = concurrencyManagerService.createJob { Job j ->
       cleanupService.deleteOrphanedTipps(j)
     }.startOrQueue()
 
-    log.debug("Triggering cleanup task. Started job #${j.uuid}")
+    log.debug("Triggering cleanup orphaned TIPPs task. Started job #${j.uuid}")
 
     j.description = "TIPP Cleanup"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'TIPPCleanup')
@@ -421,6 +422,22 @@ class AdminController {
 
     render(view: "logViewer", model: logViewer())
   }
+
+
+  def cleanupOrphanedIdentifiers() {
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.deleteOrphanedIdentifiers(j)
+    }.startOrQueue()
+
+    log.debug("Triggering cleanup orphaned Identifiers task. Started job #${j.uuid}")
+
+    j.description = "Identifier Cleanup"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'IdentifierCleanup')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
 
   def rejectWrongTitles() {
     Job j = concurrencyManagerService.createJob { Job j ->

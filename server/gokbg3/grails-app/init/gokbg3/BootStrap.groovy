@@ -994,6 +994,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Job.Type', 'CleanupDeletedComponents').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'CleanupRejectedComponents').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'TIPPCleanup').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'IdentifierCleanup').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'DeleteTIWithoutHistory').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'RejectTIWithoutIdentifier').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'PlatformCleanup').save(flush: true, failOnError: true)

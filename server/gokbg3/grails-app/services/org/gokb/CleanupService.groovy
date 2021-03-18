@@ -154,6 +154,32 @@ class CleanupService {
     return new Date();
   }
 
+
+  @Transactional
+  def deleteOrphanedIdentifiers(Job j = null) {
+    log.debug("Expunging Identifiers with missing links or missing linked components...")
+    def delete_candidates = new HashSet()
+    delete_candidates.addAll(
+        Identifier.executeQuery("SELECT id.id FROM Identifier AS id " +
+            "WHERE NOT EXISTS (SELECT 1 FROM Combo AS co WHERE co.toComponent.id = id.id)")
+    )
+    delete_candidates.addAll(
+        Identifier.executeQuery("SELECT id.id FROM Combo AS co, Identifier AS id, KBComponent AS kbc " +
+            "WHERE co.toComponent.id = id.id " +
+            "AND co.fromComponent.id = null")
+    )
+    delete_candidates.addAll(
+        Identifier.executeQuery("SELECT id.id FROM Combo AS co, Identifier AS id " +
+            "WHERE co.toComponent.id = id.id " +
+            "AND NOT EXISTS (SELECT 1 FROM KBComponent AS kbc WHERE kbc.id = co.fromComponent.id)")
+    )
+    log.debug("... found ${delete_candidates.size()} Identifier(s) with missing links or missing linked components.")
+    expungeByIds(delete_candidates, j)
+    log.debug("... Done: expunging Identifiers with missing links or missing linked components.")
+    return new Date()
+  }
+
+
   @Transactional
   def expungeDeletedComponents(Job j = null) {
 
