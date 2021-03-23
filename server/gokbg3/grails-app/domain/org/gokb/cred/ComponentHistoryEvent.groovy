@@ -26,25 +26,18 @@ class ComponentHistoryEvent implements Auditable {
   }
 
 
-  def afterInsert() {
-    lastSeen = new Date().getTime()
-    touchParticipants(lastSeen)
-  }
-
-
   def afterUpdate() {
-    lastSeen = new Date().getTime()
-    touchParticipants(lastSeen)
+    touchParticipants()
   }
 
 
   def beforeDelete() {
-    lastSeen = new Date().getTime()
-    touchParticipants(lastSeen)
+    touchParticipants()
   }
 
 
-  private void touchParticipants(Long lastSeen){
+  private void touchParticipants(){
+    lastSeen = new Date().getTime()
     for (ComponentHistoryEventParticipant participant in participants){
       participant.participant.lastSeen = lastSeen
     }
