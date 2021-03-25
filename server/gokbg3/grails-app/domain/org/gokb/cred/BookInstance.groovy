@@ -57,13 +57,13 @@ class BookInstance extends TitleInstance {
     })
     editionDifferentiator(nullable: true, blank: false)
     editionStatement(nullable: true, blank: false)
-    volumeNumber(validator: { val, obj ->
-      if (obj.hasChanged('volumeNumber') && val) {
-        if (!(val ==~ "^\\d+\$")) {
-          return ["typeMismatch.java.lang.Integer"]
-        }
-      }
-    })
+//    volumeNumber(validator: { val, obj ->
+//      if (obj.hasChanged('volumeNumber') && val) {
+//        if (!(val ==~ "^\\d+\$")) {
+//          return ["typeMismatch.java.lang.Integer"]
+//        }
+//      }
+//    })
     dateFirstInPrint(nullable: true, blank: false)
     dateFirstOnline(nullable: true, blank: false)
     summaryOfContent(nullable: true, blank: false)
