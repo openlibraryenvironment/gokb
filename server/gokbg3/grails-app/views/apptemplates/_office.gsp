@@ -92,5 +92,11 @@
 		<dd>
 			<g:xEditableRefData owner="${d}" field="country" config='Country' />
 		</dd>
-	</g:if>
+        <dt>
+            <g:annotatedLabel owner="${d}" property="language">preferred Language</g:annotatedLabel>
+        </dt>
+        <dd>
+            <g:xEditableRefData owner="${d}" field="language" config="${org.gokb.cred.KBComponent.RD_LANGUAGE}"/>
+        </dd>
+    </g:if>
 </dl>
