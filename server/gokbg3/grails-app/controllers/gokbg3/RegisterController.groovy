@@ -70,7 +70,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     }
 
     def secTerms = session.secQuestion ? session.secQuestion.split("\\*") : null
-    
+
     if ( secTerms ) {
       secResult = (secTerms[0] as Integer) * (secTerms[1] as Integer)
     }
@@ -88,7 +88,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
     def user = uiRegistrationCodeStrategy.createUser(registerCommand)
     String salt = saltSource instanceof NullSaltSource ? null : registerCommand.username
-    RegistrationCode registrationCode = uiRegistrationCodeStrategy.register(user, registerCommand.password, salt)
+    RegistrationCode registrationCode = uiRegistrationCodeStrategy.register(user, registerCommand.password)
 
     if (registrationCode == null || registrationCode.hasErrors()) {
       // null means problem creating the user
@@ -106,6 +106,64 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
       }
       else {
         [emailSent: true, registerCommand: registerCommand, noAddress: true]
+      }
+    } else {
+      redirectVerifyRegistration(uiRegistrationCodeStrategy.verifyRegistration(registrationCode.token))
+    }
+  }
+
+  def start(RegisterCommand registerCommand) {
+
+    def secResult
+    def errors = [:]
+
+    if ( !request.post ) {
+      session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+      return [registerCommand: new RegisterCommand(), secQuestion: session.secQuestion]
+    }
+
+    if ( session.regTries && session.regTries > 3 ) {
+      response.setStatus(429)
+
+      render(view: 'start', model: [registerCommand: registerCommand, noTries: true, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)])
+    }
+
+    def secTerms = session.secQuestion ? session.secQuestion.split("\\*") : null
+
+    if ( secTerms ) {
+      secResult = (secTerms[0] as Integer) * (secTerms[1] as Integer)
+    }
+
+    if ( !secTerms || params.int('secAnswer') != secResult ) {
+      session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+      session.regTries = session.regTries ? (session.regTries + 1) : 1
+      render(view: 'start', model: [registerCommand: registerCommand, secFailed: true, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)])
+    }
+
+    if (registerCommand.hasErrors() || params.phone) {
+      session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+      render(view: 'start', model: [registerCommand: registerCommand, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)])
+    }
+
+    def user = uiRegistrationCodeStrategy.createUser(registerCommand)
+    RegistrationCode registrationCode = uiRegistrationCodeStrategy.register(user, registerCommand.password)
+
+    if (registrationCode == null || registrationCode.hasErrors()) {
+      // null means problem creating the user
+      flash.error = message(code: 'spring.security.ui.register.miscError')
+      render(view: 'start', model: [registerCommand: registerCommand])
+    }
+
+    session.secQuestion = null
+    session.regTries = 0
+
+    if( requireEmailValidation ) {
+      if ( registerCommand.email ) {
+        sendVerifyRegistrationMail registrationCode, user, registerCommand.email
+        render(view: 'start', model: [emailSent: true, registerCommand: registerCommand])
+      }
+      else {
+        render(view: 'start', model: [emailSent: true, registerCommand: registerCommand, noAddress: true])
       }
     } else {
       redirectVerifyRegistration(uiRegistrationCodeStrategy.verifyRegistration(registrationCode.token))
