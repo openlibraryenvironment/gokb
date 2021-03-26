@@ -111,7 +111,8 @@ class Org extends KBComponent {
       'ids',
       'variantNames',
       'curatoryGroups',
-      'providedPlatforms'
+      'providedPlatforms',
+      'offices'
     ]
   ]
 

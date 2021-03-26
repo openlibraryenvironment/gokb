@@ -328,7 +328,7 @@ where cp.owner = :c
   Source source
 
   /**
-   * Component language. Linked to refdata table. Only applicable for TitleInstance and TitleInstancePackagePlatform.
+   * Component language. Linked to refdata table. Only applicable for Office, TitleInstance and TitleInstancePackagePlatform.
    */
   RefdataValue language
 

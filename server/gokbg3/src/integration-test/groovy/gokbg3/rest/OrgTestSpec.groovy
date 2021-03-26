@@ -5,6 +5,7 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
+import org.gokb.cred.Office
 import org.gokb.cred.Org
 import org.gokb.cred.Platform
 import org.gokb.TitleLookupService
@@ -34,7 +35,8 @@ class OrgTestSpec extends AbstractAuthSpec {
       Platform.findByName("TestOrgPltUpdate")?.refresh().expunge()
     }
     if (Org.findByName("TestOrgPost")) {
-      Org.findByName("TestOrgPost")?.refresh().expunge()
+      Org.findByName("TestOrgPost").offices.each{ Office off -> off.expunge()}
+      Org.findByName("TestOrgPost").refresh().expunge()
     }
     if (Org.findByName("TestOrgUpdateNew")) {
       Org.findByName("TestOrgUpdateNew")?.refresh().expunge()
@@ -72,7 +74,7 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.get("${urlPath}/rest/orgs") {
+    RestResponse resp = rest.get("${urlPath}/rest/orgs/${Org.findByName("TestOrgPatch").id}") {
       accept('application/json')
       auth("Bearer $accessToken")
     }
@@ -80,6 +82,7 @@ class OrgTestSpec extends AbstractAuthSpec {
     then:
 
     resp.status == 200 // OK
+    resp.json.name == "TestOrgPatch"
   }
 
   void "test insert new org"() {
@@ -92,7 +95,8 @@ class OrgTestSpec extends AbstractAuthSpec {
       ids              : [
         [namespace: "global", value: "test-org-id-val"]
       ],
-      providedPlatforms: ["TestOrgPlt"]
+      providedPlatforms: ["TestOrgPlt"],
+      offices: [[name: "TestOffice", language:"ger"]/*,[name: "TestOffice2", language:"esp"],[name: "TestOffice3", language:"hun"]*/]
     ]
 
     when:
@@ -106,11 +110,12 @@ class OrgTestSpec extends AbstractAuthSpec {
     then:
 
     resp.status == 201 // Created
-
-    expect:
-
     resp.json?.name == "TestOrgPost"
     resp.json?._embedded?.ids?.size() == 1
+    resp.json?._embedded?.offices?.size()==0
+
+    expect:
+    Org.findByName('TestOrgPost').offices.size()==2
   }
 
   void "test org index"() {
