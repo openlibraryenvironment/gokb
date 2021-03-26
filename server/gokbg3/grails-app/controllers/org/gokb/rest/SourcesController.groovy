@@ -173,7 +173,9 @@ class SourcesController {
       }
     }
     else {
-
+      result.result = 'ERROR'
+      response.setStatus(403)
+      result.message = "User must belong to at least one curatory group of an existing item to make changes!"
     }
     render result as JSON
   }
