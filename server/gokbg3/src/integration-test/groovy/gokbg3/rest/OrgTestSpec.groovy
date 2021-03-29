@@ -35,8 +35,10 @@ class OrgTestSpec extends AbstractAuthSpec {
       Platform.findByName("TestOrgPltUpdate")?.refresh().expunge()
     }
     if (Org.findByName("TestOrgPost")) {
-      Org.findByName("TestOrgPost").offices.each{ Office off -> off.expunge()}
-      Org.findByName("TestOrgPost").refresh().expunge()
+      Office.list().each {
+        it.expunge()
+      }
+      Org.findByName("TestOrgPost")?.refresh().expunge()
     }
     if (Org.findByName("TestOrgUpdateNew")) {
       Org.findByName("TestOrgUpdateNew")?.refresh().expunge()
@@ -110,12 +112,12 @@ class OrgTestSpec extends AbstractAuthSpec {
     then:
 
     resp.status == 201 // Created
-    resp.json?.name == "TestOrgPost"
-    resp.json?._embedded?.ids?.size() == 1
-    resp.json?._embedded?.offices?.size()==0
 
     expect:
-    Org.findByName('TestOrgPost').offices.size()==2
+
+    resp.json?.name == "TestOrgPost"
+    resp.json?._embedded?.ids?.size() == 1
+    resp.json?._embedded?.offices?.size() == 1
   }
 
   void "test org index"() {

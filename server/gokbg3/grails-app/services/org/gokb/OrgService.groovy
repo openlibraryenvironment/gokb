@@ -8,6 +8,7 @@ import org.hibernate.Session
 class OrgService {
 
   def sessionFactory
+  def platformService
   ComponentLookupService componentLookupService
 
   def restLookup(orgDTO, def user = null) {
@@ -286,6 +287,7 @@ class OrgService {
 
   public def updateOffices(obj, offices, boolean remove = true) {
     log.debug("Update offices ${offices}")
+    def language_rdc = RefdataCategory.findByLabel('KBComponent.Language')
     Set new_offices = []
     def errors = []
     // def current_offices = Combo.findAllWhere(fromComponent: obj, type:OFFICE_ORG)
@@ -301,12 +303,22 @@ class OrgService {
       }
       else if (office instanceof Map) {
         office_obj = Office.get(office.id) ?: Office.findByNameIlike(office.name)
+
         if (!office_obj) {
           // create new office
           def lang = office.language
-          if (lang) {
+
+          if (lang instanceof String) {
             office.language = RefdataCategory.lookup(KBComponent.RD_LANGUAGE, lang)
           }
+          else if (lang instanceof Integer) {
+            def lang_rdv = RefdataValue.get(lang)
+
+            if (lang_rdv.owner == language_rdc) {
+              office.language = lang_rdv
+            }
+          }
+
           office_obj = new Office(office).save(flush:true)
         }
       }
@@ -323,9 +335,8 @@ class OrgService {
       new_offices.each { new_office ->
         if (!obj.offices.contains(new_office)) {
           log.debug("new office ${new_office}")
-          //RefdataValue OFFICE_ORG = RefdataCategory.lookup('Combo.Type', 'Office.Org')
-          //def new_combo = new Combo(fromComponent: obj, toComponent: new_office, type: OFFICE_ORG).save(flush:true)
-          obj.offices << new_office
+          def OFFICE_ORG = RefdataCategory.lookup('Combo.Type', 'Office.Org')
+          def new_combo = new Combo(fromComponent: new_office, toComponent: obj, type: OFFICE_ORG).save(flush:true)
         }
         else {
           log.debug("Existing office ${new_office}..")
