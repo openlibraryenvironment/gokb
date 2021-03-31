@@ -24,8 +24,6 @@ import groovy.util.logging.*
 @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
 class RegisterController extends grails.plugin.springsecurity.ui.RegisterController {
 
-  static defaultAction = 'register'
-
   /** Dependency injection for the 'saltSource' bean. */
   SaltSource saltSource
 
@@ -51,6 +49,15 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 	static final String EMAIL_LAYOUT = "/layouts/email"
 	static final String FORGOT_PASSWORD_TEMPLATE = "/register/_forgotPasswordMail"
 	static final String VERIFY_REGISTRATION_TEMPLATE = "/register/_verifyRegistrationMail"
+
+  def index(RegisterCommand registerCommand) {
+    if (params.embed) {
+      redirect(action: 'start', params: params)
+    }
+    else {
+      redirect(action: 'register')
+    }
+  }
 
   @Override
   def register(RegisterCommand registerCommand) {
@@ -116,16 +123,18 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
     def secResult
     def errors = [:]
+    Locale locale = new Locale(params.lang ?: request.locale)
+
 
     if ( !request.post ) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
-      return [registerCommand: new RegisterCommand(), secQuestion: session.secQuestion]
+      return [registerCommand: new RegisterCommand(), secQuestion: session.secQuestion, embed: 'true', locale: locale]
     }
 
     if ( session.regTries && session.regTries > 3 ) {
       response.setStatus(429)
 
-      render(view: 'start', model: [registerCommand: registerCommand, noTries: true, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)])
+      return [registerCommand: registerCommand, noTries: true, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
     }
 
     def secTerms = session.secQuestion ? session.secQuestion.split("\\*") : null
@@ -137,12 +146,12 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     if ( !secTerms || params.int('secAnswer') != secResult ) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
       session.regTries = session.regTries ? (session.regTries + 1) : 1
-      render(view: 'start', model: [registerCommand: registerCommand, secFailed: true, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)])
+      return [registerCommand: registerCommand, secFailed: true, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
     }
 
     if (registerCommand.hasErrors() || params.phone) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
-      render(view: 'start', model: [registerCommand: registerCommand, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)])
+      return [registerCommand: registerCommand, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
     }
 
     def user = uiRegistrationCodeStrategy.createUser(registerCommand)
@@ -151,22 +160,18 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     if (registrationCode == null || registrationCode.hasErrors()) {
       // null means problem creating the user
       flash.error = message(code: 'spring.security.ui.register.miscError')
-      render(view: 'start', model: [registerCommand: registerCommand])
+      return [registerCommand: registerCommand, embed: 'true', locale: locale]
     }
 
     session.secQuestion = null
     session.regTries = 0
 
-    if( requireEmailValidation ) {
-      if ( registerCommand.email ) {
-        sendVerifyRegistrationMail registrationCode, user, registerCommand.email
-        render(view: 'start', model: [emailSent: true, registerCommand: registerCommand])
-      }
-      else {
-        render(view: 'start', model: [emailSent: true, registerCommand: registerCommand, noAddress: true])
-      }
-    } else {
-      redirectVerifyRegistration(uiRegistrationCodeStrategy.verifyRegistration(registrationCode.token))
+    if ( registerCommand.email ) {
+      sendVerifyRegistrationMail registrationCode, user, registerCommand.email
+      return [registerCommand: registerCommand, emailSent: true, embed: 'true', locale: locale]
+    }
+    else {
+      return [registerCommand: registerCommand, emailSent: true, noAddress: true, embed: 'true', locale: locale]
     }
   }
 

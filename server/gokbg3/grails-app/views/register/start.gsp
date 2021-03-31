@@ -1,6 +1,6 @@
 <html>
 <head>
-  <meta name='layout' content='register-ui'/>
+  <meta name='layout' content='register'/>
   <title><g:message code='spring.security.ui.register.title'/></title>
 </head>
 
@@ -28,12 +28,12 @@
             <div class="panel-heading">${message(code: 'registration.complete.label', default: 'Registration complete')}</div>
             <div class="panel-body">
               <g:if test="${noAddress}">
-                <div class="alert alert-success" style="font-weight:bolder">
+                <div class="alert alert-primary" style="font-weight:bolder">
                   ${message(code:'registration.pending')}
                 </div>
               </g:if>
               <g:else>
-                <div class="alert alert-success" style="font-weight:bolder">
+                <div class="alert alert-primary" style="font-weight:bolder">
                   <g:message code='spring.security.ui.register.sent'/>
                 </div>
               </g:else>
@@ -44,7 +44,7 @@
           <div class="panel panel-default">
             <div class="panel-heading">${message(code:'registration.failed.label')}</div>
             <div class="panel-body">
-              <div class="alert alert-danger" style="font-weight:bolder">
+              <div class="alert alert-primary" style="font-weight:bolder">
                 <span style="padding:10px;">${message(code:'registration.questionFailed')}</span>
               </div>
             </div>
@@ -52,12 +52,23 @@
         </g:elseif>
         <g:else>
           <div class="panel panel-default">
-            <div class="panel-heading"><b>GOKb</b> – ${message(code:'spring.security.ui.login.register')}</div>
+            <div class="panel-heading"><b>GOKb</b> – ${message(code:'spring.security.ui.register.header', locale: locale)}</div>
             <div class="panel-body">
-              <g:form controller="register" action="register" class="form" role="form">
+              <g:form controller="register" action="start" class="form" role="form" params="[embed:true, lang: locale]">
+                <div class="form-group ${registerCommand.errors.hasFieldErrors('email') ? 'has-error' : ''}">
+                  <label for="email">${message(code:'spring.security.ui.register.email.label', locale: locale)} <i class="fas fa-info-circle" style="color:#008cba" title="${message(code:'registration.email.info', locale:locale)}"></i></label>
+                  <input type="email" class="form-control" id="email" name="email" value="${registerCommand.email}" style="width:50%"/>
+                  <g:if test="${errors?.email?.size() > 0}">
+                    <ul>
+                      <g:each var="e" in="${errors.email}">
+                        <li>${e.message}</li>
+                      </g:each>
+                    </ul>
+                  </g:if>
+                </div>
                 <div class="form-group ${registerCommand.errors.hasFieldErrors('username') ? 'has-error' : ''}">
-                  <label for="username">${message(code:'springSecurity.login.username.label', default: 'Username')} (<span style="color:red">*</span>)</label>
-                  <input autocomplete="false" type="text" class="form-control" id="username" name="username" placeholder="Requested Username" value="${registerCommand.username}" style="width:50%"/>
+                  <label for="username">${message(code:'spring.security.ui.register.username.label', locale: locale)} (<span style="color:red">*</span>)</label>
+                  <input autocomplete="false" type="text" class="form-control" id="username" name="username" value="${registerCommand.username}" style="width:50%"/>
                   <input type="text" name="phone" value="" hidden="true" />
                   <g:if test="${errors?.username?.size() > 0}">
                     <ul>
@@ -67,20 +78,9 @@
                     </ul>
                   </g:if>
                 </div>
-                <div class="form-group ${registerCommand.errors.hasFieldErrors('email') ? 'has-error' : ''}">
-                  <label for="email">Email <i class="fas fa-info-circle" style="color:#008cba" title="You may register without providing an email, but an administrator will have to manually activate such an account. Also, without a provided email you will not be able to reset your password."></i></label>
-                  <input type="email" class="form-control" id="email" name="email" placeholder="user@yourdomain.ac.uk" value="${registerCommand.email}"  style="width:50%"/>
-                  <g:if test="${errors?.email?.size() > 0}">
-                    <ul>
-                      <g:each var="e" in="${errors.email}">
-                        <li>${e.message}</li>
-                      </g:each>
-                    </ul>
-                  </g:if>
-                </div>
                 <div class="form-group ${registerCommand.errors.hasFieldErrors('password') ? 'has-error' : ''}">
-                  <label for="password">Password (<span style="color:red">*</span>)</label>
-                  <input autocomplete="false" type="password" class="form-control" id="password" name="password" placeholder="password" value="${registerCommand.password}" style="width:50%" />
+                  <label for="password">${message(code:'spring.security.ui.register.password.label', locale: locale)} (<span style="color:red">*</span>)</label>
+                  <input autocomplete="false" type="password" class="form-control" id="password" name="password" value="${registerCommand.password}" style="width:50%" />
                   <g:if test="${errors?.password?.size() > 0}">
                     <ul>
                       <g:each var="e" in="${errors.password}">
@@ -90,8 +90,8 @@
                   </g:if>
                 </div>
                 <div class="form-group ${registerCommand.errors.hasFieldErrors('password2') ? 'has-error' : ''}">
-                  <label for="password2">Confirm Password (<span style="color:red">*</span>)</label>
-                  <input autocomplete="false" type="password" class="form-control" id="password2" name="password2" placeholder="password" value="${registerCommand.password2}" style="width:50%" />
+                  <label for="password2">${message(code:'spring.security.ui.register.password2.label', locale: locale)} (<span style="color:red">*</span>)</label>
+                  <input autocomplete="false" type="password" class="form-control" id="password2" name="password2" value="${registerCommand.password2}" style="width:50%" />
                   <g:if test="${errors?.password2?.size() > 0}">
                     <ul>
                       <g:each var="e" in="${errors.password2}">
@@ -101,15 +101,15 @@
                   </g:if>
                 </div>
                 <div class="form-group ${secFailed ? 'has-error' : ''}">
-                  <label for="botFilter">What is ${secQuestion}? (<span style="color:red">*</span>)</label>
+                  <label for="botFilter">${message(code:'spring.security.ui.register.mathCheck.label', args:[secQuestion], locale: locale)} (<span style="color:red">*</span>)</label>
                   <input autocomplete="false" type="text" class="form-control" id="botFilter" name="secAnswer" style="width:50%" />
                   <g:if test="${secFailed}">
-                    <ul><li>Please answer this question correctly.</li></ul>
+                    <ul><li>${message(code:'spring.security.ui.register.mathCheck.error', locale: locale)}</li></ul>
                   </g:if>
                 </div>
                 <div class="form-group">
                   <label for="submit"></label>
-                  <button type="submit" class="btn btn-success">Register</button>
+                  <button type="submit" class="btn btn-default">${message(code:'spring.security.ui.register.submit', locale: locale)}</button>
                 </div>
               </g:form>
             </div>
