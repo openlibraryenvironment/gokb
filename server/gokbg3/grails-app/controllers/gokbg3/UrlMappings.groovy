@@ -50,7 +50,7 @@ class UrlMappings {
 
       post "/provider/$id/retire"(controller: 'org', namespace: 'rest', action:'retire')
       get "/provider/$id/$action"(controller: 'org', namespace: 'rest')
-      post "provider"(controller: 'org', namespace: 'rest', action: 'save')
+      post "/provider"(controller: 'org', namespace: 'rest', action: 'save')
       get "/provider/$id"(controller: 'org', namespace: 'rest', action: 'show')
       put "/provider/$id"(controller: 'org', namespace: 'rest', action: 'update')
       patch "/provider/$id"(controller: 'org', namespace: 'rest', action: 'update')
