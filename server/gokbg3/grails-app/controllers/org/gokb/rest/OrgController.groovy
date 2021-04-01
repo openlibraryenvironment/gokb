@@ -1,19 +1,15 @@
 package org.gokb.rest
 
-import grails.converters.*
-import grails.core.GrailsClass
-import grails.gorm.transactions.*
-import grails.plugin.springsecurity.annotation.Secured
 
-import groovyx.net.http.URIBuilder
+import grails.converters.JSON
+import grails.gorm.transactions.Transactional
+import grails.plugin.springsecurity.annotation.Secured
+import org.gokb.cred.KBComponent
+import org.gokb.cred.Org
+import org.gokb.cred.User
 
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
-import org.gokb.cred.*
-import org.grails.datastore.mapping.model.*
-import org.grails.datastore.mapping.model.types.*
 
 @Transactional(readOnly = true)
 class OrgController {
@@ -303,7 +299,6 @@ class OrgController {
 
     if (reqBody.offices instanceof Collection) {
       def office_errors = orgService.updateOffices(obj, reqBody.offices, remove)
-
       if (office_errors.size() > 0) {
         errors['offices'] = office_errors
       }

@@ -4,6 +4,7 @@ import grails.gorm.transactions.Transactional
 
 import org.gokb.cred.*
 import org.hibernate.Session
+import org.hibernate.SessionFactory
 
 class OrgService {
 
@@ -284,11 +285,13 @@ class OrgService {
     errors
   }
 
-  public def updateOffices(obj, offices, boolean remove = true) {
+  public def updateOffices(Org org, offices, boolean remove = true) {
     log.debug("Update offices ${offices}")
-    Set new_offices = []
+    RefdataValue OFFICE_ORG = RefdataCategory.lookup(Combo.RD_TYPE, 'Office.Org')
+    RefdataValue STATUS_ACTIVE = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
+    def new_offices = []
     def errors = []
-    // def current_offices = Combo.findAllWhere(fromComponent: obj, type:OFFICE_ORG)
 
     offices.each { office ->
       def office_obj = null
@@ -304,14 +307,25 @@ class OrgService {
         if (!office_obj) {
           // create new office
           def lang = office.language
-          if (lang) {
+
+          if (lang instanceof String) {
             office.language = RefdataCategory.lookup(KBComponent.RD_LANGUAGE, lang)
           }
-          office_obj = new Office(office).save(flush:true)
+          else if (lang instanceof Integer) {
+            def lang_rdv = RefdataValue.get(lang)
+
+            if (lang_rdv.owner == language_rdc) {
+              office.language = lang_rdv
+            }
+          }
+
+          office_obj = new Office(office).save(flush: true)
         }
       }
 
       if (office_obj) {
+        // create combo to connect org & office
+        new Combo(fromComponent: office_obj, toComponent: org, type: OFFICE_ORG, status: STATUS_ACTIVE).save(flush: true)
         new_offices << office_obj
       }
       else {
@@ -319,22 +333,8 @@ class OrgService {
       }
     }
 
-    if (errors.size() == 0) {
-      new_offices.each { new_office ->
-        if (!obj.offices.contains(new_office)) {
-          log.debug("new office ${new_office}")
-          //RefdataValue OFFICE_ORG = RefdataCategory.lookup('Combo.Type', 'Office.Org')
-          //def new_combo = new Combo(fromComponent: obj, toComponent: new_office, type: OFFICE_ORG).save(flush:true)
-          obj.offices << new_office
-        }
-        else {
-          log.debug("Existing office ${new_office}..")
-        }
-      }
-
-      if (remove) {
-        obj.offices.retainAll(new_offices)
-      }
+    if (remove) {
+      org.offices.retainAll(new_offices)
     }
     log.debug("New offices: ${new_offices}")
     errors
