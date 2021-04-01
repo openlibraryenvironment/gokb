@@ -1243,7 +1243,9 @@ class IntegrationController {
               user,
               null,
               title_class_name,
-              titleObj.uuid
+              titleObj.uuid,
+              false,
+              titleObj.language
           )
 
           if (title && !title.hasErrors()) {

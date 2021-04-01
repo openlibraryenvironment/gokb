@@ -796,14 +796,16 @@ class TitleInstance extends KBComponent {
     }
 
     if (type) {
-      result = titleLookupService.findOrCreate(titleDTO.name,
+      result = titleLookupService.findOrCreate(
+        titleDTO.name,
         titleDTO.publisher,
         titleDTO.identifiers,
         user,
         null,
         type,
         titleDTO.uuid,
-        fullsync
+        fullsync,
+        titleDTO.language
       )
       if (titleDTO.medium) {
         result.medium = determineMediumRef(titleDTO)

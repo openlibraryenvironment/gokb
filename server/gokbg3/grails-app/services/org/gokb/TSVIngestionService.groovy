@@ -1049,7 +1049,17 @@ class TSVIngestionService {
         }
 
         if ( identifiers.size() > 0 ) {
-          def title = titleLookupService.findOrCreate(the_kbart.publication_title, the_kbart.publisher_name, identifiers, user, null, row_specific_config.defaultTypeName)
+          def title = titleLookupService.findOrCreate(
+              the_kbart.publication_title,
+              the_kbart.publisher_name,
+              identifiers,
+              user,
+              null,
+              row_specific_config.defaultTypeName,
+              null,
+              false,
+              the_kbart.language
+          )
 
           if ( title ) {
 

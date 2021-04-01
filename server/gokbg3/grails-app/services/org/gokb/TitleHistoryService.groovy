@@ -97,7 +97,9 @@ class TitleHistoryService {
               user,
               null,
               title_class_name,
-              fhe.uuid
+              fhe.uuid,
+              false,
+              fhe.language
             );
           }
 
