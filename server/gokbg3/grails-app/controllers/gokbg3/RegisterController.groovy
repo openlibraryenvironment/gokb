@@ -166,13 +166,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     session.secQuestion = null
     session.regTries = 0
 
-    if ( registerCommand.email ) {
-      sendVerifyRegistrationMail registrationCode, user, registerCommand.email
-      return [registerCommand: registerCommand, emailSent: true, embed: 'true', locale: locale]
-    }
-    else {
-      return [registerCommand: registerCommand, emailSent: true, noAddress: true, embed: 'true', locale: locale]
-    }
+    return [registerCommand: registerCommand, emailSent: true, noAddress: true, embed: 'true', locale: locale]
   }
 
   def verifyRegistration() {
