@@ -13,7 +13,7 @@ class Combo implements Auditable {
 
   @Transient
   private def springSecurityService
-  
+
   static final String RD_STATUS = "Combo.Status"
   static final String RD_TYPE = "Combo.Type"
   static final String STATUS_ACTIVE = "Active"
@@ -27,9 +27,9 @@ class Combo implements Auditable {
 
   RefdataValue status
   RefdataValue type
-  
+
   Date startDate
-  
+
   // The Combos without an end date are the "current" values.
   Date endDate
 
@@ -77,7 +77,7 @@ class Combo implements Auditable {
       log.debug("Combo status is ${this.status}")
     }
   }
-  
+
   public Date expire (Date endDate = null, boolean replaced = false) {
 
     if (endDate == null) endDate = new Date ()
