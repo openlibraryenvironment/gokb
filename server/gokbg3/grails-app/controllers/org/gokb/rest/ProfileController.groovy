@@ -11,6 +11,7 @@ import org.gokb.cred.Role
 import org.gokb.cred.User
 import grails.plugin.springsecurity.annotation.Secured
 
+@Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
 class ProfileController {
 
   static namespace = 'rest'
@@ -20,7 +21,6 @@ class ProfileController {
   def passwordEncoder
   ConcurrencyManagerService concurrencyManagerService
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def show() {
     def user = User.get(springSecurityService.principal.id)
 
@@ -60,48 +60,6 @@ class ProfileController {
     render result as JSON
   }
 
-  @Transactional
-  def save() {
-    Map result = [:]
-    def reqData = request.JSON
-    def userInfo = [:]
-    def errors = [:]
-
-    if (reqData.username) {
-      userInfo.username = reqData.username.trim()
-    }
-    else {
-      response.setStatus(400)
-      errors.username = [[ message: "Missing username in request", code: 404]]
-    }
-
-    if (reqData.password) {
-      userInfo.password = reqData.password
-    }
-    else {
-      response.setStatus(400)
-      errors.password = [[ message: "Missing password in request", code: 404]]
-    }
-
-    if (reqData.email) {
-      userInfo.email = reqData.email
-    }
-    else {
-      response.setStatus(400)
-      errors.email = [[ message: "Missing email in request", code: 404]]
-    }
-
-    if (errors) {
-      result.errors = errors
-    }
-    else {
-      result = userProfileService.create(userInfo)
-    }
-
-    render result as JSON
-  }
-
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
     Map result = [:]
