@@ -8,9 +8,6 @@ import org.hibernate.SessionFactory
 
 class OrgService {
 
-  def sessionFactory
-  ComponentLookupService componentLookupService
-
   def restLookup(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}");
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
@@ -290,6 +287,7 @@ class OrgService {
     RefdataValue OFFICE_ORG = RefdataCategory.lookup(Combo.RD_TYPE, 'Office.Org')
     RefdataValue STATUS_ACTIVE = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
+    def function_rdc = RefdataCategory.findByLabel(Office.RD_FUNCTION)
     def new_offices = []
     def errors = []
 
@@ -316,6 +314,18 @@ class OrgService {
 
             if (lang_rdv.owner == language_rdc) {
               office.language = lang_rdv
+            }
+          }
+          def function = office.function
+
+          if (function instanceof String) {
+            office.function = RefdataCategory.lookup(Office.RD_FUNCTION, function)
+          }
+          else if (function instanceof Integer) {
+            def function_rdv = RefdataValue.get(function)
+
+            if (function_rdv.owner == function_rdc) {
+              office.function = function_rdv
             }
           }
 

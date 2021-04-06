@@ -4,6 +4,8 @@ import javax.persistence.Transient
 
 class Office extends KBComponent {
 
+  static final String RD_FUNCTION = "Office.Function"
+
   String website
   String email
   String phoneNumber
@@ -15,6 +17,7 @@ class Office extends KBComponent {
   String region
   String state
   RefdataValue country
+  RefdataValue function
 
   static hasByCombo = [
     org : Org,
@@ -23,7 +26,7 @@ class Office extends KBComponent {
   static manyByCombo = [
 	curatoryGroups : CuratoryGroup
   ]
-  
+
   static mapping = {
         includes KBComponent.mapping
 	website column:'office_website'
@@ -36,9 +39,10 @@ class Office extends KBComponent {
 	zipPostcode column:'office_zip_postcode'
 	region column:'office_region'
 	state column:'office_state'
-	country column:'office_country_fk_rv'
+  country column:'office_country_fk_rv'
+  function column:'office_function_fk_rv' // , defaultValue: RefdataCategory.lookup(RD_FUNCTION, "Technical Support")
   }
-  
+
   static constraints = {
 	website (nullable:true, blank:true)
 	email (nullable:true, blank:true)
@@ -51,6 +55,7 @@ class Office extends KBComponent {
 	region (nullable:true, blank:true)
 	state (nullable:true, blank:true)
 	country (nullable:true, blank:true)
+  function (nullable: true, blank: false)
   }
 
   /**
@@ -96,9 +101,9 @@ class Office extends KBComponent {
   @Transient
   def toGoKBXml(builder, attr) {
     builder.'gokb' (attr) {
-      
+
       addCoreGOKbXmlFields(builder, attr)
-        
+
       builder.'website' (website)
       builder.'phoneNumber' (phoneNumber)
       builder.'otherDetails' (otherDetails)
@@ -129,5 +134,4 @@ class Office extends KBComponent {
       }
     }
   }
-
 }

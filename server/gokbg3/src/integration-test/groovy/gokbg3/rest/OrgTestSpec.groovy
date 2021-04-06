@@ -103,7 +103,17 @@ class OrgTestSpec extends AbstractAuthSpec {
         [namespace: "global", value: "test-org-id-val"]
       ],
       providedPlatforms: ["TestOrgPlt"],
-      offices: [[name: "TestOffice1", language:"ger"],[name: "TestOffice2", language:"esp"],[name: "TestOffice3", language:"hun"]]
+      offices: [
+          [name: "TestOffice1",
+           language:"ger",
+           function: "Technical Support"],
+          [name: "TestOffice2",
+           language:"esp",
+           function: "Technical Support"],
+          [name: "TestOffice3",
+           language:"hun",
+           function: "Technical Support"]
+      ],
     ]
 
     when:
@@ -122,6 +132,7 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.json?.name == "TestOrgPost"
     resp.json?._embedded?.ids?.size() == 1
     resp.json?._embedded?.offices?.size()==3
+    resp.json?._embedded?.offices[2].function.name == "Technical Support"
   }
 
   void "test org index"() {
@@ -160,7 +171,13 @@ class OrgTestSpec extends AbstractAuthSpec {
         [namespace: "global", value: "test-org-id-val-new"]
       ],
       providedPlatforms: [updated_plt.id],
-      offices: [[name: "2ndTestOffice1", language:"ger"],[name: "2ndTestOffice2", language:RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "eng").id]]
+      offices: [[name: "2ndTestOffice1",
+                 language:"ger",
+                 function:"Technical Support"],
+                [name: "2ndTestOffice2",
+                 language:RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "eng").id,
+                 function: "other"]
+      ]
     ]
 
     when:
@@ -180,7 +197,8 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.json.name == "TestOrgUpdateNew"
     resp.json._embedded?.ids?.size() == 1
     resp.json._embedded?.providedPlatforms?.size() == 1
-    resp.json._embedded?.offices?.size() == 2
+    resp.json._embedded?.offices.size() == 2
+    resp.json._embedded?.offices*.function.name.contains("other")
   }
 
   void "test source delete"() {
