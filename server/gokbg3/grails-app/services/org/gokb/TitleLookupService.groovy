@@ -959,7 +959,7 @@ class TitleLookupService {
     // If we have a title then lets set the publisher and ids...
     if (the_title) {
 
-      if (metadata.language) {
+      if (metadata.language && RefdataCategory.lookupOrCreate('KBComponent.Language', metadata.language)){
         the_title.language = metadata.language
       }
 
