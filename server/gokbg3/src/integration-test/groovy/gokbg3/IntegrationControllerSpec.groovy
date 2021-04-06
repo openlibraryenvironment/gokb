@@ -1,5 +1,6 @@
-package org.gokb
+package gokbg3
 
+import org.gokb.TitleLookupService
 import spock.lang.Specification
 import org.gokb.cred.*
 

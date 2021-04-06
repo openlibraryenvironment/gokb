@@ -64,17 +64,21 @@ class RefdataController {
       result['label'] = cat.label
       result['_embedded'] = ['values': []]
 
-      cat.values.each { v ->
-        def val = [:]
-        val['_links'] = [
-          ['self': ['href': base + "/refdata/values/${v.id}"]],
-          ['owner': ['href': base + "/refdata/categories/${cat.id}"]]
-        ]
+      def vals = cat.values.sort { it.sortKey }
 
-        val['value'] = v.value
-        val['id'] = v.id
+      vals.each { v ->
+        if (!v.useInstead) {
+          def val = [:]
+          val['_links'] = [
+            ['self': ['href': base + "/refdata/values/${v.id}"]],
+            ['owner': ['href': base + "/refdata/categories/${cat.id}"]]
+          ]
 
-        result['_embedded']['values'].add(val)
+          val['value'] = v.value
+          val['id'] = v.id
+
+          result['_embedded']['values'].add(val)
+        }
       }
     }
     render result as JSON

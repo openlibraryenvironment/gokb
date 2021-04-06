@@ -7,4 +7,8 @@ class ComponentHistoryEventParticipant {
   def String participantRole // in/out
   
   static belongsTo = [ event:ComponentHistoryEvent ]
+
+  def afterInsert() {
+    participant.lastSeen = new Date().getTime()
+  }
 }
