@@ -1,5 +1,6 @@
 package org.gokb.cred
 
+import javax.annotation.PostConstruct
 import javax.persistence.Transient
 
 class Office extends KBComponent {
@@ -56,6 +57,12 @@ class Office extends KBComponent {
 	state (nullable:true, blank:true)
 	country (nullable:true, blank:true)
   function (nullable: true, blank: false)
+  }
+
+  def beforeInsert() {
+    if (!function){
+      function=RefdataCategory.lookup(RD_FUNCTION, "Technical Support")
+    }
   }
 
   /**

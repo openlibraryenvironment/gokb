@@ -53,10 +53,10 @@ class OrgService {
               def match = Org.lookupByIO(ns.value, rid.value)
 
               if (match) {
-                if (!matches["${nc.id}"])
-                  matches["${nc.id}"] = []
+                if (!matches["${ns.id}"])
+                  matches["${ns.id}"] = []
 
-                matches["${nc.id}"] << [field: 'ids', value: rid.value, message: "An existing organization was matched by a supplied identifier!"]
+                matches["${ns.id}"] << [field: 'ids', value: rid.value, message: "An existing organization was matched by a supplied identifier!"]
               }
             }
           }
