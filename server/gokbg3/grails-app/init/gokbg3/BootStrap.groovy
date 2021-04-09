@@ -491,6 +491,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("Package.Global", "Consortium").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("Package.Global", "Regional").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("Package.Global", "Global").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate("Package.Global", "Local").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("Package.Global", "Other").save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate("Package.ContentType", "Mixed").save(flush: true, failOnError: true)
