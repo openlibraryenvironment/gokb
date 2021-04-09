@@ -16,52 +16,52 @@ class Org extends KBComponent {
 
   def availableActions() {
     [
-      [code: 'org::deprecateReplace', label: 'Replace Publisher With...'],
-      [code: 'org::deprecateDelete', label: 'Remove Publisher name from title records...'],
-      [code: 'method::deleteSoft', label: 'Delete Org', perm: 'delete'],
-      [code: 'method::retire', label: 'Retire Org', perm: 'admin'],
-      [code: 'method::setActive', label: 'Set Current']
+        [code: 'org::deprecateReplace', label: 'Replace Publisher With...'],
+        [code: 'org::deprecateDelete', label: 'Remove Publisher name from title records...'],
+        [code: 'method::deleteSoft', label: 'Delete Org', perm: 'delete'],
+        [code: 'method::retire', label: 'Retire Org', perm: 'admin'],
+        [code: 'method::setActive', label: 'Set Current']
     ]
   }
 
 
   static manyByCombo = [
-    providedPackages : Package,
-    children         : Org,
-    'previous'       : Org,
-    ownedImprints    : Imprint,
-    curatoryGroups   : CuratoryGroup,
-    publishedTitles  : TitleInstance,
-    issuedTitles     : TitleInstance,
-    providedPlatforms: Platform,
-    brokeredPackages : Package,
-    licensedPackages : Package,
-    vendedPackages   : Package,
-    offeredLicenses  : License,
-    heldLicenses     : License,
-    offices          : Office
-    //  ids      : Identifier
+      providedPackages : Package,
+      children         : Org,
+      'previous'       : Org,
+      ownedImprints    : Imprint,
+      curatoryGroups   : CuratoryGroup,
+      publishedTitles  : TitleInstance,
+      issuedTitles     : TitleInstance,
+      providedPlatforms: Platform,
+      brokeredPackages : Package,
+      licensedPackages : Package,
+      vendedPackages   : Package,
+      offeredLicenses  : License,
+      heldLicenses     : License,
+      offices          : Office
+      //  ids      : Identifier
   ]
 
   static hasByCombo = [
-    parent   : Org,
-    successor: Org,
-    imprint  : Imprint
+      parent   : Org,
+      successor: Org,
+      imprint  : Imprint
   ]
 
   static mappedByCombo = [
-    providedPackages : 'provider',
-    providedPlatforms: 'provider',
-    publishedTitles  : 'publisher',
-    issuedTitles     : 'issuer',
-    children         : 'parent',
-    successor        : 'previous',
-    brokeredPackages : 'broker',
-    licensedPackages : 'licensor',
-    vendedPackages   : 'vendor',
-    offeredLicenses  : 'licensor',
-    heldLicenses     : 'licensee',
-    offices          : 'org',
+      providedPackages : 'provider',
+      providedPlatforms: 'provider',
+      publishedTitles  : 'publisher',
+      issuedTitles     : 'issuer',
+      children         : 'parent',
+      successor        : 'previous',
+      brokeredPackages : 'broker',
+      licensedPackages : 'licensor',
+      vendedPackages   : 'vendor',
+      offeredLicenses  : 'licensor',
+      heldLicenses     : 'licensee',
+      offices          : 'org',
   ]
 
   //  static mappedBy = [
@@ -69,7 +69,7 @@ class Org extends KBComponent {
   //  ]
 
   static hasMany = [
-    roles: RefdataValue,
+      roles: RefdataValue,
   ]
 
   static mapping = {
@@ -90,7 +90,8 @@ class Org extends KBComponent {
           if (dupes?.size() > 0 && dupes.any { it != obj }) {
             return ['notUnique']
           }
-        } else {
+        }
+        else {
           return ['notNull']
         }
       }
@@ -100,20 +101,20 @@ class Org extends KBComponent {
   }
 
   static jsonMapping = [
-    'ignore'       : [
-    ],
-    'es'           : [
-    ],
-    'defaultLinks' : [
+      'ignore'       : [
+      ],
+      'es'           : [
+      ],
+      'defaultLinks' : [
 
-    ],
-    'defaultEmbeds': [
-      'ids',
-      'variantNames',
-      'curatoryGroups',
-      'providedPlatforms',
-      'offices'
-    ]
+      ],
+      'defaultEmbeds': [
+          'ids',
+          'variantNames',
+          'curatoryGroups',
+          'providedPlatforms',
+          'offices'
+      ]
   ]
 
   //  @Transient
@@ -164,8 +165,8 @@ class Org extends KBComponent {
         break
       case Identifier:
         located_org = lookupByIO(
-          ids.ns.ns,
-          ids.value
+            ids.ns.ns,
+            ids.value
         )
         break
     }
@@ -179,11 +180,11 @@ class Org extends KBComponent {
 
   @Transient
   static def oaiConfig = [
-    id             : 'orgs',
-    textDescription: 'Organization repository for GOKb',
-    query          : " from Org as o ",
-    statusFilter   : ["Deleted"],
-    pageSize       : 10
+      id             : 'orgs',
+      textDescription: 'Organization repository for GOKb',
+      query          : " from Org as o ",
+      statusFilter   : ["Deleted"],
+      pageSize       : 10
   ]
 
   /**
@@ -238,26 +239,29 @@ class Org extends KBComponent {
         if (offices) {
           builder.'offices' {
             offices.each { office ->
-              builder.'name'(office.name)
-              builder.'website'(office.website)
-              builder.'phoneNumber'(office.phoneNumber)
-              builder.'otherDetails'(office.otherDetails)
-              builder.'addressLine1'(office.addressLine1)
-              builder.'addressLine2'(office.addressLine2)
-              builder.'city'(office.city)
-              builder.'zipPostcode'(office.zipPostcode)
-              builder.'region'(office.region)
-              builder.'state'(office.state)
+              builder.'office' {
+                builder.'name'(office.name)
+                builder.'website'(office.website)
+                builder.'phoneNumber'(office.phoneNumber)
+                builder.'otherDetails'(office.otherDetails)
+                builder.'addressLine1'(office.addressLine1)
+                builder.'addressLine2'(office.addressLine2)
+                builder.'city'(office.city)
+                builder.'zipPostcode'(office.zipPostcode)
+                builder.'region'(office.region)
+                builder.'state'(office.state)
+                builder.'language'(office.language)
+                builder.'function'(office.function)
+                if (office.country) {
+                  builder.'country'(office.country.value)
+                }
 
-              if (office.country) {
-                builder.'country'(office.country.value)
-              }
-
-              builder.curatoryGroups {
-                office.curatoryGroups.each { ocg ->
-                  builder.group {
-                    builder.owner(ocg.owner.username)
-                    builder.name(ocg.name)
+                builder.curatoryGroups {
+                  office.curatoryGroups.each { ocg ->
+                    builder.group {
+                      builder.owner(ocg.owner.username)
+                      builder.name(ocg.name)
+                    }
                   }
                 }
               }
