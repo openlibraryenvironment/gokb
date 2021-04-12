@@ -51,6 +51,7 @@ class TitleTestSpec extends AbstractAuthSpec {
       JournalInstance.findByName("TestNextJournal")?.refresh()?.expunge()
       JournalInstance.findByName("TestUpdateJournalHistory")?.refresh()?.expunge()
       JournalInstance.findByName("TestJournal")?.refresh()?.expunge()
+      JournalInstance.findByName("TestFullJournal")?.refresh()?.expunge()
     }
   }
 
