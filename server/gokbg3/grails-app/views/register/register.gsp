@@ -1,6 +1,6 @@
 <html>
 <head>
-  <meta name='layout' content='sb-admin'/>
+  <meta name='layout' content='public'/>
   <title><g:message code='spring.security.ui.register.title'/></title>
 </head>
 
@@ -21,7 +21,7 @@
 
         <g:if test="${flash.message}">
           <div class="info alert-info" style="display: block">${flash.message}</div>
-        </g:if> 
+        </g:if>
 
         <g:if test='${emailSent}'>
           <div class="panel panel-default">

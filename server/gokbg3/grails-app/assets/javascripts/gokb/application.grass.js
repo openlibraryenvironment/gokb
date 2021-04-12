@@ -32,38 +32,38 @@ window.gokb = {
     "baseUrl" : "/",
   },
   validateJson : function (value) {
-    
+
     if (value && value != "") {
       try {
         // Parse the JSON
         var data = $.parseJSON ( value );
-        
+
         data = JSON.stringify(data, null, "  ");
         return data;
       } catch (e) {
         return false;
       }
     }
-  } 
+  }
 };
 
 (function($) {
-  
+
   // When DOM is ready.
   $(document).ready(function(){
 
-    if(contextPath) {
+    if(typeof contextPath !== 'undefined') {
       gokb.config.baseUrl = contextPath;
       gokb.config.lookupURI = contextPath + "/ajaxSupport/lookup";
     }
 
     gokb.dialog = bootbox.dialog;
-  
+
     /**
      * Show a confirmation box.
      */
     gokb.confirm = function (confirmCallback, message, confirmText, cancelText, cancelCallback) {
-      
+
       // Set the defaults.
       if (typeof message == 'undefined') {
         message = "Are you sure?";
@@ -77,7 +77,7 @@ window.gokb = {
       if (typeof cancelCallback == 'undefined') {
         cancelCallback = false;
       }
-      
+
       // Add the message.
       var options = {
         "title"   : "Confirm action",
@@ -95,41 +95,41 @@ window.gokb = {
           }
         }
       };
-  
-      // Default to empty object.      
+
+      // Default to empty object.
       return gokb.dialog (options);
     };
-    
+
     // Add some default behaviours we wish to define application wide.
     $('.confirm-click').click(function(e) {
-      
+
       // The target.
       var target = $(this);
-      
+
       if (target.hasClass('confirm-click-confirmed')) {
-        
+
         // This action has been confirmed.
         target.removeClass('confirm-click-confirmed');
-        
+
         // If we are here then the action was confirmed.
         var href = target.attr("href");
         if (href) {
           window.location.href = href;
         }
-        
+
         // Do nothing just allow the click.
-        
+
       } else {
-        
+
         // Prevent default as we need to confirm the action.
         e.preventDefault();
-        
+
         // Now we need to ask the user to confirm.
         gokb.confirm (
           function () {
             // We need to refire the click event on the target after setting the class as a flag.
             target.addClass('confirm-click-confirmed');
-            
+
             // Now refire the click.
             target.trigger('click', e);
           },
@@ -139,7 +139,7 @@ window.gokb = {
         );
       }
     });
-    
+
     // If we have error messages then let's display them in a modal.
     var messages = $('#msg');
     if (messages.children().length > 0) {
@@ -155,35 +155,35 @@ window.gokb = {
     if (success.children().length > 0) {
       bootbox.alert("<h2 class='text-success' >Success</h2>" + success.html());
     }
-    
+
     $('#modal').on('show.bs.modal', function () {
       $(this).find('.modal-body').css({
              width:'auto', //probably not needed
-             height:'auto', //probably not needed 
+             height:'auto', //probably not needed
              'max-height':'100%'
       });
     });
-    
+
     $('#modal').on('hidden.bs.modal', function() {
       $(this).removeData('bs.modal')
     })
-    
-    
+
+
     /** Editable **/
     $.fn.editable.defaults.mode = 'inline';
     $.fn.editable.defaults.onblur = 'ignore';
-    
+
     $('.xEditableValue').editable();
-    
+
     // Add the client-side validation to test for valid json.
     $('.refine-transform .xEditableValue').editable('option', 'validate', function(value){
       if ( gokb.validateJson( value ) == false ) {
         return "The JSON is incorrectly formatted.";
       }
     });
-    
+
     $(".xEditableManyToOne").editable();
-    
+
     // Handle dates differently now.
     $('.ipe').each(function() {
 
@@ -210,10 +210,10 @@ window.gokb = {
       // Make it editbale()
       me.editable();
     });
-  
-    
+
+
     var results = $(".simpleHiddenRefdata");
-    
+
     results.editable({
       url: function(params) {
         var hidden_field_id = $(this).data('hidden-id');
@@ -221,9 +221,9 @@ window.gokb = {
         // Element has a data-hidden-id which is the hidden form property that should be set to the appropriate value
       }
     });
-  
+
     results = $(".simpleReferenceTypedown");
-    
+
     results.each(function() {
 
       var conf = {
@@ -256,9 +256,9 @@ window.gokb = {
           callback(data);
         }
       };
-      
+
       var me = $(this);
-      
+
       if (me.hasClass("allow-add")) {
         // Add to the config...
         conf.createSearchChoice = function(term, data) {
@@ -266,16 +266,16 @@ window.gokb = {
             return term.localeCompare(this.text) === 0;
           }).length === 0) {
             return {
-              id: me.data('domain') + ":__new__:" + me.data('filter1') + ":" + term, 
+              id: me.data('domain') + ":__new__:" + me.data('filter1') + ":" + term,
               text:  term  + ' (new tag)'
             };
           }
         };
       }
-      
+
       me.select2(conf);
     });
-  
+
     $(".xEditableManyToOneS2").each(function(elem) {
       var dom = $(this).data('domain');
       var filter1 = $(this).data('filter1');
@@ -304,7 +304,7 @@ window.gokb = {
         }
       });
     });
-  
+
     $(".xEditableManyToOneS2Old").editable({
       select2: {
         placeholder: "Search for.....",
@@ -332,7 +332,7 @@ window.gokb = {
       // do something…
       $('#savedItemsContent').load('/gokb/savedItems/index?folder=userHome');
     });
-    
+
     // Add show mores...
     $('.show-more').each(function() {
       var me = $(this);
@@ -342,16 +342,16 @@ window.gokb = {
         button.addClass('btn btn-default');
       }
     });
-    
+
     // Add the json handling to the textareas.
     $(".json").on("paste", function(e){
-      
+
       data = gokb.validateJson( e.originalEvent.clipboardData.getData('text') );
       if (data == false) {
         bootbox.alert("<h2 class='text-danger' >Error</h2>" +
           '<p>The JSON you are attempting to paste is incorrectly formatted. Please ensure you copy everything from the source.</p>'
         );
-        
+
         // Halt all other events.
         e.preventDefault();
         e.stopImmediatePropagation();
