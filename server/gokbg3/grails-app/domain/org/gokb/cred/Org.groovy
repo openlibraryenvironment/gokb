@@ -39,7 +39,7 @@ class Org extends KBComponent {
     vendedPackages   : Package,
     offeredLicenses  : License,
     heldLicenses     : License,
-    offices          : Office,
+    offices          : Office
     //  ids      : Identifier
   ]
 
