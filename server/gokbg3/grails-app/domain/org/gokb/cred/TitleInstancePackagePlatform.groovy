@@ -858,7 +858,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'dateFirstInPrint'(dateFirstInPrint?.trim())
         builder.'dateFirstOnline'(dateFirstOnline?.trim())
         builder.'firstAuthor'(firstAuthor?.trim())
-        builder.'publicationType'(publicationType.value.trim())
+        builder.'publicationType'(publicationType?.value?.trim())
         builder.'volumeNumber'(volumeNumber?.trim())
         builder.'editionStatement'(editionStatement?.trim())
         builder.'firstEditor'(firstEditor?.trim())
