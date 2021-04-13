@@ -261,8 +261,7 @@ class TitleLookupService {
             }
             else if (results['other_matches'].size() > 1) {
               log.debug("Multiple matches by secondary ID!")
-              results.other_matches.each {
-                om
+              results.other_matches.each { om ->
                 result.matches.add([object: om, conflicts: [], warnings: ['secondary', 'other_matches']])
               }
             }
