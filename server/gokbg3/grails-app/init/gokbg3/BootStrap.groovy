@@ -1001,7 +1001,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Job.Type', 'RecalculateStatistics').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Technical Support').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'other').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Other').save(flush: true, failOnError: true)
 
         LanguagesService.initialize()
 

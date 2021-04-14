@@ -133,7 +133,7 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.json?._embedded?.offices?.size()==3
     resp.json?._embedded?.offices[0].function.name == "Technical Support"
     resp.json?._embedded?.offices[2].function.name == "Technical Support"
-    resp.json?._embedded?.offices[1].function.name == "other"
+    resp.json?._embedded?.offices[1].function.name == "Other"
     resp.json?._embedded?.offices[2].language.name == "hun"
   }
 
@@ -200,7 +200,7 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.json._embedded?.ids?.size() == 1
     resp.json._embedded?.providedPlatforms?.size() == 1
     resp.json._embedded?.offices.size() == 2
-    resp.json._embedded?.offices*.function.name.contains("other")
+    resp.json._embedded?.offices*.function.name.contains("Other")
   }
 
   void "test source delete"() {
