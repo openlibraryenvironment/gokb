@@ -59,11 +59,9 @@ class Office extends KBComponent {
   function (nullable: true, blank: false)
   }
 
-  def beforeInsert() {
-    if (!function){
-      function=RefdataCategory.lookup(RD_FUNCTION, "Technical Support")
-    }
-  }
+  private static refdataDefaults = [
+      "Office.function"		: "Technical Support"
+  ]
 
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
