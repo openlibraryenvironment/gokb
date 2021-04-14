@@ -404,6 +404,32 @@ class PackagesController {
   }
 
   @Transactional(readOnly = true)
+  def kbartTitleData() {
+    if (request.method == "GET") {
+      if (params.id == "all") {
+        Package.all.each { pack ->
+          packageService.createKbartExport(pack)
+        }
+        return response
+      }
+      def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+      if (pkg)
+        packageService.sendFile(pkg, PackageService.ExportType.KBART, response)
+      else
+        log.error("Cant find package with ID ${params.id}")
+    }
+    else if (request.method == "POST") {
+      def packs = []
+      request.JSON.data.ids.each { id ->
+        def pkg = Package.findByUuid(id) ?: genericOIDService.resolveOID(id)
+        if (pkg)
+          packs << pkg
+      }
+      packageService.sendZip(packs, PackageService.ExportType.KBART, response)
+    }
+  }
+
+  @Transactional(readOnly = true)
   def packageTSVExport() {
     if (request.method == "GET") {
       if (params.id == "all") {

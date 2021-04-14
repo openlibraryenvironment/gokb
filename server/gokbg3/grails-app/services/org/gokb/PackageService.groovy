@@ -1178,7 +1178,7 @@ class PackageService {
   /**
    * collects the data of the given package into a KBART formatted TSV file for later download
    */
-  void createKbartExport(Package pkg) {
+  void createKbartExport(Package pkg, boolean onlyTitleData=false) {
     if (pkg) {
       def exportFileName = generateExportFileName(pkg, ExportType.KBART)
       def path = exportFilePath()
@@ -1248,34 +1248,26 @@ class PackageService {
               def pub_type = tipp.title?.niceName == 'Book' ? 'Monograph' : 'Serial'
               def print_id = ""
               def online_id = ""
-
+              def pid, oid
               if (tipp.title.hasProperty('dateFirstInPrint')) {
-                def pid = tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')
-                def oid = tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')
-
-                if (pid) {
-                  print_id = pid
-                }
-                if (oid) {
-                  online_id = oid
-                }
+                pid = onlyTitleData ? tipp.title.getIdentifierValue('pISBN') : tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')
+                oid = onlyTitleData ? tipp.title.getIdentifierValue('ISBN') : tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')
               }
               else {
-                def pid = tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')
-                def oid = tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')
-
-                if (pid) {
-                  print_id = pid
-                }
-                if (oid) {
-                  online_id = oid
-                }
+                pid = onlyTitleData ? tipp.title.getIdentifierValue('ISSN') : tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')
+                oid = onlyTitleData ? tipp.title.getIdentifierValue('eISSN') : tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')
+              }
+              if (pid) {
+                print_id = pid
+              }
+              if (oid) {
+                online_id = oid
               }
 
               if (tipp.coverageStatements?.size() > 0) {
                 tipp.coverageStatements.each { cst ->
                   writer.write(
-                      sanitize(tipp.name ?: tipp.title.name) + '\t' +
+                      sanitize(onlyTitleData? tipp.title.name:tipp.name ?: tipp.title.name) + '\t' +
                           print_id + '\t' +
                           online_id + '\t' +
                           sanitize(cst.startDate) + '\t' +
@@ -1285,13 +1277,13 @@ class PackageService {
                           sanitize(cst.endVolume) + '\t' +
                           sanitize(cst.endIssue) + '\t' +
                           sanitize(tipp.url) + '\t' +
-                          (tipp.title.hasProperty('firstAuthor') ? sanitize(tipp.title.firstAuthor) : '') + '\t' +
-                          sanitize(tipp.title.getId()) + '\t' +
+                          sanitize(onlyTitleData ? tipp.title.firstAuthor ?: "" : tipp.firstAuthor ?: tipp.title.firstAuthor ?: '') + '\t' +
+                          sanitize(onlyTitleData ? tipp.title.getId(): tipp.getID()) + '\t' +
                           sanitize(cst.embargo) + '\t' +
                           sanitize(cst.coverageDepth).toLowerCase() + '\t' +
                           sanitize(cst.coverageNote) + '\t' +
-                          sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
-                          sanitize(tipp.title.getPrecedingTitleId()) + '\t' +
+                          sanitize(onlyTitleData ? tipp.title.getCurrentPublisher()?.name : tipp.publisherName ?: tipp.title.getCurrentPublisher()?.name) + '\t' +
+                          sanitize(onlyTitleData ? tipp.title.getPrecedingTitleId() : tipp.precedingPublicationTitleId ?: tipp.title.getPrecedingTitleId()) + '\t' +
                           (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.dateFirstInPrint) : '') + '\t' +
                           (tipp.title.hasProperty('dateFirstOnline') ? sanitize(tipp.title.dateFirstOnline) : '') + '\t' +
                           (tipp.title.hasProperty('volumeNumber') ? sanitize(tipp.title.volumeNumber) : '') + '\t' +
