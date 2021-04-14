@@ -131,10 +131,9 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.json?.name == "TestOrgPost"
     resp.json?._embedded?.ids?.size() == 1
     resp.json?._embedded?.offices?.size()==3
-    resp.json?._embedded?.offices[0].function.name == "Technical Support"
-    resp.json?._embedded?.offices[2].function.name == "Technical Support"
-    resp.json?._embedded?.offices[1].function.name == "Other"
-    resp.json?._embedded?.offices[2].language.name == "hun"
+    resp.json?._embedded?.offices*.function.name.count("Technical Support")==2
+    resp.json?._embedded?.offices*.function.name.count("Other")
+    resp.json?._embedded?.offices*.language.name.containsAll(["hun", "ger", "epo"])
   }
 
   void "test org index"() {
