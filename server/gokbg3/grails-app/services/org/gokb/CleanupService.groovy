@@ -121,11 +121,13 @@ class CleanupService {
           def c_id = "${component.class.name}:${component.id}"
           def expunge_result = component.expunge();
           log.debug("${expunge_result}");
-          DeleteRequest req = Requests.deleteRequest(ESSearchService.indicesPerType.get(kbc['type']))
-                .type('component')
-                .id(c_id)
-          def es_response = esclient.delete(req)
-          log.debug("${es_response}")
+          if (ESSearchService.indicesPerType[component.class.getSimpleName()]) {
+            DeleteRequest req = new DeleteRequest(ESSearchService.indicesPerType[component.class.getSimpleName()])
+                  .type('component')
+                  .id(c_id)
+            def es_response = esclient.delete(req)
+            log.debug("${es_response}")
+          }
           result.report.add(expunge_result)
         }
         j?.setProgress(idx,ids.size())
@@ -724,11 +726,15 @@ class CleanupService {
       batch.each {
         def kbc = KBComponent.get(it)
         def oid = "${kbc.class.name}:${it}"
-        DeleteRequest req = new DeleteRequest(ESSearchService.indicesPerType.get(kbc['type']))
-              .type('component')
-              .id(oid)
-        def es_response = esclient.delete(req)
+
+        if (ESSearchService.indicesPerType[kbc.class.getSimpleName()]) {
+          DeleteRequest req = new DeleteRequest(ESSearchService.indicesPerType[kbc.class.getSimpleName()])
+                .type('component')
+                .id(oid)
+          def es_response = esclient.delete(req)
+        }
       }
+
       result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)",[component:batch])
       j?.setProgress(result.num_expunged, result.num_requested)
     }

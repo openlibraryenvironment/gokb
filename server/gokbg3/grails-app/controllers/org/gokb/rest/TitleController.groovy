@@ -204,7 +204,7 @@ class TitleController {
 
                 title_lookup.matches.each { tlm ->
                   additionalInfo.otherComponents.add([oid:"${tlm.object.id}", name:"${tlm.object.name}"])
-                  combo_ids.add(tlm.obect.id)
+                  combo_ids.add(tlm.object.id)
                 }
 
                 additionalInfo.cstring = combo_ids.sort().join('_')

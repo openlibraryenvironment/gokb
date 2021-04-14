@@ -591,11 +591,15 @@ class TitleInstancePackagePlatform extends KBComponent {
             if (cur_tipps.size() > 0) {
               tipp = cur_tipps[0]
 
-              log.warn("found ${cur_tipps.size()} current TIPPs!")
+              if (cur_tipps.size() > 1) {
+                log.debug("found ${cur_tipps.size()} current TIPPs!")
+              }
             } else if (ret_tipps.size() > 0) {
               tipp = ret_tipps[0]
 
-              log.warn("found ${ret_tipps.size()} retired TIPPs!")
+              if (ret_tipps.size() > 1) {
+                log.debug("found ${ret_tipps.size()} retired TIPPs!")
+              }
             } else {
               log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
             }
@@ -854,7 +858,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'dateFirstInPrint'(dateFirstInPrint?.trim())
         builder.'dateFirstOnline'(dateFirstOnline?.trim())
         builder.'firstAuthor'(firstAuthor?.trim())
-        builder.'publicationType'(publicationType.value.trim())
+        builder.'publicationType'(publicationType?.value?.trim())
         builder.'volumeNumber'(volumeNumber?.trim())
         builder.'editionStatement'(editionStatement?.trim())
         builder.'firstEditor'(firstEditor?.trim())

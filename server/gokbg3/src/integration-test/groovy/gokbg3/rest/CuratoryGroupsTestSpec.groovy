@@ -14,7 +14,7 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
   def group1, group2, group3, group4, user
 
   def setup() {
-    group1 = CuratoryGroup.findByName("Curatory Group A") ?: new CuratoryGroup(name: "Curatory Group A").save(flush: true)
+    group1 = CuratoryGroup.findByName("Curatory Group A") ?: new CuratoryGroup(name: "Curatory Group A", email: "a@b.cd").save(flush: true)
     group2 = CuratoryGroup.findByName("Curatory Group B") ?: new CuratoryGroup(name: "Curatory Group B").save(flush: true)
     group3 = CuratoryGroup.findByName("Curatory Group C") ?: new CuratoryGroup(name: "Curatory Group C").save(flush: true)
     group4 = CuratoryGroup.findByName("Curatory Group D") ?: new CuratoryGroup(name: "Curatory Group D").save(flush: true)
@@ -43,6 +43,7 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.data.name == group1.name
+    resp.json.data.email == group1.email
   }
 
   void "test GET /rest/curatoryGroups"() {
@@ -57,6 +58,7 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json.data.size() == 5
+    resp.json.data*.email.contains(group1.email)
   }
 
   void "test GET /rest/curatoryGroups with inverse sorting by name"() {

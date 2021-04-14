@@ -4,7 +4,8 @@ class CuratoryGroup extends KBComponent {
 
   static belongsTo = User
 
-  User owner;
+  User owner
+  String email
 
   static hasMany = [
     users: User,
@@ -50,6 +51,7 @@ class CuratoryGroup extends KBComponent {
         }
       }
     })
+    email (nullable: true, blank: false, email: true)
   }
 
   public String getRestPath() {

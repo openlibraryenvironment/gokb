@@ -326,15 +326,9 @@
                       </dd>
                       <dt class="dt-label">Country</dt>
                       <dd>
-                          <g:simpleReferenceTypedown class="form-control" name="country"
-                                                       baseClass="org.gokb.cred.RefdataValue"
-                                                       filter1="Country" />
-                      </dd>
-                      <dt class="dt-label">preferred Language</dt>
-                      <dd>
-                            <g:simpleReferenceTypedown class="form-control" name="language"
-                                                       baseClass="org.gokb.cred.RefdataValue"
-                                                       filter1="KBComponent.Language" />
+                        <g:simpleReferenceTypedown class="form-control" name="country"
+                          baseClass="org.gokb.cred.RefdataValue"
+                          filter1="Country" />
                       </dd>
                       <dt class="dt-label"></dt>
                       <dd>

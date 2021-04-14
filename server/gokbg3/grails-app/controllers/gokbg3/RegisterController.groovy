@@ -24,8 +24,6 @@ import groovy.util.logging.*
 @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
 class RegisterController extends grails.plugin.springsecurity.ui.RegisterController {
 
-  static defaultAction = 'register'
-
   /** Dependency injection for the 'saltSource' bean. */
   SaltSource saltSource
 
@@ -52,6 +50,15 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 	static final String FORGOT_PASSWORD_TEMPLATE = "/register/_forgotPasswordMail"
 	static final String VERIFY_REGISTRATION_TEMPLATE = "/register/_verifyRegistrationMail"
 
+  def index(RegisterCommand registerCommand) {
+    if (params.embed) {
+      redirect(action: 'start', params: params)
+    }
+    else {
+      redirect(action: 'register')
+    }
+  }
+
   @Override
   def register(RegisterCommand registerCommand) {
 
@@ -70,7 +77,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     }
 
     def secTerms = session.secQuestion ? session.secQuestion.split("\\*") : null
-    
+
     if ( secTerms ) {
       secResult = (secTerms[0] as Integer) * (secTerms[1] as Integer)
     }
@@ -88,7 +95,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
     def user = uiRegistrationCodeStrategy.createUser(registerCommand)
     String salt = saltSource instanceof NullSaltSource ? null : registerCommand.username
-    RegistrationCode registrationCode = uiRegistrationCodeStrategy.register(user, registerCommand.password, salt)
+    RegistrationCode registrationCode = uiRegistrationCodeStrategy.register(user, registerCommand.password)
 
     if (registrationCode == null || registrationCode.hasErrors()) {
       // null means problem creating the user
@@ -110,6 +117,56 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     } else {
       redirectVerifyRegistration(uiRegistrationCodeStrategy.verifyRegistration(registrationCode.token))
     }
+  }
+
+  def start(RegisterCommand registerCommand) {
+
+    def secResult
+    def errors = [:]
+    Locale locale = new Locale(params.lang ?: request.locale)
+
+
+    if ( !request.post ) {
+      session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+      return [registerCommand: new RegisterCommand(), secQuestion: session.secQuestion, embed: 'true', locale: locale]
+    }
+
+    if ( session.regTries && session.regTries > 3 ) {
+      response.setStatus(429)
+
+      return [registerCommand: registerCommand, noTries: true, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
+    }
+
+    def secTerms = session.secQuestion ? session.secQuestion.split("\\*") : null
+
+    if ( secTerms ) {
+      secResult = (secTerms[0] as Integer) * (secTerms[1] as Integer)
+    }
+
+    if ( !secTerms || params.int('secAnswer') != secResult ) {
+      session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+      session.regTries = session.regTries ? (session.regTries + 1) : 1
+      return [registerCommand: registerCommand, secFailed: true, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
+    }
+
+    if (registerCommand.hasErrors() || params.phone) {
+      session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+      return [registerCommand: registerCommand, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
+    }
+
+    def user = uiRegistrationCodeStrategy.createUser(registerCommand)
+    RegistrationCode registrationCode = uiRegistrationCodeStrategy.register(user, registerCommand.password)
+
+    if (registrationCode == null || registrationCode.hasErrors()) {
+      // null means problem creating the user
+      flash.error = message(code: 'spring.security.ui.register.miscError')
+      return [registerCommand: registerCommand, embed: 'true', locale: locale]
+    }
+
+    session.secQuestion = null
+    session.regTries = 0
+
+    return [registerCommand: registerCommand, emailSent: true, noAddress: true, embed: 'true', locale: locale]
   }
 
   def verifyRegistration() {
