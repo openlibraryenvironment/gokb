@@ -123,13 +123,6 @@
     </dd>
 
     <dt>
-        <g:annotatedLabel owner="${d}" property="publisherName">Publisher</g:annotatedLabel>
-    </dt>
-    <dd>
-        <g:xEditable class="ipe" owner="${d}" field="publisherName"/>
-    </dd>
-
-    <dt>
         <g:annotatedLabel owner="${d}" property="volumeNumber">Volume Number</g:annotatedLabel>
     </dt>
     <dd>
