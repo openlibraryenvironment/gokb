@@ -60,7 +60,7 @@ class Office extends KBComponent {
   }
 
   private static refdataDefaults = [
-      "Office.function"		: "Technical Support"
+      "Office.Function"		: "Technical Support"
   ]
 
   /**
