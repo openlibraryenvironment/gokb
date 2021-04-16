@@ -61,10 +61,38 @@ class PackageService {
   def messageService
   def concurrencyManagerService
   def dateFormatService
+  private static final String[] KBART_FIELDS = ['publication_title',
+     'print_identifier',
+     'online_identifier',
+     'date_first_issue_online',
+     'num_first_vol_online',
+     'num_first_issue_online',
+     'date_last_issue_online',
+     'num_last_vol_online',
+     'num_last_issue_online',
+     'title_url',
+     'first_author',
+     'title_id',
+     'embargo_info',
+     'coverage_depth',
+     'coverage_notes',
+     'publisher_name',
+     'preceding_publication_title_id',
+     'date_monograph_published_print',
+     'date_monograph_published_online',
+     'monograph_volume',
+     'monograph_edition',
+     'first_editor',
+     'parent_publication_title_id',
+     'publication_type',
+     'access_type',
+     'zdb_id',
+     'gokb_tipp_uid',
+     'gokb_title_uid']
 
   public static boolean running = false;
   public static final enum ExportType {
-    KBART, TSV
+    KBART_TIPP, KBART_TITLE, TSV
   }
 
   /**
@@ -1178,9 +1206,9 @@ class PackageService {
   /**
    * collects the data of the given package into a KBART formatted TSV file for later download
    */
-  void createKbartExport(Package pkg, boolean onlyTitleData=false) {
+  void createKbartExport(Package pkg, ExportType exportType=ExportType.KBART_TIPP) {
     if (pkg) {
-      def exportFileName = generateExportFileName(pkg, ExportType.KBART)
+      def exportFileName = generateExportFileName(pkg, exportType)
       def path = exportFilePath()
       try {
         def out = new File("${path}${exportFileName}")
@@ -1195,39 +1223,12 @@ class PackageService {
           }
         }
         out.withWriter { writer ->
-
-          def sanitize = { it ? "${it}".trim() : "" }
-
           // As per spec header at top of file / section
           // II: Need to add in preceding_publication_title_id
-          writer.write('publication_title\t' +
-              'print_identifier\t' +
-              'online_identifier\t' +
-              'date_first_issue_online\t' +
-              'num_first_vol_online\t' +
-              'num_first_issue_online\t' +
-              'date_last_issue_online\t' +
-              'num_last_vol_online\t' +
-              'num_last_issue_online\t' +
-              'title_url\t' +
-              'first_author\t' +
-              'title_id\t' +
-              'embargo_info\t' +
-              'coverage_depth\t' +
-              'coverage_notes\t' +
-              'publisher_name\t' +
-              'preceding_publication_title_id\t' +
-              'date_monograph_published_print\t' +
-              'date_monograph_published_online\t' +
-              'monograph_volume\t' +
-              'monograph_edition\t' +
-              'first_editor\t' +
-              'parent_publication_title_id\t' +
-              'publication_type\t' +
-              'access_type\t' +
-              'zdb_id\t' +
-              'gokb_tipp_uid\t' +
-              'gokb_title_uid\n');
+          KBART_FIELDS.eachWithIndex { field, i ->
+            writer.write(field)
+            writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
+          }
 
           def session = sessionFactory.getCurrentSession()
           def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
@@ -1238,101 +1239,21 @@ class PackageService {
           query.setParameter('sc', status_current)
           query.setParameter('ct', combo_tipps)
 
-          ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
+          ScrollableResults tippIDs = query.scroll(ScrollMode.FORWARD_ONLY)
 
-          while (tipps.next()) {
-            def tipp_id = tipps.get(0);
-
+          while (tippIDs.next()) {
+            def tipp_id = tippIDs.get(0);
             TitleInstancePackagePlatform.withNewSession {
-              def tipp = TitleInstancePackagePlatform.get(tipp_id)
-              def pub_type = tipp.title?.niceName == 'Book' ? 'Monograph' : 'Serial'
-              def print_id = ""
-              def online_id = ""
-              def pid, oid
-              if (tipp.title.hasProperty('dateFirstInPrint')) {
-                pid = onlyTitleData ? tipp.title.getIdentifierValue('pISBN') : tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')
-                oid = onlyTitleData ? tipp.title.getIdentifierValue('ISBN') : tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')
-              }
-              else {
-                pid = onlyTitleData ? tipp.title.getIdentifierValue('ISSN') : tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')
-                oid = onlyTitleData ? tipp.title.getIdentifierValue('eISSN') : tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')
-              }
-              if (pid) {
-                print_id = pid
-              }
-              if (oid) {
-                online_id = oid
-              }
-
-              if (tipp.coverageStatements?.size() > 0) {
-                tipp.coverageStatements.each { cst ->
-                  writer.write(
-                      sanitize(onlyTitleData? tipp.title.name:tipp.name ?: tipp.title.name) + '\t' +
-                          print_id + '\t' +
-                          online_id + '\t' +
-                          sanitize(cst.startDate) + '\t' +
-                          sanitize(cst.startVolume) + '\t' +
-                          sanitize(cst.startIssue) + '\t' +
-                          sanitize(cst.endDate) + '\t' +
-                          sanitize(cst.endVolume) + '\t' +
-                          sanitize(cst.endIssue) + '\t' +
-                          sanitize(tipp.url) + '\t' +
-                          sanitize(onlyTitleData ? tipp.title.firstAuthor ?: "" : tipp.firstAuthor ?: tipp.title.firstAuthor ?: '') + '\t' +
-                          sanitize(onlyTitleData ? tipp.title.getId(): tipp.getID()) + '\t' +
-                          sanitize(cst.embargo) + '\t' +
-                          sanitize(cst.coverageDepth).toLowerCase() + '\t' +
-                          sanitize(cst.coverageNote) + '\t' +
-                          sanitize(onlyTitleData ? tipp.title.getCurrentPublisher()?.name : tipp.publisherName ?: tipp.title.getCurrentPublisher()?.name) + '\t' +
-                          sanitize(onlyTitleData ? tipp.title.getPrecedingTitleId() : tipp.precedingPublicationTitleId ?: tipp.title.getPrecedingTitleId()) + '\t' +
-                          (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.dateFirstInPrint) : '') + '\t' +
-                          (tipp.title.hasProperty('dateFirstOnline') ? sanitize(tipp.title.dateFirstOnline) : '') + '\t' +
-                          (tipp.title.hasProperty('volumeNumber') ? sanitize(tipp.title.volumeNumber) : '') + '\t' +
-                          (tipp.title.hasProperty('editionStatement') ? sanitize(tipp.title.editionStatement) : '') + '\t' +
-                          (tipp.title.hasProperty('firstEditor') ? sanitize(tipp.title.firstEditor) : '') + '\t' +
-                          '\t' +  // parent_publication_title_id
-                          sanitize(pub_type) + '\t' +  // publication_type
-                          sanitize(tipp.paymentType?.value) + '\t' +  // access_type
-                          sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
-                          sanitize(tipp.uuid) + '\t' +
-                          sanitize(tipp.title.uuid) +
-                          '\n');
+              TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+              kbartRecordsFor(tipp, exportType).each { record ->
+                KBART_FIELDS.eachWithIndex { fieldName, i ->
+                  writer.write(sanitize(record[fieldName]))
+                  writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
                 }
-              }
-              else {
-                writer.write(
-                    sanitize(tipp.name ?: tipp.title.name) + '\t' +
-                        print_id + '\t' +
-                        online_id + '\t' +
-                        sanitize(tipp.startDate) + '\t' +
-                        sanitize(tipp.startVolume) + '\t' +
-                        sanitize(tipp.startIssue) + '\t' +
-                        sanitize(tipp.endDate) + '\t' +
-                        sanitize(tipp.endVolume) + '\t' +
-                        sanitize(tipp.endIssue) + '\t' +
-                        sanitize(tipp.url) + '\t' +
-                        (tipp.title.hasProperty('firstAuthor') ? sanitize(tipp.title.firstAuthor) : '') + '\t' +
-                        sanitize(tipp.title.getId()) + '\t' +
-                        sanitize(tipp.embargo) + '\t' +
-                        sanitize(tipp.coverageDepth).toLowerCase() + '\t' +
-                        sanitize(tipp.coverageNote) + '\t' +
-                        sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
-                        sanitize(tipp.title.getPrecedingTitleId()) + '\t' +
-                        (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.dateFirstInPrint) : '') + '\t' +
-                        (tipp.title.hasProperty('dateFirstOnline') ? sanitize(tipp.title.dateFirstOnline) : '') + '\t' +
-                        (tipp.title.hasProperty('volumeNumber') ? sanitize(tipp.title.volumeNumber) : '' + '\t') +
-                        (tipp.title.hasProperty('editionStatement') ? sanitize(tipp.title.editionStatement) : '') + '\t' +
-                        (tipp.title.hasProperty('firstEditor') ? sanitize(tipp.title.firstEditor) : '') + '\t' +
-                        '\t' +  // parent_publication_title_id
-                        sanitize(pub_type) + '\t' +  // publication_type
-                        sanitize(tipp.paymentType?.value) + '\t' +  // access_type
-                        sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
-                        sanitize(tipp.uuid) + '\t' +
-                        sanitize(tipp.title.uuid) +
-                        '\n');
               }
             }
           }
-          tipps.close()
+          tippIDs.close()
 
           writer.flush();
           writer.close();
@@ -1535,8 +1456,8 @@ class PackageService {
     try {
       File file = new File(exportFilePath() + fileName)
       if (!file.isFile()) {
-        if (type == ExportType.KBART)
-          createKbartExport(pkg)
+        if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
+          createKbartExport(pkg, type)
         else
           createTsvExport(pkg)
         file = new File(exportFilePath() + fileName)
@@ -1552,6 +1473,7 @@ class PackageService {
       IOUtils.copy(inFile, out)
       inFile.close()
       out.close()
+      file.delete()
     }
     catch (Exception e) {
       log.error("Problem with sending export", e);
@@ -1568,8 +1490,8 @@ class PackageService {
       try {
         File src = new File(exportFilePath() + fileName)
         if (!src.isFile()) {
-          if (type == ExportType.KBART)
-            createKbartExport(pkg)
+          if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
+            createKbartExport(pkg, type)
           else
             createTsvExport(pkg)
           src = new File(exportFilePath() + fileName)
@@ -1750,7 +1672,7 @@ class PackageService {
   private String generateExportFileName(Package pkg, ExportType type) {
     String lastUpdate = dateFormatService.formatTimestamp(pkg.lastUpdated)
     StringBuilder name = new StringBuilder()
-    if (type == ExportType.KBART) {
+    if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE] ) {
       name.append(toCamelCase(pkg.provider?.name ? pkg.provider.name : "unknown Provider")).append('_')
           .append(toCamelCase(pkg.global.value)).append('_')
           .append(toCamelCase(pkg.name))
@@ -1776,5 +1698,84 @@ class PackageService {
             .append(word.substring(1, word.length()).toLowerCase())
     }
     ret.toString()
+  }
+
+  private static String sanitize(def what) {
+    return (what && (what.toString().trim() != '')) ? what.toString().trim() : ''
+  }
+
+  private String pick(def tippPropValue, def titlePropValue, ExportType exportType) {
+    if (tippPropValue && titlePropValue){
+      return (exportType==ExportType.KBART_TIPP) ? tippPropValue : titlePropValue
+    }
+    else if (tippPropValue){
+      return tippPropValue
+    } else if (titlePropValue){
+      return titlePropValue
+    }
+    return ''
+  }
+
+  private def kbartRecordsFor (TitleInstancePackagePlatform tipp, ExportType exportType) {
+    def recordList = []
+    def record = [:]
+    record.publication_title = pick(tipp.name, tipp.title?.name, exportType)
+    record.publication_type = pick(tipp.publicationType, tipp.title?.niceName == 'Book' ? 'Monograph' : 'Serial', exportType)
+    if (pick (tipp.dateFirstInPrint, tipp.title?.hasProperty('dateFirstInPrint'), exportType) != '') {
+      record.print_identifier = pick(tipp.getIdentifierValue('pISBN'), tipp.title?.getIdentifierValue('pISBN'), exportType)
+      record.online_identifier = pick(tipp.getIdentifierValue('ISBN'), tipp.title?.getIdentifierValue('ISBN'), exportType)
+    }
+    else{
+      record.print_identifier = pick(tipp.getIdentifierValue('ISSN'), tipp.title?.getIdentifierValue('ISSN'), exportType)
+      record.online_identifier = pick(tipp.getIdentifierValue('eISSN'), tipp.title?.getIdentifierValue('eISSN'), exportType)
+    }
+    record.title_url = tipp.url
+    record.first_author = pick(tipp.firstAuthor, tipp.title?.hasProperty('firstAuthor')?tipp.title.firstAuthor:null, exportType)
+    record.first_editor = pick(tipp.firstEditor, tipp.title?.hasProperty('firstEditor')?tipp.title.firstEditor:null, exportType)
+    record.date_monograph_published_print = pick(tipp.dateFirstInPrint, tipp.title?.hasProperty('dateFirstInPrint')?tipp.title.dateFirstInPrint:null, exportType)
+    record.date_monograph_published_online = pick(tipp.dateFirstOnline, tipp.title?.hasProperty('dateFirstOnline')?tipp.title.dateFirstOnline:null, exportType)
+    record.monograph_volume = pick(tipp.volumeNumber, tipp.title?.hasProperty('volumeNumber')?tipp.title.volumeNumber:null, exportType)
+    record.monograph_edition = pick(tipp.editionStatement, tipp.title?.hasProperty('edtionNumber')?tipp.title.editionNumber:null, exportType)
+    record.title_id = pick(tipp.id, tipp.title?.id, exportType)
+    record.publisher_name = pick (tipp.publisherName, tipp.title?.getCurrentPublisher(), exportType)
+    record.preceding_publication_title_id = pick(tipp.precedingPublicationTitleId, tipp.title?.getPrecedingTitleId(), exportType)
+    record.parent_publication_title_id = tipp.parentPublicationTitleId
+    record.access_type = pick(tipp.paymentType, null, exportType)
+    record.zdb_id = pick(tipp.getIdentifierValue('ZDB'), tipp.title?.getIdentifierValue('ZDB'), exportType)
+    record.gokb_tipp_uid = tipp.uuid
+    record.gokb_title_uid = tipp.title?.uuid
+
+    if (tipp.coverageStatements.size() > 0 ){
+      // several records
+      tipp.coverageStatements.each{cst ->
+        record.date_first_issue_online = cst.startDate
+        record.num_first_issue_online = cst.startIssue
+        record.num_first_vol_online = cst.startVolume
+        record.date_last_issue_online = cst.endDate
+        record.num_last_issue_online = cst.endIssue
+        record.num_last_vol_online = cst.endVolume
+        record.embargo_info = cst.embargo
+        record.coverage_depth = cst.coverageDepth
+        record.coverage_notes = cst.coverageNote
+
+        recordList << record.clone()
+      }
+    }
+    else{
+      // just one
+      record.date_first_issue_online = tipp.startDate
+      record.num_first_issue_online = tipp.startIssue
+      record.num_first_vol_online = tipp.startVolume
+      record.date_last_issue_online = tipp.endDate
+      record.num_last_issue_online = tipp.endIssue
+      record.num_last_vol_online = tipp.endVolume
+      record.embargo_info = tipp.embargo
+      record.coverage_depth = tipp.coverageDepth
+      record.coverage_notes = tipp.coverageNote
+
+      recordList << record
+    }
+
+    return recordList
   }
 }
