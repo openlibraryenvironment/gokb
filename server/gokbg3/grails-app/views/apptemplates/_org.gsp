@@ -278,9 +278,8 @@
             </dt>
             <dd>
               <g:render template="/apptemplates/comboList"
-                      model="${[d:d, property:'offices', noadd:true, cols:[[expr:'name',colhead:'Office Name', action:'link']],targetClass:'org.gokb.cred.Office',direction:'in',propagateDelete: 'true']}" />
-
-              <g:if test="${d.isEditable()}">
+                      model="${[d:d, property:'offices', noadd:true, cols:[[expr:'name',colhead:'Office Name', action:'link'],[ expr:'function', colhead:'Function']],targetClass:'org.gokb.cred.Office',direction:'in',propagateDelete: 'true']}" />
+                <g:if test="${d.isEditable()}">
                 <g:if test="${d.id}">
                   <button
                     class="hidden-license-details btn btn-default btn-primary "

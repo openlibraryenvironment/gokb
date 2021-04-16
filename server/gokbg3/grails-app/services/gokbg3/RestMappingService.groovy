@@ -21,38 +21,38 @@ class RestMappingService {
   def dateFormatService
 
   def defaultIgnore = [
-    'bucketHash',
-    'shortcode',
-    'normname',
-    'people',
-    'lastSeen',
-    'updateBenchmark',
-    'systemComponent',
-    'insertBenchmark',
-    'componentHash',
-    'subjects',
-    'lastUpdateComment',
-    'duplicateOf',
-    'componentDiscriminator',
-    'incomingCombos',
-    'outgoingCombos'
+      'bucketHash',
+      'shortcode',
+      'normname',
+      'people',
+      'lastSeen',
+      'updateBenchmark',
+      'systemComponent',
+      'insertBenchmark',
+      'componentHash',
+      'subjects',
+      'lastUpdateComment',
+      'duplicateOf',
+      'componentDiscriminator',
+      'incomingCombos',
+      'outgoingCombos'
   ]
 
   def defaultEmbed = [
-    'ids',
-    'variantNames',
-    'additionalProperties',
-    'reviewRequests'
+      'ids',
+      'variantNames',
+      'additionalProperties',
+      'reviewRequests'
   ]
 
   def defaultImmmutable = [
-    'id',
-    'uuid',
-    'lastUpdated',
-    'dateCreated',
-    'lastUpdatedBy',
-    'value',
-    'version'
+      'id',
+      'uuid',
+      'lastUpdated',
+      'dateCreated',
+      'lastUpdatedBy',
+      'value',
+      'version'
   ]
 
   /**
@@ -91,7 +91,7 @@ class RestMappingService {
       }
 
       if (obj.class.simpleName == 'ReviewRequest' && obj.allocatedGroups?.size() > 0) {
-        def allocated_groups = obj.allocatedGroups?.collect { arg -> [ id: arg.group.id ]} ?: []
+        def allocated_groups = obj.allocatedGroups?.collect { arg -> [id: arg.group.id] } ?: []
 
         is_curator = userGroups ? userGroups.id.intersect(allocated_groups.id) : false
       }
@@ -107,8 +107,6 @@ class RestMappingService {
       }
     }
 
-    result['_embedded'] = [:]
-
     if (embed_active.size() == 0 && !nested) {
       if (KBComponent.isAssignableFrom(obj.class)) {
         embed_active = defaultEmbed
@@ -120,6 +118,9 @@ class RestMappingService {
           }
         }
       }
+    }
+    if (embed_active.size() > 0) {
+      result['_embedded'] = [:]
     }
 
     result['id'] = obj.id
@@ -134,9 +135,9 @@ class RestMappingService {
                 def label = selectJsonLabel(obj[p.name])
 
                 result[p.name] = [
-                  'name': label,
-                  'type': obj[p.name].niceName,
-                  'id'  : obj[p.name].id
+                    'name': label,
+                    'type': obj[p.name].niceName,
+                    'id'  : obj[p.name].id
                 ]
 
                 if (p.type == IdentifierNamespace) {
@@ -146,12 +147,14 @@ class RestMappingService {
                 if (embed_active.contains(p.name)) {
                   result['_embedded'][p.name] = getEmbeddedJson(obj[p.name], user)
                 }
-              } else {
+              }
+              else {
                 result[p.name] = null
               }
             }
-          } else {
-            if ( (embed_active.contains(p.name) && (user?.isAdmin() || p.type != User))  || (!nested && p.name == 'reviewRequests' && user?.editorStatus) ) {
+          }
+          else {
+            if ((embed_active.contains(p.name) && (user?.isAdmin() || p.type != User)) || (!nested && p.name == 'reviewRequests' && user?.editorStatus)) {
               result['_embedded'][p.name] = []
 
               obj[p.name].each {
@@ -159,7 +162,8 @@ class RestMappingService {
               }
             }
           }
-        } else {
+        }
+        else {
           switch (p.type) {
             case Long.class:
               result[p.name] = "${obj[p.name]}";
@@ -180,10 +184,10 @@ class RestMappingService {
       def combo_props = obj.allComboPropertyNames
 
       combo_props.each { cp ->
-        if (obj.getCardinalityFor(obj.class,cp) == 'hasByCombo') {
+        if (obj.getCardinalityFor(obj.class, cp) == 'hasByCombo') {
           def cval = null
 
-          if ( (include_list && include_list?.contains(cp)) || (!include_list && jsonMap?.defaultLinks?.contains(cp)) ) {
+          if ((include_list && include_list?.contains(cp)) || (!include_list && jsonMap?.defaultLinks?.contains(cp))) {
             RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', obj.getComboTypeValue(cp))
             def chql = null
             def reverse = obj.isComboReverse(cp)
@@ -198,19 +202,20 @@ class RestMappingService {
 
             if (combo.size() == 0) {
               result[cp] = null
-            } else {
+            }
+            else {
               cval = reverse ? combo[0].fromComponent : combo[0].toComponent
               result[cp] = ['id': cval.id, 'name': cval.name, 'type': cval.niceName, 'uuid': cval.uuid]
             }
           }
 
-          if ( embed_active.contains(cp) ) {
+          if (embed_active.contains(cp)) {
             cval = obj[cp]
             result['_embedded'][cp] = cval ? getEmbeddedJson(cval, user) : null
           }
         }
         else {
-          if( embed_active.contains(cp) ) {
+          if (embed_active.contains(cp)) {
             result['_embedded'][cp] = []
 
             def combos = obj.getCombosByPropertyName(cp)
@@ -270,11 +275,13 @@ class RestMappingService {
         if (p instanceof Association) {
           if (p instanceof ManyToOne || p instanceof OneToOne) {
             updateAssoc(obj, p.name, newVal)
-          } else {
+          }
+          else {
             // Add to collection
             log.debug("Skip generic handling of collections}");
           }
-        } else {
+        }
+        else {
           log.debug("checking for type of property ${p.name} -> ${p.type}")
           switch (p.type) {
             case Long.class:
@@ -299,13 +306,14 @@ class RestMappingService {
     log.debug("Update association $obj - $prop: $val")
     def ptype = grailsApplication.mappingContext.getPersistentEntity(obj.class.name).getPropertyByName(prop).type
 
-    if ( val != null ) {
+    if (val != null) {
       if (ptype == RefdataValue) {
         def rdv = null
 
-        if ( val == null ) {
+        if (val == null) {
           obj[prop] = null
-        } else {
+        }
+        else {
           String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
 
           if (catName) {
@@ -333,27 +341,28 @@ class RestMappingService {
                   else {
                     obj[prop] = rdv
                   }
-                } else {
+                }
+                else {
                   obj.errors.reject(
-                    'rdc.values.notFound',
-                    [rdv, cat] as Object[],
-                    '[Value {0} is not valid for category {1}!]'
+                      'rdc.values.notFound',
+                      [rdv, cat] as Object[],
+                      '[Value {0} is not valid for category {1}!]'
                   )
                   obj.errors.rejectValue(
-                    prop,
-                    'rdc.values.notFound'
+                      prop,
+                      'rdc.values.notFound'
                   )
                 }
               }
               else {
                 obj.errors.reject(
-                  'default.not.found.message',
-                  [ptype, val] as Object[],
-                  '[{0} not found with id {1}]'
+                    'default.not.found.message',
+                    [ptype, val] as Object[],
+                    '[{0} not found with id {1}]'
                 )
                 obj.errors.rejectValue(
-                  prop,
-                  'default.not.found.message'
+                    prop,
+                    'default.not.found.message'
                 )
               }
             }
@@ -380,27 +389,28 @@ class RestMappingService {
                     else {
                       obj[prop] = rdv
                     }
-                  } else {
+                  }
+                  else {
                     obj.errors.reject(
-                      'rdc.values.notFound',
-                      [rdv, cat] as Object[],
-                      '[Value {0} is not valid for category {1}!]'
+                        'rdc.values.notFound',
+                        [rdv, cat] as Object[],
+                        '[Value {0} is not valid for category {1}!]'
                     )
                     obj.errors.rejectValue(
-                      prop,
-                      'rdc.values.notFound'
+                        prop,
+                        'rdc.values.notFound'
                     )
                   }
                 }
                 else {
                   obj.errors.reject(
-                    'default.not.found.message',
-                    [ptype, val.id] as Object[],
-                    '[{0} not found with id {1}]'
+                      'default.not.found.message',
+                      [ptype, val.id] as Object[],
+                      '[{0} not found with id {1}]'
                   )
                   obj.errors.rejectValue(
-                    prop,
-                    'default.not.found.message'
+                      prop,
+                      'default.not.found.message'
                   )
                 }
               }
@@ -409,13 +419,13 @@ class RestMappingService {
 
                 if (!rdv) {
                   obj.errors.reject(
-                    'rdc.values.notFound',
-                    [val.name, prop] as Object[],
-                    '[{0} is not a valid value for property {1}!]'
+                      'rdc.values.notFound',
+                      [val.name, prop] as Object[],
+                      '[{0} is not a valid value for property {1}!]'
                   )
                   obj.errors.rejectValue(
-                    prop,
-                    'rdc.values.notFound'
+                      prop,
+                      'rdc.values.notFound'
                   )
                 }
                 else {
@@ -444,13 +454,13 @@ class RestMappingService {
 
               if (!rdv) {
                 obj.errors.reject(
-                  'rdc.values.notFound',
-                  [val, prop] as Object[],
-                  '[{0} is not a valid value for property {1}!]'
+                    'rdc.values.notFound',
+                    [val, prop] as Object[],
+                    '[{0} is not a valid value for property {1}!]'
                 )
                 obj.errors.rejectValue(
-                  prop,
-                  'rdc.values.notFound'
+                    prop,
+                    'rdc.values.notFound'
                 )
               }
               else {
@@ -469,13 +479,13 @@ class RestMappingService {
                   }
                   else {
                     obj.errors.reject(
-                      'rdc.values.notFound',
-                      [val] as Object[],
-                      '[{0} is not a valid status value!]'
+                        'rdc.values.notFound',
+                        [val] as Object[],
+                        '[{0} is not a valid status value!]'
                     )
                     obj.errors.rejectValue(
-                      prop,
-                      'rdc.values.notFound'
+                        prop,
+                        'rdc.values.notFound'
                     )
                   }
                 }
@@ -484,11 +494,13 @@ class RestMappingService {
                 }
               }
             }
-          } else {
+          }
+          else {
             log.error("Could not resolve category (${obj.niceName}.${p.name})!")
           }
         }
-      } else {
+      }
+      else {
         def linkObj = null
 
         if (val instanceof Integer) {
@@ -500,15 +512,16 @@ class RestMappingService {
 
         if (linkObj) {
           obj[prop] = linkObj
-        } else {
+        }
+        else {
           obj.errors.reject(
-            'default.not.found.message',
-            [ptype, val] as Object[],
-            '[{0} not found with id {1}]'
+              'default.not.found.message',
+              [ptype, val] as Object[],
+              '[{0} not found with id {1}]'
           )
           obj.errors.rejectValue(
-            prop,
-            'default.not.found.message'
+              prop,
+              'default.not.found.message'
           )
         }
       }
@@ -559,7 +572,8 @@ class RestMappingService {
 
               errors << messageService.processValidationErrors(ve.errors)
             }
-          } else {
+          }
+          else {
             errors << [message: messageService.resolveCode('identifier.value.IllegalIDForm', null, null), baddata: i]
             valid = false
           }
@@ -582,16 +596,16 @@ class RestMappingService {
       if (errors.size() == 0) {
         new_ids.each { i ->
 
-          def dupe = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?",[combo_id_type, obj, i])
+          def dupe = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?", [combo_id_type, obj, i])
 
           if (dupe.size() == 0) {
-            def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush:true)
+            def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true)
           }
-          else if (dupe.size() == 1 ) {
+          else if (dupe.size() == 1) {
             if (dupe[0].status == combo_deleted) {
               log.debug("Matched ID combo was marked as deleted!")
-              dupe[0].delete(flush:true)
-              def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush:true)
+              dupe[0].delete(flush: true)
+              def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true)
             }
             else {
               log.debug("Not adding duplicate ..")
@@ -654,7 +668,8 @@ class RestMappingService {
 
       if (cg instanceof String) {
         cg_obj = CuratoryGroup.findByNameIlike(cg)
-      } else if (cg instanceof Integer){
+      }
+      else if (cg instanceof Integer) {
         cg_obj = CuratoryGroup.get(cg)
       }
       else if (cg instanceof Map) {
@@ -663,7 +678,8 @@ class RestMappingService {
 
       if (cg_obj) {
         new_cgs << cg_obj
-      } else {
+      }
+      else {
         errors << [message: "Unable to lookup curatory group!", baddata: cg]
       }
     }
@@ -671,8 +687,9 @@ class RestMappingService {
     if (errors.size() == 0) {
       new_cgs.each { c ->
         if (!obj.curatoryGroups.contains(c)) {
-          def new_combo = new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush:true)
-        } else {
+          def new_combo = new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush: true)
+        }
+        else {
           log.debug("Existing cg ${c}..")
         }
       }
@@ -710,7 +727,8 @@ class RestMappingService {
 
             if (dupes) {
               log.debug("Not adding duplicate variant")
-            } else {
+            }
+            else {
               newVariant = obj.ensureVariantName(it)
 
               if (newVariant) {
@@ -720,34 +738,39 @@ class RestMappingService {
               else {
                 log.debug("Could not add variant ${it}!")
                 obj.errors.reject(
-                  'component.addToList.denied.label',
-                  ['variantNames'] as Object[],
-                  '[Could not process list of items for property {0}]'
+                    'component.addToList.denied.label',
+                    ['variantNames'] as Object[],
+                    '[Could not process list of items for property {0}]'
                 )
                 obj.errors.rejectValue(
-                  'variantNames',
-                  'component.addToList.denied.label'
+                    'variantNames',
+                    'component.addToList.denied.label'
                 )
               }
             }
-          } else {
+          }
+          else {
             log.debug("Ignoring empty variant")
           }
-        } else if (it instanceof Integer) {
+        }
+        else if (it instanceof Integer) {
           newVariant = KBComponentVariantName.get(it)
 
           if (newVariant && newVariant.owner == obj) {
             remaining << newVariant
-          } else {
+          }
+          else {
             notFound << it
           }
-        } else if (it instanceof Map) {
+        }
+        else if (it instanceof Map) {
           if (it.id && it.id instanceof Integer) {
             newVariant = KBComponentVariantName.get(it.id)
 
             if (newVariant && newVariant.owner == obj) {
               remaining << newVariant
-            } else {
+            }
+            else {
               notFound << it
             }
           }
@@ -758,34 +781,38 @@ class RestMappingService {
             if (dupes) {
               log.debug("Not adding duplicate variant")
               remaining << dupes
-            } else {
+            }
+            else {
               newVariant = obj.ensureVariantName(it.variantName)
 
               if (newVariant) {
                 log.debug("Added variant ${newVariant}")
                 if (it.locale) {
                   newVariant = updateAssoc(newVariant, 'locale', it.locale)
-                } else {
+                }
+                else {
                   newVariant.locale = null
                 }
 
                 if (it.variantType) {
                   newVariant = updateAssoc(newVariant, 'variantType', it.variantType)
-                } else {
+                }
+                else {
                   newVal.variantType = null
                 }
 
                 remaining << newVariant
-              } else {
+              }
+              else {
                 log.debug("Could not add variant ${it}!")
                 obj.errors.reject(
-                  'component.addToList.denied.label',
-                  ['variantNames'] as Object[],
-                  '[Could not process list of items for property {0}]'
+                    'component.addToList.denied.label',
+                    ['variantNames'] as Object[],
+                    '[Could not process list of items for property {0}]'
                 )
                 obj.errors.rejectValue(
-                  'variantNames',
-                  'component.addToList.denied.label'
+                    'variantNames',
+                    'component.addToList.denied.label'
                 )
               }
             }
@@ -813,29 +840,30 @@ class RestMappingService {
         else {
           log.debug("Not removing: (remove: ${remove} - errors: ${obj.errors})")
         }
-      } else {
+      }
+      else {
         log.debug("Unable to look up variants ..")
         obj.errors.reject(
-          'component.addToList.denied.label',
-          ['variantNames'] as Object[],
-          '[Could not process list of items for property {0}]'
+            'component.addToList.denied.label',
+            ['variantNames'] as Object[],
+            '[Could not process list of items for property {0}]'
         )
         obj.errors.rejectValue(
-          'variantNames',
-          'component.addToList.denied.label'
+            'variantNames',
+            'component.addToList.denied.label'
         )
       }
     }
     catch (Exception e) {
       log.debug("Unable to process variants:", e)
       obj.errors.reject(
-        'component.addToList.denied.label',
-        ['variantNames'] as Object[],
-        '[Could not process list of items for property {0}]'
+          'component.addToList.denied.label',
+          ['variantNames'] as Object[],
+          '[Could not process list of items for property {0}]'
       )
       obj.errors.rejectValue(
-        'variantNames',
-        'component.addToList.denied.label'
+          'variantNames',
+          'component.addToList.denied.label'
       )
     }
     obj
@@ -853,7 +881,7 @@ class RestMappingService {
 
     if (new_pubs instanceof Collection) {
       new_pubs.each { pub ->
-        if (!pubs_to_add.collect { it.id == pub}) {
+        if (!pubs_to_add.collect { it.id == pub }) {
           pubs_to_add << Org.get(pub)
         }
         else {
@@ -862,7 +890,7 @@ class RestMappingService {
       }
     }
     else {
-      if (!pubs_to_add.collect { it.id == new_pubs}) {
+      if (!pubs_to_add.collect { it.id == new_pubs }) {
         pubs_to_add << Org.get(new_pubs)
       }
       else {
@@ -872,7 +900,7 @@ class RestMappingService {
 
     pubs_to_add.each { publisher ->
       boolean found = false
-      for ( int i=0; !found && i<publisher_combos.size(); i++) {
+      for (int i = 0; !found && i < publisher_combos.size(); i++) {
         Combo pc = publisher_combos[i]
         def idMatch = pc."${propName}".id == publisher.id
 
@@ -883,7 +911,8 @@ class RestMappingService {
 
       if (!found) {
         def new_combo = new Combo(fromComponent: obj, toComponent: publisher, type: combo_type).save(flush: true)
-      } else {
+      }
+      else {
         log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
       }
     }
@@ -909,13 +938,13 @@ class RestMappingService {
     }
     catch (Exception e) {
       obj.errors.reject(
-        'typeMismatch.java.lang.Long',
-        [prop] as Object[],
-        '[Invalid number value for property [{0}]]'
+          'typeMismatch.java.lang.Long',
+          [prop] as Object[],
+          '[Invalid number value for property [{0}]]'
       )
       obj.errors.rejectValue(
-        prop,
-        'typeMismatch.java.lang.Long'
+          prop,
+          'typeMismatch.java.lang.Long'
       )
     }
     obj
@@ -924,20 +953,22 @@ class RestMappingService {
   public def updateDateField(obj, prop, val) {
     if (val == null) {
       obj[prop] = null
-    } else if (val.trim()) {
+    }
+    else if (val.trim()) {
       LocalDateTime dateObj = GOKbTextUtils.completeDateString(val)
 
       if (dateObj) {
         ClassUtils.updateDateField(val, obj, prop)
-      } else {
+      }
+      else {
         obj.errors.reject(
-          'typeMismatch.java.util.Date',
-          [prop] as Object[],
-          '[Invalid date value for property [{0}]]'
+            'typeMismatch.java.util.Date',
+            [prop] as Object[],
+            '[Invalid date value for property [{0}]]'
         )
         obj.errors.rejectValue(
-          prop,
-          'typeMismatch.java.util.Date'
+            prop,
+            'typeMismatch.java.util.Date'
         )
       }
       log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))");
@@ -955,13 +986,17 @@ class RestMappingService {
 
     if (obj.hasProperty('jsonLabel')) {
       obj_label = obj[obj.jsonLabel]
-    } else if (obj.hasProperty('value')) {
+    }
+    else if (obj.hasProperty('value')) {
       obj_label = obj.value
-    } else if (obj.hasProperty('name')) {
+    }
+    else if (obj.hasProperty('name')) {
       obj_label = obj.name
-    } else if (obj.hasProperty('variantName')) {
+    }
+    else if (obj.hasProperty('variantName')) {
       obj_label = obj.variantName
-    } else if (obj.hasProperty('propertyName')) {
+    }
+    else if (obj.hasProperty('propertyName')) {
       obj_label = obj.propertyName
     }
 

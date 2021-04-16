@@ -5,9 +5,12 @@ import grails.plugins.rest.client.RestBuilder
 import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
 import grails.transaction.Rollback
+import org.gokb.cred.KBComponent
+import org.gokb.cred.Office
 import org.gokb.cred.Org
 import org.gokb.cred.Platform
 import org.gokb.TitleLookupService
+import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Source
 
 @Integration
@@ -23,7 +26,10 @@ class OrgTestSpec extends AbstractAuthSpec {
     def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true)
     def new_plt_upd = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate").save(flush: true)
     def new_source = Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource").save(flush: true)
-    def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source).save(flush: true)
+    def new_office = Office.findByName("firstTestOffice") ?: new Office(name: "firstTestOffice", language: RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "ger"))
+        new_office.save(flush: true)
+    def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source, offices:[new_office])
+        patch_org.save(flush: true)
   }
 
   def cleanup() {
@@ -33,8 +39,11 @@ class OrgTestSpec extends AbstractAuthSpec {
     if (Platform.findByName("TestOrgPltUpdate")) {
       Platform.findByName("TestOrgPltUpdate")?.refresh().expunge()
     }
+    Office.list().each {
+      it.expunge()
+    }
     if (Org.findByName("TestOrgPost")) {
-      Org.findByName("TestOrgPost")?.refresh().expunge()
+        Org.findByName("TestOrgPost")?.refresh().expunge()
     }
     if (Org.findByName("TestOrgUpdateNew")) {
       Org.findByName("TestOrgUpdateNew")?.refresh().expunge()
@@ -72,7 +81,7 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.get("${urlPath}/rest/orgs") {
+    RestResponse resp = rest.get("${urlPath}/rest/orgs/${Org.findByName("TestOrgPatch").id}") {
       accept('application/json')
       auth("Bearer $accessToken")
     }
@@ -80,6 +89,7 @@ class OrgTestSpec extends AbstractAuthSpec {
     then:
 
     resp.status == 200 // OK
+    resp.json.name == "TestOrgPatch"
   }
 
   void "test insert new org"() {
@@ -92,7 +102,17 @@ class OrgTestSpec extends AbstractAuthSpec {
       ids              : [
         [namespace: "global", value: "test-org-id-val"]
       ],
-      providedPlatforms: ["TestOrgPlt"]
+      providedPlatforms: ["TestOrgPlt"],
+      offices: [
+          [name: "TestOffice1",
+           language:"ger",
+           function: "Technical Support"],
+          [name: "TestOffice2",
+           language:"epo",
+           function: "other"],
+          [name: "TestOffice3",
+           language:"hun"]
+      ],
     ]
 
     when:
@@ -108,9 +128,12 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.status == 201 // Created
 
     expect:
-
     resp.json?.name == "TestOrgPost"
     resp.json?._embedded?.ids?.size() == 1
+    resp.json?._embedded?.offices?.size()==3
+    resp.json?._embedded?.offices*.function.name.count("Technical Support")==2
+    resp.json?._embedded?.offices*.function.name.count("Other")
+    resp.json?._embedded?.offices*.language.name.containsAll(["hun", "ger", "epo"])
   }
 
   void "test org index"() {
@@ -148,12 +171,19 @@ class OrgTestSpec extends AbstractAuthSpec {
       ids              : [
         [namespace: "global", value: "test-org-id-val-new"]
       ],
-      providedPlatforms: [updated_plt.id]
+      providedPlatforms: [updated_plt.id],
+      offices: [[name: "2ndTestOffice1",
+                 language:"ger",
+                 function:"Technical Support"],
+                [name: "2ndTestOffice2",
+                 language:RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "eng").id,
+                 function: "other"]
+      ]
     ]
 
     when:
 
-    RestResponse resp = rest.put("${urlPath}/rest/orgs/$id?_embed=providedPlatforms,ids") {
+    RestResponse resp = rest.put("${urlPath}/rest/orgs/$id?_embed=providedPlatforms,ids,offices") {
       accept('application/json')
       auth("Bearer $accessToken")
       body(update_record as JSON)
@@ -168,6 +198,8 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.json.name == "TestOrgUpdateNew"
     resp.json._embedded?.ids?.size() == 1
     resp.json._embedded?.providedPlatforms?.size() == 1
+    resp.json._embedded?.offices.size() == 2
+    resp.json._embedded?.offices*.function.name.contains("Other")
   }
 
   void "test source delete"() {
