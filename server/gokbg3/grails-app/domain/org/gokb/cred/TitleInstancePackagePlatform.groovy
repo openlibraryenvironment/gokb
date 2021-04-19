@@ -712,8 +712,6 @@ class TitleInstancePackagePlatform extends KBComponent {
 
           tipp.coverageStatements?.each { tcs ->
             if (c.id && tcs.id == c.id) {
-              missing_by_id.remove(tcs)
-
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
