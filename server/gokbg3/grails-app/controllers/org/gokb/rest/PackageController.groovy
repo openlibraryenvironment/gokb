@@ -187,7 +187,7 @@ class PackageController {
                 update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
               }
 
-              errors << updateCombos(obj, reqBody)
+              errors << updateCombos(obj, reqBody, false, user)
 
               if (errors.size() == 0) {
                 log.debug("No errors: ${errors}")
@@ -288,7 +288,7 @@ class PackageController {
           obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
         }
 
-        errors << updateCombos(obj, reqBody, remove)
+        errors << updateCombos(obj, reqBody, remove, user)
 
         if (obj.validate()) {
           if (generateToken) {
@@ -342,7 +342,7 @@ class PackageController {
     render result as JSON
   }
 
-  private def updateCombos(obj, reqBody, boolean remove = true) {
+  private def updateCombos(obj, reqBody, boolean remove = true, user) {
     log.debug("Updating package combos ..")
     def errors = [:]
 
@@ -458,7 +458,7 @@ class PackageController {
         if (tipp_dto.title && tipp_dto.title instanceof Map) {
           if (!tipp_dto.id) {
             try {
-              def ti = TitleInstance.upsertDTO(tipp_dto.title)
+              def ti = TitleInstance.upsertDTO(titleLookupservice, tipp_dto.title, user)
 
               if (ti) {
                 tipp_dto.title = ti.id
@@ -498,10 +498,26 @@ class PackageController {
           }
         }
         else {
-          def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp_dto)
+          def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp_dto, user)
 
           if (upserted_tipp) {
             if (errors.size() == 0) {
+              def tipp_status = null
+
+              if (tipp_dto.status instanceof String) {
+                tipp_status = RefdataCategory.lookup('KBComponent.Status', tipp_dto.status)
+              } else if (tipp_dto.status instanceof Integer) {
+                def id_rdv = RefdataValue.get(tipp_dto.status)
+                tipp_status = id_rdv.owner.label == 'KBComponent.Status' ? id_rdv : null
+              } else if (tipp_dto.status instanceof Map) {
+                def id_rdv = RefdataValue.get(tipp_dto.status.id)
+                tipp_status = id_rdv.owner.label == 'KBComponent.Status' ? id_rdv : null
+              }
+
+              if (tipp_status && upserted_tipp.status != tipp_status) {
+                upserted_tipp.status = tipp_status
+              }
+
               upserted_tipp = upserted_tipp?.save(flush: true)
             }
           }
@@ -673,7 +689,7 @@ class PackageController {
             def tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp, RequestContextUtils.getLocale(request))
 
             if (tipp_validation.valid) {
-              def tipp_obj = TitleInstancePackagePlatform.upsertDTO(tipp)
+              def tipp_obj = TitleInstancePackagePlatform.upsertDTO(tipp, user)
 
               if (!tipp_obj) {
                 errors.add(['code': 400, 'message': "TIPP could not be created!", baddata: tipp, idx: idx])
@@ -978,7 +994,7 @@ class PackageController {
                         else {
                           // Not in cache.
                           try {
-                            pl = Platform.upsertDTO(tipp_plt_dto, user);
+                            pl = Platform.upsertDTO(tipp_plt_dto);
 
                             if (pl) {
                               platform_cache[tipp_plt_dto.name] = pl.id
