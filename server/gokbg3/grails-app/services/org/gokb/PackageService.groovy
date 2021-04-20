@@ -1737,7 +1737,7 @@ class PackageService {
     record.monograph_volume = pick(tipp.volumeNumber, tipp.title?.hasProperty('volumeNumber')?tipp.title.volumeNumber:null, exportType)
     record.monograph_edition = pick(tipp.editionStatement, tipp.title?.hasProperty('edtionNumber')?tipp.title.editionNumber:null, exportType)
     record.title_id = pick(tipp.id, tipp.title?.id, exportType)
-    record.publisher_name = pick (tipp.publisherName, tipp.title?.getCurrentPublisher(), exportType)
+    record.publisher_name = pick (tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
     record.preceding_publication_title_id = pick(tipp.precedingPublicationTitleId, tipp.title?.getPrecedingTitleId(), exportType)
     record.parent_publication_title_id = tipp.parentPublicationTitleId
     record.access_type = pick(tipp.paymentType, null, exportType)
