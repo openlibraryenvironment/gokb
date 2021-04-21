@@ -380,6 +380,35 @@ class PackagesController {
   @Transactional(readOnly = true)
   def kbart() {
     if (request.method == "GET") {
+      def type = params.exportType=='title'? PackageService.ExportType.KBART_TITLE : PackageService.ExportType.KBART_TIPP
+      if (params.id == "all") {
+        Package.all.each { pack ->
+          packageService.createKbartExport(pack, type)
+        }
+        return response
+      }
+      def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
+      if (pkg)
+        packageService.sendFile(pkg, type, response)
+      else
+        log.error("Cant find package with ID ${params.id}")
+    }
+    else if (request.method == "POST") {
+      def packs = []
+      def type = request.JSON.data.exportType=='title'?PackageService.ExportType.KBART_TITLE:PackageService.ExportType.KBART_TIPP
+      request.JSON.data.ids.each { id ->
+        def pkg = Package.findByUuid(id) ?: genericOIDService.resolveOID(id)
+        if (pkg)
+          packs << pkg
+      }
+      packageService.sendZip(packs, type, response)
+    }
+  }
+
+  @Transactional(readOnly = true)
+  def kbartTitleData() {
+    if (request.method == "GET") {
+      def type = params.exportType=='title'? PackageService.ExportType.KBART_TITLE : PackageService.ExportType.KBART_TIPP
       if (params.id == "all") {
         Package.all.each { pack ->
           packageService.createKbartExport(pack)
@@ -388,18 +417,19 @@ class PackagesController {
       }
       def pkg = Package.findByUuid(params.id) ?: genericOIDService.resolveOID(params.id)
       if (pkg)
-        packageService.sendFile(pkg, PackageService.ExportType.KBART, response)
+        packageService.sendFile(pkg, type, response)
       else
         log.error("Cant find package with ID ${params.id}")
     }
     else if (request.method == "POST") {
       def packs = []
+      def type = request.JSON.data.exportType=='title'?PackageService.ExportType.KBART_TITLE:PackageService.ExportType.KBART_TIPP
       request.JSON.data.ids.each { id ->
         def pkg = Package.findByUuid(id) ?: genericOIDService.resolveOID(id)
         if (pkg)
           packs << pkg
       }
-      packageService.sendZip(packs, PackageService.ExportType.KBART, response)
+      packageService.sendZip(packs, type, response)
     }
   }
 
