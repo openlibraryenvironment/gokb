@@ -14,11 +14,17 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   def dateFormatService
 
+  @Deprecated
   Date startDate
+  @Deprecated
   String startVolume
+  @Deprecated
   String startIssue
+  @Deprecated
   String embargo
+  @Deprecated
   RefdataValue coverageDepth
+  @Deprecated
   String coverageNote
   RefdataValue format
   RefdataValue delayedOA
@@ -27,8 +33,11 @@ class TitleInstancePackagePlatform extends KBComponent {
   String hybridOAUrl
   RefdataValue primary
   RefdataValue paymentType
+  @Deprecated
   Date endDate
+  @Deprecated
   String endVolume
+  @Deprecated
   String endIssue
   String url
   Date accessStartDate
