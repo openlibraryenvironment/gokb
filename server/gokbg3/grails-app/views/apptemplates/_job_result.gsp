@@ -55,7 +55,14 @@
       <div>Titles</div>
       <ul>
         <g:each in="${json?.errors?.tipps}" var="te">
-          <li>${ge.message}</li>
+          <li>
+            <div>Title ${te.index}:</div>
+            <ul>
+              <g:each in="${te.tipp}" var="tprop">
+                  <li>${tprop.key} (${tprop.value.baddata}) - Message: ${tprop.value.message}</li>
+              </g:each>
+            </ul>
+          </li>
         </g:each>
       </ul>
     </g:if>
