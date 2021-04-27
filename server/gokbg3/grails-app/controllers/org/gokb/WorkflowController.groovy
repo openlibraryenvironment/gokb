@@ -203,17 +203,26 @@ class WorkflowController{
 
           log.debug("Add tipp to discontinue ${tipp}")
 
+          def coverages = []
+
+          tipp.coverageStatements.each { sc ->
+            coverages << [
+              startDate: sc.startDate,
+              startVolume: sc.startVolume,
+              startIssue: sc.startIssue,
+              endDate: sc.endDate,
+              endVolume: sc.endVolume,
+              endIssue: sc.endIssue,
+              embargo: sc.embargo
+            ]
+          }
+
           titleChangeData.tipps[tipp.id] = [
               oldTippValue: [
                   title_id   : tipp.title.id,
                   package_id : tipp.pkg.id,
                   platform_id: tipp.hostPlatform.id,
-                  startDate  : tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
-                  startVolume: tipp.startVolume,
-                  startIssue : tipp.startIssue,
-                  endDate    : tipp.endDate ? dateFormatService.formatDate(tipp.endDate) : null,
-                  endVolume  : tipp.endVolume,
-                  endIssue   : tipp.endIssue,
+                  coverage   : coverages,
                   url        : tipp.url
               ],
               newtipps    : []
@@ -225,13 +234,9 @@ class WorkflowController{
                 title_id   : new_title_obj.id,
                 package_id : tipp.pkg.id,
                 platform_id: tipp.hostPlatform.id,
-                startDate  : tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
-                startVolume: tipp.startVolume,
-                startIssue : tipp.startIssue,
-                endDate    : tipp.endDate ? dateFormatService.formatDate(tipp.endDate) : null,
-                endVolume  : tipp.endVolume,
-                url        : tipp.url,
-                endIssue   : tipp.endIssue]
+                coverage   : coverages,
+                url        : tipp.url
+            ]
             titleChangeData.tipps[tipp.id].newtipps.add(new_tipp_info)
           }
         }
@@ -421,6 +426,20 @@ class WorkflowController{
           result.titles.add(title_instance)
           titleTransferData.title_ids.add(title_instance.id)
           title_instance.tipps.each{ tipp ->
+            def coverages = []
+
+            tipp.coverageStatements.each { sc ->
+              coverages << [
+                startDate: sc.startDate,
+                startVolume: sc.startVolume,
+                startIssue: sc.startIssue,
+                endDate: sc.endDate,
+                endVolume: sc.endVolume,
+                endIssue: sc.endIssue,
+                embargo: sc.embargo
+              ]
+            }
+
             if ((tipp.status?.value != 'Deleted') && (tipp.pkg.scope?.value != 'GOKb Master')){
               result.tipps.add(tipp)
               titleTransferData.tipps[tipp.id] = [
@@ -428,12 +447,7 @@ class WorkflowController{
                       title_id   : tipp.title.id,
                       package_id : tipp.pkg.id,
                       platform_id: tipp.hostPlatform.id,
-                      startDate  : tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
-                      startVolume: tipp.startVolume,
-                      startIssue : tipp.startIssue,
-                      endDate    : tipp.endDate ? dateFormatService.formatDate(tipp.endDate) : null,
-                      endVolume  : tipp.endVolume,
-                      endIssue   : tipp.endIssue,
+                      coverage   : coverages,
                       url        : tipp.url
                   ],
                   newtipps    : []
@@ -535,17 +549,27 @@ class WorkflowController{
                   tipp_info.newtipps = [:]
                 }
 
+                def coverages = []
+
+                old_tipp.coverageStatements.each { sc ->
+                  coverages << [
+                    startDate: sc.startDate,
+                    startVolume: sc.startVolume,
+                    startIssue: sc.startIssue,
+                    endDate: sc.endDate,
+                    endVolume: sc.endVolume,
+                    endIssue: sc.endIssue,
+                    embargo: sc.embargo
+                  ]
+                }
+
                 def new_tipp_info = [
-                    title_id   : old_tipp.title.id,
-                    package_id : new_tipp_package.id,
-                    platform_id: new_tipp_platform.id,
-                    startDate  : old_tipp.startDate ? dateFormatService.formatDate(old_tipp.startDate) : null,
-                    startVolume: old_tipp.startVolume,
-                    startIssue : old_tipp.startIssue,
-                    endDate    : old_tipp.endDate ? dateFormatService.formatDate(old_tipp.endDate) : null,
-                    endVolume  : old_tipp.endVolume,
-                    endIssue   : old_tipp.endIssue,
-                    url        : old_tipp.url]
+                  title_id   : old_tipp.title.id,
+                  package_id : new_tipp_package.id,
+                  platform_id: new_tipp_platform.id,
+                  coverage   : coverages,
+                  url        : old_tipp.url
+                ]
                 log.debug("new_tipp_info :: ${new_tipp_info}")
                 tipp_info.newtipps.add(new_tipp_info)
               }
@@ -628,18 +652,28 @@ class WorkflowController{
 
     activity_data.tipps.each{ tipp_info ->
       def tipp_object = TitleInstancePackagePlatform.get(tipp_info.key)
+
+      def coverages = []
+
+      tipp.coverageStatements.each { sc ->
+        coverages << [
+          startDate: sc.startDate,
+          startVolume: sc.startVolume,
+          startIssue: sc.startIssue,
+          endDate: sc.endDate,
+          endVolume: sc.endVolume,
+          endIssue: sc.endIssue,
+          embargo: sc.embargo
+        ]
+      }
+
       result.tipps.add([
           id          : tipp_object.id,
           type        : 'CURRENT',
           title       : tipp_object.title,
           pkg         : tipp_object.pkg,
           hostPlatform: tipp_object.hostPlatform,
-          startDate   : tipp_info.value.oldTippValue?.startDate,
-          startVolume : tipp_info.value.oldTippValue?.startVolume,
-          startIssue  : tipp_info.value.oldTippValue?.startIssue,
-          endDate     : tipp_info.value.oldTippValue?.endDate,
-          endVolume   : tipp_info.value.oldTippValue?.endVolume,
-          endIssue    : tipp_info.value.oldTippValue?.endIssue,
+          coverage    : coverages,
           url         : tipp_info.value.oldTippValue?.url
       ])
       int seq = 0
@@ -652,12 +686,7 @@ class WorkflowController{
             title       : KBComponent.get(newtipp_info.title_id),
             pkg         : KBComponent.get(newtipp_info.package_id),
             hostPlatform: KBComponent.get(newtipp_info.platform_id),
-            startDate   : newtipp_info.startDate,
-            startVolume : newtipp_info.startVolume,
-            startIssue  : newtipp_info.startIssue,
-            endDate     : newtipp_info.endDate,
-            endVolume   : newtipp_info.endVolume,
-            endIssue    : newtipp_info.endIssue,
+            coverage    : newtipp_info.coverage,
             review      : newtipp_info.review,
             url         : newtipp_info.url
         ])
@@ -776,12 +805,7 @@ class WorkflowController{
           title       : tipp_object.title,
           pkg         : tipp_object.pkg,
           hostPlatform: tipp_object.hostPlatform,
-          startDate   : tipp_info.value.oldTippValue?.startDate,
-          startVolume : tipp_info.value.oldTippValue?.startVolume,
-          startIssue  : tipp_info.value.oldTippValue?.startIssue,
-          endDate     : tipp_info.value.oldTippValue?.endDate,
-          endVolume   : tipp_info.value.oldTippValue?.endVolume,
-          endIssue    : tipp_info.value.oldTippValue?.endIssue,
+          coverage    : tipp_info.value.oldTippValue.coverage,
           url         : tipp_info.value.oldTippValue?.url
       ])
       int seq = 0
@@ -793,12 +817,7 @@ class WorkflowController{
             title       : KBComponent.get(newtipp_info.title_id),
             pkg         : KBComponent.get(newtipp_info.package_id),
             hostPlatform: KBComponent.get(newtipp_info.platform_id),
-            startDate   : newtipp_info.startDate,
-            startVolume : newtipp_info.startVolume,
-            startIssue  : newtipp_info.startIssue,
-            endDate     : newtipp_info.endDate,
-            endVolume   : newtipp_info.endVolume,
-            endIssue    : newtipp_info.endIssue,
+            coverage    : newtipp_info.coverage,
             review      : newtipp_info.review,
             url         : newtipp_info.url
         ])
@@ -829,12 +848,7 @@ class WorkflowController{
             package    : ['internalId': new_package.id],
             platform   : ['internalId': new_platform.id],
             title      : ['internalId': current_tipp.title.id],
-            startDate  : newtipp.startDate,
-            startVolume: newtipp.startVolume,
-            startIssue : newtipp.startIssue,
-            endDate    : newtipp.endDate,
-            endVolume  : newtipp.endVolume,
-            endIssue   : newtipp.endIssue,
+            coverage   : newtipp.coverage,
             url        : newtipp.url
         ], user).save(flush: true, failOnError: true)
 
@@ -842,27 +856,6 @@ class WorkflowController{
           reviewRequestService.raise(new_tipp, 'New tipp - please review', 'A Title change cause this new tipp to be created', request.user)
         }
       }
-
-
-      // Update old tipp
-      def parsed_start_date = null
-      def parsed_end_date = null
-      try{
-        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.startDate) : null
-        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.endDate) : null
-      }
-      catch (Exception e){
-      }
-
-      current_tipp.startDate = parsed_start_date
-      current_tipp.startVolume = tipp_map_entry.value.oldTippValue.startVolume
-      current_tipp.startIssue = tipp_map_entry.value.oldTippValue.startIssue
-      current_tipp.endDate = parsed_end_date
-      current_tipp.endVolume = tipp_map_entry.value.oldTippValue.endVolume
-      current_tipp.endIssue = tipp_map_entry.value.oldTippValue.endIssue
-      log.debug("Saving current tipp")
-      current_tipp.save()
-
 
       // Retire the tipp if
       if (params["oldtipp_close:${tipp_map_entry.key}"] == 'on'){
@@ -1023,8 +1016,8 @@ class WorkflowController{
                 'endIssue'     : otcs.endIssue ?: "",
                 'embargo'      : otcs.embargo ?: "",
                 'coverageNote' : otcs.coverageNote ?: "",
-                'startDate'    : otcs.startDate ? dateFormatService.formatTimestampMs(otcs.startDate) : "",
-                'endDate'      : otcs.endDate ? dateFormatService.formatTimestampMs(otcs.endDate) : "",
+                'startDate'    : otcs.startDate,
+                'endDate'      : otcs.endDate,
                 'coverageDepth': old_tipp.coverageDepth?.value ?: ""
             ]
             tipp_dto.coverage.add(cst)
@@ -1069,35 +1062,6 @@ class WorkflowController{
       def current_tipp = TitleInstancePackagePlatform.get(tipp_map_entry.key)
       log.debug("Processing current tipp : ${current_tipp.id}")
       tipp_map_entry.value.newtipps.each{ newtipp ->
-        log.debug("Process new tipp : ${newtipp}")
-        if (tipp_map_entry.value.oldTippValue?.startDate){
-          try{
-            current_tipp.startDate = dateFormatService.parseDate(tipp_map_entry.value.oldTippValue?.startDate)
-          }
-          catch (Exception e){
-          }
-        }
-        if (tipp_map_entry.value.oldTippValue?.startVolume){
-          current_tipp.startVolume = tipp_map_entry.value.oldTippValue?.startVolume
-        }
-        if (tipp_map_entry.value.oldTippValue?.startIssue){
-          current_tipp.startIssue = tipp_map_entry.value.oldTippValue?.startIssue
-        }
-
-        if (tipp_map_entry.value.oldTippValue?.endDate){
-          try{
-            current_tipp.endDate = dateFormatService.parseDate(tipp_map_entry.value.oldTippValue?.endDate)
-          }
-          catch (Exception e){
-          }
-        }
-        if (tipp_map_entry.value.oldTippValue?.endVolume){
-          current_tipp.endVolume = tipp_map_entry.value.oldTippValue?.endVolume
-        }
-        if (tipp_map_entry.value.oldTippValue?.endIssue){
-          current_tipp.endIssue = tipp_map_entry.value.oldTippValue?.endIssue
-        }
-
         def new_package = Package.get(newtipp.package_id)
         def new_platform = Platform.get(newtipp.platform_id)
 
@@ -1106,12 +1070,7 @@ class WorkflowController{
             package    : ['internalId': new_package.id],
             platform   : ['internalId': new_platform.id],
             title      : ['internalId': current_tipp.title.id],
-            startDate  : newtipp.startDate,
-            startVolume: newtipp.startVolume,
-            startIssue : newtipp.startIssue,
-            endDate    : newtipp.endDate,
-            endVolume  : newtipp.endVolume,
-            endIssue   : newtipp.endIssue,
+            coverage   : newtipp.coverage,
             url        : newtipp.url
         ], user).save(flush: true, failOnError: true)
 
@@ -1136,21 +1095,6 @@ class WorkflowController{
         }
       }
 
-      def parsed_start_date = null
-      def parsed_end_date = null
-      try{
-        parsed_start_date = tipp_map_entry.value.oldTippValue.startDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.startDate) : null
-        parsed_end_date = tipp_map_entry.value.oldTippValue.endDate ? dateFormatService.parseDate(tipp_map_entry.value.oldTippValue.endDate) : null
-      }
-      catch (Exception e){
-      }
-
-      current_tipp.startDate = parsed_start_date
-      current_tipp.startVolume = tipp_map_entry.value.oldTippValue.startVolume
-      current_tipp.startIssue = tipp_map_entry.value.oldTippValue.startIssue
-      current_tipp.endDate = parsed_end_date
-      current_tipp.endVolume = tipp_map_entry.value.oldTippValue.endVolume
-      current_tipp.endIssue = tipp_map_entry.value.oldTippValue.endIssue
       log.debug("Saving current tipp")
       current_tipp.save(flush: true, failOnError: true)
     }
@@ -1205,10 +1149,10 @@ class WorkflowController{
       def tipp_obj = genericOIDService.resolveOID2(title_oid)
       tipp_obj.status = retired_status
       if (params.endDateSelect == 'select' && params.selectedDate){
-        tipp_obj.accessEndDate = params.date('selectedDate', 'yyyy-MM-dd')
+        tipp_obj.accessEndDate = LocalDate.parse(selectedDate)
       }
       else if (params.endDateSelect == 'now'){
-        tipp_obj.accessEndDate = new Date()
+        tipp_obj.accessEndDate = LocalDate.now()
       }
       tipp_obj.save(flush: true, failOnError: true)
     }
@@ -1239,8 +1183,8 @@ class WorkflowController{
                       'endIssue'     : cst.endIssue ?: "",
                       'embargo'      : cst.embargo ?: "",
                       'coverageNote' : cst.coverageNote ?: "",
-                      'startDate'    : cst.startDate ? dateFormatService.formatTimestampMs(cst.startDate) : "",
-                      'endDate'      : cst.endDate ? dateFormatService.formatTimestampMs(cst.endDate) : "",
+                      'startDate'    : cst.startDate ? cst.startDate.toString() : "",
+                      'endDate'      : cst.endDate ? cst.endDate.toString() : "",
                       'coverageDepth': cst.coverageDepth?.value ?: ""
         ])
       }

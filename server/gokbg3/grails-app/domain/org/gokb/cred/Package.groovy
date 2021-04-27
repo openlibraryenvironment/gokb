@@ -540,15 +540,15 @@ select tipp.id,
                 'primaryUrl'(tipp[10]?.trim())
                 'name'(tipp[3]?.trim())
               }
-              'access'(start: tipp[7] ? dateFormatService.formatIsoTimestamp(tipp[7]) : null, end: tipp[8] ? dateFormatService.formatIsoTimestamp(tipp[8]) : null)
+              'access'(start: tipp[7], end: tipp[8])
               def cov_statements = getCoverageStatements(tipp[0])
               if (cov_statements?.size() > 0) {
                 cov_statements.each { tcs ->
                   'coverage'(
-                    startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+                    startDate: (tcs.startDate),
                     startVolume: (tcs.startVolume),
                     startIssue: (tcs.startIssue),
-                    endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+                    endDate: (tcs.endDate),
                     endVolume: (tcs.endVolume),
                     endIssue: (tcs.endIssue),
                     coverageDepth: (tcs.coverageDepth?.value ?: null),

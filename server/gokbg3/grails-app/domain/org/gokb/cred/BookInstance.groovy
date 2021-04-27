@@ -9,6 +9,7 @@ import org.gokb.GOKbTextUtils
 import org.gokb.DomainClassExtender
 import groovy.util.logging.*
 
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 import static grails.async.Promises.*
@@ -26,8 +27,8 @@ class BookInstance extends TitleInstance {
   String volumeNumber
   String firstAuthor
   String firstEditor
-  Date dateFirstInPrint
-  Date dateFirstOnline
+  LocalDate dateFirstInPrint
+  LocalDate dateFirstOnline
   String summaryOfContent
 
   private static refdataDefaults = [

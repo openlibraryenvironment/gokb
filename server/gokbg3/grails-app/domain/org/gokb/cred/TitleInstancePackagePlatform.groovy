@@ -6,6 +6,7 @@ import org.gokb.GOKbTextUtils
 import groovy.util.logging.*
 
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -14,10 +15,6 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   def dateFormatService
 
-  Date startDate
-  String startVolume
-  String startIssue
-  String embargo
   RefdataValue coverageDepth
   String coverageNote
   RefdataValue format
@@ -27,17 +24,14 @@ class TitleInstancePackagePlatform extends KBComponent {
   String hybridOAUrl
   RefdataValue primary
   RefdataValue paymentType
-  Date endDate
-  String endVolume
-  String endIssue
   String url
-  Date accessStartDate
-  Date accessEndDate
+  LocalDate accessStartDate
+  LocalDate accessEndDate
   String subjectArea
   String series
   String publisherName
-  Date dateFirstInPrint
-  Date dateFirstOnline
+  LocalDate dateFirstInPrint
+  LocalDate dateFirstOnline
   String firstAuthor
   RefdataValue publicationType
   String volumeNumber
@@ -853,8 +847,8 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'subjectArea'(subjectArea)
         builder.'series'(series)
         builder.'publisherName'(publisherName)
-        builder.'dateFirstInPrint'(dateFirstInPrint ? dateFormatService.formatIsoTimestamp(dateFirstInPrint) : null)
-        builder.'dateFirstOnline'(dateFirstOnline ? dateFormatService.formatIsoTimestamp(dateFirstOnline) : null)
+        builder.'dateFirstInPrint'(dateFirstInPrint)
+        builder.'dateFirstOnline'(dateFirstOnline)
         builder.'firstAuthor'(firstAuthor)
         builder.'publicationType'(publicationType?.value)
         builder.'volumeNumber'(volumeNumber)

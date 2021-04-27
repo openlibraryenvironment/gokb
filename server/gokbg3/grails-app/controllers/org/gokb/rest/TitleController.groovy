@@ -393,14 +393,14 @@ class TitleController {
           if (event.id) {
             def matched_event = current_history.find { it.id == event.id }
 
-            if (event.date && matched_event && event.date != dateFormatService.formatDate(matched_event.date)) {
+            if (event.date && matched_event && event.date != matched_event.date.toString()) {
               def he_obj = ComponentHistoryEvent.get(matched_event.id)
 
               if (he_obj) {
                 def parsed_date = null
 
                 try {
-                  parsed_date = dateFormatService.parseDate(event.date)
+                  parsed_date = LocalDate.parse(event.date)
                 }
                 catch (Exception e){
                   log.debug("Illegal date value ${event.date}!")
@@ -666,8 +666,8 @@ class TitleController {
         ComponentHistoryEvent existingEvent = dupe[0]
         result.id = existingEvent.id
 
-        if (date && (!existingEvent.eventDate || dateFormatService.formatDate(existingEvent.eventDate) != date)) {
-          existingEvent.eventDate = dateFormatService.parseDate(date)
+        if (date && (!existingEvent.eventDate || existingEvent.eventDate.toString() != date)) {
+          existingEvent.eventDate = LocalDate.parse(date)
         }
       }
       else {
@@ -700,7 +700,7 @@ class TitleController {
 
       if (history) {
         history.each { he ->
-          def mapped_event = [id: he.id, date: he.date ? dateFormatService.formatDate(he.date) : null, from: [], to: []]
+          def mapped_event = [id: he.id, date: he.date ? he.date.toString() : null, from: [], to: []]
 
           he.from.each { f ->
             if (embeds.contains('history')) {

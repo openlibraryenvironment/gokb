@@ -14,6 +14,8 @@ import java.time.LocalDateTime
 import java.time.LocalDate
 import java.time.ZoneId
 import org.gokb.cred.KBComponent
+import org.grails.datastore.mapping.model.*
+import org.grails.datastore.mapping.model.types.*
 
 class ClassUtils {
 
@@ -39,36 +41,64 @@ class ClassUtils {
   /**
    * Attempt automatic parsing.
    */
-  public static boolean setDateIfPresent(def value, obj, prop) {
-    LocalDateTime ldt = null
+  public boolean setDateIfPresent(def value, obj, prop) {
+    PersistentEntity entity = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
+    PersistentProperty pprop = entity?.getPropertyByName(prop) ?: null
 
-    if (value && value.toString().trim()) {
-      if (value instanceof LocalDateTime) {
-        ldt = value
-      }
-      else if (value instanceof LocalDate) {
-        ldt = value.atStartOfDay()
-      }
-      else {
-        try {
-          ldt = LocalDateTime.parse(value, datetimeformatter)
-        }
-        catch (Exception e) {
-        }
+    if (pprop && value?.toString().trim()) {
+      if (pprop.type == Date) {
+        LocalDateTime ldt = null
 
-        if (!ldt) {
+        if (value instanceof LocalDateTime) {
+          ldt = value
+        }
+        else if (value instanceof LocalDate) {
+          ldt = value.atStartOfDay()
+        }
+        else {
           try {
-            ldt = LocalDate.parse(value, dateformatter).atStartOfDay()
+            ldt = LocalDateTime.parse(value, datetimeformatter)
           }
           catch (Exception e) {
           }
+
+          if (!ldt) {
+            try {
+              ldt = LocalDate.parse(value, dateformatter).atStartOfDay()
+            }
+            catch (Exception e) {
+            }
+          }
+        }
+
+        if (ldt) {
+          Date instant = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant())
+          if (instant != obj[prop]) {
+            obj[prop] = instant
+            return true
+          }
         }
       }
+      else if (pprop.type == LocalDate) {
+        LocalDate ld = null
 
-      if (ldt) {
-        Date instant = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant())
-        if (instant != obj[prop]) {
-          obj[prop] = instant
+        if (value instanceof LocalDateTime) {
+          ld = value.toLocalDate()
+        }
+        else if (value instanceof LocalDate) {
+          ld = value
+        }
+        else if (value instanceof String) {
+          try {
+            ld = LocalDate.parse(value.substring(0, 10))
+          }
+          catch (Exception e) {
+
+          }
+        }
+
+        if (ld && ld != obj[prop]) {
+          obj[prop] = ld
           return true
         }
       }

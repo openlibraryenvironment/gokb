@@ -1,18 +1,19 @@
 package org.gokb.cred
 
+import java.time.LocalDate
 import javax.persistence.Transient
 
 class TIPPCoverageStatement {
 
   TitleInstancePackagePlatform owner
 
-  Date startDate
+  LocalDate startDate
   String startVolume
   String startIssue
   String embargo
   String coverageNote
   RefdataValue coverageDepth
-  Date endDate
+  LocalDate endDate
   String endVolume
   String endIssue
 

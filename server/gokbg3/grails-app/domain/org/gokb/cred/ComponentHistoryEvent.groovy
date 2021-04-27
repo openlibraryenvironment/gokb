@@ -1,10 +1,11 @@
 package org.gokb.cred
 
 import grails.plugins.orm.auditable.Auditable
+import java.time.LocalDate
 
 class ComponentHistoryEvent implements Auditable {
-  
-  Date eventDate
+
+  LocalDate eventDate
   Set participants
   // Timestamps
   Date dateCreated

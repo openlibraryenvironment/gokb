@@ -290,6 +290,9 @@ class RestMappingService {
             case Date.class:
               updateDateField(obj, p.name, newVal)
               break;
+            case LocalDate.class:
+              updateLocalDateField(obj, p.name, newVal)
+              break;
             default:
               log.debug("Default for type ${p.type}")
               log.debug("Set simple prop ${p.name} = ${newVal}");
@@ -970,6 +973,36 @@ class RestMappingService {
             prop,
             'typeMismatch.java.util.Date'
         )
+      }
+      log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))");
+    }
+    obj
+  }
+
+  public def updateLocalDateField(obj, prop, val) {
+    if (val == null) {
+      obj[prop] = null
+    }
+    else if (val.trim()) {
+      def localDate = null
+
+      try {
+        localDate = LocalDate.parse(val.trim())
+      }
+      catch(Exception e) {
+        obj.errors.reject(
+            'typeMismatch.java.util.Date',
+            [prop] as Object[],
+            '[Invalid date value for property [{0}]]'
+        )
+        obj.errors.rejectValue(
+            prop,
+            'typeMismatch.java.util.Date'
+        )
+      }
+
+      if (localDate) {
+        ClassUtils.updateDateField(val, obj, prop)
       }
       log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))");
     }

@@ -2,6 +2,7 @@ package org.gokb.cred
 
 import org.grails.web.json.JSONObject
 
+import java.time.LocalDate
 import java.time.LocalDateTime
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
@@ -18,8 +19,8 @@ class TitleInstance extends KBComponent {
   RefdataValue reasonRetired
   RefdataValue OAStatus
   Work work
-  Date publishedFrom
-  Date publishedTo
+  LocalDate publishedFrom
+  LocalDate publishedTo
   String coverImage
 
   private static refdataDefaults = [
@@ -484,10 +485,10 @@ class TitleInstance extends KBComponent {
                 if (cov_statements?.size() > 0) {
                   cov_statements.each { tcs ->
                     'coverage'(
-                      startDate: (tcs.startDate ? "${tcs.startDate.toInstant().toString()}" : null),
+                      startDate: (tcs.startDate),
                       startVolume: tcs.startVolume,
                       startIssue: tcs.startIssue,
-                      endDate: (tcs.endDate ? "${tcs.endDate.toInstant().toString()}" : null),
+                      endDate: (tcs.endDate),
                       endVolume: tcs.endVolume,
                       endIssue: tcs.endIssue,
                       coverageDepth: tcs.coverageDepth?.value ?: tipp.coverageDepth?.value,
@@ -499,10 +500,10 @@ class TitleInstance extends KBComponent {
                 else {
 
                   builder.'coverage'(
-                    startDate: (tipp.startDate ? "${tipp.startDate.toInstant().toString()}" : null),
+                    startDate: (tipp.startDate),
                     startVolume: tipp.startVolume,
                     startIssue: tipp.startIssue,
-                    endDate: (tipp.endDate ? "${tipp.endDate.toInstant().toString()}" : null),
+                    endDate: (tipp.endDate),
                     endVolume: tipp.endVolume,
                     endIssue: tipp.endIssue,
                     coverageDepth: tipp.coverageDepth?.value,
