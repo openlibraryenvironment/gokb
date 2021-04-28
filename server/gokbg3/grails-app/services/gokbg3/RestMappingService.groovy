@@ -2,6 +2,7 @@ package gokbg3
 
 import com.k_int.ClassUtils
 
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 import org.gokb.cred.*
@@ -171,6 +172,9 @@ class RestMappingService {
 
             case Date.class:
               result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
+              break;
+            case LocalDate.class:
+              result[p.name] = obj[p.name] ? obj[p.name].toString() : null
               break;
             default:
               result[p.name] = obj[p.name]
