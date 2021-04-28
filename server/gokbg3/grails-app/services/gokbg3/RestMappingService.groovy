@@ -1006,7 +1006,7 @@ class RestMappingService {
       }
 
       if (localDate) {
-        ClassUtils.updateDateField(val, obj, prop)
+        obj[prop] = localDate
       }
       log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))");
     }

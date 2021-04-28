@@ -892,15 +892,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           'primaryUrl'(hostPlatform.primaryUrl?.trim())
           'name'(hostPlatform.name?.trim())
         }
-        'access'([start: (accessStartDate ? dateFormatService.formatIsoTimestamp(accessStartDate) : null), end: (accessEndDate ? dateFormatService.formatIsoTimestamp(accessEndDate) : null)])
+        'access'([start: (accessStartDate?.toString()), end: (accessEndDate?.toString())])
         def cov_statements = getCoverageStatements()
         if (cov_statements?.size() > 0) {
           cov_statements.each { tcs ->
             'coverage'(
-              startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+              startDate: (tcs.startDate?.toString()),
               startVolume: (tcs.startVolume),
               startIssue: (tcs.startIssue),
-              endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+              endDate: (tcs.endDate?.toString()),
               endVolume: (tcs.endVolume),
               endIssue: (tcs.endIssue),
               coverageDepth: (tcs.coverageDepth?.value ?: null),

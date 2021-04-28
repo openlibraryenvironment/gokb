@@ -485,10 +485,10 @@ class TitleInstance extends KBComponent {
                 if (cov_statements?.size() > 0) {
                   cov_statements.each { tcs ->
                     'coverage'(
-                      startDate: (tcs.startDate),
+                      startDate: (tcs.startDate?.toString()),
                       startVolume: tcs.startVolume,
                       startIssue: tcs.startIssue,
-                      endDate: (tcs.endDate),
+                      endDate: (tcs.endDate?.toString()),
                       endVolume: tcs.endVolume,
                       endIssue: tcs.endIssue,
                       coverageDepth: tcs.coverageDepth?.value ?: tipp.coverageDepth?.value,
@@ -498,17 +498,7 @@ class TitleInstance extends KBComponent {
                   }
                 }
                 else {
-
-                  builder.'coverage'(
-                    startDate: (tipp.startDate),
-                    startVolume: tipp.startVolume,
-                    startIssue: tipp.startIssue,
-                    endDate: (tipp.endDate),
-                    endVolume: tipp.endVolume,
-                    endIssue: tipp.endIssue,
-                    coverageDepth: tipp.coverageDepth?.value,
-                    coverageNote: tipp.coverageNote,
-                    embargo: tipp.embargo)
+                  builder.'coverage'()
                 }
                 if (tipp.url != null) {
                   'url'(tipp.url)
