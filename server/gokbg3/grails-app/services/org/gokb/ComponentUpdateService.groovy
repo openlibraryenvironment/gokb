@@ -44,7 +44,7 @@ class ComponentUpdateService {
 
     // Core refdata.
     hasChanged |= setAllRefdata([
-      'status', 'editStatus',
+        'status', 'editStatus',
     ], data, component)
 
     // Identifiers
@@ -85,13 +85,13 @@ class ComponentUpdateService {
 
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
               reviewRequestService.raise(
-                component,
-                "Review ID status.",
-                "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
-                user,
-                null,
-                null,
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
+                  component,
+                  "Review ID status.",
+                  "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
+                  user,
+                  null,
+                  null,
+                  RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
               )
             }
             else {
@@ -122,17 +122,6 @@ class ComponentUpdateService {
       }
     }
 
-    // Flags
-    log.debug("Tag Processing: ${data.tags}");
-
-    data.tags?.each { t ->
-      log.debug("Adding tag ${t.type},${t.value}")
-
-      component.addToTags(
-        RefdataCategory.lookupOrCreate(t.type, t.value)
-      )
-    }
-
     // handle the source.
     if (!component.source && data.source) {
       component.source = createOrUpdateSource(data.source)?.get('component')
@@ -148,7 +137,7 @@ class ComponentUpdateService {
         // Single properties.
         file.with {
           (name, uploadName, uploadMimeType, filesize, doctype) = [
-            fa.uploadName, fa.uploadName, fa.uploadMimeType, fa.filesize, fa.doctype
+              fa.uploadName, fa.uploadName, fa.uploadMimeType, fa.filesize, fa.doctype
           ]
 
           // The contents of the file.
@@ -311,7 +300,7 @@ class ComponentUpdateService {
           ClassUtils.setStringIfDifferent(located_or_new_source, 'ruleset', data.ruleset)
 
           changed |= setAllRefdata([
-            'software', 'service'
+              'software', 'service'
           ], source_data, located_or_new_source)
 
           ClassUtils.setRefdataIfPresent(data.defaultSupplyMethod, located_or_new_source, 'defaultSupplyMethod', 'Source.DataSupplyMethod')
