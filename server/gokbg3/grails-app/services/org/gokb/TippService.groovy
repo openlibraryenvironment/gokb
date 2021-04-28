@@ -30,45 +30,51 @@ class TippService {
     )
 
     TitleInstance ti
-    if (found.matches.size()== 0 && found.to_create==true) {
+    if (found.matches.size() == 1) {
+      ti = found.matches[0].object
+    }
+    else if (found.to_create == true) {
       ti = Class.forName(title_class_name).newInstance()
       ti.name = tipp.name
       ti.ids = tipp.ids
     }
-    else if (found.matches.size() == 1){
-      ti = found.matches[0].object
-    }
     // Add the core data.
-    componentUpdateService.ensureCoreData(ti, tipp, true, null)
+    if (ti) {
+      componentUpdateService.ensureCoreData(ti, tipp, true, null)
 
-    title_changed |= componentUpdateService.setAllRefdata([
-        'medium', 'language'
-    ], tipp, ti)
+      title_changed |= componentUpdateService.setAllRefdata([
+          'medium', 'language'
+      ], tipp, ti)
 
-    def pubFrom = GOKbTextUtils.completeDateString(tipp.accessStartDate)
-    def pubTo = GOKbTextUtils.completeDateString(tipp.accessEndDate, false)
+      def pubFrom = GOKbTextUtils.completeDateString(tipp.accessStartDate)
+      def pubTo = GOKbTextUtils.completeDateString(tipp.accessEndDate, false)
 
-    log.debug("Completed date publishedFrom ${tipp.accessStartDate} -> ${pubFrom}")
+      log.debug("Completed date publishedFrom ${tipp.accessStartDate} -> ${pubFrom}")
 
-    title_changed |= ClassUtils.setDateIfPresent(pubFrom, ti, 'publishedFrom')
-    title_changed |= ClassUtils.setDateIfPresent(pubTo, ti, 'publishedTo')
+      title_changed |= ClassUtils.setDateIfPresent(pubFrom, ti, 'publishedFrom')
+      title_changed |= ClassUtils.setDateIfPresent(pubTo, ti, 'publishedTo')
 
-    if (title_class_name == 'org.gokb.cred.BookInstance') {
-      log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
+      if (title_class_name == 'org.gokb.cred.BookInstance') {
+        log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
 
-      title_changed |= ti.addMonographFields(new JSONObject([editionNumber        : null,
-                                                             editionDifferentiator: null,
-                                                             editionStatement     : tipp.editionStatement,
-                                                             volumeNumber         : tipp.volumeNumber,
-                                                             summaryOfContent     : null,
-                                                             firstAuthor          : tipp.firstAuthor,
-                                                             firstEditor          : tipp.firstEditor]))
+        title_changed |= ti.addMonographFields(new JSONObject([//editionNumber        : null,
+                                                               //editionDifferentiator: null,
+                                                               editionStatement     : tipp.editionStatement,
+                                                               volumeNumber         : tipp.volumeNumber,
+                                                               //summaryOfContent     : null,
+                                                               firstAuthor          : tipp.firstAuthor,
+                                                               firstEditor          : tipp.firstEditor]))
+      }
+
+      if (title_changed) {
+        ti.merge(flush: true)
+      }
+      tipp.title = ti
     }
+    handleFindConflicts(tipp, found)
+  }
 
-    if (title_changed) {
-      ti.merge(flush: true)
-    }
-    tipp.title = ti
-    return
+  private void handleFindConflicts(TitleInstancePackagePlatform tipp, def found){
+    // use this to create more ReviewRequests as needed
   }
 }
