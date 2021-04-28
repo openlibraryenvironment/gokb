@@ -1194,6 +1194,7 @@ class IntegrationController {
     render result as JSON
   }
 
+  @Deprecated
   private crossReferenceSingleTitle(Object titleObj, userid, fullsync, locale) {
 
     def result = ['result': 'OK']

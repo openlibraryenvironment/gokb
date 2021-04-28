@@ -12,6 +12,7 @@ import com.k_int.ClassUtils
 import grails.util.Holders
 
 import groovy.util.logging.*
+import org.grails.web.json.JSONObject
 
 @Slf4j
 class ComponentUpdateService {
@@ -48,14 +49,21 @@ class ComponentUpdateService {
     ], data, component)
 
     // Identifiers
-    log.debug("Identifier processing ${data.identifiers}")
+    def data_identifiers = []
+    if (data instanceof JSONObject) {
+      data_identifiers = data.identifiers ?: []
+    }
+    else {
+      data_identifiers = data.ids ?: []
+    }
+    log.debug("Identifier processing ${data_identifiers}")
     Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
     RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
     RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
-    data.identifiers.each { ci ->
-      def namespace_val = ci.type ?: ci.namespace
+    data_identifiers.each { ci ->
+      def namespace_val = (ci instanceof Identifier) ? ci.namespace.value : ci.type
       String testKey = "${namespace_val}|${ci.value}".toString()
 
       if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {
@@ -110,9 +118,9 @@ class ComponentUpdateService {
 
     if (sync) {
       log.debug("Cleaning up deprecated IDs ..")
-      component.ids.each { cid ->
-        if (!data.identifiers.collect { "${it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString() }.contains("${cid.namespace?.value}|${Identifier.normalizeIdentifier(cid.value)}".toString())) {
-          def ctr = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [cid, component])
+      component.ids.each { ci ->
+        if (!data_identifiers.collect { "${((ci instanceof Identifier) ? ci.namespace.value : ci.type).toLowerCase()}|${Identifier.normalizeIdentifier(ci.value)}".toString() }.contains("${ci.namespace?.value}|${Identifier.normalizeIdentifier(ci.value)}".toString())) {
+          def ctr = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [ci, component])
 
           if (ctr.size() == 1) {
             ctr[0].delete()

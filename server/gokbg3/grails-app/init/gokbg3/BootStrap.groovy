@@ -451,7 +451,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Unknown").save(flush: true, failOnError: true)
 
         ['Database', 'Monograph', 'Other', 'Serial'].each { pubType ->
-            RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PublicationType", pubType).save(flush: true, failOnError: true)
+            RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, pubType).save(flush: true, failOnError: true)
         }
 
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.CoverageDepth", "Fulltext").save(flush: true, failOnError: true)
@@ -515,7 +515,7 @@ class BootStrap {
          "Other", "Published Score", "Article", "Software", "Statistics", "Market Data", "Standards",
          "Biography", "Legal Text", "Cartography", "Miscellaneous", "Other"].each { med ->
             RefdataCategory.lookupOrCreate("TitleInstance.Medium", med).save(flush: true, failOnError: true)
-            RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Medium", med).save(flush: true, failOnError: true)
+            RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_MEDIUM, med).save(flush: true, failOnError: true)
         }
 
         RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Unknown").save(flush: true, failOnError: true)

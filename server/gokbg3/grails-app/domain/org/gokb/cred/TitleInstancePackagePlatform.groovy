@@ -12,6 +12,8 @@ import java.time.ZoneId
 @Slf4j
 class TitleInstancePackagePlatform extends KBComponent {
 
+  static final String RD_PUBLICATION_TYPE = 'TitleInstancePackagePlatform.PublicationType'
+  static final String RD_MEDIUM = 'TitleInstancePackagePlatform.Medium'
   def dateFormatService
 
   @Deprecated
@@ -276,7 +278,8 @@ class TitleInstancePackagePlatform extends KBComponent {
       new Combo(toComponent: result, fromComponent: tipp_fields.hostPlatform, type: plt_combo_type).save(flush: true, failOnError: true)
 
       def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-      new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
+      if (tipp_fields.title)
+        new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
 
       TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
     } else {

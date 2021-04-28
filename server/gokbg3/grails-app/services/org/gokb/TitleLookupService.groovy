@@ -64,6 +64,11 @@ class TitleLookupService {
           id_def.type = IdentifierNamespace.get(id_ns).value
         }
       }
+      else if (id_inc instanceof Identifier) {
+        the_id = id_inc
+        id_def.value = the_id.value
+        id_def.type = the_id.namespace.value
+      }
       else {
         the_id = Identifier.get(id_inc)
 
@@ -279,10 +284,10 @@ class TitleLookupService {
 
             if (string_matched) {
               log.debug("TI matched by bucket.")
-              def title_match = [object: the_title, warnings: ['bucket']]
+              def title_match = [object: string_matched, warnings: ['bucket']]
 
-              if (title != the_title.name) {
-                title_match.conflicts.add([message: "Found a title with a different primary name!", field: "name", value: title, matched: the_title.name])
+              if (title != string_matched.name) {
+                title_match.conflicts.add([message: "Found a title with a different primary name!", field: "name", value: title, matched: string_matched.name])
               }
 
               result.matches.add(title_match)
