@@ -3,6 +3,7 @@ package org.gokb
 import grails.converters.JSON
 import java.text.SimpleDateFormat
 import java.text.MessageFormat
+import java.time.LocalDate
 
 import com.k_int.ClassUtils
 
@@ -341,6 +342,11 @@ class AjaxSupportController {
                     case Long.class:
                       log.debug("Set simple prop ${p.name} = ${params[p.name]} (as long=${Long.parseLong(params[p.name])})");
                       new_obj[p.name] = Long.parseLong(params[p.name]);
+                      break;
+
+                    case LocalDate.class:
+                      new_obj[p.name] = LocalDate.parse(params[p.name])
+                      log.debug("Set simple prop ${p.name} = ${params[p.name]} (as date ${dateObj}))");
                       break;
 
                     case Date.class:
@@ -814,17 +820,20 @@ class AjaxSupportController {
       def editable = checkEditable(target_object, user)
 
       if (editable || target_object == user) {
+        def binding_properties = [:]
+
         if (params.type == 'date') {
-          target_object."${params.name}" = params.date('value',params.dateFormat ?: 'yyyy-MM-dd')
+          binding_properties[params.name] = params.value?.trim() ? LocalDate.parse(params.value) : null
+          bindData(target_object, binding_properties)
         }
         else if (params.type == 'boolean') {
-          target_object."${params.name}" = params.boolean('value')
+          binding_properties[params.name] = params.boolean('value')
+          bindData(target_object, binding_properties)
         }
         else if (params.name == 'uuid' || params.name == 'password') {
           errors[params.name] = "This property is not editable."
         }
         else {
-          def binding_properties = [:]
           def new_val = params.value?.trim() ?: null
 
           binding_properties[ params.name ] = new_val

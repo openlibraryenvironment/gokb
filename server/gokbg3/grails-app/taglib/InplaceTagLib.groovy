@@ -113,10 +113,7 @@ class InplaceTagLib {
 
         if (!dv) {
           if (owner[attrs.field]) {
-
-            // Date format.
-            def sdf = new java.text.SimpleDateFormat(dformat.replace('mm', 'MM'))
-            dv = sdf.format(owner[attrs.field])
+            dv = owner[attrs.field]
           } else {
             dv = ""
           }
@@ -140,12 +137,7 @@ class InplaceTagLib {
       out << body()
     }
     else {
-      if (attrs.type!='date' ) {
-        out << owner[attrs.field]
-      } else if (owner[attrs.field]){
-        def sdf = new java.text.SimpleDateFormat(attrs."data-format"?:'yyyy-MM-dd')
-        out << sdf.format(owner[attrs.field])
-      }
+      out << owner[attrs.field]
     }
     out << "</span>"
   }
