@@ -25,6 +25,8 @@ class TitleAugmentService {
 
   def augment(titleInstance) {
     log.debug("TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
+    CuratoryGroup editorialGroup = grailsApplication.config.gokb.editorialAdmin?.journals ? CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.editorialAdmin.journals) : null
+
     if ( titleInstance.niceName == 'Journal' ) {
       def candidates = zdbAPIService.lookup(titleInstance.name, titleInstance.ids)
       RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
@@ -78,7 +80,9 @@ class TitleAugmentService {
           "Multiple ZDB-IDs found for ISSN ids",
           null,
           null,
-          (additionalInfo as JSON).toString()
+          (additionalInfo as JSON).toString(),
+          RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple ZDB Results'),
+          editorialGroup
         )
       }
     }

@@ -17,7 +17,7 @@
         <h3>
           ${d.activityName} - ${d.status?.value}
         </h3>
-        <div>Icon indicators: 
+        <div>Icon indicators:
           <div><span class="fas fa-check"></span> Item is already connected to the new title</div>
           <div><span class="fas fa-plus" style="color:green;"></span> Item will be added to the new title, if the item type is <b>included</b></div>
         </div>
@@ -47,10 +47,10 @@
                 <td colspan="4" class="title-merge-title"> ${ot.name} </td>
               </tr>
               <tr>
-                <td> 
+                <td>
                   <g:each in="${ot.ids}" var="ti_id">
                     <div class="title-merge-ids">
-                      <span class="label label-primary">${ti_id.namespace.value}</span> 
+                      <span class="label label-primary">${ti_id.namespace.value}</span>
                       <span class="label label-default">${ti_id.value}</span>
                       <span class="pull-right">
                         <g:if test="${ti_id in newTitle.ids}">
@@ -154,7 +154,7 @@
                                 </g:else>
                               </div>
                             </td>
-                            <td> ${tipp.pkg.name} </td>
+                            <td> ${tipp.pkg?.name} </td>
                             <td> ${tipp.hostPlatform.name} </td>
                             <td> ${tipp.startDate} </td>
                             <td> ${tipp.startVolume} </td>
@@ -180,10 +180,10 @@
               <td colspan="4" class="title-merge-title"> ${newTitle.name} </td>
             </tr>
             <tr class="title-merge-body-new">
-              <td> 
+              <td>
                 <g:each in="${newTitle.ids}" var="ti_id">
                   <div class="title-merge-ids">
-                    <span class="label label-primary">${ti_id.namespace.value}</span> 
+                    <span class="label label-primary">${ti_id.namespace.value}</span>
                     <span class="label label-default">${ti_id.value}</span>
                   </div>
                 </g:each>
@@ -255,9 +255,9 @@
                                 </g:else>
                               </div>
                             </td>
-                            
-                            <td> ${tipp.pkg.name} </td>
-                            <td> ${tipp.hostPlatform.name} </td>
+
+                            <td> ${tipp.pkg?.name} </td>
+                            <td> ${tipp.hostPlatform?.name} </td>
                             <td> ${tipp.startDate} </td>
                             <td> ${tipp.startVolume} </td>
                             <td> ${tipp.startIssue} </td>

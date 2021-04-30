@@ -11,7 +11,7 @@ class AugmentJob {
 
   // Every five minutes
   static triggers = {
-    cron name: 'CollectJobTrigger', cronExpression: "0 0 * * * ?", startDelay:600000
+    cron name: 'TitleAugmentJobTrigger', cronExpression: "0 0 * * * ?", startDelay:600000
   }
 
   def execute() {
