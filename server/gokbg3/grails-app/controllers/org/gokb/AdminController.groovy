@@ -8,8 +8,6 @@ import org.hibernate.criterion.CriteriaSpecification
 
 import org.springframework.security.access.annotation.Secured
 import org.springframework.security.acls.domain.BasePermission
-import org.springframework.security.acls.model.ObjectIdentity
-import org.springframework.security.acls.model.Permission
 
 import java.util.concurrent.CancellationException
 
@@ -63,7 +61,8 @@ class AdminController {
               log.debug("Got a publisher combo");
               if (nmo.parent != null) {
                 def new_pub_combo = new Combo(fromComponent: ic.fromComponent, toComponent: nmo.parent, type: ic.type, status: ic.status).save();
-              } else {
+              }
+              else {
                 def authorized_rdv = RefdataCategory.lookupOrCreate('Org.Authorized', 'Y')
                 log.debug("No parent set.. try and find an authorised org with the appropriate name(${ic.toComponent.name})");
                 def authorized_orgs = Org.executeQuery("select distinct o from Org o join o.variantNames as vn where ( o.name = ? or vn.variantName = ?) AND ? in elements(o.tags)", [ic.toComponent.name, ic.toComponent.name, authorized_rdv]);
@@ -121,7 +120,8 @@ class AdminController {
                 ic.fromComponent.summaryStatement = uploadAnalysisService.generateSummary(source_file);
                 ic.fromComponent.save(flush: true);
                 log.debug("Completed regeneration... size is ${ic.fromComponent.summaryStatement?.length()}");
-              } else {
+              }
+              else {
                 log.error("No file data attached to DataFile ${df.guid}")
               }
             }
@@ -422,6 +422,31 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def copyTitleData() {
+    log.debug("copy Identifiers")
+    def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
+    log.debug("found ${tippIDs.size()} TIPPs")
+    tippIDs.each { id ->
+      TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(id)
+      if (tipp.title) {
+        tipp.title.ids.each { data ->
+          if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(data.namespace.value)) {
+            if (!tipp.ids*.namespace.contains(data.namespace)) {
+              tipp.ids << data
+              log.debug("added ID $data in TIPP $tipp")
+            }
+          }
+        }
+        if (!tipp.name||tipp.name==''){
+          tipp.name = tipp.title.name
+          log.debug("set TIPP name to $tipp.name")
+        }
+      }
+    }
+    log.debug("finished Identifier Transfer task")
+    render(view: "logViewer", model: logViewer())
+  }
+
   def rejectWrongTitles() {
     Job j = concurrencyManagerService.createJob { Job j ->
       cleanupService.rejectWrongTitles(j)
@@ -477,10 +502,10 @@ class AdminController {
       }
     })?.each { CuratoryGroup group ->
       result["${group.name}"] = [
-              users     : group.users.collect { it.username },
-              owner     : group.owner?.username,
-              status    : group.status?.value,
-              editStatus: group.editStatus?.value
+          users     : group.users.collect { it.username },
+          owner     : group.owner?.username,
+          status    : group.status?.value,
+          editStatus: group.editStatus?.value
       ]
     }
 
