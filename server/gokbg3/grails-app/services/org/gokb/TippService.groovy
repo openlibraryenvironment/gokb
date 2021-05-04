@@ -1,10 +1,12 @@
 package org.gokb
 
 import com.k_int.ClassUtils
+import com.k_int.ConcurrencyManagerService
 import grails.validation.ValidationException
 import net.sf.json.JSON
 import org.gokb.cred.Imprint
 import org.gokb.cred.KBComponent
+import org.gokb.cred.RefdataCategory
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
 import org.gokb.exceptions.MultipleComponentsMatchedException
@@ -59,11 +61,11 @@ class TippService {
 
         title_changed |= ti.addMonographFields(new JSONObject([//editionNumber        : null,
                                                                //editionDifferentiator: null,
-                                                               editionStatement     : tipp.editionStatement,
-                                                               volumeNumber         : tipp.volumeNumber,
+                                                               editionStatement: tipp.editionStatement,
+                                                               volumeNumber    : tipp.volumeNumber,
                                                                //summaryOfContent     : null,
-                                                               firstAuthor          : tipp.firstAuthor,
-                                                               firstEditor          : tipp.firstEditor]))
+                                                               firstAuthor     : tipp.firstAuthor,
+                                                               firstEditor     : tipp.firstEditor]))
       }
 
       if (title_changed) {
@@ -74,7 +76,33 @@ class TippService {
     handleFindConflicts(tipp, found)
   }
 
-  private void handleFindConflicts(TitleInstancePackagePlatform tipp, def found){
+  def copyTitleData(ConcurrencyManagerService.Job job = null) {
+    TitleInstance.withNewSession {
+      def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
+      log.debug("found ${tippIDs.size()} TIPPs")
+      tippIDs.eachWithIndex { id, index ->
+        TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(id)
+        if (tipp.title) {
+          tipp.title.ids.each { data ->
+            if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(data.namespace.value)) {
+              if (!tipp.ids*.namespace.contains(data.namespace)) {
+                tipp.ids << data
+                log.debug("added ID $data in TIPP $tipp")
+              }
+            }
+          }
+          if (!tipp.name || tipp.name == '') {
+            tipp.name = tipp.title.name
+            log.debug("set TIPP name to $tipp.name")
+          }
+        }
+        job?.setProgress(index, tippIDs.size())
+      }
+      job?.setProgress(10, 10)
+    }
+  }
+
+  private void handleFindConflicts(TitleInstancePackagePlatform tipp, def found) {
     // use this to create more ReviewRequests as needed
   }
 }

@@ -23,6 +23,7 @@ class AdminController {
   def titleAugmentService
   ConcurrencyManagerService concurrencyManagerService
   CleanupService cleanupService
+  TippService tippService
 
   @Deprecated
   def tidyOrgData() {
@@ -424,26 +425,16 @@ class AdminController {
 
   def copyTitleData() {
     log.debug("copy Identifiers")
-    def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
-    log.debug("found ${tippIDs.size()} TIPPs")
-    tippIDs.each { id ->
-      TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(id)
-      if (tipp.title) {
-        tipp.title.ids.each { data ->
-          if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(data.namespace.value)) {
-            if (!tipp.ids*.namespace.contains(data.namespace)) {
-              tipp.ids << data
-              log.debug("added ID $data in TIPP $tipp")
-            }
-          }
-        }
-        if (!tipp.name||tipp.name==''){
-          tipp.name = tipp.title.name
-          log.debug("set TIPP name to $tipp.name")
-        }
-      }
-    }
-    log.debug("finished Identifier Transfer task")
+    Job j = concurrencyManagerService.createJob { Job j ->
+      tippService.copyTitleData(j)
+    }.startOrQueue()
+
+    log.debug("started data transfer task")
+
+    j.description = "TIPP: copy title data"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'TIPPfillUp')
+    j.startTime = new Date()
+
     render(view: "logViewer", model: logViewer())
   }
 
