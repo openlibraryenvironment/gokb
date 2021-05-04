@@ -1214,7 +1214,7 @@ class IntegrationController {
         result.errors = title_validation.errors
       }
       else {
-        def title_class_name = determineTitleClass(titleObj)
+        def title_class_name = TitleInstance.determineTitleClass(titleObj)
 
         if (!title_class_name) {
           log.error("Missing or unknown publication type: ${titleObj.type}")
@@ -1345,39 +1345,6 @@ class IntegrationController {
       }
     }
     result
-  }
-
-  public static determineTitleClass(titleObj) {
-    if (titleObj.type) {
-      switch (titleObj.type) {
-        case "serial":
-        case "Serial":
-        case "Journal":
-        case "journal":
-          return "org.gokb.cred.JournalInstance"
-          break;
-        case "monograph":
-        case "Monograph":
-        case "Book":
-        case "book":
-          return "org.gokb.cred.BookInstance"
-          break;
-        case "Database":
-        case "database":
-          return "org.gokb.cred.DatabaseInstance"
-          break;
-        case "Other":
-        case "other":
-          return "org.gokb.cred.OtherInstance"
-          break;
-        default:
-          return null
-          break;
-      }
-    }
-    else {
-      return null
-    }
   }
 
   private static addPublisherHistory(TitleInstance ti, publishers) {

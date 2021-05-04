@@ -20,7 +20,7 @@ class TippService {
     Map titleErrorMap = [:] // [<propertyName>: [message: <msg>, baddata: <propertyValue>], ..]
     def found
     def title_changed = false
-    def title_class_name = IntegrationController.determineTitleClass([type: tipp.publicationType.value])
+    def title_class_name = TitleInstance.determineTitleClass([type: tipp.publicationType.value])
 
     found = titleLookupService.find(
         tipp.name,

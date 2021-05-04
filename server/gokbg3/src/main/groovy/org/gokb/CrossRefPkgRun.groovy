@@ -389,7 +389,7 @@ class CrossRefPkgRun {
 
   private Map handleTitle(JSONObject tippJson) {
     Map titleErrorMap = [:] // [<jsonPropertyName>: [message: <msg>, baddata: <jsonPropertyValue>], ..]
-    def title_validation = Class.forName(IntegrationController.determineTitleClass(tippJson.title)).validateDTO(tippJson.title, locale)
+    def title_validation = Class.forName(TitleInstance.determineTitleClass(tippJson.title)).validateDTO(tippJson.title, locale)
     if (title_validation && title_validation.errors?.size() > 0) {
       titleErrorMap.putAll(title_validation.errors)
       if (title_validation && !title_validation.valid) {
@@ -402,7 +402,7 @@ class CrossRefPkgRun {
     def ti = null
     def titleObj = tippJson.title.name ? tippJson.title : tippJson
     def title_changed = false
-    def title_class_name = IntegrationController.determineTitleClass(titleObj)
+    def title_class_name = TitleInstance.determineTitleClass(titleObj)
 
     try {
       ti = titleLookupService.findOrCreate(

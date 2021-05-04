@@ -913,4 +913,37 @@ class TitleInstance extends KBComponent {
   def afterInsert() {
 
   }
+
+  public static String determineTitleClass(titleObj) {
+    if (titleObj.type) {
+      switch (titleObj.type) {
+        case "serial":
+        case "Serial":
+        case "Journal":
+        case "journal":
+          return "org.gokb.cred.JournalInstance"
+          break;
+        case "monograph":
+        case "Monograph":
+        case "Book":
+        case "book":
+          return "org.gokb.cred.BookInstance"
+          break;
+        case "Database":
+        case "database":
+          return "org.gokb.cred.DatabaseInstance"
+          break;
+        case "Other":
+        case "other":
+          return "org.gokb.cred.OtherInstance"
+          break;
+        default:
+          return null
+          break;
+      }
+    }
+    else {
+      return null
+    }
+  }
 }
