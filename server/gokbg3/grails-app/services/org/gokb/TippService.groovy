@@ -115,6 +115,8 @@ class TippService {
           count = 0
         }
       }
+      // one last flush
+      sessionFactory.currentSession.flush()
       job?.setProgress(10, 10)
       job?.endTime = new Date()
     }
