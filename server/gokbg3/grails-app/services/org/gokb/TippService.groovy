@@ -17,6 +17,7 @@ class TippService {
   def componentUpdateService
   def titleLookupService
   def messageService
+  def sessionFactory
 
   void matchTitle(TitleInstancePackagePlatform tipp) {
     Map titleErrorMap = [:] // [<propertyName>: [message: <msg>, baddata: <propertyValue>], ..]
@@ -78,10 +79,14 @@ class TippService {
 
   def copyTitleData(ConcurrencyManagerService.Job job = null) {
     TitleInstance.withNewSession {
+      int count = 0, index=0
+      boolean cancelled = false
       def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
       log.debug("found ${tippIDs.size()} TIPPs")
-      tippIDs.eachWithIndex { id, index ->
-        TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(id)
+      def tippIDit = tippIDs.iterator()
+      while (tippIDit.hasNext() && !cancelled) {
+        TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDit.next())
+        index++
         if (tipp.title) {
           tipp.title.ids.each { data ->
             if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(data.namespace.value)) {
@@ -97,8 +102,21 @@ class TippService {
           }
         }
         job?.setProgress(index, tippIDs.size())
+        if(job?.isCancelled()){
+          cancelled=true
+        }
+        if (count++>100){
+          log.debug("Clean up GORM");
+          // Get the current session.
+          def session = sessionFactory.currentSession
+          // flush and clear the session.
+          session.flush()
+          session.clear()
+          count = 0
+        }
       }
       job?.setProgress(10, 10)
+      job?.endTime = new Date()
     }
   }
 
