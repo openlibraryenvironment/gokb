@@ -9,6 +9,7 @@ import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
+import org.gokb.cred.Package
 import org.gokb.exceptions.MultipleComponentsMatchedException
 import org.grails.web.json.JSONObject
 
@@ -18,6 +19,16 @@ class TippService {
   def titleLookupService
   def messageService
   def sessionFactory
+
+  def matchPackage(Package aPackage) {
+    TitleInstance.withNewSession {
+      int count = 0, index = 0
+      boolean cancelled = false
+      def tipps = TitleInstancePackagePlatform.findAllWhere(pkg: aPackage, title: null)
+      log.debug("found ${tippIDs.size()} TIPPs in package $aPackage")
+      tipps.each { tipp -> matchTitle(tipp) }
+    }
+  }
 
   void matchTitle(TitleInstancePackagePlatform tipp) {
     Map titleErrorMap = [:] // [<propertyName>: [message: <msg>, baddata: <propertyValue>], ..]
@@ -39,11 +50,13 @@ class TippService {
     else if (found.to_create == true) {
       ti = Class.forName(title_class_name).newInstance()
       ti.name = tipp.name
+      ti.save(flush:true)
       ti.ids = tipp.ids
+      titleLookupService.addPublisher(tipp.publisherName, ti)
     }
     // Add the core data.
     if (ti) {
-      componentUpdateService.ensureCoreData(ti, tipp, true, null)
+      componentUpdateService.ensureCoreData(ti, tipp, false, null)
 
       title_changed |= componentUpdateService.setAllRefdata([
           'medium', 'language'
@@ -79,7 +92,7 @@ class TippService {
 
   def copyTitleData(ConcurrencyManagerService.Job job = null) {
     TitleInstance.withNewSession {
-      int count = 0, index=0
+      int count = 0, index = 0
       boolean cancelled = false
       def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
       log.debug("found ${tippIDs.size()} TIPPs")
@@ -102,10 +115,10 @@ class TippService {
           }
         }
         job?.setProgress(index, tippIDs.size())
-        if(job?.isCancelled()){
-          cancelled=true
+        if (job?.isCancelled()) {
+          cancelled = true
         }
-        if (count++>100){
+        if (count++ > 100) {
           log.debug("Clean up GORM");
           // Get the current session.
           def session = sessionFactory.currentSession
@@ -117,7 +130,6 @@ class TippService {
       }
       // one last flush
       sessionFactory.currentSession.flush()
-      job?.setProgress(10, 10)
       job?.endTime = new Date()
     }
   }
