@@ -42,7 +42,7 @@
               <g:if test="${tipp.type=='CURRENT'}">
                 <tr style="background-color: #FF4D4D;">
                   <td rowspan="2"> ${tipp.type} </td>
-                  <td> ${tipp.title.name} </td>
+                  <td> ${tipp.title?tipp.title.name:tipp.name} </td>
                   <td> ${tipp.pkg.name} </td>
                   <td> ${tipp.hostPlatform.name} </td>
                   <td> <input name="_oldtipp:${tipp.id}:startDate" type="date" value="${tipp.startDate}"/> </td>
@@ -61,7 +61,7 @@
               <g:else>
                 <tr style="background-color: #4DFF4D;">
                   <td rowspan="2"> ${tipp.type} </td>
-                  <td> ${tipp.title.name} </td>
+                  <td> ${tipp.title?tipp.title.name:tipp.name} </td>
                   <td> ${tipp.pkg.name} </td>
                   <td> ${tipp.hostPlatform.name} </td>
                   <td> <input type="date" name="_tippdata:${tipp.parent}:${tipp.seq}:startDate" value="${tipp.startDate}"/> </td>

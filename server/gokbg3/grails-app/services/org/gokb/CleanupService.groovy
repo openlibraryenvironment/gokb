@@ -328,7 +328,7 @@ class CleanupService {
 
         for (tipp in tipps) {
 
-          def tipls = checkForTipl(tipp.title, tipp.hostPlatform, tipp.url)
+          def tipls = checkForTipl(tipp.title?:null, tipp.hostPlatform, tipp.url)
           def final_tipl = null
 
           if ( tipls?.size() == 0 ) {
@@ -351,7 +351,7 @@ class CleanupService {
 
           }
           else {
-            log.debug("Found more than one TIPL for ${tipp.title} on ${tipp.hostPlatform}!")
+            log.debug("Found more than one TIPL for ${tipp.title?:tipp} on ${tipp.hostPlatform}!")
           }
 
           log.debug("TIPL ${final_tipl}")

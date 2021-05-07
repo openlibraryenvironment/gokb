@@ -38,22 +38,22 @@ class PublicController {
     def result = [:]
     if ( params.id ) {
       def pkg_id_components = params.id.split(':');
-      
+
       if ( pkg_id_components?.size() == 2 ) {
         result.pkg = Package.get(Long.parseLong(pkg_id_components[1]));
       }
       else {
         result.pkg = Package.findByUuid(params.id)
       }
-      
+
       if (result.pkg) {
         def tipp_combo_rdv = RefdataCategory.lookupOrCreate('Combo.Type','Package.Tipps')
         def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status','Current')
-        
+
         result.pkgId = result.pkg.id
         result.pkgName = result.pkg.name
         log.debug("Tipp qry name: ${result.pkgName}");
-        
+
         result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY,[result.pkgId, tipp_combo_rdv, status_current])[0]
         result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id',[result.pkgId, tipp_combo_rdv, status_current],[offset:params.offset?params.long('offset'):0,max:10])
         log.debug("Tipp qry done ${result.tipps?.size()}");
@@ -81,7 +81,7 @@ class PublicController {
     else
       mutableParams.offset = Integer.parseInt(mutableParams.offset)
 
-    if( ( mutableParams.q == null ) || (mutableParams.q == '') )  
+    if( ( mutableParams.q == null ) || (mutableParams.q == '') )
       mutableParams.q = '*'
     // params.remove('q');
     // params.isPublic="Yes"
@@ -174,9 +174,9 @@ class PublicController {
               TitleInstancePackagePlatform.withNewSession {
                 def tipp = TitleInstancePackagePlatform.get(tipp_id)
                 writer.write(
-                            sanitize( tipp.title.name ) + '\t' +
-                            sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
-                            sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+                            sanitize( tipp.title?.name ) + '\t' +
+                            sanitize( tipp.title?.getIdentifierValue('ISSN') ) + '\t' +
+                            sanitize( tipp.title?.getIdentifierValue('eISSN') ) + '\t' +
                             sanitize( tipp.startDate ) + '\t' +
                             sanitize( tipp.startVolume ) + '\t' +
                             sanitize( tipp.startIssue ) + '\t' +
@@ -185,12 +185,12 @@ class PublicController {
                             sanitize( tipp.endIssue ) + '\t' +
                             sanitize( tipp.url ) + '\t' +
                             '\t'+  // First Author
-                            sanitize( tipp.title.getId() ) + '\t' +
+                            sanitize( tipp.title?.getId() ) + '\t' +
                             sanitize( tipp.embargo ) + '\t' +
                             sanitize( tipp.coverageDepth ) + '\t' +
                             sanitize( tipp.coverageNote ) + '\t' +
-                            sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' +
-                            sanitize( tipp.title.getPrecedingTitleId() ) + '\t' +
+                            sanitize( tipp.title?.getCurrentPublisher()?.name ) + '\t' +
+                            sanitize( tipp.title?.getPrecedingTitleId() ) + '\t' +
                             '\t' +  // date_monograph_published_print
                             '\t' +  // date_monograph_published_online
                             '\t' +  // monograph_volume
@@ -266,12 +266,12 @@ class PublicController {
 
             TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
 
-            writer.write( sanitize( tipp.getId() ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title.getId() ) + '\t' + sanitize( tipp.title.name ) + '\t' +
-                          sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title.imprint?.name ) + '\t' + sanitize( tipp.title.publishedFrom ) + '\t' +
-                          sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.oa?.status ) + '\t' +
-                          sanitize( tipp.title.continuingSeries?.value ) + '\t' +
-                          sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
-                          sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+            writer.write( sanitize( tipp.getId() ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title?.getId() ) + '\t' + sanitize( tipp.title?.name ) + '\t' +
+                          sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title?.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title?.imprint?.name ) + '\t' + sanitize( tipp.title?.publishedFrom ) + '\t' +
+                          sanitize( tipp.title?.publishedTo ) + '\t' + sanitize( tipp.title?.medium?.value ) + '\t' + sanitize( tipp.title?.oa?.status ) + '\t' +
+                          sanitize( tipp.title?.continuingSeries?.value ) + '\t' +
+                          sanitize( tipp.title?.getIdentifierValue('ISSN') ) + '\t' +
+                          sanitize( tipp.title?.getIdentifierValue('eISSN') ) + '\t' +
                           sanitize( pkg.name ) + '\t' + sanitize( pkg.getId() ) + '\t' + '\t' + sanitize( tipp.hostPlatform.name ) + '\t' +
                           sanitize( tipp.hostPlatform.primaryUrl ) + '\t' + sanitize( tipp.hostPlatform.getId() ) + '\t\t' + sanitize( tipp.status?.value ) + '\t' + sanitize( tipp.accessStartDate )  + '\t' +
                           sanitize( tipp.accessEndDate ) + '\t' + sanitize( tipp.startDate ) + '\t' + sanitize( tipp.startVolume ) + '\t' + sanitize( tipp.startIssue ) + '\t' + sanitize( tipp.endDate ) + '\t' +
