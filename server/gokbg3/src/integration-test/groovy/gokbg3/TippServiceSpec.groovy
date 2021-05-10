@@ -17,8 +17,8 @@ import org.springframework.transaction.annotation.Transactional
 import spock.lang.Specification
 
 @Integration
-@Rollback
 @Transactional
+@Rollback
 class TippServiceSpec extends Specification implements ServiceUnitTest<TippService> {
 
   private Package pkg
@@ -33,7 +33,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     pkg = new Package(name: "Test Package").save()
     plt = new Platform(name: "Test Platform").save()
     isbn = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5')
-    book = new BookInstance(name:"Book 1", ids: [isbn])
+    book = new BookInstance(name: "Book 1", ids: [isbn])
   }
 
   def cleanup() {
@@ -55,7 +55,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
         'name'        : "Test Title Name from TIPP",
         'editStatus'  : "Approved",
         'language'    : "ger",
-        'type': "Monograph"
+        'type'        : "Monograph"
     ]
 
     when:
@@ -70,7 +70,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
 
   void "Test attach existing title with a TIPP by its IDs"() {
     given:
-    Identifier my_isbn = Identifier.findByNamespaceAndValue(IdentifierNamespace.findByValue('isbn'),'979-11-655-6390-5') ?: new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5')
+    Identifier my_isbn = Identifier.findByNamespaceAndValue(IdentifierNamespace.findByValue('isbn'), '979-11-655-6390-5') ?: new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5')
     def tmap = [
         'pkg'         : pkg,
         'title'       : null,
@@ -93,5 +93,33 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
 
     then:
     tipp.title == book
+  }
+
+  @Rollback
+  void "Test Package Update from TIPPs"() {
+    given: // a package with unmatched TIPPs
+    def pack = new Package(name: "Import Package")
+    def platform = new Platform(name: "Import Platform")
+    def aISBN = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '978-11-655-6370-8')
+    def book1 = new BookInstance(name: "Book 1", ids: [isbn])
+    def tipp1 = new TitleInstancePackagePlatform([
+        name           : "Book 1",
+        hostPlatform   : platform,
+        ids            : [aISBN],
+        publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")])
+    def tipp2 = new TitleInstancePackagePlatform([
+        name           : "Journal 1",
+        hostPlatform   : platform,
+        ids            : [new Identifier(namespace: IdentifierNamespace.findByValue('zdb'), value: '655639-0')],
+        publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Serial")])
+    pack.tipps<<tipp1
+    pack.tipps<<tipp2
+
+    when:
+    tippService.matchPackage( pack )
+
+    then:
+    tipp1.title != null
+    tipp2.title != null
   }
 }

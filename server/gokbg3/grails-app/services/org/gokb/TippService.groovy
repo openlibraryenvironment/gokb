@@ -4,6 +4,8 @@ import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService
 import grails.validation.ValidationException
 import net.sf.json.JSON
+import org.gokb.cred.Identifier
+import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.Imprint
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
@@ -21,18 +23,21 @@ class TippService {
   def sessionFactory
 
   def matchPackage(Package aPackage) {
-    TitleInstance.withNewSession {
       int count = 0, index = 0
       boolean cancelled = false
-      def tipps = TitleInstancePackagePlatform.findAllWhere(pkg: aPackage, title: null)
-      log.debug("found ${tippIDs.size()} TIPPs in package $aPackage")
-      tipps.each { tipp -> matchTitle(tipp) }
+      def tipps = aPackage.tipps
+      log.debug("found ${tipps.size()} TIPPs in package $aPackage")
+      tipps.each { tipp ->
+        if (!tipp.title) {
+          matchTitle(tipp)
+        }
     }
   }
 
   void matchTitle(TitleInstancePackagePlatform tipp) {
     Map titleErrorMap = [:] // [<propertyName>: [message: <msg>, baddata: <propertyValue>], ..]
     def found
+    final IdentifierNamespace ZDB_NS =  IdentifierNamespace.findByValue('zdb')
     def title_changed = false
     def title_class_name = TitleInstance.determineTitleClass([type: tipp.publicationType.value])
 
@@ -53,6 +58,11 @@ class TippService {
       ti.save(flush:true)
       ti.ids = tipp.ids
       titleLookupService.addPublisher(tipp.publisherName, ti)
+      tipp.ids.each{ Identifier ident ->
+        if (ident.namespace == ZDB_NS) {
+          // TODO: ZDB-Enrichment for new Journals with ZDB-ID already present
+        }
+      }
     }
     // Add the core data.
     if (ti) {
@@ -136,5 +146,6 @@ class TippService {
 
   private void handleFindConflicts(TitleInstancePackagePlatform tipp, def found) {
     // use this to create more ReviewRequests as needed
+    // TODO: check if the ReviewRequest was raised already before rasing another one
   }
 }
