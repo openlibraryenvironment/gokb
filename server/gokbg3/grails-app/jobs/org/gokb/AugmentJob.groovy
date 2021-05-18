@@ -11,7 +11,7 @@ class AugmentJob {
 
   // Every five minutes
   static triggers = {
-    cron name: 'CollectJobTrigger', cronExpression: "0 0 * * * ?", startDelay:600000
+    cron name: 'TitleAugmentJobTrigger', cronExpression: "0 0 * * * ?", startDelay:600000
   }
 
   def execute() {
@@ -19,11 +19,10 @@ class AugmentJob {
   }
 
   def aug() {
-    log.debug("Attempting to augment titles");
-    def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-    def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
-
     if (grailsApplication.config.gokb.zdbAugment.enabled) {
+      log.debug("Attempting to augment titles");
+      def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+      def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
       def zdbNs = IdentifierNamespace.findByValue('zdb')
 
       // find the next 100 titles that don't have a suncat ID

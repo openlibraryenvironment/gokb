@@ -25,6 +25,8 @@ class TitleAugmentService {
 
   def augment(titleInstance) {
     log.debug("TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
+    CuratoryGroup editorialGroup = grailsApplication.config.gokb.editorialAdmin?.journals ? CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.editorialAdmin.journals) : null
+
     if ( titleInstance.niceName == 'Journal' ) {
       def candidates = zdbAPIService.lookup(titleInstance.name, titleInstance.ids)
       RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
@@ -61,6 +63,24 @@ class TitleAugmentService {
           log.debug("Adding new start journal end date ..")
           com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedTo), titleInstance, 'publishedTo')
         }
+
+        if (!titleInstance.currentPublisher && candidates[0].publisher) {
+          def pub_obj = Org.findByNameAndStatusNot(candidates[0].publisher, status_deleted)
+
+          if (!pub_obj) {
+            def variant_normname = GOKbTextUtils.normaliseString(candidates[0].publisher)
+            def var_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted])
+
+            if (var_candidates.size() == 1) {
+              pub_obj = var_candidates[0]
+            }
+          }
+
+          if (pub_obj) {
+            def publisher_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
+            new Combo(fromComponent: titleInstance, toComponent: pub_obj, type: publisher_combo).save(flush: true, failOnError: true)
+          }
+        }
       }
       else if (candidates.size == 0){
         log.debug("No ZDB result for ids of title ${titleInstance}")
@@ -78,7 +98,9 @@ class TitleAugmentService {
           "Multiple ZDB-IDs found for ISSN ids",
           null,
           null,
-          (additionalInfo as JSON).toString()
+          (additionalInfo as JSON).toString(),
+          RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple ZDB Results'),
+          editorialGroup
         )
       }
     }

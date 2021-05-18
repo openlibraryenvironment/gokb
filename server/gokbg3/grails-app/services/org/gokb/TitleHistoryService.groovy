@@ -64,7 +64,7 @@ class TitleHistoryService {
     }
   }
 
-  def getHistories(th_graph) {   
+  def getHistories(th_graph) {
   }
 
   def processHistoryEvents(TitleInstance ti, titleObj, title_class_name, user, fullsync, locale) {
@@ -306,7 +306,7 @@ class TitleHistoryService {
 
           result.new_events.add(he.id)
         }
-      } 
+      }
       else if ( outlist?.size() > 0 && inlist.size() == 0 ) {
         outlist.each {
           def he = new ComponentHistoryEvent()
