@@ -88,7 +88,7 @@ class TitleLookupService {
 
         if (!the_id) {
           log.error("Unable to look up ID")
-          throw new RuntimeException("Unable to lookup Identifier for ${id_def}");
+          throw new RuntimeException("Unable to lookup/create Identifier for ${id_def}");
         }
         // Add the id.
         result['ids'] << the_id

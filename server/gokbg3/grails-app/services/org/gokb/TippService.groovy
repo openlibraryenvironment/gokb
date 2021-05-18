@@ -2,6 +2,7 @@ package org.gokb
 
 import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService
+import grails.gorm.transactions.NotTransactional
 import grails.validation.ValidationException
 import net.sf.json.JSON
 import org.gokb.cred.Identifier
@@ -9,14 +10,15 @@ import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.Imprint
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
+import org.gokb.cred.ReviewRequest
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
 import org.gokb.cred.Package
 import org.gokb.exceptions.MultipleComponentsMatchedException
 import org.grails.web.json.JSONObject
 
-class TippService {
 
+class TippService {
   def componentUpdateService
   def titleLookupService
   def messageService

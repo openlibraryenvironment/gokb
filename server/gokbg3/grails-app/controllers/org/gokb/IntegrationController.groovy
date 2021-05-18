@@ -871,6 +871,82 @@ class IntegrationController {
     component.ensureVariantName(variant_name)
   }
 
+  def updatePackageTipps(){
+    // identical JSON as crossReferencePackage, but without any title matching:
+    // puts the data into TIPPs for later processing with the title attribute blank
+    def result = ['result': 'OK']
+    def async = params.async ? params.boolean('async') : false
+    def addOnly = params.addOnly ? params.boolean('addOnly') : false
+    def request_locale = RequestContextUtils.getLocale(request)
+    def rjson = request.JSON
+    def cancelled = false
+    UpdateToken updateToken = null
+    User request_user = null
+    def fullsync = false
+    def token = null
+
+    log.debug("crossReferencePackage (${request_locale})")
+
+    if (springSecurityService.isLoggedIn()) {
+      request_user = springSecurityService.currentUser
+    }
+    else if (params.user && params.password) {
+      request_user = springSecurityService.reauthenticate(params.user, params.password)
+    }
+    else if (params.updateToken?.trim() || rjson.updateToken?.trim()) {
+      token = params.updateToken ?: rjson.updateToken
+      updateToken = UpdateToken.findByValue(token)
+
+      if (updateToken) {
+        request_user = updateToken.updateUser
+
+        if (rjson.packageHeader) {
+          rjson.packageHeader.uuid = updateToken.pkg.uuid
+        }
+      }
+      else {
+        log.error("Unable to reference update token!")
+        result.message = "Unable to reference update token!"
+        response.setStatus(400)
+        result.result = "ERROR"
+      }
+    }
+    else {
+      response.setStatus(401)
+      response.setHeader('WWW-Authenticate', 'Basic realm="gokb"')
+    }
+
+    if (params.fullsync == "true" && request_user?.adminStatus) {
+      fullsync = true
+    }
+
+    if (!async) {
+      result = crossReferenceService.xRefPkg(rjson,
+          addOnly as boolean, fullsync as boolean, token != null,
+          request_locale, request_user, null, true)
+      log.debug("xRefPkg Result:\n$result")
+    }
+    else {
+      // start xRef Job
+      Job background_job = concurrencyManagerService.createJob { Job job ->
+        crossReferenceService.xRefPkg(rjson, addOnly as boolean, fullsync as boolean,
+            token != null, request_locale, request_user, job, true)
+      }
+      log.debug("Starting job ${background_job}..")
+      background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
+      background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
+      background_job.linkedItem = [name: rjson.packageHeader.name,
+                                   type: "Package"]
+      background_job.message("Starting upsert for Package ${rjson.packageHeader.name}")
+      background_job.startOrQueue()
+      background_job.startTime = new Date()
+      result << [job_id: background_job.uuid,
+                 // TODO: remove key 'info' as it is deprecated
+                 info  : [job_id: background_job.uuid]]
+    }
+    render result as JSON
+  }
+
   def crossReferencePackage() {
     def result = ['result': 'OK']
     def async = params.async ? params.boolean('async') : false
@@ -1289,7 +1365,7 @@ class IntegrationController {
             title.save()
 
             if (!result.message) {
-              result.message = messageService.resolveCode('crossRef.title.success', null, locale)
+              result.message = messageService.resolveCode('crossRef.title.success', [title], locale)
             }
             result.cls = title.class.name
             result.titleId = title.id

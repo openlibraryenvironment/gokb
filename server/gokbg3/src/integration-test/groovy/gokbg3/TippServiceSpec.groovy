@@ -1,5 +1,6 @@
 package gokbg3
 
+import com.k_int.ConcurrencyManagerService
 import grails.testing.mixin.integration.Integration
 import grails.testing.services.ServiceUnitTest
 import org.gokb.*
@@ -11,6 +12,7 @@ import org.gokb.cred.Platform
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
+import org.hibernate.SessionFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.annotation.Rollback
 import org.springframework.transaction.annotation.Transactional
@@ -28,6 +30,8 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
 
   @Autowired
   TippService tippService
+  SessionFactory sessionFactory
+  ConcurrencyManagerService concurrencyManagerService
 
   def setup() {
     pkg = new Package(name: "Test Package").save()
@@ -112,14 +116,14 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
         hostPlatform   : platform,
         ids            : [new Identifier(namespace: IdentifierNamespace.findByValue('zdb'), value: '655639-0')],
         publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Serial")])
-    pack.tipps<<tipp1
-    pack.tipps<<tipp2
+    pack.tipps << tipp1
+    pack.tipps << tipp2
 
     when:
-    tippService.matchPackage( pack )
+    tippService.matchPackage(pack)
 
     then:
-    tipp1.title != null
+    tipp1.title == book1
     tipp2.title != null
   }
 }

@@ -304,7 +304,7 @@ class IntegrationControllerSpec extends Specification {
     matching_with_class_one_ids?.size() == 1
   }
 
-  void "Test crossReferencePackage :: Import new Package"() {
+  void "Test update Tipps :: Import a Package"() {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
@@ -381,7 +381,7 @@ class IntegrationControllerSpec extends Specification {
     ]
 
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-      "/integration/crossReferencePackage") {
+      "/integration/updatePackageTipps") {
       auth('admin', 'admin')
       body(json_record as JSON)
     }

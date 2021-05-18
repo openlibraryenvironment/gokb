@@ -28,6 +28,7 @@ class CrossRefPkgRun {
   boolean addOnly
   boolean fullsync
   boolean autoUpdate
+  boolean tippsOnly
   Locale locale
   User user
   Map jsonResult = [result: "SUCCESS"]
@@ -50,13 +51,14 @@ class CrossRefPkgRun {
   def rr_TIPPs_invalid
   def status_ip
 
-  public CrossRefPkgRun(JSONObject json, Boolean add, Boolean full, Boolean isAutoUpdate, Locale loc, User u) {
+  public CrossRefPkgRun(JSONObject json, Boolean add, Boolean full, Boolean isAutoUpdate, Locale loc, User u, Boolean noTitles) {
     rjson = json
     addOnly = add
     fullsync = full
     locale = loc
     user = u
     autoUpdate = isAutoUpdate
+    tippsOnly = noTitles
   }
 
   def work(Job aJob) {
@@ -156,7 +158,7 @@ class CrossRefPkgRun {
           invalidTipps << json_tipp
         }
 
-        if (!invalidTipps.contains(json_tipp)) {
+        if (!invalidTipps.contains(json_tipp) && !tippsOnly) {
           // validate and upsert TitleInstance
           Map titleErrorMap = handleTitle(json_tipp)
           if (titleErrorMap.size() > 0) {
@@ -566,7 +568,10 @@ class CrossRefPkgRun {
       log.debug("upsert TIPP ${tippJson.name ?: tippJson.title.name}")
       def upserted_tipp = null
       try {
+        def stash = tippJson.title
+        tippJson.title = tippsOnly ? null : stash
         upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tippJson, user)
+        tippJson.title = stash
         log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp?.url}")
         upserted_tipp.merge(flush: true)
         componentUpdateService.ensureCoreData(upserted_tipp, tippJson, fullsync, user)
