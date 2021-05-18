@@ -118,10 +118,10 @@ class ReviewsController {
           }
 
           if (rdv_desc) {
-            obj.status = rdv_desc
+            obj.stdDesc = rdv_desc
           }
           else {
-            errors.status = [[message: "Illegal standard description provided.", code: 404, baddata:reqBody.stdDesc]]
+            errors.stdDesc = [[message: "Illegal standard description provided.", code: 404, baddata:reqBody.stdDesc]]
           }
         }
 
