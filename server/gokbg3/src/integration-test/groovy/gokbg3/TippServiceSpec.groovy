@@ -105,7 +105,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     def pack = new Package(name: "Import Package")
     def platform = new Platform(name: "Import Platform")
     def aISBN = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '978-11-655-6370-8')
-    def book1 = new BookInstance(name: "Book 1", ids: [isbn])
+    def book1 = new BookInstance(name: "Book 1", ids: [aISBN])
     def tipp1 = new TitleInstancePackagePlatform([
         name           : "Book 1",
         hostPlatform   : platform,

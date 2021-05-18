@@ -62,100 +62,100 @@ class TitleInstancePackagePlatform extends KBComponent {
   private static SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
 
   private static refdataDefaults = [
-    "format"       : "Electronic",
-    "delayedOA"    : "Unknown",
-    "hybridOA"     : "Unknown",
-    "primary"      : "No",
-    "paymentType"  : "Paid",
-    "coverageDepth": "Fulltext"
+      "format"       : "Electronic",
+      "delayedOA"    : "Unknown",
+      "hybridOA"     : "Unknown",
+      "primary"      : "No",
+      "paymentType"  : "Paid",
+      "coverageDepth": "Fulltext"
   ]
 
   static jsonMapping = [
-    'ignore'       : [
-      'format',
-      'startIssue',
-      'delayedOA',
-      'hybridOA',
-      'coverageNote',
-      'primary',
-      'delayedOAEmbargo',
-      'coverageDepth',
-      'startVolume',
-      'endDate',
-      'embargo',
-      'startDate',
-      'endIssue',
-      'endVolume',
-      'description',
-      'hybridOAUrl'
-    ],
-    'es'           : [
-      'hostPlatformUuid'      : "hostPlatform.uuid",
-      'hostPlatformName'      : "hostPlatform.name",
-      'hostPlatform'          : "hostPlatform.id",
-      'tippTitleUuid'         : "title.uuid",
-      'tippTitleName'         : "title.name",
-      'tippTitle'             : "title.id",
-      'tippPackageUuid'       : "pkg.uuid",
-      'tippPackageName'       : "pkg.name",
-      'tippPackage'           : "pkg.id",
-      'titleType'             : "title.niceName",
-      'coverage'              : "coverageStatements",
-      'publisherName'         : "publisherName",
-      'dateFirstInPrint'      : "dateFirstInPrint",
-      'dateFirstOnline'       : "dateFirstOnline",
-      'firstAuthor'           : "firstAuthor",
-      'publicationType'       : "publicationType",
-      'volumeNumber'          : "volumeNumber",
-      'editionStatement'      : "editionStatement",
-      'firstEditor'           : "firstEditor",
-      'parentPublicationTitleId'   : "parentPublicationTitleId",
-      'precedingPublicationId': "precedingPublicationId",
-      'lastChangedExternal'     : "lastChangedExternal",
-      'medium'                : "medium",
-      'language'              : "language"
-    ],
-    'defaultLinks' : [
-      'pkg',
-      'title',
-      'hostPlatform'
-    ],
-    'defaultEmbeds': [
-      'coverageStatements'
-    ]
+      'ignore'       : [
+          'format',
+          'startIssue',
+          'delayedOA',
+          'hybridOA',
+          'coverageNote',
+          'primary',
+          'delayedOAEmbargo',
+          'coverageDepth',
+          'startVolume',
+          'endDate',
+          'embargo',
+          'startDate',
+          'endIssue',
+          'endVolume',
+          'description',
+          'hybridOAUrl'
+      ],
+      'es'           : [
+          'hostPlatformUuid'        : "hostPlatform.uuid",
+          'hostPlatformName'        : "hostPlatform.name",
+          'hostPlatform'            : "hostPlatform.id",
+          'tippTitleUuid'           : "title.uuid",
+          'tippTitleName'           : "title.name",
+          'tippTitle'               : "title.id",
+          'tippPackageUuid'         : "pkg.uuid",
+          'tippPackageName'         : "pkg.name",
+          'tippPackage'             : "pkg.id",
+          'titleType'               : "title.niceName",
+          'coverage'                : "coverageStatements",
+          'publisherName'           : "publisherName",
+          'dateFirstInPrint'        : "dateFirstInPrint",
+          'dateFirstOnline'         : "dateFirstOnline",
+          'firstAuthor'             : "firstAuthor",
+          'publicationType'         : "publicationType",
+          'volumeNumber'            : "volumeNumber",
+          'editionStatement'        : "editionStatement",
+          'firstEditor'             : "firstEditor",
+          'parentPublicationTitleId': "parentPublicationTitleId",
+          'precedingPublicationId'  : "precedingPublicationId",
+          'lastChangedExternal'     : "lastChangedExternal",
+          'medium'                  : "medium",
+          'language'                : "language"
+      ],
+      'defaultLinks' : [
+          'pkg',
+          'title',
+          'hostPlatform'
+      ],
+      'defaultEmbeds': [
+          'coverageStatements'
+      ]
   ]
 
   static touchOnUpdate = [
-    "pkg"
+      "pkg"
   ]
 
   static hasByCombo = [
-    pkg         : Package,
-    hostPlatform: Platform,
-    title       : TitleInstance,
-    derivedFrom : TitleInstancePackagePlatform,
-    masterTipp  : TitleInstancePackagePlatform,
+      pkg         : Package,
+      hostPlatform: Platform,
+      title       : TitleInstance,
+      derivedFrom : TitleInstancePackagePlatform,
+      masterTipp  : TitleInstancePackagePlatform,
   ]
 
   static mappedByCombo = [
-    pkg                : 'tipps',
-    hostPlatform       : 'hostedTipps',
-    additionalPlatforms: 'linkedTipps',
-    title              : 'tipps',
-    derivatives        : 'derivedFrom'
+      pkg                : 'tipps',
+      hostPlatform       : 'hostedTipps',
+      additionalPlatforms: 'linkedTipps',
+      title              : 'tipps',
+      derivatives        : 'derivedFrom'
   ]
 
   static manyByCombo = [
-    derivatives        : TitleInstancePackagePlatform,
-    additionalPlatforms: Platform,
+      derivatives        : TitleInstancePackagePlatform,
+      additionalPlatforms: Platform,
   ]
 
   static hasMany = [
-    coverageStatements: TIPPCoverageStatement
+      coverageStatements: TIPPCoverageStatement
   ]
 
   static mappedBy = [
-    coverageStatements: 'owner'
+      coverageStatements: 'owner'
   ]
 
   public getPersistentId() {
@@ -282,7 +282,8 @@ class TitleInstancePackagePlatform extends KBComponent {
         new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
 
       TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
-    } else {
+    }
+    else {
       log.error("TIPP creation failed!")
     }
 
@@ -309,12 +310,14 @@ class TitleInstancePackagePlatform extends KBComponent {
     if (!pkgLink) {
       result.valid = false
       errors.pkg = [[message: "Missing package link!", baddata: pkgLink]]
-    } else {
+    }
+    else {
       def pkg = null
 
       if (pkgLink instanceof Map) {
         pkg = Package.get(pkgLink.id ?: pkgLink.internalId)
-      } else {
+      }
+      else {
         pkg = Package.get(pkgLink)
       }
 
@@ -327,12 +330,14 @@ class TitleInstancePackagePlatform extends KBComponent {
     if (!pltLink) {
       result.valid = false
       errors.hostPlatform = [[message: "Missing platform link!", baddata: pltLink]]
-    } else {
+    }
+    else {
       def plt = null
 
       if (pltLink instanceof Map) {
         plt = Platform.get(pltLink.id ?: pltLink.internalId)
-      } else {
+      }
+      else {
         plt = Platform.get(pltLink)
       }
 
@@ -342,7 +347,9 @@ class TitleInstancePackagePlatform extends KBComponent {
       }
     }
 
-    if (!tiLink) {
+    // since a tipp is valid without a title connection, the validation of the tipp should drop this
+    // precondition too
+    /* if (!tiLink) {
       result.valid = false
       errors.title = [[message: "Missing title link!", baddata: tiLink]]
     } else {
@@ -358,7 +365,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         result.valid = false
         errors.title = [[message: "Could not resolve title id!", baddata: tiLink, code: 404]]
       }
-    }
+    }*/
 
     String idJsonKey = 'ids'
     def ids_list = tipp_dto[idJsonKey]
@@ -405,7 +412,8 @@ class TitleInstancePackagePlatform extends KBComponent {
         }
         coverage.coverageDepth = "fulltext"
         errors.coverageDepth << [message: "Missing value for coverage depth: set to fulltext", baddata: coverage.coverageDepth]
-      } else {
+      }
+      else {
         if (coverage.coverageDepth instanceof String && !['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase())) {
           if (!errors.coverageDepth) {
             errors.coverageDepth = []
@@ -413,7 +421,8 @@ class TitleInstancePackagePlatform extends KBComponent {
 
           result.valid = false
           errors.coverageDepth << [message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
-        } else if (coverage.coverageDepth instanceof Integer) {
+        }
+        else if (coverage.coverageDepth instanceof Integer) {
           try {
             def candidate = RefdataValue.get(coverage.coverageDepth)
 
@@ -428,7 +437,8 @@ class TitleInstancePackagePlatform extends KBComponent {
           } catch (Exception e) {
             log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Integer")
           }
-        } else if (coverage.coverageDepth instanceof Map) {
+        }
+        else if (coverage.coverageDepth instanceof Map) {
           if (coverage.coverageDepth.id) {
             try {
               def candidate = RefdataValue.get(coverage.coverageDepth.id)
@@ -444,7 +454,8 @@ class TitleInstancePackagePlatform extends KBComponent {
             } catch (Exception e) {
               log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Map")
             }
-          } else if (coverage.coverageDepth.value || coverage.coverageDepth.name) {
+          }
+          else if (coverage.coverageDepth.value || coverage.coverageDepth.name) {
             if (!['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase())) {
               if (!errors.coverageDepth) {
                 errors.coverageDepth = []
@@ -522,7 +533,8 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if (pkg_info instanceof Map) {
         pkg = Package.get(pkg_info.id ?: pkg_info.internalId)
-      } else {
+      }
+      else {
         pkg = Package.get(pkg_info)
       }
 
@@ -534,7 +546,8 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if (plt_info instanceof Map) {
         plt = Platform.get(plt_info.id ?: plt_info.internalId)
-      } else {
+      }
+      else {
         plt = Platform.get(plt_info)
       }
 
@@ -546,7 +559,8 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if (title_info instanceof Map) {
         ti = TitleInstance.get(title_info.id ?: title_info.internalId)
-      } else {
+      }
+      else {
         ti = TitleInstance.get(title_info)
       }
 
@@ -557,16 +571,16 @@ class TitleInstancePackagePlatform extends KBComponent {
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
     def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
     def curator = pkg?.curatoryGroups?.size() > 0 ? (user.adminStatus || user.curatoryGroups?.id.intersect(pkg?.curatoryGroups?.id)) : true
-
+    def tipp
     if (pkg && plt && ti && curator) {
       log.debug("See if we already have a tipp")
       def tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
-        'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
-        'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
-        'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
-        [pkg, plt, ti])
+          'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
+          'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
+          'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
+          [pkg, plt, ti])
       def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
-      def tipp = null
+      tipp = null
 
       if (uuid_tipp && uuid_tipp.pkg == pkg && uuid_tipp.title == ti && uuid_tipp.hostPlatform == plt) {
         tipp = uuid_tipp
@@ -580,10 +594,12 @@ class TitleInstancePackagePlatform extends KBComponent {
             if (trimmed_url && trimmed_url.size() > 0) {
               if (!tipps[0].url || tipps[0].url == trimmed_url) {
                 tipp = tipps[0]
-              } else {
+              }
+              else {
                 log.debug("matched tipp has a different url..")
               }
-            } else {
+            }
+            else {
               tipp = tipps[0]
             }
             break;
@@ -606,13 +622,15 @@ class TitleInstancePackagePlatform extends KBComponent {
               if (cur_tipps.size() > 1) {
                 log.debug("found ${cur_tipps.size()} current TIPPs!")
               }
-            } else if (ret_tipps.size() > 0) {
+            }
+            else if (ret_tipps.size() > 0) {
               tipp = ret_tipps[0]
 
               if (ret_tipps.size() > 1) {
                 log.debug("found ${ret_tipps.size()} retired TIPPs!")
               }
-            } else {
+            }
+            else {
               log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
             }
             break;
@@ -622,15 +640,15 @@ class TitleInstancePackagePlatform extends KBComponent {
       if (!tipp) {
         log.debug("Creating new TIPP..")
         def tmap = [
-          'pkg'         : pkg,
-          'title'       : ti,
-          'hostPlatform': plt,
-          'url'         : trimmed_url,
-          'uuid'        : (tipp_dto.uuid ?: null),
-          'status'      : (tipp_dto.status ?: null),
-          'name'        : (tipp_dto.name ?: null),
-          'editStatus'  : (tipp_dto.editStatus ?: null),
-          'language'    : (tipp_dto.language ?: null)
+            'pkg'         : pkg,
+            'title'       : ti,
+            'hostPlatform': plt,
+            'url'         : trimmed_url,
+            'uuid'        : (tipp_dto.uuid ?: null),
+            'status'      : (tipp_dto.status ?: null),
+            'name'        : (tipp_dto.name ?: null),
+            'editStatus'  : (tipp_dto.editStatus ?: null),
+            'language'    : (tipp_dto.language ?: null)
         ]
 
         tipp = tiplAwareCreate(tmap)
@@ -639,91 +657,227 @@ class TitleInstancePackagePlatform extends KBComponent {
         if (!tipp) {
           log.error("TIPP creation failed!")
         }
-      } else {
+      }
+      else {
         TitleInstancePlatform.ensure(ti, plt, trimmed_url)
       }
+    }
+    else if (pkg && plt && curator) {
+      log.debug("See if we already have a tipp")
+      def tipps = TitleInstancePackagePlatform.executeQuery(
+          'select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as platform_combo  ' +
+              'where tipp.url = :url ' +
+              'and tipp.name = :name ' +
+              'and pkg_combo.toComponent=tipp and pkg_combo.fromComponent=:pkg ' +
+              'and platform_combo.toComponent=tipp and platform_combo.fromComponent = :plt',
+          [pkg: pkg, plt: plt, url: trimmed_url, name: tipp_dto.name])
+      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
+      tipp = null
 
-      if (tipp) {
-        def changed = false
+      if (uuid_tipp && uuid_tipp.pkg == pkg && uuid_tipp.title == ti && uuid_tipp.hostPlatform == plt) {
+        tipp = uuid_tipp
+      }
 
-        if (tipp.isRetired() && tipp_dto.status == "Current") {
-          if (tipp.accessEndDate) {
-            tipp.accessEndDate = null
-          }
+      if (!tipp) {
+        switch (tipps.size()) {
+          case 1:
+            log.debug("found")
 
-          changed = true
+            if (trimmed_url && trimmed_url.size() > 0) {
+              if (!tipps[0].url || tipps[0].url == trimmed_url) {
+                tipp = tipps[0]
+              }
+              else {
+                log.debug("matched tipp has a different url..")
+              }
+            }
+            else {
+              tipp = tipps[0]
+            }
+            break;
+          case 0:
+            log.debug("not found");
+
+            break;
+          default:
+            if (trimmed_url && trimmed_url.size() > 0) {
+              tipps = tipps.findAll { !it.url || it.url == trimmed_url };
+              log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
+            }
+
+            def cur_tipps = tipps.findAll { it.status == status_current };
+            def ret_tipps = tipps.findAll { it.status == status_retired };
+
+            if (cur_tipps.size() > 0) {
+              tipp = cur_tipps[0]
+
+              if (cur_tipps.size() > 1) {
+                log.debug("found ${cur_tipps.size()} current TIPPs!")
+              }
+            }
+            else if (ret_tipps.size() > 0) {
+              tipp = ret_tipps[0]
+
+              if (ret_tipps.size() > 1) {
+                log.debug("found ${ret_tipps.size()} retired TIPPs!")
+              }
+            }
+            else {
+              log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
+            }
+            break;
+        }
+      }
+
+      if (!tipp) {
+        log.debug("Creating new TIPP..")
+        def tmap = [
+            'pkg'         : pkg,
+            'title'       : null,
+            'hostPlatform': plt,
+            'url'         : trimmed_url,
+            'uuid'        : (tipp_dto.uuid ?: null),
+            'status'      : (tipp_dto.status ?: null),
+            'name'        : (tipp_dto.name ?: null),
+            'editStatus'  : (tipp_dto.editStatus ?: null),
+            'language'    : (tipp_dto.language ?: null)
+        ]
+
+        tipp = tiplAwareCreate(tmap)
+        // Hibernate problem
+
+        if (!tipp) {
+          log.error("TIPP creation failed!")
+        }
+      }
+      else {
+        TitleInstancePlatform.ensure(null, plt, trimmed_url)
+      }
+    }
+    if (tipp) {
+      def changed = false
+
+      if (tipp.isRetired() && tipp_dto.status == "Current") {
+        if (tipp.accessEndDate) {
+          tipp.accessEndDate = null
         }
 
-        if (tipp_dto.paymentType && tipp_dto.paymentType.length() > 0) {
+        changed = true
+      }
 
-          def payment_statement
+      if (tipp_dto.paymentType && tipp_dto.paymentType.length() > 0) {
 
-          if (tipp_dto.paymentType == 'P') {
-            payment_statement = 'Paid'
-          } else if (tipp_dto.paymentType == 'F') {
-            payment_statement = 'OA'
-          } else {
-            payment_statement = tipp_dto.paymentType
-          }
+        def payment_statement
 
-          def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
-
-          if (payment_ref) tipp.paymentType = payment_ref
+        if (tipp_dto.paymentType == 'P') {
+          payment_statement = 'Paid'
+        }
+        else if (tipp_dto.paymentType == 'F') {
+          payment_statement = 'OA'
+        }
+        else {
+          payment_statement = tipp_dto.paymentType
         }
 
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', trimmed_url)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'name', tipp_dto.name)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'firstAuthor', tipp_dto.firstAuthor)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'firstEditor', tipp_dto.firstEditor)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'publisherName', tipp_dto.publisherName)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'volumeNumber', tipp_dto.volumeNumber)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'editionStatement', tipp_dto.editionStatement)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'series', tipp_dto.series)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'subjectArea', tipp_dto.subjectArea)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'editionStatement', tipp_dto.editionStatement)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'parentPublicationTitleId', tipp_dto.parentPublicationTitleId)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'precedingPublicationTitleId', tipp_dto.precedingPublicationTitleId)
-        changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessStartDate, tipp, 'accessStartDate')
-        changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate, tipp, 'accessEndDate')
-        changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.dateFirstInPrint, tipp, 'dateFirstInPrint')
-        changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.dateFirstOnline, tipp, 'dateFirstOnline')
-        changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.lastChangedExternal, tipp, 'lastChangedExternal')
-        changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', 'TitleInstance.Medium')
-        changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.publicationType, tipp, 'publicationType', 'TitleInstancePackagePlatform.PublicationType')
-        changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.language, tipp, 'language')
+        def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
 
-        if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
-          tipp_dto.coverage = tipp_dto.coverageStatements
+        if (payment_ref) tipp.paymentType = payment_ref
+      }
+
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', trimmed_url)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'name', tipp_dto.name)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'firstAuthor', tipp_dto.firstAuthor)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'firstEditor', tipp_dto.firstEditor)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'publisherName', tipp_dto.publisherName)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'volumeNumber', tipp_dto.volumeNumber)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'editionStatement', tipp_dto.editionStatement)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'series', tipp_dto.series)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'subjectArea', tipp_dto.subjectArea)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'editionStatement', tipp_dto.editionStatement)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'parentPublicationTitleId', tipp_dto.parentPublicationTitleId)
+      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'precedingPublicationTitleId', tipp_dto.precedingPublicationTitleId)
+      changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessStartDate, tipp, 'accessStartDate')
+      changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate, tipp, 'accessEndDate')
+      changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.dateFirstInPrint, tipp, 'dateFirstInPrint')
+      changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.dateFirstOnline, tipp, 'dateFirstOnline')
+      changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.lastChangedExternal, tipp, 'lastChangedExternal')
+      changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', 'TitleInstance.Medium')
+      changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.publicationType, tipp, 'publicationType', 'TitleInstancePackagePlatform.PublicationType')
+      changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.language, tipp, 'language')
+
+      if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
+        tipp_dto.coverage = tipp_dto.coverageStatements
+      }
+
+      def new_ids = []
+
+      tipp_dto.coverage.each { c ->
+        def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+        def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+
+        if (c.id) {
+          new_ids.add(c.id)
         }
 
-        def new_ids = []
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
+        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
+        changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tipp, 'startDate')
+        changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tipp, 'endDate')
+        changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
 
-        tipp_dto.coverage.each { c ->
-          def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-          def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+        def cs_match = false
+        def conflict = false
+        def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+        def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+        def conflicting_statements = []
 
-          if (c.id) {
-            new_ids.add(c.id)
+        tipp.coverageStatements?.each { tcs ->
+          if (c.id && tcs.id == c.id) {
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
+            changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tcs, 'startDate')
+            changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tcs, 'endDate')
+            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
+
+            cs_match = true
           }
+          else if (!cs_match) {
+            if (!tcs.endDate && !endAsDate) {
+              conflict = true
+            }
+            else if (tcs.startVolume && tcs.startVolume == c.startVolume) {
+              log.debug("Matched CoverageStatement by startVolume")
+              cs_match = true
+            }
+            else if (tcs.startDate && tcs.startDate == startAsDate) {
+              log.debug("Matched CoverageStatement by startDate")
+              cs_match = true
+            }
+            else if (!tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate) {
+              log.debug("Matched CoverageStatement with unspecified values")
+              cs_match = true
+            }
+            else if (tcs.startDate && tcs.endDate) {
+              if (startAsDate && startAsDate > tcs.startDate && startAsDate < tcs.endDate) {
+                conflict = true
+              }
+              else if (endAsDate && endAsDate > tcs.startDate && endAsDate < tcs.endDate) {
+                conflict = true
+              }
+            }
 
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
-          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tipp, 'startDate')
-          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tipp, 'endDate')
-          changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
-
-          def cs_match = false
-          def conflict = false
-          def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-          def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-          def conflicting_statements = []
-
-          tipp.coverageStatements?.each { tcs ->
-            if (c.id && tcs.id == c.id) {
+            if (conflict) {
+              conflicting_statements.add(tcs)
+            }
+            else if (cs_match) {
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
@@ -733,86 +887,55 @@ class TitleInstancePackagePlatform extends KBComponent {
               changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tcs, 'startDate')
               changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tcs, 'endDate')
               changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
-
-              cs_match = true
-            } else if (!cs_match) {
-              if (!tcs.endDate && !endAsDate) {
-                conflict = true
-              } else if (tcs.startVolume && tcs.startVolume == c.startVolume) {
-                log.debug("Matched CoverageStatement by startVolume")
-                cs_match = true
-              } else if (tcs.startDate && tcs.startDate == startAsDate) {
-                log.debug("Matched CoverageStatement by startDate")
-                cs_match = true
-              } else if (!tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate) {
-                log.debug("Matched CoverageStatement with unspecified values")
-                cs_match = true
-              } else if (tcs.startDate && tcs.endDate) {
-                if (startAsDate && startAsDate > tcs.startDate && startAsDate < tcs.endDate) {
-                  conflict = true
-                } else if (endAsDate && endAsDate > tcs.startDate && endAsDate < tcs.endDate) {
-                  conflict = true
-                }
-              }
-
-              if (conflict) {
-                conflicting_statements.add(tcs)
-              } else if (cs_match) {
-                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
-                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
-                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
-                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
-                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
-                changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-                changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tcs, 'startDate')
-                changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tcs, 'endDate')
-                changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
-              }
-            } else {
-              log.debug("Matched new coverage ${c} on multiple existing coverages!")
             }
           }
-
-          for (def cst : conflicting_statements) {
-            tipp.removeFromCoverageStatements(cst)
+          else {
+            log.debug("Matched new coverage ${c} on multiple existing coverages!")
           }
-
-          if (!cs_match) {
-
-            def cov_depth = null
-
-            if (c.coverageDepth instanceof String) {
-              cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
-            } else if (c.coverageDepth instanceof Integer) {
-              cov_depth = RefdataValue.get(c.coverageDepth)
-            } else if (c.coverageDepth instanceof Map) {
-              if (c.coverageDepth.id) {
-                cov_depth = RefdataValue.get(c.coverageDepth.id)
-              } else {
-                cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
-              }
-            }
-
-            tipp.addToCoverageStatements('startVolume': c.startVolume,        \
-                   'startIssue': c.startIssue,        \
-                   'endVolume': c.endVolume,        \
-                   'endIssue': c.endIssue,        \
-                   'embargo': c.embargo,        \
-                   'coverageDepth': cov_depth,        \
-                   'coverageNote': c.coverageNote,        \
-                   'startDate': startAsDate,        \
-                   'endDate': endAsDate
-            )
-          }
-          // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
         }
 
-        def old_cs = tipp.coverageStatements
-        if (new_ids?.size() > 0) {
-          for (def cs : old_cs) {
-            if (!new_ids.contains(cs.id)) {
-              tipp.removeFromCoverageStatements(cs)
+        for (def cst : conflicting_statements) {
+          tipp.removeFromCoverageStatements(cst)
+        }
+
+        if (!cs_match) {
+
+          def cov_depth = null
+
+          if (c.coverageDepth instanceof String) {
+            cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+          }
+          else if (c.coverageDepth instanceof Integer) {
+            cov_depth = RefdataValue.get(c.coverageDepth)
+          }
+          else if (c.coverageDepth instanceof Map) {
+            if (c.coverageDepth.id) {
+              cov_depth = RefdataValue.get(c.coverageDepth.id)
             }
+            else {
+              cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
+            }
+          }
+
+          tipp.addToCoverageStatements('startVolume': c.startVolume,          \
+                     'startIssue': c.startIssue,          \
+                     'endVolume': c.endVolume,          \
+                     'endIssue': c.endIssue,          \
+                     'embargo': c.embargo,          \
+                     'coverageDepth': cov_depth,          \
+                     'coverageNote': c.coverageNote,          \
+                     'startDate': startAsDate,          \
+                     'endDate': endAsDate
+          )
+        }
+        // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
+      }
+
+      def old_cs = tipp.coverageStatements
+      if (new_ids?.size() > 0) {
+        for (def cs : old_cs) {
+          if (!new_ids.contains(cs.id)) {
+            tipp.removeFromCoverageStatements(cs)
           }
         }
       }
@@ -820,20 +943,19 @@ class TitleInstancePackagePlatform extends KBComponent {
       tipp.save(flush: true, failOnError: true);
 
       result = tipp
-    } else {
-      log.debug("Not able to reference TIPP: ${tipp_dto}")
     }
+
     result
   }
 
 
   @Transient
   static def oaiConfig = [
-    id             : 'tipps',
-    textDescription: 'TIPP repository for GOKb',
-    pkg            : 'Package.Tipps',
-    query          : " from TitleInstancePackagePlatform as o ",
-    pageSize       : 10
+      id             : 'tipps',
+      textDescription: 'TIPP repository for GOKb',
+      pkg            : 'Package.Tipps',
+      query          : " from TitleInstancePackagePlatform as o ",
+      pageSize       : 10
   ]
 
   /**
@@ -907,7 +1029,8 @@ class TitleInstancePackagePlatform extends KBComponent {
                 'name'(provider?.name)
                 'mission'(provider?.mission?.value)
               }
-            } else {
+            }
+            else {
               builder.'provider'()
             }
             if (nominalPlatform) {
@@ -915,7 +1038,8 @@ class TitleInstancePackagePlatform extends KBComponent {
                 'name'(nominalPlatform.name?.trim())
                 'primaryUrl'(nominalPlatform.primaryUrl?.trim())
               }
-            } else {
+            }
+            else {
               builder.'nominalPlatform'()
             }
             builder.'curatoryGroups' {
@@ -936,15 +1060,15 @@ class TitleInstancePackagePlatform extends KBComponent {
         if (cov_statements?.size() > 0) {
           cov_statements.each { tcs ->
             'coverage'(
-              startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
-              startVolume: (tcs.startVolume),
-              startIssue: (tcs.startIssue),
-              endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
-              endVolume: (tcs.endVolume),
-              endIssue: (tcs.endIssue),
-              coverageDepth: (tcs.coverageDepth?.value ?: null),
-              coverageNote: (tcs.coverageNote),
-              embargo: (tcs.embargo)
+                startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+                startVolume: (tcs.startVolume),
+                startIssue: (tcs.startIssue),
+                endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+                endVolume: (tcs.endVolume),
+                endIssue: (tcs.endIssue),
+                coverageDepth: (tcs.coverageDepth?.value ?: null),
+                coverageNote: (tcs.coverageNote),
+                embargo: (tcs.embargo)
             )
           }
         }

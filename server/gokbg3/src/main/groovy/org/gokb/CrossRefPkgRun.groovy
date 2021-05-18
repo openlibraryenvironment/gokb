@@ -135,11 +135,11 @@ class CrossRefPkgRun {
       handleUpdateToken()
 
       existing_tipp_ids = TitleInstance.executeQuery(
-        "select tipp.id from TitleInstancePackagePlatform tipp, Combo combo where " +
-          "tipp.status in :status and " +
-          "combo.toComponent = tipp and " +
-          "combo.fromComponent = :package",
-        [package: pkg, status: [status_current, status_expected]])
+          "select tipp.id from TitleInstancePackagePlatform tipp, Combo combo where " +
+              "tipp.status in :status and " +
+              "combo.toComponent = tipp and " +
+              "combo.fromComponent = :package",
+          [package: pkg, status: [status_current, status_expected]])
       log.debug("Matched package has ${pkg.tipps.size()} TIPPs")
       total = rjson.tipps.size() + (addOnly ? 0 : existing_tipp_ids.size())
 
@@ -184,13 +184,13 @@ class CrossRefPkgRun {
 
         if (invalidTipps.contains(json_tipp)) {
           reviewRequestService.raise(
-            pkg,
-            "TIPP rejected",
-            "TIPP ${json_tipp.name ?: json_tipp.title.name} coudn't be imported. ${(currentTippError as JSON).toString()}",
-            user,
-            null,
-            (currentTippError as JSON).toString(),
-            rr_TIPPs_invalid
+              pkg,
+              "TIPP rejected",
+              "TIPP ${json_tipp.name ?: json_tipp.title.name} coudn't be imported. ${(currentTippError as JSON).toString()}",
+              user,
+              null,
+              (currentTippError as JSON).toString(),
+              rr_TIPPs_invalid
           )
           job?.message("skipped invalid title ${(currentTippError as JSON).toString()}")
         }
@@ -266,13 +266,13 @@ class CrossRefPkgRun {
             def additionalInfo = [:]
             additionalInfo.vars = [pkg.id, removedNum]
             reviewRequestService.raise(
-              pkg,
-              "TIPPs retired.",
-              "An update to package ${pkg.id} did not contain ${removedNum} previously existing TIPPs.",
-              user,
-              null,
-              (additionalInfo as JSON).toString(),
-              rr_TIPPs_retired
+                pkg,
+                "TIPPs retired.",
+                "An update to package ${pkg.id} did not contain ${removedNum} previously existing TIPPs.",
+                user,
+                null,
+                (additionalInfo as JSON).toString(),
+                rr_TIPPs_retired
             )
           }
         }
@@ -321,16 +321,16 @@ class CrossRefPkgRun {
       def result_object = JobResult.findByUuid(job?.uuid)
       if (!result_object) {
         def job_map = [
-          uuid        : (job?.uuid),
-          description : (job?.description),
-          resultObject: (jsonResult as JSON).toString(),
-          type        : (job?.type),
-          statusText  : (jsonResult.result),
-          ownerId     : (job?.ownerId),
-          groupId     : (job?.groupId),
-          startTime   : (job?.startTime),
-          endTime     : (job?.endTime),
-          linkedItemId: (job?.linkedItem?.id)
+            uuid        : (job?.uuid),
+            description : (job?.description),
+            resultObject: (jsonResult as JSON).toString(),
+            type        : (job?.type),
+            statusText  : (jsonResult.result),
+            ownerId     : (job?.ownerId),
+            groupId     : (job?.groupId),
+            startTime   : (job?.startTime),
+            endTime     : (job?.endTime),
+            linkedItemId: (job?.linkedItem?.id)
         ]
         new JobResult(job_map).save(flush: true, failOnError: true)
       }
@@ -370,7 +370,7 @@ class CrossRefPkgRun {
     }
 
     if (curatory_group_ids || !curated_pkg
-      || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
+        || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
       componentUpdateService.ensureCoreData(pkg, rjson.packageHeader, fullsync, user)
 
       if (!pkg_validation.match && rjson.packageHeader.generateToken) {
@@ -408,13 +408,13 @@ class CrossRefPkgRun {
 
     try {
       ti = titleLookupService.findOrCreate(
-        titleObj.name,
-        titleObj.publisher,
-        titleObj.identifiers,
-        user,
-        null,
-        title_class_name,
-        titleObj.uuid
+          titleObj.name,
+          titleObj.publisher,
+          titleObj.identifiers,
+          user,
+          null,
+          title_class_name,
+          titleObj.uuid
       )
 
       if (ti?.id && !ti.hasErrors()) {
@@ -433,9 +433,9 @@ class CrossRefPkgRun {
         componentUpdateService.ensureCoreData(ti, titleObj, fullsync, user)
 
         title_changed |= componentUpdateService.setAllRefdata([
-          'OAStatus', 'medium', 'language',
-          'pureOA', 'continuingSeries',
-          'reasonRetired'
+            'OAStatus', 'medium', 'language',
+            'pureOA', 'continuingSeries',
+            'reasonRetired'
         ], titleObj, ti)
 
         def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
@@ -453,9 +453,9 @@ class CrossRefPkgRun {
               currentTippError.title = [:]
             }
             currentTippError[title].put('historyEvents': [
-              message: messageService.resolveCode('crossRef.package.tipps.error.title.history', null, locale),
-              baddata: tippJson.title,
-              errors : he_result.errors])
+                message: messageService.resolveCode('crossRef.package.tipps.error.title.history', null, locale),
+                baddata: tippJson.title,
+                errors : he_result.errors])
           }
         }
 
@@ -482,8 +482,8 @@ class CrossRefPkgRun {
       log.error("Handling MultipleComponentsMatchedException")
       invalidTipps << tippJson
       titleErrorMap.put('name', [
-        message: messageService.resolveCode('crossRef.title.error.multipleMatches', [tippJson?.title?.name, mcme.matched_ids], locale),
-        baddata: tippJson?.title?.name])
+          message: messageService.resolveCode('crossRef.title.error.multipleMatches', [tippJson?.title?.name, mcme.matched_ids], locale),
+          baddata: tippJson?.title?.name])
       return titleErrorMap
     }
     catch (ValidationException ve) {
@@ -497,8 +497,8 @@ class CrossRefPkgRun {
       invalidTipps << tippJson
       log.error("Failed to locate a title for ${tippJson?.title} when attempting to create TIPP")
       titleErrorMap.put('name', [
-        message: messageService.resolveCode('crossRef.package.tipps.error.title', [tippJson.title.name], locale),
-        baddata: tippJson?.title?.name])
+          message: messageService.resolveCode('crossRef.package.tipps.error.title', [tippJson.title.name], locale),
+          baddata: tippJson?.title?.name])
     }
     return titleErrorMap
   }
@@ -536,8 +536,8 @@ class CrossRefPkgRun {
             log.error("Could not find/create ${tippPlt}")
             invalidTipps << tippJson
             pltError.putAll([
-              message: messageService.resolveCode('crossRef.package.tipps.error.platform', [tippPlt.name], locale),
-              baddata: tippPlt])
+                message: messageService.resolveCode('crossRef.package.tipps.error.platform', [tippPlt.name], locale),
+                baddata: tippPlt])
             return pltError
           }
         }
@@ -585,9 +585,9 @@ class CrossRefPkgRun {
       catch (Exception ge) {
         log.error("Exception attempting to cross reference TIPP:", ge)
         def tipp_error = [
-          message: messageService.resolveCode('crossRef.package.tipps.error', [tippJson.title.name], locale),
-          baddata: tippJson,
-          errors : [message: ge.toString()]
+            message: messageService.resolveCode('crossRef.package.tipps.error', [tippJson.title.name], locale),
+            baddata: tippJson,
+            errors : [message: ge.toString()]
         ]
         upserted_tipp?.discard()
         return tipp_error
@@ -609,13 +609,13 @@ class CrossRefPkgRun {
           if (upserted_tipp.isDeleted() && !fullsync) {
             // upserted_tipp.merge(flush: true)
             reviewRequestService.raise(
-              upserted_tipp,
-              "Matched TIPP was marked as Deleted.",
-              "Check TIPP Status.",
-              user,
-              null,
-              null,
-              rr_deleted
+                upserted_tipp,
+                "Matched TIPP was marked as Deleted.",
+                "Check TIPP Status.",
+                user,
+                null,
+                null,
+                rr_deleted
             )
           }
           upserted_tipp.status = status_current
@@ -626,13 +626,13 @@ class CrossRefPkgRun {
           def additionalInfo = [:]
           additionalInfo.vars = [upserted_tipp.hostPlatform.name, upserted_tipp.hostPlatform.status?.value]
           reviewRequestService.raise(
-            upserted_tipp,
-            "The existing platform matched for this TIPP (${upserted_tipp.hostPlatform}) is marked as ${upserted_tipp.hostPlatform.status?.value}! Please review the URL/Platform for validity.",
-            "Platform not marked as current.",
-            user,
-            null,
-            (additionalInfo as JSON).toString(),
-            rr_nonCurrent
+              upserted_tipp,
+              "The existing platform matched for this TIPP (${upserted_tipp.hostPlatform}) is marked as ${upserted_tipp.hostPlatform.status?.value}! Please review the URL/Platform for validity.",
+              "Platform not marked as current.",
+              user,
+              null,
+              (additionalInfo as JSON).toString(),
+              rr_nonCurrent
           )
         }
       }
@@ -640,8 +640,8 @@ class CrossRefPkgRun {
         log.debug("Could not reference TIPP")
         invalidTipps << tippJson
         def tipp_error = [
-          message: messageService.resolveCode('crossRef.package.tipps.error', [tippJson.title.name], locale),
-          baddata: tippJson
+            message: messageService.resolveCode('crossRef.package.tipps.error', [tippJson.title.name], locale),
+            baddata: tippJson
         ]
         return tipp_error
       }
