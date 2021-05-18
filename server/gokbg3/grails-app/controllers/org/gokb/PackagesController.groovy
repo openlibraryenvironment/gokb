@@ -383,6 +383,7 @@ class PackagesController {
 
     if (request.method == "POST") {
       def packs = []
+      def type = request.JSON.data.exportType=='title'?PackageService.ExportType.KBART_TITLE:PackageService.ExportType.KBART_TIPP
 
       request.JSON.data.ids.each { id ->
         def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
@@ -395,6 +396,7 @@ class PackagesController {
     }
     else {
       def ids = params.list('pkg')
+      def type = params.exportType == 'title' ? PackageService.ExportType.KBART_TITLE : PackageService.ExportType.KBART_TIPP
 
       if (!ids || ids.size() <= 1) {
         if (params.id == "all") {
