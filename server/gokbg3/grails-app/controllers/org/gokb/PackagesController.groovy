@@ -379,8 +379,6 @@ class PackagesController {
 
   @Transactional(readOnly = true)
   def kbart() {
-    def type = params.exportType == 'title' ? PackageService.ExportType.KBART_TITLE : PackageService.ExportType.KBART_TIPP
-
     if (request.method == "POST") {
       def packs = []
       def type = request.JSON.data.exportType=='title'?PackageService.ExportType.KBART_TITLE:PackageService.ExportType.KBART_TIPP
