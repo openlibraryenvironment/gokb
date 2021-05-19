@@ -304,7 +304,7 @@ class IntegrationControllerSpec extends Specification {
     matching_with_class_one_ids?.size() == 1
   }
 
-  void "Test update Tipps :: Import a Package"() {
+  void "Test updatePackageTipps :: Import a package without title matching"() {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
