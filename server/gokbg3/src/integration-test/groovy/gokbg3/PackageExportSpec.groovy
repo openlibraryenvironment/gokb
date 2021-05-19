@@ -72,9 +72,22 @@ class PackageExportSpec extends Specification {
     resp.headers["Content-Disposition"] == ["attachment; filename=\"UnknownProvider_${pack1.global.value}_${pack1.name}_${new SimpleDateFormat("yyyy-MM-dd").format(new Date())}.tsv\""]
   }
 
-  void "test POST /packages/packageTSVExport/"() {
+  void "test multiple results /packages/packageTSVExport/"() {
     given:
     def urlPath = getUrlPath()
+
+    when:
+    RestResponse resp = rest.get("${urlPath}/packages/packageTSVExport?pkg=${pack1.uuid}&pkg=${pack2.uuid}")
+
+    then:
+    resp.status == 200 // OK
+    resp.body.contains("GoKBPackage-" + pack1.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
+    resp.body.contains("GoKBPackage-" + pack2.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
+    resp.headers["Content-Disposition"] == ["attachment; filename=\"gokbExport.zip\""]
+  }
+
+
+  void "test POST /packages/packageTSVExport/"() {
     def ids = [
       data: [ids: [pack1.uuid, pack2.uuid]]
     ]
@@ -83,6 +96,7 @@ class PackageExportSpec extends Specification {
     RestResponse resp = rest.post("${urlPath}/packages/packageTSVExport/") {
       body(ids as JSON)
     }
+
 
     then:
     resp.status == 200 // OK
