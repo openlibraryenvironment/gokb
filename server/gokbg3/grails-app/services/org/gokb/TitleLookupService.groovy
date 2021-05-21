@@ -1301,7 +1301,10 @@ class TitleLookupService {
               ti,
               "'${title}' added as a variant of '${ti.name}'.",
               "Match was made on 1st class identifier but title name seems to be very different.",
-              user, project
+              user,
+              project,
+              null,
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Mismatch')
           )
         }
         break
