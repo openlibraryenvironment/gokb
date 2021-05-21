@@ -180,7 +180,7 @@ class OaiController {
 
       render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
     } catch (java.io.IOException ioe) {
-      if (ioe.getMessage().contains("Broken pipe")) {
+      if (ioe.getMessage() =~ /[Bb]roken [Pp]ipe/) {
         log.debug("OAI GetRecord request cancelled ..")
       }
       else {
@@ -758,7 +758,7 @@ class OaiController {
         log.debug("Render");
       }
     } catch (java.io.IOException ioe) {
-      if (ioe.getMessage().contains("Broken pipe")) {
+      if (ioe.getMessage() =~ /[Bb]roken [Pp]ipe/) {
         log.debug("OAI ListRecord request cancelled ..")
       }
       else {
