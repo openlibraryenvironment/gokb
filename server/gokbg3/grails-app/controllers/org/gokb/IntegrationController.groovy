@@ -872,20 +872,16 @@ class IntegrationController {
   }
 
   def updatePackageTipps(){
-    // identical JSON as crossReferencePackage, but without any title matching:
-    // puts the data into TIPPs for later processing with the title attribute blank
     def result = ['result': 'OK']
     def async = params.async ? params.boolean('async') : false
     def addOnly = params.addOnly ? params.boolean('addOnly') : false
     def request_locale = RequestContextUtils.getLocale(request)
     def rjson = request.JSON
-    def cancelled = false
-    UpdateToken updateToken = null
     User request_user = null
     def fullsync = false
     def token = null
 
-    log.debug("crossReferencePackage (${request_locale})")
+    log.debug("updatePackage (${request_locale})")
 
     if (springSecurityService.isLoggedIn()) {
       request_user = springSecurityService.currentUser
@@ -921,23 +917,23 @@ class IntegrationController {
     }
 
     if (!async) {
-      result = crossReferenceService.xRefPkg(rjson,
+      result = crossReferenceService.updatePackage(rjson,
           addOnly as boolean, fullsync as boolean, token != null,
-          request_locale, request_user, null, true)
-      log.debug("xRefPkg Result:\n$result")
+          request_locale, request_user, null)
+      log.debug("updatePackage Result:\n$result")
     }
     else {
       // start xRef Job
       Job background_job = concurrencyManagerService.createJob { Job job ->
-        crossReferenceService.xRefPkg(rjson, addOnly as boolean, fullsync as boolean,
-            token != null, request_locale, request_user, job, true)
+        crossReferenceService.updatePackage(rjson, addOnly as boolean, fullsync as boolean,
+            token != null, request_locale, request_user, job)
       }
       log.debug("Starting job ${background_job}..")
       background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
       background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
       background_job.linkedItem = [name: rjson.packageHeader.name,
                                    type: "Package"]
-      background_job.message("Starting upsert for Package ${rjson.packageHeader.name}")
+      background_job.message("Starting TIPPS update for Package ${rjson.packageHeader.name}")
       background_job.startOrQueue()
       background_job.startTime = new Date()
       result << [job_id: background_job.uuid,
@@ -997,7 +993,7 @@ class IntegrationController {
     if (!async) {
       result = crossReferenceService.xRefPkg(rjson,
           addOnly as boolean, fullsync as boolean, token != null,
-          request_locale, request_user)
+          request_locale, request_user, null)
       log.debug("xRefPkg Result:\n$result")
     }
     else {
@@ -1551,7 +1547,7 @@ class IntegrationController {
 
     def book_changed = false
 
-    def bookStringAttrs = ["editionNumber", "editionDifferentiator",
+    def bookStringAttrs = ["editionDifferentiator",
                            "editionStatement", "volumeNumber",
                            "summaryOfContent", "firstAuthor", "firstEditor"]
 

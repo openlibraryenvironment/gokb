@@ -211,9 +211,6 @@
 
     <div class="tab-pane" id="bookdetails">
       <dl class="dl-horizontal">
-        <dt> <g:annotatedLabel owner="${d}" property="editionNumber">Edition Number</g:annotatedLabel> </dt>
-        <dd> <g:xEditable class="ipe" owner="${d}" field="editionNumber" /> </dd>
-
         <dt> <g:annotatedLabel owner="${d}" property="coverImage">Cover Image URL</g:annotatedLabel> </dt>
         <dd> <g:xEditable class="ipe" owner="${d}" field="coverImage" /> </dd>
 

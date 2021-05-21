@@ -20,7 +20,7 @@ class TippMatchingJob {
   }
 
   def execute() {
-    TitleInstance.withSession {
+//    TitleInstance.withSession {
       def tippIDs = TitleInstancePackagePlatform.executeQuery(
           "select id from TitleInstancePackagePlatform tipp where status != :sdel and not exists (select c from Combo as c where c.type = :ctype and c.toComponent = tipp)",
           [sdel : RefdataCategory.lookup('KBComponent.Status', 'Deleted'),
@@ -39,6 +39,6 @@ class TippMatchingJob {
         }
         log.debug("end tipp")
       }
-    }
+  //  }
   }
 }

@@ -7,6 +7,7 @@ import org.gokb.*
 import org.gokb.cred.BookInstance
 import org.gokb.cred.Identifier
 import org.gokb.cred.IdentifierNamespace
+import org.gokb.cred.KBComponent
 import org.gokb.cred.Package
 import org.gokb.cred.Platform
 import org.gokb.cred.RefdataCategory
@@ -50,21 +51,20 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
   void "Test create new title from a minimal TIPP"() {
     given:
     def tmap = [
-        'pkg'         : pkg,
-        'title'       : null,
-        'hostPlatform': plt,
-        'url'         : null,
-        'uuid'        : UUID.randomUUID(),
-        'status'      : "Current",
-        'name'        : "Test Title Name from TIPP",
-        'editStatus'  : "Approved",
-        'language'    : "ger",
-        'type'        : "Monograph"
+        'pkg'            : pkg,
+        'title'          : null,
+        'hostPlatform'   : plt,
+        'url'            : null,
+        'uuid'           : UUID.randomUUID(),
+        'status'         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+        'name'           : "Test Title Name from TIPP",
+        'editStatus'     : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
+        'language'       : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, 'ger'),
+        'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")
     ]
 
     when:
-    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.tiplAwareCreate(tmap)
-    tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")
+    TitleInstancePackagePlatform tipp = new TitleInstancePackagePlatform(tmap)
 
     tippService.matchTitle(tipp)
 
@@ -76,22 +76,22 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     given:
     Identifier my_isbn = Identifier.findByNamespaceAndValue(IdentifierNamespace.findByValue('isbn'), '979-11-655-6390-5') ?: new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5')
     def tmap = [
-        'pkg'         : pkg,
-        'title'       : null,
-        'hostPlatform': plt,
-        'url'         : null,
-        'uuid'        : UUID.randomUUID(),
-        'status'      : "Current",
-        'name'        : "Book 1",
-        'editStatus'  : "Approved",
-        'language'    : "ger",
-        'type'        : "Monograph"
+        'pkg'            : pkg,
+        'title'          : null,
+        'hostPlatform'   : plt,
+        'url'            : null,
+        'uuid'           : UUID.randomUUID(),
+        'status'         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+        'name'           : book.name,
+        'editStatus'     : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
+        'language'       : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, 'ger'),
+        'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph"),
+        'ids'            : [my_isbn]
     ]
 
     when:
-    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.tiplAwareCreate(tmap)
-    tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")
-    tipp.ids = [my_isbn]
+    TitleInstancePackagePlatform tipp = new TitleInstancePackagePlatform(tmap)
+//    tipp.ids = [my_isbn]
 
     tippService.matchTitle(tipp)
 

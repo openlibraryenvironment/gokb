@@ -1,20 +1,17 @@
 package org.gokb
 
-import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService.Job
 import gokbg3.MessageService
 import grails.converters.JSON
 import grails.plugin.springsecurity.SpringSecurityService
 import grails.util.Holders
-import grails.validation.ValidationException
 import groovy.util.logging.Slf4j
 import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
-import org.gokb.exceptions.MultipleComponentsMatchedException
 import org.grails.web.json.JSONObject
 
 @Slf4j
-class CrossRefPkgRun {
+class UpdatePkgTippsRun {
 
   static MessageService messageService = Holders.grailsApplication.mainContext.getBean('messageService')
   static PackageService packageService = Holders.grailsApplication.mainContext.getBean('packageService')
@@ -23,6 +20,7 @@ class CrossRefPkgRun {
   static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
   static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
   static CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
+  static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
 
   def rjson // request JSON
   boolean addOnly
@@ -50,7 +48,7 @@ class CrossRefPkgRun {
   def rr_TIPPs_invalid
   def status_ip
 
-  public CrossRefPkgRun(JSONObject json, Boolean add, Boolean full, Boolean isAutoUpdate, Locale loc, User u) {
+  public UpdatePkgTippsRun(JSONObject json, Boolean add, Boolean full, Boolean isAutoUpdate, Locale loc, User u) {
     rjson = json
     addOnly = add
     fullsync = full
@@ -154,14 +152,6 @@ class CrossRefPkgRun {
           log.error("No package")
           currentTippError.put('package', ['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale), baddata: json_tipp.package])
           invalidTipps << json_tipp
-        }
-
-        if (!invalidTipps.contains(json_tipp)) {
-          // validate and upsert TitleInstance
-          Map titleErrorMap = handleTitle(json_tipp)
-          if (titleErrorMap.size() > 0) {
-            currentTippError.put('title', titleErrorMap)
-          }
         }
 
         if (!invalidTipps.contains(json_tipp)) {
@@ -387,120 +377,6 @@ class CrossRefPkgRun {
     }
   }
 
-  private Map handleTitle(JSONObject tippJson) {
-    Map titleErrorMap = [:] // [<jsonPropertyName>: [message: <msg>, baddata: <jsonPropertyValue>], ..]
-    def title_validation = Class.forName(TitleInstance.determineTitleClass(tippJson.title)).validateDTO(tippJson.title, locale)
-    if (title_validation && title_validation.errors?.size() > 0) {
-      titleErrorMap.putAll(title_validation.errors)
-      if (title_validation && !title_validation.valid) {
-        log.error("invalid title data $tippJson.title: ${title_validation.errors}")
-        invalidTipps << tippJson
-        return titleErrorMap
-      }
-    }
-
-    def ti = null
-    def titleObj = tippJson.title.name ? tippJson.title : tippJson
-    def title_changed = false
-    def title_class_name = TitleInstance.determineTitleClass(titleObj)
-
-    try {
-      ti = titleLookupService.findOrCreate(
-          titleObj.name,
-          titleObj.publisher,
-          titleObj.identifiers,
-          user,
-          null,
-          title_class_name,
-          titleObj.uuid
-      )
-
-      if (ti?.id && !ti.hasErrors()) {
-        if (titleObj.imprint) {
-          if (ti.imprint?.name == titleObj.imprint) {
-            // Imprint already set
-          }
-          else {
-            def imprint = Imprint.findByName(titleObj.imprint) ?: new Imprint(name: titleObj.imprint).save(failOnError: true)
-            ti.imprint = imprint
-            title_changed = true
-          }
-        }
-
-        // Add the core data.
-        componentUpdateService.ensureCoreData(ti, titleObj, fullsync, user)
-
-        title_changed |= componentUpdateService.setAllRefdata([
-            'OAStatus', 'medium', 'language',
-            'pureOA', 'continuingSeries',
-            'reasonRetired'
-        ], titleObj, ti)
-
-        def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
-        def pubTo = GOKbTextUtils.completeDateString(titleObj.publishedTo, false)
-
-        log.debug("Completed date publishedFrom ${titleObj.publishedFrom} -> ${pubFrom}")
-
-        title_changed |= ClassUtils.setDateIfPresent(pubFrom, ti, 'publishedFrom')
-        title_changed |= ClassUtils.setDateIfPresent(pubTo, ti, 'publishedTo')
-
-        if (titleObj.historyEvents?.size() > 0) {
-          def he_result = titleHistoryService.processHistoryEvents(ti, titleObj, title_class_name, user, fullsync, locale)
-          if (he_result.errors) {
-            if (!currentTippError.title) {
-              currentTippError.title = [:]
-            }
-            currentTippError[title].put('historyEvents': [
-                message: messageService.resolveCode('crossRef.package.tipps.error.title.history', null, locale),
-                baddata: tippJson.title,
-                errors : he_result.errors])
-          }
-        }
-
-        if (title_class_name == 'org.gokb.cred.BookInstance') {
-          log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
-          title_changed |= ti.addMonographFields(titleObj)
-        }
-
-        if (title_changed) {
-          ti.merge(flush: true)
-        }
-        titleLookupService.addPublisherHistory(ti, titleObj.publisher_history)
-        tippJson.title.internalId = ti.id
-      }
-      else {
-        if (ti != null) {
-          titleErrorMap.putAll(messageService.processValidationErrors(ti.errors))
-          ti.discard()
-        }
-        invalidTipps << tippJson
-      }
-    }
-    catch (MultipleComponentsMatchedException mcme) {
-      log.error("Handling MultipleComponentsMatchedException")
-      invalidTipps << tippJson
-      titleErrorMap.put('name', [
-          message: messageService.resolveCode('crossRef.title.error.multipleMatches', [tippJson?.title?.name, mcme.matched_ids], locale),
-          baddata: tippJson?.title?.name])
-      return titleErrorMap
-    }
-    catch (ValidationException ve) {
-      log.error("ValidationException attempting to cross reference title", ve)
-      invalidTipps << tippJson
-      titleErrorMap.putAll(messageService.processValidationErrors(ve.errors))
-      return titleErrorMap
-    }
-
-    if (!invalidTipps.contains(tippJson) && tippJson.title.internalId == null) {
-      invalidTipps << tippJson
-      log.error("Failed to locate a title for ${tippJson?.title} when attempting to create TIPP")
-      titleErrorMap.put('name', [
-          message: messageService.resolveCode('crossRef.package.tipps.error.title', [tippJson.title.name], locale),
-          baddata: tippJson?.title?.name])
-    }
-    return titleErrorMap
-  }
-
   private Map handlePlt(JSONObject tippJson) {
     def pltKey = 'platform'
     def tippPlt = tippJson[pltKey]
@@ -547,6 +423,7 @@ class CrossRefPkgRun {
       }
     }
     tippJson[pltKey].internalId = pl.id
+    tippJson.hostPlatform = tippJson[pltKey]
     return pltError
   }
 
@@ -564,47 +441,86 @@ class CrossRefPkgRun {
         tippError.putAll(validation_result.errors)
       }
       log.debug("upsert TIPP ${tippJson.name ?: tippJson.title.name}")
-      def upserted_tipp = null
+      def current_tipps = null
+      TitleInstancePackagePlatform tipp
       try {
-        upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tippJson, user)
-        log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp?.url}")
-        upserted_tipp.merge(flush: true)
-        componentUpdateService.ensureCoreData(upserted_tipp, tippJson, fullsync, user)
-      }
-      catch (grails.validation.ValidationException ve) {
-        log.error("ValidationException attempting to cross reference TIPP", ve)
-        upserted_tipp?.discard()
+        current_tipps = findTipps(tippJson)
+        // Fallunterscheidung
+        if (current_tipps.size() == 1) {
+          // MATCH!  -> TIPP updaten
+          tipp = current_tipps[0]
+          // update Data
+          componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
+        }
+        else {
+          // TIPP neu anlegen
+          def idents = []
+          tippJson.identifiers.each { ident ->
+            idents << componentLookupService.lookupOrCreateCanonicalIdentifier(ident.type, ident.value)
+          }
+          tipp = new TitleInstancePackagePlatform(
+              [
+                  'pkg'            : Package.get(tippJson.package.internalId),
+                  'title'          : null,
+                  'hostPlatform'   : Platform.get(tippJson.hostPlatform.internalId),
+                  'url'            : null,
+                  'uuid'           : tippJson.uuid ?: UUID.randomUUID(),
+                  'status'         : tippJson.status ? RefdataCategory.lookup(KBComponent.RD_STATUS, tippJson.status) : null,
+                  'name'           : tippJson.name,
+                  'editStatus'     : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
+                  'language'       : tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : null,
+                  'publicationType': tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : null,
+                  'importId'       : tippJson.title_id ?: null,
+                  ids              : idents]
+          ).save(flush: true)
+          componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
+        }
+        log.debug("Upserted TIPP ${tipp} with URL ${tipp?.url}")
+        tipp?.merge(flush: true)
+        if (current_tipps.size() > 1 && tipp) {
+          // RR für Multimatch generieren
+          reviewRequestService.raise(
+              tipp,
+              "TIPP has multiple matches.",
+              "Multiple Identifiers Matches for TIPP.",
+              user,
+              null,
+              current_tipps
+          )
+        }
+      } catch (grails.validation.ValidationException ve) {
+        log.error("ValidationException attempting to create/update TIPP", ve)
+        tipp?.expunge()
         tippError.putAll(messageService.processValidationErrors(ve.errors))
         return tippError
       }
       catch (Exception ge) {
-        log.error("Exception attempting to cross reference TIPP:", ge)
+        log.error("Exception attempting to create/update TIPP:", ge)
         def tipp_error = [
-            message: messageService.resolveCode('crossRef.package.tipps.error', [tippJson.title.name], locale),
+            message: messageService.resolveCode('crossRef.package.tipps.error', [tippJson.name], locale),
             baddata: tippJson,
             errors : [message: ge.toString()]
         ]
-        upserted_tipp?.discard()
+        tipp?.expunge()
         return tipp_error
       }
-      if (upserted_tipp) {
-        if (existing_tipp_ids.size() > 0 && existing_tipp_ids.contains(upserted_tipp.id)) {
+      if (tipp) {
+        if (existing_tipp_ids.size() > 0 && existing_tipp_ids.contains(tipp.id)) {
           log.debug("Existing TIPP matched!")
-          existing_tipp_ids.removeElement(upserted_tipp.id)
+          existing_tipp_ids.removeElement(tipp.id)
         }
-        if (upserted_tipp.status != status_deleted && tippJson.status == "Deleted") {
-          upserted_tipp.deleteSoft()
+        if (tipp.status != status_deleted && tippJson.status == "Deleted") {
+          tipp.deleteSoft()
           removedNum++;
         }
-        else if (upserted_tipp.status != status_retired && tippJson.status == "Retired") {
-          upserted_tipp.retire()
+        else if (tipp.status != status_retired && tippJson.status == "Retired") {
+          tipp.retire()
           removedNum++;
         }
-        else if (upserted_tipp.status != status_current && (!tippJson.status || tippJson.status == "Current")) {
-          if (upserted_tipp.isDeleted() && !fullsync) {
-            // upserted_tipp.merge(flush: true)
+        else if (tipp.status != status_current && (!tippJson.status || tippJson.status == "Current")) {
+          if (tipp.isDeleted() && !fullsync) {
             reviewRequestService.raise(
-                upserted_tipp,
+                tipp,
                 "Matched TIPP was marked as Deleted.",
                 "Check TIPP Status.",
                 user,
@@ -613,16 +529,15 @@ class CrossRefPkgRun {
                 rr_deleted
             )
           }
-          upserted_tipp.status = status_current
+          tipp.status = status_current
         }
-//        upserted_tipp.save()
-        upserted_tipp.merge(flush: true)
-        if (upserted_tipp.isCurrent() && upserted_tipp.hostPlatform?.status != status_current) {
+        tipp.merge(flush: true)
+        if (tipp.isCurrent() && tipp.hostPlatform?.status != status_current) {
           def additionalInfo = [:]
-          additionalInfo.vars = [upserted_tipp.hostPlatform.name, upserted_tipp.hostPlatform.status?.value]
+          additionalInfo.vars = [tipp.hostPlatform.name, tipp.hostPlatform.status?.value]
           reviewRequestService.raise(
-              upserted_tipp,
-              "The existing platform matched for this TIPP (${upserted_tipp.hostPlatform}) is marked as ${upserted_tipp.hostPlatform.status?.value}! Please review the URL/Platform for validity.",
+              tipp,
+              "The existing platform matched for this TIPP (${tipp.hostPlatform}) is marked as ${tipp.hostPlatform.status?.value}! Please review the URL/Platform for validity.",
               "Platform not marked as current.",
               user,
               null,
@@ -642,5 +557,53 @@ class CrossRefPkgRun {
       }
     }
     return tippError
+  }
+
+  private TitleInstancePackagePlatform[] findTipps(tippJson) {
+    def tipps = []
+    // search TIPPs for json.title_id == tipp.importId
+    TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as c ' +
+        'where c.fromComponent = :pkg and c.toComponent = tipp ' +
+        'and c.type.value = :typ ' +
+        'and tipp.importId = :tid ' +
+        'order by tipp.id',
+        [pkg: pkg, typ: "Package.Tipps", tid: tippJson.title_id]).each { tipps << it };
+    if (tipps.size() > 0)
+      return tipps
+
+    // remap JSON Identifiers to [type: value]
+    def identifiers = [:]
+    tippJson.identifiers.each { jsonId ->
+      identifiers[jsonId.type] = jsonId.value
+    }
+    tippJson.title.identifiers.each { jsonId ->
+      identifiers[jsonId.type] = jsonId.value
+    }
+    // search for package provider namespace identifier
+    IdentifierNamespace providerNamespace = pkg.provider?.titleNamespace
+    if (providerNamespace && identifiers[providerNamespace.value]) {
+      tipps = TitleInstancePackagePlatform.lookupByIO(providerNamespace.value, identifiers[providerNamespace.value])
+      if (tipps.size() > 0)
+        return tipps
+    }
+    // search for other Identifiers, depending on publicationType
+    if (tippJson.type == "Serial") {
+      // Journal
+      ['zdb', 'eissn', 'issn', 'doi'].each { ns_value ->
+        if (identifiers[ns_value]) {
+          tipps << TitleInstancePackagePlatform.lookupByIO(ns_value, identifiers[ns_value])
+        }
+      }
+      return tipps
+    }
+    else if (tippJson.type == "Monograph") {
+      // Book
+      ['zdb', 'eissn', 'issn', 'doi'].each { ns_value ->
+        if (identifiers[ns_value]) {
+          tipps << TitleInstancePackagePlatform.lookupByIO(ns_value, identifiers[ns_value])
+        }
+      }
+    }
+    return tipps
   }
 }

@@ -58,6 +58,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   String precedingPublicationTitleId
   Date lastChangedExternal
   RefdataValue medium
+  String importId
 
   private static SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
 
@@ -278,8 +279,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       new Combo(toComponent: result, fromComponent: tipp_fields.hostPlatform, type: plt_combo_type).save(flush: true, failOnError: true)
 
       def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-      if (tipp_fields.title)
-        new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
+      new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
 
       TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
     }
@@ -475,7 +475,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
 
     if (tipp_dto.medium) {
-      RefdataValue[] media = RefdataCategory.lookup("TitleInstance.Medium")
+      RefdataValue[] media = RefdataCategory.lookup("TitleInstancePackagePlatform.Medium")
       if (!media*.value.contains(tipp_dto.medium))
         errors.put('medium', [message: "unknown", baddata: tipp_dto.remove('medium')])
     }
@@ -662,7 +662,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         TitleInstancePlatform.ensure(ti, plt, trimmed_url)
       }
     }
-    else if (pkg && plt && curator) {
+    /*else if (pkg && plt && curator) {
       log.debug("See if we already have a tipp")
       def tipps = TitleInstancePackagePlatform.executeQuery(
           'select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as platform_combo  ' +
@@ -753,7 +753,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       else {
         TitleInstancePlatform.ensure(null, plt, trimmed_url)
       }
-    }
+    }*/
     if (tipp) {
       def changed = false
 
@@ -790,7 +790,6 @@ class TitleInstancePackagePlatform extends KBComponent {
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'firstEditor', tipp_dto.firstEditor)
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'publisherName', tipp_dto.publisherName)
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'volumeNumber', tipp_dto.volumeNumber)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'editionStatement', tipp_dto.editionStatement)
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'series', tipp_dto.series)
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'subjectArea', tipp_dto.subjectArea)
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'editionStatement', tipp_dto.editionStatement)
@@ -943,8 +942,9 @@ class TitleInstancePackagePlatform extends KBComponent {
       tipp.save(flush: true, failOnError: true);
 
       result = tipp
+    } else {
+      log.debug("Not able to reference TIPP: ${tipp_dto}")
     }
-
     result
   }
 

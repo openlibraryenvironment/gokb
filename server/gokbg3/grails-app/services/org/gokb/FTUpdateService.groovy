@@ -322,9 +322,6 @@ class FTUpdateService {
         if (kbc.title?.niceName == 'Book') {
           // edition for eBooks
           def edition = [:]
-          if (kbc.title?.editionNumber) {
-            edition.number = kbc.title.editionNumber
-          }
           if (kbc.title?.editionDifferentiator) {
             edition.differentiator = kbc.title.editionDifferentiator
           }

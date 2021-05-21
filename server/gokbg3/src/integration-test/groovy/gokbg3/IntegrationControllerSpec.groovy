@@ -332,9 +332,10 @@ class IntegrationControllerSpec extends Specification {
         [
           "accessEnd"  : "",
           "accessStart": "",
+          "title_id": "wildeTitleId",
           "identifiers": [
             [
-              "type" : "global",
+              "type" : "doi",
               "value": "testTippId"
             ]
           ],
@@ -351,12 +352,13 @@ class IntegrationControllerSpec extends Specification {
               "startVolume"  : "1"
             ]
           ],
-          "medium"     : "Electronic",
+          "medium"     : "Journal",
           "platform"   : [
             "name"      : "ACS Publications",
             "primaryUrl": "https://pubs.acs.org"
           ],
           "status"     : "Current",
+          "editStatus"     : "In Progress",
           "title"      : [
             "identifiers": [
               [
@@ -394,6 +396,7 @@ class IntegrationControllerSpec extends Specification {
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
     matching_pkgs[0].tipps?.size() == 1
+    matching_pkgs[0].tipps[0].importId == "wildeTitleId"
     matching_pkgs[0].provider?.name == "American Chemical Society"
     matching_pkgs[0].ids?.size() == 1
   }

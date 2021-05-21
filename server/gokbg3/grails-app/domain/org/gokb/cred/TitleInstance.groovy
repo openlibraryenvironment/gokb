@@ -339,7 +339,6 @@ class TitleInstance extends KBComponent {
 
           if (this.class.name == 'org.gokb.cred.BookInstance') {
 
-            builder.'editionNumber'(this.editionNumber)
             builder.'editionDifferentiator'(this.editionDifferentiator)
             builder.'editionStatement'(this.editionStatement)
             builder.'volumeNumber'(this.volumeNumber)
