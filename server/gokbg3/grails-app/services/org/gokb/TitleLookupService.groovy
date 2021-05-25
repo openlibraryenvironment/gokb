@@ -235,7 +235,7 @@ class TitleLookupService {
            def identifiers,
            def newTitleClassName
   ) {
-    def result = [to_create: false, matches: []]
+    def result = [to_create: false, matches: [], conflicts: []]
     TitleInstance the_title = null
     Class ti_class = Class.forName(newTitleClassName)
 
@@ -284,7 +284,7 @@ class TitleLookupService {
 
             if (string_matched) {
               log.debug("TI matched by bucket.")
-              def title_match = [object: string_matched, warnings: ['bucket']]
+              def title_match = [object: string_matched, conflicts: [], warnings: ['bucket']]
 
               if (title != string_matched.name) {
                 title_match.conflicts.add([message: "Found a title with a different primary name!", field: "name", value: title, matched: string_matched.name])

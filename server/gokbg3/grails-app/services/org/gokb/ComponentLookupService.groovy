@@ -124,7 +124,7 @@ class ComponentLookupService {
   }
 
   private static def findOrCreateId(String ns, String value, boolean ns_create = true) {
-    // log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
+    log.debug("lookupOrCreateCanonicalIdentifier(${ns},${value})");
     def namespace = null
     def identifier = null
     def namespaces = IdentifierNamespace.findAllByValueIlike(ns)

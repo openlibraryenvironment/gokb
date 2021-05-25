@@ -429,7 +429,10 @@ class UpdatePkgTippsRun {
 
   private Map handleTIPP(JSONObject tippJson) {
     Map tippError = [:]
+    def stash = tippJson.title
+    tippJson.title = null
     def validation_result = TitleInstancePackagePlatform.validateDTO(tippJson, locale)
+    tippJson.title = stash
     log.debug("validate TIPP ${tippJson.name ?: tippJson.title.name}")
     if (!validation_result.valid) {
       invalidTipps << tippJson
@@ -470,12 +473,13 @@ class UpdatePkgTippsRun {
                   'editStatus'     : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
                   'language'       : tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : null,
                   'publicationType': tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : null,
-                  'importId'       : tippJson.title_id ?: null,
-                  ids              : idents]
+                  'importId'       : tippJson.title_id ?: null]
           ).save(flush: true)
+          idents.each { tipp.ids << it }
+          // TODO: ZDB-Matching when zdb_ID is present
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
         }
-        log.debug("Upserted TIPP ${tipp} with URL ${tipp?.url}")
+        log.debug("Updated/Created TIPP ${tipp} with URL ${tipp?.url}")
         tipp?.merge(flush: true)
         if (current_tipps.size() > 1 && tipp) {
           // RR für Multimatch generieren
@@ -576,13 +580,15 @@ class UpdatePkgTippsRun {
     tippJson.identifiers.each { jsonId ->
       identifiers[jsonId.type] = jsonId.value
     }
-    tippJson.title.identifiers.each { jsonId ->
-      identifiers[jsonId.type] = jsonId.value
+    if (identifiers.size() == 0) {
+      tippJson.title.identifiers.each { jsonId ->
+        identifiers[jsonId.type] = jsonId.value
+      }
     }
     // search for package provider namespace identifier
     IdentifierNamespace providerNamespace = pkg.provider?.titleNamespace
     if (providerNamespace && identifiers[providerNamespace.value]) {
-      tipps = TitleInstancePackagePlatform.lookupByIO(providerNamespace.value, identifiers[providerNamespace.value])
+      tipps.add(TitleInstancePackagePlatform.lookupByIO(providerNamespace.value, identifiers[providerNamespace.value]))
       if (tipps.size() > 0)
         return tipps
     }
@@ -591,18 +597,25 @@ class UpdatePkgTippsRun {
       // Journal
       ['zdb', 'eissn', 'issn', 'doi'].each { ns_value ->
         if (identifiers[ns_value]) {
-          tipps << TitleInstancePackagePlatform.lookupByIO(ns_value, identifiers[ns_value])
+          def tipp = TitleInstancePackagePlatform.lookupByIO(ns_value, identifiers[ns_value])
+          if (tipp)
+            tipps.add(tipp)
         }
       }
-      return tipps
+      if (tipps.size()>0)
+        return tipps
     }
     else if (tippJson.type == "Monograph") {
       // Book
-      ['zdb', 'eissn', 'issn', 'doi'].each { ns_value ->
+      ['isbn', 'pisbn', 'doi'].each { ns_value ->
         if (identifiers[ns_value]) {
-          tipps << TitleInstancePackagePlatform.lookupByIO(ns_value, identifiers[ns_value])
+          def tipp = TitleInstancePackagePlatform.lookupByIO(ns_value, identifiers[ns_value])
+          if (tipp)
+            tipps.add(tipp)
         }
       }
+      if (tipps.size()>0)
+        return tipps
     }
     return tipps
   }

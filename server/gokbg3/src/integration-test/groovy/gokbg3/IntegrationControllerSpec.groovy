@@ -377,6 +377,8 @@ class IntegrationControllerSpec extends Specification {
             "name"       : "Journal of agricultural and food chemistry",
             "type"       : "Serial"
           ],
+          "name"       : "Journal of agricultural and food chemistry",
+          "type"       : "Serial",
           "url"        : "http://pubs.acs.org/journal/jafcau"
         ]
       ]

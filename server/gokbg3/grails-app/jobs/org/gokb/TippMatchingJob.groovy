@@ -16,7 +16,7 @@ class TippMatchingJob {
 
   static triggers = {
     // Cron timer.
-    cron name: 'TippMatchingTrigger', cronExpression: "0 0/5 * * * ?"
+    cron name: 'TippMatchingTrigger', cronExpression: "0 30 0/1 * * ?"
   }
 
   def execute() {

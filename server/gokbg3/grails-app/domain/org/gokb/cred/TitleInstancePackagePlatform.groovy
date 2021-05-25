@@ -349,10 +349,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
     // since a tipp is valid without a title connection, the validation of the tipp should drop this
     // precondition too
-    /* if (!tiLink) {
-      result.valid = false
-      errors.title = [[message: "Missing title link!", baddata: tiLink]]
-    } else {
+    if (tiLink) {
       def ti = null
 
       if (tiLink instanceof Map) {
@@ -365,7 +362,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         result.valid = false
         errors.title = [[message: "Could not resolve title id!", baddata: tiLink, code: 404]]
       }
-    }*/
+    }
 
     String idJsonKey = 'ids'
     def ids_list = tipp_dto[idJsonKey]

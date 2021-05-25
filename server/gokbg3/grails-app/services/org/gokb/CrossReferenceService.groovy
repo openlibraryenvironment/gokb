@@ -16,6 +16,6 @@ class CrossReferenceService {
   //@Async
   def updatePackage(def rjson, boolean addOnly, boolean fullsync, def auto, def request_locale, def request_user, Job job = null) {
     UpdatePkgTippsRun myRun = new UpdatePkgTippsRun(rjson, addOnly, fullsync, auto, request_locale, request_user)
-    return Package.withSession{myRun.work(job)}
+    return Package.withNewSession{myRun.work(job)}
   }
 }
