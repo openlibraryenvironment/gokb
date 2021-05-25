@@ -147,6 +147,9 @@
                       <i class="fa fa-times-circle text-danger fa-lg" title="${message(code:'default.boolean.false')}"></i>
                     </g:else>
                   </g:elseif>
+                  <g:elseif test="${c.value instanceof Date}">
+                    <g:formatDate date="${c.value}" format="yyyy-MM-dd HH:mm:ss z" timeZone="CET" />
+                  </g:elseif>
                   <g:else>
                     ${c.value}
                   </g:else></td>

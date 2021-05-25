@@ -282,11 +282,15 @@ class InplaceTagLib {
             result=value.value
           }
           break;
+        case Date.class:
+          def sdf = new java.text.SimpleDateFormat('yyyy-MM-dd')
+          result = sdf.format(value)
+          break;
         case Boolean.class:
           result = (value == true ? 'Yes' : 'No')
           break;
         default:
-          result=value.toString();
+          result=value.toString()
       }
     }
     result;

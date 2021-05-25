@@ -2,11 +2,11 @@
 <dl class="dl-horizontal">
 	<dt><g:annotatedLabel owner="${d}" property="dateCreated">Date Created</g:annotatedLabel></dt>
 	<dd>
-	  ${d?.dateCreated?:''}
+		<g:formatDate date="${d.dateCreated}" format="yyyy-MM-dd HH:mm:ss z" timeZone="CET" />
 	</dd>
 	<dt><g:annotatedLabel owner="${d}" property="lastUpdated">Last Updated</g:annotatedLabel></dt>
 	<dd>
-	  ${d?.lastUpdated?:''}
+	  <g:formatDate date="${d.lastUpdated}" format="yyyy-MM-dd HH:mm:ss z" timeZone="CET" />
 	</dd>
 	<sec:ifAnyGranted roles="ROLE_SUPERUSER">
 		<dt><g:annotatedLabel owner="${d}" property="lastUpdatedBy">Last updated by</g:annotatedLabel></dt>
@@ -16,6 +16,6 @@
 	</sec:ifAnyGranted>
 	<dt><g:annotatedLabel owner="${d}" property="uuid">UUID</g:annotatedLabel></dt>
 	<dd>
-          ${d?.uuid?:''}
+    ${d?.uuid?:''}
 	</dd>
 </dl>

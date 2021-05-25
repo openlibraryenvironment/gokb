@@ -61,7 +61,7 @@ class CrossRefPkgRun {
   }
 
   def work(Job aJob) {
-    log.info("start CrossrefPackage $rjson.packageHeader.name with ${rjson.tipps.size()} tipps")
+    log.debug("start CrossrefPackage $rjson.packageHeader.name with ${rjson.tipps.size()} tipps")
     job = aJob ?: job
     boolean cancelled = false
     int total = 0
@@ -146,7 +146,7 @@ class CrossRefPkgRun {
       for (def json_tipp : rjson.tipps) {
         idx++
         def currentTippError = [index: idx]
-        log.info("Crossreferencing #$idx title ${json_tipp.name ?: json_tipp.title.name}")
+        log.debug("Crossreferencing #$idx title ${json_tipp.name ?: json_tipp.title.name}")
 
         if ((json_tipp.package == null) && (pkg.id)) {
           json_tipp.package = [internalId: pkg.id]
@@ -249,7 +249,7 @@ class CrossRefPkgRun {
                 to_retire.retire()
               }
 
-              log.info("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
+              log.debug("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
 
               to_retire.save(failOnError: true)
 
