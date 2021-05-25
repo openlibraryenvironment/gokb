@@ -380,7 +380,7 @@ class TitleLookupService {
         log.debug("Title class one identifier lookup yielded ${matches.size()} matches - ${matches}.")
         def all_matched = []
         def partial = []
-        RefdataValue status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+        RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
         matches.each { mti ->
 

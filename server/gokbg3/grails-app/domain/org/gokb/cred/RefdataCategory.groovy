@@ -45,7 +45,7 @@ class RefdataCategory {
 
   static def lookup(category_name, value, def sortkey = null) {
 
-    // log.debug("lookupOrCreate(${category_name}, ${value}, ${sortkey})");
+    // log.debug("lookup(${category_name}, ${value}, ${sortkey})");
 
     if ((value == null) || (category_name == null))
       throw new RuntimeException("Request to lookupOrCreate null value in category ${category_name}");

@@ -58,7 +58,7 @@ class UpdatePkgTippsRun {
   }
 
   def work(Job aJob) {
-    log.info("start CrossrefPackage $rjson.packageHeader.name with ${rjson.tipps.size()} tipps")
+    log.info("start Update Package $rjson.packageHeader.name with ${rjson.tipps.size()} tipps")
     job = aJob ?: job
     boolean cancelled = false
     int total = 0
