@@ -148,7 +148,7 @@
                     </g:else>
                   </g:elseif>
                   <g:elseif test="${c.value instanceof Date}">
-                    <g:formatDate date="${c.value}" format="yyyy-MM-dd HH:mm:ss z" timeZone="CET" />
+                    <g:formatDate date="${c.value}" format="yyyy-MM-dd HH:mm:ss z" />
                   </g:elseif>
                   <g:else>
                     ${c.value}

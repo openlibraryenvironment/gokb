@@ -33,8 +33,6 @@ class BootStrap {
 
     def init = { servletContext ->
 
-        TimeZone.setDefault(TimeZone.getTimeZone("GMT"))
-
         log.debug("\n\nInit\n\n")
 
         log.info("\n\n\n **WARNING** \n\n\n - Automatic create of component identifiers index is no longer part of the domain model");
