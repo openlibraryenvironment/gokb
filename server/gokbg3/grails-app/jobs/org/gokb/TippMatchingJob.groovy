@@ -16,7 +16,7 @@ class TippMatchingJob {
 
   static triggers = {
     // Cron timer.
-    cron name: 'TippMatchingTrigger', cronExpression: "0 30 0/1 * * ?"
+    cron name: 'TippMatchingTrigger', cronExpression: "0 0/30 0/1 * * ?"
   }
 
   def execute() {
@@ -29,13 +29,11 @@ class TippMatchingJob {
       for (Long tippID : tippIDs) {
         log.debug("begin tipp")
         TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippID)
-        if (tipp.title == null) {
           // ignore Tipp if RR.Date > Tipp.Date
           def rrList = ReviewRequest.findAllByComponentToReviewAndDateCreatedGreaterThan(tipp, tipp.dateCreated)
           if (rrList.size() == 0) {
             log.debug("match tipp $tipp")
             tippService.matchTitle(tipp)
-          }
         }
         log.debug("end tipp")
       }

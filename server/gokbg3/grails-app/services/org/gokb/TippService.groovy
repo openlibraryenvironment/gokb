@@ -25,28 +25,33 @@ class TippService {
   def sessionFactory
 
   def matchPackage(Package aPackage) {
-      int count = 0, index = 0
-      boolean cancelled = false
-      def tipps = aPackage.tipps
-      log.debug("found ${tipps.size()} TIPPs in package $aPackage")
-      tipps.each { tipp ->
-        if (!tipp.title) {
-          matchTitle(tipp)
-        }
+    int count = 0, index = 0
+    boolean cancelled = false
+    def tipps = aPackage.tipps
+    log.debug("found ${tipps.size()} TIPPs in package $aPackage")
+    tipps.each { tipp ->
+      if (!tipp.title) {
+        matchTitle(tipp)
+      }
     }
   }
 
   void matchTitle(TitleInstancePackagePlatform tipp) {
     Map titleErrorMap = [:] // [<propertyName>: [message: <msg>, baddata: <propertyValue>], ..]
     def found
-    final IdentifierNamespace ZDB_NS =  IdentifierNamespace.findByValue('zdb')
+    final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
     def title_changed = false
     def title_class_name = TitleInstance.determineTitleClass([type: tipp.publicationType.value])
 
+    // remap Identifiers
+    def my_ids = []
+    tipp.ids.each {
+      my_ids << it.id
+    }
     found = titleLookupService.find(
         tipp.name,
         tipp.getPublisherName(),
-        tipp.ids ?: [],
+        my_ids,
         title_class_name
     )
 
@@ -57,10 +62,10 @@ class TippService {
     else if (found.to_create == true) {
       ti = Class.forName(title_class_name).newInstance()
       ti.name = tipp.name
-      ti.save(flush:true)
+      ti.save(flush: true)
       ti.ids = tipp.ids
       titleLookupService.addPublisher(tipp.publisherName, ti)
-      tipp.ids.each{ Identifier ident ->
+      tipp.ids.each { Identifier ident ->
         if (ident.namespace == ZDB_NS) {
           // TODO: ZDB-Enrichment for new Journals with ZDB-ID already present
         }
@@ -98,6 +103,7 @@ class TippService {
         ti.merge(flush: true)
       }
       tipp.title = ti
+      log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
     handleFindConflicts(tipp, found)
   }

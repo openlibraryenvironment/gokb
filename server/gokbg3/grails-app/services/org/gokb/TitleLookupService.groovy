@@ -64,11 +64,6 @@ class TitleLookupService {
           id_def.type = IdentifierNamespace.get(id_ns).value
         }
       }
-      else if (id_inc instanceof Identifier) {
-        the_id = id_inc
-        id_def.value = the_id.value
-        id_def.type = the_id.namespace.value
-      }
       else {
         the_id = Identifier.get(id_inc)
 
@@ -218,7 +213,7 @@ class TitleLookupService {
           }
         }
       }
-      else if (id_def.type.toLowerCase() != 'originediturl') {
+      else if (id_def.type?.toLowerCase() != 'originediturl') {
         log.debug("Skipping problem ID ${id_def}");
         the_id = componentLookupService.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
         result['other_identifiers'] << the_id

@@ -63,7 +63,7 @@ class ComponentUpdateService {
     RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
     data_identifiers.each { ci ->
-      def namespace_val = (ci instanceof Identifier) ? ci.namespace.value : ci.type
+      def namespace_val = ci.namespace?.value ?: ci.type
       String testKey = "${namespace_val}|${ci.value}".toString()
 
       if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {

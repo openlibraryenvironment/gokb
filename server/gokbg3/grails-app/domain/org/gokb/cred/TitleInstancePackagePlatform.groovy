@@ -114,7 +114,8 @@ class TitleInstancePackagePlatform extends KBComponent {
           'precedingPublicationId'  : "precedingPublicationId",
           'lastChangedExternal'     : "lastChangedExternal",
           'medium'                  : "medium",
-          'language'                : "language"
+          'language'                : "language",
+          'importId'                : "importId"
       ],
       'defaultLinks' : [
           'pkg',
@@ -196,6 +197,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     precedingPublicationId column: 'tipp_preceding_publication_id'
     lastChangedExternal column: 'tipp_last_change_ext'
     medium column: 'tipp_medium_rv_fk'
+    importId column: 'tipp_import_id'
   }
 
   static constraints = {
@@ -231,6 +233,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     precedingPublicationTitleId(nullable: true, blank: true)
     lastChangedExternal(nullable: true, blank: true)
     medium(nullable: true, blank: true)
+    importId(nullable: true, blank: true)
   }
 
   public static final String restPath = "/package-titles"
@@ -945,7 +948,6 @@ class TitleInstancePackagePlatform extends KBComponent {
     result
   }
 
-
   @Transient
   static def oaiConfig = [
       id             : 'tipps',
@@ -1086,6 +1088,14 @@ class TitleInstancePackagePlatform extends KBComponent {
         }
       }
     }
+  }
+
+  @Transient
+  public Identifier[] getIds() {
+    def refdata_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids');
+    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [this, refdata_ids, status_active], [readOnly: true])
+    result
   }
 
   @Transient
