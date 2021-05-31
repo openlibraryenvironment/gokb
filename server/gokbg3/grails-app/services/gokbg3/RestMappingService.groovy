@@ -170,7 +170,7 @@ class RestMappingService {
               break;
 
             case Date.class:
-              result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
+              result[p.name] = obj[p.name] ? dateFormatService.formatGmtTimestamp(obj[p.name]) : null
               break;
             default:
               result[p.name] = obj[p.name]

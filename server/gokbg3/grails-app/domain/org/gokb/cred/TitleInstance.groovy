@@ -343,8 +343,8 @@ class TitleInstance extends KBComponent {
             builder.'editionDifferentiator'(this.editionDifferentiator)
             builder.'editionStatement'(this.editionStatement)
             builder.'volumeNumber'(this.volumeNumber)
-            builder.'dateFirstInPrint'(this.dateFirstInPrint)
-            builder.'dateFirstOnline'(this.dateFirstOnline)
+            builder.'dateFirstInPrint'(this.dateFirstInPrint ? dateFormatService.formatDate(this.dateFirstInPrint) : null)
+            builder.'dateFirstOnline'(this.dateFirstOnline ? dateFormatService.formatDate(this.dateFirstOnline) : null)
             builder.'firstEditor'(this.firstEditor)
             builder.'firstAuthor'(this.firstAuthor)
           }
@@ -354,8 +354,8 @@ class TitleInstance extends KBComponent {
           builder.'type'(this.class.simpleName)
           builder.'OAStatus'(OAStatus?.value)
           builder.'continuingSeries'(continuingSeries?.value)
-          builder.'publishedFrom'(publishedFrom)
-          builder.'publishedTo'(publishedTo)
+          builder.'publishedFrom'(publishedFrom ? dateFormatService.formatDate(publishedFrom) : null)
+          builder.'publishedTo'(publishedTo ? dateFormatService.formatDate(publishedTo) : null)
 
           builder.'publishers' {
             publisher_combos?.each { Combo pc ->
@@ -373,10 +373,10 @@ class TitleInstance extends KBComponent {
                 builder."publisher"(['id': pub_org.id, 'uuid': pub_org.uuid]) {
                   "name"(pub_org.name)
                   if (pc.startDate) {
-                    "startDate"(pc.startDate)
+                    "startDate"(pc.startDate ? dateFormatService.formatDate(pc.startDate) : null)
                   }
                   if (pc.endDate) {
-                    "endDate"(pc.endDate)
+                    "endDate"(pc.endDate ? dateFormatService.formatDate(pc.endDate) : null)
                   }
                   if (pc.status) {
                     "status"(pc.status)
@@ -404,7 +404,7 @@ class TitleInstance extends KBComponent {
             builder.history() {
               history.each { he ->
                 builder.historyEvent(['id': he.id]) {
-                  "date"(he.date)
+                  "date"(he.date ? dateFormatService.formatDate(he.date) : null)
                   he.from.each { hti ->
                     if (hti) {
                       "from" {
@@ -471,9 +471,9 @@ class TitleInstance extends KBComponent {
                         builder.'type'(price.priceType.value)
                         builder.'amount'(price.price)
                         builder.'currency'(price.currency)
-                        builder.'startDate'(price.startDate)
+                        builder.'startDate'(price.startDate ? dateFormatService.formatDate(price.startDate) : null)
                         if (price.endDate) {
-                          builder.'endDate'(price.endDate)
+                          builder.'endDate'(dateFormatService.formatDate(price.endDate))
                         }
                       }
                     }
@@ -484,10 +484,10 @@ class TitleInstance extends KBComponent {
                 if (cov_statements?.size() > 0) {
                   cov_statements.each { tcs ->
                     'coverage'(
-                      startDate: (tcs.startDate ? "${tcs.startDate.toInstant().toString()}" : null),
+                      startDate: (tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null),
                       startVolume: tcs.startVolume,
                       startIssue: tcs.startIssue,
-                      endDate: (tcs.endDate ? "${tcs.endDate.toInstant().toString()}" : null),
+                      endDate: (tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null),
                       endVolume: tcs.endVolume,
                       endIssue: tcs.endIssue,
                       coverageDepth: tcs.coverageDepth?.value ?: tipp.coverageDepth?.value,
@@ -497,18 +497,9 @@ class TitleInstance extends KBComponent {
                   }
                 }
                 else {
-
-                  builder.'coverage'(
-                    startDate: (tipp.startDate ? "${tipp.startDate.toInstant().toString()}" : null),
-                    startVolume: tipp.startVolume,
-                    startIssue: tipp.startIssue,
-                    endDate: (tipp.endDate ? "${tipp.endDate.toInstant().toString()}" : null),
-                    endVolume: tipp.endVolume,
-                    endIssue: tipp.endIssue,
-                    coverageDepth: tipp.coverageDepth?.value,
-                    coverageNote: tipp.coverageNote,
-                    embargo: tipp.embargo)
+                  'coverage'()
                 }
+
                 if (tipp.url != null) {
                   'url'(tipp.url)
                 }

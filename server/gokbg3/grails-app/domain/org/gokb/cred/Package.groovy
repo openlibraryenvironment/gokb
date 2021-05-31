@@ -498,7 +498,7 @@ select tipp.id,
           }
         }
 
-        'listVerifiedDate'(listVerifiedDate ? dateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
+        'listVerifiedDate'(listVerifiedDate ? dateFormatService.formatDate(listVerifiedDate) : null)
 
         builder.'curatoryGroups' {
           curatoryGroups.each { cg ->
@@ -508,18 +508,18 @@ select tipp.id,
           }
         }
 
-        'dateCreated'(dateFormatService.formatIsoTimestamp(dateCreated))
+        'dateCreated'(dateFormatService.formatGmtTimestamp(dateCreated))
         'TIPPs'(count: tipps?.size()) {
           tipps.each { tipp ->
             builder.'TIPP'(['id': tipp[0], 'uuid': tipp[12]]) {
               builder.'status'(tipp[6]?.value)
               builder.'name'(tipp[18])
-              builder.'lastUpdated'(tipp[11] ? dateFormatService.formatIsoTimestamp(tipp[11]) : null)
+              builder.'lastUpdated'(tipp[11] ? dateFormatService.formatGmtTimestamp(tipp[11]) : null)
               builder.'series'(tipp[16])
               builder.'subjectArea'(tipp[17])
               builder.'publisherName'(tipp[19])
-              builder.'dateFirstInPrint'(tipp[20])
-              builder.'dateFirstOnline'(tipp[21])
+              builder.'dateFirstInPrint'(tipp[20] ? dateFormatService.formatDate(tipp[20]) : null)
+              builder.'dateFirstOnline'(tipp[21] ? dateFormatService.formatDate(tipp[21]) : null)
               builder.'medium'(tipp[9]?.value)
               builder.'title'(['id': tipp[2], 'uuid': tipp[13]]) {
                 builder.'name'(tipp[1]?.trim())
@@ -540,15 +540,15 @@ select tipp.id,
                 'primaryUrl'(tipp[10]?.trim())
                 'name'(tipp[3]?.trim())
               }
-              'access'(start: tipp[7] ? dateFormatService.formatIsoTimestamp(tipp[7]) : null, end: tipp[8] ? dateFormatService.formatIsoTimestamp(tipp[8]) : null)
+              'access'(start: tipp[7] ? dateFormatService.formatDate(tipp[7]) : null, end: tipp[8] ? dateFormatService.formatDate(tipp[8]) : null)
               def cov_statements = getCoverageStatements(tipp[0])
               if (cov_statements?.size() > 0) {
                 cov_statements.each { tcs ->
                   'coverage'(
-                    startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+                    startDate: (tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null),
                     startVolume: (tcs.startVolume),
                     startIssue: (tcs.startIssue),
-                    endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+                    endDate: (tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null),
                     endVolume: (tcs.endVolume),
                     endIssue: (tcs.endIssue),
                     coverageDepth: (tcs.coverageDepth?.value ?: null),

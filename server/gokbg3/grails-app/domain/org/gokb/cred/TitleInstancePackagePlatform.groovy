@@ -846,15 +846,15 @@ class TitleInstancePackagePlatform extends KBComponent {
       builder.'tipp'([id: (id), uuid: (uuid)]) {
 
         addCoreGOKbXmlFields(builder, attr)
-        builder.'lastUpdated'(lastUpdated ? dateFormatService.formatIsoTimestamp(lastUpdated) : null)
+        builder.'lastUpdated'(lastUpdated ? dateFormatService.formatGmtTimestamp(lastUpdated) : null)
         builder.'format'(format?.value)
         builder.'type'(titleClass)
         builder.'url'(url ?: "")
         builder.'subjectArea'(subjectArea)
         builder.'series'(series)
         builder.'publisherName'(publisherName)
-        builder.'dateFirstInPrint'(dateFirstInPrint ? dateFormatService.formatIsoTimestamp(dateFirstInPrint) : null)
-        builder.'dateFirstOnline'(dateFirstOnline ? dateFormatService.formatIsoTimestamp(dateFirstOnline) : null)
+        builder.'dateFirstInPrint'(dateFirstInPrint ? dateFormatService.formatDate(dateFirstInPrint) : null)
+        builder.'dateFirstOnline'(dateFirstOnline ? dateFormatService.formatDate(dateFirstOnline) : null)
         builder.'firstAuthor'(firstAuthor)
         builder.'publicationType'(publicationType?.value)
         builder.'volumeNumber'(volumeNumber)
@@ -888,8 +888,8 @@ class TitleInstancePackagePlatform extends KBComponent {
             'global'(global?.value)
             'globalNote'(globalNote)
             'contentType'(contentType?.value)
-            'listVerifiedDate'(listVerifiedDate ? dateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
-            'lastUpdated'(lastUpdated ? dateFormatService.formatIsoTimestamp(lastUpdated) : null)
+            'listVerifiedDate'(listVerifiedDate ? dateFormatService.formatDate(listVerifiedDate) : null)
+            'lastUpdated'(lastUpdated ? dateFormatService.formatGmtTimestamp(lastUpdated) : null)
             if (provider) {
               builder.'provider'([id: provider?.id, uuid: provider?.uuid]) {
                 'name'(provider?.name)
@@ -919,15 +919,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           'primaryUrl'(hostPlatform.primaryUrl?.trim())
           'name'(hostPlatform.name?.trim())
         }
-        'access'([start: (accessStartDate ? dateFormatService.formatIsoTimestamp(accessStartDate) : null), end: (accessEndDate ? dateFormatService.formatIsoTimestamp(accessEndDate) : null)])
+        'access'([start: (accessStartDate ? dateFormatService.formatDate(accessStartDate) : null), end: (accessEndDate ? dateFormatService.formatDate(accessEndDate) : null)])
         def cov_statements = getCoverageStatements()
         if (cov_statements?.size() > 0) {
           cov_statements.each { tcs ->
             'coverage'(
-              startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+              startDate: (tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null),
               startVolume: (tcs.startVolume),
               startIssue: (tcs.startIssue),
-              endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+              endDate: (tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null),
               endVolume: (tcs.endVolume),
               endIssue: (tcs.endIssue),
               coverageDepth: (tcs.coverageDepth?.value ?: null),
