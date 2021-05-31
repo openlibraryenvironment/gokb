@@ -3,6 +3,7 @@ package org.gokb
 import com.k_int.ESSearchService
 import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.bulk.BulkRequestBuilder
+import org.gokb.cred.TitleInstancePackagePlatform
 
 @Transactional
 class FTUpdateService {
@@ -287,9 +288,10 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class) { org.gokb.cred.TitleInstancePackagePlatform kbc ->
+      updateES(esclient, TitleInstancePackagePlatform.class) {
 
         def result = [:]
+        TitleInstancePackagePlatform kbc = TitleInstancePackagePlatform.get(it.id)
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name ?: (kbc.title?.name ?: null)

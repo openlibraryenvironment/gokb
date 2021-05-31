@@ -332,7 +332,7 @@ class IntegrationControllerSpec extends Specification {
         [
           "accessEnd"  : "",
           "accessStart": "",
-          "title_id": "wildeTitleId",
+          "titleId": "wildeTitleId",
           "identifiers": [
             [
               "type" : "doi",

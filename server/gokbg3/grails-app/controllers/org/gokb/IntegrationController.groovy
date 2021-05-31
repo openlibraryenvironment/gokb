@@ -735,6 +735,17 @@ class IntegrationController {
       }
     }
 
+    // Flags
+    log.debug("Tag Processing: ${data.tags}");
+
+    data.tags?.each { t ->
+      log.debug("Adding tag ${t.type},${t.value}")
+
+      component.addToTags(
+          RefdataCategory.lookupOrCreate(t.type, t.value)
+      )
+    }
+
     // handle the source.
     if (!component.source && data.source && data.source?.size() > 0) {
       component.source = createOrUpdateSource(data.source)?.get('component')

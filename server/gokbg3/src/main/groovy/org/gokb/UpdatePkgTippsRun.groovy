@@ -10,6 +10,8 @@ import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
 import org.grails.web.json.JSONObject
 
+import java.nio.channels.spi.AsynchronousChannelProvider
+
 @Slf4j
 class UpdatePkgTippsRun {
 
@@ -121,6 +123,9 @@ class UpdatePkgTippsRun {
       }
 
       pkg = Package.get(proxy.id)
+      def dummy = pkg.provider
+      dummy = pkg.nominalPlatform
+
       jsonResult.pkgId = pkg.id
       job?.linkedItem = [name: pkg.name,
                          type: "Package",
@@ -474,7 +479,7 @@ class UpdatePkgTippsRun {
                   'editStatus'     : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
                   'language'       : tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : null,
                   'publicationType': tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : null,
-                  'importId'       : tippJson.title_id ?: null]
+                  'importId'       : tippJson.titleId ?: null]
           ).save()
           idents.each { tipp.ids << it }
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
@@ -574,7 +579,7 @@ class UpdatePkgTippsRun {
   private TitleInstancePackagePlatform[] findTipps(tippJson) {
     def tipps = []
     // search TIPPs for json.title_id == tipp.importId
-    if (tippJson.title_id) {
+    if (tippJson.titleId) {
       // elastic search
 
       // database search
@@ -590,11 +595,11 @@ class UpdatePkgTippsRun {
           [pkg   : pkg,
            typ   : RefdataCategory.lookup(Combo.RD_TYPE, "Package.Tipps"),
            cStatus: RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE),
-           tid   : tippJson.title_id,
+           tid   : tippJson.titleId,
            tStatus: status_current]
       ).each { tipps << it }
       if (tipps.size() > 0) {
-        log.debug("found by title_id")
+        log.debug("found by titleId")
         return tipps
       }
     }
@@ -609,7 +614,7 @@ class UpdatePkgTippsRun {
       }
     }
     // search for package provider namespace identifier
-    IdentifierNamespace providerNamespace = pkg.provider?.titleNamespace
+    IdentifierNamespace providerNamespace = Package.get(pkg.id).provider?.titleNamespace
     if (providerNamespace && jsonIdMap[providerNamespace.value]) {
       def found = TitleInstancePackagePlatform.lookupAllByIO(providerNamespace.value, jsonIdMap[providerNamespace.value])
       if (found.size() > 0) {
