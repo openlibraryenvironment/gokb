@@ -42,7 +42,6 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven { url "https://repo.grails.org/grails/core" }
-    maven { url "http://nexus.k-int.com/content/repositories/releases" }
 }
 
 dependencies {
