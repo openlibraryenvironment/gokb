@@ -14,6 +14,12 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   static final String RD_PUBLICATION_TYPE = 'TitleInstancePackagePlatform.PublicationType'
   static final String RD_MEDIUM = 'TitleInstancePackagePlatform.Medium'
+  static final String RD_FORMAT = 'TitleInstancePackagePlatform.Format'
+  static final String RD_DELAYED_OA = 'TitleInstancePackagePlatform.DelayedOA'
+  static final String RD_HYBRID_OA = "TitleInstancePackagePlatform.HybridOA"
+  static final String RD_PRIMARY = "TitleInstancePackagePlatform.Primary"
+  static final String RD_PAYMENT_TYPE = "TitleInstancePackagePlatform.PaymentType"
+
   def dateFormatService
 
   @Deprecated

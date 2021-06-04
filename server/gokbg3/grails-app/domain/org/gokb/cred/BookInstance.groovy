@@ -30,7 +30,7 @@ class BookInstance extends TitleInstance {
   String summaryOfContent
 
   private static refdataDefaults = [
-    "TitleInstance.medium": "Book"
+      "TitleInstance.medium": "Book"
   ]
 
   static mapping = {
@@ -85,8 +85,8 @@ class BookInstance extends TitleInstance {
 
     // Currently, serial items are mapped based on the name of the journal. We may need to add a discriminator property
     if ((hasChanged('name')) ||
-      (hasChanged('editionStatement')) ||
-      (hasChanged('componentDiscriminator'))) {
+        (hasChanged('editionStatement')) ||
+        (hasChanged('componentDiscriminator'))) {
       log.debug("Detected an update to properties for ${id} that might change the work mapping. Looking up");
 //       submitRemapWorkTask();
     }
@@ -151,7 +151,7 @@ class BookInstance extends TitleInstance {
     ['firstAuthor', 'firstEditor'].each { key ->
       if (titleDTO.containsKey(key)) {
         if (titleDTO[key].size() > 255) {
-          valErrors.put(key,[message: "too long", baddata: titleDTO[key]])
+          valErrors.put(key, [message: "too long", baddata: titleDTO[key]])
           titleDTO[key] = titleDTO[key].substring(0, 251).concat(" ...")
           log.warn("value in key ’${key}’ was clipped to: ${titleDTO[key]}")
         }

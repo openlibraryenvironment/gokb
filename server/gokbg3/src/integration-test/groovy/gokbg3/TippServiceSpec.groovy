@@ -31,6 +31,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
 
   @Autowired
   TippService tippService
+  DateFormatService dateFormatService
   SessionFactory sessionFactory
   ConcurrencyManagerService concurrencyManagerService
 
@@ -51,16 +52,16 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
   void "Test create new title from a minimal TIPP"() {
     given:
     def tmap = [
-        'pkg'            : pkg,
-        'title'          : null,
-        'hostPlatform'   : plt,
-        'url'            : null,
-        'uuid'           : UUID.randomUUID(),
-        'status'         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
-        'name'           : "Test Title Name from TIPP",
-        'editStatus'     : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
-        'language'       : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, 'ger'),
-        'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")
+        pkg            : pkg,
+        title          : null,
+        hostPlatform   : plt,
+        url            : null,
+        uuid           : UUID.randomUUID(),
+        status         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+        name           : "Test Title Name from TIPP",
+        editStatus     : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
+        language       : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "ger"),
+        publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")
     ]
 
     when:
@@ -70,6 +71,62 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
 
     then:
     tipp.title != null
+  }
+
+  void "Test create new title BookInstance a full TIPP"() {
+    given:
+    def tmap = [
+        pkg                        : pkg,
+        title                      : null,
+        hostPlatform               : plt,
+        url                        : "http://some.random.thing/",
+        uuid                       : UUID.randomUUID(),
+        importId                   : "völlig egal",
+        status                     : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+        name                       : "Test Title Name from TIPP",
+        editStatus                 : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
+        language                   : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "ger"),
+        publicationType            : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph"),
+        coverageNote               : "coverage Note",
+        format                     : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_FORMAT, "Print"),
+        delayedOA                  : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_DELAYED_OA, "No"),
+        delayedOAEmbargo           : "Embargo?",
+        hybridOA                   : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_HYBRID_OA, "No"),
+        hybridOAUrl                : "Hybris",
+        primary                    : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PRIMARY, "No"),
+        paymentType                : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PAYMENT_TYPE, "Unknown"),
+        accessStartDate            : dateFormatService.parseDate("2001-01-01"),
+        accessEndDate              : dateFormatService.parseDate("2030-12-31"),
+        subjectArea                : "Fachbereich",
+        series                     : "Serie: Marathon",
+        publisherName              : "Publizistenname",
+        dateFirstInPrint           : dateFormatService.parseDate("2003-01-01"),
+        dateFirstOnline            : dateFormatService.parseDate("2004-01-01"),
+        firstAuthor                : "erster Autor",
+        volumeNumber               : "erster Band",
+        editionStatement           : "3. völlig überarbeitete Auflage",
+        firstEditor                : "erster Verleger",
+        parentPublicationTitleId   : "Eltern importId",
+        precedingPublicationTitleId: "Vorgänger importId",
+        lastChangedExternal        : new Date(),
+        medium                     : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, "Book")
+    ]
+
+    when:
+    TitleInstancePackagePlatform tipp = new TitleInstancePackagePlatform(tmap)
+
+    tippService.matchTitle(tipp)
+
+    then:
+    tipp.title != null
+    tipp.name == tipp.title.name
+    tipp.firstEditor == tipp.title.firstEditor
+    tipp.firstAuthor == tipp.title.firstAuthor
+    tipp.editionStatement == tipp.title.editionStatement
+    tipp.volumeNumber == tipp.title.volumeNumber
+    tipp.dateFirstInPrint == tipp.title.dateFirstInPrint
+    tipp.dateFirstOnline == tipp.title.dateFirstOnline
+    tipp.medium.value == tipp.title.medium.value
   }
 
   void "Test attach existing title with a TIPP by its IDs"() {

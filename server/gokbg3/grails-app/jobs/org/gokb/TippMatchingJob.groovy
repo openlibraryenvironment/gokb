@@ -16,7 +16,7 @@ class TippMatchingJob {
 
   static triggers = {
     // Cron timer.
-    cron name: 'TippMatchingTrigger', cronExpression: "0 0/30 0/1 * * ?"
+    cron name: 'TippMatchingTrigger', cronExpression: "0 0/10 0/1 * * ?"
   }
 
   def execute() {
@@ -34,7 +34,9 @@ class TippMatchingJob {
           if (rrList.size() == 0) {
             log.debug("match tipp $tipp")
             tippService.matchTitle(tipp)
-        }
+        } else {
+            log.debug("tipp $tipp has ${rrList.size()} recent Review Requests and is ignored.")
+          }
         log.debug("end tipp")
       }
     }

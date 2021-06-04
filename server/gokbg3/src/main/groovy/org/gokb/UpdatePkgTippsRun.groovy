@@ -1,16 +1,17 @@
 package org.gokb
 
 import com.k_int.ConcurrencyManagerService.Job
+import com.k_int.ESSearchService
 import gokbg3.MessageService
 import grails.converters.JSON
 import grails.plugin.springsecurity.SpringSecurityService
+import grails.util.AbstractTypeConvertingMap
 import grails.util.Holders
+import grails.util.TypeConvertingMap
 import groovy.util.logging.Slf4j
 import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
 import org.grails.web.json.JSONObject
-
-import java.nio.channels.spi.AsynchronousChannelProvider
 
 @Slf4j
 class UpdatePkgTippsRun {
@@ -473,7 +474,7 @@ class UpdatePkgTippsRun {
                   'title'          : null,
                   'hostPlatform'   : Platform.get(tippJson.hostPlatform.internalId),
                   'url'            : null,
-                  'uuid'           : tippJson.uuid ?: UUID.randomUUID(),
+                  'uuid'           : tippJson.uuid,
                   'status'         : tippJson.status ? RefdataCategory.lookup(KBComponent.RD_STATUS, tippJson.status) : null,
                   'name'           : tippJson.name,
                   'editStatus'     : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
@@ -581,7 +582,12 @@ class UpdatePkgTippsRun {
     // search TIPPs for json.title_id == tipp.importId
     if (tippJson.titleId) {
       // elastic search
-
+      Object map = ((Object)[componentType: 'TitleInstancePackagePlatform', importId: tippJson.titleId])
+      def something = ESSearchService.find(map)
+      if (something.size() > 0) {
+        log.debug("found by titleId in ES")
+        return something.each{it = TitleInstancePackagePlatform.getByUUID(it.uuid)}
+      }
       // database search
       TitleInstancePackagePlatform.executeQuery(
           'select tipp from TitleInstancePackagePlatform as tipp, Combo as c ' +
@@ -599,7 +605,7 @@ class UpdatePkgTippsRun {
            tStatus: status_current]
       ).each { tipps << it }
       if (tipps.size() > 0) {
-        log.debug("found by titleId")
+        log.debug("found by titleId in DB")
         return tipps
       }
     }
@@ -616,6 +622,15 @@ class UpdatePkgTippsRun {
     // search for package provider namespace identifier
     IdentifierNamespace providerNamespace = Package.get(pkg.id).provider?.titleNamespace
     if (providerNamespace && jsonIdMap[providerNamespace.value]) {
+      // elastic search
+      map = [componentType: 'TitleInstancePackagePlatform',
+             identfiers   : [type : providerNamespace.value,
+                             value: jsonIdMap[providerNamespace.value]]]
+      something = ESSearchService.find(map)
+      if (something.size() > 0) {
+        log.debug("found by provider namespace ID in ES")
+        return something.each{it = TitleInstancePackagePlatform.getByUUID(it.uuid)}
+      }
       def found = TitleInstancePackagePlatform.lookupAllByIO(providerNamespace.value, jsonIdMap[providerNamespace.value])
       if (found.size() > 0) {
         found.each {
@@ -624,7 +639,7 @@ class UpdatePkgTippsRun {
           }
         }
         if (tipps.size() > 0) {
-          log.debug("found by provider namespace Identifier")
+          log.debug("found by provider namespace ID in DB")
           return tipps
         }
       }

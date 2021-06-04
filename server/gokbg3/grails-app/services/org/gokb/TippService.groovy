@@ -79,13 +79,17 @@ class TippService {
           'medium', 'language'
       ], tipp, ti)
 
-      def pubFrom = GOKbTextUtils.completeDateString(tipp.accessStartDate)
-      def pubTo = GOKbTextUtils.completeDateString(tipp.accessEndDate, false)
+      def pubFrom = tipp.accessStartDate ? GOKbTextUtils.completeDateString(tipp.accessStartDate.format("yyyy-MM-dd")) : null
+      def pubTo = tipp.accessEndDate ? GOKbTextUtils.completeDateString(tipp.accessEndDate.format("yyyy-MM-dd"), false) : null
+      def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(tipp.dateFirstInPrint.format("yyyy-MM-dd")) : null
+      def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(tipp.dateFirstOnline.format("yyyy-MM-dd")) : null
 
       log.debug("Completed date publishedFrom ${tipp.accessStartDate} -> ${pubFrom}")
 
       title_changed |= ClassUtils.setDateIfPresent(pubFrom, ti, 'publishedFrom')
       title_changed |= ClassUtils.setDateIfPresent(pubTo, ti, 'publishedTo')
+      title_changed |= ClassUtils.setDateIfPresent(firstInPrint, ti, 'dateFirstInPrint')
+      title_changed |= ClassUtils.setDateIfPresent(firstOnline, ti, 'dateFirstOnline')
 
       if (title_class_name == 'org.gokb.cred.BookInstance') {
         log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
