@@ -5,7 +5,6 @@ import com.k_int.ESSearchService
 import gokbg3.MessageService
 import grails.converters.JSON
 import grails.plugin.springsecurity.SpringSecurityService
-import grails.util.AbstractTypeConvertingMap
 import grails.util.Holders
 import grails.util.TypeConvertingMap
 import groovy.util.logging.Slf4j
@@ -24,6 +23,7 @@ class UpdatePkgTippsRun {
   static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
   static CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
+  static ESSearchService esSearchService = Holders.grailsApplication.mainContext.getBean('ESSearchService')
 
   def rjson // request JSON
   boolean addOnly
@@ -582,11 +582,11 @@ class UpdatePkgTippsRun {
     // search TIPPs for json.title_id == tipp.importId
     if (tippJson.titleId) {
       // elastic search
-      Object map = ((Object)[componentType: 'TitleInstancePackagePlatform', importId: tippJson.titleId])
-      def something = ESSearchService.find(map)
-      if (something.size() > 0) {
-        log.debug("found by titleId in ES")
-        return something.each{it = TitleInstancePackagePlatform.getByUUID(it.uuid)}
+      TypeConvertingMap map = [componentType: 'TitleInstancePackagePlatform', importId: tippJson.titleId]
+      def something = esSearchService.find(map)
+
+      if (something?.records?.size() > 0) {
+        return something.records.each { it = TitleInstancePackagePlatform.getByUUID(it.uuid) }
       }
       // database search
       TitleInstancePackagePlatform.executeQuery(
@@ -626,7 +626,7 @@ class UpdatePkgTippsRun {
       map = [componentType: 'TitleInstancePackagePlatform',
              identfiers   : [type : providerNamespace.value,
                              value: jsonIdMap[providerNamespace.value]]]
-      something = ESSearchService.find(map)
+      something = esSearchService.find(map)
       if (something.size() > 0) {
         log.debug("found by provider namespace ID in ES")
         return something.each{it = TitleInstancePackagePlatform.getByUUID(it.uuid)}
