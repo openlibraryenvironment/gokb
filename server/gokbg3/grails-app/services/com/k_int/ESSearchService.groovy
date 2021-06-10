@@ -750,7 +750,7 @@ class ESSearchService{
         }
       }
     } catch (Exception se) {
-      log.error("${se}")
+      log.error("Error processing search request", se)
       result = [:]
       result.result = "ERROR"
       result.errors = ['unknown': "There has been an unknown error processing the search request!"]
