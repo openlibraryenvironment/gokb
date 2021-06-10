@@ -353,7 +353,7 @@ class ReviewsController {
     if (obj.allocatedTo == user) {
       curator = true
     }
-    else if (obj.allocatedGroups?.id.intersect(user.curatoryGroups?.id)) {
+    else if (obj.allocatedGroups?.group.id.intersect(user.curatoryGroups?.id)) {
       curator = true
     }
 

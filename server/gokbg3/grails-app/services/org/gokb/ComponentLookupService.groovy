@@ -478,7 +478,7 @@ class ComponentLookupService {
           hqlQry += " AND "
         }
 
-        hqlQry += "exists (select alg from AllocatedReviewGroup as alg where alg.review = p and alg.group IN :alg)"
+        hqlQry += "exists (select 1 from AllocatedReviewGroup as ag where ag.review = p and ag.group IN :alg)"
         qryParams['alg'] = validCgs
       }
     }
