@@ -4,6 +4,7 @@ package org.gokb
 import org.gokb.cred.*
 import groovy.xml.MarkupBuilder
 import groovy.xml.StreamingMarkupBuilder
+import groovy.xml.XmlUtil
 
 class OaiController {
 
@@ -79,6 +80,16 @@ class OaiController {
 
     // def attr = ["xsi:schemaLocation" : "${config.schema}"]
     def attr = [:]
+    File dir = new File("/tmp/gokb/oai/")
+
+    if (!dir.exists()) {
+      dir.mkdirs()
+    }
+
+    def location = "${dir}/${subject.uuid}_${subject.lastUpdated.toInstant()}.xml"
+    File cachedRecord = new File(location)
+    def cachedXml = null
+
     config.metadataNamespaces.each {ns, url ->
       ns = (ns == '_default_' ? '' : ":${ns}")
 
@@ -87,9 +98,24 @@ class OaiController {
 
     log.debug("proceed...");
 
+    if (cachedRecord.exists() && subject.lastUpdated < new Date(cachedRecord.lastModified())) {
+      cachedXml = new XmlParser(false, false).parse(cachedRecord)
+    } else if (subject.class == Package) {
+      def fileWriter = new FileWriter(location)
+      def recordXml = new MarkupBuilder(fileWriter)
+      subject.toGoKBXml(recordXml, attr)
+      fileWriter.close()
+      cachedXml = new XmlParser(false, false).parse(cachedRecord)
+    }
+
     // Add the metadata element and populate it depending on the config.
     builder.'metadata'() {
-      subject."${config.methodName}" (builder, attr)
+      if (subject.class == Package) {
+        mkp.yieldUnescaped XmlUtil.serialize(cachedXml).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
+      }
+      else {
+        subject."${config.methodName}" (builder, attr)
+      }
     }
     log.debug("buildMetadata.... done");
   }
@@ -686,8 +712,8 @@ class OaiController {
         log.debug("Request had errors .. not executing query!")
       }
       else {
-        rec_count = Package.executeQuery("select count(distinct o) ${query}".toString(),query_params)[0];
-        records = Package.executeQuery("select distinct o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:max])
+        rec_count = Package.executeQuery("select count(o) ${query}".toString(),query_params)[0];
+        records = Package.executeQuery("select o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:max])
 
         log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
 
