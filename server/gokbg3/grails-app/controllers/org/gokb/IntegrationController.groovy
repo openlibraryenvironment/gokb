@@ -940,16 +940,14 @@ class IntegrationController {
             token != null, request_locale, request_user, job)
       }
       log.debug("Starting job ${background_job}..")
-      background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
-      background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
+      background_job.description = "Package update TIPPs (${rjson.packageHeader.name})"
+      background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageUpdateTipps')
       background_job.linkedItem = [name: rjson.packageHeader.name,
                                    type: "Package"]
-      background_job.message("Starting TIPPS update for Package ${rjson.packageHeader.name}")
+      background_job.message("Starting TIPPs update for Package ${rjson.packageHeader.name}")
       background_job.startOrQueue()
       background_job.startTime = new Date()
-      result << [job_id: background_job.uuid,
-                 // TODO: remove key 'info' as it is deprecated
-                 info  : [job_id: background_job.uuid]]
+      result << [job_id: background_job.uuid]
     }
     render result as JSON
   }

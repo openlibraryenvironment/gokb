@@ -158,6 +158,6 @@ class TippService {
 
   private void handleFindConflicts(TitleInstancePackagePlatform tipp, def found) {
     // use this to create more ReviewRequests as needed
-    // TODO: check if the ReviewRequest was raised already before rasing another one
+    // TODO: check if the ReviewRequest was raised already before raising a new one
   }
 }

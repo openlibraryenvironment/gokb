@@ -16,11 +16,11 @@ class TippMatchingJob {
 
   static triggers = {
     // Cron timer.
-    cron name: 'TippMatchingTrigger', cronExpression: "0 0/10 0/1 * * ?"
+    cron name: 'TippMatchingTrigger', cronExpression: "0 20 0/1 * * ?"
   }
 
   def execute() {
-  TitleInstance.withNewSession {
+  TitleInstance.withSession {
       def tippIDs = TitleInstancePackagePlatform.executeQuery(
           "select id from TitleInstancePackagePlatform tipp where status != :sdel and not exists (select c from Combo as c where c.type = :ctype and c.toComponent = tipp)",
           [sdel : RefdataCategory.lookup('KBComponent.Status', 'Deleted'),

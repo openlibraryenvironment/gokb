@@ -60,7 +60,7 @@ class ComponentUpdateService {
     Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
     RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+    RefdataValue combo_type_id = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
 
     data_identifiers.each { ci ->
       def namespace_val = ci.namespace?.value ?: ci.type

@@ -39,7 +39,8 @@ class ESSearchService{
       generic: [
           "id",
           "uuid",
-          "listStatus"
+          "listStatus",
+          "importId"
       ],
       simpleMap: [
           "curatoryGroup": "curatoryGroups",
@@ -750,7 +751,7 @@ class ESSearchService{
         }
       }
     } catch (Exception se) {
-      log.error("${se}")
+      log.error("ES find exception", se)
       result = [:]
       result.result = "ERROR"
       result.errors = ['unknown': "There has been an unknown error processing the search request!"]
@@ -770,12 +771,15 @@ class ESSearchService{
     params.each{ k, v ->
       if (requestMapping.generic && k in requestMapping.generic){
         def final_val = v
-
-        if (k == 'id' && params.int('id')) {
-          final_val = KBComponent.get(params.int('id'))?.getLogEntityId()
+        if (k == "importId") {
+          exactQuery.must(QueryBuilders.termQuery(k, final_val))
         }
-
-        exactQuery.must(QueryBuilders.matchQuery(k, final_val))
+        else {
+          if (k == 'id' && params.int('id')) {
+            final_val = KBComponent.get(params.int('id'))?.getLogEntityId()
+          }
+          exactQuery.must(QueryBuilders.matchQuery(k, final_val))
+        }
       }
       else if (requestMapping.simpleMap?.containsKey(k)){
         exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v))

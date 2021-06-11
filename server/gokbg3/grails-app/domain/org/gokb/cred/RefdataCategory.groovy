@@ -77,7 +77,6 @@ class RefdataCategory {
         rdv_cache[rdv_cache_key] = result.id
       }
     }
-
     // return the refdata value.
     result
   }

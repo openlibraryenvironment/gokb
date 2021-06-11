@@ -1097,14 +1097,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   @Transient
-  public Identifier[] getIds() {
-    def refdata_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [this, refdata_ids, status_active], [readOnly: true])
-    result
-  }
-
-  @Transient
   public getTitleIds() {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
