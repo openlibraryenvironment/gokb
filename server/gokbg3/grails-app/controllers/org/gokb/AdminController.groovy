@@ -25,6 +25,7 @@ class AdminController {
   def titleAugmentService
   ConcurrencyManagerService concurrencyManagerService
   CleanupService cleanupService
+  TippService tippService
 
   @Deprecated
   def tidyOrgData() {
@@ -417,6 +418,21 @@ class AdminController {
 
     j.description = "TIPP Cleanup"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'TIPPCleanup')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
+  def copyTitleData() {
+    log.debug("copy Identifiers")
+    Job j = concurrencyManagerService.createJob { Job j ->
+      tippService.copyTitleData(j)
+    }.startOrQueue()
+
+    log.debug("started data transfer task")
+
+    j.description = "TIPP: copy title data"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'TIPPfillUp')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
