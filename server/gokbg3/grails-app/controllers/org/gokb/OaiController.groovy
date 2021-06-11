@@ -5,6 +5,8 @@ import org.gokb.cred.*
 import groovy.xml.MarkupBuilder
 import groovy.xml.StreamingMarkupBuilder
 import groovy.xml.XmlUtil
+import java.time.Duration
+import java.time.Instant
 
 class OaiController {
 
@@ -80,6 +82,7 @@ class OaiController {
 
     // def attr = ["xsi:schemaLocation" : "${config.schema}"]
     def attr = [:]
+    def newCache = false
     File dir = new File("/tmp/gokb/oai/")
 
     if (!dir.exists()) {
@@ -105,12 +108,13 @@ class OaiController {
       def recordXml = new MarkupBuilder(fileWriter)
       subject.toGoKBXml(recordXml, attr)
       fileWriter.close()
+      newCache = true
       cachedXml = new XmlParser(false, false).parse(cachedRecord)
     }
 
     // Add the metadata element and populate it depending on the config.
     builder.'metadata'() {
-      if (subject.class == Package && config.methodName == 'toGoKBXml') {
+      if (subject.class == Package && config.methodName == 'toGoKBXml' && (newCache || Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 5) ) {
         mkp.yieldUnescaped XmlUtil.serialize(cachedXml).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
       }
       else {
