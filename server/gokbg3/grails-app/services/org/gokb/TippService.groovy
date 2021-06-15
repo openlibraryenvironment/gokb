@@ -51,12 +51,14 @@ class TippService {
               log.debug("set TIPP name to $tipp.name")
               count++
             }
+            tipp.save(flush:true)
+            tipp.finalize()
           }
           job?.setProgress(index, tippIDs.size())
           if (job?.isCancelled()) {
             cancelled = true
           }
-          if (count > 200) {
+          if (count > 100) {
             log.debug("Clean up GORM");
             // Get the current session.
             def session = sessionFactory.currentSession
