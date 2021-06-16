@@ -54,7 +54,7 @@ class TippService {
             tipp.save(flush: true)
             log.debug("save $index")
           }
-          log.debug("destroy #$index: $tipp")
+          //log.debug("destroy #$index: $tipp")
           tipp.finalize()
         }
         job?.setProgress(index, tippIDs.size())
