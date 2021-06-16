@@ -61,9 +61,8 @@ class TippService {
         if (job?.isCancelled()) {
           cancelled = true
         }
-        if (count > 100) {
-          log.debug("Clean up GORM");
-          count = 0;
+        if (index % 100 == 0) {
+          log.debug("Clean up GORM at index #$index");
           // Get the current session.
           def session = sessionFactory.currentSession
           // flush and clear the session.
