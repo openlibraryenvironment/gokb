@@ -480,7 +480,6 @@ class UpdatePkgTippsRun {
                   'publicationType'            : tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : null,
                   'parentPublicationTitleId'   : tippJson.parent_publication_title_id,
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
-                  'publicationType'            : tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : null,
                   'ids'                        : idents,
                   'importId'                   : tippJson.titleId ?: null]
           ).save()

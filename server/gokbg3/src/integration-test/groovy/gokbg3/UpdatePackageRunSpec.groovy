@@ -36,12 +36,23 @@ class UpdatePackageRunSpec extends Specification {
     def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush: true)
     def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush: true)
     def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush: true)
-    def test_upd_pkg = Package.findByName('TestTokenPackage') ?: new Package(name: 'TestTokenPackage').save(flush: true)
+    def test_upd_pkg = Package.findByName('TestPackage') ?: new Package(name: 'TestPackage').save(flush: true)
+    def test_journal = JournalInstance.findByName('TestJournal') ?: new JournalInstance('TestJournal')
+    def test_tipp = TitleInstancePackagePlatform.findByName('TestTIPP') ?: new TitleInstancePackagePlatform(
+        ['pkg'                        : test_upd_pkg,
+         'title'                      : test_journal,
+         'hostPlatform'               : acs_test_plt,
+         'status'                     : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+         'name'                       : 'TestTIPP',
+         'publicationType'            : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Serial'),
+         'ids'                        : [value:new Identifier(value: '123-456'),
+                                         namespace: IdentifierNamespace.findByName('issn')],
+         'importId'                   : 'titleID'])
+
     def user = User.findByUsername('ingestAgent')
     if (!user.apiUserStatus) {
       UserRole.create(user, Role.findByAuthority('ROLE_API'), true)
     }
-    def pkg_token = UpdateToken.findByValue('TestUpdateToken') ?: new UpdateToken(value: 'TestUpdateToken', pkg: test_upd_pkg, updateUser: user).save(flush: true)
   }
 
   def cleanup() {
@@ -50,10 +61,12 @@ class UpdatePackageRunSpec extends Specification {
     Org.findByName("American Chemical Society")?.expunge()
     Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
-    Package pkg = Package.findByName('TestTokenPackage')
-    pkg?.expunge()
-    UpdateToken.findByValue('TestUpdateToken')?.delete()
-    TitleInstance.findAllByName("Acta cytologica")?.each { title ->
+    ['TestPackage',
+     "American Chemical Society: ACS Legacy Archives"
+    ].each { pkgName ->
+      Package.findByName(pkgName)?.expunge()
+    }
+    TitleInstance.findAllByName("TestJournal")?.each { title ->
       title.expunge()
     }
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
@@ -62,7 +75,7 @@ class UpdatePackageRunSpec extends Specification {
     Identifier.findByValue('zdb:2256676-4')?.expunge()
   }
 
-  void "Test updatePackageTipps :: Import a package without title matching"() {
+  void "Test updatePackageTipps :: new record"() {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
@@ -90,12 +103,25 @@ class UpdatePackageRunSpec extends Specification {
             [
                 "accessEnd"  : "",
                 "accessStart": "",
-                "titleId": "wildeTitleId",
+                "titleId"    : "wildeTitleId",
                 "identifiers": [
                     [
                         "type" : "doi",
                         "value": "testTippId"
+                    ],
+                    [
+                        "type" : "zdb",
+                        "value": "1483109-0"
+                    ],
+                    [
+                        "type" : "eissn",
+                        "value": "1520-5118"
+                    ],
+                    [
+                        "type" : "issn",
+                        "value": "0021-8561"
                     ]
+
                 ],
                 "coverage"   : [
                     [
@@ -116,7 +142,7 @@ class UpdatePackageRunSpec extends Specification {
                     "primaryUrl": "https://pubs.acs.org"
                 ],
                 "status"     : "Current",
-                "editStatus"     : "In Progress",
+                "editStatus" : "In Progress",
                 "title"      : [
                     "identifiers": [
                         [
