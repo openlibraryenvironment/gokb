@@ -16,7 +16,6 @@ class ZdbAPIService {
   def endpoint = 'zdb'
   def target_service = null
   def grailsApplication
-  def useHydra = false
 
   def config = [
     version: [
@@ -34,10 +33,6 @@ class ZdbAPIService {
     onlineOnly: [
       kxp: " and pica.bbg=O*",
       zdb: " and dnb.frm=O"
-    ],
-    printOnly: [
-      kxp: " and pica.bbg=A*",
-      zdb: " and dnb.frm=A"
     ],
     prefix: [
       kxp: "zs:",
@@ -98,70 +93,39 @@ class ZdbAPIService {
     ids.each { id ->
       if (id.namespace.value == 'eissn' || id.namespace.value == 'issn') {
         try {
-          if (!useHydra) {
-            new RESTClient(config.baseUrl[endpoint]).request(GET, ContentType.XML) { request ->
-              uri.query = [
-                version: config.version[endpoint],
-                operation: "searchRetrieve",
-                recordSchema: config.recordSchema[endpoint],
-                maximumRecords: "10",
-                query: config.issTerm[endpoint] + id.value + (id.namespace.value == 'eissn' ? config.onlineOnly[endpoint] : config.printOnly[endpoint])
-              ]
+          new RESTClient(config.baseUrl[endpoint]).request(GET, ContentType.XML) { request ->
+            uri.query = [
+              version: config.version[endpoint],
+              operation: "searchRetrieve",
+              recordSchema: config.recordSchema[endpoint],
+              maximumRecords: "10",
+              query: config.issTerm[endpoint] + id.value + config.onlineOnly[endpoint]
+            ]
 
-              response.success = { resp, data ->
-                log.debug("Got " + data.records.size() + " for " + id.namespace.value + ": " + id.value)
+            response.success = { resp, data ->
+              log.debug("Got " + data.records.size() + " for " + id.namespace.value + ": " + id.value)
 
-                if (!data.records.children().isEmpty()) {
-                  data.records.findAll { rec ->
-                    def zdb_info = null
+              if (!data.records.children().isEmpty()) {
+                data.records.findAll { rec ->
+                  def zdb_info = null
 
-                    if (endpoint == 'kxp') {
-                      zdb_info = getKxpInfo(rec, (id.namespace.value == 'eissn' ? true : false))
+                  if (endpoint == 'kxp') {
+                    zdb_info = getKxpInfo(rec)
+                  }
+                  else {
+                    zdb_info = getZdbInfo(rec)
+                  }
+
+                  if (zdb_info) {
+                    log.debug("Found ID candidate ${zdb_info.id}")
+                    if (id.namespace.value == 'eissn' && !candidate_ids.direct.find { it.id == zdb_info.id }) {
+                      candidate_ids.direct.add(zdb_info)
                     }
-                    else {
-                      zdb_info = getZdbInfo(rec, (id.namespace.value == 'eissn' ? true : false))
-                    }
-
-                    if (zdb_info) {
-                      log.debug("Found ID candidate ${zdb_info.id}")
-                      if (id.namespace.value == 'eissn' && !candidate_ids.direct.find { it.id == zdb_info.id }) {
-                        candidate_ids.direct.add(zdb_info)
-                      }
-                      else if (!candidate_ids.parallel.find { it.id == zdb_info.id }) {
-                        candidate_ids.parallel.add(zdb_info)
-                      }
+                    else if (!candidate_ids.parallel.find { it.id == zdb_info.id }) {
+                      candidate_ids.parallel.add(zdb_info)
                     }
                   }
                 }
-              }
-            }
-          }
-          else {
-            new RESTClient("https://www.zeitschriftendatenbank.de/api/hydra").request(GET, ContentType.JSON) { request ->
-              // uri.path='/'
-              uri.query = [
-                q: "iss=" + id.value
-              ]
-
-              response.success = { resp, data ->
-                data.member?.each { rec ->
-                  if ((id.namespace.value == 'eissn' && rec.data['002@'][0][0][0].startsWith('O'))  || (id.namespace.value == 'issn' && rec.data['002@'][0][0][0].startsWith('A'))) {
-                    def zdb_info = getZdbInfo(rec, (id.namespace.value == 'eissn' ? true : false), true)
-
-                    if (zdb_info) {
-                      log.debug("Found ID candidate ${zdb_info.id}")
-                      if (id.namespace.value == 'eissn' && !candidate_ids.direct.contains(zdb_info.id)) {
-                        candidate_ids.direct.add(zdb_info.id)
-                      }
-                      else if (!candidate_ids.parallel.contains(zdb_info.id)) {
-                        candidate_ids.parallel.add(zdb_info.id)
-                      }
-                    }
-                  }
-                }
-              }
-              response.failure = { resp ->
-                log.error("Error - ${resp}");
               }
             }
           }
@@ -184,102 +148,129 @@ class ZdbAPIService {
     def result = [:]
     def rec = record.record.recordData.record
 
-    if (isOnline) {
-      result.id = rec.'*'.find { it.@tag == '006Z' }.subfield[0].text()
-    }
-    else {
-      rec.'*'.findAll { it.@tag == '039D' }.each { lf ->
-        def validLink = false
-        def idVal = null
+    result.id = rec.'*'.find { it.@tag == '006Z' }.subfield[0].text()
 
-        lf.'*'.each { sf ->
-          if (sf.@code == 'R') {
-            validLink = sf.text().startsWith('O')
-          }
-          if (sf.@code == '7') {
-            idVal = sf.text().substring(5, sf.text().length())
-          }
-        }
+    rec.'*'.findAll { it.@tag == '039D' }.each { lf ->
+      def validLink = false
+      def idVal = null
 
-        if (validLink) {
-          result.id = idVal
+      lf.'*'.each { subfield ->
+        if (subfield.@code == 'R') {
+          validLink = subfield.text().startsWith('O')
         }
+        if (subfield.@code == '7') {
+          idVal = subfield.text().substring(5, subfield.text().length())
+        }
+      }
+
+      if (validLink) {
+        result.id = idVal
       }
     }
 
     result
   }
 
-  def getZdbInfo(record, isOnline, boolean useHydra = false) {
+  def getZdbInfo(record) {
     def result = [:]
+    def rec = record.record.recordData.record
 
-    if (!useHydra) {
-      def rec = record.record.recordData.record
+    result.id = rec.global.'*'.find { it.@id == '006Z' }[0].text()
+    result.title = rec.global.'*'.find { it.@id == '021A' }[0].text()
+    result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'a'}.text() ?: null
 
-      if (isOnline) {
-        result.id = rec.global.'*'.find { it.@id == '006Z' }[0].text()
+    def fromDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'a'}
+    def toDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'b'}
 
-        def fromDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'a'}
-        def toDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'b'}
+    if (fromDate)
+      result.publishedFrom = fromDate.text()
 
-        if (fromDate)
-          result.publishedFrom = fromDate.text()
+    if (toDate)
+      result.publishedTo = toDate.text()
 
-        if (toDate)
-          result.publishedTo = toDate.text()
-      }
-      else {
-        rec.global.'*'.findAll { it.@id == '039D' }.each { lf ->
-          def validLink = false
-          def idVal = null
+    def pubName = rec.global.'*'.find { it.@id == '033A' }.'*'.find {it.@id == 'n'}
 
-          lf.'*'.each { sf ->
-            if (sf.@id == 'g') {
-              validLink = sf.text().startsWith('O')
-            }
-            if (sf.@id == '0') {
-              idVal = sf.text()
-            }
-          }
+    if (pubName) {
+      result.publisher = pubName.text()
+    }
 
-          if (validLink) {
-            result.id = idVal
-          }
+    def otherPubs = []
+
+    rec.global.'*'.findAll { it.@id == '033B'}.each { otherpub ->
+      otherpub.'*'.each { subfield ->
+        if (subfield.@id == 'n') {
+          otherPubs.add(subfield.text())
         }
       }
     }
-    else {
-      if (isOnline) {
-        result.id = record.data['006Z'][0][0][0]
 
-        if (record.data['011@'][0]['a']) {
-          result.publishedFrom = record.data['011@'][0]['a'][0] ?: null
-        }
+    if (otherPubs.size() > 0) {
+      result.publisher_history = otherPubs
+    }
 
-        if (record.data['011@'][0]['b']) {
-          result.publishedTo = record.data['011@'][0]['b'][0] ?: null
+    result.direct = []
+    result.parallel = []
+
+    rec.global.'*'.findAll { it.@id == '005A' }.each { eissn ->
+
+      eissn.'*'.each { subfield ->
+        if (subfield.@id == '0') {
+          result.direct.add(subfield.text())
         }
       }
-      else {
-        record.data['039D'].each { lf ->
-          def validLink = false
-          def idVal = null
+    }
 
-          lf.each { sf ->
-            if (sf instanceof List) {
-              idVal = sf[0]
-            }
-            else if (sf['g'] && sf['g'].startsWith('O')) {
-              validLink = true
-            }
-          }
+    rec.global.'*'.findAll { it.@id == '039D' }.each { lf ->
+      def validLink = false
+      def idVal = null
 
-          if (validLink) {
-            result.id = idVal
-          }
+      lf.'*'.each { subfield ->
+        if (subfield.@id == 'g') {
+          validLink = subfield.text().startsWith('A')
+        }
+        if (subfield.@id == 'I') {
+          idVal = subfield.text()
         }
       }
 
+      if (validLink) {
+        result.parallel.add(idVal)
+      }
+    }
+
+    result.history = []
+
+    rec.global.'*'.findAll { it.@id == '039E' }.each { lf ->
+      def item = [:]
+
+      lf.'*'.each { subfield ->
+        if (subfield.@id == 'b') {
+          item.prev = subfield.text().startsWith('f')
+        }
+        if (subfield.@id == 'I') {
+          item.issn = subfield.text()
+        }
+        if (subfield.@id == '0') {
+          item.zdbId = subfield.text()
+        }
+        if (subfield.@id == 'Y') {
+          item.name = subfield.text()
+        }
+        if (subfield.@id == 'H') {
+          def val = subfield.text()
+          if (val && !val.contains('[')) {
+            item.publishedFrom = val.contains('-') ? val.split('-')[0] : val
+
+            if (val.contains('-') && val.split('-')[1]?.length() > 0) {
+              item.publishedTo = val.split('-')[1]
+            }
+          }
+        }
+      }
+
+      if (item) {
+        result.history.add(item)
+      }
     }
 
     result

@@ -28,12 +28,10 @@ class ReviewRequestService {
       }
       else if (KBComponent.has(forComponent, 'curatoryGroups')) {
         log.debug("Using Component groups for ${forComponent} -> ${forComponent.class?.name}..")
-        CuratoryGroup.withSession {
-          forComponent.curatoryGroups?.each { gr ->
-            CuratoryGroup cg = CuratoryGroup.get(gr.id)
-            log.debug("Allocating Package Group ${gr} to review ${req}")
-            AllocatedReviewGroup.create(cg, req, true)
-          }
+        forComponent.curatoryGroups?.each { gr ->
+          CuratoryGroup cg = CuratoryGroup.get(gr.id)
+          log.debug("Allocating Package Group ${gr} to review ${req}")
+          AllocatedReviewGroup.create(cg, req, true)
         }
       }
       else if (forComponent.class == TitleInstancePackagePlatform && forComponent.pkg?.curatoryGroups?.size() > 0) {
