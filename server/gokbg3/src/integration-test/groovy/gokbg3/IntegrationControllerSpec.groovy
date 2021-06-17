@@ -57,13 +57,20 @@ class IntegrationControllerSpec extends Specification {
     Org.findByName("American Chemical Society")?.expunge()
     Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
-    Package pkg = Package.findByName('TestTokenPackage')
-    pkg?.expunge()
+    ['TestTokenPackageUpdate',
+     'American Chemical Society: ACS Legacy Archives: CompleteDates',
+     'TestTokenPackage',
+     'American Chemical Society: ACS Legacy Archives: UpdateListStatus'].each {
+      Package.findByName(it)?.expunge()
+    }
     UpdateToken.findByValue('TestUpdateToken')?.delete()
     TitleInstance.findAllByName("Acta cytologica")?.each { title ->
       title.expunge()
     }
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
+      title.expunge()
+    }
+    TitleInstancePackagePlatform.findAllByName("Journal of agricultural and food chemistry")?.each { title ->
       title.expunge()
     }
     Identifier.findByValue('zdb:2256676-4')?.expunge()
@@ -73,8 +80,8 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "name" : "TestGroup2",
-      "owner": "admin"
+        "name" : "TestGroup2",
+        "owner": "admin"
     ]
 
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertGroup") {
@@ -96,13 +103,13 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "identifiers": [
-        [
-          "type" : "global",
-          "value": "org-test-id-acs"
-        ]
-      ],
-      "name"       : "TestOrgAcs"
+        "identifiers": [
+            [
+                "type" : "global",
+                "value": "org-test-id-acs"
+            ]
+        ],
+        "name"       : "TestOrgAcs"
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertOrg") {
       auth('admin', 'admin')
@@ -123,9 +130,9 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "platformName": "TestPlt1",
-      "name"        : "TestPlt1",
-      "platformUrl" : "https://acstest.url"
+        "platformName": "TestPlt1",
+        "name"        : "TestPlt1",
+        "platformUrl" : "https://acstest.url"
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePlatform") {
       auth('admin', 'admin')
@@ -146,32 +153,32 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "identifiers"      : [
-        [
-          "type" : "zdb",
-          "value": "1483109-0"
+        "identifiers"      : [
+            [
+                "type" : "zdb",
+                "value": "1483109-0"
+            ],
+            [
+                "type" : "eissn",
+                "value": "1520-5118"
+            ],
+            [
+                "type" : "issn",
+                "value": "1021-8561"
+            ]
         ],
-        [
-          "type" : "eissn",
-          "value": "1520-5118"
+        "name"             : "Journal of agricultural and food chemistry",
+        "publishedFrom"    : "1953-01-01 00:00:00.000",
+        "publishedTo"      : "",
+        "publisher_history": [
+            [
+                "endDate"  : "",
+                "name"     : "American Chemical Society",
+                "startDate": "1953-01-01 00:00:00.000",
+                "status"   : ""
+            ]
         ],
-        [
-          "type" : "issn",
-          "value": "0021-8561"
-        ]
-      ],
-      "name"             : "Journal of agricultural and food chemistry",
-      "publishedFrom"    : "1953-01-01 00:00:00.000",
-      "publishedTo"      : "",
-      "publisher_history": [
-        [
-          "endDate"  : "",
-          "name"     : "American Chemical Society",
-          "startDate": "1953-01-01 00:00:00.000",
-          "status"   : ""
-        ]
-      ],
-      "type"             : "Serial"
+        "type"             : "Serial"
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
       auth('admin', 'admin')
@@ -182,7 +189,7 @@ class IntegrationControllerSpec extends Specification {
     resp.json.message != null
     resp.json.message.startsWith('Created')
     expect: "Find item by ID can now locate that item"
-    def ids = [['ns': 'issn', 'value': '0021-8561']]
+    def ids = [['ns': 'issn', 'value': '1021-8561']]
     def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
     matching_with_class_one_ids?.size() == 1
     matching_with_class_one_ids[0] == resp.json.titleId
@@ -192,24 +199,24 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "identifiers"      : [
-        [
-          "type" : "zdb",
-          "value": "1423434-0"
-        ]
-      ],
-      "name"             : "TestJournal_Dates",
-      "publishedFrom"    : "1953-01",
-      "publishedTo"      : "2001",
-      "publisher_history": [
-        [
-          "endDate"  : "",
-          "name"     : "American Chemical Society",
-          "startDate": "1953",
-          "status"   : ""
-        ]
-      ],
-      "type"             : "Serial"
+        "identifiers"      : [
+            [
+                "type" : "zdb",
+                "value": "1423434-0"
+            ]
+        ],
+        "name"             : "TestJournal_Dates",
+        "publishedFrom"    : "1953-01",
+        "publishedTo"      : "2001",
+        "publisher_history": [
+            [
+                "endDate"  : "",
+                "name"     : "American Chemical Society",
+                "startDate": "1953",
+                "status"   : ""
+            ]
+        ],
+        "type"             : "Serial"
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
       auth('admin', 'admin')
@@ -232,63 +239,63 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "identifiers"      : [
-        [
-          "type" : "eissn",
-          "value": "1549-960X"
+        "identifiers"      : [
+            [
+                "type" : "eissn",
+                "value": "1549-960X"
+            ],
+            [
+                "type" : "zdb",
+                "value": "1491237-5"
+            ]
         ],
-        [
-          "type" : "zdb",
-          "value": "1491237-5"
-        ]
-      ],
-      "name"             : "Journal of chemical information and modeling",
-      "publishedFrom"    : "1982-01-01 00:00:00.000",
-      "publishedTo"      : "",
-      "historyEvents"    : [
-        [
-          "date": "1982-01-01 00:00:00.000",
-          "from": [
+        "name"             : "Journal of chemical information and modeling",
+        "publishedFrom"    : "1982-01-01 00:00:00.000",
+        "publishedTo"      : "",
+        "historyEvents"    : [
             [
-              "title"      : "Journal of chemical documentation",
-              "identifiers": [
-                [
-                  "type" : "eissn",
-                  "value": "1541-5732"
+                "date": "1982-01-01 00:00:00.000",
+                "from": [
+                    [
+                        "title"      : "Journal of chemical documentation",
+                        "identifiers": [
+                            [
+                                "type" : "eissn",
+                                "value": "1541-5732"
+                            ],
+                            [
+                                "type" : "zdb",
+                                "value": "2096906-5"
+                            ]
+                        ]
+                    ]
                 ],
-                [
-                  "type" : "zdb",
-                  "value": "2096906-5"
+                "to"  : [
+                    [
+                        "title"      : "Journal of chemical information and modeling",
+                        "identifiers": [
+                            [
+                                "type" : "eissn",
+                                "value": "1549-960X"
+                            ],
+                            [
+                                "type" : "zdb",
+                                "value": "1491237-5"
+                            ]
+                        ]
+                    ]
                 ]
-              ]
             ]
-          ],
-          "to"  : [
+        ],
+        "publisher_history": [
             [
-              "title"      : "Journal of chemical information and modeling",
-              "identifiers": [
-                [
-                  "type" : "eissn",
-                  "value": "1549-960X"
-                ],
-                [
-                  "type" : "zdb",
-                  "value": "1491237-5"
-                ]
-              ]
+                "endDate"  : "",
+                "name"     : "American Chemical Society",
+                "startDate": "1982-01-01 00:00:00.000",
+                "status"   : ""
             ]
-          ]
-        ]
-      ],
-      "publisher_history": [
-        [
-          "endDate"  : "",
-          "name"     : "American Chemical Society",
-          "startDate": "1982-01-01 00:00:00.000",
-          "status"   : ""
-        ]
-      ],
-      "type"             : "Serial"
+        ],
+        "type"             : "Serial"
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
       auth('admin', 'admin')
@@ -308,84 +315,84 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "packageHeader": [
-        "breakable"      : "No",
-        "consistent"     : "Yes",
-        "editStatus"     : "In Progress",
-        "fixed"          : "No",
-        "global"         : "Consortium",
-        "identifiers"    : [
-          [
-            "type" : "isil",
-            "value": "ZDB-1-ACS"
-          ]
-        ],
-        "listStatus"     : "In Progress",
-        "name"           : "American Chemical Society: ACS Legacy Archives",
-        "nominalPlatform": [
-          "name"      : "ACS Publications",
-          "primaryUrl": "https://pubs.acs.org"
-        ],
-        "nominalProvider": "American Chemical Society"
-      ],
-      "tipps"        : [
-        [
-          "accessEnd"  : "",
-          "accessStart": "",
-          "titleId": "wildeTitleId",
-          "identifiers": [
-            [
-              "type" : "doi",
-              "value": "testTippId"
-            ]
-          ],
-          "coverage"   : [
-            [
-              "coverageDepth": "Fulltext",
-              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
-              "embargo"      : "",
-              "endDate"      : "1995-12-31 00:00:00.000",
-              "endIssue"     : "",
-              "endVolume"    : "43",
-              "startDate"    : "1953-01-01 00:00:00.000",
-              "startIssue"   : "",
-              "startVolume"  : "1"
-            ]
-          ],
-          "medium"     : "Journal",
-          "platform"   : [
-            "name"      : "ACS Publications",
-            "primaryUrl": "https://pubs.acs.org"
-          ],
-          "status"     : "Current",
-          "editStatus"     : "In Progress",
-          "title"      : [
-            "identifiers": [
-              [
-                "type" : "zdb",
-                "value": "1483109-0"
-              ],
-              [
-                "type" : "eissn",
-                "value": "1520-5118"
-              ],
-              [
-                "type" : "issn",
-                "value": "0021-8561"
-              ]
+        "packageHeader": [
+            "breakable"      : "No",
+            "consistent"     : "Yes",
+            "editStatus"     : "In Progress",
+            "fixed"          : "No",
+            "global"         : "Consortium",
+            "identifiers"    : [
+                [
+                    "type" : "isil",
+                    "value": "ZDB-1-ACS"
+                ]
             ],
-            "name"       : "Journal of agricultural and food chemistry",
-            "type"       : "Serial"
-          ],
-          "name"       : "Journal of agricultural and food chemistry",
-          "type"       : "Serial",
-          "url"        : "http://pubs.acs.org/journal/jafcau"
+            "listStatus"     : "In Progress",
+            "name"           : "American Chemical Society",
+            "nominalPlatform": [
+                "name"      : "ACS Publications",
+                "primaryUrl": "https://pubs.acs.org"
+            ],
+            "nominalProvider": "American Chemical"
+        ],
+        "tipps"        : [
+            [
+                "accessEnd"  : "",
+                "accessStart": "",
+                "titleId"    : "wildeTitleId",
+                "identifiers": [
+                    [
+                        "type" : "doi",
+                        "value": "testTippId"
+                    ]
+                ],
+                "coverage"   : [
+                    [
+                        "coverageDepth": "Fulltext",
+                        "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                        "embargo"      : "",
+                        "endDate"      : "1995-12-31 00:00:00.000",
+                        "endIssue"     : "",
+                        "endVolume"    : "43",
+                        "startDate"    : "1953-01-01 00:00:00.000",
+                        "startIssue"   : "",
+                        "startVolume"  : "1"
+                    ]
+                ],
+                "medium"     : "Journal",
+                "platform"   : [
+                    "name"      : "ACS Publications",
+                    "primaryUrl": "https://pubs.acs.org"
+                ],
+                "status"     : "Current",
+                "editStatus" : "In Progress",
+                "title"      : [
+                    "identifiers": [
+                        [
+                            "type" : "zdb",
+                            "value": "1483109-0"
+                        ],
+                        [
+                            "type" : "eissn",
+                            "value": "1520-5118"
+                        ],
+                        [
+                            "type" : "issn",
+                            "value": "0021-8561"
+                        ]
+                    ],
+                    "name"       : "Journal of agricultural and food chemistry",
+                    "type"       : "Serial"
+                ],
+                "name"       : "Journal of agricultural and food chemistry",
+                "type"       : "Serial",
+                "url"        : "http://pubs.acs.org/journal/jafcau"
+            ]
         ]
-      ]
     ]
 
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-      "/integration/updatePackageTipps") {
+        "/integration/updatePackageTipps") {
       auth('admin', 'admin')
       body(json_record as JSON)
     }
@@ -394,12 +401,12 @@ class IntegrationControllerSpec extends Specification {
     resp.json.message != null
     resp.json.message.startsWith('Created')
     expect: "Find pkg by name, which is connected to the new TIPP"
-    def matching_pkgs = Package.findAllByName("American Chemical Society: ACS Legacy Archives")
+    def matching_pkgs = Package.findAllByName("American Chemical Society")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
     matching_pkgs[0].tipps?.size() == 1
     matching_pkgs[0].tipps[0].importId == "wildeTitleId"
-    matching_pkgs[0].provider?.name == "American Chemical Society"
+    matching_pkgs[0].provider?.name == "American Chemical"
     matching_pkgs[0].ids?.size() == 1
   }
 
@@ -407,69 +414,69 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "packageHeader": [
-        "breakable"      : "No",
-        "consistent"     : "Yes",
-        "editStatus"     : "In Progress",
-        "fixed"          : "No",
-        "global"         : "Consortium",
-        "identifiers"    : [
-          [
-            "type" : "isil",
-            "value": "ZDB-1-ACS"
-          ]
-        ],
-        "listStatus"     : "In Progress",
-        "name"           : "American Chemical Society: ACS Legacy Archives: CompleteDates",
-        "nominalPlatform": [
-          "name"      : "ACS Publications",
-          "primaryUrl": "https://pubs.acs.org"
-        ],
-        "nominalProvider": "American Chemical Society"
-      ],
-      "tipps"        : [
-        [
-          "accessEnd"   : "",
-          "accessStart" : "",
-          "coverage"    : [
-            [
-              "coverageDepth": "Fulltext",
-              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
-              "embargo"      : "",
-              "endDate"      : "1995",
-              "endIssue"     : "",
-              "endVolume"    : "43",
-              "startDate"    : "1953-01",
-              "startIssue"   : "",
-              "startVolume"  : "1"
-            ]
-          ],
-          "hostPlatform": [
-            "name"      : "ACS Publications",
-            "primaryUrl": "https://pubs.acs.org"
-          ],
-          "status"      : "Current",
-          "title"       : [
-            "identifiers": [
-              [
-                "type" : "zdb",
-                "value": "1483109-0"
-              ],
-              [
-                "type" : "eissn",
-                "value": "1520-5118"
-              ],
-              [
-                "type" : "issn",
-                "value": "0021-8561"
-              ]
+        "packageHeader": [
+            "breakable"      : "No",
+            "consistent"     : "Yes",
+            "editStatus"     : "In Progress",
+            "fixed"          : "No",
+            "global"         : "Consortium",
+            "identifiers"    : [
+                [
+                    "type" : "isil",
+                    "value": "ZDB-1-ACS"
+                ]
             ],
-            "name"       : "Journal of agricultural and food chemistry",
-            "type"       : "Serial"
-          ],
-          "url"         : "http://pubs.acs.org/journal/jafcau"
+            "listStatus"     : "In Progress",
+            "name"           : "American Chemical Society: ACS Legacy Archives: CompleteDates",
+            "nominalPlatform": [
+                "name"      : "ACS Publications",
+                "primaryUrl": "https://pubs.acs.org"
+            ],
+            "nominalProvider": "American Chemical Society"
+        ],
+        "tipps"        : [
+            [
+                "accessEnd"   : "",
+                "accessStart" : "",
+                "coverage"    : [
+                    [
+                        "coverageDepth": "Fulltext",
+                        "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                        "embargo"      : "",
+                        "endDate"      : "1995",
+                        "endIssue"     : "",
+                        "endVolume"    : "43",
+                        "startDate"    : "1953-01",
+                        "startIssue"   : "",
+                        "startVolume"  : "1"
+                    ]
+                ],
+                "hostPlatform": [
+                    "name"      : "ACS Publications",
+                    "primaryUrl": "https://pubs.acs.org"
+                ],
+                "status"      : "Current",
+                "title"       : [
+                    "identifiers": [
+                        [
+                            "type" : "zdb",
+                            "value": "1483109-0"
+                        ],
+                        [
+                            "type" : "eissn",
+                            "value": "1520-5118"
+                        ],
+                        [
+                            "type" : "issn",
+                            "value": "0021-8561"
+                        ]
+                    ],
+                    "name"       : "Journal of agricultural and food chemistry",
+                    "type"       : "Serial"
+                ],
+                "url"         : "http://pubs.acs.org/journal/jafcau"
+            ]
         ]
-      ]
     ]
 
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
@@ -493,81 +500,81 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "packageHeader": [
-        "breakable"      : "No",
-        "consistent"     : "Yes",
-        "editStatus"     : "In Progress",
-        "fixed"          : "No",
-        "global"         : "Consortium",
-        "identifiers"    : [
-          [
-            "type" : "isil",
-            "value": "ZDB-5-ACS"
-          ]
-        ],
-        "listStatus"     : "In Progress",
-        "name"           : "American Chemical Society: additional Props",
-        "nominalPlatform": [
-          "name"      : "ACS Publications",
-          "primaryUrl": "https://pubs.acs.org"
-        ],
-        "nominalProvider": "American Chemical Society"
-      ],
-      "tipps"        : [
-        [
-          "accessEnd"                  : "",
-          "accessStart"                : "",
-          "coverage"                   : [
-            [
-              "coverageDepth": "Fulltext",
-              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
-              "embargo"      : "",
-              "endDate"      : "1995",
-              "endIssue"     : "",
-              "endVolume"    : "43",
-              "startDate"    : "1953-01",
-              "startIssue"   : "",
-              "startVolume"  : "1"
-            ]
-          ],
-          "hostPlatform"               : [
-            "name"      : "ACS Publications",
-            "primaryUrl": "https://pubs.acs.org"
-          ],
-          "status"                     : "Current",
-          "title"                      : [
-            "identifiers": [
-              [
-                "type" : "zdb",
-                "value": "1483109-0"
-              ],
-              [
-                "type" : "eissn",
-                "value": "1520-5118"
-              ],
-              [
-                "type" : "issn",
-                "value": "0021-8561"
-              ]
+        "packageHeader": [
+            "breakable"      : "No",
+            "consistent"     : "Yes",
+            "editStatus"     : "In Progress",
+            "fixed"          : "No",
+            "global"         : "Consortium",
+            "identifiers"    : [
+                [
+                    "type" : "isil",
+                    "value": "ZDB-6-ACS"
+                ]
             ],
-            "name"       : "Journal of agricultural and food chemistry",
-            "type"       : "Serial"
-          ],
-          "firstAuthor"                : "erster Autor",
-          "firstEditor"                : "erster Lektor",
-          "publisherName"              : "publisher",
-          "volumeNumber"               : "Volume 3",
-          "editionStatement"           : "dritte Auflage",
-          "parentPublicationTitleId"   : "elternPubTitelId",
-          "precedingPublicationTitleId": "vorgängerPubTitelId",
-          "publicationType"            : "Database",
-          "medium"                     : "Other",
-          "dateFirstInPrint"           : "2020-01-01",
-          "dateFirstOnline"            : "2020-01-02",
-          "lastChangedExternal"        : "2021-01-02",
-          "url"                        : "http://pubs.acs.org/journal/jafcau"
+            "listStatus"     : "In Progress",
+            "name"           : "American Chemical Society with additional Props",
+            "nominalPlatform": [
+                "name"      : "ACS Publications",
+                "primaryUrl": "https://pubs.acs.org"
+            ],
+            "nominalProvider": "American Chemical Society"
+        ],
+        "tipps"        : [
+            [
+                "accessEnd"                  : "",
+                "accessStart"                : "",
+                "coverage"                   : [
+                    [
+                        "coverageDepth": "Fulltext",
+                        "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                        "embargo"      : "",
+                        "endDate"      : "1995",
+                        "endIssue"     : "",
+                        "endVolume"    : "43",
+                        "startDate"    : "1953-01",
+                        "startIssue"   : "",
+                        "startVolume"  : "1"
+                    ]
+                ],
+                "hostPlatform"               : [
+                    "name"      : "ACS Publications",
+                    "primaryUrl": "https://pubs.acs.org"
+                ],
+                "status"                     : "Current",
+                "title"                      : [
+                    "identifiers": [
+                        [
+                            "type" : "zdb",
+                            "value": "1483109-0"
+                        ],
+                        [
+                            "type" : "eissn",
+                            "value": "1520-5118"
+                        ],
+                        [
+                            "type" : "issn",
+                            "value": "0021-8561"
+                        ]
+                    ],
+                    "name"       : "Journal of agricultural and food chemistry",
+                    "type"       : "Serial"
+                ],
+                "firstAuthor"                : "erster Autor",
+                "firstEditor"                : "erster Lektor",
+                "publisherName"              : "publisher",
+                "volumeNumber"               : "Volume 3",
+                "editionStatement"           : "dritte Auflage",
+                "parentPublicationTitleId"   : "elternPubTitelId",
+                "precedingPublicationTitleId": "vorgängerPubTitelId",
+                "publicationType"            : "Database",
+                "medium"                     : "Other",
+                "dateFirstInPrint"           : "2020-01-01",
+                "dateFirstOnline"            : "2020-01-02",
+                "lastChangedExternal"        : "2021-01-02",
+                "url"                        : "http://pubs.acs.org/journal/jafcau"
+            ]
         ]
-      ]
     ]
 
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
@@ -590,22 +597,22 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "identifiers"    : [
-        [
-          "type" : "isbn",
-          "value": "978-13-12232-23-5"
+        "identifiers"    : [
+            [
+                "type" : "isbn",
+                "value": "978-13-12232-23-5"
+            ],
+            [
+                "type" : "doi",
+                "value": "10.1515/pdtc"
+            ]
         ],
-        [
-          "type" : "doi",
-          "value": "10.1515/pdtc"
-        ]
-      ],
-      "name"           : "Test Book 1",
-      "type"           : "monograph",
-      "editionNumber"  : "4",
-      "volumeNumber"   : "3",
-      "firstAuthor"    : "J. Smith",
-      "dateFirstOnline": "2019-01-01 00:00:00.000"
+        "name"           : "Test Book 1",
+        "type"           : "monograph",
+        "editionNumber"  : "4",
+        "volumeNumber"   : "3",
+        "firstAuthor"    : "J. Smith",
+        "dateFirstOnline": "2019-01-01 00:00:00.000"
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
       auth('admin', 'admin')
@@ -624,34 +631,34 @@ class IntegrationControllerSpec extends Specification {
   void "Test crossReferenceTitle identifier lock"() {
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      [
-        "identifiers"    : [
-          [
-            "type" : "isbn",
-            "value": "978-13-12232-23-9"
-          ]
+        [
+            "identifiers"    : [
+                [
+                    "type" : "isbn",
+                    "value": "978-13-12232-23-9"
+                ]
+            ],
+            "type"           : "Monograph",
+            "name"           : "Test Book 1",
+            "editionNumber"  : "4",
+            "volumeNumber"   : "3",
+            "firstAuthor"    : "J. Smith",
+            "dateFirstOnline": "2019-01-01 00:00:00.000"
         ],
-        "type"           : "Monograph",
-        "name"           : "Test Book 1",
-        "editionNumber"  : "4",
-        "volumeNumber"   : "3",
-        "firstAuthor"    : "J. Smith",
-        "dateFirstOnline": "2019-01-01 00:00:00.000"
-      ],
-      [
-        "identifiers"    : [
-          [
-            "type" : "isbn",
-            "value": "978-13-12232-23-9"
-          ]
-        ],
-        "name"           : "Test Book 1",
-        "type"           : "Monograph",
-        "editionNumber"  : "4",
-        "volumeNumber"   : "3",
-        "firstAuthor"    : "J. Smith",
-        "dateFirstOnline": "2019-01-01 00:00:00.000"
-      ]
+        [
+            "identifiers"    : [
+                [
+                    "type" : "isbn",
+                    "value": "978-13-12232-23-9"
+                ]
+            ],
+            "name"           : "Test Book 1",
+            "type"           : "Monograph",
+            "editionNumber"  : "4",
+            "volumeNumber"   : "3",
+            "firstAuthor"    : "J. Smith",
+            "dateFirstOnline": "2019-01-01 00:00:00.000"
+        ]
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
       auth('admin', 'admin')
@@ -668,22 +675,22 @@ class IntegrationControllerSpec extends Specification {
   void "Test crossReferenceTitle with duplicate identifier"() {
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "identifiers"    : [
-        [
-          "type" : "isbn",
-          "value": "978-13-12232-23-8"
+        "identifiers"    : [
+            [
+                "type" : "isbn",
+                "value": "978-13-12232-23-8"
+            ],
+            [
+                "type" : "isbn",
+                "value": "978-13-12232-23-8"
+            ]
         ],
-        [
-          "type" : "isbn",
-          "value": "978-13-12232-23-8"
-        ]
-      ],
-      "type"           : "Monograph",
-      "name"           : "Test Book 1",
-      "editionNumber"  : "4",
-      "volumeNumber"   : "3",
-      "firstAuthor"    : "J. Smith",
-      "dateFirstOnline": "2019-01-01 00:00:00.000"
+        "type"           : "Monograph",
+        "name"           : "Test Book 1",
+        "editionNumber"  : "4",
+        "volumeNumber"   : "3",
+        "firstAuthor"    : "J. Smith",
+        "dateFirstOnline": "2019-01-01 00:00:00.000"
     ]
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
       auth('admin', 'admin')
@@ -704,13 +711,13 @@ class IntegrationControllerSpec extends Specification {
   void "Test crossReferenceTitle with wrong type"() {
     when: "Caller asks for this record to be cross referenced"
     def book_record = [
-      "identifiers": [
-        [
-          "type" : "isbn",
-          "value": "978-13-12324-23-8"
-        ]
-      ],
-      "name"       : "Test Book Missing Type"
+        "identifiers": [
+            [
+                "type" : "isbn",
+                "value": "978-13-12324-23-8"
+            ]
+        ],
+        "name"       : "Test Book Missing Type"
     ]
 
     RestResponse respBook = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
@@ -779,87 +786,87 @@ class IntegrationControllerSpec extends Specification {
   void "Test package update"() {
     given:
     def json_record = [
-      "packageHeader": [
-        "breakable"      : "No",
-        "consistent"     : "Yes",
-        "editStatus"     : "In Progress",
-        "listStatus"     : "Checked",
-        "fixed"          : "No",
-        "global"         : "Consortium",
-        "identifiers"    : [
-          [
-            "type" : "isil",
-            "value": "ZDB-1-ACS"
-          ]
-        ],
-        "name"           : "American Chemical Society: ACS Legacy Archives: UpdateListStatus",
-        "nominalPlatform": [
-          "name"      : "ACS Publications",
-          "primaryUrl": "https://pubs.acs.org"
-        ],
-        "nominalProvider": "American Chemical Society"
-      ],
-      "tipps"        : [
-        [
-          "accessEnd"  : "",
-          "accessStart": "",
-          "coverage"   : [
-            [
-              "coverageDepth": "Fulltext",
-              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
-              "embargo"      : "",
-              "endDate"      : "1995",
-              "endIssue"     : "",
-              "endVolume"    : "43",
-              "startDate"    : "1953-01",
-              "startIssue"   : "",
-              "startVolume"  : "1"
-            ]
-          ],
-          "medium"     : "Electronic",
-          "name"       : "TIPP Name",
-          "platform"   : [
-            "name"      : "ACS Publications",
-            "primaryUrl": "https://pubs.acs.org"
-          ],
-          "prices"     : [
-            [
-              "type"     : "list",
-              "currency" : "EUR",
-              "amount"   : 123.45,
-              "startDate": "2010-01-31"
+        "packageHeader": [
+            "breakable"      : "No",
+            "consistent"     : "Yes",
+            "editStatus"     : "In Progress",
+            "listStatus"     : "Checked",
+            "fixed"          : "No",
+            "global"         : "Consortium",
+            "identifiers"    : [
+                [
+                    "type" : "isil",
+                    "value": "ZDB-8-ACS"
+                ]
             ],
-            [
-              "type"     : "topup",
-              "currency" : "USD",
-              "amount"   : 43.12,
-              "startDate": "2020-01-01"
-            ]
-          ],
-          "series"     : "Mystery Cloud",
-          "status"     : "Current",
-          "subjectArea": "Fringe",
-          "title"      : [
-            "identifiers": [
-              [
-                "type" : "zdb",
-                "value": "1483109-0"
-              ],
-              [
-                "type" : "eissn",
-                "value": "1520-5118"
-              ],
-              [
-                "type" : "issn",
-                "value": "0021-8561"
-              ]
+            "name"           : "American Chemical Society: ACS Legacy Archives: UpdateListStatus",
+            "nominalPlatform": [
+                "name"      : "ACS Publications",
+                "primaryUrl": "https://pubs.acs.org"
             ],
-            "name"       : "Journal of agricultural and food chemistry",
-            "type"       : "Serial"
-          ],
-          "url"        : "http://pubs.acs.org/journal/jafcau"
+            "nominalProvider": "American Chemical Society"
+        ],
+        "tipps"        : [
+            [
+                "accessEnd"  : "",
+                "accessStart": "",
+                "coverage"   : [
+                    [
+                        "coverageDepth": "Fulltext",
+                        "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                        "embargo"      : "",
+                        "endDate"      : "1995",
+                        "endIssue"     : "",
+                        "endVolume"    : "43",
+                        "startDate"    : "1953-01",
+                        "startIssue"   : "",
+                        "startVolume"  : "1"
+                    ]
+                ],
+                "medium"     : "Electronic",
+                "name"       : "TIPP Name",
+                "platform"   : [
+                    "name"      : "ACS Publications",
+                    "primaryUrl": "https://pubs.acs.org"
+                ],
+                "prices"     : [
+                    [
+                        "type"     : "list",
+                        "currency" : "EUR",
+                        "amount"   : 123.45,
+                        "startDate": "2010-01-31"
+                    ],
+                    [
+                        "type"     : "topup",
+                        "currency" : "USD",
+                        "amount"   : 43.12,
+                        "startDate": "2020-01-01"
+                    ]
+                ],
+                "series"     : "Mystery Cloud",
+                "status"     : "Current",
+                "subjectArea": "Fringe",
+                "title"      : [
+                    "identifiers": [
+                        [
+                            "type" : "zdb",
+                            "value": "1483109-0"
+                        ],
+                        [
+                            "type" : "eissn",
+                            "value": "1520-5118"
+                        ],
+                        [
+                            "type" : "issn",
+                            "value": "0021-8561"
+                        ]
+                    ],
+                    "name"       : "Journal of agricultural and food chemistry",
+                    "type"       : "Serial"
+                ],
+                "url"        : "http://pubs.acs.org/journal/jafcau"
+            ]
         ]
-      ]
     ]
     when: "Caller asks for this record to be cross referenced"
 
@@ -888,97 +895,97 @@ class IntegrationControllerSpec extends Specification {
   void "test update package via token"() {
     given:
     def json_record = [
-      "updateToken"  : "TestUpdateToken",
-      "packageHeader": [
-        "breakable"      : "No",
-        "consistent"     : "Yes",
-        "editStatus"     : "In Progress",
-        "listStatus"     : "Checked",
-        "fixed"          : "No",
-        "global"         : "Consortium",
-        "identifiers"    : [
-          [
-            "type" : "isil",
-            "value": "ZDB-1-ACS"
-          ]
+        "updateToken"  : "TestUpdateToken",
+        "packageHeader": [
+            "breakable"      : "No",
+            "consistent"     : "Yes",
+            "editStatus"     : "In Progress",
+            "listStatus"     : "Checked",
+            "fixed"          : "No",
+            "global"         : "Consortium",
+            "identifiers"    : [
+                [
+                    "type" : "isil",
+                    "value": "ZDB-3-ACS"
+                ]
+            ],
+            "name"           : "TestTokenPackageUpdate",
+            "nominalPlatform": [
+                "name"      : "ACS Publications",
+                "primaryUrl": "https://pubs.acs.org"
+            ],
+            "nominalProvider": "American Chemical Society"
         ],
-        "name"           : "TestTokenPackageUpdate",
-        "nominalPlatform": [
-          "name"      : "ACS Publications",
-          "primaryUrl": "https://pubs.acs.org"
-        ],
-        "nominalProvider": "American Chemical Society"
-      ],
-      "tipps"        : [
-        [
-          "accessEnd"  : "",
-          "accessStart": "",
-          "coverage"   : [
+        "tipps"        : [
             [
-              "coverageDepth": "Fulltext",
-              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
-              "embargo"      : "",
-              "endDate"      : "1995",
-              "endIssue"     : "",
-              "endVolume"    : "43",
-              "startDate"    : "1953-01",
-              "startIssue"   : "",
-              "startVolume"  : "1"
+                "accessEnd"  : "",
+                "accessStart": "",
+                "coverage"   : [
+                    [
+                        "coverageDepth": "Fulltext",
+                        "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                        "embargo"      : "",
+                        "endDate"      : "1995",
+                        "endIssue"     : "",
+                        "endVolume"    : "43",
+                        "startDate"    : "1953-01",
+                        "startIssue"   : "",
+                        "startVolume"  : "1"
+                    ]
+                ],
+                "medium"     : "Electronic",
+                "name"       : "TippName for Journal of agricultural and food chemistry",
+                "platform"   : [
+                    "name"      : "ACS Publications",
+                    "primaryUrl": "https://pubs.acs.org"
+                ],
+                "status"     : "Current",
+                "prices"     : [
+                    [
+                        "type"     : "list",
+                        "currency" : "EUR",
+                        "amount"   : 123.45,
+                        "startDate": "2010-01-31"
+                    ],
+                    [
+                        "type"     : "topup",
+                        "currency" : "USD",
+                        "amount"   : 43.12,
+                        "startDate": "2020-01-01"
+                    ]
+                ],
+                "status"     : "Current",
+                "series"     : "Mystery Cloud",
+                "subjectArea": "Fringe",
+                "title"      : [
+                    "identifiers"      : [
+                        [
+                            "type" : "zdb",
+                            "value": "1483109-0"
+                        ],
+                        [
+                            "type" : "eissn",
+                            "value": "1520-5118"
+                        ],
+                        [
+                            "type" : "issn",
+                            "value": "0021-8561"
+                        ]
+                    ],
+                    "publisher_history": [
+                        [
+                            "endDate"  : "",
+                            "name"     : "ACS TestOrg",
+                            "startDate": "1990",
+                            "status"   : ""
+                        ]
+                    ],
+                    "name"             : "Journal of agricultural and food chemistry",
+                    "type"             : "Serial"
+                ],
+                "url"        : "http://pubs.acs.org/journal/jafcau"
             ]
-          ],
-          "medium"     : "Electronic",
-          "name"       : "TippName for Journal of agricultural and food chemistry",
-          "platform"   : [
-            "name"      : "ACS Publications",
-            "primaryUrl": "https://pubs.acs.org"
-          ],
-          "status"     : "Current",
-          "prices"     : [
-            [
-              "type"     : "list",
-              "currency" : "EUR",
-              "amount"   : 123.45,
-              "startDate": "2010-01-31"
-            ],
-            [
-              "type"     : "topup",
-              "currency" : "USD",
-              "amount"   : 43.12,
-              "startDate": "2020-01-01"
-            ]
-          ],
-          "status"     : "Current",
-          "series"     : "Mystery Cloud",
-          "subjectArea": "Fringe",
-          "title"      : [
-            "identifiers"      : [
-              [
-                "type" : "zdb",
-                "value": "1483109-0"
-              ],
-              [
-                "type" : "eissn",
-                "value": "1520-5118"
-              ],
-              [
-                "type" : "issn",
-                "value": "0021-8561"
-              ]
-            ],
-            "publisher_history": [
-              [
-                "endDate"  : "",
-                "name"     : "ACS TestOrg",
-                "startDate": "1990",
-                "status"   : ""
-              ]
-            ],
-            "name"             : "Journal of agricultural and food chemistry",
-            "type"             : "Serial"
-          ],
-          "url"        : "http://pubs.acs.org/journal/jafcau"
         ]
-      ]
     ]
     when: "Caller asks for this record to be cross referenced"
 
@@ -1003,36 +1010,36 @@ class IntegrationControllerSpec extends Specification {
   void "Update Title remove VariantName via fullsync"() {
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "identifiers"    : [
-        [
-          "type" : "isbn",
-          "value": "978-13-12232-23-8"
-        ]
-      ],
-      "variantNames"   : [
-        "TestVariantBookName"
-      ],
-      "type"           : "Monograph",
-      "name"           : "Test Book 1",
-      "editionNumber"  : "4",
-      "volumeNumber"   : "3",
-      "firstAuthor"    : "J. Smith",
-      "dateFirstOnline": "2019-01-01 00:00:00.000"
+        "identifiers"    : [
+            [
+                "type" : "isbn",
+                "value": "978-13-12232-23-8"
+            ]
+        ],
+        "variantNames"   : [
+            "TestVariantBookName"
+        ],
+        "type"           : "Monograph",
+        "name"           : "Test Book 1",
+        "editionNumber"  : "4",
+        "volumeNumber"   : "3",
+        "firstAuthor"    : "J. Smith",
+        "dateFirstOnline": "2019-01-01 00:00:00.000"
     ]
 
     def json_update_record = [
-      "identifiers"    : [
-        [
-          "type" : "isbn",
-          "value": "978-13-12232-23-8"
-        ]
-      ],
-      "type"           : "Monograph",
-      "name"           : "Test Book 1",
-      "editionNumber"  : "4",
-      "volumeNumber"   : "3",
-      "firstAuthor"    : "J. Smith",
-      "dateFirstOnline": "2019-01-01 00:00:00.000"
+        "identifiers"    : [
+            [
+                "type" : "isbn",
+                "value": "978-13-12232-23-8"
+            ]
+        ],
+        "type"           : "Monograph",
+        "name"           : "Test Book 1",
+        "editionNumber"  : "4",
+        "volumeNumber"   : "3",
+        "firstAuthor"    : "J. Smith",
+        "dateFirstOnline": "2019-01-01 00:00:00.000"
     ]
 
 
@@ -1058,18 +1065,18 @@ class IntegrationControllerSpec extends Specification {
   void "Create Title with problematic characters"() {
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "identifiers"    : [
-        [
-          "type" : "isbn",
-          "value": "978-13-12112-23-2"
-        ]
-      ],
-      "type"           : "Monograph",
-      "name"           : "TestVariantBookName \"Quotes Test\"",
-      "editionNumber"  : "4",
-      "volumeNumber"   : "3",
-      "firstAuthor"    : "J. Smith",
-      "dateFirstOnline": "2019-01-01 00:00:00.000"
+        "identifiers"    : [
+            [
+                "type" : "isbn",
+                "value": "978-13-12112-23-2"
+            ]
+        ],
+        "type"           : "Monograph",
+        "name"           : "TestVariantBookName \"Quotes Test\"",
+        "editionNumber"  : "4",
+        "volumeNumber"   : "3",
+        "firstAuthor"    : "J. Smith",
+        "dateFirstOnline": "2019-01-01 00:00:00.000"
     ]
 
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
@@ -1088,94 +1095,94 @@ class IntegrationControllerSpec extends Specification {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
-      "packageHeader": [
-        "breakable"      : "No",
-        "consistent"     : "Yes",
-        "editStatus"     : "In Progress",
-        "fixed"          : "No",
-        "global"         : "Consortium",
-        "identifiers"    : [
-          [
-            "type" : "isil",
-            "value": "ZDB-1-ACS"
-          ]
+        "packageHeader": [
+            "breakable"      : "No",
+            "consistent"     : "Yes",
+            "editStatus"     : "In Progress",
+            "fixed"          : "No",
+            "global"         : "Consortium",
+            "identifiers"    : [
+                [
+                    "type" : "isil",
+                    "value": "ZDB-1-ACS"
+                ]
+            ],
+            "listStatus"     : "In Progress",
+            "name"           : "American Chemical Society: ACS Legacy Archives",
+            "nominalPlatform": [
+                "name"      : "ACS Publications",
+                "primaryUrl": "https://pubs.acs.org"
+            ],
+            "nominalProvider": "American Chemical Society"
         ],
-        "listStatus"     : "In Progress",
-        "name"           : "American Chemical Society: ACS Legacy Archives",
-        "nominalPlatform": [
-          "name"      : "ACS Publications",
-          "primaryUrl": "https://pubs.acs.org"
-        ],
-        "nominalProvider": "American Chemical Society"
-      ],
-      "tipps"        : [
-        [
-          "accessEnd"  : "1999-01-01",
-          "accessStart": "1999-02-02",
-          "identifiers": [
+        "tipps"        : [
             [
-              "type" : "global",
-              "value": "testTippId"
-            ],
-            [
-              "type" : "zdb",
-              "value": "1483109-0X"
-            ],
-            [
-              "type" : "eissn",
-              "value": "1520-5118-XXX"
-            ],
-            [
-              "type" : "issn",
-              "value": "0021-8561"
+                "accessEnd"  : "1999-01-01",
+                "accessStart": "1999-02-02",
+                "identifiers": [
+                    [
+                        "type" : "global",
+                        "value": "testTippId"
+                    ],
+                    [
+                        "type" : "zdb",
+                        "value": "1483109-0X"
+                    ],
+                    [
+                        "type" : "eissn",
+                        "value": "1520-5118-XXX"
+                    ],
+                    [
+                        "type" : "issn",
+                        "value": "0021-8561"
+                    ]
+                ],
+                "coverage"   : [
+                    [
+                        "coverageDepth": "Fulltext",
+                        "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                        "embargo"      : "",
+                        "endDate"      : "1995-12-31 00:00:00.000",
+                        "endIssue"     : "",
+                        "endVolume"    : "43",
+                        "startDate"    : "1953-01-01 00:00:00.000",
+                        "startIssue"   : "",
+                        "startVolume"  : "1"
+                    ]
+                ],
+                "medium"     : "Electronic",
+                "platform"   : [
+                    "name"      : "ACS Publications",
+                    "primaryUrl": "https://pubs.acs.org"
+                ],
+                "status"     : "Current",
+                "title"      : [
+                    "identifiers": [
+                        [
+                            "type" : "zdb",
+                            "value": "1483109-0"
+                        ],
+                        [
+                            "type" : "eissn",
+                            "value": "1520-5118"
+                        ],
+                        [
+                            "type" : "issn",
+                            "value": "0021-8561-XXX"
+                        ]
+                    ],
+                    "name"       : "Book of agricultural and food chemistry",
+                    "firstAuthor": "Autor, extralong                                                                                                                                                                                                                                                                   ",
+                    "firstEditor": "Editor, too long as well                                                                                                                                                                                                                                                           ",
+                    "type"       : "Monograph"
+                ],
+                "url"        : "http://pubs.acs.org/journal/jafcau"
             ]
-          ],
-          "coverage"   : [
-            [
-              "coverageDepth": "Fulltext",
-              "coverageNote" : "NL-DE;  1.1953 - 43.1995",
-              "embargo"      : "",
-              "endDate"      : "1995-12-31 00:00:00.000",
-              "endIssue"     : "",
-              "endVolume"    : "43",
-              "startDate"    : "1953-01-01 00:00:00.000",
-              "startIssue"   : "",
-              "startVolume"  : "1"
-            ]
-          ],
-          "medium"     : "Electronic",
-          "platform"   : [
-            "name"      : "ACS Publications",
-            "primaryUrl": "https://pubs.acs.org"
-          ],
-          "status"     : "Current",
-          "title"      : [
-            "identifiers": [
-              [
-                "type" : "zdb",
-                "value": "1483109-0"
-              ],
-              [
-                "type" : "eissn",
-                "value": "1520-5118"
-              ],
-              [
-                "type" : "issn",
-                "value": "0021-8561-XXX"
-              ]
-            ],
-            "name"       : "Book of agricultural and food chemistry",
-            "firstAuthor": "Autor, extralong                                                                                                                                                                                                                                                                   ",
-            "firstEditor": "Editor, too long as well                                                                                                                                                                                                                                                           ",
-            "type"       : "Monograph"
-          ],
-          "url"        : "http://pubs.acs.org/journal/jafcau"
         ]
-      ]
     ]
 
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-      "/integration/crossReferencePackage") {
+        "/integration/crossReferencePackage") {
       auth('admin', 'admin')
       body(json_record as JSON)
     }
