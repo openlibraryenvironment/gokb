@@ -4,6 +4,8 @@ package org.gokb.rest
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import groovy.json.JsonOutput
+import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.ReviewRequest
@@ -22,6 +24,7 @@ class ReviewsController {
   def ESSearchService
   def messageService
   def restMappingService
+  def reviewRequestService
   def componentLookupService
 
   @Secured(['ROLE_CONTRIBUTOR', 'IS_AUTHENTICATED_FULLY'])
@@ -286,10 +289,10 @@ class ReviewsController {
 
       if (errors.size() == 0) {
         try {
-          obj = reviewRequestService.raise(pars.componentToReview, pars.reviewRequest, pars.descriptionOfCause, user, pars.additionalInfo, stdDesc)
+          obj = reviewRequestService.raise(pars.componentToReview, pars.reviewRequest, pars.descriptionOfCause, user, null, pars.additionalInfo, pars.stdDesc)
 
           if (obj) {
-            result = restMappingService.mapObjectToJson(obj, user)
+            result = restMappingService.mapObjectToJson(obj, params, user)
             response.status = 201
 
             result._links = generateLinks(obj, user)
@@ -301,10 +304,16 @@ class ReviewsController {
           }
         }
         catch (Exception e) {
+          log.error("Error creating Review", e)
           response.setStatus(500)
           result.result = 'ERROR'
-          response.message = "There was an error creating the request."
+          result.message = "There was an error creating the request."
         }
+      }
+      else {
+        result.result = 'ERROR'
+        response.setStatus(400)
+        result.errors = errors
       }
     }
     else {
