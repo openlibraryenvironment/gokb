@@ -10,7 +10,7 @@
   <div class="container">
 
     <div class="row"> <div class="box">
-   
+
      <div class="col-lg-12 ">
       <div class="well">
       <g:if test="${pkgName}">
@@ -35,7 +35,7 @@
           <h2>Price Information</h2>
           <table class="table table-striped table-bordered">
             <thead>
-              <tr> 
+              <tr>
                 <th>Price Type</th>
                 <th>Currency</th>
                 <th>Start Date</th>
@@ -64,11 +64,11 @@
           </g:each>
         </ul>
 
-        <h2>Titles (${titleCount})</h2>
+        <h2>TIPPs (${titleCount})</h2>
         <table class="table table-striped table-bordered">
           <thead>
             <tr>
-              <th>Title</th>
+              <th>Name</th>
               <th>Identifiers</th>
               <th>Coverage</th>
             </tr>
@@ -76,17 +76,17 @@
           <tbody>
             <g:each in="${tipps}" var="t">
               <tr>
-                <td>${t.title.name}</th>
+                <td>${t.name}</td>
                 <td>
                   <ul>
-                    <g:each in="${t.title.ids}" var="id">
+                    <g:each in="${t.ids}" var="id">
                       <li><strong>${id.namespace.value}</strong> : ${id.value}</li>
                     </g:each>
                   </ul>
-                </th>
+                </td>
                 <td>
                   ${t.coverageDepth?.value}<br/>${t.coverageNote}
-                </th>
+                </td>
               </tr>
             </g:each>
           </tbody>
