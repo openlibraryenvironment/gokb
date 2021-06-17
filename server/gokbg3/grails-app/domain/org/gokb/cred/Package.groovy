@@ -349,7 +349,8 @@ select tipp.id,
        tipp.name,
        tipp.publisherName,
        tipp.dateFirstInPrint,
-       tipp.dateFirstOnline
+       tipp.dateFirstOnline,
+       tipp.publicationType
     from TitleInstancePackagePlatform as tipp,
          Combo as hostPlatformCombo,
          Combo as titleCombo,
@@ -520,6 +521,8 @@ select tipp.id,
               builder.'publisherName'(tipp[19])
               builder.'dateFirstInPrint'(tipp[20])
               builder.'dateFirstOnline'(tipp[21])
+              builder.'publicationType'(tipp[22])
+//              builder.'importId'(tipp[23])
               builder.'medium'(tipp[9]?.value)
               builder.'title'(['id': tipp[2], 'uuid': tipp[13]]) {
                 builder.'name'(tipp[1]?.trim())
