@@ -27,7 +27,7 @@ class TippService {
 
   def scanTIPPs(Job job = null) {
     autoTimestampEventListener.withoutLastUpdated(TitleInstancePackagePlatform) {
-      int count = 0, index = 0
+      int index = 0
       boolean cancelled = false
       def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
       log.debug("found ${tippIDs.size()} TIPPs")
@@ -41,14 +41,12 @@ class TippService {
               if (!tipp.ids*.namespace.contains(data.namespace)) {
                 tipp.ids << data
                 log.debug("added ID $data in TIPP $tipp")
-                count++
               }
             }
           }
           if (!tipp.name || tipp.name == '') {
             tipp.name = tipp.title.name
             log.debug("set TIPP name to $tipp.name")
-            count++
           }
           if (tipp.isDirty()) {
             tipp.save(flush: true)
@@ -61,9 +59,8 @@ class TippService {
         if (job?.isCancelled()) {
           cancelled = true
         }
-        if (count > 100) {
+        if (index % 100 == 0) {
           log.debug("Clean up GORM");
-          count = 0;
           // Get the current session.
           def session = sessionFactory.currentSession
           // flush and clear the session.
