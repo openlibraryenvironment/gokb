@@ -452,14 +452,14 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
 
     if (tipp_dto.medium) {
-      RefdataValue[] media = RefdataCategory.lookup("TitleInstance.Medium")
-      if (!media*.value.contains(tipp_dto.medium))
+      RefdataValue pubMedium = RefdataCategory.lookup("TitleInstance.Medium", tipp_dto.medium)
+      if (!pubMedium)
         errors.put('medium', [message: "unknown", baddata: tipp_dto.remove('medium')])
     }
 
     if (tipp_dto.publicationType) {
-      RefdataValue[] pubTypes = RefdataCategory.lookup("TitleInstancePackagePlatform.PublicationType")
-      if (!pubTypes*.value.contains(tipp_dto.publicationType))
+      RefdataValue pubType = RefdataCategory.lookup("TitleInstancePackagePlatform.PublicationType", tipp_dto.publicationType)
+      if (!pubType)
         errors.put('publicationType', [message: "unknown", baddata: tipp_dto.remove('publicationType')])
     }
 
