@@ -156,7 +156,7 @@ class UpdatePkgTippsRun {
         }
         else {
           log.error("No package")
-          currentTippError.put('package', ['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale), baddata: json_tipp.package])
+          currentTippError.put('package', ['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], locale), baddata: json_tipp.package])
           invalidTipps << json_tipp
         }
 
@@ -486,7 +486,7 @@ class UpdatePkgTippsRun {
                   'ids'                        : idents,
                   'importId'       : tippJson.titleId ?: null]
           ).save()
-          idents.each { tipp.ids << it }
+//          idents.each { tipp.ids << it }
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
         }
