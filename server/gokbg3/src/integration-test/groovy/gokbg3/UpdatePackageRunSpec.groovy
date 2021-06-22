@@ -75,7 +75,7 @@ class UpdatePackageRunSpec extends Specification {
     Identifier.findByValue('zdb:2256676-4')?.expunge()
   }
 
-  void "Test updatePackageTipps :: new record"() {
+  void "Test updatePackageTipps :: match by importId"() {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
@@ -92,7 +92,7 @@ class UpdatePackageRunSpec extends Specification {
                 ]
             ],
             "listStatus"     : "In Progress",
-            "name"           : "American Chemical Society: ACS Legacy Archives",
+            "name"           : "TestPackage",
             "nominalPlatform": [
                 "name"      : "ACS Publications",
                 "primaryUrl": "https://pubs.acs.org"
@@ -103,7 +103,7 @@ class UpdatePackageRunSpec extends Specification {
             [
                 "accessEnd"  : "",
                 "accessStart": "",
-                "titleId"    : "wildeTitleId",
+                "titleId"    : "titleID",
                 "identifiers": [
                     [
                         "type" : "doi",
@@ -178,16 +178,16 @@ class UpdatePackageRunSpec extends Specification {
     resp.json.message != null
     resp.json.message.startsWith('Created')
     expect: "Find pkg by name, which is connected to the new TIPP"
-    def matching_pkgs = Package.findAllByName("American Chemical Society: ACS Legacy Archives")
+    def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
     matching_pkgs[0].tipps?.size() == 1
-    matching_pkgs[0].tipps[0].importId == "wildeTitleId"
+    matching_pkgs[0].tipps[0].importId == "titleID"
     matching_pkgs[0].provider?.name == "American Chemical Society"
     matching_pkgs[0].ids?.size() == 1
   }
 
-  void "Test updatePackageTipps :: match by importId"() {
+  void "Test updatePackageTipps :: new record"() {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
@@ -215,7 +215,7 @@ class UpdatePackageRunSpec extends Specification {
             [
                 "accessEnd"  : "",
                 "accessStart": "",
-                "titleId"    : "titleID",
+                "titleId"    : "wildeTitleId",
                 "identifiers": [
                     [
                         "type" : "doi",
