@@ -5,15 +5,12 @@ import com.k_int.ESSearchService
 import gokbg3.MessageService
 import grails.converters.JSON
 import grails.plugin.springsecurity.SpringSecurityService
-import grails.util.AbstractTypeConvertingMap
 import grails.util.Holders
 import grails.util.TypeConvertingMap
 import groovy.util.logging.Slf4j
 import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
 import org.grails.web.json.JSONObject
-
-import java.util.concurrent.ThreadLocalRandom
 
 @Slf4j
 class UpdatePkgTippsRun {
@@ -159,7 +156,7 @@ class UpdatePkgTippsRun {
         }
         else {
           log.error("No package")
-          currentTippError.put('package', ['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], locale), baddata: json_tipp.package])
+          currentTippError.put('package', ['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], request_locale), baddata: json_tipp.package])
           invalidTipps << json_tipp
         }
 
@@ -459,55 +456,41 @@ class UpdatePkgTippsRun {
       try {
         current_tipps = findTipps(tippJson)
         // Fallunterscheidung
-        if (current_tipps.size() == 0) {
-          // kein TIPP gefunden: neu anlegen
-          log.debug("create TIPP for ${tippJson.name}")
+        if (current_tipps.size() == 1) {
+          log.debug("Found one matching TIPP ${current_tipps[0]}")
+          tipp = current_tipps[0]
+          // update Data
+          componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
+          log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
+        }
+        else {
+          // TIPP neu anlegen wenn kein aktueller RR mit vorhandenen TIPPs verknüpft ist
           def idents = []
           tippJson.identifiers.each { ident ->
             idents << componentLookupService.lookupOrCreateCanonicalIdentifier(ident.type, ident.value)
           }
           tipp = new TitleInstancePackagePlatform(
               [
-                  'pkg'                        : Package.get(tippJson.package.internalId),
-                  'title'                      : null,
-                  'hostPlatform'               : Platform.get(tippJson.hostPlatform.internalId),
-                  'url'                        : tippJson.url ?: null,
-                  'uuid'                       : tippJson.uuid,
-                  'status'                     : tippJson.status ? RefdataCategory.lookup(KBComponent.RD_STATUS, tippJson.status) : null,
-                  'name'                       : tippJson.name,
-                  'editStatus'                 : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
-                  'language'                   : tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : null,
-                  'publicationType'            : tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : null,
+                  'pkg'            : Package.get(tippJson.package.internalId),
+                  'title'          : null,
+                  'hostPlatform'   : Platform.get(tippJson.hostPlatform.internalId),
+                  'url'            : null,
+                  'uuid'           : tippJson.uuid,
+                  'status'         : tippJson.status ? RefdataCategory.lookup(KBComponent.RD_STATUS, tippJson.status) : null,
+                  'name'           : tippJson.name,
+                  'editStatus'     : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
+                  'language'       : tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : null,
+                  'publicationType': tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : null,
                   'parentPublicationTitleId'   : tippJson.parent_publication_title_id,
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                   'ids'                        : idents,
-                  'importId'                   : tippJson.titleId ?: null]
+                  'importId'       : tippJson.titleId ?: null]
           ).save()
-//          idents.each { tipp.ids << it }
-          log.debug("new TIPP created with ${tipp.ids.size()} ids.")
+          idents.each { tipp.ids << it }
+          componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
+          log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
         }
-        else {
-          log.debug("Found ${current_tipps.size()} TIPPs")
-          // find newest TIPP
-          current_tipps.each {
-            if (tipp == null)
-              tipp = it
-            else if (tipp.dateCreated < it.dateCreated) {
-              tipp.retire(null)
-              tipp.save()
-              tipp = it
-            }
-          }
-          // update Data
-          log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
-        }
-        if (!tipp.pkg) {
-          tipp.pkg = Package.get(tippJson.package.internalId)
-        }
-        if (!tipp.hostPlatform) {
-          tipp.hostPlatform = Platform.get(tippJson.hostPlatform.internalId)
-        }
-        componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
+        tipp?.merge()
         if (current_tipps.size() > 1 && tipp) {
           log.debug("multimatch (${current_tipps.size()}) for $tipp")
           // RR für Multimatch generieren
@@ -668,11 +651,10 @@ class UpdatePkgTippsRun {
              identfiers       : [type : providerNamespace.value,
                                  value: jsonIdMap[providerNamespace.value]],
              skipDomainMapping: true]
-      something = ESSearchService.find(map)
-      if (something.records?.size() > 0) {
+      something = esSearchService.find(map)
+      if (something.size() > 0) {
         log.debug("found by provider namespace ID in ES")
         return something.records.each { tipps << TitleInstancePackagePlatform.findByUuid(it.uuid) }
-        return tipps
       }
       def found = TitleInstancePackagePlatform.lookupAllByIO(providerNamespace.value, jsonIdMap[providerNamespace.value])
       if (found.size() > 0) {
@@ -696,7 +678,7 @@ class UpdatePkgTippsRun {
           if (found.size() > 0) {
             found.each {
               if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status == status_current) {
+                  && it.pkg == pkg && it.status==status_current) {
                 tipps.add(it)
               }
             }
@@ -715,7 +697,7 @@ class UpdatePkgTippsRun {
           if (found.size() > 0) {
             found.each {
               if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status == status_current) {
+                  && it.pkg == pkg && it.status==status_current) {
                 tipps.add(it)
               }
             }
