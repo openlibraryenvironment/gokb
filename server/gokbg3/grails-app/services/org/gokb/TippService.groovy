@@ -62,11 +62,11 @@ class TippService {
     else if (found.to_create == true) {
       ti = Class.forName(title_class_name).newInstance()
       ti.name = tipp.name
-      ti.save(flush: true)
-      ti.ids = tipp.ids
       titleLookupService.addPublisher(tipp.publisherName, ti)
-      tipp.ids.each { Identifier ident ->
-        if (ident.namespace == ZDB_NS) {
+      ti.save(flush: true)
+      tipp.ids.each{
+        ti.ids << it
+        if (it.namespace == ZDB_NS) {
           // TODO: ZDB-Enrichment for new Journals with ZDB-ID already present
         }
       }

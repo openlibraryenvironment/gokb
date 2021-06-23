@@ -110,7 +110,7 @@ where cp.owner = :c
 
       } catch (Throwable t) {
         // Suppress but log.
-        log.error("${t}")
+        log.error("failed updating dependants ${t}")
       }
     }
 

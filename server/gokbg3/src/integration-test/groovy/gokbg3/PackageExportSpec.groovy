@@ -28,17 +28,17 @@ class PackageExportSpec extends Specification {
   TitleInstancePackagePlatform tipp1, tipp2, tipp3, tipp4
 
   def setup() {
-    journal1 = JournalInstance.findByName("journal1") ?: new JournalInstance(name: "journal1")
-    journal2 = JournalInstance.findByName("journal2") ?: new JournalInstance(name: "journal2")
-    journal3 = JournalInstance.findByName("journal3") ?: new JournalInstance(name: "journal3")
-    pack1 = Package.findByName("Package1") ?: new Package(name: "Package1")
-    pack2 = Package.findByName("Package2") ?: new Package(name: "Package2")
-    plt = Platform.findByName("Platform") ?: new Platform(name: "Platform")
+    journal1 = JournalInstance.findByName("journal1") ?: new JournalInstance(name: "journal1").save(flush:true)
+    journal2 = JournalInstance.findByName("journal2") ?: new JournalInstance(name: "journal2").save(flush:true)
+    journal3 = JournalInstance.findByName("journal3") ?: new JournalInstance(name: "journal3").save(flush:true)
+    pack1 = Package.findByName("Package1") ?: new Package(name: "Package1").save(flush:true)
+    pack2 = Package.findByName("Package2") ?: new Package(name: "Package2").save(flush:true)
+    plt = Platform.findByName("Platform") ?: new Platform(name: "Platform").save(flush:true)
 
-    tipp1 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal1, accessStartDate: new Date())
-    tipp2 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal2, accessStartDate: new Date())
-    tipp3 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack2, title: journal3, accessStartDate: new Date())
-    tipp4 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack2, title: journal2, accessStartDate: new Date())
+    tipp1 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal1, accessStartDate: new Date()).save(flush:true)
+    tipp2 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal2, accessStartDate: new Date()).save(flush:true)
+    tipp3 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack2, title: journal3, accessStartDate: new Date()).save(flush:true)
+    tipp4 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack2, title: journal2, accessStartDate: new Date()).save(flush:true)
   }
 
   def cleanup() {

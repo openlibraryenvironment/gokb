@@ -461,6 +461,18 @@ class UpdatePkgTippsRun {
           tipp = current_tipps[0]
           // update Data
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
+          // overwrite String properties with JSON values
+          ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
+           'volumeNumber', 'editionStatement', 'firstEditor'].each{propName ->
+            tipp[propName] = tippJson[propName]?:tipp[propName]
+          }
+
+          tipp.language = tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : tipp.language
+          tipp.publicationType = tippJson.publicationType ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType) : tipp.publicationType
+          tipp.parentPublicationTitleId = tippJson.parentPublicationTitleId ?: tipp.parentPublicationTitleId
+          tipp.precedingPublicationTitleId = tippJson.precedingTublicationTitleId ?: tipp.precedingPublicationTitleId
+          tipp.precedingPublicationTitleId = tippJson.precedingTublicationTitleId ?: tipp.precedingPublicationTitleId
+          tipp.importId = tippJson.titleId ?: tipp.importId
           log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
         }
         else {
@@ -471,20 +483,20 @@ class UpdatePkgTippsRun {
           }
           tipp = new TitleInstancePackagePlatform(
               [
-                  'pkg'            : Package.get(tippJson.package.internalId),
-                  'title'          : null,
-                  'hostPlatform'   : Platform.get(tippJson.hostPlatform.internalId),
-                  'url'            : null,
-                  'uuid'           : tippJson.uuid,
-                  'status'         : tippJson.status ? RefdataCategory.lookup(KBComponent.RD_STATUS, tippJson.status) : null,
-                  'name'           : tippJson.name,
-                  'editStatus'     : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
-                  'language'       : tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : null,
-                  'publicationType': tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : null,
+                  'pkg'                        : Package.get(tippJson.package.internalId),
+                  'title'                      : null,
+                  'hostPlatform'               : Platform.get(tippJson.hostPlatform.internalId),
+                  'url'                        : null,
+                  'uuid'                       : tippJson.uuid,
+                  'status'                     : tippJson.status ? RefdataCategory.lookup(KBComponent.RD_STATUS, tippJson.status) : null,
+                  'name'                       : tippJson.name,
+                  'editStatus'                 : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
+                  'language'                   : tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : null,
+                  'publicationType'            : tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : null,
                   'parentPublicationTitleId'   : tippJson.parent_publication_title_id,
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                   'ids'                        : idents,
-                  'importId'       : tippJson.titleId ?: null]
+                  'importId'                   : tippJson.titleId ?: null]
           ).save()
 //          idents.each { tipp.ids << it }
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
@@ -529,7 +541,7 @@ class UpdatePkgTippsRun {
           log.debug("Existing TIPP matched!")
           existing_tipp_ids.removeElement(tipp.id)
         }
-        // Probably, these tipp.status overwritten already
+        // Probably, these tipp.status are overwritten already
         if (tipp.status != status_deleted && tippJson.status == "Deleted") {
           tipp.deleteSoft()
           removedNum++;
@@ -582,6 +594,7 @@ class UpdatePkgTippsRun {
     }
     return tippError
   }
+
 /**
  * this method finds similar tipps based on their identifiers (ids). for performance reasons, the ElasticSearch index
  * is used first and if it fails, a database search is performed after for a definitive decision.
@@ -678,7 +691,7 @@ class UpdatePkgTippsRun {
           if (found.size() > 0) {
             found.each {
               if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status==status_current) {
+                  && it.pkg == pkg && it.status == status_current) {
                 tipps.add(it)
               }
             }
@@ -697,7 +710,7 @@ class UpdatePkgTippsRun {
           if (found.size() > 0) {
             found.each {
               if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status==status_current) {
+                  && it.pkg == pkg && it.status == status_current) {
                 tipps.add(it)
               }
             }

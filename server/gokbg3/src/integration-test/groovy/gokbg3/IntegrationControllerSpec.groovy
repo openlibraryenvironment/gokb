@@ -729,6 +729,7 @@ class IntegrationControllerSpec extends Specification {
     respBook.json.result == 'ERROR'
   }
 
+  @Ignore
   void "Test crossReferenceTitle multithreading"() {
     given:
     Resource journals = new ClassPathResource("/karger_journals_test.json")
