@@ -2,6 +2,7 @@ package org.gokb
 
 import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService
+import grails.converters.JSON
 import org.gokb.cred.*
 import org.grails.web.json.JSONObject
 
@@ -9,6 +10,7 @@ class TippService {
   def componentUpdateService
   def titleLookupService
   def sessionFactory
+  def reviewRequestService
 
   def matchPackage(Package aPackage) {
     def tipps = aPackage.tipps
@@ -86,10 +88,11 @@ class TippService {
       }
       ti.merge(flush: true)
     }
-    tipp.title = ti
-    tipp.save()
-    log.debug("linked TIPP $tipp with TitleInstance $ti")
-
+    if (ti) {
+      tipp.title = ti
+      tipp.save()
+      log.debug("linked TIPP $tipp with TitleInstance $ti")
+    }
     handleFindConflicts(tipp, found)
   }
 
@@ -156,7 +159,31 @@ class TippService {
   }
 
   private void handleFindConflicts(TitleInstancePackagePlatform tipp, def found) {
-    // use this to create more ReviewRequests as needed
+    // use this to create ReviewRequests as needed
     // TODO: check if the ReviewRequest was raised already before issuing a new one
+    if (tipp.reviewRequests.size() < 1) {
+      if (found.matches.size > 1) {
+        reviewRequestService.raise(
+            tipp,
+            "TIPP matched several titles",
+            "TIPP ${tipp.name} coudn't be linked.",
+            null,
+            null,
+            found.matches as JSON,
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches")
+        )
+      }
+      if (found.conflicts.size > 0) {
+        reviewRequestService.raise(
+            tipp,
+            "TIPP conflicts",
+            "TIPP ${tipp.name} conflicts with other titles.",
+            null,
+            null,
+            found.conflicts as JSON,
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Major Identifier Mismatch")
+        )
+      }
+    }
   }
 }
