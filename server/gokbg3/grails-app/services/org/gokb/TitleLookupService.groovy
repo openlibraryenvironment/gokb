@@ -327,7 +327,7 @@ class TitleLookupService {
 
 
         // Take whatever we can get if what we have is an unknown title
-        if (title.startsWith("Unknown Title")) {
+        if (title?.startsWith("Unknown Title")) {
           // Don't go through title matching if we don't have a real title
           title_match.warnings.add('title_ignored')
         }

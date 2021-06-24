@@ -463,8 +463,8 @@ class UpdatePkgTippsRun {
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
           // overwrite String properties with JSON values
           ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
-           'volumeNumber', 'editionStatement', 'firstEditor'].each{propName ->
-            tipp[propName] = tippJson[propName]?:tipp[propName]
+           'volumeNumber', 'editionStatement', 'firstEditor'].each { propName ->
+            tipp[propName] = tippJson[propName] ?: tipp[propName]
           }
 
           tipp.language = tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : tipp.language
@@ -495,6 +495,7 @@ class UpdatePkgTippsRun {
                   'publicationType'            : tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : null,
                   'parentPublicationTitleId'   : tippJson.parent_publication_title_id,
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
+                  'publisherName'              : tippJson.publisherName,
                   'ids'                        : idents,
                   'importId'                   : tippJson.titleId ?: null]
           ).save()

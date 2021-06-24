@@ -91,6 +91,8 @@ class TippService {
       title_changed |= ClassUtils.setDateIfPresent(firstInPrint, ti, 'dateFirstInPrint')
       title_changed |= ClassUtils.setDateIfPresent(firstOnline, ti, 'dateFirstOnline')
 
+      // title_changed |= ClassUtils.setStringIfDifferent(ti, 'publisherName', tipp.publisherName)
+
       if (title_class_name == 'org.gokb.cred.BookInstance') {
         log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
 
@@ -158,6 +160,6 @@ class TippService {
 
   private void handleFindConflicts(TitleInstancePackagePlatform tipp, def found) {
     // use this to create more ReviewRequests as needed
-    // TODO: check if the ReviewRequest was raised already before raising a new one
+    // TODO: check if the ReviewRequest was raised already before issuing a new one
   }
 }

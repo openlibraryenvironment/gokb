@@ -38,16 +38,27 @@ class UpdatePackageRunSpec extends Specification {
     def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush: true)
     def test_upd_pkg = Package.findByName('TestPackage') ?: new Package(name: 'TestPackage').save(flush: true)
     def test_journal = JournalInstance.findByName('TestJournal') ?: new JournalInstance(name: 'TestJournal').save(flush: true)
-    def test_tipp = TitleInstancePackagePlatform.findByName('TestTIPP') ?: new TitleInstancePackagePlatform(
+    def test_book = BookInstance.findByName('TestBook') ?: new BookInstance(name: 'TestBook').save(flush: true)
+    def test_tipp1 = TitleInstancePackagePlatform.findByName('TestTIPP') ?: new TitleInstancePackagePlatform(
         ['pkg'            : test_upd_pkg,
          'title'          : test_journal,
          'hostPlatform'   : acs_test_plt,
          'status'         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
-         'name'           : 'TestTIPP',
+         'name'           : 'TestJournalTIPP',
          'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Serial'),
          'ids'            : [Identifier.findByValue('9783-442X') ?: new Identifier(value: '9783-442X', namespace: IdentifierNamespace.findByValue('issn')),
                              Identifier.findByValue('9783-4420') ?: new Identifier(value: '9783-4420', namespace: IdentifierNamespace.findByValue('eissn'))],
          'importId'       : 'titleID']).save(flush: true)
+    def test_tipp2 = TitleInstancePackagePlatform.findByName('TestTIPP') ?: new TitleInstancePackagePlatform(
+        ['pkg'            : test_upd_pkg,
+         'title'          : test_book,
+         'hostPlatform'   : acs_test_plt,
+         'status'         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+         'name'           : 'TestBookTIPP',
+         'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Serial'),
+         'ids'            : [Identifier.findByValue('9784-442X') ?: new Identifier(value: '9784-442X', namespace: IdentifierNamespace.findByValue('issn')),
+                             Identifier.findByValue('978-3-16-148410-0') ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('pisbn'))],
+         'importId'       : 'bookID']).save(flush: true)
 
 
     def user = User.findByUsername('ingestAgent')
@@ -70,15 +81,124 @@ class UpdatePackageRunSpec extends Specification {
     TitleInstance.findAllByName("TestJournal")?.each { title ->
       title.expunge()
     }
+    TitleInstance.findAllByName("TestBook")?.each { title ->
+      title.expunge()
+    }
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
       title.expunge()
     }
-    ['9783-442X', '9783-4420'].each {
+    ['9783-442X', '9783-4420', '9784-442X', '978-3-16-148410-0'].each {
       Identifier.findByValue(it)?.expunge()
     }
   }
 
-  void "Test updatePackageTipps :: match by one of two identifiers"() {
+  void "Test updatePackageTipps :: match book by one of two identifiers"() {
+
+    when: "Caller asks for this record to be cross referenced"
+    def json_record = [
+        "packageHeader": [
+            "breakable"      : "No",
+            "consistent"     : "Yes",
+            "editStatus"     : "In Progress",
+            "fixed"          : "No",
+            "global"         : "Consortium",
+            "identifiers"    : [
+                [
+                    "type" : "isil",
+                    "value": "ZDB-1-ACS"
+                ]
+            ],
+            "listStatus"     : "In Progress",
+            "name"           : "TestPackage",
+            "nominalPlatform": [
+                "name"      : "ACS Publications",
+                "primaryUrl": "https://pubs.acs.org"
+            ],
+            "nominalProvider": "American Chemical Society"
+        ],
+        "tipps"        : [
+            [
+                "accessEnd"  : "",
+                "accessStart": "",
+                "titleId"    : "bookTitleID", // different
+                "identifiers": [
+                    [
+                        "type" : "issn",
+                        "value": "9784-4421"  // different
+                    ],
+                    [
+                        "type" : "pisbn",
+                        "value": "978-3-16-148410-0"  // same
+                    ]
+                ],
+                "coverage"   : [
+                    [
+                        "coverageDepth": "Fulltext",
+                        "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                        "embargo"      : "",
+                        "endDate"      : "1995-12-31 00:00:00.000",
+                        "endIssue"     : "",
+                        "endVolume"    : "43",
+                        "startDate"    : "1953-01-01 00:00:00.000",
+                        "startIssue"   : "",
+                        "startVolume"  : "1"
+                    ]
+                ],
+                "medium"     : "Book",
+                "platform"   : [
+                    "name"      : "ACS Publications",
+                    "primaryUrl": "https://pubs.acs.org"
+                ],
+                "status"     : "Current",
+                "editStatus" : "In Progress",
+                "title"      : [
+                    "identifiers": [
+                        [
+                            "type" : "zdb",
+                            "value": "1483109-0"
+                        ],
+                        [
+                            "type" : "eissn",
+                            "value": "1520-5118"
+                        ],
+                        [
+                            "type" : "issn",
+                            "value": "9783-442X"
+                        ]
+                    ],
+                    "name"       : "Journal of agricultural and food chemistry",
+                    "type"       : "Monograph"
+                ],
+                "name"       : "Book of agricultural and food chemistry",
+                "type"       : "Monograph",
+                "url"        : "http://pubs.acs.org/journal/jafcau"
+            ]
+        ]
+    ]
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
+        "/integration/updatePackageTipps") {
+      auth('admin', 'admin')
+      body(json_record as JSON)
+    }
+
+    then: "The item is found in the database based on the issn"
+    resp.json.message != null
+    resp.json.message.startsWith('Created/Updated')
+    expect: "Find pkg by name, which is connected to the new TIPP"
+    def matching_pkgs = Package.findAllByName("TestPackage")
+    matching_pkgs.size() == 1
+    matching_pkgs[0].id == resp.json.pkgId
+    matching_pkgs[0].tipps?.size() == 2
+    def book
+    matching_pkgs[0].tipps.each { tipp ->
+      if (tipp.importId == "bookTitleID")
+        book = tipp
+    }
+    book.ids.size() == 3
+  }
+
+  void "Test updatePackageTipps :: match journal by one of two identifiers"() {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
@@ -175,14 +295,16 @@ class UpdatePackageRunSpec extends Specification {
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
-    matching_pkgs[0].tipps?.size() == 1
-    matching_pkgs[0].tipps[0].importId == "thirdTitleID"
-    matching_pkgs[0].tipps[0].ids.size() == 3
-    matching_pkgs[0].provider?.name == "American Chemical Society"
-    matching_pkgs[0].ids?.size() == 1
+    matching_pkgs[0].tipps?.size() == 2
+    def journal
+    matching_pkgs[0].tipps.each { tipp ->
+      if (tipp.importId == "thirdTitleID")
+        journal = tipp
+    }
+    journal.ids.size() == 3
   }
 
-  void "Test updatePackageTipps :: match by identifier"() {
+  void "Test updatePackageTipps :: match journal by identifier"() {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
@@ -275,10 +397,12 @@ class UpdatePackageRunSpec extends Specification {
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
-    matching_pkgs[0].tipps?.size() == 1
-    matching_pkgs[0].tipps[0].importId == "otherTitleID"
-    matching_pkgs[0].provider?.name == "American Chemical Society"
-    matching_pkgs[0].ids?.size() == 1
+    def journal
+    matching_pkgs[0].tipps.each { tipp ->
+      if (tipp.importId == "otherTitleID")
+        journal = tipp
+    }
+    journal.ids.size() == 2
   }
 
   void "Test updatePackageTipps :: match by importId"() {
@@ -387,10 +511,12 @@ class UpdatePackageRunSpec extends Specification {
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
-    matching_pkgs[0].tipps?.size() == 1
-    matching_pkgs[0].tipps[0].importId == "titleID"
-    matching_pkgs[0].provider?.name == "American Chemical Society"
-    matching_pkgs[0].ids?.size() == 1
+    def journal
+    matching_pkgs[0].tipps.each { tipp ->
+      if (tipp.importId == "titleID")
+        journal = tipp
+    }
+    journal.ids.size() == 6
   }
 
   void "Test updatePackageTipps :: new record"() {
