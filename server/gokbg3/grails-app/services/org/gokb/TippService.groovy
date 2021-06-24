@@ -137,19 +137,24 @@ class TippService {
             tipp.name = tipp.title.name
             log.debug("set TIPP name to $tipp.name")
           }
+          if (tipp.isDirty()) {
+            tipp.save(flush: true)
+            log.debug("save $index")
+          }
+          log.debug("destroy #$index: $tipp")
+          tipp.finalize()
         }
         job?.setProgress(index, tippIDs.size())
         if (job?.isCancelled()) {
           cancelled = true
         }
-        if (count++ > 100) {
+        if (index % 100 == 0) {
           log.debug("Clean up GORM");
           // Get the current session.
           def session = sessionFactory.currentSession
           // flush and clear the session.
           session.flush()
           session.clear()
-          count = 0
         }
       }
       // one last flush

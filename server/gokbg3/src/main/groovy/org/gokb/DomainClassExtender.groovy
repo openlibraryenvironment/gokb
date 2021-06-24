@@ -35,7 +35,7 @@ import com.k_int.ClassUtils
 @Log4j
 class DomainClassExtender {
 
-  public static RefdataValue getComboStatusActive () {
+  public static RefdataValue getComboStatusActive() {
     RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
   }
 
