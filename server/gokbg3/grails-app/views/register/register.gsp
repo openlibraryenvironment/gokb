@@ -107,6 +107,13 @@
                     <ul><li>Please answer this question correctly.</li></ul>
                   </g:if>
                 </div>
+                <div class="form-group ${agrFailed ? 'has-error' : ''}">
+                  <input type="checkbox" id="agreement" name="agreement" />
+                  <label for="agreement">${message(code:'spring.security.ui.register.agreement.label')} (<span style="color:red">*</span>)</label>
+                  <g:if test="${agrFailed}">
+                    <ul><li>${message(code:'spring.security.ui.register.agreement.error')}</li></ul>
+                  </g:if>
+                </div>
                 <div class="form-group">
                   <label for=""></label>
                   <button type="submit" class="btn btn-success">Register</button>
