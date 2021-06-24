@@ -64,10 +64,16 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
     def secResult
     def errors = [:]
+    def secFailed = false
+    def agrFailed = false
 
     if ( !request.post ) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
       return [registerCommand: new RegisterCommand(), secQuestion: session.secQuestion]
+    }
+
+    if ( params.boolean('agreement') == false ) {
+      agrFailed = true
     }
 
     if ( session.regTries && session.regTries > 3 ) {
@@ -85,12 +91,13 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     if ( !secTerms || params.int('secAnswer') != secResult ) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
       session.regTries = session.regTries ? (session.regTries + 1) : 1
-      return [registerCommand: registerCommand, secFailed: true, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)]
+      secFailed = true
+      return [registerCommand: registerCommand, secFailed: secFailed, agrFailed: agrFailed, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)]
     }
 
-    if (registerCommand.hasErrors() || params.phone) {
+    if (registerCommand.hasErrors() || params.phone || agrFailed ) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
-      return [registerCommand: registerCommand, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)]
+      return [registerCommand: registerCommand, secFailed: secFailed, agrFailed: agrFailed, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, request.locale)]
     }
 
     def user = uiRegistrationCodeStrategy.createUser(registerCommand)
@@ -123,7 +130,9 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
     def secResult
     def errors = [:]
-    Locale locale = new Locale(params.lang ?: request.locale)
+    def secFailed = false
+    def agrFailed = false
+    Locale locale = params.lang ? new Locale(params.lang) : request.locale
 
 
     if ( !request.post ) {
@@ -137,6 +146,10 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
       return [registerCommand: registerCommand, noTries: true, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
     }
 
+    if ( !params.boolean('agreement') ) {
+      agrFailed = true
+    }
+
     def secTerms = session.secQuestion ? session.secQuestion.split("\\*") : null
 
     if ( secTerms ) {
@@ -146,12 +159,13 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     if ( !secTerms || params.int('secAnswer') != secResult ) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
       session.regTries = session.regTries ? (session.regTries + 1) : 1
-      return [registerCommand: registerCommand, secFailed: true, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
+      secFailed = true
+      return [registerCommand: registerCommand, secFailed: secFailed, agrFailed: agrFailed, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
     }
 
-    if (registerCommand.hasErrors() || params.phone) {
+    if (registerCommand.hasErrors() || params.phone || agrFailed) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
-      return [registerCommand: registerCommand, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
+      return [registerCommand: registerCommand, secFailed: secFailed, agrFailed: agrFailed, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
     }
 
     def user = uiRegistrationCodeStrategy.createUser(registerCommand)

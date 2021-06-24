@@ -527,11 +527,13 @@ class FTUpdateService {
         log.debug("Final BulkResponse: ${bulkFinalResponse}")
       }
       // update timestamp
-      FTControl.withNewTransaction {
-        latest_ft_record = FTControl.get(latest_ft_record.id)
-        latest_ft_record.lastTimestamp = highest_timestamp
-        latest_ft_record.lastId = highest_id
-        latest_ft_record.save(flush: true, failOnError: true)
+      if (total > 0) {
+        FTControl.withNewTransaction {
+          latest_ft_record = FTControl.get(latest_ft_record.id)
+          latest_ft_record.lastTimestamp = highest_timestamp
+          latest_ft_record.lastId = highest_id
+          latest_ft_record.save(flush: true, failOnError: true)
+        }
       }
       cleanUpGorm()
       log.debug("final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
