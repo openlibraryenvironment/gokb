@@ -2,31 +2,15 @@ package org.gokb
 
 import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService
-import grails.gorm.transactions.NotTransactional
-import grails.validation.ValidationException
-import net.sf.json.JSON
-import org.gokb.cred.Identifier
-import org.gokb.cred.IdentifierNamespace
-import org.gokb.cred.Imprint
-import org.gokb.cred.KBComponent
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.ReviewRequest
-import org.gokb.cred.TitleInstance
-import org.gokb.cred.TitleInstancePackagePlatform
-import org.gokb.cred.Package
-import org.gokb.exceptions.MultipleComponentsMatchedException
+import org.gokb.cred.*
 import org.grails.web.json.JSONObject
-
 
 class TippService {
   def componentUpdateService
   def titleLookupService
-  def messageService
   def sessionFactory
 
   def matchPackage(Package aPackage) {
-    int count = 0, index = 0
-    boolean cancelled = false
     def tipps = aPackage.tipps
     log.debug("found ${tipps.size()} TIPPs in package $aPackage")
     tipps.each { tipp ->
@@ -37,7 +21,6 @@ class TippService {
   }
 
   void matchTitle(TitleInstancePackagePlatform tipp) {
-    Map titleErrorMap = [:] // [<propertyName>: [message: <msg>, baddata: <propertyValue>], ..]
     def found
     final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
     def title_changed = false
@@ -64,15 +47,13 @@ class TippService {
       ti.name = tipp.name
       titleLookupService.addPublisher(tipp.publisherName, ti)
       ti.save(flush: true)
-      tipp.ids.each{
+      tipp.ids.each {
         ti.ids << it
         if (it.namespace == ZDB_NS) {
           // TODO: ZDB-Enrichment for new Journals with ZDB-ID already present
         }
       }
-    }
-    // Add the core data.
-    if (ti) {
+      // Add the core data.
       componentUpdateService.ensureCoreData(ti, tipp, false, null)
 
       title_changed |= componentUpdateService.setAllRefdata([
@@ -95,7 +76,6 @@ class TippService {
 
       if (title_class_name == 'org.gokb.cred.BookInstance') {
         log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
-
         title_changed |= ti.addMonographFields(new JSONObject([//editionNumber        : null,
                                                                //editionDifferentiator: null,
                                                                editionStatement: tipp.editionStatement,
@@ -104,19 +84,30 @@ class TippService {
                                                                firstAuthor     : tipp.firstAuthor,
                                                                firstEditor     : tipp.firstEditor]))
       }
-
-      if (title_changed) {
-        ti.merge(flush: true)
-      }
-      tipp.title = ti
-      log.debug("linked TIPP $tipp with TitleInstance $ti")
+      ti.merge(flush: true)
     }
+    tipp.title = ti
+    log.debug("linked TIPP $tipp with TitleInstance $ti")
+
     handleFindConflicts(tipp, found)
   }
 
   def copyTitleData(ConcurrencyManagerService.Job job = null) {
-    TitleInstance.withNewSession {
-      int count = 0, index = 0
+    if (job != null) {
+      TitleInstance.withNewSession {
+        scanTIPPs(job)
+      }
+    }
+    else {
+      TitleInstance.withSession {
+        scanTIPPs(null)
+      }
+    }
+  }
+
+  def scanTIPPs(ConcurrencyManagerService.Job job = null) {
+    autoTimestampEventListener.withoutLastUpdated(TitleInstancePackagePlatform) {
+      int index = 0
       boolean cancelled = false
       def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
       log.debug("found ${tippIDs.size()} TIPPs")
