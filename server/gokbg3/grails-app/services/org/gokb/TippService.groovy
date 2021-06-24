@@ -72,7 +72,7 @@ class TippService {
       title_changed |= ClassUtils.setDateIfPresent(firstInPrint, ti, 'dateFirstInPrint')
       title_changed |= ClassUtils.setDateIfPresent(firstOnline, ti, 'dateFirstOnline')
 
-      // title_changed |= ClassUtils.setStringIfDifferent(ti, 'publisherName', tipp.publisherName)
+      titleLookupService.addPublisher(tipp.publisherName, ti)
 
       if (title_class_name == 'org.gokb.cred.BookInstance') {
         log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
@@ -87,6 +87,7 @@ class TippService {
       ti.merge(flush: true)
     }
     tipp.title = ti
+    tipp.save()
     log.debug("linked TIPP $tipp with TitleInstance $ti")
 
     handleFindConflicts(tipp, found)
