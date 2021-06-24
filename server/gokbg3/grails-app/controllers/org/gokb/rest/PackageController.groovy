@@ -70,6 +70,11 @@ class PackageController {
 
     result.data?.each { obj ->
       obj['_links'] << ['tipps': ['href': (base + "/packages/${obj.uuid}/tipps")]]
+      def countTippsParams = [:]
+      countTippsParams.componentType = "TIPP"
+      countTippsParams.tippPackage = obj.uuid
+      countTippsParams.max = 0
+      obj['_tippCount'] = ESSearchService.find(countTippsParams)?._pagination?.total ?: 0
     }
 
     render result as JSON
