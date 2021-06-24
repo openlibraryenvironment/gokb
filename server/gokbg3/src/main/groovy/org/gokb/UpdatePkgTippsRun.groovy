@@ -24,6 +24,7 @@ class UpdatePkgTippsRun {
   static CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
   static ESSearchService esSearchService = Holders.grailsApplication.mainContext.getBean('ESSearchService')
+  static TippService tippService =  Holders.grailsApplication.mainContext.getBean('tippService')
 
   def rjson // request JSON
   boolean addOnly
@@ -330,6 +331,8 @@ class UpdatePkgTippsRun {
       }
     }
 
+    tippService.matchPackage(pkg)
+    
     return jsonResult
   }
 

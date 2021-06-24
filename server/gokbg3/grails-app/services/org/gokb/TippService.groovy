@@ -13,9 +13,10 @@ class TippService {
   def reviewRequestService
 
   def matchPackage(Package aPackage) {
-    def tipps = aPackage.tipps
-    log.debug("found ${tipps.size()} TIPPs in package $aPackage")
-    tipps.each { tipp ->
+    def tippIDs = aPackage.tipps*.id
+    log.debug("found ${tippIDs.size()} TIPPs in package $aPackage")
+    tippIDs.each { id ->
+      def tipp = TitleInstancePackagePlatform.get(id)
       if (!tipp.title) {
         matchTitle(tipp)
       }
