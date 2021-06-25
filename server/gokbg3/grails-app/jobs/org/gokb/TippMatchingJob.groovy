@@ -4,6 +4,7 @@ import grails.util.Holders
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.TitleInstancePackagePlatform
+import org.springframework.beans.factory.annotation.Autowired
 
 class TippMatchingJob {
 
@@ -15,7 +16,8 @@ class TippMatchingJob {
     cron name: 'TippMatchingTrigger', cronExpression: "0 20 0/1 * * ?"
   }
 
-  static TippService tippService
+  @Autowired
+  TippService tippService
 
   def execute() {
 //  TitleInstance.withSession {
