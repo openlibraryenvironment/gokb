@@ -155,6 +155,8 @@ environments:
             languagesUrl : null
             packageUpdate:
                 enabled: false
+            packageOaiCaching:
+                enabled: false
             zdbAugment:
                 enabled: false
             es:
@@ -194,6 +196,8 @@ environments:
             ygorUrl: null
             languagesUrl : null
             packageUpdate:
+                enabled: false
+            packageOaiCaching:
                 enabled: false
             zdbAugment:
                 enabled: false
@@ -243,6 +247,8 @@ environments:
         gokb:
             packageUpdate:
                 enabled: false
+            packageOaiCaching:
+                enabled: true
             zdbAugment:
                 enabled: false
             ygorUrl: null
