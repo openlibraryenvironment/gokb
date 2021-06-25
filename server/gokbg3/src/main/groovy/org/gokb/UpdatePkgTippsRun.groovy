@@ -24,7 +24,7 @@ class UpdatePkgTippsRun {
   static CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
   static ESSearchService esSearchService = Holders.grailsApplication.mainContext.getBean('ESSearchService')
-  static TippService tippService =  Holders.grailsApplication.mainContext.getBean('tippService')
+  static TippService tippService = Holders.grailsApplication.mainContext.getBean('tippService')
 
   def rjson // request JSON
   boolean addOnly
@@ -495,7 +495,7 @@ class UpdatePkgTippsRun {
                   'name'                       : tippJson.name,
                   'editStatus'                 : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
                   'language'                   : tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : null,
-                  'publicationType'            : tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : null,
+                  'publicationType'            : tippJson.publicationType ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType) : tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : 'serial',
                   'parentPublicationTitleId'   : tippJson.parent_publication_title_id,
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                   'publisherName'              : tippJson.publisherName,

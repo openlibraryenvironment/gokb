@@ -913,9 +913,9 @@ class TitleInstance extends KBComponent {
 
   }
 
-  public static String determineTitleClass(titleObj) {
-    if (titleObj.type) {
-      switch (titleObj.type) {
+  public static String determineTitleClass(String pubTypeName) {
+    if ( pubTypeName) {
+      switch ( pubTypeName) {
         case "serial":
         case "Serial":
         case "Journal":

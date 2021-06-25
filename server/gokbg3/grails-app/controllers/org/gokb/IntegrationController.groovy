@@ -1295,7 +1295,7 @@ class IntegrationController {
         result.errors = title_validation.errors
       }
       else {
-        def title_class_name = TitleInstance.determineTitleClass(titleObj)
+        def title_class_name = TitleInstance.determineTitleClass(titleObj.publitionType?:titleObj.type)
 
         if (!title_class_name) {
           log.error("Missing or unknown publication type: ${titleObj.type}")

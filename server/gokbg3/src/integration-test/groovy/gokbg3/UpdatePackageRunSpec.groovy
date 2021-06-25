@@ -55,7 +55,7 @@ class UpdatePackageRunSpec extends Specification {
          'hostPlatform'   : acs_test_plt,
          'status'         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
          'name'           : 'TestBookTIPP',
-         'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Serial'),
+         'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Monograph'),
          'ids'            : [Identifier.findByValue('9784-442X') ?: new Identifier(value: '9784-442X', namespace: IdentifierNamespace.findByValue('issn')),
                              Identifier.findByValue('978-3-16-148410-0') ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('pisbn'))],
          'importId'       : 'bookID']).save(flush: true)
@@ -166,11 +166,11 @@ class UpdatePackageRunSpec extends Specification {
                             "value": "9783-442X"
                         ]
                     ],
-                    "name"       : "Journal of agricultural and food chemistry",
-                    "type"       : "Monograph"
+                    "name"       : "Book of agricultural and food chemistry",
+                    "publicationType"       : "Monograph"
                 ],
                 "name"       : "Book of agricultural and food chemistry",
-                "type"       : "Monograph",
+                "publicationType"       : "Monograph",
                 "url"        : "http://pubs.acs.org/journal/jafcau"
             ]
         ]
@@ -186,10 +186,11 @@ class UpdatePackageRunSpec extends Specification {
     resp.json.message != null
     resp.json.message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
+    sleep(5000)
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
-    matching_pkgs[0].tipps?.size() == 2
+    matching_pkgs[0].tipps?.size() == 3
     def book
     matching_pkgs[0].tipps.each { tipp ->
       if (tipp.importId == "bookTitleID")
@@ -273,10 +274,10 @@ class UpdatePackageRunSpec extends Specification {
                         ]
                     ],
                     "name"       : "Journal of agricultural and food chemistry",
-                    "type"       : "Serial"
+                    "publicationType"       : "Serial"
                 ],
                 "name"       : "Journal of agricultural and food chemistry",
-                "type"       : "Serial",
+                "publicationType"       : "Serial",
                 "url"        : "http://pubs.acs.org/journal/jafcau"
             ]
         ]
@@ -295,7 +296,7 @@ class UpdatePackageRunSpec extends Specification {
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
-    matching_pkgs[0].tipps?.size() == 2
+    matching_pkgs[0].tipps?.size() == 3
     def journal
     matching_pkgs[0].tipps.each { tipp ->
       if (tipp.importId == "thirdTitleID")
@@ -375,10 +376,10 @@ class UpdatePackageRunSpec extends Specification {
                         ]
                     ],
                     "name"       : "Journal of agricultural and food chemistry",
-                    "type"       : "Serial"
+                    "publicationType"       : "Serial"
                 ],
                 "name"       : "Journal of agricultural and food chemistry",
-                "type"       : "Serial",
+                "publicationType"       : "Serial",
                 "url"        : "http://pubs.acs.org/journal/jafcau"
             ]
         ]
@@ -489,10 +490,10 @@ class UpdatePackageRunSpec extends Specification {
                         ]
                     ],
                     "name"       : "Journal of agricultural and food chemistry",
-                    "type"       : "Serial"
+                    "publicationType"       : "Serial"
                 ],
                 "name"       : "Journal of agricultural and food chemistry",
-                "type"       : "Serial",
+                "publicationType"       : "Serial",
                 "url"        : "http://pubs.acs.org/journal/jafcau"
             ]
         ]
@@ -509,7 +510,7 @@ class UpdatePackageRunSpec extends Specification {
     resp.json.message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
-    matching_pkgs.size() == 1
+    matching_pkgs.size() == 2
     matching_pkgs[0].id == resp.json.pkgId
     def journal
     matching_pkgs[0].tipps.each { tipp ->
@@ -603,10 +604,10 @@ class UpdatePackageRunSpec extends Specification {
                         ]
                     ],
                     "name"       : "Journal of agricultural and food chemistry",
-                    "type"       : "Serial"
+                    "publicationType"       : "Serial"
                 ],
                 "name"       : "Journal of agricultural and food chemistry",
-                "type"       : "Serial",
+                "publicationType"       : "Serial",
                 "url"        : "http://pubs.acs.org/journal/jafcau"
             ]
         ]
