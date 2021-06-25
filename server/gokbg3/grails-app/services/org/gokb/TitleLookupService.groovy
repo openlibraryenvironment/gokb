@@ -597,10 +597,10 @@ class TitleLookupService {
                 additionalInfo.vars = [metadata.title, the_title.name]
 
                 rr_map = [
-                  review: "'${metadata.title}' added as a variant of '${the_title.name}'.",
-                  cause: "Title was matched via secondary id, but had a different name.",
-                  additionalInfo: additionalInfo,
-                  type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Mismatch')
+                    review        : "'${metadata.title}' added as a variant of '${the_title.name}'.",
+                    cause         : "Title was matched via secondary id, but had a different name.",
+                    additionalInfo: additionalInfo,
+                    type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Mismatch')
                 ]
               }
 
@@ -646,10 +646,10 @@ class TitleLookupService {
               additionalInfo.cstring = combo_ids.sort().join('_')
 
               rr_map = [
-                review:  "New TI created.",
-                cause:  "No matched components via IDs, but a title with a similar name already exists.",
-                additionalInfo: additionalInfo,
-                type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Similarity')
+                  review        : "New TI created.",
+                  cause         : "No matched components via IDs, but a title with a similar name already exists.",
+                  additionalInfo: additionalInfo,
+                  type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Similarity')
               ]
             }
           }
@@ -671,10 +671,10 @@ class TitleLookupService {
           additionalInfo.mismatches = ["${data.suppliedNS}": data.value]
 
           rr_map = [
-            review:  "Identifier type mismatch.",
-            cause:  "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
-            additionalInfo: additionalInfo,
-            type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Mismatch')
+              review        : "Identifier type mismatch.",
+              cause         : "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
+              additionalInfo: additionalInfo,
+              type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Mismatch')
           ]
         }
 
@@ -744,10 +744,10 @@ class TitleLookupService {
                 additionalInfo.vars = [the_title.name, id_mm]
 
                 rr_map = [
-                  review: "Identifier mismatch",
-                  cause: "Title ${the_title} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
-                  additionalInfo: additionalInfo,
-                  type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Minor Identifier Mismatch')
+                    review        : "Identifier mismatch",
+                    cause         : "Title ${the_title} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
+                    additionalInfo: additionalInfo,
+                    type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Minor Identifier Mismatch')
                 ]
               }
             }
@@ -804,10 +804,10 @@ class TitleLookupService {
                 additionalInfo.vars = [matches[0].id, '(' + matches[0].name + ')']
 
                 rr_map = [
-                  review: "New TI created.",
-                  cause: "TitleInstance ${matches[0].id} ${matches[0].name ? '(' + matches[0].name + ')' : ''} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
-                  additionalInfo: additionalInfo,
-                  type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Major Identifier Mismatch')
+                    review        : "New TI created.",
+                    cause         : "TitleInstance ${matches[0].id} ${matches[0].name ? '(' + matches[0].name + ')' : ''} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
+                    additionalInfo: additionalInfo,
+                    type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Major Identifier Mismatch')
                 ]
               }
               else {
@@ -883,10 +883,10 @@ class TitleLookupService {
             additionalInfo.cstring = combo_ids.sort().join('_')
 
             rr_map = [
-              review: "New TI created.",
-              cause: "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
-              additionalInfo: additionalInfo,
-              type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Multiple Matches')
+                review        : "New TI created.",
+                cause         : "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
+                additionalInfo: additionalInfo,
+                type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Multiple Matches')
             ]
 
             break;
@@ -934,10 +934,10 @@ class TitleLookupService {
               additionalInfo.cstring = combo_ids.sort().join('_')
 
               rr_map = [
-                review: "Check titles for duplicates.",
-                cause: "Multiple titles were matched on all identifiers.",
-                additionalInfo: additionalInfo,
-                type: RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Matches')
+                  review        : "Check titles for duplicates.",
+                  cause         : "Multiple titles were matched on all identifiers.",
+                  additionalInfo: additionalInfo,
+                  type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Matches')
               ]
 
             }
@@ -973,13 +973,13 @@ class TitleLookupService {
           log.info("New RR for title ${the_title}")
 
           reviewRequestService.raise(
-            the_title,
-            rr_map.review,
-            rr_map.cause,
-            user,
-            project,
-            (rr_map.additionalInfo as JSON).toString(),
-            rr_map.type
+              the_title,
+              rr_map.review,
+              rr_map.cause,
+              user,
+              project,
+              (rr_map.additionalInfo as JSON).toString(),
+              rr_map.type
           )
         }
 
@@ -1048,7 +1048,7 @@ class TitleLookupService {
       // Found a publisher.
       if (publisher) {
         log.debug("Found publisher ${publisher}");
-        def orgs = ti.getPublisher()
+        def orgs = ti.publisher ?: []
 
         log.debug("Check for dupes in ${orgs}")
 
