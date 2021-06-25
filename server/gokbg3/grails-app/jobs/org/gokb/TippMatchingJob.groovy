@@ -1,23 +1,21 @@
 package org.gokb
 
-import org.gokb.cred.KBComponent
+import grails.util.Holders
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.ReviewRequest
-import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
-import org.hibernate.mapping.List
 
 class TippMatchingJob {
 
   // Allow only one run at a time.
   static concurrent = false
 
-  def tippService
-
   static triggers = {
     // Cron timer.
     cron name: 'TippMatchingTrigger', cronExpression: "0 20 0/1 * * ?"
   }
+
+  static TippService tippService
 
   def execute() {
 //  TitleInstance.withSession {
