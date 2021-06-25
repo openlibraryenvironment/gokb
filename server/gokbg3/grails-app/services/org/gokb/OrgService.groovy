@@ -7,6 +7,7 @@ import org.hibernate.Session
 import org.hibernate.SessionFactory
 
 class OrgService {
+  def platformService
 
   def restLookup(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}");
