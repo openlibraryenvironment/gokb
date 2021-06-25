@@ -279,10 +279,10 @@ class TitleLookupService {
 
             if (string_matched) {
               log.debug("TI matched by bucket.")
-              def title_match = [object: string_matched, conflicts: [], warnings: ['bucket']]
+              def title_match = [object: the_title, warnings: ['bucket']]
 
-              if (title != string_matched.name) {
-                title_match.conflicts.add([message: "Found a title with a different primary name!", field: "name", value: title, matched: string_matched.name])
+              if (title != the_title.name) {
+                title_match.conflicts.add([message: "Found a title with a different primary name!", field: "name", value: title, matched: the_title.name])
               }
 
               result.matches.add(title_match)
@@ -1016,9 +1016,7 @@ class TitleLookupService {
     the_title
   }
 
-  private TitleInstance addPublisher(publisher_name, ti, user = null, project = null) {
-
-
+  private TitleInstance addPublisher(publisher_name, TitleInstance ti, user = null, project = null) {
     if ((publisher_name != null) &&
         (publisher_name.trim().length() > 0)) {
 
@@ -1048,12 +1046,11 @@ class TitleLookupService {
       // Found a publisher.
       if (publisher) {
         log.debug("Found publisher ${publisher}");
-        def orgs = ti.publisher ?: []
-
+        def orgs = ti.getPublisher()
         log.debug("Check for dupes in ${orgs}")
 
         // Has the publisher ever existed in the list against this title.
-        if (!orgs.contains(publisher)) {
+        if (!(orgs?.contains(publisher))) {
 
           // First publisher added?
           boolean not_first = orgs.size() > 0

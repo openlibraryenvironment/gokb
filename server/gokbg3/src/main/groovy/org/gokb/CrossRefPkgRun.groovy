@@ -403,12 +403,12 @@ class CrossRefPkgRun {
     def ti = null
     def titleObj = tippJson.title.name ? tippJson.title : tippJson
     def title_changed = false
-    def title_class_name = TitleInstance.determineTitleClass(titleObj.publitionType?:titleObj.type)
+    def title_class_name = TitleInstance.determineTitleClass(titleObj.publicationType ?: titleObj.type)
 
     try {
       ti = titleLookupService.findOrCreate(
           titleObj.name,
-          titleObj.publisher,
+          tippJson.publisherName,
           titleObj.identifiers,
           user,
           null,

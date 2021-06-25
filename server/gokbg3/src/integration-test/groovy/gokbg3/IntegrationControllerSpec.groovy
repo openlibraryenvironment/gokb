@@ -919,9 +919,9 @@ class IntegrationControllerSpec extends Specification {
         ],
         "tipps"        : [
             [
-                "accessEnd"  : "",
-                "accessStart": "",
-                "coverage"   : [
+                "accessEnd"      : "",
+                "accessStart"    : "",
+                "coverage"       : [
                     [
                         "coverageDepth": "Fulltext",
                         "coverageNote" : "NL-DE;  1.1953 - 43.1995",
@@ -934,14 +934,14 @@ class IntegrationControllerSpec extends Specification {
                         "startVolume"  : "1"
                     ]
                 ],
-                "medium"     : "Electronic",
-                "name"       : "TippName for Journal of agricultural and food chemistry",
-                "platform"   : [
+                "medium"         : "Electronic",
+                "name"           : "TippName for Journal of agricultural and food chemistry",
+                "platform"       : [
                     "name"      : "ACS Publications",
                     "primaryUrl": "https://pubs.acs.org"
                 ],
-                "status"     : "Current",
-                "prices"     : [
+                "status"         : "Current",
+                "prices"         : [
                     [
                         "type"     : "list",
                         "currency" : "EUR",
@@ -955,10 +955,10 @@ class IntegrationControllerSpec extends Specification {
                         "startDate": "2020-01-01"
                     ]
                 ],
-                "status"     : "Current",
-                "series"     : "Mystery Cloud",
-                "subjectArea": "Fringe",
-                "title"      : [
+                "status"         : "Current",
+                "series"         : "Mystery Cloud",
+                "subjectArea"    : "Fringe",
+                "title"          : [
                     "identifiers"      : [
                         [
                             "type" : "zdb",
@@ -981,17 +981,21 @@ class IntegrationControllerSpec extends Specification {
                             "status"   : ""
                         ]
                     ],
-                    "name"             : "Journal of agricultural and food chemistry",
-                    "type"             : "Serial"
+                    "publisherName"  : "ACS TestOrg",
+                    "name"           : "Journal of agricultural and food chemistry",
+                    "publicationType": "Serial",
                 ],
-                "url"        : "http://pubs.acs.org/journal/jafcau"
+                "publisherName"  : "ACS TestOrg",
+                "name"           : "TippName",
+                "publicationType": "Serial",
+                "url"            : "http://pubs.acs.org/journal/jafcau"
             ]
         ]
-    ]
+    ] as JSON
     when: "Caller asks for this record to be cross referenced"
 
     RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
-      body(json_record as JSON)
+      body(json_record)
     }
 
     then: "The request is sucessfully processed"

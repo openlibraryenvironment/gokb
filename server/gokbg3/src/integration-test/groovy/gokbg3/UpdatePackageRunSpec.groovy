@@ -186,7 +186,6 @@ class UpdatePackageRunSpec extends Specification {
     resp.json.message != null
     resp.json.message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
-    sleep(5000)
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
@@ -196,7 +195,7 @@ class UpdatePackageRunSpec extends Specification {
       if (tipp.importId == "bookTitleID")
         book = tipp
     }
-    book.ids.size() == 3
+    book.ids.size() == 2
   }
 
   void "Test updatePackageTipps :: match journal by one of two identifiers"() {
@@ -302,7 +301,7 @@ class UpdatePackageRunSpec extends Specification {
       if (tipp.importId == "thirdTitleID")
         journal = tipp
     }
-    journal.ids.size() == 3
+    journal.ids.size() == 2
   }
 
   void "Test updatePackageTipps :: match journal by identifier"() {
@@ -403,7 +402,7 @@ class UpdatePackageRunSpec extends Specification {
       if (tipp.importId == "otherTitleID")
         journal = tipp
     }
-    journal.ids.size() == 2
+    journal.ids.size() == 1
   }
 
   void "Test updatePackageTipps :: match by importId"() {
@@ -510,7 +509,7 @@ class UpdatePackageRunSpec extends Specification {
     resp.json.message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
-    matching_pkgs.size() == 2
+    matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
     def journal
     matching_pkgs[0].tipps.each { tipp ->
