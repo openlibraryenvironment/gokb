@@ -27,7 +27,8 @@ class TippService {
     def found
     final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
     def title_changed = false
-    def title_class_name = TitleInstance.determineTitleClass([type: tipp.publicationType?.value])
+    def type = tipp.publicationType?:tipp.type
+    def title_class_name = TitleInstance.determineTitleClass([type: type])
 
     // remap Identifiers
     def my_ids = []
