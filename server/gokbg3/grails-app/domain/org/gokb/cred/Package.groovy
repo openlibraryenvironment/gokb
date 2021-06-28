@@ -349,8 +349,7 @@ select tipp.id,
        tipp.name,
        tipp.publisherName,
        tipp.dateFirstInPrint,
-       tipp.dateFirstOnline,
-       tipp.publicationType
+       tipp.dateFirstOnline
     from TitleInstancePackagePlatform as tipp,
          Combo as hostPlatformCombo,
          Combo as titleCombo,
@@ -519,20 +518,23 @@ select tipp.id,
               builder.'series'(tipp[16])
               builder.'subjectArea'(tipp[17])
               builder.'publisherName'(tipp[19])
-              builder.'dateFirstInPrint'(tipp[20])
-              builder.'dateFirstOnline'(tipp[21])
-              builder.'publicationType'(tipp[22])
-//              builder.'importId'(tipp[23])
+              builder.'dateFirstInPrint'(tipp[21])
+              builder.'dateFirstOnline'(tipp[22])
               builder.'medium'(tipp[9]?.value)
-              builder.'title'(['id': tipp[2], 'uuid': tipp[13]]) {
-                builder.'name'(tipp[1]?.trim())
-                builder.'type'(getTitleClass(tipp[2]))
-                builder.'status'(tipp[15]?.value)
-                builder.'identifiers' {
-                  getTitleIds(tipp[2]).each { tid ->
-                    builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+              if (tipp[2]) {
+                builder.'title'(['id': tipp[2], 'uuid': tipp[13]]) {
+                  builder.'name'(tipp[1]?.trim())
+                  builder.'type'(getTitleClass(tipp[2]))
+                  builder.'status'(tipp[15]?.value)
+                  builder.'identifiers' {
+                    getTitleIds(tipp[2]).each { tid ->
+                      builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                    }
                   }
                 }
+              }
+              else {
+                builder.'title'()
               }
               builder.'identifiers' {
                 getTippIds(tipp[0]).each { tid ->

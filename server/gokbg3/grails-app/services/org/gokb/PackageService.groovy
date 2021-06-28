@@ -1786,37 +1786,39 @@ class PackageService {
     def result = 'OK'
     def attr = [:]
     File dir = new File("/tmp/gokb/oai/")
-    Package item = Package.get(id)
 
-    if (item) {
-      if (!dir.exists()) {
-        dir.mkdirs()
-      }
+    Package.withNewSession {
+      Package item = Package.get(id)
 
-      attr["xsi:schemaLocation"] = 'http://gokb.org/schemas/oai_package.xsd'
-      attr["xmlns:gokb"] = 'http://gokb.org/oai_metadata/'
+      if (item) {
+        if (!dir.exists()) {
+          dir.mkdirs()
+        }
 
-      def location = "${dir}/${item.uuid}_${item.lastUpdated.toInstant()}.xml"
-      File cachedRecord = new File(location)
+        attr["xmlns:gokb"] = 'http://gokb.org/oai_metadata/'
 
-      if (!cachedRecord.exists() || (item.lastUpdated > new Date(cachedRecord.lastModified()) && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 30)) {
-        def fileWriter = new FileWriter(location)
-        def recordXml = new MarkupBuilder(fileWriter)
-        item.toGoKBXml(recordXml, attr)
-        fileWriter.close()
+        def location = "${dir}/${item.uuid}_${item.lastUpdated.toInstant()}.xml"
+        File cachedRecord = new File(location)
+
+        if (!cachedRecord.exists() || (item.lastUpdated > new Date(cachedRecord.lastModified()) && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 30)) {
+          def fileWriter = new FileWriter(location)
+          def recordXml = new MarkupBuilder(fileWriter)
+          item.toGoKBXml(recordXml, attr)
+          fileWriter.close()
+        }
+        else if (item.lastUpdated <= new Date(cachedRecord.lastModified())) {
+          log.debug("Package had no new changes ..")
+          result = 'SKIPPED_NO_CHANGE'
+        }
+        else if (Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() <= 30) {
+          result = 'SKIPPED_CURRENTLY_CHANGING'
+          log.debug("Skipping Package that is currently receiving changes ..")
+        }
       }
-      else if (item.lastUpdated <= new Date(cachedRecord.lastModified())) {
-        log.debug("Package had no new changes ..")
-        result = 'SKIPPED_NO_CHANGE'
+      else {
+        result = 'ERROR'
+        log.debug("Unable to reference package by id!")
       }
-      else if (Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() <= 30) {
-        result = 'SKIPPED_CURRENTLY_CHANGING'
-        log.debug("Skipping Package that is currently receiving changes ..")
-      }
-    }
-    else {
-      result = 'ERROR'
-      log.debug("Unable to reference package by id!")
     }
 
     result

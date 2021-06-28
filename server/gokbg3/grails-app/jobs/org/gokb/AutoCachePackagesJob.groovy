@@ -21,8 +21,7 @@ class AutoCachePackagesJob {
       def ids = Package.executeQuery("select id from Package")
 
       ids.each { i ->
-        packageService.cachePackageXml(i)
-        sleep(4000)
+        def result = packageService.cachePackageXml(i)
       }
     }
   }

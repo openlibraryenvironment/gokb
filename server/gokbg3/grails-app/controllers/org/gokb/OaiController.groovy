@@ -103,18 +103,11 @@ class OaiController {
 
     if (cachedRecord.exists() && subject.lastUpdated < new Date(cachedRecord.lastModified())) {
       cachedXml = new XmlParser(false, false).parse(cachedRecord)
-    } else if (subject.class == Package && config.methodName == 'toGoKBXml') {
-      def fileWriter = new FileWriter(location)
-      def recordXml = new MarkupBuilder(fileWriter)
-      subject.toGoKBXml(recordXml, attr)
-      fileWriter.close()
-      newCache = true
-      cachedXml = new XmlParser(false, false).parse(cachedRecord)
     }
 
     // Add the metadata element and populate it depending on the config.
     builder.'metadata'() {
-      if (subject.class == Package && config.methodName == 'toGoKBXml' && (newCache || Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 5) ) {
+      if (subject.class == Package && config.methodName == 'toGoKBXml' && cachedRecord.exists() && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 5) {
         mkp.yieldUnescaped XmlUtil.serialize(cachedXml).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
       }
       else {
