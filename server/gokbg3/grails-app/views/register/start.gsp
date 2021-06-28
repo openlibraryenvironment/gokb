@@ -107,6 +107,13 @@
                     <ul><li>${message(code:'spring.security.ui.register.mathCheck.error', locale: locale)}</li></ul>
                   </g:if>
                 </div>
+                <div class="form-group ${agrFailed ? 'has-error' : ''}">
+                  <input type="checkbox" id="agreement" name="agreement" />
+                  <label for="agreement">${message(code:'spring.security.ui.register.agreement.label', locale: locale)} (<span style="color:red">*</span>)</label>
+                  <g:if test="${agrFailed}">
+                    <ul><li>${message(code:'spring.security.ui.register.agreement.error', locale: locale)}</li></ul>
+                  </g:if>
+                </div>
                 <div class="form-group">
                   <label for="submit"></label>
                   <button type="submit" class="btn btn-default">${message(code:'spring.security.ui.register.submit', locale: locale)}</button>

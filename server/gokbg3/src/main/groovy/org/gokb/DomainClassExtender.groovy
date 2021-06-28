@@ -3,31 +3,30 @@ package org.gokb
 /**
  * The following class adds the functionality that allows properties maintained by the Combo
  * mechanism instead of the normal Grails gorm mapping.
- * 
+ *
  * The following shows how specially mapped Combo properties can be declared on a Domain class:
- * 
+ *
  * static hasByCombo   = ['myProp'     : MyClass]
  * static manyByCombo  = ['myCollection'   : MyClass]
  * static mappedByCombo  = ['myProp'      : propColl]
- * 
+ *
  * The hasByCombo mapping would create a virtual property 'myProp',
- * along with the getter and setter (getMyProp(), setMyProp (MyClass val)), 
+ * along with the getter and setter (getMyProp(), setMyProp (MyClass val)),
  * on the current domain class with the type MyClass.
- * 
+ *
  * The has manyByCombo mapping would create a virtual property 'myCollection',
  * along with the getter and setter (getMyCollection(), setMyCollection( Collection<MyClass> val )),
  * on the current domain class with the type List<MyClass>.
- * 
+ *
  * The mappedByCombo mapping declares that the property declared as 'myProp' should be treated as an incoming
- * relationship from the class 'MyClass' from the property 'propColl'. This will ensure that relationships 
+ * relationship from the class 'MyClass' from the property 'propColl'. This will ensure that relationships
  * are only stored once in the database but allows us to easily derive the relationship identifier to lookup.
- * 
+ *
  */
 
 import grails.util.GrailsNameUtils
 import groovy.util.logging.*
 
-import org.grails.core.GrailsClass
 import grails.core.GrailsClass
 import org.gokb.cred.*
 
@@ -36,13 +35,8 @@ import com.k_int.ClassUtils
 @Log4j
 class DomainClassExtender {
 
-  private static RefdataValue getComboStatusActive = null;
-  public static RefdataValue getComboStatusActive () {
-    if (getComboStatusActive == null) {
-      getComboStatusActive = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    }
-
-    getComboStatusActive
+  public static RefdataValue getComboStatusActive() {
+    RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
   }
 
   private static addComboPropertyCache = { GrailsClass domainClass ->
@@ -526,7 +520,7 @@ class DomainClassExtender {
       (lookupComboMapping (Combo.MAPPED_BY, propertyName) != null)
     }
   }
-  
+
   private static addIsComboReverseFor = { GrailsClass domainClass ->
     final ExpandoMetaClass mc = domainClass.getMetaClass()
     mc.'static'.isComboReverseFor = { Class forClass, String propertyName ->
@@ -617,13 +611,13 @@ class DomainClassExtender {
       // Get all..
       List<Combo> combos
       // Query DB for current combos (endDate is NULL)
-      
+
       // The delegate.
       final KBComponent thisComponent = delegate
-      
+
       // We should flush to process any pending transactions.
       thisComponent.save(flush:true, failOnError:true)
-      
+
       if (isComboReverse(propertyName)) {
         combos = Combo.createCriteria().list {
           and {
@@ -714,20 +708,20 @@ class DomainClassExtender {
 
       Class c = lookupComboMappingFor (forClass, Combo.MANY, propName)
       if (c) {
-        
+
         return Combo.MANY
-        
+
       } else {
         c = lookupComboMappingFor (forClass, Combo.HAS, propName)
         if (c) return Combo.HAS
       }
-      
+
       return null
     }
   }
-  
+
   private static addGetCardinality = { GrailsClass domainClass ->
-    
+
     // Get the metaclass.
     domainClass.getMetaClass().getCardinality = { String propName ->
       getCardinalityFor (domainClass.getClazz(), propName)
@@ -1025,73 +1019,73 @@ class DomainClassExtender {
       }
     }
   }
-  
+
 //  private static overrideGORMMethods = { GrailsClass domainClass ->
-//    
+//
 //    def target = domainClass.getClazz()
-//    
+//
 //    // The GORM methods are lazily wired up to the metaclass. So until,
 //    // a GORM method is called the methods will not exist.
 //    // To force the methods to be wired up we must call a lightweight GORM method here.
 //    target.exists(-1)
-//    
+//
 //    // Get the metaclass.
 //    ExpandoMetaClass mc = domainClass.getMetaClass()
-//    
+//
 //    // New save method closure.
 //    def save_method = { Map p ->
-//      
+//
 //      // Cast the delegate.
 //      KBComponent d = delegate as KBComponent
-//      
+//
 //      // Just set the systemComponent flag if necessary.
 //      if (p?."system_save") {
 //        // systemComponent.
 //        d.systemComponent = true
-//      } 
+//      }
 //      return delegate."old_replaced_save" (p)
-//      
+//
 ////      // Check to see if this is a system component.
 ////      if (d.isSystemComponent() || p?."system_save") {
-////       
+////
 ////        // Found method.
 ////        log.debug("System component, check parameters.")
-////        
+////
 ////        // Check to see if we were supplied a map and whether 'system_save' was set
 ////        if (!p?."system_save") {
-////          
+////
 ////          d.errors.reject("systemonly",
 ////            "Component ${d.id} is marked as \"system only\"."
 ////          )
-////         
+////
 ////          def error = "Attempting to save component ${d.id} failed as component is marked as \"system only\".";
 ////          log.error (error)
-////          
+////
 ////          if (p?."failOnError" == true) {
 ////            throw new Exception (error)
 ////          }
-////          
+////
 ////          // Return null here.
 ////          return null
 ////        } else {
 ////          p?."systemComponent" = true
 ////        }
 ////      }
-////      
+////
 ////      // Execute the original from GORM.
 ////      return delegate."old_replaced_save" (p)
 //    }
 //
 //    // Find the old save method.
 //    MetaMethod gorm_save = mc.getMetaMethod("save", [Map.class] as Object[])
-//    
+//
 //    // If we've found the method then move it.
 //    if (gorm_save) {
 //      mc."old_replaced_save" = {Map m ->
 //        // Invoke the method on the delegate with the supplied args.
 //        gorm_save.invoke(delegate, [m] as Object[])
 //      }
-//      
+//
 //      // Then set the save to use our new version.
 //      mc."save" = save_method
 //    }
