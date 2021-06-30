@@ -269,6 +269,8 @@ gokb:
         active: false
         otherVoters: false
     costInfo: false
+    tsvExportTempDirectory: '/tmp/gokb/export'
+    packageXmlCacheDirectory: '/tmp/gokb/oai/'
 
 quartz:
     autoStartup: true

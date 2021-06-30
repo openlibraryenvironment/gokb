@@ -467,7 +467,7 @@ select tipp.id,
     // log.debug("Running package contents qry : ${OAI_PKG_CONTENTS_QRY}");
 
     // Get the tipps manually rather than iterating over the collection - For better management
-    def tipps = this.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery(OAI_PKG_CONTENTS_QRY, [this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps], [readOnly: true]) : []
+    def tipps = this.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)", [pkg: this, ctype: refdata_package_tipps], [readOnly: true]) : []
 
     log.debug("Query complete...");
 
@@ -511,23 +511,24 @@ select tipp.id,
         'dateCreated'(dateFormatService.formatIsoTimestamp(dateCreated))
         'TIPPs'(count: tipps?.size()) {
           tipps.each { tipp ->
-            builder.'TIPP'(['id': tipp[0], 'uuid': tipp[12]]) {
-              builder.'status'(tipp[6]?.value)
-              builder.'name'(tipp[18])
-              builder.'lastUpdated'(tipp[11] ? dateFormatService.formatIsoTimestamp(tipp[11]) : null)
-              builder.'series'(tipp[16])
-              builder.'subjectArea'(tipp[17])
-              builder.'publisherName'(tipp[19])
-              builder.'dateFirstInPrint'(tipp[21])
-              builder.'dateFirstOnline'(tipp[22])
-              builder.'medium'(tipp[9]?.value)
-              if (tipp[2]) {
-                builder.'title'(['id': tipp[2], 'uuid': tipp[13]]) {
-                  builder.'name'(tipp[1]?.trim())
-                  builder.'type'(getTitleClass(tipp[2]))
-                  builder.'status'(tipp[15]?.value)
+            builder.'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
+              builder.'status'(tipp.status?.value)
+              builder.'name'(tipp.name)
+              builder.'lastUpdated'(tipp.lastUpdated ? dateFormatService.formatIsoTimestamp(tipp.lastUpdated) : null)
+              builder.'series'(tipp.series)
+              builder.'subjectArea'(tipp.subjectArea)
+              builder.'publisherName'(tipp.publisherName)
+              builder.'dateFirstInPrint'(tipp.dateFirstInPrint)
+              builder.'dateFirstOnline'(tipp.dateFirstOnline)
+              builder.'medium'(tipp.format?.value)
+              builder.'publicationType'(tipp.publicationType?.value)
+              if (tipp.title) {
+                builder.'title'(['id': tipp.title.id, 'uuid': tipp.title.uuid]) {
+                  builder.'name'(tipp.name?.trim())
+                  builder.'type'(getTitleClass(tipp.title.id))
+                  builder.'status'(tipp.title.status?.value)
                   builder.'identifiers' {
-                    getTitleIds(tipp[2]).each { tid ->
+                    getTitleIds(tipp.title.id).each { tid ->
                       builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
                     }
                   }
@@ -537,16 +538,16 @@ select tipp.id,
                 builder.'title'()
               }
               builder.'identifiers' {
-                getTippIds(tipp[0]).each { tid ->
+                getTippIds(tipp.id).each { tid ->
                   builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
                 }
               }
-              'platform'([id: tipp[4], 'uuid': tipp[14]]) {
-                'primaryUrl'(tipp[10]?.trim())
-                'name'(tipp[3]?.trim())
+              'platform'([id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid]) {
+                'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
+                'name'(tipp.hostPlatform.name?.trim())
               }
-              'access'(start: tipp[7] ? dateFormatService.formatIsoTimestamp(tipp[7]) : null, end: tipp[8] ? dateFormatService.formatIsoTimestamp(tipp[8]) : null)
-              def cov_statements = getCoverageStatements(tipp[0])
+              'access'(start: tipp.accessStartDate ? dateFormatService.formatIsoTimestamp(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatIsoTimestamp(tipp.accessEndDate) : null)
+              def cov_statements = getCoverageStatements(tipp.id)
               if (cov_statements?.size() > 0) {
                 cov_statements.each { tcs ->
                   'coverage'(
@@ -562,7 +563,7 @@ select tipp.id,
                   )
                 }
               }
-              'url'(tipp[5] ?: "")
+              'url'(tipp.url ?: "")
             }
           }
         }

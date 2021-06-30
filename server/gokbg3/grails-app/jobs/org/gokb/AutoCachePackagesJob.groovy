@@ -11,7 +11,7 @@ class AutoCachePackagesJob {
 
   static triggers = {
     // Cron timer.
-    cron name: 'AutoCachePackageTrigger', cronExpression: "0 1/5 * * * ? *" // every hour at 40 mins
+    cron name: 'AutoCachePackageTrigger', cronExpression: "0 40 * * * ? *" // every hour at 40 mins
   }
 
   def execute() {

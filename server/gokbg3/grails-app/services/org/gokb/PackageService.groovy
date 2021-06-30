@@ -1785,7 +1785,7 @@ class PackageService {
   public def cachePackageXml (id) {
     def result = 'OK'
     def attr = [:]
-    File dir = new File("/tmp/gokb/oai/")
+    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
 
     Package.withNewSession {
       Package item = Package.get(id)
@@ -1801,6 +1801,12 @@ class PackageService {
         File cachedRecord = new File(location)
 
         if (!cachedRecord.exists() || (item.lastUpdated > new Date(cachedRecord.lastModified()) && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 30)) {
+          def removal = removeCacheEntriesForItem(item.uuid)
+
+          if (removal) {
+            log.debug("Removed stale cache files ..")
+          }
+
           def fileWriter = new FileWriter(location)
           def recordXml = new MarkupBuilder(fileWriter)
           item.toGoKBXml(recordXml, attr)
@@ -1818,6 +1824,20 @@ class PackageService {
       else {
         result = 'ERROR'
         log.debug("Unable to reference package by id!")
+      }
+    }
+
+    result
+  }
+
+  private boolean removeCacheEntriesForItem(uuid) {
+    boolean result = true
+    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    File[] files = dir.listFiles()
+
+    for (def file : files) {
+      if (file.name.contains(uuid)) {
+        result &= file.delete()
       }
     }
 
