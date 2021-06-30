@@ -11,6 +11,7 @@ class TippService {
   def titleLookupService
   def sessionFactory
   def reviewRequestService
+  def autoTimestampEventListener
 
   def matchPackage(Package aPackage) {
     def tippIDs = aPackage.tipps*.id
