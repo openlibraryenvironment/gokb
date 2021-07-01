@@ -101,13 +101,13 @@ class OaiController {
 
     log.debug("proceed...");
 
-    if (cachedRecord.exists() && subject.lastUpdated < new Date(cachedRecord.lastModified())) {
+    if (cachedRecord.exists() && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 5) {
       cachedXml = new XmlParser(false, false).parse(cachedRecord)
     }
 
     // Add the metadata element and populate it depending on the config.
     builder.'metadata'() {
-      if (subject.class == Package && config.methodName == 'toGoKBXml' && cachedRecord.exists() && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 5) {
+      if (cachedXml) {
         mkp.yieldUnescaped XmlUtil.serialize(cachedXml).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
       }
       else {
