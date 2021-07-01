@@ -327,46 +327,6 @@ class Package extends KBComponent {
     return all_rrs;
   }
 
-  private static OAI_PKG_CONTENTS_QRY = '''
-select tipp.id,
-       title.name,
-       title.id,
-       plat.name,
-       plat.id,
-       tipp.url,
-       tipp.status,
-       tipp.accessStartDate,
-       tipp.accessEndDate,
-       tipp.format,
-       plat.primaryUrl,
-       tipp.lastUpdated,
-       tipp.uuid,
-       title.uuid,
-       plat.uuid,
-       title.status,
-       tipp.series,
-       tipp.subjectArea,
-       tipp.name,
-       tipp.publisherName,
-       tipp.dateFirstInPrint,
-       tipp.dateFirstOnline
-    from TitleInstancePackagePlatform as tipp,
-         Combo as hostPlatformCombo,
-         Combo as titleCombo,
-         Combo as pkgCombo,
-         Platform as plat,
-         TitleInstance as title
-    where pkgCombo.toComponent=tipp
-      and pkgCombo.fromComponent= ?
-      and pkgCombo.type= ?
-      and hostPlatformCombo.toComponent=tipp
-      and hostPlatformCombo.type = ?
-      and hostPlatformCombo.fromComponent = plat
-      and titleCombo.toComponent=tipp
-      and titleCombo.type = ?
-      and titleCombo.fromComponent=title
-    order by tipp.id''';
-
   public void deleteSoft(context) {
     // Call the delete method on the superClass.
     super.deleteSoft(context)
@@ -463,8 +423,6 @@ select tipp.id,
     def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps');
     def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps');
     def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted');
-
-    // log.debug("Running package contents qry : ${OAI_PKG_CONTENTS_QRY}");
 
     // Get the tipps manually rather than iterating over the collection - For better management
     def tipps = this.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)", [pkg: this, ctype: refdata_package_tipps], [readOnly: true]) : []

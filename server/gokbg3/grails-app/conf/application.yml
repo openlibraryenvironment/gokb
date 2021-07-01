@@ -168,7 +168,6 @@ environments:
                     orgs: gokborgs
                     packages: gokbpackages
                     platforms: gokbplatforms
-            tsvExportTempDirectory: /tmp/gokb/export
         cache:
             headers:
                 enabled: false
