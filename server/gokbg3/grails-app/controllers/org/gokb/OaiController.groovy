@@ -83,7 +83,7 @@ class OaiController {
     // def attr = ["xsi:schemaLocation" : "${config.schema}"]
     def attr = [:]
     def newCache = false
-    File dir = new File("/tmp/gokb/oai/")
+    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
 
     if (!dir.exists()) {
       dir.mkdirs()
