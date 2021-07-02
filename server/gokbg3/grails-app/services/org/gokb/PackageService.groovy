@@ -6,6 +6,7 @@ import grails.gorm.transactions.Transactional
 
 import grails.io.IOUtils
 import groovy.util.logging.Slf4j
+import groovy.xml.MarkupBuilder
 import groovyx.net.http.RESTClient
 import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
@@ -17,6 +18,8 @@ import org.springframework.util.FileCopyUtils
 
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.time.Duration
+import java.time.Instant
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -1777,5 +1780,67 @@ class PackageService {
     }
 
     return recordList
+  }
+
+  public def cachePackageXml (id) {
+    def result = 'OK'
+    def attr = [:]
+    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+
+    Package.withNewSession {
+      Package item = Package.get(id)
+
+      if (item) {
+        if (!dir.exists()) {
+          dir.mkdirs()
+        }
+
+        attr["xmlns:gokb"] = 'http://gokb.org/oai_metadata/'
+
+        def location = "${dir}/${item.uuid}_${item.lastUpdated.toInstant()}.xml"
+        File cachedRecord = new File(location)
+
+        if (!cachedRecord.exists() || (item.lastUpdated > new Date(cachedRecord.lastModified()) && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 30)) {
+          def removal = removeCacheEntriesForItem(item.uuid)
+
+          if (removal) {
+            log.debug("Removed stale cache files ..")
+          }
+
+          def fileWriter = new FileWriter(location)
+          def recordXml = new MarkupBuilder(fileWriter)
+          item.toGoKBXml(recordXml, attr)
+          fileWriter.close()
+        }
+        else if (item.lastUpdated <= new Date(cachedRecord.lastModified())) {
+          log.debug("Package had no new changes ..")
+          result = 'SKIPPED_NO_CHANGE'
+        }
+        else if (Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() <= 30) {
+          result = 'SKIPPED_CURRENTLY_CHANGING'
+          log.debug("Skipping Package that is currently receiving changes ..")
+        }
+      }
+      else {
+        result = 'ERROR'
+        log.debug("Unable to reference package by id!")
+      }
+    }
+
+    result
+  }
+
+  private boolean removeCacheEntriesForItem(uuid) {
+    boolean result = true
+    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    File[] files = dir.listFiles()
+
+    for (def file : files) {
+      if (file.name.contains(uuid)) {
+        result &= file.delete()
+      }
+    }
+
+    result
   }
 }
