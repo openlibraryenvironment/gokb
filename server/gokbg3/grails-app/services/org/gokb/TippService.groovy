@@ -6,6 +6,7 @@ import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
+import org.gokb.cred.Package
 
 
 class TippService {
@@ -26,7 +27,7 @@ class TippService {
   }
 
   def scanTIPPs(Job job = null) {
-    autoTimestampEventListener.withoutLastUpdated(TitleInstancePackagePlatform) {
+    autoTimestampEventListener.withoutLastUpdated(TitleInstancePackagePlatform, Package) {
       int index = 0
       boolean cancelled = false
       def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
