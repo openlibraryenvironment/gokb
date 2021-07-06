@@ -482,7 +482,7 @@ class Package extends KBComponent {
               builder.'publicationType'(tipp.publicationType?.value)
               if (tipp.title) {
                 builder.'title'(['id': tipp.title.id, 'uuid': tipp.title.uuid]) {
-                  builder.'name'(tipp.name?.trim())
+                  builder.'name'(tipp.title.name?.trim())
                   builder.'type'(getTitleClass(tipp.title.id))
                   builder.'status'(tipp.title.status?.value)
                   builder.'identifiers' {
