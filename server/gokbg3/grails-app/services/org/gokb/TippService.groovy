@@ -27,7 +27,7 @@ class TippService {
   }
 
   def scanTIPPs(Job job = null) {
-    autoTimestampEventListener.withoutLastUpdated(TitleInstancePackagePlatform, Package) {
+    autoTimestampEventListener.withoutLastUpdated {
       int index = 0
       boolean cancelled = false
       def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
