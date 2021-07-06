@@ -28,8 +28,7 @@ class TippService {
     def found
     final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
     def title_changed = false
-    def type = tipp.publicationType ?: tipp.type ?: [value: 'serial']
-    def title_class_name = TitleInstance.determineTitleClass(type.value)
+    def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
 
     // remap Identifiers
     def my_ids = []
@@ -37,17 +36,16 @@ class TippService {
       my_ids << it.id
     }
     found = titleLookupService.find(
-        tipp.name,
-        tipp.getPublisherName(),
-        my_ids,
-        title_class_name
+      tipp.name,
+      tipp.getPublisherName(),
+      my_ids,
+      title_class_name
     )
 
     TitleInstance ti
     if (found.matches.size() == 1) {
       ti = found.matches[0].object
-    }
-    else if (found.to_create == true) {
+    } else if (found.to_create == true) {
       ti = Class.forName(title_class_name).newInstance()
       ti.name = tipp.name
       titleLookupService.addPublisher(tipp.publisherName, ti)
@@ -62,7 +60,7 @@ class TippService {
       componentUpdateService.ensureCoreData(ti, tipp, false, null)
 
       title_changed |= componentUpdateService.setAllRefdata([
-          'medium', 'language'
+        'medium', 'language'
       ], tipp, ti)
 
       def pubFrom = tipp.accessStartDate ? GOKbTextUtils.completeDateString(tipp.accessStartDate.format("yyyy-MM-dd")) : null
@@ -104,8 +102,7 @@ class TippService {
       TitleInstance.withNewSession {
         scanTIPPs(job)
       }
-    }
-    else {
+    } else {
       TitleInstance.withSession {
         scanTIPPs(null)
       }
@@ -113,16 +110,16 @@ class TippService {
   }
 
   def scanTIPPs(ConcurrencyManagerService.Job job = null) {
-    autoTimestampEventListener.withoutLastUpdated(TitleInstancePackagePlatform) {
-      int index = 0
-      boolean cancelled = false
-      def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
-      log.debug("found ${tippIDs.size()} TIPPs")
-      def tippIDit = tippIDs.iterator()
-      while (tippIDit.hasNext() && !cancelled) {
-        TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDit.next())
-        index++
-        if (tipp.title) {
+    int index = 0
+    boolean cancelled = false
+    def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
+    log.debug("found ${tippIDs.size()} TIPPs")
+    def tippIDit = tippIDs.iterator()
+    while (tippIDit.hasNext() && !cancelled) {
+      TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDit.next())
+      index++
+      if (tipp.title) {
+        autoTimestampEventListener.withoutLastUpdated(TitleInstancePackagePlatform) {
           tipp.title.ids.each { data ->
             if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(data.namespace.value)) {
               if (!tipp.ids*.namespace.contains(data.namespace)) {
@@ -167,24 +164,24 @@ class TippService {
     if (tipp.reviewRequests.size() < 1) {
       if (found.matches.size > 1) {
         reviewRequestService.raise(
-            tipp,
-            "TIPP matched several titles",
-            "TIPP ${tipp.name} coudn't be linked.",
-            null,
-            null,
-            found.matches as JSON,
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches")
+          tipp,
+          "TIPP matched several titles",
+          "TIPP ${tipp.name} coudn't be linked.",
+          null,
+          null,
+          found.matches as JSON,
+          RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches")
         )
       }
       if (found.conflicts.size > 0) {
         reviewRequestService.raise(
-            tipp,
-            "TIPP conflicts",
-            "TIPP ${tipp.name} conflicts with other titles.",
-            null,
-            null,
-            found.conflicts as JSON,
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Major Identifier Mismatch")
+          tipp,
+          "TIPP conflicts",
+          "TIPP ${tipp.name} conflicts with other titles.",
+          null,
+          null,
+          found.conflicts as JSON,
+          RefdataCategory.lookup("ReviewRequest.StdDesc", "Major Identifier Mismatch")
         )
       }
     }

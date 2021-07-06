@@ -784,7 +784,7 @@ class IntegrationControllerSpec extends Specification {
     title.prices?.size() == 2
   }
 
-  void "Test package update"() {
+  void "crossref package"() {
     given:
     def json_record = [
         "packageHeader": [
@@ -893,7 +893,7 @@ class IntegrationControllerSpec extends Specification {
     pkg.listStatus?.value == "In Progress"
   }
 
-  void "test update package via token"() {
+  void "crossref package with updateToken"() {
     given:
     def json_record = [
         "updateToken"  : "TestUpdateToken",
@@ -1001,7 +1001,7 @@ class IntegrationControllerSpec extends Specification {
     then: "The request is sucessfully processed"
     resp.json?.message?.startsWith('Created')
     expect: "The Package updater is set correctly"
-    sleep(200)
+    sleep(2000)
     def pkg = Package.get(resp.json.pkgId)
     pkg.tipps?.size() == 1
     pkg.tipps[0].name.startsWith("TippName")

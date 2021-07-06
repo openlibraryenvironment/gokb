@@ -495,7 +495,7 @@ class UpdatePkgTippsRun {
                   'name'                       : tippJson.name,
                   'editStatus'                 : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
                   'language'                   : tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : null,
-                  'publicationType'            : tippJson.publicationType ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType) : tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : 'serial',
+                  'publicationType'            : TitleInstancePackagePlatform.determinePubTypeRef(tippJson.publicationType?: tippJson.type ?:'Serial'),
                   'parentPublicationTitleId'   : tippJson.parent_publication_title_id,
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                   'publisherName'              : tippJson.publisherName,
