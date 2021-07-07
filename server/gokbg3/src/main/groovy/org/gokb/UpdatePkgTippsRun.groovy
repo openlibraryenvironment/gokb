@@ -471,7 +471,7 @@ class UpdatePkgTippsRun {
           }
 
           tipp.language = tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : tipp.language
-          tipp.publicationType = tippJson.publicationType ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType) : tippJson.type ? RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.type) : tipp.publicationType
+          tipp.publicationType = TitleInstancePackagePlatform.determinePubTypeRef(tippJson.publicationType ?: tippJson.type ?: tipp.publicationType.value)
           tipp.parentPublicationTitleId = tippJson.parentPublicationTitleId ?: tipp.parentPublicationTitleId
           tipp.precedingPublicationTitleId = tippJson.precedingTublicationTitleId ?: tipp.precedingPublicationTitleId
           tipp.precedingPublicationTitleId = tippJson.precedingTublicationTitleId ?: tipp.precedingPublicationTitleId
