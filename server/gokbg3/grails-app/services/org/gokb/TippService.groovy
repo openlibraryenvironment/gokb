@@ -17,12 +17,12 @@ class TippService {
 
     def tippIDs = TitleInstancePackagePlatform.executeQuery(
     'select tipp.id from TitleInstancePackagePlatform as tipp ' +
-      //', Combo as c1 ' +
+      ', Combo as c1 ' +
       'where ' +
-      //'c1.fromComponent=:pkg and c1.toComponent=tipp and '+
+      'c1.fromComponent=:pkg and c1.toComponent=tipp and '+
       ' not exists (from Combo as cmb where cmb.toComponent = tipp and cmb.type = :rdv)',
       [rdv: RefdataCategory.lookup(Combo.RD_TYPE,'TitleInstance.Tipps')
-       //, pkg: aPackage
+      , pkg: aPackage
       ])
     // aPackage.tipps*.id
     log.debug("found ${tippIDs.size()} unbound TIPPs in package $aPackage")

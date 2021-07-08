@@ -329,6 +329,7 @@ class UpdatePkgTippsRun {
       }
     }
 
+    cleanupService.cleanUpGorm()
     tippService.matchPackage(pkg)
 
     return jsonResult
