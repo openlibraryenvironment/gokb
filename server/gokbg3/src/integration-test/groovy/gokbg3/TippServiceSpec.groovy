@@ -52,16 +52,16 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
   void "Test create new title from a minimal TIPP"() {
     given:
     def tmap = [
-        pkg            : pkg,
-        title          : null,
-        hostPlatform   : plt,
-        url            : null,
-        uuid           : UUID.randomUUID(),
-        status         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
-        name           : "Test Title Name from TIPP",
-        editStatus     : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
-        language       : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "ger"),
-        publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")
+      pkg            : pkg,
+      title          : null,
+      hostPlatform   : plt,
+      url            : null,
+      uuid           : UUID.randomUUID(),
+      status         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+      name           : "Test Title Name from TIPP",
+      editStatus     : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
+      language       : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "ger"),
+      publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")
     ]
 
     when:
@@ -73,43 +73,43 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     tipp.title != null
   }
 
-  void "Test create new title BookInstance a full TIPP"() {
+  void "Test create new BookInstance from a full TIPP"() {
     given:
     def tmap = [
-        pkg                        : pkg,
-        title                      : null,
-        hostPlatform               : plt,
-        url                        : "http://some.random.thing/",
-        uuid                       : UUID.randomUUID(),
-        importId                   : "völlig egal",
-        status                     : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
-        name                       : "Test Title Name from TIPP",
-        editStatus                 : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
-        language                   : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "ger"),
-        publicationType            : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph"),
-        coverageNote               : "coverage Note",
-        format                     : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_FORMAT, "Print"),
-        delayedOA                  : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_DELAYED_OA, "No"),
-        delayedOAEmbargo           : "Embargo?",
-        hybridOA                   : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_HYBRID_OA, "No"),
-        hybridOAUrl                : "Hybris",
-        primary                    : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PRIMARY, "No"),
-        paymentType                : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PAYMENT_TYPE, "Unknown"),
-        accessStartDate            : dateFormatService.parseDate("2001-01-01"),
-        accessEndDate              : dateFormatService.parseDate("2030-12-31"),
-        subjectArea                : "Fachbereich",
-        series                     : "Serie: Marathon",
-        publisherName              : "Publizistenname",
-        dateFirstInPrint           : dateFormatService.parseDate("2003-01-01"),
-        dateFirstOnline            : dateFormatService.parseDate("2004-01-01"),
-        firstAuthor                : "erster Autor",
-        volumeNumber               : "erster Band",
-        editionStatement           : "3. völlig überarbeitete Auflage",
-        firstEditor                : "erster Verleger",
-        parentPublicationTitleId   : "Eltern importId",
-        precedingPublicationTitleId: "Vorgänger importId",
-        lastChangedExternal        : new Date(),
-        medium                     : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, "Book")
+      pkg                        : pkg,
+      title                      : null,
+      hostPlatform               : plt,
+      url                        : "http://some.random.thing/",
+      uuid                       : UUID.randomUUID(),
+      importId                   : "völlig egal",
+      status                     : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+      name                       : "Test Title Name from TIPP",
+      editStatus                 : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
+      language                   : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "ger"),
+      publicationType            : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph"),
+      coverageNote               : "coverage Note",
+      format                     : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_FORMAT, "Print"),
+      delayedOA                  : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_DELAYED_OA, "No"),
+      delayedOAEmbargo           : "Embargo?",
+      hybridOA                   : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_HYBRID_OA, "No"),
+      hybridOAUrl                : "Hybris",
+      primary                    : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PRIMARY, "No"),
+      paymentType                : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PAYMENT_TYPE, "Unknown"),
+      accessStartDate            : dateFormatService.parseDate("2001-01-01"),
+      accessEndDate              : dateFormatService.parseDate("2030-12-31"),
+      subjectArea                : "Fachbereich",
+      series                     : "Serie: Marathon",
+      publisherName              : "Publizistenname",
+      dateFirstInPrint           : dateFormatService.parseDate("2003-01-01"),
+      dateFirstOnline            : dateFormatService.parseDate("2004-01-01"),
+      firstAuthor                : "erster Autor",
+      volumeNumber               : "erster Band",
+      editionStatement           : "3. völlig überarbeitete Auflage",
+      firstEditor                : "erster Verleger",
+      parentPublicationTitleId   : "Eltern importId",
+      precedingPublicationTitleId: "Vorgänger importId",
+      lastChangedExternal        : new Date(),
+      medium                     : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, "Book")
     ]
 
     when:
@@ -127,23 +127,24 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     tipp.dateFirstInPrint == tipp.title.dateFirstInPrint
     tipp.dateFirstOnline == tipp.title.dateFirstOnline
     tipp.medium.value == tipp.title.medium.value
+    tipp.title.publisher*.name.contains(tipp.publisherName)
   }
 
   void "Test attach existing title with a TIPP by its IDs"() {
     given:
     Identifier my_isbn = Identifier.findByNamespaceAndValue(IdentifierNamespace.findByValue('isbn'), '979-11-655-6390-5') ?: new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5')
     def tmap = [
-        'pkg'            : pkg,
-        'title'          : null,
-        'hostPlatform'   : plt,
-        'url'            : null,
-        'uuid'           : UUID.randomUUID(),
-        'status'         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
-        'name'           : book.name,
-        'editStatus'     : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
-        'language'       : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, 'ger'),
-        'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph"),
-        'ids'            : [my_isbn]
+      'pkg'            : pkg,
+      'title'          : null,
+      'hostPlatform'   : plt,
+      'url'            : null,
+      'uuid'           : UUID.randomUUID(),
+      'status'         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+      'name'           : book.name,
+      'editStatus'     : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
+      'language'       : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, 'ger'),
+      'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph"),
+      'ids'            : [my_isbn]
     ]
 
     when:
@@ -164,15 +165,15 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     def aISBN = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '978-11-655-6370-8')
     def book1 = new BookInstance(name: "Book 1", ids: [aISBN])
     def tipp1 = new TitleInstancePackagePlatform([
-        name           : "Book 1",
-        hostPlatform   : platform,
-        ids            : [aISBN],
-        publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")])
+      name           : "Book 1",
+      hostPlatform   : platform,
+      ids            : [aISBN],
+      publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")])
     def tipp2 = new TitleInstancePackagePlatform([
-        name           : "Journal 1",
-        hostPlatform   : platform,
-        ids            : [new Identifier(namespace: IdentifierNamespace.findByValue('zdb'), value: '655639-0')],
-        publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Serial")])
+      name           : "Journal 1",
+      hostPlatform   : platform,
+      ids            : [new Identifier(namespace: IdentifierNamespace.findByValue('zdb'), value: '655639-0')],
+      publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Serial")])
     pack.tipps << tipp1
     pack.tipps << tipp2
 

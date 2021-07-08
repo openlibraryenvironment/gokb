@@ -174,9 +174,9 @@ class PublicController {
               TitleInstancePackagePlatform.withNewSession {
                 def tipp = TitleInstancePackagePlatform.get(tipp_id)
                 writer.write(
-                            sanitize( tipp.title?.name ) + '\t' +
-                            sanitize( tipp.title?.getIdentifierValue('ISSN') ) + '\t' +
-                            sanitize( tipp.title?.getIdentifierValue('eISSN') ) + '\t' +
+                            sanitize( tipp.title ? tipp.title.name : tipp.name ) + '\t' +
+                            sanitize( tipp.title ? tipp.title.getIdentifierValue('ISSN') : tipp.getIdentifierValue('ISSN')) + '\t' +
+                            sanitize( tipp.title ? tipp.title.getIdentifierValue('eISSN') : tipp.getIdentifierValue('eISSN')) + '\t' +
                             sanitize( tipp.startDate ) + '\t' +
                             sanitize( tipp.startVolume ) + '\t' +
                             sanitize( tipp.startIssue ) + '\t' +
@@ -189,8 +189,8 @@ class PublicController {
                             sanitize( tipp.embargo ) + '\t' +
                             sanitize( tipp.coverageDepth ) + '\t' +
                             sanitize( tipp.coverageNote ) + '\t' +
-                            sanitize( tipp.title?.getCurrentPublisher()?.name ) + '\t' +
-                            sanitize( tipp.title?.getPrecedingTitleId() ) + '\t' +
+                            sanitize( tipp.title.getCurrentPublisher() ? tipp.title.getCurrentPublisher().name : tipp.publisherName ) + '\t' +
+                            sanitize( tipp.title.getPrecedingTitleId() ?: tipp.precedingPublicationTitleId ) + '\t' +
                             '\t' +  // date_monograph_published_print
                             '\t' +  // date_monograph_published_online
                             '\t' +  // monograph_volume

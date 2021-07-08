@@ -1295,7 +1295,7 @@ class IntegrationController {
         result.errors = title_validation.errors
       }
       else {
-        def title_class_name = TitleInstance.determineTitleClass(titleObj.publitionType?:titleObj.type)
+        def title_class_name = TitleInstance.determineTitleClass(titleObj.publicationType?:titleObj.type)
 
         if (!title_class_name) {
           log.error("Missing or unknown publication type: ${titleObj.type}")
@@ -1370,7 +1370,7 @@ class IntegrationController {
             title.save()
 
             if (!result.message) {
-              result.message = messageService.resolveCode('crossRef.title.success', [title], locale)
+              result.message = messageService.resolveCode('crossRef.title.success', [title.name], locale)
             }
             result.cls = title.class.name
             result.titleId = title.id

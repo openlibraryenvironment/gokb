@@ -14,13 +14,20 @@ class TippService {
   def autoTimestampEventListener
 
   def matchPackage(Package aPackage) {
-    def tippIDs = aPackage.tipps*.id
-    log.debug("found ${tippIDs.size()} TIPPs in package $aPackage")
+
+    def tippIDs = TitleInstancePackagePlatform.executeQuery(
+    'select tipp.id from TitleInstancePackagePlatform as tipp ' +
+      //', Combo as c1 ' +
+      'where ' +
+      //'c1.fromComponent=:pkg and c1.toComponent=tipp and '+
+      ' not exists (from Combo as cmb where cmb.toComponent = tipp and cmb.type = :rdv)',
+      [rdv: RefdataCategory.lookup(Combo.RD_TYPE,'TitleInstance.Tipps')
+       //, pkg: aPackage
+      ])
+    // aPackage.tipps*.id
+    log.debug("found ${tippIDs.size()} unbound TIPPs in package $aPackage")
     tippIDs.each { id ->
-      def tipp = TitleInstancePackagePlatform.get(id)
-      if (!tipp.title) {
-        matchTitle(tipp)
-      }
+      matchTitle(TitleInstancePackagePlatform.get(id))
     }
   }
 
@@ -48,8 +55,8 @@ class TippService {
     } else if (found.to_create == true) {
       ti = Class.forName(title_class_name).newInstance()
       ti.name = tipp.name
+      ti.save(flush:true)
       titleLookupService.addPublisher(tipp.publisherName, ti)
-      ti.save(flush: true)
       tipp.ids.each {
         ti.ids << it
         if (it.namespace == ZDB_NS) {

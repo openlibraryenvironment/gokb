@@ -1008,23 +1008,25 @@ class TitleLookupService {
         }
       }
 
-      // Found a publisher.
-      if (publisher) {
-        log.debug("Found publisher ${publisher}");
-        def orgs = ti.getPublisher()
-        log.debug("Check for dupes in ${orgs}")
-
-          // Has the publisher ever existed in the list against this title.
-          if (!orgs.contains(publisher)) {
-
-            // First publisher added?
-            boolean not_first = orgs.size() > 0
-
-            // Added a publisher?
-            ti.publisher.add(publisher)
-          }
-        }
+      if (!publisher) {
+        publisher = new Org(name: publisher_name)
+        publisher.save()
       }
+      // publisher present
+      log.debug("Found publisher ${publisher}");
+      def orgs = ti.getPublisher()
+      log.debug("Check for dupes in ${orgs}")
+
+      // Has the publisher ever existed in the list against this title.
+      if (!orgs.contains(publisher)) {
+
+        // First publisher added?
+        boolean not_first = orgs.size() > 0
+
+        // Added a publisher?
+        ti.publisher.add(publisher)
+      }
+    }
     ti
   }
 
@@ -1077,10 +1079,8 @@ class TitleLookupService {
 
               if (idMatch) {
                 if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
-                }
-                else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
-                }
-                else {
+                } else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
+                } else {
                   found = true
                 }
               }

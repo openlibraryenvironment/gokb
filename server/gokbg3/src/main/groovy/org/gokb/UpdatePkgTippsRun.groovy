@@ -125,8 +125,6 @@ class UpdatePkgTippsRun {
       }
 
       pkg = Package.get(proxy.id)
-      def dummy = pkg.provider
-      dummy = pkg.nominalPlatform
 
       jsonResult.pkgId = pkg.id
       job?.linkedItem = [name: pkg.name,
@@ -471,7 +469,7 @@ class UpdatePkgTippsRun {
           }
 
           tipp.language = tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : tipp.language
-          tipp.publicationType = TitleInstancePackagePlatform.determinePubTypeRef(tippJson.publicationType ?: tippJson.type ?: tipp.publicationType.value)
+          tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType ?: tippJson.type ?: tipp.publicationType.value)
           tipp.parentPublicationTitleId = tippJson.parentPublicationTitleId ?: tipp.parentPublicationTitleId
           tipp.precedingPublicationTitleId = tippJson.precedingTublicationTitleId ?: tipp.precedingPublicationTitleId
           tipp.precedingPublicationTitleId = tippJson.precedingTublicationTitleId ?: tipp.precedingPublicationTitleId
@@ -495,7 +493,7 @@ class UpdatePkgTippsRun {
                   'name'                       : tippJson.name,
                   'editStatus'                 : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
                   'language'                   : tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : null,
-                  'publicationType'            : TitleInstancePackagePlatform.determinePubTypeRef(tippJson.publicationType?: tippJson.type ?:'Serial'),
+                  'publicationType'            : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType?: tippJson.type ?:'Serial'),
                   'parentPublicationTitleId'   : tippJson.parent_publication_title_id,
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                   'publisherName'              : tippJson.publisherName,

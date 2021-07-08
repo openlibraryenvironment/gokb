@@ -986,7 +986,6 @@ class IntegrationControllerSpec extends Specification {
                     "publicationType": "Serial",
                 ],
                 "publisherName"  : "ACS TestOrg",
-                "name"           : "TippName",
                 "publicationType": "Serial",
                 "url"            : "http://pubs.acs.org/journal/jafcau"
             ]
@@ -1001,15 +1000,16 @@ class IntegrationControllerSpec extends Specification {
     then: "The request is sucessfully processed"
     resp.json?.message?.startsWith('Created')
     expect: "The Package updater is set correctly"
-    sleep(2000)
+    sleep(200)
     def pkg = Package.get(resp.json.pkgId)
     pkg.tipps?.size() == 1
     pkg.tipps[0].name.startsWith("TippName")
     pkg.lastUpdatedBy == User.findByUsername('ingestAgent')
     pkg.name == "TestTokenPackageUpdate"
-    def title = JournalInstance.findByName("Journal of agricultural and food chemistry")
+    def title = pkg.tipps[0].title //JournalInstance.findByName("Journal of agricultural and food chemistry")
     title.publisher?.size() == 1
     title.publisher[0].name == "ACS TestOrg"
+    title.name =="Journal of agricultural and food chemistry"
   }
 
   void "Update Title remove VariantName via fullsync"() {
