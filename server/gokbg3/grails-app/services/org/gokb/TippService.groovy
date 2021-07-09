@@ -19,12 +19,12 @@ class TippService {
     'select tipp.id from TitleInstancePackagePlatform as tipp ' +
       ', Combo as c1 ' +
       'where ' +
-      'c1.fromComponent=:pkg and c1.toComponent=tipp and '+
-      ' not exists (from Combo as cmb where cmb.toComponent = tipp and cmb.type = :rdv)',
-      [rdv: RefdataCategory.lookup(Combo.RD_TYPE,'TitleInstance.Tipps')
-      , pkg: aPackage
+      'c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 and c1.status=:act and '+
+      'not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2 and cmb.status=:act)',
+      [rdv2: RefdataCategory.lookup(Combo.RD_TYPE,'TitleInstance.Tipps'),
+        act: RefdataCategory.lookup(Combo.RD_STATUS,Combo.STATUS_ACTIVE)
+      , pkg: aPackage, rdv1:RefdataCategory.lookup(Combo.RD_TYPE,'Package.Tipps')
       ])
-    // aPackage.tipps*.id
     log.debug("found ${tippIDs.size()} unbound TIPPs in package $aPackage")
     tippIDs.each { id ->
       matchTitle(TitleInstancePackagePlatform.get(id))

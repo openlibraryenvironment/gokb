@@ -162,7 +162,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     given: // a package with unmatched TIPPs
     def pack = new Package(name: "Import Package")
     def platform = new Platform(name: "Import Platform")
-    def aISBN = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '978-11-655-6370-8')
+    def aISBN = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '978-11-656-6370-8')
     def book1 = new BookInstance(name: "Book 1", ids: [aISBN])
     def tipp1 = new TitleInstancePackagePlatform([
       name           : "Book 1",
@@ -176,6 +176,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
       publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Serial")])
     pack.tipps << tipp1
     pack.tipps << tipp2
+    pack.save(flush: true)
 
     when:
     tippService.matchPackage(pack)
