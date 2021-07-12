@@ -612,8 +612,8 @@ class UpdatePkgTippsRun {
       TypeConvertingMap map = [
           componentType    : 'TitleInstancePackagePlatform',
           importId         : tippJson.titleId,
-          tippPackageUuid  : pkg.uuid,
-          hostPlatformUuid : tippJson.hostPlatform.uuid,
+          pkg              : pkg.uuid,
+          platform         : tippJson.hostPlatform.uuid,
           skipDomainMapping: true
       ]
       def something = esSearchService.find(map)
