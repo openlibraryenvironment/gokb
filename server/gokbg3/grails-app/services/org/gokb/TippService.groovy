@@ -16,14 +16,14 @@ class TippService {
   def matchPackage(Package aPackage) {
 
     def tippIDs = TitleInstancePackagePlatform.executeQuery(
-    'select tipp.id from TitleInstancePackagePlatform as tipp ' +
-      ', Combo as c1 ' +
-      'where ' +
-      'c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 and c1.status=:act and '+
-      'not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2 and cmb.status=:act)',
-      [rdv2: RefdataCategory.lookup(Combo.RD_TYPE,'TitleInstance.Tipps'),
-        act: RefdataCategory.lookup(Combo.RD_STATUS,Combo.STATUS_ACTIVE)
-      , pkg: aPackage, rdv1:RefdataCategory.lookup(Combo.RD_TYPE,'Package.Tipps')
+      'select tipp.id from TitleInstancePackagePlatform as tipp ' +
+        ', Combo as c1 ' +
+        'where ' +
+        'c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 and c1.status=:act and ' +
+        'not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2 and cmb.status=:act)',
+      [rdv2 : RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps'),
+       act  : RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+       , pkg: aPackage, rdv1: RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps')
       ])
     log.debug("found ${tippIDs.size()} unbound TIPPs in package $aPackage")
     tippIDs.each { id ->
@@ -55,7 +55,7 @@ class TippService {
     } else if (found.to_create == true) {
       ti = Class.forName(title_class_name).newInstance()
       ti.name = tipp.name
-      ti.save(flush:true)
+      ti.save(flush: true)
       titleLookupService.addPublisher(tipp.publisherName, ti)
       tipp.ids.each {
         ti.ids << it
@@ -170,24 +170,32 @@ class TippService {
     // TODO: check if the ReviewRequest was raised already before issuing a new one
     if (tipp.reviewRequests.size() < 1) {
       if (found.matches.size > 1) {
+        def collection = []
+        found.matches.each { KBComponent comp ->
+          collection << [oid: "${comp.class.name}:${comp.id}", name: comp.name]
+        }
         reviewRequestService.raise(
           tipp,
           "TIPP matched several titles",
           "TIPP ${tipp.name} coudn't be linked.",
           null,
           null,
-          found.matches as JSON,
+          [otherComponents: collection] as JSON,
           RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches")
         )
       }
       if (found.conflicts.size > 0) {
+        def collection = []
+        found.conflicts.each { KBComponent comp ->
+          collection << [oid: "${comp.class.name}:${comp.id}", name: comp.name]
+        }
         reviewRequestService.raise(
           tipp,
           "TIPP conflicts",
           "TIPP ${tipp.name} conflicts with other titles.",
           null,
           null,
-          found.conflicts as JSON,
+          [otherComponents: collection] as JSON,
           RefdataCategory.lookup("ReviewRequest.StdDesc", "Major Identifier Mismatch")
         )
       }
