@@ -11,6 +11,7 @@ import grails.plugin.springsecurity.annotation.Secured
 
 import groovyx.net.http.URIBuilder
 
+import java.security.MessageDigest
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -1337,6 +1338,115 @@ class PackageController {
     }
 
     render result as JSON
+  }
+
+  @Transactional
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
+  def ingestKbart() {
+    log.debug("Form post")
+    def result = [result: 'OK']
+    Package pkg = Package.get(params.id)
+    def upload_mime_type = request.getFile("submissionFile")?.contentType
+    def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
+    def deposit_token = java.util.UUID.randomUUID().toString();
+    def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
+    def user = User.get(springSecurityService.principal.id)
+    def info = analyse(temp_file);
+    def new_datafile_id = null
+
+    log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
+    def existing_file = DataFile.findByMd5(info.md5sumHex);
+
+    if ( existing_file != null ) {
+      log.debug("Found a match !")
+
+      new_datafile_id = existing_file.id
+    }
+    else {
+      log.debug("Create new datafile");
+      def new_datafile = new DataFile(
+                                      guid:deposit_token,
+                                      md5:info.md5sumHex,
+                                      uploadName:upload_filename,
+                                      name:upload_filename,
+                                      filesize:info.filesize,
+                                      uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
+
+      log.debug("Saved new datafile : ${new_datafile.id}");
+      new_datafile_id = new_datafile.id
+      new_datafile.fileData = temp_file.getBytes()
+      new_datafile.save(failOnError:true,flush:true)
+    }
+
+    if (new_datafile_id) {
+      Job background_job = concurrencyManagerService.createJob { Job job ->
+        TSVIngestionService.ingest2('kbart2', pkg.name, (pkg.nominalPlatform?.primaryUrl ?: null), pkg.source, new_datafile_id, job)
+      }
+
+      background_job.ownerId = user.id
+      background_job.description = "KBART REST ingest (${pkg.name})"
+      background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'KBART Ingest')
+      background_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+      background_job.message("Starting upsert for Package ${pkg.name}")
+      background_job.startTime = new Date()
+      background_job.startOrQueue()
+
+      result.jobId = background_job.uuid
+    }
+    else {
+      response.status = 500
+      result.message = "There has been an error processing the KBART file!"
+    }
+
+    return result as JSON
+  }
+
+  private def analyse(temp_file) {
+
+    def result=[:]
+    result.filesize = 0;
+
+    log.debug("analyze...");
+
+    // Create a checksum for the file..
+    MessageDigest md5_digest = MessageDigest.getInstance("MD5");
+    InputStream md5_is = new FileInputStream(temp_file);
+    byte[] md5_buffer = new byte[8192];
+    int md5_read = 0;
+    while( (md5_read = md5_is.read(md5_buffer)) >= 0) {
+      md5_digest.update(md5_buffer, 0, md5_read);
+      result.filesize += md5_read
+    }
+    md5_is.close();
+    byte[] md5sum = md5_digest.digest();
+    result.md5sumHex = new BigInteger(1, md5sum).toString(16);
+
+    log.debug("MD5 is ${result.md5sumHex}");
+    result
+  }
+
+
+  private def copyUploadedFile(inputfile, deposit_token) {
+    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '/tmp/gokb/ingest'
+    log.debug("copyUploadedFile...");
+    def sub1 = deposit_token.substring(0,2);
+    def sub2 = deposit_token.substring(2,4);
+    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}");
+    def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
+    def temp_file = new File(temp_file_name);
+
+    // Copy the upload file to a temporary space
+    inputfile.transferTo(temp_file);
+
+    temp_file
+  }
+
+  private def validateUploadDir(path) {
+    File f = new File(path);
+    if ( ! f.exists() ) {
+      log.debug("Creating upload directory path")
+      f.mkdirs();
+    }
   }
 
   private def cleanUpGorm(session) {

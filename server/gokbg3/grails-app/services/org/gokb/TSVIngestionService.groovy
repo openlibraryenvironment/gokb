@@ -31,21 +31,22 @@ import org.gokb.cred.ComponentHistoryEventParticipant
 import org.gokb.cred.KBComponentVariantName
 // import org.gokb.cred.KBartRecord
 import org.gokb.cred.Org
-import org.gokb.cred.Package;
+import org.gokb.cred.Package
 import org.gokb.cred.Person
 import org.gokb.cred.Platform
-import org.gokb.cred.RefdataCategory;
-import org.gokb.cred.RefdataValue;
+import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.Subject
-import org.gokb.cred.TitleInstance;
-import org.gokb.cred.Combo;
-import org.gokb.cred.TitleInstancePackagePlatform;
-import org.gokb.cred.User;
-import org.gokb.cred.DataFile;
-import org.gokb.cred.IngestionProfile;
-import org.gokb.cred.CuratoryGroup;
-import org.gokb.exceptions.*;
+import org.gokb.cred.TitleInstance
+import org.gokb.cred.Combo
+import org.gokb.cred.TitleInstancePackagePlatform
+import org.gokb.cred.User
+import org.gokb.cred.DataFile
+import org.gokb.cred.IngestionProfile
+import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.JobResult
+import org.gokb.exceptions.*
 import com.k_int.TextUtils
 import grails.converters.JSON
 import org.apache.commons.io.ByteOrderMark
@@ -866,7 +867,7 @@ class TSVIngestionService {
 
         if ( badrows.size() > 0 ) {
           def msg = "There are ${badrows.size()} bad rows -- write to badfile and report"
-          job.message([timestam:System.currentTimeMillis(), message:msg, event:'BadRows', count:badrows.size()])
+          job.message([timestamp:System.currentTimeMillis(), message:msg, event:'BadRows', count:badrows.size()])
           badrows.each {
             job.message(it)
           }
@@ -937,7 +938,26 @@ class TSVIngestionService {
     }
 
     job?.setProgress(100)
+    job.endTime = new Date()
 
+    JobResult.withNewSession {
+      def result_object = JobResult.findByUuid(job?.uuid)
+      if (!result_object) {
+        def job_map = [
+            uuid        : (job?.uuid),
+            description : (job?.description),
+            resultObject: (job.messages as JSON).toString(),
+            type        : (job?.type),
+            statusText  : (job.messages.last()),
+            ownerId     : (job?.ownerId),
+            groupId     : (job?.groupId),
+            startTime   : (job?.startTime),
+            endTime     : (job?.endTime),
+            linkedItemId: (job?.linkedItem?.id)
+        ]
+        new JobResult(job_map).save(flush: true, failOnError: true)
+      }
+    }
 
     def elapsed = System.currentTimeMillis()-start_time;
 
@@ -1048,8 +1068,10 @@ class TSVIngestionService {
           }
         }
 
-        if ( identifiers.size() > 0 ) {
-          def title = titleLookupService.findOrCreate(the_kbart.publication_title, the_kbart.publisher_name, identifiers, user, null, row_specific_config.defaultTypeName)
+        def titleClass = TitleInstance.determineTitleClass(the_kbart.publication_type)
+
+        if ( titleClass && identifiers.size() > 0 ) {
+          def title = titleLookupService.findOrCreate(the_kbart.publication_title, the_kbart.publisher_name, identifiers, user, null, titleClass)
 
           if ( title ) {
 
