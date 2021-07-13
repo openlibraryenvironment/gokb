@@ -3,6 +3,7 @@ package org.gokb
 import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
+import org.gokb.cred.IdentifierNamespace
 import org.grails.web.json.JSONObject
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
