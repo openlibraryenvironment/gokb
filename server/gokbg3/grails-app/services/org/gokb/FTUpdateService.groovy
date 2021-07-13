@@ -3,6 +3,7 @@ package org.gokb
 import com.k_int.ESSearchService
 import grails.gorm.transactions.Transactional
 import org.elasticsearch.action.bulk.BulkRequestBuilder
+import org.gokb.cred.TitleInstancePackagePlatform
 
 @Transactional
 class FTUpdateService {
@@ -103,6 +104,8 @@ class FTUpdateService {
         result.sortname = kbc.name
         result.altname = []
         result.updater = 'org'
+        result.titleNamespace = kbc.titleNamespace?.value
+        result.packageNamespace = kbc.packageNamespace?.value
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
@@ -287,9 +290,10 @@ class FTUpdateService {
         result
       }
 
-      updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class) { org.gokb.cred.TitleInstancePackagePlatform kbc ->
+      updateES(esclient, TitleInstancePackagePlatform.class) {
 
         def result = [:]
+        TitleInstancePackagePlatform kbc = TitleInstancePackagePlatform.get(it.id)
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name ?: (kbc.title?.name ?: null)
@@ -322,9 +326,6 @@ class FTUpdateService {
         if (kbc.title?.niceName == 'Book') {
           // edition for eBooks
           def edition = [:]
-          if (kbc.title?.editionNumber) {
-            edition.number = kbc.title.editionNumber
-          }
           if (kbc.title?.editionDifferentiator) {
             edition.differentiator = kbc.title.editionDifferentiator
           }
@@ -420,6 +421,7 @@ class FTUpdateService {
         if (kbc.firstEditor) result.firstEditor = kbc.firstEditor
         if (kbc.parentPublicationTitleId) result.parentPublicationTitleId = kbc.parentPublicationTitleId
         if (kbc.precedingPublicationTitleId) result.precedingPublicationTitleId = kbc.precedingPublicationTitleId
+        if (kbc.importId) result.importId = kbc.importId
 
         // prices
         result.prices = []

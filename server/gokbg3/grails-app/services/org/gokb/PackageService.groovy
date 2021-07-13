@@ -1738,8 +1738,8 @@ class PackageService {
     record.date_monograph_published_print = pick(tipp.dateFirstInPrint, tipp.title?.hasProperty('dateFirstInPrint')?tipp.title.dateFirstInPrint:null, exportType)
     record.date_monograph_published_online = pick(tipp.dateFirstOnline, tipp.title?.hasProperty('dateFirstOnline')?tipp.title.dateFirstOnline:null, exportType)
     record.monograph_volume = pick(tipp.volumeNumber, tipp.title?.hasProperty('volumeNumber')?tipp.title.volumeNumber:null, exportType)
-    record.monograph_edition = pick(tipp.editionStatement, tipp.title?.hasProperty('edtionNumber')?tipp.title.editionNumber:null, exportType)
-    record.title_id = pick(tipp.id, tipp.title?.id, exportType)
+    record.monograph_edition = pick(tipp.editionStatement, tipp.title?.hasProperty('editionStatement')?tipp.title.editionStatement:null, exportType)
+    record.title_id = pick(tipp.importId, tipp.title?.id, exportType)
     record.publisher_name = pick (tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
     record.preceding_publication_title_id = pick(tipp.precedingPublicationTitleId, tipp.title?.getPrecedingTitleId(), exportType)
     record.parent_publication_title_id = tipp.parentPublicationTitleId

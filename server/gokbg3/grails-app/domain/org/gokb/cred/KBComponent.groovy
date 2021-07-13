@@ -110,7 +110,7 @@ where cp.owner = :c
 
       } catch (Throwable t) {
         // Suppress but log.
-        log.error("${t}")
+        log.error("failed updating dependants ${t}")
       }
     }
 
@@ -545,56 +545,39 @@ where cp.owner = :c
     result
   }
 
-//  @Transient
-//  static def lookupByIO(String idtype, String idvalue) {
-//    // println("lookupByIO(${idtype},${idvalue})");
-//    // Component(ids) -> (fromComponent) Combo (toComponent) -> (identifiedComponents) Identifier
-//    def result = null
-//
-//    // Look up the namespace.. If we can't find it, there can't possibly be a match
-//    def ns = IdentifierNamespace.findByValue(idtype)
-//    if ( ns != null ) {
-//
-//      // Got a namespace, see if we can find the supplied idvalue in that namespace, if not, we won't be able to find
-//      // any components with that identifier
-//      def identifier = Identifier.findByNamespaceAndValue(ns, idvalue)
-//
-//      if ( identifier != null ) {
-//        // Found an identifier.. Get all components where that identifier is linked via
-//        // the ids combo map.
-//        def crit = KBComponent.createCriteria()
-//        def combotype = RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids');
-//
-//        def lr = crit.list {
-//          outgoingCombos {
-//            and {
-//              eq ( 'toComponent', identifier)
-//              eq ( 'type', combotype)
-//            }
-//          }
-//        }
-//
-//        if ( lr ) {
-//          if ( lr.size() == 0 ) {
-//            // println("Not found");
-//          }
-//          else if ( lr.size() == 1 ) {
-//            result=lr.get(0);
-//          }
-//          else {
-//            // println("Too many");
-//          }
-//        }
-//      }
-//      else {
-//        // println("No Identifier");
-//      }
-//    }
-//    else {
-//      // println("No Namespace");
-//    }
-//    result
-//  }
+  @Transient
+  static KBComponent[] lookupAllByIO(String idtype, String idvalue) {
+    // println("lookupByIO(${idtype},${idvalue})");
+    // Component(ids) -> (fromComponent) Combo (toComponent) -> (identifiedComponents) Identifier
+    def result = null
+    def crit = KBComponent.createCriteria()
+    def db_results = crit.list {
+
+      createAlias('outgoingCombos', 'ogc')
+      createAlias('ogc.type', 'ogcType')
+      createAlias('ogcType.owner', 'ogcOwner')
+
+      createAlias('ogc.toComponent', 'tc')
+      createAlias('tc.namespace', 'tcNamespace')
+
+      and {
+        eq 'ogcOwner.desc', 'Combo.Type'
+        eq 'ogcType.value', 'KBComponent.Ids'
+
+        eq 'tc.value', idvalue
+        eq 'tcNamespace.value', idtype
+      }
+
+      projections {
+        distinct 'id'
+      }
+    }
+
+    result = []
+    db_results.each{result.add(KBComponent.get(it))};
+
+    result
+  }
 
   /*
    *  ignore any namespace or type - see if we can find a componenet where a linked identifier has the specified value

@@ -78,8 +78,8 @@ class TitleInstancePlatform extends KBComponent {
         return matched_tipl
 
       } else {
-        return null
         log.warn("Found more than one TIPL for ${title} on ${platform}!")
+        return null
       }
     }
   }

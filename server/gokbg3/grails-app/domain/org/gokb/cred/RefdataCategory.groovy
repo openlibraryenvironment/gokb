@@ -45,7 +45,7 @@ class RefdataCategory {
 
   static def lookup(category_name, value, def sortkey = null) {
 
-    // log.debug("lookupOrCreate(${category_name}, ${value}, ${sortkey})");
+    // log.debug("lookup(${category_name}, ${value}, ${sortkey})");
 
     if ((value == null) || (category_name == null))
       throw new RuntimeException("Request to lookupOrCreate null value in category ${category_name}");
@@ -77,7 +77,6 @@ class RefdataCategory {
         rdv_cache[rdv_cache_key] = result.id
       }
     }
-
     // return the refdata value.
     result
   }

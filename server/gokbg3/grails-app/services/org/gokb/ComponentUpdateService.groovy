@@ -1,5 +1,6 @@
 package org.gokb
 
+import gokbg3.DateFormatService
 import grails.util.GrailsNameUtils
 import groovyx.net.http.URIBuilder
 
@@ -12,6 +13,7 @@ import com.k_int.ClassUtils
 import grails.util.Holders
 
 import groovy.util.logging.*
+import org.grails.web.json.JSONObject
 
 @Slf4j
 class ComponentUpdateService {
@@ -48,14 +50,20 @@ class ComponentUpdateService {
     ], data, component)
 
     // Identifiers
-    log.debug("Identifier processing ${data.identifiers}")
+    def data_identifiers = []
+    if (data instanceof JSONObject) {
+      data_identifiers = data.identifiers ?: []
+    } else {
+      data_identifiers = data.ids ?: []
+    }
+    log.debug("Identifier processing ${data_identifiers}")
     Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
     RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+    RefdataValue combo_type_id = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
 
-    data.identifiers.each { ci ->
-      def namespace_val = ci.type ?: ci.namespace
+    data_identifiers.each { ci ->
+      def namespace_val = ci.namespace?.value ?: ci.type
       String testKey = "${namespace_val}|${ci.value}".toString()
 
       if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {
@@ -65,8 +73,7 @@ class ComponentUpdateService {
 
           if (!KBComponent.has(component, 'publisher')) {
             canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
-          }
-          else {
+          } else {
             def norm_id = Identifier.normalizeIdentifier(ci.value)
             def ns = IdentifierNamespace.findByValueIlike(namespace_val)
             canonical_identifier = Identifier.findByNamespaceAndNormnameIlike(ns, norm_id)
@@ -80,8 +87,7 @@ class ComponentUpdateService {
               log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
               def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
               hasChanged = true
-            }
-            else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
+            } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
               reviewRequestService.raise(
@@ -93,15 +99,13 @@ class ComponentUpdateService {
                 null,
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
               )
-            }
-            else {
+            } else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")
             }
 
             // Add the value for comparison.
             ids << testKey
-          }
-          else {
+          } else {
             log.debug("Could not find or create Identifier!")
           }
         }
@@ -110,9 +114,9 @@ class ComponentUpdateService {
 
     if (sync) {
       log.debug("Cleaning up deprecated IDs ..")
-      component.ids.each { cid ->
-        if (!data.identifiers.collect { "${it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString() }.contains("${cid.namespace?.value}|${Identifier.normalizeIdentifier(cid.value)}".toString())) {
-          def ctr = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [cid, component])
+      component.ids.each { ci ->
+        if (!data_identifiers.collect { "${((ci instanceof Identifier) ? ci.namespace.value : ci.type).toLowerCase()}|${Identifier.normalizeIdentifier(ci.value)}".toString() }.contains("${ci.namespace?.value}|${Identifier.normalizeIdentifier(ci.value)}".toString())) {
+          def ctr = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [ci, component])
 
           if (ctr.size() == 1) {
             ctr[0].delete()
@@ -123,14 +127,16 @@ class ComponentUpdateService {
     }
 
     // Flags
-    log.debug("Tag Processing: ${data.tags}");
+    if (data.hasProperty('tags')) {
+      log.debug("Tag Processing: ${data.tags}");
 
-    data.tags?.each { t ->
-      log.debug("Adding tag ${t.type},${t.value}")
+      data.tags.each { t ->
+        log.debug("Adding tag ${t.type},${t.value}")
 
-      component.addToTags(
-        RefdataCategory.lookupOrCreate(t.type, t.value)
-      )
+        component.addToTags(
+          RefdataCategory.lookupOrCreate(t.type, t.value)
+        )
+      }
     }
 
     // handle the source.
@@ -186,8 +192,7 @@ class ComponentUpdateService {
             def new_combo = new Combo(fromComponent: component, toComponent: group, type: combo_type_cg, status: combo_active).save(flush: true, failOnError: true)
             hasChanged = true
             groups << [id: group.id, name: group.name]
-          }
-          else {
+          } else {
             log.debug("Could not find linked group ${name}!")
           }
         }
@@ -203,8 +208,7 @@ class ComponentUpdateService {
           }
         }
       }
-    }
-    else {
+    } else {
       log.debug("Skipping CG handling ..")
     }
 
@@ -267,8 +271,13 @@ class ComponentUpdateService {
     // Prices.
     if (data.prices) {
       for (def priceData : data.prices) {
-        if (priceData.amount != null && priceData.currency) {
-          component.setPrice(priceData.type, "${priceData.amount} ${priceData.currency}", priceData.startDate ? dateFormatService.parseDate(priceData.startDate) : null, priceData.endDate ? dateFormatService.parseDate(priceData.endDate) : null)
+        def val = priceData.price ?: priceData.amount ?: null
+        def typ = priceData.priceType ? priceData.priceType.value : priceData.type ?: null
+        if (val != null && priceData.currency && typ) {
+          component.setPrice(typ,
+            "${val} ${priceData.currency}",
+            priceData.startDate ? dateFormatService.parseDate(priceData.startDate.toString()) : null,
+            priceData.endDate ? dateFormatService.parseDate(priceData.endDate.toString()) : null)
           hasChanged = true
         }
       }

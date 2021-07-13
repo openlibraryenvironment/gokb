@@ -78,50 +78,6 @@ class TitleInstance extends KBComponent {
   @Transient
   public title_status_properties = [:]
 
-  public boolean addVariantTitle(String title, String locale = null) {
-
-    // Check that the variant is not equal to the name of this title first.
-    if (!title.equalsIgnoreCase(this.name)) {
-
-      def normTitle = GOKbTextUtils.normaliseString(title)
-
-      // Need to compare the existing variant names here. Rather than use the equals method,
-      // we are going to compare certain attributes here.
-      RefdataValue title_type = RefdataCategory.lookupOrCreate("KBComponentVariantName.VariantType", "Alternate Title")
-      def locale_rd = null
-
-      if (locale) {
-        locale_rd = RefdataValue.findByOwnerAndValue(RefdataCategory.findByDesc("KBComponentVariantName.Locale"), (locale))
-      }
-
-      // Each of the variants...
-      def existing = variantNames.find {
-        KBComponentVariantName name = it
-        return (name.getNormVariantName().equals(normTitle))
-      }
-
-      if (!existing) {
-        new KBComponentVariantName([
-          "variantType": (title_type),
-          "owner"      : this,
-          "locale"     : (locale_rd),
-          "status"     : RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
-          "variantName": (title)
-        ])
-        return true
-      }
-      else {
-        log.debug("Not adding variant title as it is the same as an existing variant.")
-        return false
-      }
-
-    }
-    else {
-      log.debug("Not adding variant title as it is the same as the actual title.")
-      return false
-    }
-  }
-
   static hasByCombo = [
     issuer        : Org,
     translatedFrom: TitleInstance,
@@ -169,6 +125,50 @@ class TitleInstance extends KBComponent {
      [code: 'title::merge', label: 'Title Merge']
 //       [code:'title::reconcile', label:'Title Reconcile']
     ]
+  }
+
+  public boolean addVariantTitle(String title, String locale = null) {
+
+    // Check that the variant is not equal to the name of this title first.
+    if (!title.equalsIgnoreCase(this.name)) {
+
+      def normTitle = GOKbTextUtils.normaliseString(title)
+
+      // Need to compare the existing variant names here. Rather than use the equals method,
+      // we are going to compare certain attributes here.
+      RefdataValue title_type = RefdataCategory.lookupOrCreate("KBComponentVariantName.VariantType", "Alternate Title")
+      def locale_rd = null
+
+      if (locale) {
+        locale_rd = RefdataValue.findByOwnerAndValue(RefdataCategory.findByDesc("KBComponentVariantName.Locale"), (locale))
+      }
+
+      // Each of the variants...
+      def existing = variantNames.find {
+        KBComponentVariantName name = it
+        return (name.getNormVariantName().equals(normTitle))
+      }
+
+      if (!existing) {
+        new KBComponentVariantName([
+          "variantType": (title_type),
+          "owner"      : this,
+          "locale"     : (locale_rd),
+          "status"     : RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
+          "variantName": (title)
+        ])
+        return true
+      }
+      else {
+        log.debug("Not adding variant title as it is the same as an existing variant.")
+        return false
+      }
+
+    }
+    else {
+      log.debug("Not adding variant title as it is the same as the actual title.")
+      return false
+    }
   }
 
   @Override
@@ -252,11 +252,10 @@ class TitleInstance extends KBComponent {
           combo.toComponent = new_publisher
           addToOutgoingCombos(combo)
         }
-
-        this.save()
-
+        combo.save(flush:true)
+        //this.publisher.add(new_publisher)
+        this.save(flush:true)
         return true
-        //        publisher.add(new_publisher)
       }
     }
 
@@ -339,7 +338,6 @@ class TitleInstance extends KBComponent {
 
           if (this.class.name == 'org.gokb.cred.BookInstance') {
 
-            builder.'editionNumber'(this.editionNumber)
             builder.'editionDifferentiator'(this.editionDifferentiator)
             builder.'editionStatement'(this.editionStatement)
             builder.'volumeNumber'(this.volumeNumber)
@@ -912,5 +910,38 @@ class TitleInstance extends KBComponent {
 
   def afterInsert() {
 
+  }
+
+  public static String determineTitleClass(String pubTypeName) {
+    if ( pubTypeName) {
+      switch ( pubTypeName) {
+        case "serial":
+        case "Serial":
+        case "Journal":
+        case "journal":
+          return "org.gokb.cred.JournalInstance"
+          break;
+        case "monograph":
+        case "Monograph":
+        case "Book":
+        case "book":
+          return "org.gokb.cred.BookInstance"
+          break;
+        case "Database":
+        case "database":
+          return "org.gokb.cred.DatabaseInstance"
+          break;
+        case "Other":
+        case "other":
+          return "org.gokb.cred.OtherInstance"
+          break;
+        default:
+          return null
+          break;
+      }
+    }
+    else {
+      return null
+    }
   }
 }

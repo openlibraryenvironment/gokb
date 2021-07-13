@@ -427,17 +427,17 @@ class BootStrap {
         RefdataCategory.lookupOrCreate(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_IN_PROGRESS).save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_REJECTED).save(flush: true, failOnError: true)
 
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Format", "Digitised").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Format", "Electronic").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Format", "Print").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_FORMAT, "Digitised").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_FORMAT, "Electronic").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_FORMAT, "Print").save(flush: true, failOnError: true)
 
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.DelayedOA", "No").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.DelayedOA", "Unknown").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.DelayedOA", "Yes").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_DELAYED_OA, "No").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_DELAYED_OA, "Unknown").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_DELAYED_OA, "Yes").save(flush: true, failOnError: true)
 
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.HybridOA", "No").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.HybridOA", "Unknown").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.HybridOA", "Yes").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_HYBRID_OA, "No").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_HYBRID_OA, "Unknown").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_HYBRID_OA, "Yes").save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Primary", "Yes").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Primary", "No").save(flush: true, failOnError: true)
@@ -451,7 +451,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Unknown").save(flush: true, failOnError: true)
 
         ['Database', 'Monograph', 'Other', 'Serial'].each { pubType ->
-            RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PublicationType", pubType).save(flush: true, failOnError: true)
+            RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, pubType).save(flush: true, failOnError: true)
         }
 
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.CoverageDepth", "Fulltext").save(flush: true, failOnError: true)
@@ -515,7 +515,7 @@ class BootStrap {
          "Other", "Published Score", "Article", "Software", "Statistics", "Market Data", "Standards",
          "Biography", "Legal Text", "Cartography", "Miscellaneous", "Other"].each { med ->
             RefdataCategory.lookupOrCreate("TitleInstance.Medium", med).save(flush: true, failOnError: true)
-            RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Medium", med).save(flush: true, failOnError: true)
+            RefdataCategory.lookupOrCreate(TitleInstancePackagePlatform.RD_MEDIUM, med).save(flush: true, failOnError: true)
         }
 
         RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Unknown").save(flush: true, failOnError: true)

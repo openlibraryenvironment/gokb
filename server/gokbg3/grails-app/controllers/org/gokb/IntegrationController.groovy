@@ -882,6 +882,84 @@ class IntegrationController {
     component.ensureVariantName(variant_name)
   }
 
+  def updatePackageTipps(){
+    def result = ['result': 'OK']
+    def async = params.async ? params.boolean('async') : false
+    def addOnly = params.addOnly ? params.boolean('addOnly') : false
+    def request_locale = RequestContextUtils.getLocale(request)
+    def rjson = request.JSON
+    User request_user = null
+    def fullsync = false
+    def token = null
+
+    log.debug("updatePackage (${request_locale})")
+
+    if (springSecurityService.isLoggedIn()) {
+      request_user = springSecurityService.currentUser
+    }
+    else if (params.user && params.password) {
+      request_user = springSecurityService.reauthenticate(params.user, params.password)
+    }
+    else if (params.updateToken?.trim() || rjson.updateToken?.trim()) {
+      token = params.updateToken ?: rjson.updateToken
+      updateToken = UpdateToken.findByValue(token)
+
+      if (updateToken) {
+        request_user = updateToken.updateUser
+
+        if (rjson.packageHeader) {
+          rjson.packageHeader.uuid = updateToken.pkg.uuid
+        }
+      }
+      else {
+        log.error("Unable to reference update token!")
+        result.message = "Unable to reference update token!"
+        response.setStatus(400)
+        result.result = "ERROR"
+      }
+    }
+    else {
+      response.setStatus(401)
+      response.setHeader('WWW-Authenticate', 'Basic realm="gokb"')
+    }
+
+    if (request_user) {
+      if (params.fullsync == "true" && request_user?.adminStatus) {
+        fullsync = true
+      }
+
+      if (!async) {
+        result = crossReferenceService.updatePackage(rjson,
+            addOnly as boolean, fullsync as boolean, token != null,
+            request_locale, request_user, null)
+        log.debug("updatePackage Result:\n$result")
+      }
+      else {
+        // start xRef Job
+        Job background_job = concurrencyManagerService.createJob { Job job ->
+          crossReferenceService.updatePackage(rjson, addOnly as boolean, fullsync as boolean,
+              token != null, request_locale, request_user, job)
+        }
+        log.debug("Starting job ${background_job}..")
+        background_job.ownerId = request_user.id
+        background_job.description = "Package update TIPPs (${rjson.packageHeader.name})"
+        background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageUpdateTipps')
+        background_job.linkedItem = [name: rjson.packageHeader.name,
+                                    type: "Package"]
+        background_job.message("Starting TIPPs update for Package ${rjson.packageHeader.name}")
+        background_job.startOrQueue()
+        background_job.startTime = new Date()
+        result << [job_id: background_job.uuid]
+      }
+    }
+    else {
+      log.error("Unable to reference updatePackageTipps user!")
+      result.message = "Unable to reference user for TIPP update!"
+      result.result = "ERROR"
+    }
+    render result as JSON
+  }
+
   def crossReferencePackage() {
     def result = ['result': 'OK']
     def async = params.async ? params.boolean('async') : false
@@ -925,34 +1003,44 @@ class IntegrationController {
       response.setHeader('WWW-Authenticate', 'Basic realm="gokb"')
     }
 
-    if (params.fullsync == "true" && request_user?.adminStatus) {
-      fullsync = true
-    }
+    if (request_user) {
+      if (params.fullsync == "true" && request_user?.adminStatus) {
+        fullsync = true
+      }
 
-    if (!async) {
-      result = crossReferenceService.xRefPkg(rjson,
-          addOnly as boolean, fullsync as boolean, token != null,
-          request_locale, request_user)
-      log.debug("xRefPkg Result:\n$result")
+      if (!async) {
+        result = crossReferenceService.xRefPkg(rjson,
+            addOnly as boolean, fullsync as boolean, token != null,
+            request_locale, request_user, null)
+        log.debug("xRefPkg Result:\n$result")
+      }
+      else {
+        // start xRef Job
+        Job background_job = concurrencyManagerService.createJob { Job job ->
+          crossReferenceService.xRefPkg(rjson, addOnly as boolean, fullsync as boolean,
+              token != null, request_locale, request_user, job)
+        }
+        log.debug("Starting job ${background_job}..")
+        background_job.ownerId = request_user.id
+        background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
+        background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
+        background_job.linkedItem = [name: rjson.packageHeader.name,
+                                    type: "Package"]
+        background_job.message("Starting upsert for Package ${rjson.packageHeader.name}")
+        background_job.startOrQueue()
+        background_job.startTime = new Date()
+        result << [job_id: background_job.uuid,
+                  // TODO: remove key 'info' as it is deprecated
+                  info  : [job_id: background_job.uuid]]
+      }
     }
     else {
-      // start xRef Job
-      Job background_job = concurrencyManagerService.createJob { Job job ->
-        crossReferenceService.xRefPkg(rjson, addOnly as boolean, fullsync as boolean,
-            token != null, request_locale, request_user, job)
-      }
-      log.debug("Starting job ${background_job}..")
-      background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
-      background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
-      background_job.linkedItem = [name: rjson.packageHeader.name,
-                                   type: "Package"]
-      background_job.message("Starting upsert for Package ${rjson.packageHeader.name}")
-      background_job.startOrQueue()
-      background_job.startTime = new Date()
-      result << [job_id: background_job.uuid,
-                 // TODO: remove key 'info' as it is deprecated
-                 info  : [job_id: background_job.uuid]]
+      log.error("Unable to reference crossReferencePackage user!")
+      result.message = "Unable to reference user for package import!"
+      response.setStatus(400)
+      result.result = "ERROR"
     }
+
     render result as JSON
   }
 
@@ -1205,6 +1293,7 @@ class IntegrationController {
     render result as JSON
   }
 
+  @Deprecated
   private crossReferenceSingleTitle(Object titleObj, userid, fullsync, locale) {
 
     def result = ['result': 'OK']
@@ -1224,7 +1313,7 @@ class IntegrationController {
         result.errors = title_validation.errors
       }
       else {
-        def title_class_name = determineTitleClass(titleObj)
+        def title_class_name = TitleInstance.determineTitleClass(titleObj.publicationType?:titleObj.type)
 
         if (!title_class_name) {
           log.error("Missing or unknown publication type: ${titleObj.type}")
@@ -1299,7 +1388,7 @@ class IntegrationController {
             title.save()
 
             if (!result.message) {
-              result.message = messageService.resolveCode('crossRef.title.success', null, locale)
+              result.message = messageService.resolveCode('crossRef.title.success', [title.name], locale)
             }
             result.cls = title.class.name
             result.titleId = title.id
@@ -1355,39 +1444,6 @@ class IntegrationController {
       }
     }
     result
-  }
-
-  public static determineTitleClass(titleObj) {
-    if (titleObj.type) {
-      switch (titleObj.type) {
-        case "serial":
-        case "Serial":
-        case "Journal":
-        case "journal":
-          return "org.gokb.cred.JournalInstance"
-          break;
-        case "monograph":
-        case "Monograph":
-        case "Book":
-        case "book":
-          return "org.gokb.cred.BookInstance"
-          break;
-        case "Database":
-        case "database":
-          return "org.gokb.cred.DatabaseInstance"
-          break;
-        case "Other":
-        case "other":
-          return "org.gokb.cred.OtherInstance"
-          break;
-        default:
-          return null
-          break;
-      }
-    }
-    else {
-      return null
-    }
   }
 
   private static addPublisherHistory(TitleInstance ti, publishers) {
@@ -1518,7 +1574,7 @@ class IntegrationController {
 
     def book_changed = false
 
-    def bookStringAttrs = ["editionNumber", "editionDifferentiator",
+    def bookStringAttrs = ["editionDifferentiator",
                            "editionStatement", "volumeNumber",
                            "summaryOfContent", "firstAuthor", "firstEditor"]
 

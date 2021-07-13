@@ -205,7 +205,7 @@ class WorkflowController{
 
           titleChangeData.tipps[tipp.id] = [
               oldTippValue: [
-                  title_id   : tipp.title.id,
+                  title_id   : tipp.title?.id,
                   package_id : tipp.pkg.id,
                   platform_id: tipp.hostPlatform.id,
                   startDate  : tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
@@ -425,7 +425,7 @@ class WorkflowController{
               result.tipps.add(tipp)
               titleTransferData.tipps[tipp.id] = [
                   oldTippValue: [
-                      title_id   : tipp.title.id,
+                      title_id   : tipp.title?.id,
                       package_id : tipp.pkg.id,
                       platform_id: tipp.hostPlatform.id,
                       startDate  : tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null,
@@ -536,7 +536,7 @@ class WorkflowController{
                 }
 
                 def new_tipp_info = [
-                    title_id   : old_tipp.title.id,
+                    title_id   : old_tipp.title?.id,
                     package_id : new_tipp_package.id,
                     platform_id: new_tipp_platform.id,
                     startDate  : old_tipp.startDate ? dateFormatService.formatDate(old_tipp.startDate) : null,
@@ -631,7 +631,7 @@ class WorkflowController{
       result.tipps.add([
           id          : tipp_object.id,
           type        : 'CURRENT',
-          title       : tipp_object.title,
+          title       : tipp_object.title?:null,
           pkg         : tipp_object.pkg,
           hostPlatform: tipp_object.hostPlatform,
           startDate   : tipp_info.value.oldTippValue?.startDate,
@@ -773,7 +773,7 @@ class WorkflowController{
       result.tipps.add([
           id          : tipp_object.id,
           type        : 'CURRENT',
-          title       : tipp_object.title,
+          title       : tipp_object.title?.null,
           pkg         : tipp_object.pkg,
           hostPlatform: tipp_object.hostPlatform,
           startDate   : tipp_info.value.oldTippValue?.startDate,
@@ -828,7 +828,7 @@ class WorkflowController{
         def new_tipp = TitleInstancePackagePlatform.upsertDTO([
             package    : ['internalId': new_package.id],
             platform   : ['internalId': new_platform.id],
-            title      : ['internalId': current_tipp.title.id],
+            title      : ['internalId': current_tipp.title?.id],
             startDate  : newtipp.startDate,
             startVolume: newtipp.startVolume,
             startIssue : newtipp.startIssue,
