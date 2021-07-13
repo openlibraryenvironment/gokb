@@ -73,6 +73,11 @@ class IntegrationControllerSpec extends Specification {
     TitleInstancePackagePlatform.findAllByName("Journal of agricultural and food chemistry")?.each { title ->
       title.expunge()
     }
+    def combo_plt = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps')
+
+    TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as t where not exists (select 1 from Combo where toComponent = t and type = ?)", [combo_plt])?.each { title ->
+      title.expunge()
+    }
     Identifier.findByValue('zdb:2256676-4')?.expunge()
   }
 

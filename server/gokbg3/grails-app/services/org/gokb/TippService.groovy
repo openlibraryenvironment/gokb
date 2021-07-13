@@ -180,8 +180,8 @@ class TippService {
     if (tipp.reviewRequests.size() < 1) {
       if (found.matches.size > 1) {
         def collection = []
-        found.matches.each { KBComponent comp ->
-          collection << [oid: "${comp.class.name}:${comp.id}", name: comp.name]
+        found.matches.each { comp ->
+          collection << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name]
         }
         reviewRequestService.raise(
           tipp,
@@ -195,8 +195,8 @@ class TippService {
       }
       if (found.conflicts.size > 0) {
         def collection = []
-        found.conflicts.each { KBComponent comp ->
-          collection << [oid: "${comp.class.name}:${comp.id}", name: comp.name]
+        found.conflicts.each { comp ->
+          collection << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name]
         }
         reviewRequestService.raise(
           tipp,

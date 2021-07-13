@@ -15,7 +15,7 @@ import spock.lang.Specification
 
 // For @Autowired
 
-@Integration
+@Integration(applicationClass = Application.class)
 @Rollback
 class UpdatePackageRunSpec extends Specification {
 
@@ -39,7 +39,7 @@ class UpdatePackageRunSpec extends Specification {
     def test_upd_pkg = Package.findByName('TestPackage') ?: new Package(name: 'TestPackage').save(flush: true)
     def test_journal = JournalInstance.findByName('TestJournal') ?: new JournalInstance(name: 'TestJournal').save(flush: true)
     def test_book = BookInstance.findByName('TestBook') ?: new BookInstance(name: 'TestBook').save(flush: true)
-    def test_tipp1 = TitleInstancePackagePlatform.findByName('TestTIPP') ?: new TitleInstancePackagePlatform(
+    def test_tipp1 = TitleInstancePackagePlatform.findByName('TestJournalTIPP') ?: new TitleInstancePackagePlatform(
         ['pkg'            : test_upd_pkg,
          'title'          : test_journal,
          'hostPlatform'   : acs_test_plt,
@@ -49,7 +49,7 @@ class UpdatePackageRunSpec extends Specification {
          'ids'            : [Identifier.findByValue('9783-442X') ?: new Identifier(value: '9783-442X', namespace: IdentifierNamespace.findByValue('issn')),
                              Identifier.findByValue('9783-4420') ?: new Identifier(value: '9783-4420', namespace: IdentifierNamespace.findByValue('eissn'))],
          'importId'       : 'titleID']).save(flush: true)
-    def test_tipp2 = TitleInstancePackagePlatform.findByName('TestTIPP') ?: new TitleInstancePackagePlatform(
+    def test_tipp2 = TitleInstancePackagePlatform.findByName('TestBookTIPP') ?: new TitleInstancePackagePlatform(
         ['pkg'            : test_upd_pkg,
          'title'          : test_book,
          'hostPlatform'   : acs_test_plt,
@@ -89,6 +89,9 @@ class UpdatePackageRunSpec extends Specification {
     }
     ['9783-442X', '9783-4420', '9784-442X', '978-3-16-148410-0'].each {
       Identifier.findByValue(it)?.expunge()
+    }
+    ['TestJournalTIPP', 'TestBookTIPP'].each {
+      TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
   }
 
@@ -619,7 +622,7 @@ class UpdatePackageRunSpec extends Specification {
     }
 
     then: "The item is created in the database because it does not exist"
-    resp.json.message != null
+    resp.json?.message != null
     resp.json.message.startsWith('Created')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("American Chemical Society: ACS Legacy Archives")

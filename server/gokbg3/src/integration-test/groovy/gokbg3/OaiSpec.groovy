@@ -75,6 +75,7 @@ class OaiSpec extends Specification {
   }
 
   def cleanup() {
+    TitleInstancePackagePlatform.findByName('testTIPP')?.expunge()
     JournalInstance.findByName('Test Title 1')?.expunge()
     Package.findByName('Test Package 1')?.expunge()
     Source.findByName("PackTestSource")?.expunge()

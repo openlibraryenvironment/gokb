@@ -923,31 +923,39 @@ class IntegrationController {
       response.setHeader('WWW-Authenticate', 'Basic realm="gokb"')
     }
 
-    if (params.fullsync == "true" && request_user?.adminStatus) {
-      fullsync = true
-    }
+    if (request_user) {
+      if (params.fullsync == "true" && request_user?.adminStatus) {
+        fullsync = true
+      }
 
-    if (!async) {
-      result = crossReferenceService.updatePackage(rjson,
-          addOnly as boolean, fullsync as boolean, token != null,
-          request_locale, request_user, null)
-      log.debug("updatePackage Result:\n$result")
+      if (!async) {
+        result = crossReferenceService.updatePackage(rjson,
+            addOnly as boolean, fullsync as boolean, token != null,
+            request_locale, request_user, null)
+        log.debug("updatePackage Result:\n$result")
+      }
+      else {
+        // start xRef Job
+        Job background_job = concurrencyManagerService.createJob { Job job ->
+          crossReferenceService.updatePackage(rjson, addOnly as boolean, fullsync as boolean,
+              token != null, request_locale, request_user, job)
+        }
+        log.debug("Starting job ${background_job}..")
+        background_job.ownerId = request_user.id
+        background_job.description = "Package update TIPPs (${rjson.packageHeader.name})"
+        background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageUpdateTipps')
+        background_job.linkedItem = [name: rjson.packageHeader.name,
+                                    type: "Package"]
+        background_job.message("Starting TIPPs update for Package ${rjson.packageHeader.name}")
+        background_job.startOrQueue()
+        background_job.startTime = new Date()
+        result << [job_id: background_job.uuid]
+      }
     }
     else {
-      // start xRef Job
-      Job background_job = concurrencyManagerService.createJob { Job job ->
-        crossReferenceService.updatePackage(rjson, addOnly as boolean, fullsync as boolean,
-            token != null, request_locale, request_user, job)
-      }
-      log.debug("Starting job ${background_job}..")
-      background_job.description = "Package update TIPPs (${rjson.packageHeader.name})"
-      background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageUpdateTipps')
-      background_job.linkedItem = [name: rjson.packageHeader.name,
-                                   type: "Package"]
-      background_job.message("Starting TIPPs update for Package ${rjson.packageHeader.name}")
-      background_job.startOrQueue()
-      background_job.startTime = new Date()
-      result << [job_id: background_job.uuid]
+      log.error("Unable to reference updatePackageTipps user!")
+      result.message = "Unable to reference user for TIPP update!"
+      result.result = "ERROR"
     }
     render result as JSON
   }
@@ -995,34 +1003,44 @@ class IntegrationController {
       response.setHeader('WWW-Authenticate', 'Basic realm="gokb"')
     }
 
-    if (params.fullsync == "true" && request_user?.adminStatus) {
-      fullsync = true
-    }
+    if (request_user) {
+      if (params.fullsync == "true" && request_user?.adminStatus) {
+        fullsync = true
+      }
 
-    if (!async) {
-      result = crossReferenceService.xRefPkg(rjson,
-          addOnly as boolean, fullsync as boolean, token != null,
-          request_locale, request_user, null)
-      log.debug("xRefPkg Result:\n$result")
+      if (!async) {
+        result = crossReferenceService.xRefPkg(rjson,
+            addOnly as boolean, fullsync as boolean, token != null,
+            request_locale, request_user, null)
+        log.debug("xRefPkg Result:\n$result")
+      }
+      else {
+        // start xRef Job
+        Job background_job = concurrencyManagerService.createJob { Job job ->
+          crossReferenceService.xRefPkg(rjson, addOnly as boolean, fullsync as boolean,
+              token != null, request_locale, request_user, job)
+        }
+        log.debug("Starting job ${background_job}..")
+        background_job.ownerId = request_user.id
+        background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
+        background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
+        background_job.linkedItem = [name: rjson.packageHeader.name,
+                                    type: "Package"]
+        background_job.message("Starting upsert for Package ${rjson.packageHeader.name}")
+        background_job.startOrQueue()
+        background_job.startTime = new Date()
+        result << [job_id: background_job.uuid,
+                  // TODO: remove key 'info' as it is deprecated
+                  info  : [job_id: background_job.uuid]]
+      }
     }
     else {
-      // start xRef Job
-      Job background_job = concurrencyManagerService.createJob { Job job ->
-        crossReferenceService.xRefPkg(rjson, addOnly as boolean, fullsync as boolean,
-            token != null, request_locale, request_user, job)
-      }
-      log.debug("Starting job ${background_job}..")
-      background_job.description = "Package CrossRef (${rjson.packageHeader.name})"
-      background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
-      background_job.linkedItem = [name: rjson.packageHeader.name,
-                                   type: "Package"]
-      background_job.message("Starting upsert for Package ${rjson.packageHeader.name}")
-      background_job.startOrQueue()
-      background_job.startTime = new Date()
-      result << [job_id: background_job.uuid,
-                 // TODO: remove key 'info' as it is deprecated
-                 info  : [job_id: background_job.uuid]]
+      log.error("Unable to reference crossReferencePackage user!")
+      result.message = "Unable to reference user for package import!"
+      response.setStatus(400)
+      result.result = "ERROR"
     }
+
     render result as JSON
   }
 

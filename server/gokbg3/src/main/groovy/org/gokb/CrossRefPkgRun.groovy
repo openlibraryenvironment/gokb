@@ -79,7 +79,6 @@ class CrossRefPkgRun {
 
       springSecurityService.reauthenticate(user.username)
       user = User.get(user.id)
-      job?.ownerId = user.id
 
       // check permissions
       if (!(user?.apiUserStatus)) {
