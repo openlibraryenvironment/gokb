@@ -297,8 +297,8 @@ class ESSearchService{
         errors[field] = "Could not convert ${field} to Int."
       }
     }
-    else if (str && str instanceof Integer) {
-      result[field] = value
+    else if (str != null && str instanceof Integer) {
+      result[field] = str
     }
   }
 
@@ -651,7 +651,7 @@ class ESSearchService{
         checkInt(result, errors, params.from, 'offset')
         checkInt(result, errors, params.offset, 'offset')
 
-        if (params.max) {
+        if (params.max != null) {
           es_request.setSize(result.max)
         }
         else {
@@ -1054,16 +1054,18 @@ class ESSearchService{
     domainMapping['_embedded']['curatoryGroups'] = []
     cgs.each { cg ->
       def cg_obj = CuratoryGroup.findByName(cg)
-      domainMapping['_embedded']['curatoryGroups'] << [
-          'links': [
-              'self': [
-                  'href': base + cg_obj.getRestPath()+"/" + cg_obj.uuid
-              ]
-          ],
-          'name': cg_obj.name,
-          'id': cg_obj.id,
-          'uuid': cg_obj.uuid
-      ]
+      if (cg_obj){
+        domainMapping['_embedded']['curatoryGroups'] << [
+            'links': [
+                'self': [
+                    'href': base + cg_obj.getRestPath()+"/" + cg_obj.uuid
+                ]
+            ],
+            'name': cg_obj.name,
+            'id': cg_obj.id,
+            'uuid': cg_obj.uuid
+        ]
+      }
     }
   }
 

@@ -155,6 +155,8 @@ environments:
             languagesUrl : null
             packageUpdate:
                 enabled: false
+            packageOaiCaching:
+                enabled: false
             zdbAugment:
                 enabled: false
             es:
@@ -166,7 +168,6 @@ environments:
                     orgs: gokborgs
                     packages: gokbpackages
                     platforms: gokbplatforms
-            tsvExportTempDirectory: /tmp/gokb/export
         cache:
             headers:
                 enabled: false
@@ -194,6 +195,8 @@ environments:
             ygorUrl: null
             languagesUrl : null
             packageUpdate:
+                enabled: false
+            packageOaiCaching:
                 enabled: false
             zdbAugment:
                 enabled: false
@@ -243,6 +246,8 @@ environments:
         gokb:
             packageUpdate:
                 enabled: false
+            packageOaiCaching:
+                enabled: true
             zdbAugment:
                 enabled: false
             ygorUrl: null
@@ -263,6 +268,8 @@ gokb:
         active: false
         otherVoters: false
     costInfo: false
+    tsvExportTempDirectory: '/tmp/gokb/export'
+    packageXmlCacheDirectory: '/tmp/gokb/oai/'
 
 quartz:
     autoStartup: true

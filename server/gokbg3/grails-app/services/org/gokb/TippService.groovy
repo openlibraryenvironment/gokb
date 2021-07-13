@@ -1,10 +1,15 @@
 package org.gokb
 
-import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
-import org.gokb.cred.*
 import org.grails.web.json.JSONObject
+import org.gokb.cred.KBComponent
+import org.gokb.cred.RefdataCategory
+import org.gokb.cred.TitleInstance
+import org.gokb.cred.TitleInstancePackagePlatform
+import org.gokb.cred.Package
+
 
 class TippService {
   def componentUpdateService
@@ -109,24 +114,25 @@ class TippService {
       TitleInstance.withNewSession {
         scanTIPPs(job)
       }
-    } else {
+    }
+    else {
       TitleInstance.withSession {
         scanTIPPs(null)
       }
     }
   }
 
-  def scanTIPPs(ConcurrencyManagerService.Job job = null) {
-    int index = 0
-    boolean cancelled = false
-    def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
-    log.debug("found ${tippIDs.size()} TIPPs")
-    def tippIDit = tippIDs.iterator()
-    while (tippIDit.hasNext() && !cancelled) {
-      TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDit.next())
-      index++
-      if (tipp.title) {
-        autoTimestampEventListener.withoutLastUpdated(TitleInstancePackagePlatform) {
+  def scanTIPPs(Job job = null) {
+    autoTimestampEventListener.withoutLastUpdated {
+      int index = 0
+      boolean cancelled = false
+      def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
+      log.debug("found ${tippIDs.size()} TIPPs")
+      def tippIDit = tippIDs.iterator()
+      while (tippIDit.hasNext() && !cancelled) {
+        TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDit.next())
+        index++
+        if (tipp.title) {
           tipp.title.ids.each { data ->
             if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(data.namespace.value)) {
               if (!tipp.ids*.namespace.contains(data.namespace)) {
