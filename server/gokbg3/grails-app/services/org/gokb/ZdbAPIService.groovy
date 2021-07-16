@@ -103,10 +103,10 @@ class ZdbAPIService {
             ]
 
             response.success = { resp, data ->
-              log.debug("Got " + data.records.size() + " for " + id.namespace.value + ": " + id.value)
+              log.debug("Got " + data.records.record.size() + " for " + id.namespace.value + ": " + id.value)
 
               if (!data.records.children().isEmpty()) {
-                data.records.findAll { rec ->
+                data.records.record.findAll { rec ->
                   def zdb_info = null
 
                   if (endpoint == 'kxp') {
@@ -146,7 +146,7 @@ class ZdbAPIService {
 
   def getKxpInfo(record, isOnline) {
     def result = [:]
-    def rec = record.record.recordData.record
+    def rec = record.recordData.record
 
     result.id = rec.'*'.find { it.@tag == '006Z' }.subfield[0].text()
 
@@ -173,7 +173,7 @@ class ZdbAPIService {
 
   def getZdbInfo(record) {
     def result = [:]
-    def rec = record.record.recordData.record
+    def rec = record.recordData.record
 
     result.id = rec.global.'*'.find { it.@id == '006Z' }[0].text()
     result.title = rec.global.'*'.find { it.@id == '021A' }[0].text()
