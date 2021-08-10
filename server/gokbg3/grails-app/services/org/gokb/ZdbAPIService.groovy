@@ -176,7 +176,7 @@ class ZdbAPIService {
     def rec = record.recordData.record
 
     result.id = rec.global.'*'.find { it.@id == '006Z' }[0].text()
-    result.title = rec.global.'*'.find { it.@id == '021A' }[0].text()
+    result.title = rec.global.'*'.find { it.@id == '021A' }.'*'.find {it.@id == 'a'}.text()
     result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'a'}.text() ?: null
 
     def fromDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'a'}
@@ -259,10 +259,14 @@ class ZdbAPIService {
         if (subfield.@id == 'H') {
           def val = subfield.text()
           if (val && !val.contains('[')) {
-            item.publishedFrom = val.contains('-') ? val.split('-')[0] : val
+            item.publishedFrom = val.contains('-') ? val.split('-')[0].trim() : val
 
-            if (val.contains('-') && val.split('-')[1]?.length() > 0) {
-              item.publishedTo = val.split('-')[1]
+            if (val.contains('-')) {
+              def pubToDate = val.split('-').size() == 2 ? val.split('-')[1].trim() : null
+
+              if (pubToDate) {
+                item.publishedTo = val.split('-')[1]
+              }
             }
           }
         }
