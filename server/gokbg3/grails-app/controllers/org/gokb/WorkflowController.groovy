@@ -1504,7 +1504,7 @@ class WorkflowController{
   def processRRTransfer(){
     def result = [:]
     log.debug("processRRTransfer ${params}")
-    def new_user_alloc = genericOIDService.resolveOID2(params.allocToUser)
+    def new_cg_alloc = genericOIDService.resolveOID2(params.allocToCuratoryGroup)
 
     params.each{ p ->
       if ((p.key.startsWith('tt:')) && (p.value) && (p.value instanceof String)){
@@ -1514,7 +1514,7 @@ class WorkflowController{
         rr.needsNotify = true
         rr.allocatedTo = new_user_alloc
         rr.save(flush: true)
-        def rra = new ReviewRequestAllocationLog(note: params.note, allocatedTo: new_user_alloc, rr: rr).save(flush: true)
+        def rra = new ReviewRequestAllocationLog(note: params.note, allocatedTo: new_cg_alloc, rr: rr).save(flush: true)
       }
     }
 

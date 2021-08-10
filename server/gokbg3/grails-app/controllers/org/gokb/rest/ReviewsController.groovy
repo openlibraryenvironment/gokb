@@ -5,14 +5,12 @@ import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
 import groovy.json.JsonOutput
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.User
-
-import java.time.Duration
-import java.time.LocalDateTime
 
 @Transactional(readOnly = true)
 class ReviewsController {
@@ -133,13 +131,13 @@ class ReviewsController {
         }
 
         if (reqBody.allocatedTo) {
-          def allocatedUser = User.findById(reqBody.allocatedTo)
+          def allocatedCG = CuratoryGroup.findById(reqBody.allocatedTo)
 
           if (allocatedUser) {
-            obj.allocatedTo = allocatedUser
+            obj.allocatedTo = allocatedCG
           }
           else {
-            errors.allocatedTo = [[message:"Unable to update allocated User for ID ${reqBody.allocatedTo}", baddata: reqBody.allocatedTo]]
+            errors.allocatedTo = [[message:"Unable to update allocated CuratoryGroup for ID ${reqBody.allocatedTo}", baddata: reqBody.allocatedTo]]
           }
         }
 
@@ -356,17 +354,19 @@ class ReviewsController {
     render result as JSON
   }
 
-  private def isUserCurator(obj, user) {
-    def curator = false
-
-    if (obj.allocatedTo == user) {
-      curator = true
+  private def isUserCurator(reviewRequest, user) {
+    def isCurator = false
+    for (CuratoryGroup cg in user.curatoryGroups){
+      if (reviewRequest.allocatedTo == cg) {
+        isCurator = true
+        break
+      }
+      else if (reviewRequest.allocatedGroups?.group.id.intersect(user.curatoryGroups?.id)) {
+        isCurator = true
+        break
+      }
     }
-    else if (obj.allocatedGroups?.group.id.intersect(user.curatoryGroups?.id)) {
-      curator = true
-    }
-
-    curator
+    isCurator
   }
 
   private def generateLinks(obj,user) {

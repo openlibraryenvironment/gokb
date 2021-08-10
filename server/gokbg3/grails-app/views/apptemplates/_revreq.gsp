@@ -33,7 +33,7 @@
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>User</th>
+                    <th>CuratoryGroup</th>
                     <th>Note</th>
                   </tr>
                 </thead>
@@ -111,7 +111,7 @@
             <g:annotatedLabel owner="${d}" property="allocatedTo">Allocated To</g:annotatedLabel>
           </dt>
           <dd>
-            ${d.allocatedTo ? d.allocatedTo.displayName ?: d.allocatedTo.username : 'N/A'}
+            ${d.allocatedTo ? d.allocatedTo.name ?: 'N/A'}
           </dd>
 
           <g:if test="${d.id != null}">

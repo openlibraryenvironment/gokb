@@ -4,8 +4,8 @@ class ReviewRequestAllocationLog {
 
   ReviewRequest rr
   String note
-  User allocatedTo
-  
+  CuratoryGroup allocatedTo
+
   // Timestamps
   Date dateCreated
   Date lastUpdated
@@ -14,7 +14,7 @@ class ReviewRequestAllocationLog {
     id column:'rral_id'
     note column:'rral_note', type:'text'
   }
-  
+
   static constraints = {
     rr(nullable:false, blank:false)
     note(nullable:true, blank:true)

@@ -631,7 +631,7 @@ globalSearchTemplates = [
         [heading:'Request', property:'reviewRequest'],
         [heading:'Status', property:'status?.value'],
         [heading:'Raised By', property:'raisedBy?.username'],
-        [heading:'Allocated To', property:'allocatedTo?.username'],
+        [heading:'Allocated To', property:'allocatedTo?.name'],
         [heading:'Timestamp', property:'dateCreated', sort:'dateCreated'],
       ]
     ]

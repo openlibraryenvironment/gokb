@@ -14,7 +14,7 @@
   <link rel="shortcut icon"
     href="${resource(dir: 'images', file: 'favicon.ico')}"
     type="image/x-icon">
-  
+
   <g:layoutHead />
   <asset:javascript src="gokb/application.grass.js" />
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
@@ -106,8 +106,10 @@
             </ul></li>
           <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">ToDo</a>
             <ul class="dropdown-menu">
-              <li><g:link controller="search" action="index"
-                  params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.User:'+request.user.id]}">My ToDos</g:link></li>
+              <g:each in="${request.user.curatoryGroups}" var="cg"><li>
+                  <g:link controller="search" action="index"
+                          params="${[qbe:'g:reviewRequests',qp_allocatedto:'org.gokb.cred.CuratoryGroup:'+cg.id]}">My ToDos in ${cg.name}</g:link>
+              </li></g:each>
               <li><g:link controller="search" action="index"
                   params="${[qbe:'g:reviewRequests']}">Data Review</g:link></li>
             </ul></li>
@@ -159,7 +161,7 @@
         (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
         m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
         })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  
+
         ga('create', '${grailsApplication.config.kuali.analytics.code}', 'kuali.org');
         ga('send', 'pageview');
       </g:javascript>

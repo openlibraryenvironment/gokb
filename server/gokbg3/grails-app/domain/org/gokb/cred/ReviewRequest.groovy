@@ -18,7 +18,7 @@ class ReviewRequest implements Auditable {
   RefdataValue status
   RefdataValue stdDesc
   User raisedBy
-  User allocatedTo
+  CuratoryGroup allocatedTo
   User closedBy
   User reviewedBy
   Boolean needsNotify
@@ -74,11 +74,9 @@ class ReviewRequest implements Auditable {
         ).save(failOnError:true);
 
     // Just return the request.
-
     if ( req && raisedBy ) {
       new ReviewRequestAllocationLog(allocatedTo:raisedBy, rr:req).save(failOnError:true)
     }
-
     req
   }
 

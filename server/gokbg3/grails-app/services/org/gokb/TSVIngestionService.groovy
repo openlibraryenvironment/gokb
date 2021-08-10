@@ -1,54 +1,19 @@
 package org.gokb
 
-import java.util.Map;
-import java.util.Set;
-import java.util.GregorianCalendar;
-
 import au.com.bytecode.opencsv.CSVReader
-import au.com.bytecode.opencsv.bean.CsvToBean
-import au.com.bytecode.opencsv.bean.HeaderColumnNameMappingStrategy
-import au.com.bytecode.opencsv.bean.HeaderColumnNameTranslateMappingStrategy
+import com.k_int.ClassUtils
+import grails.converters.JSON
+import grails.gorm.transactions.Transactional
+import org.apache.commons.io.ByteOrderMark
+import org.gokb.cred.*
+import org.gokb.exceptions.InconsistentTitleIdentifierException
+
 import java.text.SimpleDateFormat
-import java.time.LocalDateTime
 import java.time.ZoneId
 
-import com.k_int.ConcurrencyManagerService;
-import com.k_int.ConcurrencyManagerService.Job
-import com.k_int.ClassUtils
-
-import grails.gorm.transactions.Transactional
-
-import org.gokb.cred.TitleInstance
 // Only in ebooks branch -- import org.gokb.cred.BookInstance
-import org.gokb.cred.ComponentPerson
-import org.gokb.cred.ComponentSubject
-import org.gokb.cred.IngestionProfile
-import org.gokb.cred.Identifier
-import org.gokb.cred.IdentifierNamespace
-import org.gokb.cred.KBComponent
-import org.gokb.cred.ComponentHistoryEvent
-import org.gokb.cred.ComponentHistoryEventParticipant
-import org.gokb.cred.KBComponentVariantName
+
 // import org.gokb.cred.KBartRecord
-import org.gokb.cred.Org
-import org.gokb.cred.Package;
-import org.gokb.cred.Person
-import org.gokb.cred.Platform
-import org.gokb.cred.RefdataCategory;
-import org.gokb.cred.RefdataValue;
-import org.gokb.cred.ReviewRequest
-import org.gokb.cred.Subject
-import org.gokb.cred.TitleInstance;
-import org.gokb.cred.Combo;
-import org.gokb.cred.TitleInstancePackagePlatform;
-import org.gokb.cred.User;
-import org.gokb.cred.DataFile;
-import org.gokb.cred.IngestionProfile;
-import org.gokb.cred.CuratoryGroup;
-import org.gokb.exceptions.*;
-import com.k_int.TextUtils
-import grails.converters.JSON
-import org.apache.commons.io.ByteOrderMark
 
 @Transactional
 class TSVIngestionService {
@@ -681,7 +646,8 @@ class TSVIngestionService {
              ingest_cfg=null,
              incremental=null,
              other_params = null,
-             user=null) {
+             user=null,
+             curatoryGroup=null) {
 
     log.debug("ingest2...");
     def result = [:]
@@ -886,7 +852,6 @@ class TSVIngestionService {
                              elapsed:processing_elapsed
                             ]);
 
-
         Package.withNewTransaction {
           try {
             def update_agent = User.findByUsername('IngestAgent')
@@ -905,11 +870,9 @@ class TSVIngestionService {
         }
       }
       else {
-
         preflight_result.source = src_id
-
         // Preflight failed
-        job.message("Failed Preflight");
+        job.message("Failed Preflight")
 
         // Raise a review request against the datafile
         def preflight_json = preflight_result as JSON
@@ -918,7 +881,7 @@ class TSVIngestionService {
           ReviewRequest req = new ReviewRequest (
               status	: RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
               raisedBy : user,
-              allocatedTo : user,
+              allocatedTo : curatoryGroup ?: user.curatoryGroups.size == 1 ? user.curatoryGroups.getAt(0) : null,
               descriptionOfCause : "Ingest of datafile ${datafile.id} / ${datafile.name} failed preflight",
               reviewRequest : "Generate rules to handle error cases.",
               refineProject: null,
@@ -929,7 +892,6 @@ class TSVIngestionService {
           job.message([timestamp:System.currentTimeMillis(),event:'FailedPreflight',message:"Failed Preflight, see review request ${req.id}"]);
         }
       }
-
     }
     catch ( Exception e ) {
       job.message(e.toString());
@@ -937,13 +899,10 @@ class TSVIngestionService {
     }
 
     job?.setProgress(100)
-
-
     def elapsed = System.currentTimeMillis()-start_time;
-
     job.message("Ingest completed after ${elapsed}ms");
-
     job.message("Ingest2 returning ${result}")
+
     result
   }
 

@@ -42,9 +42,9 @@
 					<div class="col-md-6">
 						<div class="form-horizontal">
 							<div class="form-group">
-								<label for="allocUser" class="col-sm-2 control-label">To User</label>
+								<label for="allocCuratoryGroup" class="col-sm-2 control-label">To User</label>
 								<div class="col-sm-8">
-									<g:simpleReferenceTypedown class="form-control" id="allocUser" name="allocToUser" baseClass="org.gokb.cred.User" />
+									<g:simpleReferenceTypedown class="form-control" id="allocCuratoryGroup" name="allocToCuratoryGroup" baseClass="org.gokb.cred.CuratoryGroup" />
 								</div>
 							</div>
 							<div class="form-group">
@@ -61,7 +61,7 @@
 
 
 				</div>
-		
+
 			</g:form>
 		</div>
 	</div>
