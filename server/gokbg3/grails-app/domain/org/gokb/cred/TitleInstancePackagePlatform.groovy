@@ -642,7 +642,8 @@ class TitleInstancePackagePlatform extends KBComponent {
           'status'      : (tipp_dto.status ?: null),
           'name'        : (tipp_dto.name ?: null),
           'editStatus'  : (tipp_dto.editStatus ?: null),
-          'language'    : (tipp_dto.language ?: null)
+          'language'    : (tipp_dto.language ?: null),
+          'importId'    : (tipp_dto.titleId) ? (tipp_dto.importId ?: null) : null)
         ]
 
         tipp = tiplAwareCreate(tmap)
