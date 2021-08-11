@@ -43,6 +43,7 @@ class PackageController {
   def reviewRequestService
   def titleLookupService
   def titleHistoryService
+  def TSVIngestionService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -1346,56 +1347,64 @@ class PackageController {
     log.debug("Form post")
     def result = [result: 'OK']
     Package pkg = Package.get(params.id)
-    def upload_mime_type = request.getFile("submissionFile")?.contentType
-    def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
-    def deposit_token = java.util.UUID.randomUUID().toString();
-    def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
-    def user = User.get(springSecurityService.principal.id)
-    def info = analyse(temp_file);
-    def new_datafile_id = null
 
-    log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
-    def existing_file = DataFile.findByMd5(info.md5sumHex);
+    if (pkg) {
+      def upload_mime_type = request.getFile("submissionFile")?.contentType
+      def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
+      def deposit_token = java.util.UUID.randomUUID().toString();
+      def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
+      def user = User.get(springSecurityService.principal.id)
+      def info = analyse(temp_file);
+      def new_datafile_id = null
 
-    if ( existing_file != null ) {
-      log.debug("Found a match !")
+      log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
+      def existing_file = DataFile.findByMd5(info.md5sumHex);
 
-      new_datafile_id = existing_file.id
-    }
-    else {
-      log.debug("Create new datafile");
-      def new_datafile = new DataFile(
-                                      guid:deposit_token,
-                                      md5:info.md5sumHex,
-                                      uploadName:upload_filename,
-                                      name:upload_filename,
-                                      filesize:info.filesize,
-                                      uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
+      if ( existing_file != null ) {
+        log.debug("Found a match !")
 
-      log.debug("Saved new datafile : ${new_datafile.id}");
-      new_datafile_id = new_datafile.id
-      new_datafile.fileData = temp_file.getBytes()
-      new_datafile.save(failOnError:true,flush:true)
-    }
+        new_datafile_id = existing_file.id
+      }
+      else {
+        log.debug("Create new datafile");
+        def new_datafile = new DataFile(
+                                        guid:deposit_token,
+                                        md5:info.md5sumHex,
+                                        uploadName:upload_filename,
+                                        name:upload_filename,
+                                        filesize:info.filesize,
+                                        uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
 
-    if (new_datafile_id) {
-      Job background_job = concurrencyManagerService.createJob { Job job ->
-        TSVIngestionService.ingest2('kbart2', pkg.name, (pkg.nominalPlatform?.primaryUrl ?: null), pkg.source, new_datafile_id, job)
+        log.debug("Saved new datafile : ${new_datafile.id}");
+        new_datafile_id = new_datafile.id
+        new_datafile.fileData = temp_file.getBytes()
+        new_datafile.save(failOnError:true,flush:true)
       }
 
-      background_job.ownerId = user.id
-      background_job.description = "KBART REST ingest (${pkg.name})"
-      background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'KBART Ingest')
-      background_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
-      background_job.message("Starting upsert for Package ${pkg.name}")
-      background_job.startTime = new Date()
-      background_job.startOrQueue()
+      if (new_datafile_id) {
+        Job background_job = concurrencyManagerService.createJob { Job job ->
+          TSVIngestionService.ingest2('kbart2', pkg.name, (pkg.nominalPlatform?.primaryUrl ?: null), pkg.source, new_datafile_id, job)
+        }
 
-      result.jobId = background_job.uuid
+        background_job.ownerId = user.id
+        background_job.description = "KBART REST ingest (${pkg.name})"
+        background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'KBART Ingest')
+        background_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+        background_job.message("Starting upsert for Package ${pkg.name}")
+        background_job.startTime = new Date()
+        background_job.startOrQueue()
+
+        result.jobId = background_job.uuid
+      }
+      else {
+        log.debug("Unable to reference DataFile!")
+        response.setStatus(500)
+        result.message = "There has been an error processing the KBART file!"
+      }
     }
     else {
-      response.status = 500
-      result.message = "There has been an error processing the KBART file!"
+        response.status = 404
+        result.message = "Unable to reference package!"
     }
 
     return result as JSON
