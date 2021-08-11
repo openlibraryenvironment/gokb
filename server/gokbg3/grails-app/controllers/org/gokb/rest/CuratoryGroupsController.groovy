@@ -51,10 +51,12 @@ class CuratoryGroupsController {
 
     if (sortField) {
       curGroups = curGroups.toSorted { a, b ->
-        if (sortOrder == "desc")
+        if (sortOrder == "desc"){
           b[sortField].toString().toLowerCase() <=> a[sortField].toString().toLowerCase()
-        else
+        }
+        else{
           a[sortField].toString().toLowerCase() <=> b[sortField].toString().toLowerCase()
+        }
       }
     }
     def result = [data: []]
@@ -117,7 +119,8 @@ class CuratoryGroupsController {
     def errors = [:]
 
     if (group) {
-      def qry = "where exists (select arg from AllocatedReviewGroup arg where arg.group = :group and arg.review = rr)"
+      def qry = "where exists (select arg from AllocatedReviewGroup arg" +
+                              "where arg.group = :group and arg.review = rr and arc.status != :inactive)"
       def qryParams = [group:group]
       def sortQry = ""
 

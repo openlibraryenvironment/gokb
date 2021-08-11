@@ -7,12 +7,13 @@ class AllocatedReviewGroup implements Serializable {
   CuratoryGroup group
   ReviewRequest review
   RefdataValue status
+	AllocatedReviewGroup escalatedFrom
+
 
 	boolean equals(other) {
 		if (!(other instanceof AllocatedReviewGroup)) {
 			return false
 		}
-
 		other.group?.id == group?.id &&
 			other.review?.id == review?.id
 	}
@@ -38,7 +39,6 @@ class AllocatedReviewGroup implements Serializable {
 		if (!instance) {
 			return false
 		}
-
 		instance.delete(flush: flush)
 		true
 	}

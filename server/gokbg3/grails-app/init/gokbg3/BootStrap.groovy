@@ -856,6 +856,7 @@ class BootStrap {
 
         RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Claimed').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'In Progress').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Minor Identifier Mismatch').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Major Identifier Mismatch').save(flush: true, failOnError: true)

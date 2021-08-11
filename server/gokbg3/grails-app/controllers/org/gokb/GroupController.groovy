@@ -15,7 +15,7 @@ class GroupController {
   def springSecurityService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def index() { 
+  def index() {
     def result = [:]
     if ( params.id ) {
       User user = springSecurityService.currentUser
@@ -46,14 +46,14 @@ class GroupController {
       def closedStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Closed')
       def delStat = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Deleted')
       def cg_components = KBComponent.executeQuery("select c.id from KBComponent as c where exists ( select oc from c.outgoingCombos as oc where oc.toComponent.id = :group )",[group:result.group.id])
-   
+
       log.debug("Got ${cg_components.size()} connected components")
 
       def cg_review_tasks_hql = ''' from ReviewRequest as rr where ((
         rr.allocatedTo in ( select u from CuratoryGroup as cg join cg.users as u where cg = :group )
         or rr.componentToReview.id in (:cgcomponents)
       ) or exists (select arc from AllocatedReviewGroup as arc where arc.review = rr and arc.group = :group))
-      and rr.status != :closed and rr.status != :deleted
+      and rr.status != :closed and rr.status != :deleted and arc.status != :inactive
       '''
 
       result.rr_count = Package.executeQuery('select count(rr) '+cg_review_tasks_hql,[group:result.group,cgcomponents:cg_components,closed:closedStat,deleted:delStat])[0];
