@@ -456,6 +456,7 @@ class ComponentLookupService {
 
     if (cls == ReviewRequest && params['allocatedGroups']) {
       def cgs = params.list('allocatedGroups')
+      def inactive = RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive')
       def validCgs = []
 
       cgs.each { cg ->
@@ -476,9 +477,9 @@ class ComponentLookupService {
         else {
           hqlQry += " AND "
         }
-
         hqlQry += "exists (select 1 from AllocatedReviewGroup as ag where ag.review = p and ag.group IN :alg and ag.status != :inactive)"
         qryParams['alg'] = validCgs
+        qryParams['inactive'] = inactive
       }
     }
 

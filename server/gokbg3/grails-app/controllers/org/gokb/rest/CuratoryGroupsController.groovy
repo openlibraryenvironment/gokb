@@ -115,13 +115,14 @@ class CuratoryGroupsController {
     def sort = params.sort ?: null
     def order = params.order ?: null
     def group = CuratoryGroup.get(params.id)
+    def inactive = RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive')
     User user = User.get(springSecurityService.principal.id)
     def errors = [:]
 
     if (group) {
       def qry = "where exists (select arg from AllocatedReviewGroup arg" +
                               "where arg.group = :group and arg.review = rr and arc.status != :inactive)"
-      def qryParams = [group:group]
+      def qryParams = [group:group, inactive:inactive]
       def sortQry = ""
 
       if (params.status) {
