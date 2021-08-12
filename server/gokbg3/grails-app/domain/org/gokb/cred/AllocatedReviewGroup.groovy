@@ -53,6 +53,7 @@ class AllocatedReviewGroup implements Serializable {
 
 	static mapping = {
 		id composite: ['review', 'group']
+		escalatedFrom column: 'arg_escalated_from'
 		version false
 	}
 
