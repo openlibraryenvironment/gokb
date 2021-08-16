@@ -26,6 +26,8 @@ class UpdatePkgTippsRun {
   static ESSearchService esSearchService = Holders.grailsApplication.mainContext.getBean('ESSearchService')
   static TippService tippService = Holders.grailsApplication.mainContext.getBean('tippService')
 
+  static LOCK = new Object()
+
   def rjson // request JSON
   boolean addOnly
   boolean fullsync
@@ -61,278 +63,280 @@ class UpdatePkgTippsRun {
     autoUpdate = isAutoUpdate
   }
 
-  def synchronized work(Job aJob) {
-    log.info("start Update Package $rjson.packageHeader.name with ${rjson.tipps.size()} tipps")
-    job = aJob ?: job
-    boolean cancelled = false
-    int total = 0
+  def work(Job aJob) {
+    synchronized (LOCK) {
+      log.info("start Update Package $rjson.packageHeader.name with ${rjson.tipps.size()} tipps")
+      job = aJob ?: job
+      boolean cancelled = false
+      int total = 0
 
-    try {
-      status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-      status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-      status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-      status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-      rr_deleted = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Status Deleted')
-      rr_nonCurrent = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Platform Noncurrent')
-      rr_TIPPs_retired = RefdataCategory.lookup('ReviewRequest.StdDesc', 'TIPPs Retired')
-      rr_TIPPs_invalid = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Invalid TIPPs')
-      listStatus_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+      try {
+        status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+        status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+        status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+        status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+        rr_deleted = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Status Deleted')
+        rr_nonCurrent = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Platform Noncurrent')
+        rr_TIPPs_retired = RefdataCategory.lookup('ReviewRequest.StdDesc', 'TIPPs Retired')
+        rr_TIPPs_invalid = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Invalid TIPPs')
+        listStatus_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
 
-      springSecurityService.reauthenticate(user.username)
-      user = User.get(user.id)
-      job?.ownerId = user.id
+        springSecurityService.reauthenticate(user.username)
+        user = User.get(user.id)
+        job?.ownerId = user.id
 
-      // check permissions
-      if (!(user?.apiUserStatus)) {
-        globalError([code   : 403,
-                     message: messageService.resolveCode('crossRef.package.error.apiRole', [], locale)]
-        )
-        job?.endTime = new Date()
-
-        return jsonResult
-      }
-      // validate and upsert header pkg
-      if (!(rjson?.packageHeader?.name)) {
-        globalError([code   : 400,
-                     message: messageService.resolveCode('crossRef.package.error', [], locale)]
-        )
-        job?.endTime = new Date()
-
-        return jsonResult
-      }
-      // Package Validation
-      pkg_validation = Package.validateDTO(rjson.packageHeader, locale)
-
-      if (!pkg_validation.valid) {
-        globalError([code   : 403,
-                     message: messageService.resolveCode('crossRef.package.error.validation.global', null, locale),
-                     errors : pkg_validation.errors]
-        )
-        job?.endTime = new Date()
-
-        return jsonResult
-      }
-      // upsert Package
-      def proxy = packageService.upsertDTO(rjson.packageHeader, user)
-
-      if (!proxy) {
-        globalError([code   : 400,
-                     message: messageService.resolveCode('crossRef.package.error', null, locale),
-        ])
-        job?.endTime = new Date()
-
-        return jsonResult
-      }
-
-      pkg = Package.get(proxy.id)
-
-      jsonResult.pkgId = pkg.id
-      job?.linkedItem = [name: pkg.name,
-                         type: "Package",
-                         id  : pkg.id,
-                         uuid: pkg.uuid]
-      job?.message("found Package ${pkg.name} (uuid: ${pkg.uuid})")
-
-      handleUpdateToken()
-
-      existing_tipp_ids = TitleInstance.executeQuery(
-          "select tipp.id from TitleInstancePackagePlatform tipp, Combo combo where " +
-              "tipp.status in :status and " +
-              "combo.toComponent = tipp and " +
-              "combo.fromComponent = :package",
-          [package: pkg, status: [status_current, status_expected]])
-      log.debug("Matched package has ${pkg.tipps.size()} TIPPs")
-      total = rjson.tipps.size() + (addOnly ? 0 : existing_tipp_ids.size())
-
-      int idx = 0
-      for (def json_tipp : rjson.tipps) {
-        idx++
-        def currentTippError = [index: idx]
-        log.info("Handling #$idx TIPP ${json_tipp.name ?: json_tipp.title.name}")
-
-        if ((json_tipp.package == null) && (pkg.id)) {
-          json_tipp.package = [internalId: pkg.id]
-        }
-        else {
-          log.error("No package")
-          currentTippError.put('package', ['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], locale), baddata: json_tipp.package])
-          invalidTipps << json_tipp
-        }
-
-        if (!invalidTipps.contains(json_tipp)) {
-          // validate and upsert PlatformInstance
-          Map pltErrorMap = handlePlt(json_tipp)
-          if (pltErrorMap.size() > 0) {
-            currentTippError.put('platform', pltErrorMap)
-          }
-        }
-
-        if (!invalidTipps.contains(json_tipp)) {
-          // validate and upsert TIPP
-          Map tippErrorMap = handleTIPP(json_tipp)
-          if (tippErrorMap.size() > 0) {
-            currentTippError.put('tipp', tippErrorMap)
-          }
-        }
-
-        if (invalidTipps.contains(json_tipp)) {
-          reviewRequestService.raise(
-              pkg,
-              "TIPP rejected",
-              "TIPP ${json_tipp.name ?: json_tipp.title.name} coudn't be imported. ${(currentTippError as JSON).toString()}",
-              user,
-              null,
-              (currentTippError as JSON).toString(),
-              rr_TIPPs_invalid
+        // check permissions
+        if (!(user?.apiUserStatus)) {
+          globalError([code   : 403,
+                       message: messageService.resolveCode('crossRef.package.error.apiRole', [], locale)]
           )
-          job?.message("skipped invalid title ${(currentTippError as JSON).toString()}")
+          job?.endTime = new Date()
+
+          return jsonResult
         }
-        else if (currentTippError.size() > 1) {
-          errors.tipps.add(currentTippError)
-          String msg = "ignored data ${(currentTippError as JSON).toString()}"
-          job?.message(msg)
+        // validate and upsert header pkg
+        if (!(rjson?.packageHeader?.name)) {
+          globalError([code   : 400,
+                       message: messageService.resolveCode('crossRef.package.error', [], locale)]
+          )
+          job?.endTime = new Date()
+
+          return jsonResult
+        }
+        // Package Validation
+        pkg_validation = Package.validateDTO(rjson.packageHeader, locale)
+
+        if (!pkg_validation.valid) {
+          globalError([code   : 403,
+                       message: messageService.resolveCode('crossRef.package.error.validation.global', null, locale),
+                       errors : pkg_validation.errors]
+          )
+          job?.endTime = new Date()
+
+          return jsonResult
+        }
+        // upsert Package
+        def proxy = packageService.upsertDTO(rjson.packageHeader, user)
+
+        if (!proxy) {
+          globalError([code   : 400,
+                       message: messageService.resolveCode('crossRef.package.error', null, locale),
+          ])
+          job?.endTime = new Date()
+
+          return jsonResult
         }
 
-        if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
-          log.debug("cancelling Job #${job?.uuid}")
-          cancelled = true
-          def msg = "the job got cancelled"
-          globalError([message: msg, code: 500])
-          break
-        }
+        pkg = Package.get(proxy.id)
 
-        job?.setProgress(idx, total)
+        jsonResult.pkgId = pkg.id
+        job?.linkedItem = [name: pkg.name,
+                           type: "Package",
+                           id  : pkg.id,
+                           uuid: pkg.uuid]
+        job?.message("found Package ${pkg.name} (uuid: ${pkg.uuid})")
 
-        if (idx % 100 == 0) {
-          log.info("Clean up");
-          cleanupService.cleanUpGorm()
-        }
-      }
+        handleUpdateToken()
 
-      if (!cancelled) {
-        pkg = Package.get(pkg.id)
+        existing_tipp_ids = TitleInstance.executeQuery(
+            "select tipp.id from TitleInstancePackagePlatform tipp, Combo combo where " +
+                "tipp.status in :status and " +
+                "combo.toComponent = tipp and " +
+                "combo.fromComponent = :package",
+            [package: pkg, status: [status_current, status_expected]])
+        log.debug("Matched package has ${pkg.tipps.size()} TIPPs")
+        total = rjson.tipps.size() + (addOnly ? 0 : existing_tipp_ids.size())
 
-        if (invalidTipps.size() > 0) {
-          String msg = messageService.resolveCode('crossRef.package.tipps.ignored', [invalidTipps.size()], locale)
-          log.warn(msg)
-          jsonResult.result = "WARNING"
-          jsonResult.message = msg
-          errors.global.add([message: msg, baddata: rjson.packageHeader])
-          job?.message(msg)
-        }
+        int idx = 0
+        for (def json_tipp : rjson.tipps) {
+          idx++
+          def currentTippError = [index: idx]
+          log.info("Handling #$idx TIPP ${json_tipp.name ?: json_tipp.title.name}")
 
-        if (rjson.tipps?.size() > 0 && rjson.tipps.size() > invalidTipps.size()) {
-          if (pkg.status == status_current && pkg?.listStatus != listStatus_ip) {
-            pkg.listStatus = listStatus_ip
-            pkg.merge()
+          if ((json_tipp.package == null) && (pkg.id)) {
+            json_tipp.package = [internalId: pkg.id]
           }
-        }
-        else {
-          log.debug("imported Package $pkg.name contains no valid TIPPs")
-        }
+          else {
+            log.error("No package")
+            currentTippError.put('package', ['message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [json_tipp.title.name], locale), baddata: json_tipp.package])
+            invalidTipps << json_tipp
+          }
 
-        if (!addOnly && existing_tipp_ids.size() > 0) {
-          existing_tipp_ids.eachWithIndex { ttd, ix ->
-            def to_retire = TitleInstancePackagePlatform.get(ttd)
-
-            if (to_retire?.isCurrent()) {
-              if (fullsync) {
-                to_retire.deleteSoft()
-              }
-              else {
-                to_retire.retire()
-              }
-
-              log.info("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
-
-              to_retire.save(failOnError: true)
-
-              if ((++removedNum) % 50 == 0) {
-                log.debug("flush session");
-                cleanupService.cleanUpGorm()
-              }
-              job?.setProgress(removedNum + rjson.tipps.size(), total)
+          if (!invalidTipps.contains(json_tipp)) {
+            // validate and upsert PlatformInstance
+            Map pltErrorMap = handlePlt(json_tipp)
+            if (pltErrorMap.size() > 0) {
+              currentTippError.put('platform', pltErrorMap)
             }
           }
 
-          if (removedNum > 0) {
-            def additionalInfo = [:]
-            additionalInfo.vars = [pkg.id, removedNum]
+          if (!invalidTipps.contains(json_tipp)) {
+            // validate and upsert TIPP
+            Map tippErrorMap = handleTIPP(json_tipp)
+            if (tippErrorMap.size() > 0) {
+              currentTippError.put('tipp', tippErrorMap)
+            }
+          }
+
+          if (invalidTipps.contains(json_tipp)) {
             reviewRequestService.raise(
                 pkg,
-                "TIPPs retired.",
-                "An update to package ${pkg.id} did not contain ${removedNum} previously existing TIPPs.",
+                "TIPP rejected",
+                "TIPP ${json_tipp.name ?: json_tipp.title.name} coudn't be imported. ${(currentTippError as JSON).toString()}",
                 user,
                 null,
-                (additionalInfo as JSON).toString(),
-                rr_TIPPs_retired
+                (currentTippError as JSON).toString(),
+                rr_TIPPs_invalid
             )
+            job?.message("skipped invalid title ${(currentTippError as JSON).toString()}")
+          }
+          else if (currentTippError.size() > 1) {
+            errors.tipps.add(currentTippError)
+            String msg = "ignored data ${(currentTippError as JSON).toString()}"
+            job?.message(msg)
+          }
+
+          if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
+            log.debug("cancelling Job #${job?.uuid}")
+            cancelled = true
+            def msg = "the job got cancelled"
+            globalError([message: msg, code: 500])
+            break
+          }
+
+          job?.setProgress(idx, total)
+
+          if (idx % 100 == 0) {
+            log.info("Clean up");
+            cleanupService.cleanUpGorm()
           }
         }
 
-        log.debug("Removed ${removedNum} TIPPS from the matched package!")
-        jsonResult.result = 'OK'
-        def msg = messageService.resolveCode('crossRef.package.success', [rjson.packageHeader.name, rjson.tipps.size(), existing_tipp_ids.size(), removedNum], locale)
-        jsonResult.message = msg
-        job?.message(msg)
-
-        if (pkg.status != status_deleted) {
+        if (!cancelled) {
           pkg = Package.get(pkg.id)
-          pkg.lastUpdateComment = jsonResult.message
-          pkg.merge()
+
+          if (invalidTipps.size() > 0) {
+            String msg = messageService.resolveCode('crossRef.package.tipps.ignored', [invalidTipps.size()], locale)
+            log.warn(msg)
+            jsonResult.result = "WARNING"
+            jsonResult.message = msg
+            errors.global.add([message: msg, baddata: rjson.packageHeader])
+            job?.message(msg)
+          }
+
+          if (rjson.tipps?.size() > 0 && rjson.tipps.size() > invalidTipps.size()) {
+            if (pkg.status == status_current && pkg?.listStatus != listStatus_ip) {
+              pkg.listStatus = listStatus_ip
+              pkg.merge()
+            }
+          }
+          else {
+            log.debug("imported Package $pkg.name contains no valid TIPPs")
+          }
+
+          if (!addOnly && existing_tipp_ids.size() > 0) {
+            existing_tipp_ids.eachWithIndex { ttd, ix ->
+              def to_retire = TitleInstancePackagePlatform.get(ttd)
+
+              if (to_retire?.isCurrent()) {
+                if (fullsync) {
+                  to_retire.deleteSoft()
+                }
+                else {
+                  to_retire.retire()
+                }
+
+                log.info("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
+
+                to_retire.save(failOnError: true)
+
+                if ((++removedNum) % 50 == 0) {
+                  log.debug("flush session");
+                  cleanupService.cleanUpGorm()
+                }
+                job?.setProgress(removedNum + rjson.tipps.size(), total)
+              }
+            }
+
+            if (removedNum > 0) {
+              def additionalInfo = [:]
+              additionalInfo.vars = [pkg.id, removedNum]
+              reviewRequestService.raise(
+                  pkg,
+                  "TIPPs retired.",
+                  "An update to package ${pkg.id} did not contain ${removedNum} previously existing TIPPs.",
+                  user,
+                  null,
+                  (additionalInfo as JSON).toString(),
+                  rr_TIPPs_retired
+              )
+            }
+          }
+
+          log.debug("Removed ${removedNum} TIPPS from the matched package!")
+          jsonResult.result = 'OK'
+          def msg = messageService.resolveCode('crossRef.package.success', [rjson.packageHeader.name, rjson.tipps.size(), existing_tipp_ids.size(), removedNum], locale)
+          jsonResult.message = msg
+          job?.message(msg)
+
+          if (pkg.status != status_deleted) {
+            pkg = Package.get(pkg.id)
+            pkg.lastUpdateComment = jsonResult.message
+            pkg.merge()
+          }
+
+          if (autoUpdate && pkg.source) {
+            Source src = Source.get(pkg.source.id)
+            src.lastRun = new Date()
+            src.merge()
+          }
         }
 
-        if (autoUpdate && pkg.source) {
-          Source src = Source.get(pkg.source.id)
-          src.lastRun = new Date()
-          src.merge()
-        }
-      }
-      log.debug("final flush");
-      cleanupService.cleanUpGorm()
+        tippService.matchPackage(pkg)
 
-      if (!cancelled) {
-        job?.setProgress(100)
+        log.debug("final flush");
+        cleanupService.cleanUpGorm()
+
+        if (!cancelled) {
+          job?.setProgress(100)
+        }
+      } catch (Exception e) {
+        log.error("exception caught: ", e)
+        Package.withNewSession {
+          String fail_msg = messageService.resolveCode('crossRef.package.error.unknown', [e], locale)
+          globalError([message: fail_msg, code: 500])
+        }
+        job?.endTime = new Date()
       }
-    } catch (Exception e) {
-      log.error("exception caught: ", e)
-      Package.withNewSession {
-        String fail_msg = messageService.resolveCode('crossRef.package.error.unknown', [e], locale)
-        globalError([message: fail_msg, code: 500])
+      if (errors.global.size() > 0) {
+        jsonResult << [errors: [global: errors.global]]
       }
+      if (errors.tipps.size() > 0) {
+        jsonResult << [errors: [tipps: errors.tipps]]
+      }
+
       job?.endTime = new Date()
-    }
-    if (errors.global.size() > 0) {
-      jsonResult << [errors: [global: errors.global]]
-    }
-    if (errors.tipps.size() > 0) {
-      jsonResult << [errors: [tipps: errors.tipps]]
-    }
-    job?.endTime = new Date()
 
-    JobResult.withNewSession {
-      def result_object = JobResult.findByUuid(job?.uuid)
-      if (!result_object) {
-        def job_map = [
-            uuid        : (job?.uuid),
-            description : (job?.description),
-            resultObject: (jsonResult as JSON).toString(),
-            type        : (job?.type),
-            statusText  : (jsonResult.result),
-            ownerId     : (job?.ownerId),
-            groupId     : (job?.groupId),
-            startTime   : (job?.startTime),
-            endTime     : (job?.endTime),
-            linkedItemId: (job?.linkedItem?.id)
-        ]
-        new JobResult(job_map).save(flush: true, failOnError: true)
+      JobResult.withNewSession {
+        def result_object = JobResult.findByUuid(job?.uuid)
+        if (!result_object) {
+          def job_map = [
+              uuid        : (job?.uuid),
+              description : (job?.description),
+              resultObject: (jsonResult as JSON).toString(),
+              type        : (job?.type),
+              statusText  : (jsonResult.result),
+              ownerId     : (job?.ownerId),
+              groupId     : (job?.groupId),
+              startTime   : (job?.startTime),
+              endTime     : (job?.endTime),
+              linkedItemId: (job?.linkedItem?.id)
+          ]
+          new JobResult(job_map).save(flush: true, failOnError: true)
+        }
       }
+      return jsonResult
     }
-
-    cleanupService.cleanUpGorm()
-    tippService.matchPackage(pkg)
-
-    return jsonResult
   }
 
   private void globalError(Map error) {
@@ -458,26 +462,7 @@ class UpdatePkgTippsRun {
       try {
         current_tipps = findTipps(tippJson)
         // Fallunterscheidung
-        if (current_tipps.size() == 1) {
-          log.debug("Found one matching TIPP ${current_tipps[0]}")
-          tipp = current_tipps[0]
-          // update Data
-          componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
-          // overwrite String properties with JSON values
-          ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
-           'volumeNumber', 'editionStatement', 'firstEditor'].each { propName ->
-            tipp[propName] = tippJson[propName] ?: tipp[propName]
-          }
-
-          tipp.language = tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : tipp.language
-          tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType ?: tippJson.type ?: tipp.publicationType.value)
-          tipp.parentPublicationTitleId = tippJson.parentPublicationTitleId ?: tipp.parentPublicationTitleId
-          tipp.precedingPublicationTitleId = tippJson.precedingTublicationTitleId ?: tipp.precedingPublicationTitleId
-          tipp.precedingPublicationTitleId = tippJson.precedingTublicationTitleId ?: tipp.precedingPublicationTitleId
-          tipp.importId = tippJson.titleId ?: tipp.importId
-          log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
-        }
-        else {
+        if (current_tipps.size() == 0) {
           // TIPP neu anlegen wenn kein aktueller RR mit vorhandenen TIPPs verknüpft ist
           def idents = []
           tippJson.identifiers.each { ident ->
@@ -488,13 +473,13 @@ class UpdatePkgTippsRun {
                   'pkg'                        : Package.get(tippJson.package.internalId),
                   'title'                      : null,
                   'hostPlatform'               : Platform.get(tippJson.hostPlatform.internalId),
-                  'url'                        : null,
+                  'url'                        : tippJson.url,
                   'uuid'                       : tippJson.uuid,
                   'status'                     : tippJson.status ? RefdataCategory.lookup(KBComponent.RD_STATUS, tippJson.status) : null,
                   'name'                       : tippJson.name,
                   'editStatus'                 : tippJson.editStatus ? RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, tippJson.editStatus) : null,
                   'language'                   : tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : null,
-                  'publicationType'            : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType?: tippJson.type ?:'Serial'),
+                  'publicationType'            : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType ?: tippJson.type ?: 'Serial'),
                   'parentPublicationTitleId'   : tippJson.parent_publication_title_id,
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                   'publisherName'              : tippJson.publisherName,
@@ -505,9 +490,34 @@ class UpdatePkgTippsRun {
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
         }
+        else {
+          log.debug("Found one matching TIPP ${current_tipps[0]}")
+          tipp = current_tipps[0]
+          // update Data
+          componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
+          // overwrite String properties with JSON values
+          ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
+           'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'importId'].each { propName ->
+            tipp[propName] = tippJson[propName] ?: tipp[propName]
+          }
+
+          tipp.language = tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : tipp.language
+          tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType ?: tippJson.type ?: tipp.publicationType.value)
+          log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
+        }
+
         tipp?.merge()
+
         if (current_tipps.size() > 1 && tipp) {
           log.debug("multimatch (${current_tipps.size()}) for $tipp")
+          def additionalInfo = [ otherComponents: [] ]
+
+          current_tipps.eachWithIndex { ct, idx ->
+            if (idx > 0) {
+              additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
+            }
+          }
+
           // RR für Multimatch generieren
           def myRR = reviewRequestService.raise(
               tipp,
@@ -515,7 +525,7 @@ class UpdatePkgTippsRun {
               "Multiple Identifier Matches for TIPP.",
               user,
               null,
-              null,
+              additionalInfo as JSON,
               RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple Matches')
           )
           current_tipps.each {
@@ -610,11 +620,11 @@ class UpdatePkgTippsRun {
     if (tippJson.titleId) {
       // elastic search
       TypeConvertingMap map = [
-          componentType    : 'TitleInstancePackagePlatform',
-          importId         : tippJson.titleId,
-          pkg              : pkg.uuid,
-          platform         : tippJson.hostPlatform.uuid,
-          skipDomainMapping: true
+          componentType     : 'TitleInstancePackagePlatform',
+          importId          : tippJson.titleId,
+          pkg               : pkg.uuid,
+          platform          : tippJson.hostPlatform.uuid,
+          skipDomainMapping : true
       ]
       def something = esSearchService.find(map)
       if (something.records?.size() > 0) {
@@ -623,7 +633,7 @@ class UpdatePkgTippsRun {
         return tipps
       }
       // database search
-      TitleInstancePackagePlatform.executeQuery(
+      def tippList = TitleInstancePackagePlatform.executeQuery(
           'select tipp from TitleInstancePackagePlatform as tipp, Combo as c1, Combo as c2 ' +
               'where c1.fromComponent = :pkg ' +
               'and c1.toComponent = tipp ' +
@@ -643,7 +653,8 @@ class UpdatePkgTippsRun {
            cStatus: RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE),
            tid    : tippJson.titleId,
            tStatus: status_current]
-      ).each { tipps << it }
+      )
+      tipps = tippList
       if (tipps.size() > 0) {
         log.debug("found by titleId in DB")
         return tipps
@@ -663,19 +674,27 @@ class UpdatePkgTippsRun {
     IdentifierNamespace providerNamespace = Package.get(pkg.id).provider?.titleNamespace
     if (providerNamespace && jsonIdMap[providerNamespace.value]) {
       // elastic search
-      map = [componentType    : 'TitleInstancePackagePlatform',
-             identfiers       : [type : providerNamespace.value,
-                                 value: jsonIdMap[providerNamespace.value]],
-             skipDomainMapping: true]
-      something = esSearchService.find(map)
-      if (something.size() > 0) {
+      TypeConvertingMap map = [
+          componentType     : 'TitleInstancePackagePlatform',
+          identfiers        : [
+            type : providerNamespace.value,
+            value: jsonIdMap[providerNamespace.value]
+          ],
+          skipDomainMapping : true
+      ]
+
+      def something = esSearchService.find(map)
+
+      if (something.records?.size() > 0) {
         log.debug("found by provider namespace ID in ES")
         return something.records.each { tipps << TitleInstancePackagePlatform.findByUuid(it.uuid) }
       }
+
       def found = TitleInstancePackagePlatform.lookupAllByIO(providerNamespace.value, jsonIdMap[providerNamespace.value])
+
       if (found.size() > 0) {
         found.each {
-          if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)) {
+          if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it) && it.pkg == pkg && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
             tipps.add(it)
           }
         }
@@ -694,7 +713,7 @@ class UpdatePkgTippsRun {
           if (found.size() > 0) {
             found.each {
               if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status == status_current) {
+                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
                 tipps.add(it)
               }
             }
@@ -713,7 +732,7 @@ class UpdatePkgTippsRun {
           if (found.size() > 0) {
             found.each {
               if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status == status_current) {
+                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
                 tipps.add(it)
               }
             }
