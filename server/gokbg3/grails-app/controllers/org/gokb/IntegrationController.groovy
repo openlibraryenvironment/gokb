@@ -885,6 +885,7 @@ class IntegrationController {
     def async = params.async ? params.boolean('async') : false
     def addOnly = params.addOnly ? params.boolean('addOnly') : false
     def request_locale = RequestContextUtils.getLocale(request)
+    UpdateToken updateToken = null
     def rjson = request.JSON
     User request_user = null
     def fullsync = false

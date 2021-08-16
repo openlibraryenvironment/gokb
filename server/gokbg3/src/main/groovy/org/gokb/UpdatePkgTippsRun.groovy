@@ -462,22 +462,7 @@ class UpdatePkgTippsRun {
       try {
         current_tipps = findTipps(tippJson)
         // Fallunterscheidung
-        if (current_tipps.size() == 1) {
-          log.debug("Found one matching TIPP ${current_tipps[0]}")
-          tipp = current_tipps[0]
-          // update Data
-          componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
-          // overwrite String properties with JSON values
-          ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
-           'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'importId'].each { propName ->
-            tipp[propName] = tippJson[propName] ?: tipp[propName]
-          }
-
-          tipp.language = tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : tipp.language
-          tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType ?: tippJson.type ?: tipp.publicationType.value)
-          log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
-        }
-        else {
+        if (current_tipps.size() == 0) {
           // TIPP neu anlegen wenn kein aktueller RR mit vorhandenen TIPPs verknüpft ist
           def idents = []
           tippJson.identifiers.each { ident ->
@@ -505,9 +490,34 @@ class UpdatePkgTippsRun {
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
         }
+        else {
+          log.debug("Found one matching TIPP ${current_tipps[0]}")
+          tipp = current_tipps[0]
+          // update Data
+          componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
+          // overwrite String properties with JSON values
+          ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
+           'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'importId'].each { propName ->
+            tipp[propName] = tippJson[propName] ?: tipp[propName]
+          }
+
+          tipp.language = tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : tipp.language
+          tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType ?: tippJson.type ?: tipp.publicationType.value)
+          log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
+        }
+
         tipp?.merge()
+
         if (current_tipps.size() > 1 && tipp) {
           log.debug("multimatch (${current_tipps.size()}) for $tipp")
+          def additionalInfo = [ otherComponents: [] ]
+
+          current_tipps.eachWithIndex { ct, idx ->
+            if (idx > 0) {
+              additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
+            }
+          }
+
           // RR für Multimatch generieren
           def myRR = reviewRequestService.raise(
               tipp,
@@ -515,7 +525,7 @@ class UpdatePkgTippsRun {
               "Multiple Identifier Matches for TIPP.",
               user,
               null,
-              null,
+              additionalInfo as JSON,
               RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple Matches')
           )
           current_tipps.each {
@@ -610,11 +620,11 @@ class UpdatePkgTippsRun {
     if (tippJson.titleId) {
       // elastic search
       TypeConvertingMap map = [
-          componentType    : 'TitleInstancePackagePlatform',
-          importId         : tippJson.titleId,
-          pkg              : pkg.uuid,
-          platform         : tippJson.hostPlatform.uuid,
-          skipDomainMapping: true
+          componentType     : 'TitleInstancePackagePlatform',
+          importId          : tippJson.titleId,
+          pkg               : pkg.uuid,
+          platform          : tippJson.hostPlatform.uuid,
+          skipDomainMapping : true
       ]
       def something = esSearchService.find(map)
       if (something.records?.size() > 0) {
@@ -664,19 +674,27 @@ class UpdatePkgTippsRun {
     IdentifierNamespace providerNamespace = Package.get(pkg.id).provider?.titleNamespace
     if (providerNamespace && jsonIdMap[providerNamespace.value]) {
       // elastic search
-      map = [componentType    : 'TitleInstancePackagePlatform',
-             identfiers       : [type : providerNamespace.value,
-                                 value: jsonIdMap[providerNamespace.value]],
-             skipDomainMapping: true]
-      something = esSearchService.find(map)
-      if (something.size() > 0) {
+      TypeConvertingMap map = [
+          componentType     : 'TitleInstancePackagePlatform',
+          identfiers        : [
+            type : providerNamespace.value,
+            value: jsonIdMap[providerNamespace.value]
+          ],
+          skipDomainMapping : true
+      ]
+
+      def something = esSearchService.find(map)
+
+      if (something.records?.size() > 0) {
         log.debug("found by provider namespace ID in ES")
         return something.records.each { tipps << TitleInstancePackagePlatform.findByUuid(it.uuid) }
       }
+
       def found = TitleInstancePackagePlatform.lookupAllByIO(providerNamespace.value, jsonIdMap[providerNamespace.value])
+
       if (found.size() > 0) {
         found.each {
-          if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)) {
+          if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it) && it.pkg == pkg && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
             tipps.add(it)
           }
         }
@@ -695,7 +713,7 @@ class UpdatePkgTippsRun {
           if (found.size() > 0) {
             found.each {
               if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status == status_current) {
+                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
                 tipps.add(it)
               }
             }
@@ -714,7 +732,7 @@ class UpdatePkgTippsRun {
           if (found.size() > 0) {
             found.each {
               if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status == status_current) {
+                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
                 tipps.add(it)
               }
             }
