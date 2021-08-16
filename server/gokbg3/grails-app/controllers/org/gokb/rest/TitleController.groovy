@@ -219,9 +219,7 @@ class TitleController {
                 )
               }
 
-              if (reqBody.variantNames) {
-                obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
-              }
+              obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
 
               errors << updateCombos(obj, reqBody)
 
@@ -750,9 +748,7 @@ class TitleController {
         if ( obj.validate() ) {
           log.debug("No errors.. updating combos..")
 
-          if (reqBody.variantNames) {
-            obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
-          }
+          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
 
           errors << updateCombos(obj, reqBody, remove)
 

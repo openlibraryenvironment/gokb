@@ -146,9 +146,7 @@ class OrgController {
             log.debug("No errors.. saving")
             obj.save()
 
-            if (reqBody.variantNames) {
-              obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
-            }
+            obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
 
             errors << updateCombos(obj, reqBody)
 
@@ -220,11 +218,7 @@ class OrgController {
         def jsonMap = obj.jsonMapping
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
-
-
-        if (reqBody.variantNames) {
-          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
-        }
+        obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
 
         errors << updateCombos(obj, reqBody, remove)
 
