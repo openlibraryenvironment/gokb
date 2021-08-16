@@ -53,14 +53,15 @@ class GroupController {
       def cg_review_tasks_hql = ''' from ReviewRequest as rr where ((
         rr.allocatedTo in ( select u from CuratoryGroup as cg join cg.users as u where cg = :group )
         or rr.componentToReview.id in (:cgcomponents)
-      ) or exists (select arc from AllocatedReviewGroup as arc where arc.review = rr and arc.group = :group))
-      and rr.status != :closed and rr.status != :deleted and arc.status_id != :inactive
+      ) or exists (select arc from AllocatedReviewGroup as arc where arc.review = rr and arc.group = :group and
+                                                                     arc.status != :inactive))
+      and rr.status != :closed and rr.status != :deleted
       '''
 
       result.rr_count = Package.executeQuery('select count(rr) ' + cg_review_tasks_hql,
           [group:result.group,cgcomponents:cg_components,closed:closedStat,deleted:delStat,inactive:inactiveStat])[0]
       result.rrs = Package.executeQuery('select rr ' + cg_review_tasks_hql + " order by ${rr_sort} ${rr_sort_order}",
-          [group:result.group,cgcomponents:cg_components,closed:closedStat,deleted:delStat],
+          [group:result.group,cgcomponents:cg_components,closed:closedStat,deleted:delStat,inactive:inactiveStat],
           [max:result.max,offset:result.rr_offset])
 
       result.rr_page_max = (result.rr_count / result.max).toInteger() + (result.rr_count % result.max > 0 ? 1 : 0)
