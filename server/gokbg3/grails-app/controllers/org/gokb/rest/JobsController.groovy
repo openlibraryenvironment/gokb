@@ -40,7 +40,9 @@ class JobsController {
             filterJobResults('userId', userId, max, offset, result)
           }
           else {
-            result << concurrencyManagerService.getUserJobs(userId, max, offset)
+            concurrencyManagerService.getGroupJobs(groupId, max, offset).each { k, v ->
+              result.k = v
+            }
           }
         }
         else {
@@ -79,7 +81,9 @@ class JobsController {
           filterJobResults('linkedItemId', compId, max, offset, result)
         }
         else {
-          result << concurrencyManagerService.getComponentJobs(componentId, max, offset)
+          concurrencyManagerService.getGroupJobs(groupId, max, offset).each { k, v ->
+            result.k = v
+          }
         }
       }
       // all jobs
