@@ -5,7 +5,9 @@ import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+import org.apache.commons.lang.StringUtils
 import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.CuratoryGroupType
 import org.gokb.cred.JobResult
 import org.gokb.cred.KBComponent
 import org.gokb.cred.ReviewRequest
@@ -259,6 +261,36 @@ class CuratoryGroupsController {
     }
     log.debug("Return ${result}")
 
+    render result as JSON
+  }
+
+
+  @Secured("hasRole('ROLE_ADMIN') and isAuthenticated()")
+  def addGroupType() {
+    def result = [:]
+    CuratoryGroupType.Level level
+    CuratoryGroupType.MediumScope scope
+    String name
+    try{
+      level = CuratoryGroupType.Level.getByName(params.level)
+      scope = CuratoryGroupType.MediumScope.getByName(params.mediumScope)
+      if (StringUtils.isEmpty(params.name)){
+        throw new Exception("Missing param name.")
+      }
+      name = params.name
+    }
+    catch (Exception e){
+      result.result = 'ERROR'
+      response.setStatus(500)
+      result.message = "No CuratoryGroupType found for these params. ".concat(e.getMessage())
+    }
+    if (level && scope && name){
+      CuratoryGroupType cgt = new CuratoryGroupType(level:level, name:name, mediumScope:scope)
+      cgt.dump()
+      result.result = 'OK'
+      response.setStatus(200)
+      result.message = "Created CuratoryGroupType ".concat(cgt.toString())
+    }
     render result as JSON
   }
 }
