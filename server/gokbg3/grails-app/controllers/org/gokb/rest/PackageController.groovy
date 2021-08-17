@@ -665,6 +665,43 @@ class PackageController {
     render result as JSON
   }
 
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+  def jobs() {
+    def result = [:]
+    User user = null
+
+    if (springSecurityService.isLoggedIn()) {
+      user = User.get(springSecurityService.principal?.id)
+    }
+    log.debug("jobs :: ${params}")
+    def obj = Package.findByUuid(params.id)
+
+    if (!obj) {
+      obj = Package.get(params.id)
+    }
+
+    log.debug("Jobs for Package: ${obj}")
+
+    if (obj) {
+      def jobs=concurrencyManagerService.getComponentJobs(obj.id)
+
+      if (jobs){
+        result = jobs
+      }
+      else{
+        result.data = []
+        result.result = 'OK'
+        result.message = "no jobs found for Component ${obj.name?:obj.id}"
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      result.message = "Package id ${params.id} could not be resolved!"
+      response.setStatus(404)
+    }
+    render result as JSON
+  }
+
   @Transactional
   @Secured(value = ["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def addTipps() {

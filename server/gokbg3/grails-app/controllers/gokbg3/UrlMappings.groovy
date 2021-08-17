@@ -19,6 +19,7 @@ class UrlMappings {
       put "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'updateTipps')
       patch "/packages/$id/tipps"(controller: 'package', namespace: 'rest', action: 'updateTipps')
       "/packages/$id/$action"(controller: 'package', namespace: 'rest')
+      get "/packages/$id/jobs/"(controller: 'package', namespace: 'rest', action: 'jobs')
       get "/packages/$id"(controller: 'package', namespace: 'rest', action: 'show')
       put "/packages/$id"(controller: 'package', namespace: 'rest', action: 'update')
       patch "/packages/$id"(controller: 'package', namespace: 'rest', action: 'update')
