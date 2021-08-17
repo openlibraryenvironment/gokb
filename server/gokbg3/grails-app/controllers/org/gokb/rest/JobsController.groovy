@@ -33,14 +33,14 @@ class JobsController {
 // by user
       if (params.user) {
         if (user.superUserStatus || user.id == params.int('user')) {
-          int userId = params.long('user')
+          long userId = params.long('user')
 
           if (params.archived == "true") {
             result.data = []
             filterJobResults('userId', userId, max, offset, result)
           }
           else {
-            concurrencyManagerService.getGroupJobs(groupId, max, offset).each { k, v ->
+            concurrencyManagerService.getGroupJobs(userId, max, offset).each { k, v ->
               result.k = v
             }
           }
@@ -54,7 +54,7 @@ class JobsController {
       // by curatoryGroup
       if (params.curatoryGroup) {
         if (user.superUserStatus || user.curatoryGroups?.find { it.id == params.int('curatoryGroup') }) {
-          int groupId = params.int('curatoryGroup')
+          long groupId = params.long('curatoryGroup')
 
           if (params.boolean('archived') == true) {
             result.data = []
@@ -74,14 +74,14 @@ class JobsController {
       }
       // by linked Component
       if (params.linkedItem) {
-        int compId = params.int('linkedItem')
+        long compId = params.long('linkedItem')
 
         if (params.boolean('archived') == true) {
           result.data = []
           filterJobResults('linkedItemId', compId, max, offset, result)
         }
         else {
-          concurrencyManagerService.getGroupJobs(groupId, max, offset).each { k, v ->
+          concurrencyManagerService.getGroupJobs(compId, max, offset).each { k, v ->
             result.k = v
           }
         }
