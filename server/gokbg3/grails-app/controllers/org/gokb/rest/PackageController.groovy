@@ -169,9 +169,9 @@ class PackageController {
           def jsonMap = obj.jsonMapping
 
           jsonMap.immutable = [
-            'userListVerifier',
-            'listVerifiedDate',
-            'listStatus'
+              'userListVerifier',
+              'listVerifiedDate',
+              'listStatus'
           ]
 
           log.debug("Updating ${obj}")
@@ -278,13 +278,13 @@ class PackageController {
         def jsonMap = obj.jsonMapping
 
         jsonMap.ignore = [
-          'lastProject',
+            'lastProject',
         ]
 
         jsonMap.immutable = [
-          'userListVerifier',
-          'listVerifiedDate',
-          'listStatus'
+            'userListVerifier',
+            'listVerifiedDate',
+            'listStatus'
         ]
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
@@ -473,9 +473,9 @@ class PackageController {
               log.error("ValidationException attempting to cross reference title", ve);
               valid_ti = false
               def validation_errors = [
-                message: "Title ${tipp_dto.title?.name} failed validation!",
-                baddata: tipp_dto.title,
-                errors : messageService.processValidationErrors(ve.errors)
+                  message: "Title ${tipp_dto.title?.name} failed validation!",
+                  baddata: tipp_dto.title,
+                  errors : messageService.processValidationErrors(ve.errors)
               ]
               ti_errors.add(validation_errors)
             }
@@ -511,10 +511,12 @@ class PackageController {
 
               if (tipp_dto.status instanceof String) {
                 tipp_status = RefdataCategory.lookup('KBComponent.Status', tipp_dto.status)
-              } else if (tipp_dto.status instanceof Integer) {
+              }
+              else if (tipp_dto.status instanceof Integer) {
                 def id_rdv = RefdataValue.get(tipp_dto.status)
                 tipp_status = id_rdv.owner.label == 'KBComponent.Status' ? id_rdv : null
-              } else if (tipp_dto.status instanceof Map) {
+              }
+              else if (tipp_dto.status instanceof Map) {
                 def id_rdv = RefdataValue.get(tipp_dto.status.id)
                 tipp_status = id_rdv.owner.label == 'KBComponent.Status' ? id_rdv : null
               }
@@ -673,6 +675,7 @@ class PackageController {
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
+
     log.debug("jobs :: ${params}")
     def obj = Package.findByUuid(params.id)
 
@@ -683,15 +686,22 @@ class PackageController {
     log.debug("Jobs for Package: ${obj}")
 
     if (obj) {
-      def jobs=concurrencyManagerService.getComponentJobs(obj.id)
+      def jobs = concurrencyManagerService.getComponentJobs(obj.id)
 
-      if (jobs){
+      if (jobs && user) {
         result = jobs
+        if (!user.superUserStatus) {
+          result.data = []
+          jobs.data.each { job ->
+            if (job.owner == user || user.curatoryGroups.contains(job.group))
+              result.data << job
+          }
+        }
       }
-      else{
+      else {
         result.data = []
         result.result = 'OK'
-        result.message = "no jobs found for Component ${obj.name?:obj.id}"
+        result.message = "no jobs found for Component ${obj.name ?: obj.id}"
       }
     }
     else {
@@ -881,11 +891,11 @@ class PackageController {
                       if (title_validation && !title_validation.valid) {
                         log.warn("Not valid after title validation ${tipp.title}");
                         def preval_errors = [
-                          code   : 400,
-                          message: messageService.resolveCode('crossRef.package.tipps.error.title.preValidation', [tipp.title.name, title_validation.errors], locale),
-                          baddata: tipp.title,
-                          idx    : idx,
-                          errors : title_validation.errors
+                            code   : 400,
+                            message: messageService.resolveCode('crossRef.package.tipps.error.title.preValidation', [tipp.title.name, title_validation.errors], locale),
+                            baddata: tipp.title,
+                            idx    : idx,
+                            errors : title_validation.errors
                         ]
                         errors.add(preval_errors)
                       }
@@ -900,13 +910,13 @@ class PackageController {
 
                           try {
                             ti = titleLookupService.findOrCreate(
-                              titleObj.name,
-                              titleObj.publisher,
-                              titleObj.identifiers,
-                              user,
-                              null,
-                              title_class_name,
-                              titleObj.uuid
+                                titleObj.name,
+                                titleObj.publisher,
+                                titleObj.identifiers,
+                                user,
+                                null,
+                                title_class_name,
+                                titleObj.uuid
                             )
 
                             if (ti?.id && !ti.hasErrors()) {
@@ -925,9 +935,9 @@ class PackageController {
                               componentUpdateService.ensureCoreData(ti, titleObj, fullsync, user)
 
                               title_changed |= componentUpdateService.setAllRefdata([
-                                'OAStatus', 'medium', 'language',
-                                'pureOA', 'continuingSeries',
-                                'reasonRetired'
+                                  'OAStatus', 'medium', 'language',
+                                  'pureOA', 'continuingSeries',
+                                  'reasonRetired'
                               ], titleObj, ti)
 
                               def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
@@ -979,11 +989,11 @@ class PackageController {
                             valid_ti = false
                             valid = false
                             def validation_errors = [
-                              code   : 400,
-                              message: messageService.resolveCode('crossRef.package.tipps.error.title.validation', [tipp?.title?.name], locale),
-                              baddata: tipp,
-                              idx    : idx,
-                              errors : messageService.processValidationErrors(ve.errors)
+                                code   : 400,
+                                message: messageService.resolveCode('crossRef.package.tipps.error.title.validation', [tipp?.title?.name], locale),
+                                baddata: tipp,
+                                idx    : idx,
+                                errors : messageService.processValidationErrors(ve.errors)
                             ]
                             errors.add(validation_errors)
                           }
@@ -1017,11 +1027,11 @@ class PackageController {
                         log.warn("Not valid after platform validation ${tipp_plt_dto}");
 
                         def plt_errors = [
-                          code   : 400,
-                          idx    : idx,
-                          message: messageService.resolveCode('crossRef.package.tipps.error.platform.preValidation', [tipp_plt_dto?.name], locale),
-                          baddata: tipp_plt_dto,
-                          errors : valid_plt.errors
+                            code   : 400,
+                            idx    : idx,
+                            message: messageService.resolveCode('crossRef.package.tipps.error.platform.preValidation', [tipp_plt_dto?.name], locale),
+                            baddata: tipp_plt_dto,
+                            errors : valid_plt.errors
                         ]
                         errors.add([])
                       }
@@ -1055,11 +1065,11 @@ class PackageController {
                             valid = false
 
                             def plt_errors = [
-                              code   : 400,
-                              message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tipp_plt_dto], locale),
-                              baddata: tipp_plt_dto,
-                              idx    : idx,
-                              errors : messageService.processValidationErrors(ve.errors)
+                                code   : 400,
+                                message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tipp_plt_dto], locale),
+                                baddata: tipp_plt_dto,
+                                idx    : idx,
+                                errors : messageService.processValidationErrors(ve.errors)
                             ]
                             errors.add(plt_errors)
                           }
@@ -1109,11 +1119,11 @@ class PackageController {
                       log.debug("TIPP Validation failed on ${tipp}")
                       valid = false
                       def tipp_errors = [
-                        'code' : 400,
-                        idx    : idx,
-                        message: messageService.resolveCode('crossRef.package.tipps.error.preValidation', [tipp.title.name, validation_result.errors], locale),
-                        baddata: tipp,
-                        errors : validation_result.errors
+                          'code' : 400,
+                          idx    : idx,
+                          message: messageService.resolveCode('crossRef.package.tipps.error.preValidation', [tipp.title.name, validation_result.errors], locale),
+                          baddata: tipp,
+                          errors : validation_result.errors
                       ]
                       errors.add(tipp_errors)
                     }
@@ -1172,11 +1182,11 @@ class PackageController {
                       valid = false
                       tipp_fails++
                       def tipp_errors = [
-                        code   : 400,
-                        idx    : idx,
-                        message: messageService.resolveCode('crossRef.package.tipps.error.validation', [tipp.title.name], locale),
-                        baddata: tipp,
-                        errors : messageService.processValidationErrors(ve.errors)
+                          code   : 400,
+                          idx    : idx,
+                          message: messageService.resolveCode('crossRef.package.tipps.error.validation', [tipp.title.name], locale),
+                          baddata: tipp,
+                          errors : messageService.processValidationErrors(ve.errors)
                       ]
                       errors.add(tipp_errors)
 
@@ -1188,10 +1198,10 @@ class PackageController {
                       valid = false
                       tipp_fails++
                       def tipp_errors = [
-                        code   : 500,
-                        idx    : idx,
-                        message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
-                        baddata: tipp
+                          code   : 500,
+                          idx    : idx,
+                          message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
+                          baddata: tipp
                       ]
                       errors.add(tipp_errors)
 
@@ -1222,10 +1232,10 @@ class PackageController {
                       valid = false
                       tipp_fails++
                       def tipp_errors = [
-                        code   : 500,
-                        idx    : idx,
-                        message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
-                        baddata: tipp
+                          code   : 500,
+                          idx    : idx,
+                          message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
+                          baddata: tipp
                       ]
                       errors.add(tipp_errors)
                     }
@@ -1269,13 +1279,13 @@ class PackageController {
                       }
                       if (num_removed_tipps > 0) {
                         reviewRequestService.raise(
-                          the_pkg,
-                          "TIPPs retired.",
-                          "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
-                          user,
-                          null,
-                          null,
-                          RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
+                            the_pkg,
+                            "TIPPs retired.",
+                            "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
+                            user,
+                            null,
+                            null,
+                            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
                         )
                       }
                     }
@@ -1311,13 +1321,13 @@ class PackageController {
                     }
 
                     reviewRequestService.raise(
-                      the_pkg,
-                      "Invalid TIPPs.",
-                      "An update for this package failed because of invalid TIPP information (JOB ${job.uuid}).",
-                      user,
-                      null,
-                      (additionalInfo as JSON).toString(),
-                      RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs')
+                        the_pkg,
+                        "Invalid TIPPs.",
+                        "An update for this package failed because of invalid TIPP information (JOB ${job.uuid}).",
+                        user,
+                        null,
+                        (additionalInfo as JSON).toString(),
+                        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs')
                     )
                   }
                 }

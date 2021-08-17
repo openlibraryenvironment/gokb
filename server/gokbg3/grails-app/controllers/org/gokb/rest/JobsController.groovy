@@ -19,7 +19,7 @@ class JobsController {
   def springSecurityService
   ConcurrencyManagerService concurrencyManagerService
 
-  //@Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
+  @Secured("hasAnyRole('ROLE_USER') and isAuthenticated()")
   def index() {
     def result = [:]
     def max = params.limit ? params.int('limit') : 10
@@ -295,8 +295,8 @@ class JobsController {
 
   private def filterJobResults(String propName, def id, int max, int offset, Map result) {
     if (['ownerId', 'groupId', 'linkedItemId'].contains(propName)) {
-      def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.$propName = ?", [id.toLong()])[0]
-      def jobs = JobResult.executeQuery("from JobResult as jr where jr.$propName = ? order by jr.startTime desc", [id.toLong()], [max: max, offset: offset])
+      def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr."+propName+" = :val", [val: id.toLong()])[0]
+      def jobs = JobResult.executeQuery("from JobResult as jr where jr."+propName+" = :val order by jr.startTime desc", [val: id.toLong()], [max: max, offset: offset])
       jobs.each { j ->
         def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
         // No JsonObject for list view

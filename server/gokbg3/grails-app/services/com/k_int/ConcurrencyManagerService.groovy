@@ -1,5 +1,6 @@
 package com.k_int
 
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.JobResult
 import org.gokb.cred.RefdataValue
 import java.util.concurrent.ConcurrentHashMap
@@ -275,7 +276,7 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getComponentJobs(def kbc_id, def max=10, def offset=0) {
+  public Map getComponentJobs(def kbc_id, def max = 10, def offset = 0) {
     return getFilteredJobs("linkedItem", kbc_id, max, offset)
   }
 
@@ -286,7 +287,7 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getUserJobs(def user_id, def max=10, def offset=0) {
+  public Map getUserJobs(def user_id, def max = 10, def offset = 0) {
     return getFilteredJobs("ownerId", user_id, max, offset)
   }
 
@@ -325,6 +326,8 @@ class ConcurrencyManagerService {
     allJobs.each { k, v ->
       if (v[propertyName] == id || v[propertyName]?.id == id) {
         selected << [
+            owner      : User.get(v.ownerId),
+            group      : CuratoryGroup.get(v.groupId),
             uuid       : v.uuid,
             progress   : v.progress,
             messages   : v.messages,
