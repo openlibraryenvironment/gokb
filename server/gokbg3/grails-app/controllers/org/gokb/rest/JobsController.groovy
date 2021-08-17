@@ -5,6 +5,7 @@ import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.JobResult
 import org.gokb.cred.KBComponent
 import org.gokb.cred.Role
@@ -94,11 +95,13 @@ class JobsController {
         def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr")[0]
         def jobs = JobResult.executeQuery("from JobResult as jr order by jr.startTime desc", [], [max: max, offset: offset])
 
-        jobs.each { j ->
+        jobs.each { Job j ->
           def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
           // No JsonObject for list view
 
           result.data << [
+              owner      : User.get(j.ownerId),
+              group      : CuratoryGroup.get(j.groupId),
               uuid       : j.uuid,
               description: j.description,
               type       : j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
