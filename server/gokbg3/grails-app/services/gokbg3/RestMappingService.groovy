@@ -542,7 +542,7 @@ class RestMappingService {
     Set new_ids = []
 
     if (obj && ids instanceof Collection) {
-      ids.each { i ->
+      ids?.each { i ->
         Identifier id = null
         def valid = true
 
@@ -663,7 +663,7 @@ class RestMappingService {
     def current_cgs = obj.getCombosByPropertyName('curatoryGroups')
     RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', obj.getComboTypeValue('curatoryGroups'))
 
-    cgs.each { cg ->
+    cgs?.each { cg ->
       def cg_obj = null
 
       if (cg instanceof String) {
@@ -717,7 +717,7 @@ class RestMappingService {
     def toRemove = []
 
     try {
-      vals.each {
+      vals?.each {
         def newVariant = null
 
         if (it instanceof String) {

@@ -28,11 +28,6 @@ class TitleInstance extends KBComponent {
     "OAStatus": "Unknown"
   ]
 
-  static touchOnUpdate = [
-    "tipps",
-    "tipls"
-  ]
-
   static mapping = {
     // From TitleInstance
     includes KBComponent.mapping
