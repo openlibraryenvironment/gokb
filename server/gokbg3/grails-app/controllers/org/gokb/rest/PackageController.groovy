@@ -670,6 +670,9 @@ class PackageController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def jobs() {
     def result = [:]
+    def max = params.limit ? params.long('limit') : 10
+    def offset = params.offset ? params.long('offset') : 0
+    def base = grailsApplication.config.serverURL + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -686,17 +689,10 @@ class PackageController {
     log.debug("Jobs for Package: ${obj}")
 
     if (obj) {
-      def jobs = concurrencyManagerService.getComponentJobs(obj.id)
+      def jobs = concurrencyManagerService.getComponentJobs(obj.id, max, offset)
 
-      if (jobs && user) {
+      if (jobs) {
         result = jobs
-        if (!user.superUserStatus) {
-          result.data = []
-          jobs.data.each { job ->
-            if (job.owner == user || user.curatoryGroups.contains(job.group))
-              result.data << job
-          }
-        }
       }
       else {
         result.data = []

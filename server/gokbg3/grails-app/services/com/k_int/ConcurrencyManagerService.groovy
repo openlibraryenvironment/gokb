@@ -299,7 +299,7 @@ class ConcurrencyManagerService {
    * @return List of Jobs
    */
   public Map getGroupJobs(def group_id, def max = 10, def offset = 0) {
-    return getFilteredJobs("group_id", group_id, max, offset)
+    return getFilteredJobs("groupId", group_id, max, offset)
   }
 
 /**
@@ -320,26 +320,27 @@ class ConcurrencyManagerService {
       return null
     }
 
-    log.debug("Getting jobs for $paramName ${id}")
+    log.debug("Getting jobs for $propertyName ${id}")
 
     // Filter the jobs.
     allJobs.each { k, v ->
-      if (v[propertyName] == id || v[propertyName]?.id == id) {
-        selected << [
-            owner      : User.get(v.ownerId),
-            group      : CuratoryGroup.get(v.groupId),
-            uuid       : v.uuid,
-            progress   : v.progress,
-            messages   : v.messages,
-            description: v.description,
-            type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
-            begun      : v.begun,
-            linkedItem : v.linkedItem,
-            startTime  : v.startTime,
-            endTime    : v.endTime,
-            cancelled  : v.isCancelled()
-        ]
-      }
+      if (v.hasProperty(propertyName))
+        if (v[propertyName] == id || (v[propertyName].id ? v[propertyName].id == id : false)){
+          CuratoryGroup cg = CuratoryGroup.get(j.groupId)
+          selected << [
+              group      : [id: cg.id, name: cg.name, uuid: cg.uuid],
+              uuid       : v.uuid,
+              progress   : v.progress,
+              messages   : v.messages,
+              description: v.description,
+              type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
+              begun      : v.begun,
+              linkedItem : v.linkedItem,
+              startTime  : v.startTime,
+              endTime    : v.endTime,
+              cancelled  : v.isCancelled()
+          ]
+        }
     }
 
     total = selected.size()

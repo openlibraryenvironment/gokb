@@ -89,7 +89,7 @@ class JobsController {
       }
       // all jobs
     }
-    if (user.superUserStatus) {
+    else if (user.superUserStatus) {
       if (params.archived == "true") {
         result.data = []
         def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr")[0]
@@ -98,10 +98,9 @@ class JobsController {
         jobs.each { Job j ->
           def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
           // No JsonObject for list view
-
+          CuratoryGroup cg = CuratoryGroup.get(j.groupId)
           result.data << [
-              owner      : User.get(j.ownerId),
-              group      : CuratoryGroup.get(j.groupId),
+              group      : [id:cg.id, name:cg.name, uuid: cg.uuid],
               uuid       : j.uuid,
               description: j.description,
               type       : j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
@@ -302,8 +301,8 @@ class JobsController {
 
   private def filterJobResults(String propName, def id, int max, int offset, Map result) {
     if (['ownerId', 'groupId', 'linkedItemId'].contains(propName)) {
-      def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr."+propName+" = :val", [val: id.toLong()])[0]
-      def jobs = JobResult.executeQuery("from JobResult as jr where jr."+propName+" = :val order by jr.startTime desc", [val: id.toLong()], [max: max, offset: offset])
+      def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr." + propName + " = :val", [val: id.toLong()])[0]
+      def jobs = JobResult.executeQuery("from JobResult as jr where jr." + propName + " = :val order by jr.startTime desc", [val: id.toLong()], [max: max, offset: offset])
       jobs.each { j ->
         def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
         // No JsonObject for list view
