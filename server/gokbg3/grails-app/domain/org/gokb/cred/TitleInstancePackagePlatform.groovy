@@ -473,7 +473,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
 
     if (tipp_dto.medium) {
-      def ref = TitleInstance.determineMediumRef(tipp_dto)
+      def ref = determineMediumRef(tipp_dto.medium)
       if (ref == null)
         errors.put('medium', [message: "unknown", baddata: tipp_dto.remove('medium')])
       else
@@ -481,7 +481,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     }
 
     if (tipp_dto.publicationType) {
-      def type = TitleInstancePackagePlatform.determinePubTypeRef(tipp_dto.publicationType)
+      def type = determinePubTypeRef(tipp_dto.publicationType)
       if (type == null)
         errors.put('publicationType', [message: "unknown", baddata: tipp_dto.remove('publicationType')])
       else
@@ -793,7 +793,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.dateFirstInPrint, tipp, 'dateFirstInPrint')
       changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.dateFirstOnline, tipp, 'dateFirstOnline')
       changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.lastChangedExternal, tipp, 'lastChangedExternal')
-      changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', 'TitleInstance.Medium')
+      changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', 'TitleInstancePackagePlatform.Medium')
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.publicationType, tipp, 'publicationType', 'TitleInstancePackagePlatform.PublicationType')
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.language, tipp, 'language')
 
@@ -1092,13 +1092,52 @@ class TitleInstancePackagePlatform extends KBComponent {
     result
   }
 
-  public static RefdataValue determinePubTypeRef(String someType) {
-    if (someType) {
-      RefdataValue[] pubTypes = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE)
-      for (RefdataValue pubType : pubTypes) {
-        if (someType.equalsIgnoreCase(pubType.value)) {
-          return pubType
-        }
+  public static RefdataValue determineMediumRef(def mediumType) {
+    if (mediumType instanceof String) {
+      def rdv = RefdataCategory.lookup("TitleInstancePackagePlatform.Medium", mediumType)
+
+      if (rdv) {
+        return rdv
+      }
+    }
+    else if (mediumType instanceof Integer) {
+      def rdv = RefdataValue.get(mediumType)
+
+      if (rdv && rdv.owner == RefdataCategory.findByLabel("TitleInstancePackagePlatform.Medium")) {
+        return rdv
+      }
+    }
+    else if (mediumType instanceof Map && mediumType.id) {
+      def rdv = RefdataValue.get(mediumType.id)
+
+      if (rdv && rdv.owner == RefdataCategory.findByLabel("TitleInstancePackagePlatform.Medium")) {
+        return rdv
+      }
+    }
+
+    return null
+  }
+
+  public static RefdataValue determinePubTypeRef(def someType) {
+    if (someType instanceof String) {
+      RefdataValue pubType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, someType)
+
+      if (pubType) {
+        return pubType
+      }
+    }
+    else if (someType instanceof Integer) {
+      RefdataValue pubType = RefdataValue.get(someType)
+
+      if (pubType && pubType.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE)) {
+        return pubType
+      }
+    }
+    else if (someType instanceof Map && someType.id) {
+      RefdataValue pubType = RefdataValue.get(someType.id)
+
+      if (pubType && pubType.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE)) {
+        return pubType
       }
     }
     return null
