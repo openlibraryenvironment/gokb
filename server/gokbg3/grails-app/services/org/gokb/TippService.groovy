@@ -13,6 +13,8 @@ import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
 import org.gokb.cred.Package
 
+import java.time.LocalDateTime
+
 
 class TippService {
   def componentUpdateService
@@ -24,15 +26,15 @@ class TippService {
   def matchPackage(Package aPackage) {
 
     def tippIDs = TitleInstancePackagePlatform.executeQuery(
-      'select tipp.id from TitleInstancePackagePlatform as tipp ' +
-        ', Combo as c1 ' +
-        'where ' +
-        'c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 and c1.status=:act and ' +
-        'not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2 and cmb.status=:act)',
-      [rdv2 : RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps'),
-       act  : RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-       , pkg: aPackage, rdv1: RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps')
-      ])
+        'select tipp.id from TitleInstancePackagePlatform as tipp ' +
+            ', Combo as c1 ' +
+            'where ' +
+            'c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 and c1.status=:act and ' +
+            'not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2 and cmb.status=:act)',
+        [rdv2 : RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps'),
+         act  : RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+         , pkg: aPackage, rdv1: RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps')
+        ])
     log.debug("found ${tippIDs.size()} unbound TIPPs in package $aPackage")
     tippIDs.each { id ->
       matchTitle(TitleInstancePackagePlatform.get(id))
@@ -51,16 +53,17 @@ class TippService {
       my_ids << it.id
     }
     found = titleLookupService.find(
-      tipp.name,
-      tipp.getPublisherName(),
-      my_ids,
-      title_class_name
+        tipp.name,
+        tipp.getPublisherName(),
+        my_ids,
+        title_class_name
     )
 
     TitleInstance ti
     if (found.matches.size() == 1) {
       ti = found.matches[0].object
-    } else if (found.to_create == true) {
+    }
+    else if (found.to_create == true) {
       ti = Class.forName(title_class_name).newInstance()
       ti.name = tipp.name
       ti.save(flush: true)
@@ -75,7 +78,7 @@ class TippService {
       componentUpdateService.ensureCoreData(ti, tipp, false, null)
 
       title_changed |= componentUpdateService.setAllRefdata([
-        'medium', 'language'
+          'medium', 'language'
       ], tipp, ti)
 
       def pubFrom = tipp.accessStartDate ? GOKbTextUtils.completeDateString(tipp.accessStartDate.format("yyyy-MM-dd")) : null
@@ -123,6 +126,11 @@ class TippService {
         scanTIPPs(null)
       }
     }
+  }
+
+  def statusUpdate() {
+    log.debug("${TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform tipp set tipp.status=:retired where tipp.status=:current and accessEndDate<:today", [retired: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED), current: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT), today: new Date()])} TIPPs retired")
+    log.debug("${TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform tipp set tipp.status=:current where tipp.status=:expected and accessStartDate<=:today", [expected: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED), current: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT), today: new Date()])} TIPPs activated")
   }
 
   def scanTIPPs(Job job = null) {
@@ -184,13 +192,13 @@ class TippService {
           collection << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name]
         }
         reviewRequestService.raise(
-          tipp,
-          "TIPP matched several titles",
-          "TIPP ${tipp.name} coudn't be linked.",
-          null,
-          null,
-          [otherComponents: collection] as JSON,
-          RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches")
+            tipp,
+            "TIPP matched several titles",
+            "TIPP ${tipp.name} coudn't be linked.",
+            null,
+            null,
+            [otherComponents: collection] as JSON,
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches")
         )
       }
       if (found.conflicts.size > 0) {
@@ -199,13 +207,13 @@ class TippService {
           collection << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name]
         }
         reviewRequestService.raise(
-          tipp,
-          "TIPP conflicts",
-          "TIPP ${tipp.name} conflicts with other titles.",
-          null,
-          null,
-          [otherComponents: collection] as JSON,
-          RefdataCategory.lookup("ReviewRequest.StdDesc", "Major Identifier Mismatch")
+            tipp,
+            "TIPP conflicts",
+            "TIPP ${tipp.name} conflicts with other titles.",
+            null,
+            null,
+            [otherComponents: collection] as JSON,
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Major Identifier Mismatch")
         )
       }
     }
