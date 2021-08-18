@@ -696,7 +696,7 @@ class TitleInstance extends KBComponent {
   }
 
   static determineMediumRef(titleObj) {
-    if (titleObj.medium) {
+    if (titleObj.medium instanceof String) {
       switch (titleObj.medium.toLowerCase()) {
         case "a & i database":
         case "abstract- & indexdatenbank":
@@ -756,9 +756,22 @@ class TitleInstance extends KBComponent {
           return null
       }
     }
-    else {
-      return null
+    else if (titleObj.medium instanceof Integer) {
+      def rdv = RefdataValue.get(titleObj.medium)
+
+      if (rdv && rdv.owner == RefdataCategory.findByLabel("TitleInstance.Medium")) {
+        return rdv
+      }
     }
+    else if (titleObj.medium instanceof Map && titleObj.medium.id) {
+      def rdv = RefdataValue.get(titleObj.medium.id)
+
+      if (rdv && rdv.owner == RefdataCategory.findByLabel("TitleInstance.Medium")) {
+        return rdv
+      }
+    }
+
+    return null
   }
 
   @Transient
