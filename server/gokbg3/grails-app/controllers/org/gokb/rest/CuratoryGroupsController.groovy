@@ -265,6 +265,44 @@ class CuratoryGroupsController {
   }
 
 
+  @Secured(value=["hasRole('ROLE_ADMIN')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def connectGroups() {
+    def result = ['result':'ERROR',
+                  'params': params]
+    if (!params.superordinateId || !params.subordinateId){
+      response.setStatus(422)
+      result.message = "Missing params. Requested parameters are 'superordinateId' and 'subordinateId'"
+    }
+    else{
+      CuratoryGroup superordinate = CuratoryGroup.get(genericOIDService.oidToId(params.superordinateId))
+      CuratoryGroup subordinate = CuratoryGroup.get(genericOIDService.oidToId(params.subordinateId))
+      if (!superordinate || !subordinate){
+        response.setStatus(404)
+        result.message = "CuratoryGroup combination not found for superordinate id ${params.superordinateId} and subordinate id ${params.subordinateId}."
+      }
+      else if (!(superordinate.type.level > subordinate.type.level)){
+        response.setStatus(409)
+        result.message = "The given CuratoryGroups are not connectable in the requested way for hierarchic reasons."
+      }
+      else{
+        try{
+          superordinate.subordinatedGroups << subordinate
+          subordinate.superordinatedGroup = superordinate
+          result.result = 'OK'
+          response.setStatus(200)
+          result.message = "Curatory Groups have been connected."
+        }
+        catch(Exception e){
+          response.setStatus(500)
+          result.message = "Could not process request to connect CuratoryGroups."
+        }
+      }
+    }
+    render result as JSON
+  }
+
+
   @Secured("hasRole('ROLE_ADMIN') and isAuthenticated()")
   def addGroupType() {
     def result = [:]
