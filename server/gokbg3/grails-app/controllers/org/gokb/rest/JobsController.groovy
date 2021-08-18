@@ -42,7 +42,7 @@ class JobsController {
           }
           else {
             concurrencyManagerService.getUserJobs(userId, max, offset).each { k, v ->
-              result.k = v
+              result[k] = v
             }
           }
         }
@@ -63,7 +63,7 @@ class JobsController {
           }
           else {
             concurrencyManagerService.getGroupJobs(groupId, max, offset).each { k, v ->
-              result.k = v
+              result[k] = v
             }
           }
         }
@@ -83,24 +83,24 @@ class JobsController {
         }
         else {
           concurrencyManagerService.getComponentJobs(compId, max, offset).each { k, v ->
-            result.k = v
+            result[k] = v
           }
         }
       }
-      // all jobs
     }
+    // all jobs
     else if (user.superUserStatus) {
       if (params.archived == "true") {
         result.data = []
         def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr")[0]
         def jobs = JobResult.executeQuery("from JobResult as jr order by jr.startTime desc", [], [max: max, offset: offset])
 
-        jobs.each { Job j ->
+        jobs.each { JobResult j ->
           def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
           // No JsonObject for list view
           CuratoryGroup cg = CuratoryGroup.get(j.groupId)
           result.data << [
-              group      : [id:cg.id, name:cg.name, uuid: cg.uuid],
+              group      : cg?[id:cg.id, name:cg.name, uuid: cg.uuid]:null,
               uuid       : j.uuid,
               description: j.description,
               type       : j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
@@ -299,7 +299,7 @@ class JobsController {
     render result as JSON
   }
 
-  private def filterJobResults(String propName, def id, int max, int offset, Map result) {
+  public static def filterJobResults(String propName, def id, def max, def offset, Map result) {
     if (['ownerId', 'groupId', 'linkedItemId'].contains(propName)) {
       def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr." + propName + " = :val", [val: id.toLong()])[0]
       def jobs = JobResult.executeQuery("from JobResult as jr where jr." + propName + " = :val order by jr.startTime desc", [val: id.toLong()], [max: max, offset: offset])

@@ -276,7 +276,7 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getComponentJobs(def kbc_id, def max = 10, def offset = 0) {
+  public Map getComponentJobs(def kbc_id, int max = 10, int offset = 0) {
     return getFilteredJobs("linkedItem", kbc_id, max, offset)
   }
 
@@ -287,7 +287,7 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getUserJobs(def user_id, def max = 10, def offset = 0) {
+  public Map getUserJobs(long user_id, int max = 10, int offset = 0) {
     return getFilteredJobs("ownerId", user_id, max, offset)
   }
 
@@ -298,7 +298,7 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getGroupJobs(def group_id, def max = 10, def offset = 0) {
+  public Map getGroupJobs(long group_id, int max = 10, int offset = 0) {
     return getFilteredJobs("groupId", group_id, max, offset)
   }
 
@@ -310,7 +310,7 @@ class ConcurrencyManagerService {
  * @param offset
  * @return List of Jobs
  */
-  private Map getFilteredJobs(String propertyName, def id, def max = 10, def offset = 0) {
+  private Map getFilteredJobs(String propertyName, long id, int max = 10, int offset = 0) {
     def allJobs = getJobs()
     def selected = []
     def result = [:]
@@ -325,10 +325,10 @@ class ConcurrencyManagerService {
     // Filter the jobs.
     allJobs.each { k, v ->
       if (v.hasProperty(propertyName))
-        if (v[propertyName] == id || (v[propertyName].id ? v[propertyName].id == id : false)){
+        if (v[propertyName] != null && (v[propertyName] == id || (v[propertyName].id ? v[propertyName].id == id : false))) {
           CuratoryGroup cg = CuratoryGroup.get(j.groupId)
           selected << [
-              group      : [id: cg.id, name: cg.name, uuid: cg.uuid],
+              group      : cg ? [id: cg.id, name: cg.name, uuid: cg.uuid] : null,
               uuid       : v.uuid,
               progress   : v.progress,
               messages   : v.messages,

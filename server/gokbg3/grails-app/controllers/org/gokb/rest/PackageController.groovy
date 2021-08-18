@@ -670,41 +670,25 @@ class PackageController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def jobs() {
     def result = [:]
-    def max = params.limit ? params.long('limit') : 10
-    def offset = params.offset ? params.long('offset') : 0
-    def base = grailsApplication.config.serverURL + "/rest"
-    User user = null
-
-    if (springSecurityService.isLoggedIn()) {
-      user = User.get(springSecurityService.principal?.id)
-    }
+    int max = params.limit ? params.int('limit') : 10
+    int offset = params.offset ? params.int('offset') : 0
 
     log.debug("jobs :: ${params}")
-    def obj = Package.findByUuid(params.id)
-
-    if (!obj) {
-      obj = Package.get(params.id)
-    }
+    def obj = Package.findByUuid(params.id)?:Package.get(params.id)
 
     log.debug("Jobs for Package: ${obj}")
 
     if (obj) {
-      def jobs = concurrencyManagerService.getComponentJobs(obj.id, max, offset)
-
-      if (jobs) {
-        result = jobs
+        if (params.boolean('archived') == true) {
+          result.data = []
+          JobsController.filterJobResults('linkedItemId', obj.id, max, offset, result)
+        }
+        else {
+          concurrencyManagerService.getComponentJobs(obj.id, max, offset).each { k, v ->
+            result[k] = v
+          }
+        }
       }
-      else {
-        result.data = []
-        result.result = 'OK'
-        result.message = "no jobs found for Component ${obj.name ?: obj.id}"
-      }
-    }
-    else {
-      result.result = 'ERROR'
-      result.message = "Package id ${params.id} could not be resolved!"
-      response.setStatus(404)
-    }
     render result as JSON
   }
 
