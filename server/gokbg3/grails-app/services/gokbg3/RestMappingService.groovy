@@ -320,7 +320,11 @@ class RestMappingService {
             def cat = RefdataCategory.findByDesc(catName)
 
             if (!cat) {
-              cat = RefdataCategory.findByDesc(catName.split('.')[1])
+              def catParts = catName.split('.')
+
+              if (catParts.size() == 2) {
+                cat = RefdataCategory.findByDesc(catParts[1])
+              }
             }
 
             if (cat) {
