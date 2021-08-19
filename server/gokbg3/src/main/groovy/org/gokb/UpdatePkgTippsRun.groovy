@@ -488,7 +488,8 @@ class UpdatePkgTippsRun {
                   'publisherName'              : tippJson.publisherName,
                   'ids'                        : idents,
                   'importId'                   : tippJson.titleId ?: null,
-                  'accessStartDate'            : tippJson.package.updateDate]
+                  'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : tippJson.package.updateDate,
+                  'accessEndDate'              : tippJson.accessEndDate ? dateFormatService.parseDate(tippJson.accessEndDate) : null]
           ).save()
 //          idents.each { tipp.ids << it }
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
