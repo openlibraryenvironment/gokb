@@ -676,10 +676,9 @@ class UpdatePkgTippsRun {
       // elastic search
       TypeConvertingMap map = [
           componentType     : 'TitleInstancePackagePlatform',
-          identfiers        : [
-            type : providerNamespace.value,
-            value: jsonIdMap[providerNamespace.value]
-          ],
+          identfiers        : providerNamespace.value + ',' + jsonIdMap[providerNamespace.value],
+          pkg               : pkg.uuid,
+          platform          : tippJson.hostPlatform.uuid,
           skipDomainMapping : true
       ]
 
@@ -687,7 +686,8 @@ class UpdatePkgTippsRun {
 
       if (something.records?.size() > 0) {
         log.debug("found by provider namespace ID in ES")
-        return something.records.each { tipps << TitleInstancePackagePlatform.findByUuid(it.uuid) }
+        something.records.each { tipps << TitleInstancePackagePlatform.findByUuid(it.uuid) }
+        return tipps
       }
 
       def found = TitleInstancePackagePlatform.lookupAllByIO(providerNamespace.value, jsonIdMap[providerNamespace.value])
