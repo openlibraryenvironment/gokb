@@ -325,8 +325,9 @@ class ConcurrencyManagerService {
     // Filter the jobs.
     allJobs.each { k, v ->
       if (v.hasProperty(propertyName))
-        if (v[propertyName] != null && (v[propertyName] == id || (v[propertyName].id ? v[propertyName].id == id : false))) {
-          CuratoryGroup cg = CuratoryGroup.get(j.groupId)
+        if ((Integer.isInstance(v[propertyName]) && v[propertyName] == id) ||
+            (Map.isInstance(v[propertyName]) && v[propertyName].id == id)) {
+          CuratoryGroup cg = CuratoryGroup.get(v.groupId)
           selected << [
               group      : cg ? [id: cg.id, name: cg.name, uuid: cg.uuid] : null,
               uuid       : v.uuid,

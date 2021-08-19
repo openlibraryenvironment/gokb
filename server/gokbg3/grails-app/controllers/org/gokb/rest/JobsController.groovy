@@ -38,7 +38,7 @@ class JobsController {
 
           if (params.archived == "true") {
             result.data = []
-            filterJobResults('userId', userId, max, offset, result)
+            filterJobResults('ownerId', userId, max, offset, result)
           }
           else {
             concurrencyManagerService.getUserJobs(userId, max, offset).each { k, v ->
@@ -306,7 +306,9 @@ class JobsController {
       jobs.each { j ->
         def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
         // No JsonObject for list view
+        CuratoryGroup cg = CuratoryGroup.get(j.groupId)
         result.data << [
+            group      : cg ? [id: cg.id, name: cg.name, uuid: cg.uuid] : null,
             uuid       : j.uuid,
             description: j.description,
             type       : j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
