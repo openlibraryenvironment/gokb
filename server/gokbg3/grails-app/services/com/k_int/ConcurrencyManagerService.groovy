@@ -1,5 +1,6 @@
 package com.k_int
 
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.JobResult
 import org.gokb.cred.RefdataValue
 import java.util.concurrent.ConcurrentHashMap
@@ -32,11 +33,11 @@ class ConcurrencyManagerService {
   static {
     // Set the default promise factory and limit to 100 threads.
     Promises.setPromiseFactory(
-      new CachedThreadPoolPromiseFactory(100, 60L, TimeUnit.SECONDS)
+        new CachedThreadPoolPromiseFactory(100, 60L, TimeUnit.SECONDS)
     )
 
     // Immutable pool map.
-    pools = Collections.unmodifiableMap (['smallJobs' : new CachedThreadPoolPromiseFactory(1, 60L, TimeUnit.SECONDS)])
+    pools = Collections.unmodifiableMap(['smallJobs': new CachedThreadPoolPromiseFactory(1, 60L, TimeUnit.SECONDS)])
   }
 
 
@@ -57,7 +58,7 @@ class ConcurrencyManagerService {
 
     public message(String message) {
       log.debug(message);
-      messages.add([timestamp:System.currentTimeMillis(), message:message]);
+      messages.add([timestamp: System.currentTimeMillis(), message: message]);
     }
 
     public message(Map message) {
@@ -73,15 +74,15 @@ class ConcurrencyManagerService {
      * Cancel the job.
      * @see java.util.concurrent.FutureTask#cancel(boolean)
      */
-    public synchronized boolean cancel () {
-      cancel (false)
-     }
+    public synchronized boolean cancel() {
+      cancel(false)
+    }
 
     /**
      * Attempt to force Cancel the job.
      * @see java.util.concurrent.FutureTask#cancel(boolean mayInterruptIfRunning)
      */
-    public synchronized boolean forceCancel () {
+    public synchronized boolean forceCancel() {
       cancel(true)
     }
 
@@ -90,7 +91,7 @@ class ConcurrencyManagerService {
      * @see java.util.concurrent.FutureTask#done()
      */
     @Override
-    public synchronized boolean isDone () {
+    public synchronized boolean isDone() {
       this.task.done
     }
 
@@ -119,14 +120,14 @@ class ConcurrencyManagerService {
     }
 
     @Override
-    public boolean cancel (boolean mayInterruptIfRunning) {
+    public boolean cancel(boolean mayInterruptIfRunning) {
       this.task.cancel(mayInterruptIfRunning)
       message("cancel Job ($uuid)")
       endTime = new Date()
     }
 
     @Override
-    public boolean isCancelled () {
+    public boolean isCancelled() {
       this.task.isCancelled();
     }
 
@@ -134,7 +135,7 @@ class ConcurrencyManagerService {
      * Starts the background task.
      * @return this Job
      */
-    public synchronized Job startOrQueue () {
+    public synchronized Job startOrQueue() {
 
       // Just return if this task has already started.
       if (!begun) {
@@ -155,14 +156,14 @@ class ConcurrencyManagerService {
      * Starts the background task with a named pool.
      * @return this Job
      */
-    public synchronized Job startOrQueue (String poolName) {
+    public synchronized Job startOrQueue(String poolName) {
 
       // Just return if this task has already started.
       if (!begun) {
 
         // Check for a parameter on this closure.
         work = work.rcurry(this)
-        task = ConcurrencyManagerService.pools.get ("${poolName}").createPromise(work as Closure)
+        task = ConcurrencyManagerService.pools.get("${poolName}").createPromise(work as Closure)
 
         begun = true
         startTime = new Date()
@@ -191,8 +192,8 @@ class ConcurrencyManagerService {
       return task.get(time, unit)
     }
 
-    public synchronized def setProgress( progress, total) {
-      this.progress = ( progress.div(total) * 100 )
+    public synchronized def setProgress(progress, total) {
+      this.progress = (progress.div(total) * 100)
     }
 
     public synchronized def setProgress(int progress) {
@@ -203,7 +204,7 @@ class ConcurrencyManagerService {
   // Store each job hashed by ID. ConcurrentHashMap is thread-safe and, with only one thread updating per entry,
   // should perform well enough.
   private Map<String, Job> map = new ConcurrentHashMap<String, Job>().withDefault { String the_id ->
-    new Job (["uuid" : the_id])
+    new Job(["uuid": the_id])
   }
 
   public Map<String, Job> getJobs() {
@@ -220,7 +221,7 @@ class ConcurrencyManagerService {
    * @param task
    * @return a new Job
    */
-  public Job createJob (Closure task) {
+  public Job createJob(Closure task) {
 
     // Just allocate the job ID to the size of the map.
     Job j = createNewJob()
@@ -256,16 +257,27 @@ class ConcurrencyManagerService {
     }
 
     // Get the job.
-    Job j = map.get (job_id)
+    Job j = map.get(job_id)
 
     // Check if the job has finished.
     if (j.isDone() && cleanup) {
       // Remove from the map too as we don't need to keep track any more.
-      map.remove (job_id)
+      map.remove(job_id)
     }
 
     // Return the job.
     j
+  }
+
+  /**
+   * Gets all Jobs for the supplied kbc_id.
+   * @param kbc_id
+   * @param max
+   * @param offset
+   * @return List of Jobs
+   */
+  public Map getComponentJobs(def kbc_id, int max = 10, int offset = 0) {
+    return getFilteredJobs("linkedItem", kbc_id, max, offset)
   }
 
   /**
@@ -275,50 +287,8 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getUserJobs(int user_id, int max, int offset) {
-    def allJobs = getJobs()
-    def selected = []
-    def result = [:]
-    def total = null
-
-    if (user_id == null) {
-      return null
-    }
-
-    // Get the jobs.
-    allJobs.each { k, v ->
-      if (v.ownerId == user_id) {
-        selected << [
-          uuid: v.uuid,
-          progress: v.progress,
-          messages: v.messages,
-          description: v.description,
-          type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
-          begun: v.begun,
-          linkedItem: v.linkedItem,
-          startTime: v.startTime,
-          endTime: v.endTime,
-          cancelled: v.isCancelled()
-        ]
-      }
-    }
-
-    total = selected.size()
-
-    if (offset > 0) {
-      selected = selected.drop(offset)
-    }
-
-    result.data = selected.take(max)
-
-    result._pagination = [
-      total: total,
-      limit: max,
-      offset: offset
-    ]
-
-    // Return the jobs.
-    result
+  public Map getUserJobs(long user_id, int max = 10, int offset = 0) {
+    return getFilteredJobs("ownerId", user_id, max, offset)
   }
 
   /**
@@ -328,34 +298,50 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getGroupJobs(int group_id, int max = 10, int offset = 0) {
+  public Map getGroupJobs(long group_id, int max = 10, int offset = 0) {
+    return getFilteredJobs("groupId", group_id, max, offset)
+  }
+
+/**
+ * filters the job list for specific ids in named parameter fields.
+ * @param parameterName
+ * @param id
+ * @param max
+ * @param offset
+ * @return List of Jobs
+ */
+  private Map getFilteredJobs(String propertyName, long id, int max = 10, int offset = 0) {
     def allJobs = getJobs()
     def selected = []
     def result = [:]
     def total = null
 
-    if (group_id == null) {
+    if (id == null || propertyName == null) {
       return null
     }
 
-    log.debug("Getting jobs for group ${group_id}")
+    log.debug("Getting jobs for $propertyName ${id}")
 
-    // Get the jobs.
+    // Filter the jobs.
     allJobs.each { k, v ->
-      if (v.groupId == group_id) {
-        selected << [
-          uuid: v.uuid,
-          progress: v.progress,
-          messages: v.messages,
-          description: v.description,
-          type: v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
-          begun: v.begun,
-          linkedItem: v.linkedItem,
-          startTime: v.startTime,
-          endTime: v.endTime,
-          cancelled: v.isCancelled()
-        ]
-      }
+      if (v.hasProperty(propertyName))
+        if ((Integer.isInstance(v[propertyName]) && v[propertyName] == id) ||
+            (Map.isInstance(v[propertyName]) && v[propertyName].id == id)) {
+          CuratoryGroup cg = CuratoryGroup.get(v.groupId)
+          selected << [
+              group      : cg ? [id: cg.id, name: cg.name, uuid: cg.uuid] : null,
+              uuid       : v.uuid,
+              progress   : v.progress,
+              messages   : v.messages,
+              description: v.description,
+              type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
+              begun      : v.begun,
+              linkedItem : v.linkedItem,
+              startTime  : v.startTime,
+              endTime    : v.endTime,
+              cancelled  : v.isCancelled()
+          ]
+        }
     }
 
     total = selected.size()
@@ -367,9 +353,9 @@ class ConcurrencyManagerService {
     result.data = selected.take(max)
 
     result._pagination = [
-      total: total,
-      limit: max,
-      offset: offset
+        total : total,
+        limit : max,
+        offset: offset
     ]
 
     // Return the jobs.
@@ -386,16 +372,16 @@ class ConcurrencyManagerService {
       }
 
       def job_map = [
-        uuid: (j.uuid),
-        description: (j.description),
-        resultObject: (result_object as JSON).toString(),
-        type: (j.type),
-        statusText: (result_object.result),
-        ownerId: (j.ownerId),
-        groupId: (j.groupId),
-        startTime: (j.startTime),
-        endTime: (j.endTime),
-        linkedItemId: (j.linkedItem?.id)
+          uuid        : (j.uuid),
+          description : (j.description),
+          resultObject: (result_object as JSON).toString(),
+          type        : (j.type),
+          statusText  : (result_object.result),
+          ownerId     : (j.ownerId),
+          groupId     : (j.groupId),
+          startTime   : (j.startTime),
+          endTime     : (j.endTime),
+          linkedItemId: (j.linkedItem?.id)
       ]
 
       jobResult = new JobResult(job_map).save(flush: true, failOnError: true)
@@ -406,4 +392,5 @@ class ConcurrencyManagerService {
   @javax.annotation.PreDestroy
   def destroy() {
   }
+
 }
