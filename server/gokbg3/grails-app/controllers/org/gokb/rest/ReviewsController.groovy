@@ -5,6 +5,9 @@ import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
 import groovy.json.JsonOutput
+import org.apache.commons.lang.StringUtils
+import org.gokb.cred.AllocatedReviewGroup
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
@@ -346,15 +349,67 @@ class ReviewsController {
     else if (!obj) {
       result.result = 'ERROR'
       response.setStatus(404)
-      result.message = "TitleInstance not found or empty request body!"
+      result.message = "ReviewRequest not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
       response.setStatus(403)
-      result.message = "User is not allowed to delete this component!"
+      result.message = "User is not allowed to delete this ReviewRequest!"
     }
     render result as JSON
   }
+
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def escalate() {
+    def result = ['result':'ERROR', 'params': params]
+    def rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
+    def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
+    def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+
+    if (rr){
+      if (rr.isEditable()){
+        def argsExisting = rr.allocatedGroups
+        if (argsExisting && !argsExisting.isEmpty()){
+          List<AllocatedReviewGroup> inProgressARGs = AllocatedReviewGroup.findAllByStatus(inProgress)
+          if (!inProgressARGs.isEmpty()){
+            if (!inProgressARGs.size() > 1){
+              // all conditions are met --> escalate
+              argsExisting.each{arg -> arg.status = inactive}
+              CuratoryGroup escalatedToCG = inProgressARGs.get(0).group.superordinatedGroup
+              reviewRequestService.escalate(inProgressARGs.get(0), escalatedToCG)
+              response.setStatus(200)
+              result.message = "The requested ReviewRequest has been escalated."
+              result.result = 'OK'
+            }
+            else{
+              response.setStatus(409)
+              result.message = "The requested ReviewRequest can not be escalated due to multiple group allocations being in progress."
+            }
+          }
+          else{
+            response.setStatus(409)
+            result.message = "The requested ReviewRequest can not be escalated due to missing group allocations being in progress."
+          }
+        }
+        else{
+          response.setStatus(409)
+          result.message = "The requested ReviewRequest can not be escalated due to missing group allocations."
+        }
+      }
+      else{
+        response.setStatus(403)
+        result.message = "User is not allowed to edit this ReviewRequest."
+      }
+    }
+    else{
+      response.setStatus(404)
+      result.message = "ReviewRequest not found or empty request body."
+    }
+    render result as JSON
+  }
+
 
   private def isUserCurator(obj, user) {
     def curator = false
@@ -365,9 +420,9 @@ class ReviewsController {
     else if (obj.allocatedGroups?.group.id.intersect(user.curatoryGroups?.id)) {
       curator = true
     }
-
     curator
   }
+
 
   private def generateLinks(obj,user) {
     def base = grailsApplication.config.serverURL + "/rest" + obj.restPath + "/${obj.id}"
