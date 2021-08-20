@@ -247,6 +247,7 @@ class UpdatePkgTippsRun {
                 }
                 else {
                   to_retire.retire()
+                  to_retire.accessEndDate = to_retire.accessEndDate ?: new Date()
                 }
 
                 log.info("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
