@@ -247,7 +247,9 @@ class UpdatePkgTippsRun {
                 }
                 else {
                   to_retire.retire()
-                  to_retire.accessEndDate = to_retire.accessEndDate ?: (tippJson.accessEndDate ? dateFormatService.parseDate(tippJson.accessEndDate) : null)
+                  to_retire.accessEndDate = to_retire.accessEndDate ?:
+                      (rjson.packageHeader.fileNameDate ?
+                          dateFormatService.parseDate(rjson.packageHeader.fileNameDate) : new Date())
                 }
 
                 log.info("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
