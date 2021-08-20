@@ -154,7 +154,7 @@
         <g:annotatedLabel owner="${d}" property="medium">Medium</g:annotatedLabel>
     </dt>
     <dd>
-        <g:xEditableRefData owner="${d}" field="medium" config='TitleInstancePackagePlatform.Medium'/>
+        <g:xEditableRefData owner="${d}" field="medium" config='TitleInstance.Medium'/>
     </dd>
 
     <dt>
