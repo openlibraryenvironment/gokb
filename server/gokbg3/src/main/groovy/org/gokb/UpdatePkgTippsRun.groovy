@@ -533,11 +533,11 @@ class UpdatePkgTippsRun {
               additionalInfo as JSON,
               RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple Matches')
           )
-          current_tipps.each {
-            if (tipp != it) {
-              it.retire()
-            }
-          }
+//          current_tipps.each {
+//            if (tipp != it) {
+//              it.retire()
+//            }
+//          }
         }
       } catch (grails.validation.ValidationException ve) {
         log.error("ValidationException attempting to create/update TIPP", ve)

@@ -129,8 +129,8 @@ class TippService {
   }
 
   def statusUpdate() {
-    log.debug("${TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform tipp set tipp.status=:retired where tipp.status=:current and accessEndDate<:today", [retired: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED), current: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT), today: new Date()])} TIPPs retired")
-    log.debug("${TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform tipp set tipp.status=:current where tipp.status=:expected and accessStartDate<=:today", [expected: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED), current: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT), today: new Date()])} TIPPs activated")
+    log.debug("${TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform tipp set tipp.status=:retired, tipp.lastUpdated=:today where tipp.status=:current and accessEndDate<:today", [retired: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED), current: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT), today: new Date()])} TIPPs retired")
+    log.debug("${TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform tipp set tipp.status=:current, tipp.lastUpdated=:today where tipp.status=:expected and accessStartDate<=:today", [expected: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED), current: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT), today: new Date()])} TIPPs activated")
   }
 
   def scanTIPPs(Job job = null) {
