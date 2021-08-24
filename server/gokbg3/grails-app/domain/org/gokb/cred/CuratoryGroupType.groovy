@@ -14,16 +14,18 @@ class CuratoryGroupType extends KBComponent{
 
 
   static enum Level{
-    PACKAGE  ("PACKAGE", 25),
-    TITLE    ("TITLE", 50),
-    CENTRAL  ("CENTRAL", 75)
+    PACKAGE  (25),
+    TITLE    (50),
+    CENTRAL  (75)
 
-    private final String name
     private final int levelNumber
 
+    Level(int levelNumber) {
+      this.levelNumber = levelNumber
+    }
 
-    private Level(String name) {
-      this.name = name
+    int getLevelNumber(){
+      levelNumber
     }
 
     Level getByName(String name){

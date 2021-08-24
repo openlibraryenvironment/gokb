@@ -304,12 +304,13 @@ class CuratoryGroupsController {
 
 
   @Secured("hasRole('ROLE_ADMIN') and isAuthenticated()")
+  @Transactional
   def createGroupType() {
     def result = [:]
     CuratoryGroupType.Level level
     String name
     try{
-      level = CuratoryGroupType.Level.getByName(params.level?.toUpperCase())
+      level = params.level?.toUpperCase()
       if (StringUtils.isEmpty(params.name)){
         throw new Exception("Missing param name.")
       }
