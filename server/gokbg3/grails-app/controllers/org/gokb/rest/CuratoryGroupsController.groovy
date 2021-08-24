@@ -304,14 +304,12 @@ class CuratoryGroupsController {
 
 
   @Secured("hasRole('ROLE_ADMIN') and isAuthenticated()")
-  def addGroupType() {
+  def createGroupType() {
     def result = [:]
     CuratoryGroupType.Level level
-    CuratoryGroupType.MediumScope scope
     String name
     try{
       level = CuratoryGroupType.Level.getByName(params.level)
-      scope = CuratoryGroupType.MediumScope.getByName(params.mediumScope)
       if (StringUtils.isEmpty(params.name)){
         throw new Exception("Missing param name.")
       }
@@ -322,8 +320,8 @@ class CuratoryGroupsController {
       response.setStatus(500)
       result.message = "No CuratoryGroupType found for these params. ".concat(e.getMessage())
     }
-    if (level && scope && name){
-      CuratoryGroupType cgt = new CuratoryGroupType(level:level, name:name, mediumScope:scope)
+    if (level && name){
+      CuratoryGroupType cgt = new CuratoryGroupType(level:level, name:name)
       cgt.dump()
       result.result = 'OK'
       response.setStatus(200)
