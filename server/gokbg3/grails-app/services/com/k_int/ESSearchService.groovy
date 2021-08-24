@@ -388,7 +388,7 @@ class ESSearchService{
         }
       }
       else {
-        labelQuery.should(QueryBuilders.termQuery('uuid', qpars.q).boost(10))
+        labelQuery.should(QueryBuilders.termQuery('uuid', qpars.label).boost(10))
       }
 
       labelQuery.should(QueryBuilders.matchQuery('name', qpars.label).boost(2))
@@ -719,7 +719,7 @@ class ESSearchService{
           def response_record = [:]
 
           if (!params.skipDomainMapping) {
-            response_record = mapEsToDomain(r, params)
+            response_record = mapEsToDomain(r, params, user)
           }
           else {
             response_record.id = r.id
@@ -840,7 +840,7 @@ class ESSearchService{
    * @param params : Request params
    */
 
-  private Map mapEsToDomain(record, params) {
+  private Map mapEsToDomain(record, params, def user = null) {
     def domainMapping = [:]
     def base = grailsApplication.config.serverURL + "/rest"
     def linkedObjects = [:]
@@ -871,7 +871,19 @@ class ESSearchService{
       }
 
       if (obj_cls.hasProperty('restPath')) {
-        domainMapping['_links'] = ['self': ['href': base + obj_cls.restPath + "/${rec_id}"]]
+        domainMapping['_links'] = [
+          'self': ['href': base + obj_cls.restPath + "/${rec_id}"]
+        ]
+
+        def is_curator = true
+
+        if (user && record.source.curatoryGroups?.size() > 0) {
+          is_curator = user?.curatoryGroups?.name.intersect(record.source.curatoryGroups)
+        }
+
+        def href = (user?.hasRole('ROLE_EDITOR') && is_curator) || user?.isAdmin() ? base + obj_cls.restPath + "/${rec_id}" : null
+        domainMapping['_links']['update'] = ['href': href]
+        domainMapping['_links']['delete'] = ['href': href]
       }
 
       domainMapping['_embedded'] = [:]
