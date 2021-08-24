@@ -687,12 +687,11 @@ class UpdatePkgTippsRun {
     if (providerNamespace && jsonIdMap[providerNamespace.value]) {
       // elastic search
       TypeConvertingMap map = [
-          componentType    : 'TitleInstancePackagePlatform',
-          identfiers       : [
-              type : providerNamespace.value,
-              value: jsonIdMap[providerNamespace.value]
-          ],
-          skipDomainMapping: true
+          componentType     : 'TitleInstancePackagePlatform',
+          identfiers        : providerNamespace.value + ',' + jsonIdMap[providerNamespace.value],
+          pkg               : pkg.uuid,
+          platform          : tippJson.hostPlatform.uuid,
+          skipDomainMapping : true
       ]
 
       def something = esSearchService.find(map)
@@ -725,11 +724,9 @@ class UpdatePkgTippsRun {
           def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
           if (found.size() > 0) {
             found.each {
-              if (TitleInstancePackagePlatform.isInstance(it)) {
-                def tipp = TitleInstancePackagePlatform.get(it.id)
-                if (!tipps.contains(tipp) && tipp.pkg == pkg && tipp.status == status_current && tipp.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
-                  tipps.add(tipp)
-                }
+              if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
+                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
+                tipps.add(it)
               }
             }
           }
@@ -746,11 +743,9 @@ class UpdatePkgTippsRun {
           def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
           if (found.size() > 0) {
             found.each {
-              if (TitleInstancePackagePlatform.isInstance(it)) {
-                def tipp = TitleInstancePackagePlatform.get(it.id)
-                if (!tipps.contains(tipp) && tipp.pkg == pkg && tipp.status == status_current && tipp.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
-                  tipps.add(tipp)
-                }
+              if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
+                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
+                tipps.add(it)
               }
             }
           }

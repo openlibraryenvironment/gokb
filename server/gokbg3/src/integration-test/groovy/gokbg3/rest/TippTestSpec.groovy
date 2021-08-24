@@ -66,7 +66,7 @@ class TippTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/tipps") {
+    RestResponse resp = rest.get("${urlPath}/rest/tipps?_embed=prices") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -74,17 +74,18 @@ class TippTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200 // OK
     resp.json != null
+    resp.json.data['_embedded'].prices.size() > 0
   }
 
   void "test /rest/tipps POST"() {
     given:
     def upd_body = [
-        pkg         : testPackage.id,
-        hostPlatform: testPlatform.id,
-        name        : "TippName",
-        title       : testTitle.id,
-        url         : "http://host-url.test/old",
-        coverage    : [
+        pkg          : testPackage.id,
+        hostPlatform : testPlatform.id,
+        name         : "TippName",
+        title        : testTitle.id,
+        url          : "http://host-url.test/old",
+        coverage     : [
             [
                 startDate    : "2010-01-01",
                 startVolume  : "1",
@@ -92,8 +93,16 @@ class TippTestSpec extends AbstractAuthSpec {
                 coverageDepth: "Fulltext"
             ]
         ],
-            publisherName: "other Publisher"
+        publisherName: "other Publisher",
+        prices       : [
+            [
+                type    : [name:'list'],
+                price  : 12.95,
+                currency: [name:"EUR"]
+            ]
+        ]
     ]
+
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
@@ -103,6 +112,7 @@ class TippTestSpec extends AbstractAuthSpec {
       auth("Bearer $accessToken")
       body(upd_body as JSON)
     }
+
     then:
     resp.status == 200 // OK
     resp.json.url == upd_body.url
@@ -157,4 +167,5 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.json._embedded.coverageStatements?.size() == 2
     resp.json._embedded.coverageStatements.collect { it.id }.contains(tipp.coverageStatements[0].id.toInteger()) == true
   }
+
 }
