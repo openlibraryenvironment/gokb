@@ -1,6 +1,6 @@
 package org.gokb.cred
 
-class CuratoryGroupType {
+class CuratoryGroupType extends KBComponent{
 
     // TODO: frontend admin section
 
@@ -14,11 +14,17 @@ class CuratoryGroupType {
 
 
     static enum Level{
-        PACKAGE    (25),
-        TITLE      (50),
-        CENTRAL    (75)
+        PACKAGE    ("PACKAGE", 25),
+        TITLE      ("TITLE", 50),
+        CENTRAL    ("CENTRAL", 75)
 
+        private final String name
         private final int levelNumber
+
+
+        private Level(String name) {
+            this.name = name
+        }
 
         Level getByName(String name){
             for (Level level : Level.values()) {

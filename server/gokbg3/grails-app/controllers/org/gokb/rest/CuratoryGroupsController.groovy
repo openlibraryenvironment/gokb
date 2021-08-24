@@ -309,7 +309,7 @@ class CuratoryGroupsController {
     CuratoryGroupType.Level level
     String name
     try{
-      level = CuratoryGroupType.Level.getByName(params.level)
+      level = CuratoryGroupType.Level.getByName(params.level?.toUpperCase())
       if (StringUtils.isEmpty(params.name)){
         throw new Exception("Missing param name.")
       }
