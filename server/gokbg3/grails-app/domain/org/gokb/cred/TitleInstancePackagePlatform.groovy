@@ -593,7 +593,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
           'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
           [pkg, plt, ti])
-      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
+      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : (tipp_dto.id ? TitleInstancePackagePlatform.get(tipp_dto.id) : null)
       tipp = null
 
       if (uuid_tipp && uuid_tipp.pkg == pkg && uuid_tipp.title == ti && uuid_tipp.hostPlatform == plt) {
@@ -810,11 +810,11 @@ class TitleInstancePackagePlatform extends KBComponent {
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'editionStatement', tipp_dto.editionStatement)
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'parentPublicationTitleId', tipp_dto.parentPublicationTitleId)
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'precedingPublicationTitleId', tipp_dto.precedingPublicationTitleId)
-      changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessStartDate, tipp, 'accessStartDate')
-      changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.accessEndDate, tipp, 'accessEndDate')
-      changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.dateFirstInPrint, tipp, 'dateFirstInPrint')
-      changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.dateFirstOnline, tipp, 'dateFirstOnline')
-      changed |= com.k_int.ClassUtils.setDateIfPresent(tipp_dto.lastChangedExternal, tipp, 'lastChangedExternal')
+      changed |= com.k_int.ClassUtils.updateDateField(tipp_dto.accessStartDate, tipp, 'accessStartDate')
+      changed |= com.k_int.ClassUtils.updateDateField(tipp_dto.accessEndDate, tipp, 'accessEndDate')
+      changed |= com.k_int.ClassUtils.updateDateField(tipp_dto.dateFirstInPrint, tipp, 'dateFirstInPrint')
+      changed |= com.k_int.ClassUtils.updateDateField(tipp_dto.dateFirstOnline, tipp, 'dateFirstOnline')
+      changed |= com.k_int.ClassUtils.updateDateField(tipp_dto.lastChangedExternal, tipp, 'lastChangedExternal')
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', 'TitleInstancePackagePlatform.Medium')
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.publicationType, tipp, 'publicationType', 'TitleInstancePackagePlatform.PublicationType')
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.language, tipp, 'language')
@@ -839,8 +839,8 @@ class TitleInstancePackagePlatform extends KBComponent {
         changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
         changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
         changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
-        changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tipp, 'startDate')
-        changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tipp, 'endDate')
+        changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tipp, 'startDate')
+        changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tipp, 'endDate')
         changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
 
         def cs_match = false
@@ -857,8 +857,8 @@ class TitleInstancePackagePlatform extends KBComponent {
             changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
             changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
             changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-            changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tcs, 'startDate')
-            changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tcs, 'endDate')
+            changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tcs, 'startDate')
+            changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
             changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
             cs_match = true
@@ -898,8 +898,8 @@ class TitleInstancePackagePlatform extends KBComponent {
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-              changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tcs, 'startDate')
-              changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tcs, 'endDate')
+              changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tcs, 'startDate')
+              changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
               changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
             }
           }
