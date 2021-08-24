@@ -29,6 +29,7 @@ class TippController {
   def messageService
   def restMappingService
   def componentLookupService
+  def tippService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -191,7 +192,7 @@ class TippController {
           obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
           errors << updateCombos(obj, reqBody)
-          obj = updateCoverage(obj, reqBody)
+          obj = tippService.updateCoverage(obj, reqBody)
 
           if (obj?.validate()) {
             if (errors.size() == 0) {
@@ -251,98 +252,6 @@ class TippController {
     }
 
     errors
-  }
-
-  private def updateCoverage(tipp, reqBody) {
-    def cov_list = reqBody.coverageStatements ?: reqBody.coverage
-    def missing = tipp.coverageStatements.collect { it.id }
-    def changed = false
-
-    cov_list?.each { c ->
-      def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-      def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
-
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
-      changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tipp, 'startDate')
-      changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tipp, 'endDate')
-      changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
-
-      def cs_match = false
-      def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-      def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-
-      tipp.coverageStatements?.each { tcs ->
-
-        if (!cs_match && (
-          (c.id && tcs.id == c.id) ||
-            (tcs.startVolume && tcs.startVolume == c.startVolume) ||
-            (tcs.startDate && tcs.startDate == startAsDate) ||
-            (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
-        ) {
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tcs, 'startDate')
-          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tcs, 'endDate')
-
-          cs_match = true
-          missing.remove(tcs.id)
-        }
-        else if (cs_match) {
-          log.debug("Matched new coverage ${c} on multiple existing coverages!")
-        }
-      }
-
-      if (!cs_match) {
-
-        def cov_depth = null
-
-        if (c.coverageDepth instanceof String) {
-          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
-        }
-        else if (c.coverageDepth instanceof Integer) {
-          cov_depth = RefdataValue.get(c.coverageDepth)
-        }
-        else if (c.coverageDepth instanceof Map) {
-          if (c.coverageDepth.id) {
-            cov_depth = RefdataValue.get(c.coverageDepth.id)
-          }
-          else {
-            cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
-          }
-        }
-
-        if (!cov_depth) {
-          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
-        }
-
-        tipp.addToCoverageStatements('startVolume': c.startVolume,  \
-           'startIssue': c.startIssue,  \
-           'endVolume': c.endVolume,  \
-           'endIssue': c.endIssue,  \
-           'embargo': c.embargo,  \
-           'coverageDepth': cov_depth,  \
-           'coverageNote': c.coverageNote,  \
-           'startDate': startAsDate,  \
-           'endDate': endAsDate
-        )
-      }
-    }
-    if (cov_list) {
-      missing.each {
-        tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(it))
-      }
-    }
-
-    tipp
   }
 
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')

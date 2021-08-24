@@ -514,7 +514,10 @@ class UpdatePkgTippsRun {
           log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
         }
 
-        tipp?.merge()
+        if (tipp) {
+          tipp = tippService.updateCoverage(tipp, tippJson)
+          tipp.merge()
+        }
 
         if (current_tipps.size() > 1 && tipp) {
           log.debug("multimatch (${current_tipps.size()}) for $tipp")
@@ -696,7 +699,8 @@ class UpdatePkgTippsRun {
 
       if (something.records?.size() > 0) {
         log.debug("found by provider namespace ID in ES")
-        return something.records.each { tipps << TitleInstancePackagePlatform.findByUuid(it.uuid) }
+        something.records.each { tipps << TitleInstancePackagePlatform.findByUuid(it.uuid) }
+        return tipps
       }
 
       def found = TitleInstancePackagePlatform.lookupAllByIO(providerNamespace.value, jsonIdMap[providerNamespace.value])

@@ -5,7 +5,6 @@ import com.k_int.ClassUtils
 import org.gokb.GOKbTextUtils
 import groovy.util.logging.*
 
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -65,8 +64,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   Date lastChangedExternal
   RefdataValue medium
   String importId
-
-  private static SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
 
   private static refdataDefaults = [
     "format"       : "Electronic",
