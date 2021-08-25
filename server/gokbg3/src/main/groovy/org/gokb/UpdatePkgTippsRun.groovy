@@ -2,6 +2,7 @@ package org.gokb
 
 import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ESSearchService
+import gokbg3.DateFormatService
 import gokbg3.MessageService
 import grails.converters.JSON
 import grails.plugin.springsecurity.SpringSecurityService
@@ -25,6 +26,7 @@ class UpdatePkgTippsRun {
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
   static ESSearchService esSearchService = Holders.grailsApplication.mainContext.getBean('ESSearchService')
   static TippService tippService = Holders.grailsApplication.mainContext.getBean('tippService')
+  static DateFormatService dateFormatService = Holders.grailsApplication.mainContext.getBean('dateFormatService')
 
   static LOCK = new Object()
 
@@ -154,7 +156,8 @@ class UpdatePkgTippsRun {
           log.info("Handling #$idx TIPP ${json_tipp.name ?: json_tipp.title.name}")
 
           if ((json_tipp.package == null) && (pkg.id)) {
-            json_tipp.package = [internalId: pkg.id]
+            json_tipp.package = [internalId: pkg.id,
+                                 updateDate: rjson.packageHeader.fileNameDate ? dateFormatService.parseDate(rjson.packageHeader.fileNameDate) : new Date()]
           }
           else {
             log.error("No package")
@@ -244,6 +247,9 @@ class UpdatePkgTippsRun {
                 }
                 else {
                   to_retire.retire()
+                  to_retire.accessEndDate = to_retire.accessEndDate ?:
+                      (rjson.packageHeader.fileNameDate ?
+                          dateFormatService.parseDate(rjson.packageHeader.fileNameDate) : new Date())
                 }
 
                 log.info("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
@@ -484,7 +490,9 @@ class UpdatePkgTippsRun {
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                   'publisherName'              : tippJson.publisherName,
                   'ids'                        : idents,
-                  'importId'                   : tippJson.titleId ?: null]
+                  'importId'                   : tippJson.titleId ?: null,
+                  'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : tippJson.package.updateDate,
+                  'accessEndDate'              : tippJson.accessEndDate ? dateFormatService.parseDate(tippJson.accessEndDate) : null]
           ).save()
 //          idents.each { tipp.ids << it }
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
@@ -506,11 +514,14 @@ class UpdatePkgTippsRun {
           log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
         }
 
-        tipp?.merge()
+        if (tipp) {
+          tipp = tippService.updateCoverage(tipp, tippJson)
+          tipp.merge()
+        }
 
         if (current_tipps.size() > 1 && tipp) {
           log.debug("multimatch (${current_tipps.size()}) for $tipp")
-          def additionalInfo = [ otherComponents: [] ]
+          def additionalInfo = [otherComponents: []]
 
           current_tipps.eachWithIndex { ct, idx ->
             if (idx > 0) {
@@ -528,10 +539,11 @@ class UpdatePkgTippsRun {
               additionalInfo as JSON,
               RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple Matches')
           )
-          current_tipps.each {
-            if (tipp != it)
-              it.setStatus(status_retired)
-          }
+//          current_tipps.each {
+//            if (tipp != it) {
+//              it.retire()
+//            }
+//          }
         }
       } catch (grails.validation.ValidationException ve) {
         log.error("ValidationException attempting to create/update TIPP", ve)
@@ -620,11 +632,11 @@ class UpdatePkgTippsRun {
     if (tippJson.titleId) {
       // elastic search
       TypeConvertingMap map = [
-          componentType     : 'TitleInstancePackagePlatform',
-          importId          : tippJson.titleId,
-          pkg               : pkg.uuid,
-          platform          : tippJson.hostPlatform.uuid,
-          skipDomainMapping : true
+          componentType    : 'TitleInstancePackagePlatform',
+          importId         : tippJson.titleId,
+          pkg              : pkg.uuid,
+          platform         : tippJson.hostPlatform.uuid,
+          skipDomainMapping: true
       ]
       def something = esSearchService.find(map)
       if (something.records?.size() > 0) {

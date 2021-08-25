@@ -29,6 +29,7 @@ class TippController {
   def messageService
   def restMappingService
   def componentLookupService
+  def tippService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -188,9 +189,10 @@ class TippController {
         if (tipp_validation.valid) {
           def jsonMap = obj.jsonMapping
 
-          obj = TitleInstancePackagePlatform.upsertDTO(reqBody, user)
+          obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
           errors << updateCombos(obj, reqBody)
+          obj = tippService.updateCoverage(obj, reqBody)
 
           if (obj?.validate()) {
             if (errors.size() == 0) {
