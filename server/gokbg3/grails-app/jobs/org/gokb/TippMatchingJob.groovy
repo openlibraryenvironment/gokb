@@ -16,7 +16,7 @@ class TippMatchingJob {
 
   static triggers = {
     // Cron timer.
-    cron name: 'TippMatchingTrigger', cronExpression: "0 40 * * * ?"
+    cron name: 'TippMatchingTrigger', cronExpression: "0 0 4 * * ?"
   }
 
   @Autowired
