@@ -810,7 +810,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       changed |= com.k_int.ClassUtils.updateDateField(tipp_dto.dateFirstInPrint, tipp, 'dateFirstInPrint')
       changed |= com.k_int.ClassUtils.updateDateField(tipp_dto.dateFirstOnline, tipp, 'dateFirstOnline')
       changed |= com.k_int.ClassUtils.updateDateField(tipp_dto.lastChangedExternal, tipp, 'lastChangedExternal')
-      changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', 'TitleInstancePackagePlatform.Medium')
+      changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', TitleInstancePackagePlatform.RD_MEDIUM)
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.publicationType, tipp, 'publicationType', 'TitleInstancePackagePlatform.PublicationType')
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.language, tipp, 'language')
 
