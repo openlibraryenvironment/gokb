@@ -1136,7 +1136,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   public static RefdataValue determineMediumRef(def mediumType) {
     if (mediumType instanceof String) {
-      def rdv = RefdataCategory.lookup("TitleInstancePackagePlatform.Medium", mediumType)
+      def rdv = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, mediumType)
 
       if (rdv) {
         return rdv
@@ -1145,14 +1145,14 @@ class TitleInstancePackagePlatform extends KBComponent {
     else if (mediumType instanceof Integer) {
       def rdv = RefdataValue.get(mediumType)
 
-      if (rdv && rdv.owner == RefdataCategory.findByLabel("TitleInstancePackagePlatform.Medium")) {
+      if (rdv && rdv.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)) {
         return rdv
       }
     }
     else if (mediumType instanceof Map && mediumType.id) {
       def rdv = RefdataValue.get(mediumType.id)
 
-      if (rdv && rdv.owner == RefdataCategory.findByLabel("TitleInstancePackagePlatform.Medium")) {
+      if (rdv && rdv.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)) {
         return rdv
       }
     }
