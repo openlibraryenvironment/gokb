@@ -23,7 +23,7 @@ appender('STDOUT', ConsoleAppender) {
 }
 
 if (Environment.isDevelopmentMode() || Environment.current == Environment.TEST) {
-  logger('com.k_int', ERROR)
+  logger('com.k_int', DEBUG)
   logger('org.gokb', DEBUG)
   logger('gokbg3', ERROR)
 

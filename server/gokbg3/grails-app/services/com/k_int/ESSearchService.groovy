@@ -39,8 +39,13 @@ class ESSearchService{
       generic: [
           "id",
           "uuid",
-          "listStatus",
           "importId"
+      ],
+      refdata: [
+        "listStatus",
+        "global",
+        "editStatus",
+        "status"
       ],
       simpleMap: [
           "curatoryGroup": "curatoryGroups",
@@ -50,7 +55,6 @@ class ESSearchService{
           "identifier",
           "ids",
           "identifiers",
-          "status",
           "componentType",
           "platform",
           "suggest",
@@ -318,33 +322,29 @@ class ESSearchService{
     }
   }
 
-  private void addStatusQuery(query, errors, status) {
-    if (!status){
-      query.must(QueryBuilders.termQuery('status', 'Current'))
-      return
-    }
-    QueryBuilder statusQuery = QueryBuilders.boolQuery()
-    if (status.getClass().isArray() || status instanceof List){
-      status.each {
-        addStatusToQuery(it, statusQuery)
+  private void addRefdataQuery(query, errors, field, value) {
+    QueryBuilder refdataQuery = QueryBuilders.boolQuery()
+    if (value.getClass().isArray() || value instanceof List){
+      value.each {
+        addRefdataToQuery(it, refdataQuery, field)
       }
     }
-    if (status instanceof String){
-      addStatusToQuery(status, statusQuery)
+    if (value instanceof String){
+      addRefdataToQuery(value, refdataQuery, field)
     }
-    statusQuery.minimumNumberShouldMatch(1)
-    query.must(statusQuery)
+    refdataQuery.minimumNumberShouldMatch(1)
+    query.must(refdataQuery)
     return
   }
 
 
-  private void addStatusToQuery(String status, QueryBuilder statusQuery){
+  private void addRefdataToQuery(String value, QueryBuilder refdataQuery, String field){
     try{
-      status = RefdataValue.get(Long.valueOf(status))
+      value = RefdataValue.get(Long.valueOf(value))?.value
     }
     catch (Exception e){
     }
-    statusQuery.should(QueryBuilders.termQuery('status', status))
+    refdataQuery.should(QueryBuilders.matchQuery(field, value))
   }
 
 
@@ -498,7 +498,7 @@ class ESSearchService{
         QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
         scrollQuery.must(typeFilter)
       }
-      addStatusQuery(scrollQuery, errors, params.status)
+      addRefdataQuery(scrollQuery, errors, 'status', params.status)
       // addDateQueries(scrollQuery, errors, params)
       // TODO: add this after upgrade to Elasticsearch 7
       // TODO: alternative query builders for scroll searches with q
@@ -628,7 +628,6 @@ class ESSearchService{
       QueryBuilder exactQuery = QueryBuilders.boolQuery()
 
       filterByComponentType(exactQuery, component_type, params)
-      addStatusQuery(exactQuery, errors, params.status)
       addDateQueries(exactQuery, errors, params)
       processNameFields(exactQuery, errors, params)
       processGenericFields(exactQuery, errors, params)
@@ -787,6 +786,9 @@ class ESSearchService{
       else if (requestMapping.linked?.containsKey(k)){
         processLinkedField(exactQuery, requestMapping.linked[k], v)
       }
+      else if (requestMapping.refdata?.contains(k)) {
+        addRefdataQuery(exactQuery, errors, k, v)
+      }
       else if (k.contains('platform') || k.contains('Platform')){
         if (!platformParam){
           platformParam = k
@@ -808,6 +810,11 @@ class ESSearchService{
       else{
         unknown_fields.add(k)
       }
+    }
+    if (!params.status) {
+      QueryBuilder statusQuery = QueryBuilders.boolQuery()
+      statusQuery.mustNot(QueryBuilders.termQuery('status', 'Deleted'))
+      exactQuery.must(statusQuery)
     }
   }
 
