@@ -42,8 +42,8 @@ class TippService {
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
-      changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tipp, 'startDate')
-      changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tipp, 'endDate')
+      changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tipp, 'startDate')
+      changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tipp, 'endDate')
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
 
       def cs_match = false
@@ -64,8 +64,8 @@ class TippService {
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tcs, 'startDate')
-          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tcs, 'endDate')
+          changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tcs, 'startDate')
+          changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
 
           cs_match = true
           missing.remove(tcs.id)
