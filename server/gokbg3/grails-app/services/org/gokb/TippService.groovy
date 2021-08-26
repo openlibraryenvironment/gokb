@@ -19,7 +19,6 @@ import org.gokb.cred.Package
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-
 class TippService {
   def componentUpdateService
   def titleLookupService
@@ -157,9 +156,11 @@ class TippService {
 
     TitleInstance ti
     if (found.matches.size() == 1) {
+      // exactly one match
       ti = found.matches[0].object
     }
     else if (found.to_create == true) {
+      // unknown title
       ti = Class.forName(title_class_name).newInstance()
       ti.name = tipp.name
       ti.save(flush: true)
@@ -184,7 +185,7 @@ class TippService {
 
       log.debug("Completed date publishedFrom ${tipp.accessStartDate} -> ${pubFrom}")
 
-      title_changed |= ti.hasProperty('publishedFrom')?ClassUtils.setDateIfPresent(pubFrom, ti, 'publishedFrom'):false
+      title_changed |= ti.hasProperty('publishedFrom')?ClassUtils.updateDateField(pubFrom, ti, 'publishedFrom'):false
       title_changed |= ti.hasProperty('publishedTo')?ClassUtils.setDateIfPresent(pubTo, ti, 'publishedTo'):false
       title_changed |= ti.hasProperty('dateFirstInPrint')?ClassUtils.setDateIfPresent(firstInPrint, ti, 'dateFirstInPrint'):false
       title_changed |= ti.hasProperty('dateFirstOnline')?ClassUtils.setDateIfPresent(firstOnline, ti, 'dateFirstOnline'):false
