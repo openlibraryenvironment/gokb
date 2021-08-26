@@ -47,7 +47,7 @@ class TippController {
     if (es_search) {
       params.remove('es')
       def start_es = LocalDateTime.now()
-      result = ESSearchService.find(params)
+      result = ESSearchService.find(params, null, user)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
     }
     else {
@@ -189,10 +189,9 @@ class TippController {
         if (tipp_validation.valid) {
           def jsonMap = obj.jsonMapping
 
-          obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+          obj = TitleInstancePackagePlatform.upsertDTO(reqBody, user)
 
           errors << updateCombos(obj, reqBody)
-          obj = tippService.updateCoverage(obj, reqBody)
 
           if (obj?.validate()) {
             if (errors.size() == 0) {

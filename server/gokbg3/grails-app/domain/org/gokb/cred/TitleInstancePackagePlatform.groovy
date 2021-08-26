@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import gokbg3.DateFormatService
+
 import javax.persistence.Transient
 import com.k_int.ClassUtils
 import org.gokb.GOKbTextUtils
@@ -7,7 +9,6 @@ import groovy.util.logging.*
 
 import java.time.LocalDateTime
 import java.time.ZoneId
-import gokbg3.DateFormatService
 
 @Slf4j
 class TitleInstancePackagePlatform extends KBComponent {
@@ -19,7 +20,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   static final String RD_HYBRID_OA = "TitleInstancePackagePlatform.HybridOA"
   static final String RD_PRIMARY = "TitleInstancePackagePlatform.Primary"
   static final String RD_PAYMENT_TYPE = "TitleInstancePackagePlatform.PaymentType"
-
+  
   @Deprecated
   Date startDate
   @Deprecated

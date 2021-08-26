@@ -42,11 +42,15 @@ class ReviewRequestService {
           AllocatedReviewGroup.create(cg, req, true)
         }
       }
-      else if (raisedBy?.curatoryGroups?.size() > 0) {
+      else if (raisedBy) {
         log.debug("Using User groups ..")
-        raisedBy.curatoryGroups.each { gr ->
-          log.debug("Allocating User Group ${gr} to review ${req}")
-          AllocatedReviewGroup.create(gr, req, true)
+        AllocatedReviewGroup.withNewSession {
+          User user = User.get(raisedBy.id)
+
+          user.curatoryGroups?.each { gr ->
+            log.debug("Allocating User Group ${gr} to review ${req}")
+            AllocatedReviewGroup.create(gr, req, true)
+          }
         }
       }
     }
