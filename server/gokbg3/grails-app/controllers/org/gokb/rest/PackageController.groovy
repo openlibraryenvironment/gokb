@@ -59,7 +59,7 @@ class PackageController {
     if (es_search) {
       params.remove('es')
       def start_es = LocalDateTime.now()
-      result = ESSearchService.find(params)
+      result = ESSearchService.find(params, null, user)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
     }
     else {
