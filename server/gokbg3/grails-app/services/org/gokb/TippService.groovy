@@ -191,7 +191,9 @@ class TippService {
           null,
           null,
           [otherComponents: collection] as JSON,
-          RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches")
+          RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches"),
+          tipp.curatoryGroups?.size() == 1 ? tipp.curatoryGroups[0] : null
+          // TODO: use currently active CG if tipp.curatoryGroups?.size() != 1
         )
       }
       if (found.conflicts.size > 0) {

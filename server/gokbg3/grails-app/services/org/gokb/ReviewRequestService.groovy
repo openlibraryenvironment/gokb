@@ -5,7 +5,8 @@ import com.k_int.ClassUtils
 
 class ReviewRequestService {
 
-  def raise(KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null, refineProject = null, additionalInfo = null, RefdataValue stdDesc = null, CuratoryGroup group = null) {
+  def raise(KBComponent forComponent, String actionRequired, String cause = null, User raisedBy = null,
+            refineProject = null, additionalInfo = null, RefdataValue stdDesc = null, CuratoryGroup group = null) {
     // Create a request.
     ReviewRequest req = new ReviewRequest(
       status: RefdataCategory.lookup('ReviewRequest.Status', 'Open'),
@@ -50,7 +51,6 @@ class ReviewRequestService {
         }
       }
     }
-
     req
   }
 }
