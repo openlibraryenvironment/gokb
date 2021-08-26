@@ -16,7 +16,7 @@ class ReviewRequestService {
       stdDesc: (stdDesc),
       additionalInfo: (additionalInfo),
       componentToReview: (forComponent)
-    ).save();
+    ).save(flush:true);
 
     if (req) {
       if (raisedBy) {
@@ -44,7 +44,7 @@ class ReviewRequestService {
       }
       else if (raisedBy) {
         log.debug("Using User groups ..")
-        AllocatedReviewGroup.withNewSession {
+        AllocatedReviewGroup.withSession {
           User user = User.get(raisedBy.id)
 
           user.curatoryGroups?.each { gr ->
