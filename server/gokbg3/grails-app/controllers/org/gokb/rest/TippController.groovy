@@ -29,6 +29,7 @@ class TippController {
   def messageService
   def restMappingService
   def componentLookupService
+  def tippService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {

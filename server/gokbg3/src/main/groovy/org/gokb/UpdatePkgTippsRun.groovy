@@ -514,7 +514,10 @@ class UpdatePkgTippsRun {
           log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
         }
 
-        tipp?.merge()
+        if (tipp) {
+          tipp = tippService.updateCoverage(tipp, tippJson)
+          tipp.merge()
+        }
 
         if (current_tipps.size() > 1 && tipp) {
           log.debug("multimatch (${current_tipps.size()}) for $tipp")
@@ -721,11 +724,9 @@ class UpdatePkgTippsRun {
           def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
           if (found.size() > 0) {
             found.each {
-              if (TitleInstancePackagePlatform.isInstance(it)) {
-                def tipp = TitleInstancePackagePlatform.get(it.id)
-                if (!tipps.contains(tipp) && tipp.pkg == pkg && tipp.status == status_current && tipp.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
-                  tipps.add(tipp)
-                }
+              if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
+                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
+                tipps.add(it)
               }
             }
           }
@@ -742,11 +743,9 @@ class UpdatePkgTippsRun {
           def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
           if (found.size() > 0) {
             found.each {
-              if (TitleInstancePackagePlatform.isInstance(it)) {
-                def tipp = TitleInstancePackagePlatform.get(it.id)
-                if (!tipps.contains(tipp) && tipp.pkg == pkg && tipp.status == status_current && tipp.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
-                  tipps.add(tipp)
-                }
+              if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
+                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
+                tipps.add(it)
               }
             }
           }

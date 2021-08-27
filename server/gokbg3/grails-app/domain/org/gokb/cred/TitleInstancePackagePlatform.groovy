@@ -7,7 +7,6 @@ import com.k_int.ClassUtils
 import org.gokb.GOKbTextUtils
 import groovy.util.logging.*
 
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -21,9 +20,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   static final String RD_HYBRID_OA = "TitleInstancePackagePlatform.HybridOA"
   static final String RD_PRIMARY = "TitleInstancePackagePlatform.Primary"
   static final String RD_PAYMENT_TYPE = "TitleInstancePackagePlatform.PaymentType"
-
-  static DateFormatService dateFormatService
-
+  
   @Deprecated
   Date startDate
   @Deprecated
@@ -67,8 +64,6 @@ class TitleInstancePackagePlatform extends KBComponent {
   Date lastChangedExternal
   RefdataValue medium
   String importId
-
-  private static SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd")
 
   private static refdataDefaults = [
       "format"       : "Electronic",
@@ -815,7 +810,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       changed |= com.k_int.ClassUtils.updateDateField(tipp_dto.dateFirstInPrint, tipp, 'dateFirstInPrint')
       changed |= com.k_int.ClassUtils.updateDateField(tipp_dto.dateFirstOnline, tipp, 'dateFirstOnline')
       changed |= com.k_int.ClassUtils.updateDateField(tipp_dto.lastChangedExternal, tipp, 'lastChangedExternal')
-      changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', 'TitleInstancePackagePlatform.Medium')
+      changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', TitleInstancePackagePlatform.RD_MEDIUM)
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.publicationType, tipp, 'publicationType', 'TitleInstancePackagePlatform.PublicationType')
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.language, tipp, 'language')
 
@@ -960,8 +955,8 @@ class TitleInstancePackagePlatform extends KBComponent {
           if (!price.id && (price.price || price.amount) )
           tipp.setPrice(String.isInstance(price.type) ? price.type : price.type.name,
               "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
-              price.startDate ? dateFormatService.parseDate(price.startDate) : null,
-              price.endDate ? dateFormatService.parseDate(price.endDate) : null)
+              price.startDate ? DateFormatService.parseDate(price.startDate) : null,
+              price.endDate ? DateFormatService.parseDate(price.endDate) : null)
         }
       }
 
@@ -1006,15 +1001,15 @@ class TitleInstancePackagePlatform extends KBComponent {
       builder.'tipp'([id: (id), uuid: (uuid)]) {
 
         addCoreGOKbXmlFields(builder, attr)
-        builder.'lastUpdated'(lastUpdated ? dateFormatService.formatIsoTimestamp(lastUpdated) : null)
+        builder.'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
         builder.'format'(format?.value)
         builder.'type'(titleClass)
         builder.'url'(url ?: "")
         builder.'subjectArea'(subjectArea)
         builder.'series'(series)
         builder.'publisherName'(publisherName)
-        builder.'dateFirstInPrint'(dateFirstInPrint ? dateFormatService.formatIsoTimestamp(dateFirstInPrint) : null)
-        builder.'dateFirstOnline'(dateFirstOnline ? dateFormatService.formatIsoTimestamp(dateFirstOnline) : null)
+        builder.'dateFirstInPrint'(dateFirstInPrint ? DateFormatService.formatIsoTimestamp(dateFirstInPrint) : null)
+        builder.'dateFirstOnline'(dateFirstOnline ? DateFormatService.formatIsoTimestamp(dateFirstOnline) : null)
         builder.'firstAuthor'(firstAuthor)
         builder.'publicationType'(publicationType?.value)
         builder.'volumeNumber'(volumeNumber)
@@ -1048,8 +1043,8 @@ class TitleInstancePackagePlatform extends KBComponent {
             'global'(global?.value)
             'globalNote'(globalNote)
             'contentType'(contentType?.value)
-            'listVerifiedDate'(listVerifiedDate ? dateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
-            'lastUpdated'(lastUpdated ? dateFormatService.formatIsoTimestamp(lastUpdated) : null)
+            'listVerifiedDate'(listVerifiedDate ? DateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
+            'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
             if (provider) {
               builder.'provider'([id: provider?.id, uuid: provider?.uuid]) {
                 'name'(provider?.name)
@@ -1081,15 +1076,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           'primaryUrl'(hostPlatform.primaryUrl?.trim())
           'name'(hostPlatform.name?.trim())
         }
-        'access'([start: (accessStartDate ? dateFormatService.formatIsoTimestamp(accessStartDate) : null), end: (accessEndDate ? dateFormatService.formatIsoTimestamp(accessEndDate) : null)])
+        'access'([start: (accessStartDate ? DateFormatService.formatIsoTimestamp(accessStartDate) : null), end: (accessEndDate ? DateFormatService.formatIsoTimestamp(accessEndDate) : null)])
         def cov_statements = getCoverageStatements()
         if (cov_statements?.size() > 0) {
           cov_statements.each { tcs ->
             'coverage'(
-                startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+                startDate: (tcs.startDate ? DateFormatService.formatIsoTimestamp(tcs.startDate) : null),
                 startVolume: (tcs.startVolume),
                 startIssue: (tcs.startIssue),
-                endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+                endDate: (tcs.endDate ? DateFormatService.formatIsoTimestamp(tcs.endDate) : null),
                 endVolume: (tcs.endVolume),
                 endIssue: (tcs.endIssue),
                 coverageDepth: (tcs.coverageDepth?.value ?: null),
@@ -1141,7 +1136,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   public static RefdataValue determineMediumRef(def mediumType) {
     if (mediumType instanceof String) {
-      def rdv = RefdataCategory.lookup("TitleInstancePackagePlatform.Medium", mediumType)
+      def rdv = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, mediumType)
 
       if (rdv) {
         return rdv
@@ -1150,14 +1145,14 @@ class TitleInstancePackagePlatform extends KBComponent {
     else if (mediumType instanceof Integer) {
       def rdv = RefdataValue.get(mediumType)
 
-      if (rdv && rdv.owner == RefdataCategory.findByLabel("TitleInstancePackagePlatform.Medium")) {
+      if (rdv && rdv.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)) {
         return rdv
       }
     }
     else if (mediumType instanceof Map && mediumType.id) {
       def rdv = RefdataValue.get(mediumType.id)
 
-      if (rdv && rdv.owner == RefdataCategory.findByLabel("TitleInstancePackagePlatform.Medium")) {
+      if (rdv && rdv.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)) {
         return rdv
       }
     }
