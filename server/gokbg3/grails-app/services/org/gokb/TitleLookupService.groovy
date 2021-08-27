@@ -569,7 +569,7 @@ class TitleLookupService {
                 additionalInfo.otherComponents = []
 
                 results['other_matches'].each { tlm ->
-                  additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+                  additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
                   combo_ids.add(tlm.id)
                 }
 
@@ -617,7 +617,7 @@ class TitleLookupService {
               additionalInfo.otherComponents = []
 
               matches.each { tlm ->
-                additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+                additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
                 combo_ids.add(tlm.id)
               }
 
@@ -767,7 +767,7 @@ class TitleLookupService {
                 additionalInfo.otherComponents = []
 
                 matches.each { tlm ->
-                  additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+                  additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
                   combo_ids.add(tlm.id)
                 }
 
@@ -846,7 +846,7 @@ class TitleLookupService {
             additionalInfo.otherComponents = []
 
             matches.each { tlm ->
-              additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+              additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
               combo_ids.add(tlm.id)
             }
 
@@ -896,7 +896,7 @@ class TitleLookupService {
               additionalInfo.otherComponents = []
 
               matched_sorted.each { tlm ->
-                additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+                additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
                 combo_ids.add(tlm.id)
               }
 
@@ -959,7 +959,7 @@ class TitleLookupService {
           additionalInfo.otherComponents = []
 
           results.other_types.each { tlm ->
-            additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+            additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
             combo_ids.add(tlm.id)
           }
 
@@ -1428,8 +1428,10 @@ class TitleLookupService {
   def getComponentsForIdentifier(identifier) {
 
     def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def status_active = RefdataCategory.lookup('Combo.Status', 'Active')
+    def combo_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
     // was identifier.identifiedComponents
-    KBComponent.executeQuery('select DISTINCT c.fromComponent from Combo as c where c.toComponent = :id and c.type.value = :tp and c.fromComponent.status <> :del', [id: identifier, tp: 'KBComponent.Ids', del: status_deleted]);
+    KBComponent.executeQuery("select DISTINCT c.fromComponent from Combo as c where c.toComponent = :id and c.type = :tp and c.fromComponent.status <> :del and c.status = :act", [id: identifier, tp: combo_type, del: status_deleted, act: status_active]);
   }
 
   def compareIdentifierMaps(ids_one, ids_two) {

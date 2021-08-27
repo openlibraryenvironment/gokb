@@ -48,6 +48,24 @@
         }
       },
       {
+        "editStatus": {
+          "match": "editStatus",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
+        "global": {
+          "match": "global",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "keyword"
+          }
+        }
+      },
+      {
         "package": {
           "match": "tippPackage*",
           "match_mapping_type": "string",

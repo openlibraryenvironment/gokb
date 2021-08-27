@@ -170,7 +170,6 @@ class TippService {
       TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
       if (currentCov && (ti.publishedFrom != currentCov.startDate || ti.publishedTo != currentCov.endDate)) {
         // RR for coverage check
-//        reviewRequestService.raise(tipp, "TIPP ${tipp.name} was linked, check coverage","TIPP coverage conflicts title publishing data",null, null, null,RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc"),null )
         reviewRequestService.raise(tipp,
             "TIPP coverage conflicts title publishing data",
             "TIPP ${tipp.name} was linked, check coverage",
@@ -208,9 +207,9 @@ class TippService {
       log.debug("Completed date publishedFrom ${tipp.accessStartDate} -> ${pubFrom}")
 
       title_changed |= ti.hasProperty('publishedFrom') ? ClassUtils.updateDateField(pubFrom, ti, 'publishedFrom') : false
-      title_changed |= ti.hasProperty('publishedTo') ? ClassUtils.setDateIfPresent(pubTo, ti, 'publishedTo') : false
-      title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.setDateIfPresent(firstInPrint, ti, 'dateFirstInPrint') : false
-      title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.setDateIfPresent(firstOnline, ti, 'dateFirstOnline') : false
+      title_changed |= ti.hasProperty('publishedTo') ? ClassUtils.updateDateField(pubTo, ti, 'publishedTo') : false
+      title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
+      title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
 
       titleLookupService.addPublisher(tipp.publisherName, ti)
 
