@@ -180,10 +180,10 @@ class TippController {
       def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
       if (curator || user.isAdmin()) {
-        reqBody.title = obj.title.id
+        reqBody.title = obj.title?.id
         reqBody.hostPlatform = obj.hostPlatform.id
         reqBody.pkg = obj.pkg.id
-
+        reqBody.id = reqBody.id?:params.id // storing the TIPP ID in the JSON data for later use in upsertDTO
         def tipp_validation = TitleInstancePackagePlatform.validateDTO(reqBody, RequestContextUtils.getLocale(request))
 
         if (tipp_validation.valid) {
