@@ -923,7 +923,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         addCoreGOKbXmlFields(builder, attr)
         builder.'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
         builder.'format'(format?.value)
-        builder.'type'(titleClass)
+        builder.'type'(titleClass?:publicationType.value)
         builder.'url'(url ?: "")
         builder.'subjectArea'(subjectArea)
         builder.'series'(series)
@@ -943,7 +943,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         if (ti) {
           builder.'title'([id: ti.id, uuid: ti.uuid]) {
             builder.'name'(ti.name?.trim())
-            builder.'type'(titleClass)
+            builder.'type'(titleClass?:publicationType.value)
             builder.'status'(ti.status?.value)
             builder.'identifiers' {
               titleIds.each { tid ->
