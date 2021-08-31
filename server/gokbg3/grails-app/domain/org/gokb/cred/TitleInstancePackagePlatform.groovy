@@ -285,10 +285,12 @@ class TitleInstancePackagePlatform extends KBComponent {
       def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
       new Combo(toComponent: result, fromComponent: tipp_fields.hostPlatform, type: plt_combo_type).save(flush: true, failOnError: true)
 
-      def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-      new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
+      if (tipp_fields.title) {
+        def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
+        new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
 
-      TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
+        TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
+      }
     }
     else {
       log.error("TIPP creation failed!")
@@ -583,18 +585,35 @@ class TitleInstancePackagePlatform extends KBComponent {
     def tipp
     if (pkg && plt && curator) {
       log.debug("See if we already have a tipp")
+
+      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : (tipp_dto.id ? TitleInstancePackagePlatform.get(tipp_dto.id) : null)
+      tipp = null
+
+      if (uuid_tipp) {
+        if (uuid_tipp.pkg == pkg && uuid_tipp.hostPlatform == plt && (!ti || uuid_tipp.title == ti)) {
+          tipp = uuid_tipp
+        }
+        else {
+          log.warn("TIPP matched by ID has different links! (incoming: ${pkg}, ${plt} - match: ${uuid_tipp.pkg}, ${uuid_tipp.hostPlatform})")
+        }
+      }
+
       def tipps = []
-      if (ti)
+
+      if (!tipp && (tipp_dto.importId || tipp_dto.titleId)) {
+        tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as platform_combo  ' +
+            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
+            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
+            'and tipp.importId = ?',
+            [pkg, plt, (tipp_dto.importId ?: tipp_dto.titleId)])
+      }
+
+      if (tipps.size() == 0 && ti) {
         tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
             'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
             'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
             'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
             [pkg, plt, ti])
-      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : (tipp_dto.id ? TitleInstancePackagePlatform.get(tipp_dto.id) : null)
-      tipp = null
-
-      if (uuid_tipp && uuid_tipp.pkg == pkg && uuid_tipp.title == ti && uuid_tipp.hostPlatform == plt) {
-        tipp = uuid_tipp
       }
 
       if (!tipp) {
@@ -670,7 +689,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           log.error("TIPP creation failed!")
         }
       }
-      else {
+      else if (ti) {
         TitleInstancePlatform.ensure(ti, plt, trimmed_url)
       }
     }
@@ -916,7 +935,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         addCoreGOKbXmlFields(builder, attr)
         builder.'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
         builder.'format'(format?.value)
-        builder.'type'(titleClass?:publicationType.value)
+        builder.'type'(titleClass)
         builder.'url'(url ?: "")
         builder.'subjectArea'(subjectArea)
         builder.'series'(series)
@@ -936,7 +955,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         if (ti) {
           builder.'title'([id: ti.id, uuid: ti.uuid]) {
             builder.'name'(ti.name?.trim())
-            builder.'type'(titleClass?:publicationType.value)
+            builder.'type'(titleClass)
             builder.'status'(ti.status?.value)
             builder.'identifiers' {
               titleIds.each { tid ->
@@ -944,6 +963,9 @@ class TitleInstancePackagePlatform extends KBComponent {
               }
             }
           }
+        }
+        else {
+          builder.'title'()
         }
         builder.'package'([id: linked_pkg.id, uuid: linked_pkg.uuid]) {
           linked_pkg.with {
@@ -1045,7 +1067,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Transient
   public getTitleClass() {
-    def result = KBComponent.get(title.id)?.class.getSimpleName()
+    def result = title ? KBComponent.get(title.id)?.class.getSimpleName() : (publicationType?.value ?: null)
     result
   }
 
