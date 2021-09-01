@@ -9,6 +9,7 @@ import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.JournalInstance
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.TIPPCoverageStatement
+import org.gokb.rest.TippController
 import org.grails.web.json.JSONObject
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
@@ -77,7 +78,7 @@ class TippService {
           missing.remove(tcs.id)
         }
         else if (cs_match) {
-          log.debug("Matched new coverage ${c} on multiple existing coverages!")
+          TippController.log.debug("Matched new coverage ${c} on multiple existing coverages!")
         }
       }
 

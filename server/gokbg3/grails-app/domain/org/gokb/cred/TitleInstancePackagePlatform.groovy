@@ -1,13 +1,14 @@
 package org.gokb.cred
 
+import gokbg3.DateFormatService
+
 import javax.persistence.Transient
-import com.k_int.ClassUtils
+
 import org.gokb.GOKbTextUtils
 import groovy.util.logging.*
 
 import java.time.LocalDateTime
 import java.time.ZoneId
-import gokbg3.DateFormatService
 
 @Slf4j
 class TitleInstancePackagePlatform extends KBComponent {
@@ -284,10 +285,12 @@ class TitleInstancePackagePlatform extends KBComponent {
       def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
       new Combo(toComponent: result, fromComponent: tipp_fields.hostPlatform, type: plt_combo_type).save(flush: true, failOnError: true)
 
-      def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
-      new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
+      if (tipp_fields.title) {
+        def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
+        new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
 
-      TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
+        TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
+      }
     }
     else {
       log.error("TIPP creation failed!")
@@ -580,18 +583,37 @@ class TitleInstancePackagePlatform extends KBComponent {
     def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
     def curator = pkg?.curatoryGroups?.size() > 0 ? (user.adminStatus || user.curatoryGroups?.id.intersect(pkg?.curatoryGroups?.id)) : true
     def tipp
-    if (pkg && plt && ti && curator) {
+    if (pkg && plt && curator) {
       log.debug("See if we already have a tipp")
-      def tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
+
+      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : (tipp_dto.id ? TitleInstancePackagePlatform.get(tipp_dto.id) : null)
+      tipp = null
+
+      if (uuid_tipp) {
+        if (uuid_tipp.pkg == pkg && uuid_tipp.hostPlatform == plt && (!ti || uuid_tipp.title == ti)) {
+          tipp = uuid_tipp
+        }
+        else {
+          log.warn("TIPP matched by ID has different links! (incoming: ${pkg}, ${plt} - match: ${uuid_tipp.pkg}, ${uuid_tipp.hostPlatform})")
+        }
+      }
+
+      def tipps = []
+
+      if (!tipp && (tipp_dto.importId || tipp_dto.titleId)) {
+        tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as platform_combo  ' +
+            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
+            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
+            'and tipp.importId = ?',
+            [pkg, plt, (tipp_dto.importId ?: tipp_dto.titleId)])
+      }
+
+      if (tipps.size() == 0 && ti) {
+        tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
           'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
           'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
           'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
           [pkg, plt, ti])
-      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : (tipp_dto.id ? TitleInstancePackagePlatform.get(tipp_dto.id) : null)
-      tipp = null
-
-      if (uuid_tipp && uuid_tipp.pkg == pkg && uuid_tipp.title == ti && uuid_tipp.hostPlatform == plt) {
-        tipp = uuid_tipp
       }
 
       if (!tipp) {
@@ -667,102 +689,11 @@ class TitleInstancePackagePlatform extends KBComponent {
           log.error("TIPP creation failed!")
         }
       }
-      else {
+      else if (ti) {
         TitleInstancePlatform.ensure(ti, plt, trimmed_url)
       }
     }
-    /*else if (pkg && plt && curator) {
-      log.debug("See if we already have a tipp")
-      def tipps = TitleInstancePackagePlatform.executeQuery(
-          'select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as platform_combo  ' +
-              'where tipp.url = :url ' +
-              'and tipp.name = :name ' +
-              'and pkg_combo.toComponent=tipp and pkg_combo.fromComponent=:pkg ' +
-              'and platform_combo.toComponent=tipp and platform_combo.fromComponent = :plt',
-          [pkg: pkg, plt: plt, url: trimmed_url, name: tipp_dto.name])
-      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
-      tipp = null
 
-      if (uuid_tipp && uuid_tipp.pkg == pkg && uuid_tipp.title == ti && uuid_tipp.hostPlatform == plt) {
-        tipp = uuid_tipp
-      }
-
-      if (!tipp) {
-        switch (tipps.size()) {
-          case 1:
-            log.debug("found")
-
-            if (trimmed_url && trimmed_url.size() > 0) {
-              if (!tipps[0].url || tipps[0].url == trimmed_url) {
-                tipp = tipps[0]
-              }
-              else {
-                log.debug("matched tipp has a different url..")
-              }
-            }
-            else {
-              tipp = tipps[0]
-            }
-            break;
-          case 0:
-            log.debug("not found");
-
-            break;
-          default:
-            if (trimmed_url && trimmed_url.size() > 0) {
-              tipps = tipps.findAll { !it.url || it.url == trimmed_url };
-              log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
-            }
-
-            def cur_tipps = tipps.findAll { it.status == status_current };
-            def ret_tipps = tipps.findAll { it.status == status_retired };
-
-            if (cur_tipps.size() > 0) {
-              tipp = cur_tipps[0]
-
-              if (cur_tipps.size() > 1) {
-                log.debug("found ${cur_tipps.size()} current TIPPs!")
-              }
-            }
-            else if (ret_tipps.size() > 0) {
-              tipp = ret_tipps[0]
-
-              if (ret_tipps.size() > 1) {
-                log.debug("found ${ret_tipps.size()} retired TIPPs!")
-              }
-            }
-            else {
-              log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
-            }
-            break;
-        }
-      }
-
-      if (!tipp) {
-        log.debug("Creating new TIPP..")
-        def tmap = [
-            'pkg'         : pkg,
-            'title'       : null,
-            'hostPlatform': plt,
-            'url'         : trimmed_url,
-            'uuid'        : (tipp_dto.uuid ?: null),
-            'status'      : (tipp_dto.status ?: null),
-            'name'        : (tipp_dto.name ?: null),
-            'editStatus'  : (tipp_dto.editStatus ?: null),
-            'language'    : (tipp_dto.language ?: null)
-        ]
-
-        tipp = tiplAwareCreate(tmap)
-        // Hibernate problem
-
-        if (!tipp) {
-          log.error("TIPP creation failed!")
-        }
-      }
-      else {
-        TitleInstancePlatform.ensure(null, plt, trimmed_url)
-      }
-    }*/
     if (tipp) {
       def changed = false
 
@@ -817,14 +748,14 @@ class TitleInstancePackagePlatform extends KBComponent {
         tipp_dto.coverage = tipp_dto.coverageStatements
       }
 
-      def new_ids = []
+      def known_coverage_ids = []
 
       tipp_dto.coverage.each { c ->
         def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
         def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
 
         if (c.id) {
-          new_ids.add(c.id)
+          known_coverage_ids.add(c.id as Long)
         }
 
         changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
@@ -939,10 +870,12 @@ class TitleInstancePackagePlatform extends KBComponent {
         // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
       }
 
-      def old_cs = tipp.coverageStatements
-      if (new_ids?.size() > 0) {
+      // remove previous coverage statements from TIPP
+      def old_cs = []
+      tipp.coverageStatements?.each { old_cs << it }
+      if (known_coverage_ids?.size() > 0) {
         for (def cs : old_cs) {
-          if (!new_ids.contains(cs.id)) {
+          if (cs.id && !known_coverage_ids.contains(cs.id)) {
             tipp.removeFromCoverageStatements(cs)
           }
         }
@@ -1019,15 +952,20 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'lastChangedExternal'(lastChangedExternal)
         builder.'medium'(medium?.value)
 
-        builder.'title'([id: ti.id, uuid: ti.uuid]) {
-          builder.'name'(ti.name?.trim())
-          builder.'type'(titleClass)
-          builder.'status'(ti.status?.value)
-          builder.'identifiers' {
-            titleIds.each { tid ->
-              builder.'identifier'([namespace: tid[0], namespaceName: tid[3], value: tid[1], type: tid[2]])
+        if (ti) {
+          builder.'title'([id: ti.id, uuid: ti.uuid]) {
+            builder.'name'(ti.name?.trim())
+            builder.'type'(titleClass)
+            builder.'status'(ti.status?.value)
+            builder.'identifiers' {
+              titleIds.each { tid ->
+                builder.'identifier'([namespace: tid[0], namespaceName: tid[3], value: tid[1], type: tid[2]])
+              }
             }
           }
+        }
+        else {
+          builder.'title'()
         }
         builder.'package'([id: linked_pkg.id, uuid: linked_pkg.uuid]) {
           linked_pkg.with {
@@ -1129,7 +1067,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Transient
   public getTitleClass() {
-    def result = KBComponent.get(title.id)?.class.getSimpleName()
+    def result = title ? KBComponent.get(title.id)?.class.getSimpleName() : (publicationType?.value ?: null)
     result
   }
 
