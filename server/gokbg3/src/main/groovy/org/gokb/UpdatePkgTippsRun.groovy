@@ -189,7 +189,8 @@ class UpdatePkgTippsRun {
                 user,
                 null,
                 (currentTippError as JSON).toString(),
-                rr_TIPPs_invalid
+                rr_TIPPs_invalid,
+                componentLookupService.findCuratoryGroupOfInterest(pkg, user)
             )
             job?.message("skipped invalid title ${(currentTippError as JSON).toString()}")
           }
@@ -537,7 +538,8 @@ class UpdatePkgTippsRun {
               user,
               null,
               additionalInfo as JSON,
-              RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple Matches')
+              RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple Matches'),
+              componentLookupService.findCuratoryGroupOfInterest(tipp, user)
           )
 //          current_tipps.each {
 //            if (tipp != it) {

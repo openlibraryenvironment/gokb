@@ -782,6 +782,7 @@ class TSVIngestionService {
             the_package.save(flush:true, failOnError:true);
           }
           else if ( grailsApplication.config.gokb?.defaultCuratoryGroup ) {
+            // TODO: Replace use of defaultCuratoryGroup by currently active CG
             the_package.addCuratoryGroupIfNotPresent(grailsApplication.config.gokb?.defaultCuratoryGroup)
             the_package.save(flush:true, failOnError:true);
           }
@@ -1279,7 +1280,8 @@ class TSVIngestionService {
                 user,
                 null,
                 null,
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
+                componentLookupService.findCuratoryGroupOfInterest(component, user)
               )
             } else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")

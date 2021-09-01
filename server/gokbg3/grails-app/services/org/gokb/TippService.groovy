@@ -282,13 +282,15 @@ class TippService {
           collection << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name]
         }
         reviewRequestService.raise(
-            tipp,
-            "TIPP matched several titles",
-            "TIPP ${tipp.name} coudn't be linked.",
-            null,
-            null,
-            [otherComponents: collection] as JSON,
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches")
+          tipp,
+          "TIPP matched several titles",
+          "TIPP ${tipp.name} coudn't be linked.",
+          null,
+          null,
+          [otherComponents: collection] as JSON,
+          RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches"),
+          tipp.curatoryGroups?.size() == 1 ? tipp.curatoryGroups[0] : null
+          // TODO: use currently active CG if tipp.curatoryGroups?.size() != 1
         )
       }
       if (found.conflicts.size > 0) {

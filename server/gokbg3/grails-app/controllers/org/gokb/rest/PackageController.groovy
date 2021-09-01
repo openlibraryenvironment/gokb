@@ -1260,7 +1260,8 @@ class PackageController {
                             user,
                             null,
                             null,
-                            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
+                            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired'),
+                            componentLookupService.findCuratoryGroupOfInterest(the_pkg, user)
                         )
                       }
                     }
