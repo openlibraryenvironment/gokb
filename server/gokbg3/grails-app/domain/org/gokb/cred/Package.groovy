@@ -138,11 +138,12 @@ class Package extends KBComponent {
       'provider'           : "provider.id",
       'providerName'       : "provider.name",
       'providerUuid'       : "provider.uuid",
-      'titleCount'         : false,
       'paymentType'        : false,
       'listStatus'         : "refdata",
       'contentType'        : "refdata",
-      'scope'              : "refdata"
+      'scope'              : "refdata",
+      'global'             : "refdata",
+      'editStatus'         : "refdata"
     ],
     'defaultLinks' : [
       'provider',
