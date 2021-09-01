@@ -644,6 +644,9 @@ class ComponentLookupService {
 
 
   CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null){
+    if (!KBComponent.has(component, 'curatoryGroups')){
+      return null
+    }
     // TODO: to be extended for further comparision objects
     if (component.curatoryGroups?.size() == 1){
       return component.curatoryGroups[0]
