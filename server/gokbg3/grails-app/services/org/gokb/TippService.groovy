@@ -289,7 +289,7 @@ class TippService {
           null,
           [otherComponents: collection] as JSON,
           RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches"),
-          tipp.curatoryGroups?.size() == 1 ? tipp.curatoryGroups[0] : null
+          tipp.pkg.curatoryGroups?.size() == 1 ? tipp.pkg.curatoryGroups[0] : null
           // TODO: use currently active CG if tipp.curatoryGroups?.size() != 1
         )
       }
