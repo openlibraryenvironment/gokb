@@ -1163,7 +1163,6 @@ class PackageService {
                 url            : sourceMap.url,
                 frequency      : sourceMap.frequency,
                 ezbMatch       : (sourceMap.ezbMatch ?: false),
-                zdbMatch       : (sourceMap.zdbMatch ?: false),
                 automaticUpdate: (sourceMap.automaticUpdate ?: false),
                 targetNamespace: namespace
             ]
@@ -1180,7 +1179,6 @@ class PackageService {
             changed |= ClassUtils.setStringIfDifferent(src, 'frequency', sourceMap.frequency)
             changed |= ClassUtils.setStringIfDifferent(src, 'url', sourceMap.url)
             changed |= ClassUtils.setBooleanIfDifferent(src, 'ezbMatch', sourceMap.ezbMatch)
-            changed |= ClassUtils.setBooleanIfDifferent(src, 'zdbMatch', sourceMap.zdbMatch)
             changed |= ClassUtils.setBooleanIfDifferent(src, 'automaticUpdate', sourceMap.automaticUpdate)
 
             if (namespace && namespace != src.targetNamespace) {
