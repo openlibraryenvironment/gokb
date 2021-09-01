@@ -44,7 +44,7 @@
 			</g:manyToOneReferenceTypedown>
 		</dd>
 		<dt>
-			<g:annotatedLabel owner="${d}" property="zdbMatch">Automated Updates</g:annotatedLabel>
+			<g:annotatedLabel owner="${d}" property="automaticUpdates">Automated Updates</g:annotatedLabel>
 		</dt>
 		<dd>
 			<g:xEditableBoolean owner="${d}" field="automaticUpdates" />
