@@ -126,49 +126,6 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.json.publisherName == "other Publisher"
   }
 
-  void "test /rest/tipps POST without title instance id"() {
-    given:
-    def upd_body = [
-        pkg          : testPackage.id,
-        hostPlatform : testPlatform.id,
-        name         : "TippName",
-        url          : "http://host-url.test/noTitle",
-        coverage     : [
-            [
-                startDate    : "2013-01-01",
-                startVolume  : "1",
-                startIssue   : "1",
-                coverageDepth: "Fulltext"
-            ]
-        ],
-        publisherName: "other Publisher",
-        prices       : [
-            [
-                type    : [name: 'list'],
-                price   : 15.95,
-                currency: [name: "EUR"]
-            ]
-        ]
-    ]
-
-    def urlPath = getUrlPath()
-    when:
-    String accessToken = getAccessToken()
-    RestResponse resp = rest.post("${urlPath}/rest/tipps") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(upd_body as JSON)
-    }
-
-    then:
-    resp.status == 200 // OK
-    resp.json.url == upd_body.url
-    resp.json._embedded.coverageStatements?.size() == 1
-    resp.json.publisherName == "other Publisher"
-    resp.json.title == null
-  }
-
   void "test /rest/tipps/<id> PUT"() {
     given:
     sleep(200)

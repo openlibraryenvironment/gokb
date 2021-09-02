@@ -706,7 +706,8 @@ class IntegrationController {
                 user,
                 null,
                 (additionalInfo as JSON).toString(),
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
+                componentLookupService.findCuratoryGroupOfInterest(component, user)
             )
           }
           else {

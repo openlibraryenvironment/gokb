@@ -97,7 +97,8 @@ class ComponentUpdateService {
                 user,
                 null,
                 null,
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
+                componentLookupService.findCuratoryGroupOfInterest(component, user)
               )
             } else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")
@@ -176,41 +177,7 @@ class ComponentUpdateService {
       }
     }
 
-    // If this is a component that supports curatoryGroups we should check for them.
-    if (KBComponent.has(component, 'curatoryGroups')) {
-      log.debug("Handling Curatory Groups ..")
-      def groups = component.curatoryGroups.collect { [id: it.id, name: it.name] }
-
-      data.curatoryGroups?.each { String name ->
-        if (!groups.find { it.name.toLowerCase() == name.toLowerCase() }) {
-
-          def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
-          def combo_type_cg = RefdataCategory.lookup('Combo.Type', component.getComboTypeValue('curatoryGroups'))
-          // Only add if we have the group already in the system.
-          if (group) {
-            log.debug("Adding group ${name}..")
-            def new_combo = new Combo(fromComponent: component, toComponent: group, type: combo_type_cg, status: combo_active).save(flush: true, failOnError: true)
-            hasChanged = true
-            groups << [id: group.id, name: group.name]
-          } else {
-            log.debug("Could not find linked group ${name}!")
-          }
-        }
-      }
-
-      if (sync) {
-        groups.each { cg ->
-          if (!data.curatoryGroups || !data.curatoryGroups.find { it.toLowerCase() == cg.name.toLowerCase() }) {
-            log.debug("Removing deprecated CG ${cg.name}")
-            Combo.executeUpdate("delete from Combo as c where c.fromComponent = ? and c.toComponent.id = ?", [component, cg.id])
-            component.refresh()
-            hasChanged = true
-          }
-        }
-      }
-    } else {
-      log.debug("Skipping CG handling ..")
-    }
+    checkCuratoryGroups(component, data, combo_active, sync, hasChanged)
 
     if (data.additionalProperties) {
       Set<String> props = component.additionalProperties.collect { "${it.propertyDefn?.propertyName}|${it.apValue}".toString() }
@@ -290,6 +257,47 @@ class ComponentUpdateService {
 
     hasChanged
   }
+
+  private void checkCuratoryGroups(KBComponent component, data, combo_active, boolean sync, hasChanged){
+    // If this is a component that supports curatoryGroups we should check for them.
+    if (KBComponent.has(component, 'curatoryGroups')){
+      log.debug("Handling Curatory Groups ..")
+      def groups = component.curatoryGroups.collect{ [id: it.id, name: it.name] }
+
+      def combo_type_cg = RefdataCategory.lookup('Combo.Type', component.getComboTypeValue('curatoryGroups'))
+      data.curatoryGroups?.each{ String name ->
+        if (!groups.find{ it.name.toLowerCase() == name.toLowerCase() }){
+          def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
+          // Only add if we have the group already in the system.
+          if (group){
+            log.debug("Adding group ${name}..")
+            new Combo(fromComponent: component, toComponent: group, type: combo_type_cg, status: combo_active)
+                .save(flush: true, failOnError: true)
+            hasChanged = true
+            groups << [id: group.id, name: group.name]
+          }
+          else{
+            log.debug("Could not find linked group ${name}!")
+          }
+        }
+      }
+
+      if (sync){
+        groups.each{ cg ->
+          if (!data.curatoryGroups || !data.curatoryGroups.find{ it.toLowerCase() == cg.name.toLowerCase() }){
+            log.debug("Removing deprecated CG ${cg.name}")
+            Combo.executeUpdate("delete from Combo as c where c.fromComponent = ? and c.toComponent.id = ?", [component, cg.id])
+            component.refresh()
+            hasChanged = true
+          }
+        }
+      }
+    }
+    else{
+      log.debug("Skipping CuratoryGroup handling for component ${component.id} ..")
+    }
+  }
+
 
   public boolean setAllRefdata(propNames, data, target, boolean createNew = false) {
     boolean changed = false

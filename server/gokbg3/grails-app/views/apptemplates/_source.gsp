@@ -44,7 +44,7 @@
 			</g:manyToOneReferenceTypedown>
 		</dd>
 		<dt>
-			<g:annotatedLabel owner="${d}" property="zdbMatch">Automated Updates</g:annotatedLabel>
+			<g:annotatedLabel owner="${d}" property="automaticUpdates">Automated Updates</g:annotatedLabel>
 		</dt>
 		<dd>
 			<g:xEditableBoolean owner="${d}" field="automaticUpdates" />
@@ -60,12 +60,6 @@
 		</dt>
 		<dd>
 			<g:xEditableBoolean owner="${d}" field="ezbMatch" />
-		</dd>
-		<dt>
-			<g:annotatedLabel owner="${d}" property="zdbMatch">ZDB Matching Enabled</g:annotatedLabel>
-		</dt>
-		<dd>
-			<g:xEditableBoolean owner="${d}" field="zdbMatch" />
 		</dd>
 		<dt>
 			<g:annotatedLabel owner="${d}" property="lastRun">Last Run</g:annotatedLabel>

@@ -13,6 +13,7 @@ class WorkflowController{
   def genericOIDService
   def springSecurityService
   def reviewRequestService
+  def componentLookupService
   def packageService
   def dateFormatService
 
@@ -839,7 +840,15 @@ class WorkflowController{
         ], user).save(flush: true, failOnError: true)
 
         if (newtipp.review == 'on'){
-          reviewRequestService.raise(new_tipp, 'New tipp - please review', 'A Title change cause this new tipp to be created', request.user)
+          reviewRequestService.raise(
+            new_tipp,
+            'New tipp - please review',
+            'A Title change cause this new tipp to be created',
+            request.user,
+            null,
+            null,
+            null,
+            componentLookupService.findCuratoryGroupOfInterest(new_tipp, request.user))
         }
       }
 
@@ -1117,7 +1126,16 @@ class WorkflowController{
 
         if (newtipp.review == 'on'){
           log.debug("User requested a review request be generated for this new tipp")
-          reviewRequestService.raise(new_tipp, 'New tipp - please review', 'A Title transfer cause this new tipp to be created', request.user)
+          reviewRequestService.raise(
+            new_tipp,
+            'New tipp - please review',
+            'A Title transfer cause this new tipp to be created',
+            request.user,
+            null,
+            null,
+            null,
+            componentLookupService.findCuratoryGroupOfInterest(new_tipp, request.user)
+          )
         }
       }
 
@@ -1537,7 +1555,16 @@ class WorkflowController{
         component = KBComponent.get(params.long('id'))
       }
 
-      new_rr = reviewRequestService.raise(component, params.request, "Manual Request", user, null, null, stdDesc)
+      new_rr = reviewRequestService.raise(
+        component,
+        params.request,
+        "Manual Request",
+        user,
+        null,
+        null,
+        stdDesc,
+        componentLookupService.findCuratoryGroupOfInterest(component, user)
+      )
     }
 
     redirect(url: request.getHeader('referer') + '#review')

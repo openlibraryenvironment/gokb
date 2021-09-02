@@ -947,7 +947,8 @@ class TitleLookupService {
             user,
             project,
             (rr_map.additionalInfo as JSON).toString(),
-            rr_map.type
+            rr_map.type,
+            componentLookupService.findCuratoryGroupOfInterest(the_title, user)
           )
         }
 
@@ -1256,7 +1257,11 @@ class TitleLookupService {
             ti,
             "'${title}' added as a variant of '${ti.name}'.",
             "Match was made on 1st class identifier but title name seems to be very different.",
-            user, project
+            user,
+            project,
+            null,
+            null,
+            componentLookupService.findCuratoryGroupOfInterest(ti, user)
           )
         }
         break

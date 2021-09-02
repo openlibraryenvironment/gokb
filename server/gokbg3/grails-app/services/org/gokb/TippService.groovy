@@ -178,7 +178,9 @@ class TippService {
             null,
             [otherComponents: ti] as JSON,
             RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Coverage Mismatch"),
-            null)
+            tipp.pkg.curatoryGroups?.size() == 1 ? tipp.pkg.curatoryGroups[0] : null
+            // TODO: use currently active CG if tipp.curatoryGroups?.size() != 1)
+        )
       }
     }
     else if (found.to_create == true) {
@@ -352,7 +354,9 @@ class TippService {
             null,
             null,
             [otherComponents: collection] as JSON,
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches")
+          RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches"),
+          tipp.pkg.curatoryGroups?.size() == 1 ? tipp.pkg.curatoryGroups[0] : null
+          // TODO: use currently active CG if tipp.curatoryGroups?.size() != 1
         )
       }
       if (found.conflicts.size > 0) {

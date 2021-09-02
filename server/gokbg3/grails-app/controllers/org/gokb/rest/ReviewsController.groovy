@@ -289,7 +289,16 @@ class ReviewsController {
 
       if (errors.size() == 0) {
         try {
-          obj = reviewRequestService.raise(pars.componentToReview, pars.reviewRequest, pars.descriptionOfCause, user, null, pars.additionalInfo, pars.stdDesc)
+          obj = reviewRequestService.raise(
+              pars.componentToReview,
+              pars.reviewRequest,
+              pars.descriptionOfCause,
+              user,
+              null,
+              pars.additionalInfo,
+              pars.stdDesc,
+              componentLookupService.findCuratoryGroupOfInterest(pars.componentToReview, user)
+          )
 
           if (obj) {
             result = restMappingService.mapObjectToJson(obj, params, user)
