@@ -11,6 +11,8 @@ import groovy.transform.Synchronized
 import grails.validation.ValidationException
 import groovy.util.logging.*
 
+import javax.annotation.Nonnull
+
 @Slf4j
 class ComponentLookupService {
   def grailsApplication
@@ -265,24 +267,35 @@ class ComponentLookupService {
                 catch (java.lang.NumberFormatException nfe) {
                 }
 
-                if (!addedLong && a instanceof String && a?.trim() ) {
-                  validStr.add(a.toLowerCase())
+                if (a instanceof String && a?.trim() ) {
+                  if (c == 'ids') {
+                    validStr.add(Identifier.normalizeIdentifier(a))
+                  }
+                  else {
+                    validStr.add(a.toLowerCase())
+                  }
                 }
               }
 
               if (validStr.size() > 0 || validLong.size() > 0) {
                 paramStr += " AND ("
 
-                if (validLong.size() > 0) {
+                if (c != 'ids' && validLong.size() > 0) {
                   paramStr += "${c}.id IN :${c}"
                   qryParams["${c}"] = validLong
                 }
                 if (validStr.size() > 0) {
-                  if (validLong.size() > 0) {
+                  if (c != 'ids' && validLong.size() > 0) {
                     paramStr += " OR "
                   }
                   paramStr += "${c}.uuid IN :${c}_str OR "
-                  paramStr += "lower(${c}.${c == 'ids' ? 'value' : 'name'}) IN :${c}_str"
+
+                  if (c == 'ids') {
+                    paramStr += "lower(${c}.normname) IN :${c}_str"
+                  }
+                  else {
+                    paramStr += "lower(${c}.name) IN :${c}_str"
+                  }
                   qryParams["${c}_str"] = validStr
                 }
                 paramStr += ")"
@@ -627,5 +640,31 @@ class ComponentLookupService {
     }
 
     return result
+  }
+
+
+  CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null){
+    if (!KBComponent.has(component, 'curatoryGroups')){
+      return null
+    }
+    // TODO: to be extended for further comparision objects
+    if (component.curatoryGroups?.size() == 1){
+      return component.curatoryGroups[0]
+    }
+    if (component.curatoryGroups?.size() == 0){
+      if (user?.curatoryGroups?.size() == 1){
+        return user.curatoryGroups[0]
+      }
+      // else
+      return null
+    }
+    if (component.curatoryGroups.size() > 1){
+      def intersection = component.curatoryGroups.intersect(user?.curatoryGroups)
+      if (intersection.size() == 1){
+        return intersection[0]
+      }
+      // else
+      return null
+    }
   }
 }

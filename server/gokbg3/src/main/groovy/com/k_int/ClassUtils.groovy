@@ -190,7 +190,7 @@ class ClassUtils {
   }
 
   public static boolean setStringIfDifferent(obj, prop, value) {
-    if ((obj != null) && (prop != null) && (value) && (value.toString().length() > 0))
+    if ((obj != null) && (prop != null) && (value == null || (value instanceof String && value?.toString().length() > 0)))
       if (obj[prop] != value) {
         obj[prop] = value
         return true

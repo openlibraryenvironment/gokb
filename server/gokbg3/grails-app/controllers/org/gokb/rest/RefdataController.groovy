@@ -51,12 +51,14 @@ class RefdataController {
     def cat = null
     def base = grailsApplication.config.serverURL + namespace
 
-    if (params.id.contains('.')) {
-      cat = RefdataCategory.findByDesc(params.id)
-    } else if (params.id.contains(':')) {
+    if (params.int('id')) {
+      cat = RefdataCategory.get(params.int('id'))
+    }
+    else if (params.id.contains(':')) {
       cat = genericOIDService.resolveOID(params.id)
-    } else {
-      cat = RefdataCategory.get(params.id)
+    }
+    else {
+      cat = RefdataCategory.findByDesc(params.id)
     }
 
     if (cat) {

@@ -411,6 +411,7 @@ class IntegrationControllerSpec extends Specification {
     matching_pkgs[0].id == resp.json.pkgId
     matching_pkgs[0].tipps?.size() == 1
     matching_pkgs[0].tipps[0].importId == "wildeTitleId"
+    matching_pkgs[0].tipps[0].coverageStatements.size() == 1
     matching_pkgs[0].provider?.name == "American Chemical"
     matching_pkgs[0].ids?.size() == 1
   }

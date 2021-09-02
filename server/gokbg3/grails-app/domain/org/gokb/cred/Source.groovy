@@ -20,7 +20,6 @@ class Source extends KBComponent {
   RefdataValue defaultDataFormat
   IdentifierNamespace targetNamespace
   Date lastRun
-  Boolean zdbMatch = false
   Boolean ezbMatch = false
   Org responsibleParty
 
@@ -47,7 +46,6 @@ class Source extends KBComponent {
     targetNamespace(nullable:true, blank:true)
     lastRun(nullable:true,default: null)
     ezbMatch(nullable:true, default: false)
-    zdbMatch(nullable:true,default: false)
     automaticUpdates(nullable: true,default: false)
     name(validator: { val, obj ->
       if (obj.hasChanged('name')) {
@@ -126,7 +124,6 @@ class Source extends KBComponent {
       builder.'ruleset' (ruleset)
       builder.'automaticUpdates' (automaticUpdates)
       builder.'ezbMatch' (ezbMatch)
-      builder.'zdbMatch' (zdbMatch)
       builder.'lastRun' (lastRun)
       if ( targetNamespace ) {
         builder.'targetNamespace'('namespaceName': targetNamespace.name, 'value': targetNamespace.value, 'id': targetNamespace.id)
