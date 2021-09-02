@@ -41,7 +41,8 @@ class User extends Party {
     updateTokens: UpdateToken
   ]
 
-  static mappedBy = [curatoryGroups: "users"]
+  static mappedBy = [curatoryGroups: "users",
+                     updateTokens: "updateUser"]
 
   static constraints = {
     username(blank: false, unique: true)
