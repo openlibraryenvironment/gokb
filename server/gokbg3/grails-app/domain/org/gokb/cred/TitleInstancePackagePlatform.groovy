@@ -75,60 +75,60 @@ class TitleInstancePackagePlatform extends KBComponent {
   ]
 
   static jsonMapping = [
-    'ignore'       : [
-      'format',
-      'startIssue',
-      'delayedOA',
-      'hybridOA',
-      'coverageNote',
-      'primary',
-      'delayedOAEmbargo',
-      'coverageDepth',
-      'startVolume',
-      'endDate',
-      'embargo',
-      'startDate',
-      'endIssue',
-      'endVolume',
-      'description',
-      'hybridOAUrl'
-    ],
-    'es'           : [
-      'hostPlatformUuid'        : "hostPlatform.uuid",
-      'hostPlatformName'        : "hostPlatform.name",
-      'hostPlatform'            : "hostPlatform.id",
-      'tippTitleUuid'           : "title.uuid",
-      'tippTitleName'           : "title.name",
-      'tippTitle'               : "title.id",
-      'tippPackageUuid'         : "pkg.uuid",
-      'tippPackageName'         : "pkg.name",
-      'tippPackage'             : "pkg.id",
-      'titleType'               : "title.niceName",
-      'coverage'                : "coverageStatements",
-      'publisherName'           : "publisherName",
-      'dateFirstInPrint'        : "dateFirstInPrint",
-      'dateFirstOnline'         : "dateFirstOnline",
-      'firstAuthor'             : "firstAuthor",
-      'publicationType'         : "publicationType",
-      'volumeNumber'            : "volumeNumber",
-      'editionStatement'        : "editionStatement",
-      'firstEditor'             : "firstEditor",
-      'parentPublicationTitleId': "parentPublicationTitleId",
-      'precedingPublicationId'  : "precedingPublicationId",
-      'lastChangedExternal'     : "lastChangedExternal",
-      'medium'                  : "medium",
-      'language'                : "language",
-      'importId'                : "importId"
-    ],
-    'defaultLinks' : [
-      'pkg',
-      'title',
-      'hostPlatform'
-    ],
-    'defaultEmbeds': [
-      'coverageStatements',
-      'prices'
-    ]
+      'ignore'       : [
+          'format',
+          'startIssue',
+          'delayedOA',
+          'hybridOA',
+          'coverageNote',
+          'primary',
+          'delayedOAEmbargo',
+          'coverageDepth',
+          'startVolume',
+          'endDate',
+          'embargo',
+          'startDate',
+          'endIssue',
+          'endVolume',
+          'description',
+          'hybridOAUrl'
+      ],
+      'es'           : [
+          'hostPlatformUuid'        : "hostPlatform.uuid",
+          'hostPlatformName'        : "hostPlatform.name",
+          'hostPlatform'            : "hostPlatform.id",
+          'tippTitleUuid'           : "title.uuid",
+          'tippTitleName'           : "title.name",
+          'tippTitle'               : "title.id",
+          'tippPackageUuid'         : "pkg.uuid",
+          'tippPackageName'         : "pkg.name",
+          'tippPackage'             : "pkg.id",
+          'titleType'               : "title.niceName",
+          'coverage'                : "coverageStatements",
+          'publisherName'           : "publisherName",
+          'dateFirstInPrint'        : "dateFirstInPrint",
+          'dateFirstOnline'         : "dateFirstOnline",
+          'firstAuthor'             : "firstAuthor",
+          'publicationType'         : "publicationType",
+          'volumeNumber'            : "volumeNumber",
+          'editionStatement'        : "editionStatement",
+          'firstEditor'             : "firstEditor",
+          'parentPublicationTitleId': "parentPublicationTitleId",
+          'precedingPublicationId'  : "precedingPublicationId",
+          'lastChangedExternal'     : "lastChangedExternal",
+          'medium'                  : "medium",
+          'language'                : "language",
+          'importId'                : "importId"
+      ],
+      'defaultLinks' : [
+          'pkg',
+          'title',
+          'hostPlatform'
+      ],
+      'defaultEmbeds': [
+          'coverageStatements',
+          'prices'
+      ]
   ]
 
   static touchOnUpdate = [
@@ -670,16 +670,16 @@ class TitleInstancePackagePlatform extends KBComponent {
       if (!tipp) {
         log.debug("Creating new TIPP..")
         def tmap = [
-          'pkg'         : pkg,
-          'title'       : ti,
-          'hostPlatform': plt,
-          'url'         : trimmed_url,
-          'uuid'        : (tipp_dto.uuid ?: null),
-          'status'      : (tipp_dto.status ?: null),
-          'name'        : (tipp_dto.name ?: null),
-          'editStatus'  : (tipp_dto.editStatus ?: null),
-          'language'    : (tipp_dto.language ?: null),
-          'importId'    : (tipp_dto.titleId ? (tipp_dto.importId ?: null) : null)
+            'pkg'         : pkg,
+            'title'       : ti,
+            'hostPlatform': plt,
+            'url'         : trimmed_url,
+            'uuid'        : (tipp_dto.uuid ?: null),
+            'status'      : (tipp_dto.status ?: null),
+            'name'        : (tipp_dto.name ?: null),
+            'editStatus'  : (tipp_dto.editStatus ?: null),
+            'language'    : (tipp_dto.language ?: null),
+            'importId'    : (tipp_dto.titleId ? (tipp_dto.importId ?: null) : null)
         ]
 
         tipp = tiplAwareCreate(tmap)
@@ -856,15 +856,15 @@ class TitleInstancePackagePlatform extends KBComponent {
             }
           }
 
-          tipp.addToCoverageStatements('startVolume': c.startVolume,                \
-                           'startIssue': c.startIssue,                \
-                           'endVolume': c.endVolume,                \
-                           'endIssue': c.endIssue,                \
-                           'embargo': c.embargo,                \
-                           'coverageDepth': cov_depth,                \
-                           'coverageNote': c.coverageNote,                \
-                           'startDate': startAsDate,                \
-                           'endDate': endAsDate
+          tipp.addToCoverageStatements('startVolume': c.startVolume,                  \
+                             'startIssue': c.startIssue,                  \
+                             'endVolume': c.endVolume,                  \
+                             'endIssue': c.endIssue,                  \
+                             'embargo': c.embargo,                  \
+                             'coverageDepth': cov_depth,                  \
+                             'coverageNote': c.coverageNote,                  \
+                             'startDate': startAsDate,                  \
+                             'endDate': endAsDate
           )
         }
         // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
@@ -885,10 +885,10 @@ class TitleInstancePackagePlatform extends KBComponent {
       if (tipp_dto.prices && tipp_dto.prices.size() > 0) {
         tipp_dto.prices.each { price ->
           if (!price.id && (price.price || price.amount) )
-          tipp.setPrice(String.isInstance(price.type) ? price.type : price.type.name,
-              "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
-              price.startDate ? DateFormatService.parseDate(price.startDate) : null,
-              price.endDate ? DateFormatService.parseDate(price.endDate) : null)
+            tipp.setPrice(String.isInstance(price.type) ? price.type : price.type.name,
+                "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
+                price.startDate ? DateFormatService.parseDate(price.startDate) : null,
+                price.endDate ? DateFormatService.parseDate(price.endDate) : null)
         }
       }
 

@@ -42,7 +42,7 @@ class ESSearchService{
           "importId"
       ],
       refdata: [
-          "listStatus",
+        "listStatus",
         "global",
         "editStatus",
         "status"
@@ -327,8 +327,8 @@ class ESSearchService{
     if (value.getClass().isArray() || value instanceof List){
       value.each {
         addRefdataToQuery(it, refdataQuery, field)
-    }
       }
+    }
     if (value instanceof String){
       addRefdataToQuery(value, refdataQuery, field)
     }

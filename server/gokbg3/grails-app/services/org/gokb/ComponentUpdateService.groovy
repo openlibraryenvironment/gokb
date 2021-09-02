@@ -53,7 +53,8 @@ class ComponentUpdateService {
     def data_identifiers = []
     if (data instanceof JSONObject) {
       data_identifiers = data.identifiers ?: []
-    } else {
+    }
+    else {
       data_identifiers = data.ids ?: []
     }
     log.debug("Identifier processing ${data_identifiers}")
@@ -73,7 +74,8 @@ class ComponentUpdateService {
 
           if (!KBComponent.has(component, 'publisher')) {
             canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
-          } else {
+          }
+          else {
             def norm_id = Identifier.normalizeIdentifier(ci.value)
             def ns = IdentifierNamespace.findByValueIlike(namespace_val)
             canonical_identifier = Identifier.findByNamespaceAndNormnameIlike(ns, norm_id)
@@ -87,8 +89,8 @@ class ComponentUpdateService {
               log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
               def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
               hasChanged = true
-            } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
-
+            }
+            else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
               reviewRequestService.raise(
                 component,
@@ -100,7 +102,8 @@ class ComponentUpdateService {
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
                 componentLookupService.findCuratoryGroupOfInterest(component, user)
               )
-            } else {
+            }
+            else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")
             }
 
@@ -133,7 +136,6 @@ class ComponentUpdateService {
 
       data.tags.each { t ->
         log.debug("Adding tag ${t.type},${t.value}")
-
         component.addToTags(
           RefdataCategory.lookupOrCreate(t.type, t.value)
         )
@@ -147,9 +149,7 @@ class ComponentUpdateService {
 
     // Add each file upload too!
     data.fileAttachments.each { fa ->
-
       if (fa?.md5) {
-
         DataFile file = DataFile.findByMd5(fa.md5) ?: new DataFile(guid: fa.guid, md5: fa.md5)
 
         // Single properties.
@@ -170,7 +170,6 @@ class ComponentUpdateService {
         // Grab the attachments.
         def attachments = component.getFileAttachments()
         if (!attachments.contains(file)) {
-
           // Add to the attached files.
           attachments.add(file)
         }
