@@ -108,12 +108,12 @@ class TippService {
         tipp.addToCoverageStatements('startVolume': c.startVolume,           \
                     'startIssue': c.startIssue,           \
                     'endVolume': c.endVolume,           \
-                    'endIssue': c.endIssue,           \
+                    'endIssu e': c.endIssue,           \
                     'embargo': c.embargo,           \
-                    'coverageDepth': cov_depth,           \
-                    'coverageNote': c.coverageNote,           \
-                    'startDate': startAsDate,           \
-                    'endDate': endAsDate
+                    'coverageDep th': cov_depth,           \
+                    'cover ageNote': c.coverageNote,           \
+                    's tartDate': startAsDate,           \
+                    'endDate ': endAsDate
         )
       }
     }
@@ -202,15 +202,9 @@ class TippService {
           'medium', 'language'
       ], tipp, ti)
 
-      def pubFrom = tipp.accessStartDate ? GOKbTextUtils.completeDateString(tipp.accessStartDate.format("yyyy-MM-dd")) : null
-      def pubTo = tipp.accessEndDate ? GOKbTextUtils.completeDateString(tipp.accessEndDate.format("yyyy-MM-dd"), false) : null
       def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(tipp.dateFirstInPrint.format("yyyy-MM-dd")) : null
       def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(tipp.dateFirstOnline.format("yyyy-MM-dd")) : null
 
-      log.debug("Completed date publishedFrom ${tipp.accessStartDate} -> ${pubFrom}")
-
-      title_changed |= ti.hasProperty('publishedFrom') ? ClassUtils.updateDateField(pubFrom, ti, 'publishedFrom') : false
-      title_changed |= ti.hasProperty('publishedTo') ? ClassUtils.updateDateField(pubTo, ti, 'publishedTo') : false
       title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
       title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
 
@@ -312,12 +306,17 @@ class TippService {
     if (latest && found.matches.size > 1) {
       // too many identifier matches
       def covMatch = []
-      found.matches.each { comp ->
+      for (def comp : found.matches) {
         if (JournalInstance.isInstance(comp)) {
           JournalInstance journal = JournalInstance(comp)
-          if (journal.publishedFrom == latest.startDate && journal.publishedTo == latest.endDate) {
+          if (// starts too early OR
+              journal.publishedFrom && latest.startDate && latest.startDate < journal.publishedFrom ||
+              // ends too late
+              journal.publishedTo && latest.endDate && latest.endDate > journal.publishedTo)
+            // no match
+            break
+          else
             covMatch << journal
-          }
         }
       }
       if (covMatch.size() == 1)
@@ -330,9 +329,14 @@ class TippService {
     if (covStmts?.size() > 0) {
       def today = LocalDate.now()
       covStmts.each {
-        if ((latest == null || latest.startDate < it.startDate)
-            && (today.isAfter(it.startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate())))
+        if (latest == null ||
+            // a valid date beats a null
+            !latest.startDate && it.startDate && today.isAfter(it.startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()) ||
+            // a valid date beats a prior date
+            latest.startDate && it.startDate && today.isAfter(it.startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()) && latest.startDate < it.startDate
+        ) {
           latest = it
+        }
       }
     }
     return latest
