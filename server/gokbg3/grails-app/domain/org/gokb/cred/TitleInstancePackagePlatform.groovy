@@ -610,10 +610,10 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if (tipps.size() == 0 && ti) {
         tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
-            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
-            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
-            'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
-            [pkg, plt, ti])
+          'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
+          'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
+          'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
+          [pkg, plt, ti])
       }
 
       if (!tipp) {
@@ -884,7 +884,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       // prices
       if (tipp_dto.prices && tipp_dto.prices.size() > 0) {
         tipp_dto.prices.each { price ->
-          if (!price.id && (price.price || price.amount))
+          if (!price.id && (price.price || price.amount) )
             tipp.setPrice(String.isInstance(price.type) ? price.type : price.type.name,
                 "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
                 price.startDate ? DateFormatService.parseDate(price.startDate) : null,

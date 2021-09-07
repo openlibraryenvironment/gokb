@@ -6,6 +6,7 @@ import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import org.gokb.cred.Combo
 import org.gokb.cred.IdentifierNamespace
+import org.gokb.cred.JournalInstance
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.TIPPCoverageStatement
 import org.gokb.rest.TippController
@@ -16,9 +17,8 @@ import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
 import org.gokb.cred.Package
 
-import java.time.LocalDateTime
+import java.time.LocalDate
 import java.time.ZoneId
-
 
 class TippService {
   def componentUpdateService
@@ -27,6 +27,13 @@ class TippService {
   def reviewRequestService
   def autoTimestampEventListener
 
+  /**
+   * updating the coverage of this TIPP with the coverageData in reqBody
+   *
+   * @param tipp the TIPP to be updated
+   * @param reqBody data extracted from JSON
+   * @return the updated TIPP
+   */
   public def updateCoverage(tipp, reqBody) {
     def cov_list = reqBody.coverageStatements ?: reqBody.coverage
     def missing = tipp.coverageStatements.collect { it.id }
@@ -53,10 +60,10 @@ class TippService {
       tipp.coverageStatements?.each { tcs ->
 
         if (!cs_match && (
-          (c.id && tcs.id == c.id) ||
-            (tcs.startVolume && tcs.startVolume == c.startVolume) ||
-            (tcs.startDate && tcs.startDate == startAsDate) ||
-            (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
+            (c.id && tcs.id == c.id) ||
+                (tcs.startVolume && tcs.startVolume == c.startVolume) ||
+                (tcs.startDate && tcs.startDate == startAsDate) ||
+                (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
         ) {
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
@@ -98,15 +105,15 @@ class TippService {
           cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
         }
 
-        tipp.addToCoverageStatements('startVolume': c.startVolume,  \
-           'startIssue': c.startIssue,  \
-           'endVolume': c.endVolume,  \
-           'endIssue': c.endIssue,  \
-           'embargo': c.embargo,  \
-           'coverageDepth': cov_depth,  \
-           'coverageNote': c.coverageNote,  \
-           'startDate': startAsDate,  \
-           'endDate': endAsDate
+        tipp.addToCoverageStatements('startVolume': c.startVolume,           \
+                    'startIssue': c.startIssue,           \
+                    'endVolume': c.endVolume,           \
+                    'endIssu e': c.endIssue,           \
+                    'embargo': c.embargo,           \
+                    'coverageDep th': cov_depth,           \
+                    'cover ageNote': c.coverageNote,           \
+                    's tartDate': startAsDate,           \
+                    'endDate ': endAsDate
         )
       }
     }
@@ -115,21 +122,19 @@ class TippService {
         tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(it))
       }
     }
-
     tipp
   }
 
   def matchPackage(Package aPackage) {
-
     def tippIDs = TitleInstancePackagePlatform.executeQuery(
-        'select tipp.id from TitleInstancePackagePlatform as tipp ' +
-            ', Combo as c1 ' +
-            'where ' +
-            'c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 and c1.status=:act and ' +
-            'not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2 and cmb.status=:act)',
-        [rdv2 : RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps'),
-         act  : RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-         , pkg: aPackage, rdv1: RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps')
+        'select tipp.id from TitleInstancePackagePlatform as tipp , Combo as c1 ' +
+            'where c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 and c1.status=:act ' +
+            'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2 and cmb.status=:act)',
+        [
+            act : RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE),
+            pkg : aPackage,
+            rdv1: RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
+            rdv2: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
         ])
     log.debug("found ${tippIDs.size()} unbound TIPPs in package $aPackage")
     tippIDs.each { id ->
@@ -154,12 +159,32 @@ class TippService {
         my_ids,
         title_class_name
     )
+    // additional check with coverage statement to find the correct title
+    if (found.matches?.size() > 1 && tipp.coverageStatements?.size() > 0) {
+      coverageCheck(tipp, found)
+    }
 
     TitleInstance ti
     if (found.matches.size() == 1) {
+      // exactly one match
       ti = found.matches[0].object
+      TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
+      if (currentCov && (ti.publishedFrom != currentCov.startDate || ti.publishedTo != currentCov.endDate)) {
+        // RR for coverage check
+        reviewRequestService.raise(tipp,
+            "TIPP coverage conflicts title publishing data",
+            "TIPP ${tipp.name} was linked, check coverage",
+            null,
+            null,
+            [otherComponents: ti] as JSON,
+            RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Coverage Mismatch"),
+            tipp.pkg.curatoryGroups?.size() == 1 ? tipp.pkg.curatoryGroups[0] : null
+            // TODO: use currently active CG if tipp.curatoryGroups?.size() != 1)
+        )
+      }
     }
     else if (found.to_create == true) {
+      // unknown title
       ti = Class.forName(title_class_name).newInstance()
       ti.name = tipp.name
       ti.save(flush: true)
@@ -180,8 +205,8 @@ class TippService {
       def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(tipp.dateFirstInPrint.format("yyyy-MM-dd")) : null
       def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(tipp.dateFirstOnline.format("yyyy-MM-dd")) : null
 
-      title_changed |= ti.hasProperty('dateFirstInPrint')?ClassUtils.setDateIfPresent(firstInPrint, ti, 'dateFirstInPrint'):false
-      title_changed |= ti.hasProperty('dateFirstOnline')?ClassUtils.setDateIfPresent(firstOnline, ti, 'dateFirstOnline'):false
+      title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
+      title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
 
       titleLookupService.addPublisher(tipp.publisherName, ti)
 
@@ -201,6 +226,9 @@ class TippService {
       tipp.title = ti
       tipp.save()
       log.debug("linked TIPP $tipp with TitleInstance $ti")
+    }
+    if (tipp.coverageStatements?.size() > 0) {
+      coverageCheck(tipp, found)
     }
     handleFindConflicts(tipp, found)
   }
@@ -272,6 +300,48 @@ class TippService {
     }
   }
 
+  private void coverageCheck(tipp, found) {
+    // find the latest coverage
+    TIPPCoverageStatement latest = latest(tipp.coverageStatements)
+    if (latest && found.matches.size > 1) {
+      // too many identifier matches
+      def covMatch = []
+      for (def comp : found.matches) {
+        if (JournalInstance.isInstance(comp)) {
+          JournalInstance journal = JournalInstance(comp)
+          if (// starts too early OR
+              journal.publishedFrom && latest.startDate && latest.startDate < journal.publishedFrom ||
+              // ends too late
+              journal.publishedTo && latest.endDate && latest.endDate > journal.publishedTo)
+            // no match
+            break
+          else
+            covMatch << journal
+        }
+      }
+      if (covMatch.size() == 1)
+        found.matches = covMatch
+    }
+  }
+
+  private TIPPCoverageStatement latest(def covStmts) {
+    def latest = null
+    if (covStmts?.size() > 0) {
+      def today = LocalDate.now()
+      covStmts.each {
+        if (latest == null ||
+            // a valid date beats a null
+            !latest.startDate && it.startDate && today.isAfter(it.startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()) ||
+            // a valid date beats a prior date
+            latest.startDate && it.startDate && today.isAfter(it.startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()) && latest.startDate < it.startDate
+        ) {
+          latest = it
+        }
+      }
+    }
+    return latest
+  }
+
   private void handleFindConflicts(TitleInstancePackagePlatform tipp, def found) {
     // use this to create ReviewRequests as needed
     // TODO: check if the ReviewRequest was raised already before issuing a new one
@@ -282,12 +352,12 @@ class TippService {
           collection << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name]
         }
         reviewRequestService.raise(
-          tipp,
-          "TIPP matched several titles",
-          "TIPP ${tipp.name} coudn't be linked.",
-          null,
-          null,
-          [otherComponents: collection] as JSON,
+            tipp,
+            "TIPP matched several titles",
+            "TIPP ${tipp.name} coudn't be linked.",
+            null,
+            null,
+            [otherComponents: collection] as JSON,
           RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches"),
           tipp.pkg.curatoryGroups?.size() == 1 ? tipp.pkg.curatoryGroups[0] : null
           // TODO: use currently active CG if tipp.curatoryGroups?.size() != 1
