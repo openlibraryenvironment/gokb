@@ -10,6 +10,7 @@ import grails.util.Holders
 import groovy.transform.Synchronized
 import grails.validation.ValidationException
 import groovy.util.logging.*
+import org.grails.web.json.JSONObject
 
 import javax.annotation.Nonnull
 
@@ -643,7 +644,23 @@ class ComponentLookupService {
   }
 
 
-  CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null){
+  CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null, JSONObject activeGroup = null){
+    // Find by activeGroup
+    CuratoryGroup activeCuratoryGroup = null
+    if (activeGroup?.uuid){
+      activeCuratoryGroup = CuratoryGroup.findByUuid(activeGroup.uuid)
+    }
+    else if (activeGroup?.id){
+      activeCuratoryGroup = CuratoryGroup.findById(activeGroup.id)
+    }
+    else if (activeGroup?.name){
+      activeCuratoryGroup = CuratoryGroup.findByName(activeGroup.name)
+    }
+    if (activeCuratoryGroup){
+      return activeCuratoryGroup
+    }
+
+    // Not found by activeGroup --> Get by other arguments
     if (!KBComponent.has(component, 'curatoryGroups')){
       return null
     }

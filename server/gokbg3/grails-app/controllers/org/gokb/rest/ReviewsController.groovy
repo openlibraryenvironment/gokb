@@ -243,7 +243,6 @@ class ReviewsController {
 
       if (reqBody.componentToReview instanceof Integer) {
         def comp = KBComponent.get(reqBody.componentToReview)
-
         if (comp) {
           pars.componentToReview = comp
         }
@@ -300,7 +299,7 @@ class ReviewsController {
               null,
               pars.additionalInfo,
               pars.stdDesc,
-              componentLookupService.findCuratoryGroupOfInterest(pars.componentToReview, user)
+              componentLookupService.findCuratoryGroupOfInterest(pars.componentToReview, user, reqBody.activeGroup)
           )
 
           if (obj) {
