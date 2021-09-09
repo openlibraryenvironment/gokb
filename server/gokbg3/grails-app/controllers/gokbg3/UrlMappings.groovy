@@ -109,7 +109,8 @@ class UrlMappings {
       post "/reviews"(controller: 'reviews', namespace: 'rest', action: 'save')
       put "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
       patch "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
-      patch "/reviews/$id/escalate"(controller: 'reviews', namespace: 'rest', action: 'escalate')
+      get "/reviews/escalatable/$id/$activeGroupId"(controller: 'reviews', namespace: 'rest', action: 'isEscalatable')
+      put "/reviews/escalate/$id"(controller: 'reviews', namespace: 'rest', action: 'escalate')
 
       get "/curatoryGroups/$id/reviews"(controller: 'curatoryGroups', namespace: 'rest', action: 'getReviews')
       get "/curatoryGroups/$id/jobs"(controller: 'curatoryGroups', namespace: 'rest', action: 'getJobs')

@@ -31,7 +31,11 @@ class AllocatedReviewGroup implements Serializable {
 	}
 
 	static AllocatedReviewGroup create(CuratoryGroup grp, ReviewRequest rr, boolean flush = false) {
-		new AllocatedReviewGroup(group: grp, review: rr).save(flush: flush)
+		new AllocatedReviewGroup(
+				group: grp,
+				review: rr,
+				status: RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+		).save(flush: flush)
 	}
 
 	static boolean remove(CuratoryGroup group, ReviewRequest review, boolean flush = false) {

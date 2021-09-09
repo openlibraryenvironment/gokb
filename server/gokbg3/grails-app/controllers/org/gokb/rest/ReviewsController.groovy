@@ -1,6 +1,5 @@
 package org.gokb.rest
 
-
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
@@ -13,9 +12,6 @@ import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.User
-
-import java.time.Duration
-import java.time.LocalDateTime
 
 @Transactional(readOnly = true)
 class ReviewsController {
@@ -368,54 +364,39 @@ class ReviewsController {
   }
 
 
+  /**
+   * Check if the ReviewRequest given by @params.id can be escalated.
+   */
+  def isEscalatable() {
+    render getEscalationTargetGroupId(params) as JSON
+  }
+
+
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
-  def escalate() {
-    def result = ['result':'ERROR', 'params': params]
-    def rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
-    def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
-    def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
-
-    if (rr){
-      if (rr.isEditable()){
-        def argsExisting = rr.allocatedGroups
-        if (argsExisting && !argsExisting.isEmpty()){
-          List<AllocatedReviewGroup> inProgressARGs = AllocatedReviewGroup.findAllByStatus(inProgress)
-          if (!inProgressARGs.isEmpty()){
-            if (!inProgressARGs.size() > 1){
-              // all conditions are met --> escalate
-              argsExisting.each{arg -> arg.status = inactive}
-              CuratoryGroup escalatedToCG = inProgressARGs.get(0).group.superordinatedGroup
-              reviewRequestService.escalate(inProgressARGs.get(0), escalatedToCG)
-              response.setStatus(200)
-              result.message = "The requested ReviewRequest has been escalated."
-              result.result = 'OK'
-            }
-            else{
-              response.setStatus(409)
-              result.message = "The requested ReviewRequest can not be escalated due to multiple group allocations being in progress."
-            }
-          }
-          else{
-            response.setStatus(409)
-            result.message = "The requested ReviewRequest can not be escalated due to missing group allocations being in progress."
-          }
-        }
-        else{
-          response.setStatus(409)
-          result.message = "The requested ReviewRequest can not be escalated due to missing group allocations."
-        }
+  def escalate(){
+    def result = getEscalationTargetGroupId(params)
+    if (result.target?.result == 'OK'){
+      AllocatedReviewGroup arg = AllocatedReviewGroup.findById(result['escalatingAllocatedReviewGroup'])
+      AllocatedReviewGroup newArg = reviewRequestService.escalate(arg, result['escalatedToCG'])
+      if (newArg){
+        ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
+        def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
+        rr.allocatedGroups.each{ ag -> ag.status = inactive }
+        newArg.status = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+        result.message = "The requested ReviewRequest has been escalated."
+        render result
+        return
       }
       else{
-        response.setStatus(403)
-        result.message = "User is not allowed to edit this ReviewRequest."
+        result.message = "All preconditions for an escalation have been met. Could not escalate anyway."
+        result.result = 'ERROR'
+        response.setStatus(500)
+        render result
+        return
       }
     }
-    else{
-      response.setStatus(404)
-      result.message = "ReviewRequest not found or empty request body."
-    }
-    render result as JSON
+    render result
   }
 
 
@@ -441,7 +422,80 @@ class ReviewsController {
       linksObj.update = [href:base]
       linksObj.delete = [href:base]
     }
-
     return linksObj
+  }
+
+
+  private JSON getEscalationTargetGroupId(def params){
+    def result = ['result':'ERROR', 'isEscalatable':false, 'params': params]
+
+    def rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
+    if (!rr){
+      response.setStatus(404)
+      result.message = "ReviewRequest not found for id ${params.id}."
+      return result
+    }
+    if (!rr.isEditable()){
+      response.setStatus(403)
+      result.message = "ReviewRequest for id ${params.id} may not be edited."
+      return result
+    }
+
+    CuratoryGroup escalatingGroup = null
+    if (params.activeGroupId){
+      String id = String.valueOf(params.activeGroupId)
+      if (!StringUtils.isEmpty(id)){
+        CuratoryGroup toBeChecked = CuratoryGroup.findById(id)
+        List<AllocatedReviewGroup> argCandidates = AllocatedReviewGroup.findAllByGroup(toBeChecked)
+        if (argCandidates.size() == 1){
+          escalatingGroup = toBeChecked
+        }
+      }
+    }
+
+    if (!escalatingGroup){
+      // Couldn't get escalation group by activeGroup, try allocated groups
+      def argsExisting = rr.allocatedGroups
+      if (!argsExisting || argsExisting.isEmpty()){
+        response.setStatus(409)
+        result.message = "The requested ReviewRequest can not be escalated due to missing both, active group and group allocations."
+        return result
+      }
+
+      def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+      List<AllocatedReviewGroup> inProgressARGs = AllocatedReviewGroup.findAllByStatus(inProgress)
+      if (inProgressARGs.isEmpty()){
+        response.setStatus(409)
+        result.message = "The requested ReviewRequest can not be escalated due to missing group allocations being in progress."
+        return result
+      }
+      if (inProgressARGs.size() > 1){
+        response.setStatus(409)
+        result.message = "The requested ReviewRequest can not be escalated due to multiple group allocations being in progress."
+        return result
+      }
+      escalatingGroup = inProgressARGs.get(0).group
+      result.escalatingAllocatedReviewGroup = inProgressARGs.get(0).id
+    }
+
+    if (!escalatingGroup){
+      response.setStatus(404)
+      result.message = "Could not get curatory group to be escalated from."
+      return result
+    }
+
+    CuratoryGroup escalatedToCG = escalatingGroup.superordinatedGroup
+    if (!escalatedToCG){
+      response.setStatus(409)
+      result.message = "Could not escalate due to missing superordinated group."
+      return result
+    }
+
+    // all conditions are met
+    response.setStatus(200)
+    result.escalatingGroup = escalatingGroup.id
+    result.escalationTargetGroup = escalatedToCG.id
+    result.message = "The requested ReviewRequest can be escalated."
+    return result
   }
 }
