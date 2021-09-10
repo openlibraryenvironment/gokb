@@ -36,35 +36,22 @@ class TippService {
    */
   public def updateCoverage(tipp, reqBody) {
     def cov_list = reqBody.coverageStatements ?: reqBody.coverage
-    def missing = tipp.coverageStatements.collect { it.id }
+    def stale_coverage_ids = tipp.coverageStatements.collect { it.id }
+
     def changed = false
 
     cov_list?.each { c ->
       def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
       def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
 
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
-      changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tipp, 'startDate')
-      changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tipp, 'endDate')
-      changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
-
       def cs_match = false
       def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
       def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      def conflict = false
+      def conflicting_statements = []
 
       tipp.coverageStatements?.each { tcs ->
-
-        if (!cs_match && (
-            (c.id && tcs.id == c.id) ||
-                (tcs.startVolume && tcs.startVolume == c.startVolume) ||
-                (tcs.startDate && tcs.startDate == startAsDate) ||
-                (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
-        ) {
+        if (c.id && tcs.id == c.id) {
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
@@ -73,13 +60,61 @@ class TippService {
           changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
           changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tcs, 'startDate')
           changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
+          changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
           cs_match = true
-          missing.remove(tcs.id)
+          stale_coverage_ids.removeAll(tcs.id)
         }
-        else if (cs_match) {
-          TippController.log.debug("Matched new coverage ${c} on multiple existing coverages!")
+        else if (!cs_match) {
+          if (!tcs.endDate && !endAsDate) {
+            conflict = true
+          }
+          else if (tcs.startVolume && tcs.startVolume == c.startVolume) {
+            log.debug("Matched CoverageStatement by startVolume")
+            cs_match = true
+          }
+          else if (tcs.startDate && tcs.startDate == startAsDate) {
+            log.debug("Matched CoverageStatement by startDate")
+            cs_match = true
+          }
+          else if (!tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate) {
+            log.debug("Matched CoverageStatement with unspecified values")
+            cs_match = true
+          }
+          else if (tcs.startDate && tcs.endDate) {
+            if (startAsDate && startAsDate > tcs.startDate && startAsDate < tcs.endDate) {
+              conflict = true
+            }
+            else if (endAsDate && endAsDate > tcs.startDate && endAsDate < tcs.endDate) {
+              conflict = true
+            }
+          }
+
+          if (conflict) {
+            conflicting_statements.add(tcs.id)
+          }
+          else if (cs_match) {
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
+            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
+            changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tcs, 'startDate')
+            changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
+            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
+
+            stale_coverage_ids.removeAll(tcs.id)
+          }
         }
+        else {
+          log.debug("Matched new coverage ${c} on multiple existing coverages!")
+        }
+      }
+
+      for (def cst : conflicting_statements) {
+        tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(cst))
+        changed = true
       }
 
       if (!cs_match) {
@@ -105,23 +140,32 @@ class TippService {
           cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
         }
 
-        tipp.addToCoverageStatements('startVolume': c.startVolume,           \
-                    'startIssue': c.startIssue,           \
-                    'endVolume': c.endVolume,           \
-                    'endIssu e': c.endIssue,           \
-                    'embargo': c.embargo,           \
-                    'coverageDep th': cov_depth,           \
-                    'cover ageNote': c.coverageNote,           \
-                    's tartDate': startAsDate,           \
-                    'endDate ': endAsDate
-        )
+        def coverage_item = [
+          'startVolume': c.startVolume,
+          'startIssue': c.startIssue,
+          'endVolume': c.endVolume,
+          'endIssu e': c.endIssue,
+          'embargo': c.embargo,
+          'coverageDepth': cov_depth,
+          'coverageNote': c.coverageNote,
+          'startDate': startAsDate,
+          'endDate ': endAsDate
+        ]
+
+        tipp.addToCoverageStatements(coverage_item)
+        changed = true
       }
     }
-    if (cov_list) {
-      missing.each {
-        tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(it))
-      }
+
+    stale_coverage_ids.each {
+      tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(it))
+      changed = true
     }
+
+    if (changed) {
+      tipp.lastSeen = System.currentTimeMillis()
+    }
+
     tipp
   }
 
@@ -151,7 +195,7 @@ class TippService {
     // remap Identifiers
     def my_ids = []
     tipp.ids.each {
-      my_ids << it.id
+      my_ids << [value: it.value, type: it.namespace.value]
     }
     found = titleLookupService.find(
         tipp.name,
@@ -169,15 +213,15 @@ class TippService {
       // exactly one match
       ti = found.matches[0].object
       TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
-      if (currentCov && (ti.publishedFrom != currentCov.startDate || ti.publishedTo != currentCov.endDate)) {
-        // RR for coverage check
+
+      if (currentCov && ((ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) || (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo))) {
         reviewRequestService.raise(tipp,
             "TIPP coverage conflicts title publishing data",
             "TIPP ${tipp.name} was linked, check coverage",
             null,
             null,
             [otherComponents: ti] as JSON,
-            RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Coverage Mismatch"),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch"),
             tipp.pkg.curatoryGroups?.size() == 1 ? tipp.pkg.curatoryGroups[0] : null
             // TODO: use currently active CG if tipp.curatoryGroups?.size() != 1)
         )

@@ -262,40 +262,53 @@ class OrgController {
   private def updateCombos(obj, reqBody, boolean remove = true) {
     log.debug("Updating org combos ..")
     def errors = [:]
+    def changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+      changed |= id_result.changed
+
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
       }
     }
 
     if (reqBody.providedPlatforms instanceof Collection) {
       def plts = reqBody.providedPlatforms
 
-      def plts_errors = orgService.updatePlatforms(obj, plts, remove)
+      def plts_result = orgService.updatePlatforms(obj, plts, remove)
 
-      if (plts_errors.size() > 0) {
-        errors.providedPlatforms = plts_errors
+      changed |= plts_result.changed
+
+      if (plts_result.errors.size() > 0) {
+        errors.providedPlatforms = plts_result.errors
       }
     }
 
     if (reqBody.curatoryGroups instanceof Collection) {
-      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+      def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
-      if (cg_errors.size() > 0) {
-        errors['curatoryGroups'] = cg_errors
+      changed |= cg_result.changed
+
+      if (cg_result.errors.size() > 0) {
+        errors['curatoryGroups'] = cg_result.errors
       }
     }
 
     if (reqBody.offices instanceof Collection) {
-      def office_errors = orgService.updateOffices(obj, reqBody.offices, remove)
-      if (office_errors.size() > 0) {
-        errors['offices'] = office_errors
+      def office_result = orgService.updateOffices(obj, reqBody.offices, remove)
+      changed |= office_result.changed
+
+      if (office_result.errors.size() > 0) {
+        errors['offices'] = office_result.errors
       }
+    }
+
+    if (changed) {
+      obj.lastSeen = System.currentTimeMillis()
     }
     log.debug("After update: ${obj}")
     errors

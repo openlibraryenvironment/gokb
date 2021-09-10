@@ -789,22 +789,32 @@ class TitleController {
   @Transactional
   private def updateCombos(obj, reqBody, boolean remove = true) {
     log.debug("Updating title combos ..")
+    def changed = false
     def errors = [:]
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+      changed |= id_result.changed
+
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
       }
     }
 
-    def pub_errors = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
+    def pub_result = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
 
-    if (pub_errors.size() > 0)
-      errors.publisher = pub_errors
+    changed |= pub_result.changed
+
+    if (pub_result.errors.size() > 0) {
+      errors.publisher = pub_result.errors
+    }
+
+    if (changed) {
+      obj.lastSeen = System.currentTimeMillis()
+    }
 
     errors
   }

@@ -345,22 +345,27 @@ class PackageController {
   private def updateCombos(obj, reqBody, boolean remove = true, user) {
     log.debug("Updating package combos ..")
     def errors = [:]
+    def changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+      changed |= id_result.changed
+
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
       }
     }
 
     if (reqBody.curatoryGroups) {
-      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+      def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
-      if (cg_errors.size() > 0) {
-        errors['curatoryGroups'] = cg_errors
+      changed |= cg_result.changed
+
+      if (cg_result.errors.size() > 0) {
+        errors['curatoryGroups'] = cg_result.errors
       }
     }
 
@@ -406,6 +411,7 @@ class PackageController {
           }
 
           def new_combo = new Combo(fromComponent: obj, toComponent: prov, type: combo_type).save(flush: true)
+          changed = true
 
           obj.refresh()
         }
@@ -416,6 +422,7 @@ class PackageController {
     }
     else if (reqBody.provider == null) {
       obj.provider = null
+      changed = true
     }
 
     if (reqBody.nominalPlatform != null || reqBody.platform != null) {
@@ -438,6 +445,7 @@ class PackageController {
           }
 
           def new_combo = new Combo(fromComponent: obj, toComponent: plt, type: combo_type).save(flush: true)
+          changed = true
 
           obj.refresh()
         }
@@ -448,6 +456,7 @@ class PackageController {
     }
     else if (reqBody.nominalPlatform == null || reqBody.platform == null) {
       obj.nominalPlatform = null
+      changed = true
     }
 
     if (reqBody.tipps) {
@@ -521,6 +530,7 @@ class PackageController {
               }
 
               upserted_tipp = upserted_tipp?.save(flush: true)
+              changed = true
             }
           }
           else {
@@ -532,6 +542,10 @@ class PackageController {
           }
         }
       }
+    }
+
+    if (changed) {
+      obj.lastSeen = System.currentTimeMillis()
     }
     errors
   }

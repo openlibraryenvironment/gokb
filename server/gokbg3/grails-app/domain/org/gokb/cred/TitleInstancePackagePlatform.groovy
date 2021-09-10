@@ -748,26 +748,15 @@ class TitleInstancePackagePlatform extends KBComponent {
         tipp_dto.coverage = tipp_dto.coverageStatements
       }
 
-      def known_coverage_ids = []
+      if (!tipp.importId && (tipp_dto.importId || tipp_dto.titleId)) {
+        tipp.importId = tipp_dto.importId ?: tipp_dto.titleId
+      }
+
+      def stale_coverage_ids = tipp.coverageStatements.collect { it.id }
 
       tipp_dto.coverage.each { c ->
         def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
         def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
-
-        if (c.id) {
-          known_coverage_ids.add(c.id as Long)
-        }
-
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
-        changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tipp, 'startDate')
-        changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tipp, 'endDate')
-        changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
-
         def cs_match = false
         def conflict = false
         def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
@@ -787,6 +776,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
             cs_match = true
+            stale_coverage_ids.removeAll(tcs.id)
           }
           else if (!cs_match) {
             if (!tcs.endDate && !endAsDate) {
@@ -814,7 +804,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             }
 
             if (conflict) {
-              conflicting_statements.add(tcs)
+              conflicting_statements.add(tcs.id)
             }
             else if (cs_match) {
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
@@ -825,7 +815,9 @@ class TitleInstancePackagePlatform extends KBComponent {
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
               changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tcs, 'startDate')
               changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
-              changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
+              changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tcs, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
+
+              stale_coverage_ids.removeAll(tcs.id)
             }
           }
           else {
@@ -834,7 +826,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         }
 
         for (def cst : conflicting_statements) {
-          tipp.removeFromCoverageStatements(cst)
+          tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(cst))
         }
 
         if (!cs_match) {
@@ -867,18 +859,11 @@ class TitleInstancePackagePlatform extends KBComponent {
                              'endDate': endAsDate
           )
         }
-        // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
       }
 
-      // remove previous coverage statements from TIPP
-      def old_cs = []
-      tipp.coverageStatements?.each { old_cs << it }
-      if (known_coverage_ids?.size() > 0) {
-        for (def cs : old_cs) {
-          if (cs.id && !known_coverage_ids.contains(cs.id)) {
-            tipp.removeFromCoverageStatements(cs)
-          }
-        }
+      // remove missing coverage statements from TIPP
+      stale_coverage_ids.each {
+        tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(it))
       }
 
       // prices
@@ -1051,9 +1036,13 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Transient
   public getTitleIds() {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [title, refdata_ids, status_active], [readOnly: true]);
+    def result = []
+
+    if (title) {
+      def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
+      def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+      result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [title, refdata_ids, status_active], [readOnly: true]);
+    }
     result
   }
 

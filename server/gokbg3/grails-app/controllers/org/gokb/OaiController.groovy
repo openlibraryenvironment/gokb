@@ -89,8 +89,6 @@ class OaiController {
       dir.mkdirs()
     }
 
-    def location = "${dir}/${subject.uuid}_${subject.lastUpdated.toInstant()}.xml"
-    File cachedRecord = new File(location)
     def cachedXml = null
 
     config.metadataNamespaces.each {ns, url ->
@@ -101,14 +99,24 @@ class OaiController {
 
     log.debug("proceed...");
 
-    if (cachedRecord.exists() && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 5) {
-      cachedXml = new XmlParser(false, false).parse(cachedRecord)
-    }
-
     // Add the metadata element and populate it depending on the config.
     builder.'metadata'() {
-      if (cachedXml) {
-        mkp.yieldUnescaped XmlUtil.serialize(cachedXml).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
+      if (subject.class == Package) {
+        def currentFile = null
+
+        while (!currentFile) {
+          for (File file : dir.listFiles()) {
+            if (file.name.contains(subject.uuid)) {
+              currentFile = file
+            }
+          }
+
+          if(!currentFile) {
+            sleep(1000)
+          }
+        }
+
+        mkp.yieldUnescaped XmlUtil.serialize(new XmlParser(false, false).parse(currentFile)).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
       }
       else {
         subject."${config.methodName}" (builder, attr)
@@ -130,21 +138,19 @@ class OaiController {
     request_map.keySet().removeAll(['controller','action','id'])
 
     if (oid) {
-      record = genericOIDService.resolveOID(oid);
-    }
-    else {
-      errors.add([code:'badArgument', name: 'identifier', expl: 'The request is missing a mandatory argument.'])
-      returnAttrs = false
-    }
-
-    if (oid && !record) {
-
       record = KBComponent.findByUuid(oid)
 
+      if (!record) {
+        record = genericOIDService.resolveOID(oid)
+      }
 
       if( !record ) {
         errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown or illegal in this repository.'])
       }
+    }
+    else {
+      errors.add([code:'badArgument', name: 'identifier', expl: 'The request is missing a mandatory argument.'])
+      returnAttrs = false
     }
 
     def writer = new StringWriter()
@@ -479,8 +485,6 @@ class OaiController {
 
 
   def listRecords(result) {
-    // long session for possible huge requests
-    request.getSession(true).setMaxInactiveInterval(12000)
     response.contentType = "text/xml"
     response.setCharacterEncoding("UTF-8");
     def out = response.outputStream
@@ -550,7 +554,7 @@ class OaiController {
       def wClause = false
 
       // This bit of the query needs to come from the oai config in the domain class
-      def query_params = []
+      def query_params = [:]
       // def query = " from Package as p where p.status.value != 'Deleted'"
       def query = result.oaiConfig.query
 
@@ -561,10 +565,10 @@ class OaiController {
         def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.curators)
 
         if (cg) {
-          query += ', Combo as cgCombo, CuratoryGroup as cg where cgCombo.toComponent = ? and cgCombo.type = ? and cgCombo.fromComponent = o '
+          query += ', Combo as cgCombo, CuratoryGroup as cg where cgCombo.toComponent = :cgo and cgCombo.type = :cgtype and cgCombo.fromComponent = o '
           wClause = true
-          query_params.add(cg)
-          query_params.add(comboType)
+          query_params.put('cgo', cg)
+          query_params.put('cgtype', comboType)
         } else {
           errors.add([code:'badArgument', name: 'curator', expl: 'Unable to lookup Curatory Group.'])
           returnAttrs = false
@@ -587,15 +591,30 @@ class OaiController {
 
           def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.pkg)
 
-          query += ', Combo as pkgCombo, Package as pkg where pkgCombo.fromComponent = ? and pkgCombo.type = ? and pkgCombo.toComponent = o '
+          query += ', Combo as pkgCombo, Package as pkg where pkgCombo.fromComponent = :lpkg and pkgCombo.type = :cpkgt and pkgCombo.toComponent = o '
           wClause = true
-          query_params.add(linked_pkg)
-          query_params.add(comboType)
+          query_params.put('lpkg', linked_pkg)
+          query_params.put('cpkgt', comboType)
         }
         else {
           errors.add([code:'badArgument', name: 'pkg', expl: 'Unable to lookup Package.'])
           returnAttrs = false
         }
+      }
+
+      if (result.oaiConfig.id == 'tipps') {
+        if(!wClause){
+          query += 'where '
+          wClause = true
+        }
+        else{
+          query += ' and '
+        }
+
+        query += 'exists (select 1 from Combo as cti where cti.toComponent = o and cti.type = :ctipp)'
+        def qry_cti = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, 'TitleInstance.Tipps')
+        query_params.put('ctipp', qry_cti)
+        wClause = true
       }
 
       if(status_filter && status_filter.size() > 0){
@@ -609,14 +628,14 @@ class OaiController {
           }
 
           if (val instanceof String) {
-            query += 'o.status != ?'
+            query += 'o.status != :status'
             def qry_rdc = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, val)
-            query_params.add(qry_rdc)
+            query_params.put('status', qry_rdc)
             wClause = true
           }
           else if (val instanceof org.gokb.cred.RefdataValue) {
             query += 'o.status != ?'
-            query_params.add(val)
+            query_params.put('status', val)
             wClause = true
           }
           else {
@@ -633,8 +652,8 @@ class OaiController {
         else{
           query += ' and '
         }
-        query += 'o.lastUpdated > ?'
-        query_params.add(from)
+        query += 'o.lastUpdated > :lupdf'
+        query_params.put('lupdf', from)
       }
       else if ((params.from != null)&&(params.from.trim())) {
         def fparam = params.from
@@ -654,8 +673,8 @@ class OaiController {
             query += ' and '
           }
 
-          query += 'o.lastUpdated > ? '
-                    query_params.add(from)
+          query += 'o.lastUpdated > :lupdf'
+          query_params.put('lupdf', from)
         }
         catch (Exception pe) {
           errors.add([code:'badArgument', name: 'from', expl: 'This date format is not supported.'])
@@ -663,7 +682,7 @@ class OaiController {
         }
       }
 
-      if(until){
+      if (until) {
         if(!wClause){
           query += 'where '
           wClause = true
@@ -671,8 +690,8 @@ class OaiController {
         else{
           query += ' and '
         }
-        query += 'o.lastUpdated < ?'
-        query_params.add(until)
+        query += 'o.lastUpdated < :lupd'
+        query_params.put('lupd', until)
       }
       else if ((params.until != null)&&(params.until.trim())) {
         def uparam = params.until
@@ -692,14 +711,54 @@ class OaiController {
             query += ' and '
           }
 
-          query += 'o.lastUpdated < ?'
+          query += 'o.lastUpdated < :lupd'
 
-          query_params.add(until)
+          query_params.put('lupd', until)
         }
         catch (Exception pe) {
           errors.add([code:'badArgument', name: 'until', expl: 'This date format is not supported.'])
           returnAttrs = false
         }
+      }
+
+      // Only return cached packages
+      if (result.oaiConfig.id == 'packages') {
+        if(!wClause){
+          query += 'where '
+          wClause = true
+        }
+        else{
+          query += ' and '
+        }
+
+        File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+        def cached_uuids = []
+
+        for (File file : dir.listFiles()) {
+          def nameParts = file.name.split('_')
+          if (from && until) {
+            if (dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) > from && dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) < until) {
+              cached_uuids.add(nameParts[0])
+            }
+          }
+          else if (from) {
+            if (dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) > from) {
+              cached_uuids.add(nameParts[0])
+            }
+          }
+          else if (until) {
+            if (dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) < until) {
+              cached_uuids.add(nameParts[0])
+            }
+          }
+          else {
+            cached_uuids.add(nameParts[0])
+          }
+        }
+
+        query += 'o.uuid IN :cached'
+        query_params.put('cached', cached_uuids)
+        wClause = true
       }
 
       log.debug("qry is: ${query}");

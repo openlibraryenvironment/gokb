@@ -267,7 +267,7 @@ class TitleLookupService {
 
             if (string_matched) {
               log.debug("TI matched by bucket.")
-              def title_match = [object: the_title, warnings: ['bucket']]
+              def title_match = [object: string_matched, warnings: ['bucket']]
 
               // this seems odd, as the_title is null and therefore has no field 'name'
               /* if (title != the_title.name) {

@@ -551,7 +551,7 @@ class RestMappingService {
     def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
     def id_combos = obj.getCombosByPropertyName('ids')
-    def errors = []
+    def result = [changed: false, errors: []]
     Set new_ids = []
 
     if (obj && ids instanceof Collection) {
@@ -583,16 +583,16 @@ class RestMappingService {
             catch (grails.validation.ValidationException ve) {
               log.debug("Could not create ID ${ns}:${i.value}")
 
-              errors << messageService.processValidationErrors(ve.errors)
+              result.errors << messageService.processValidationErrors(ve.errors)
             }
           }
           else {
-            errors << [message: messageService.resolveCode('identifier.value.IllegalIDForm', null, null), baddata: i]
+            result.errors << [message: messageService.resolveCode('identifier.value.IllegalIDForm', null, null), baddata: i]
             valid = false
           }
         }
         else {
-          errors << [message: "Could not identify ID form!", baddata: i]
+          result.errors << [message: "Could not identify ID form!", baddata: i]
           valid = false
           log.error("Could not identify ID form!")
         }
@@ -613,23 +613,21 @@ class RestMappingService {
 
           if (dupe.size() == 0) {
             def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true)
+            result.changed = true
           }
           else if (dupe.size() == 1) {
             if (dupe[0].status == combo_deleted) {
               log.debug("Matched ID combo was marked as deleted!")
               dupe[0].delete(flush: true)
               def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true)
+              result.changed = true
             }
             else {
               log.debug("Not adding duplicate ..")
             }
           }
           else {
-            if (!errors.ids) {
-              errors.ids = []
-            }
-
-            errors.ids << [message: "There seem to be duplicate links for an identifier against this title!", baddata: i]
+            result.errors << [message: "There seem to be duplicate links for an identifier against this title!", baddata: i]
             log.error("Multiple ID combos for ${obj} -- ${i}!")
           }
         }
@@ -645,6 +643,7 @@ class RestMappingService {
               log.debug("Removing newly missing ID ${element.toComponent}")
               element.status = combo_deleted
               removedIds.add(element.toComponent)
+              result.changed = true
             }
           }
 
@@ -662,17 +661,17 @@ class RestMappingService {
     }
     else {
       log.error("Object ${obj} not found or illegal id format")
-      errors << [message: "Expected an Array to process!", baddata: ids]
+      result.errors << [message: "Expected an Array to process!", baddata: ids]
     }
 
-    errors
+    result
   }
 
   @Transactional
   public def updateCuratoryGroups(obj, cgs, boolean remove = true) {
     log.debug("Update curatory Groups ${cgs}")
     Set new_cgs = []
-    def errors = []
+    def result = [changed: false, errors: []]
     def current_cgs = obj.getCombosByPropertyName('curatoryGroups')
     RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', obj.getComboTypeValue('curatoryGroups'))
 
@@ -693,7 +692,7 @@ class RestMappingService {
         new_cgs << cg_obj
       }
       else {
-        errors << [message: "Unable to lookup curatory group!", baddata: cg]
+        result.errors << [message: "Unable to lookup curatory group!", baddata: cg]
       }
     }
 
@@ -701,6 +700,7 @@ class RestMappingService {
       new_cgs.each { c ->
         if (!obj.curatoryGroups.contains(c)) {
           def new_combo = new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush: true)
+          result.changed = true
         }
         else {
           log.debug("Existing cg ${c}..")
@@ -715,16 +715,18 @@ class RestMappingService {
           if (!new_cgs.contains(element.toComponent)) {
             // Remove.
             element.delete()
+            result.changed = true
           }
         }
       }
     }
     log.debug("New cgs: ${obj.curatoryGroups}")
-    errors
+    result
   }
 
   public def updateVariantNames(obj, vals, boolean remove = true) {
     log.debug("Update Variants ${vals} ..")
+    def changed = false
     def remaining = []
     def notFound = []
     def toRemove = []
@@ -746,6 +748,7 @@ class RestMappingService {
 
               if (newVariant) {
                 log.debug("Added variant ${newVariant}")
+                changed = true
                 remaining << newVariant
               }
               else {
@@ -800,6 +803,7 @@ class RestMappingService {
 
               if (newVariant) {
                 log.debug("Added variant ${newVariant}")
+                changed = true
                 if (it.locale) {
                   newVariant = updateAssoc(newVariant, 'locale', it.locale)
                 }
@@ -841,6 +845,7 @@ class RestMappingService {
           obj.variantNames.each { vn ->
             if (!remaining.contains(vn)) {
               toRemove.add(vn.id)
+              changed = true
             }
           }
 
@@ -866,6 +871,10 @@ class RestMappingService {
             'component.addToList.denied.label'
         )
       }
+
+      if (changed) {
+        obj.lastSeen = System.currentTimeMillis()
+      }
     }
     catch (Exception e) {
       log.debug("Unable to process variants:", e)
@@ -884,7 +893,7 @@ class RestMappingService {
 
   @Transactional
   public def updatePublisher(obj, new_pubs, boolean remove = true) {
-    def errors = []
+    def result = [changed: false, errors: []]
     def publisher_combos = obj.getCombosByPropertyName('publisher')
     def combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
 
@@ -924,6 +933,7 @@ class RestMappingService {
 
       if (!found) {
         def new_combo = new Combo(fromComponent: obj, toComponent: publisher, type: combo_type).save(flush: true)
+        result.changed = true
       }
       else {
         log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
@@ -938,10 +948,12 @@ class RestMappingService {
         if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
           // Remove.
           element.delete()
+          result.changed = true
         }
       }
     }
-    errors
+
+    result
   }
 
   public def updateLongField(obj, prop, val) {

@@ -477,9 +477,6 @@ class UpdatePkgTippsRun {
           }
           tipp = new TitleInstancePackagePlatform(
               [
-                  'pkg'                        : Package.get(tippJson.package.internalId),
-                  'title'                      : null,
-                  'hostPlatform'               : Platform.get(tippJson.hostPlatform.internalId),
                   'url'                        : tippJson.url,
                   'uuid'                       : tippJson.uuid,
                   'status'                     : tippJson.status ? RefdataCategory.lookup(KBComponent.RD_STATUS, tippJson.status) : null,
@@ -490,11 +487,17 @@ class UpdatePkgTippsRun {
                   'parentPublicationTitleId'   : tippJson.parent_publication_title_id,
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                   'publisherName'              : tippJson.publisherName,
-                  'ids'                        : idents,
                   'importId'                   : tippJson.titleId ?: null,
                   'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : tippJson.package.updateDate,
                   'accessEndDate'              : tippJson.accessEndDate ? dateFormatService.parseDate(tippJson.accessEndDate) : null]
-          ).save()
+          ).save(flush:true)
+
+          def pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
+          new Combo(toComponent: tipp, fromComponent: pkg, type: pkg_combo_type).save(flush: true, failOnError: true)
+
+          def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
+          new Combo(toComponent: tipp, fromComponent: Platform.get(tippJson.hostPlatform.internalId), type: plt_combo_type).save(flush: true, failOnError: true)
+
 //          idents.each { tipp.ids << it }
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")

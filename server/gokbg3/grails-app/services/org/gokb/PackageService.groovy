@@ -7,7 +7,9 @@ import grails.gorm.transactions.Transactional
 import grails.io.IOUtils
 import groovy.util.logging.Slf4j
 import groovy.xml.MarkupBuilder
+import groovy.xml.StreamingMarkupBuilder
 import groovyx.net.http.RESTClient
+import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
 import org.hibernate.ScrollMode
@@ -1794,29 +1796,179 @@ class PackageService {
         }
 
         attr["xmlns:gokb"] = 'http://gokb.org/oai_metadata/'
+        def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
 
-        def location = "${dir}/${item.uuid}_${item.lastUpdated.toInstant()}.xml"
-        File cachedRecord = new File(location)
+        def fileName = "${item.uuid}_${dateFormatService.formatIsoMsTimestamp(item.lastUpdated)}.xml"
+        File cachedRecord = new File("${dir}/${fileName}")
 
         if (!cachedRecord.exists() || (item.lastUpdated > new Date(cachedRecord.lastModified()) && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 30)) {
+          File tmpFile = new File("/tmp/${fileName}.tmp")
+
+          if (tmpFile.exists()) {
+            tmpFile.delete()
+          }
+
+          def fileWriter = new BufferedWriter(new FileWriter(tmpFile, true))
+
+          def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps');
+          def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps');
+          def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps');
+          def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted');
+          String tipp_hql = "from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)"
+          def tipp_hql_params = [pkg: item, ctype: refdata_package_tipps]
+          def tipps_count = item.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
+          def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+          def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+          def pkg_ids = Identifier.executeQuery("select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [item, refdata_ids, status_active], [readOnly: true])
+          String cName = item.class.name
+
+          log.info("Starting package caching for ${item.name} with ${tipps_count} TIPPs..")
+
+          fileWriter << new StreamingMarkupBuilder().bind {
+            mkp.declareNamespace(xsd:'http://www.w3.org/2001/XMLSchema')
+            'gokb'(attr) {
+              'package'('id': (item.id), 'uuid': (item.uuid)) {
+
+                // Single props.
+                'name'(item.name)
+                'status'(item.status?.value)
+                'editStatus'(item.editStatus?.value)
+                'language'(item.language?.value)
+
+                // Identifiers
+                'identifiers' {
+                  pkg_ids?.each { tid ->
+                    'identifier'('namespace': tid[0], 'namespaceName': tid[1], 'value': tid[2], 'type': tid[3])
+                  }
+                }
+
+                // Variant Names
+                'variantNames' {
+                  item.variantNames.each { vn ->
+                    'variantName'(vn.variantName)
+                  }
+                }
+
+                'scope'(item.scope?.value)
+                'listStatus'(item.listStatus?.value)
+                'breakable'(item.breakable?.value)
+                'consistent'(item.consistent?.value)
+                'fixed'(item.fixed?.value)
+                'paymentType'(item.paymentType?.value)
+                'global'(item.global?.value)
+                'globalNote'(item.globalNote)
+                'contentType'(item.contentType?.value)
+
+                if (item.nominalPlatform) {
+                  'nominalPlatform'(id: item.nominalPlatform.id, uuid: item.nominalPlatform.uuid) {
+                    'primaryUrl'(item.nominalPlatform.primaryUrl)
+                    'name'(item.nominalPlatform.name)
+                  }
+                }
+
+                if (item.provider) {
+                  'nominalProvider'(id: item.provider.id, uuid: item.provider.uuid) {
+                    'name'(item.provider.name)
+                  }
+                }
+
+                'listVerifiedDate'(item.listVerifiedDate ? dateFormatService.formatIsoTimestamp(item.listVerifiedDate) : null)
+
+                'curatoryGroups' {
+                  item.curatoryGroups.each { cg ->
+                    'group' {
+                      'name'(cg.name)
+                    }
+                  }
+                }
+
+                'dateCreated'(dateFormatService.formatIsoTimestamp(item.dateCreated))
+                'TIPPs'(count: tipps_count) {
+                  int offset = 0
+                  while (offset < tipps_count) {
+                    log.debug("Fetching TIPPs batch ${offset}/${tipps_count}")
+                    def tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
+                    log.debug("fetch complete ..")
+                    offset += 50
+                    tipps.each { tipp ->
+                      'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
+                        'status'(tipp.status?.value)
+                        'name'(tipp.name)
+                        'lastUpdated'(tipp.lastUpdated ? dateFormatService.formatIsoTimestamp(tipp.lastUpdated) : null)
+                        'series'(tipp.series)
+                        'subjectArea'(tipp.subjectArea)
+                        'publisherName'(tipp.publisherName)
+                        'dateFirstInPrint'(tipp.dateFirstInPrint)
+                        'dateFirstOnline'(tipp.dateFirstOnline)
+                        'medium'(tipp.format?.value)
+                        'publicationType'(tipp.publicationType?.value)
+                        if (tipp.title) {
+                          'title'('id': tipp.title.id, 'uuid': tipp.title.uuid) {
+                            'name'(tipp.title.name?.trim())
+                            'type'(getTitleClass(tipp.title.id))
+                            'status'(tipp.title.status?.value)
+                            'identifiers' {
+                              getTitleIds(tipp.title.id).each { tid ->
+                                'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                              }
+                            }
+                          }
+                        }
+                        else {
+                          'title'()
+                        }
+                        'identifiers' {
+                          getTippIds(tipp.id).each { tid ->
+                            'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                          }
+                        }
+                        'platform'(id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid) {
+                          'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
+                          'name'(tipp.hostPlatform.name?.trim())
+                        }
+                        'access'(start: tipp.accessStartDate ? dateFormatService.formatIsoTimestamp(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatIsoTimestamp(tipp.accessEndDate) : null)
+                        def cov_statements = getCoverageStatements(tipp.id)
+                        if (cov_statements?.size() > 0) {
+                          cov_statements.each { tcs ->
+                            'coverage'(
+                              startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+                              startVolume: (tcs.startVolume),
+                              startIssue: (tcs.startIssue),
+                              endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+                              endVolume: (tcs.endVolume),
+                              endIssue: (tcs.endIssue),
+                              coverageDepth: (tcs.coverageDepth?.value ?: null),
+                              coverageNote: (tcs.coverageNote),
+                              embargo: (tcs.embargo)
+                            )
+                          }
+                        }
+                        'url'(tipp.url ?: "")
+                      }
+                    }
+                    cleanUpGorm()
+                    log.debug("Batch complete ..")
+                  }
+                }
+              }
+            }
+          }
+          log.info("Finished processing ${tipps_count} TIPPs ..")
+          fileWriter.close()
+
           def removal = removeCacheEntriesForItem(item.uuid)
 
           if (removal) {
             log.debug("Removed stale cache files ..")
           }
 
-          def fileWriter = new FileWriter(location)
-          def recordXml = new MarkupBuilder(fileWriter)
-          item.toGoKBXml(recordXml, attr)
-          fileWriter.close()
+          FileUtils.moveFile(tmpFile, cachedRecord)
         }
         else if (item.lastUpdated <= new Date(cachedRecord.lastModified())) {
-          log.debug("Package had no new changes ..")
           result = 'SKIPPED_NO_CHANGE'
         }
         else if (Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() <= 30) {
           result = 'SKIPPED_CURRENTLY_CHANGING'
-          log.debug("Skipping Package that is currently receiving changes ..")
         }
       }
       else {
@@ -1825,6 +1977,31 @@ class PackageService {
       }
     }
 
+    result
+  }
+
+  private def getTitleIds(Long title_id) {
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [title_id, refdata_ids, status_active], [readOnly: true]);
+    result
+  }
+
+  private def getTippIds(Long tipp_id) {
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [tipp_id, refdata_ids, status_active], [readOnly: true]);
+    result
+  }
+
+  private def getTitleClass(Long title_id) {
+    def result = KBComponent.get(title_id)?.class.getSimpleName();
+
+    result
+  }
+
+  private def getCoverageStatements(Long tipp_id) {
+    def result = TIPPCoverageStatement.executeQuery("from TIPPCoverageStatement as tcs where tcs.owner.id = :tipp", ['tipp': tipp_id], [readOnly: true])
     result
   }
 
