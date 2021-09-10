@@ -243,10 +243,14 @@ class TippController {
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
+      }
+
+      if (id_result.changed) {
+        obj.lastSeen = System.currentTimeMillis()
       }
     }
 
