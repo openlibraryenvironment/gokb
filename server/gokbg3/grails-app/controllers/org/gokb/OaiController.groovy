@@ -101,7 +101,7 @@ class OaiController {
 
     // Add the metadata element and populate it depending on the config.
     builder.'metadata'() {
-      if (subject.class == Package) {
+      if (subject.class == Package && grailsApplication.config.gokb.packageOaiCaching.enabled) {
         def currentFile = null
 
         while (!currentFile) {
@@ -722,7 +722,7 @@ class OaiController {
       }
 
       // Only return cached packages
-      if (result.oaiConfig.id == 'packages') {
+      if (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled) {
         if(!wClause){
           query += 'where '
           wClause = true

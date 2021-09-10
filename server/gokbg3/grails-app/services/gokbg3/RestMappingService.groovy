@@ -606,7 +606,7 @@ class RestMappingService {
         }
       }
 
-      if (errors.size() == 0) {
+      if (result.errors.size() == 0) {
         new_ids.each { i ->
 
           def dupe = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?", [combo_id_type, obj, i])
@@ -696,7 +696,7 @@ class RestMappingService {
       }
     }
 
-    if (errors.size() == 0) {
+    if (result.errors.size() == 0) {
       new_cgs.each { c ->
         if (!obj.curatoryGroups.contains(c)) {
           def new_combo = new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush: true)

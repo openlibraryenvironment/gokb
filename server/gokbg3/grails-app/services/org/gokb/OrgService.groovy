@@ -301,7 +301,7 @@ class OrgService {
     RefdataValue STATUS_ACTIVE = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
     def function_rdc = RefdataCategory.findByLabel(Office.RD_FUNCTION)
-    def old_combos = obj.getCombosByPropertyName('offices')
+    def old_combos = org.getCombosByPropertyName('offices')
     def new_offices = []
     def result = [changed: false, errors: []]
 
