@@ -42,13 +42,13 @@ class ESSearchService{
           "importId"
       ],
       refdata: [
-        "listStatus",
-        "global",
-        "editStatus",
-        "status"
+          "listStatus",
+          "global",
+          "editStatus",
+          "contentType",
+          "status"
       ],
       simpleMap: [
-          "curatoryGroup": "curatoryGroups",
           "role": "roles"
       ],
       complex: [
@@ -56,6 +56,8 @@ class ESSearchService{
           "ids",
           "identifiers",
           "componentType",
+          "curatoryGroup",
+          "curatoryGroups",
           "platform",
           "suggest",
           "label",
@@ -801,6 +803,19 @@ class ESSearchService{
         else{
           errors[k] = "Platform filter has already been defined by parameter '${platformParam}'!"
         }
+      }
+      else if (k.contains('curatoryGroup')) {
+        def cg_name = v
+
+        if (params.int(k)) {
+          def cg_by_id = CuratoryGroup.get(params.int(k))
+
+          if (cg_by_id) {
+            cg_name = cg_by_id.name
+          }
+        }
+
+        exactQuery.must(QueryBuilders.matchQuery(k, cg_name))
       }
       else if (requestMapping.dates && k in requestMapping.dates){
         log.debug("Processing date param ${k}")
