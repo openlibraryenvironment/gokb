@@ -12,7 +12,7 @@ class AugmentJob {
 
   // Every five minutes
   static triggers = {
-    cron name: 'TitleAugmentJobTrigger', cronExpression: "0 0/5 * * * ?", startDelay:600000
+    cron name: 'TitleAugmentJobTrigger', cronExpression: "0 0/5 * * * ?", startDelay:60000
   }
 
   def execute() {
@@ -21,7 +21,7 @@ class AugmentJob {
 
   def aug() {
     if (grailsApplication.config.gokb.zdbAugment.enabled) {
-      log.debug("Attempting to augment titles");
+      log.info("Starting ZDB augment job.");
       def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
       def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
       def zdbNs = IdentifierNamespace.findByValue('zdb')
@@ -46,6 +46,8 @@ class AugmentJob {
           }
         }
       }
+
+      log.info("Finished augmenting ${count_journals_without_zdb_id} Journals")
     }
   }
 

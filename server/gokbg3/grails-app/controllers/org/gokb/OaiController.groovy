@@ -723,14 +723,6 @@ class OaiController {
 
       // Only return cached packages
       if (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled) {
-        if(!wClause){
-          query += 'where '
-          wClause = true
-        }
-        else{
-          query += ' and '
-        }
-
         File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
         def cached_uuids = []
 
@@ -756,12 +748,28 @@ class OaiController {
           }
         }
 
-        query += 'o.uuid IN :cached'
-        query_params.put('cached', cached_uuids)
+        if(!wClause){
+          query += 'where '
+          wClause = true
+        }
+        else{
+          query += ' and '
+        }
+
+        if (cached_uuids.size() > 0) {
+          query += 'o.uuid IN (:cached)'
+          query_params.put('cached', cached_uuids)
+        }
+        else {
+          query += 'o.uuid = :cached'
+          query_params.put('cached', 'empty')
+        }
+
         wClause = true
       }
 
       log.debug("qry is: ${query}");
+      log.debug("qry params are: ${query_params}")
       log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
 
       if (errors) {

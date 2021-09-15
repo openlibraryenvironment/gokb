@@ -796,9 +796,16 @@ class ESSearchService{
         addRefdataQuery(exactQuery, errors, k, v)
       }
       else if (k.contains('platform') || k.contains('Platform')){
+
         if (!platformParam){
+          def final_val = v
           platformParam = k
-          addPlatformQuery(exactQuery, errors, v)
+
+          if (params.int(k)) {
+            final_val = 'org.gokb.cred.Platform:' + v
+          }
+
+          addPlatformQuery(exactQuery, errors, final_val)
         }
         else{
           errors[k] = "Platform filter has already been defined by parameter '${platformParam}'!"
