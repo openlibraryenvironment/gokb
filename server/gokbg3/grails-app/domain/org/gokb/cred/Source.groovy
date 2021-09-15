@@ -147,9 +147,9 @@ class Source extends KBComponent {
     if (lastRun == null) {
       return true
     }
-    if (frequency != null) {
+    if (frequency) {
       Date today = new Date()
-      Date due = getUpdateDay(intervals.get(frequency))
+      Date due = getUpdateDay(intervals.get(frequency.value))
       if (today == due){
         return true
       }
