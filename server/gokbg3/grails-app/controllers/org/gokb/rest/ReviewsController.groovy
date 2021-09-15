@@ -368,35 +368,33 @@ class ReviewsController {
    * Check if the ReviewRequest given by @params.id can be escalated.
    */
   def isEscalatable() {
-    render getEscalationTargetGroupId(params) as JSON
+    render getEscalationTargetGroupId(params.id, params.activeGroupId, params) as JSON
   }
 
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def escalate(){
-    def result = getEscalationTargetGroupId(params)
+    def result = getEscalationTargetGroupId(params.id, request.JSON?.activeGroup?.id, params)
     if (result.target?.result == 'OK'){
-      AllocatedReviewGroup arg = AllocatedReviewGroup.findById(result['escalatingAllocatedReviewGroup'])
-      AllocatedReviewGroup newArg = reviewRequestService.escalate(arg, result['escalatedToCG'])
+      CuratoryGroup escalatingGroup = CuratoryGroup.findById(result.target.escalatingGroup)
+      CuratoryGroup targetGroup = escalatingGroup.superordinatedGroup
+      AllocatedReviewGroup arg = AllocatedReviewGroup.findByGroup(escalatingGroup)
+      AllocatedReviewGroup newArg = reviewRequestService.escalate(arg, targetGroup)
       if (newArg){
         ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
         def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
         rr.allocatedGroups.each{ ag -> ag.status = inactive }
         newArg.status = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
-        result.message = "The requested ReviewRequest has been escalated."
-        render result
-        return
+        result.target.message = "The requested ReviewRequest has been escalated."
       }
       else{
-        result.message = "All preconditions for an escalation have been met. Could not escalate anyway."
-        result.result = 'ERROR'
+        result.target.message = "All preconditions for an escalation have been met. Could not escalate anyway."
+        result.target.result = 'ERROR'
         response.setStatus(500)
-        render result
-        return
       }
     }
-    render result
+    render result as JSON
   }
 
 
@@ -426,27 +424,27 @@ class ReviewsController {
   }
 
 
-  private JSON getEscalationTargetGroupId(def params){
+  private JSON getEscalationTargetGroupId(def rrId, def activeGroupId, def params){
     def result = ['result':'ERROR', 'isEscalatable':false, 'params': params]
 
-    def rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
+    def rr = ReviewRequest.get(genericOIDService.oidToId(rrId))
     if (!rr){
       response.setStatus(404)
-      result.message = "ReviewRequest not found for id ${params.id}."
+      result.message = "ReviewRequest not found for id ${rrId}."
       return result
     }
     if (!rr.isEditable()){
       response.setStatus(403)
-      result.message = "ReviewRequest for id ${params.id} may not be edited."
+      result.message = "ReviewRequest for id ${rrId} may not be edited."
       return result
     }
 
     CuratoryGroup escalatingGroup = null
-    if (params.activeGroupId){
-      String id = String.valueOf(params.activeGroupId)
+    if (activeGroupId){
+      String id = String.valueOf(activeGroupId)
       if (!StringUtils.isEmpty(id)){
         CuratoryGroup toBeChecked = CuratoryGroup.findById(id)
-        List<AllocatedReviewGroup> argCandidates = AllocatedReviewGroup.findAllByGroup(toBeChecked)
+        List<AllocatedReviewGroup> argCandidates = AllocatedReviewGroup.findAllByGroupAndReview(toBeChecked, rr)
         if (argCandidates.size() == 1){
           escalatingGroup = toBeChecked
         }
@@ -493,6 +491,8 @@ class ReviewsController {
 
     // all conditions are met
     response.setStatus(200)
+    result.result = 'OK'
+    result.isEscalatable = true
     result.escalatingGroup = escalatingGroup.id
     result.escalationTargetGroup = escalatedToCG.id
     result.message = "The requested ReviewRequest can be escalated."
