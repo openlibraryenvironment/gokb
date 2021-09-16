@@ -398,6 +398,38 @@ class ReviewsController {
   }
 
 
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def deescalate(){
+    def result = ['params': params]
+    ReviewRequest rr = params.id ? ReviewRequest.get(genericOIDService.oidToId(params.id)) : null
+    CuratoryGroup deescalatingGroup = request.JSON?.activeGroup?.id ? CuratoryGroup.findById(request.JSON.activeGroup.id) : null
+    AllocatedReviewGroup deescArg, targetArg
+    if (rr && deescalatingGroup){
+      deescArg = AllocatedReviewGroup.findByGroupAndReview(deescalatingGroup, rr)
+      targetArg = deescArg?.escalatedFrom ?: null
+      if (deescArg && targetArg){
+        def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
+        def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+        deescArg.status = inactive
+        deescArg.escalatedFrom = null
+        targetArg.status = inProgress
+        result.result = 'OK'
+        response.setStatus(200)
+      }
+      else{
+        result.result = 'ERROR'
+        response.setStatus(400)
+      }
+    }
+    else{
+      result.result = 'ERROR'
+      response.setStatus(404)
+    }
+    render result as JSON
+  }
+
+
   private def isUserCurator(obj, user) {
     def curator = false
 
