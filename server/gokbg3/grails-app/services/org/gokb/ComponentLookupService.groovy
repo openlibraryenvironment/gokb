@@ -643,17 +643,20 @@ class ComponentLookupService {
   }
 
 
-  CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null){
+  def findCuratoryGroupOfInterest(component, User user = null){
     if (!KBComponent.has(component, 'curatoryGroups')){
       return null
     }
     // TODO: to be extended for further comparision objects
     if (component.curatoryGroups?.size() == 1){
-      return component.curatoryGroups[0]
+      CuratoryGroup cg = CuratoryGroup.get(component.curatoryGroups[0].id)
+
+      return cg
     }
     if (component.curatoryGroups?.size() == 0){
       if (user?.curatoryGroups?.size() == 1){
-        return user.curatoryGroups[0]
+        CuratoryGroup cg = CuratoryGroup.get(user.curatoryGroups[0].id)
+        return cg
       }
       // else
       return null
@@ -661,7 +664,8 @@ class ComponentLookupService {
     if (component.curatoryGroups.size() > 1){
       def intersection = component.curatoryGroups.intersect(user?.curatoryGroups)
       if (intersection.size() == 1){
-        return intersection[0]
+        CuratoryGroup cg = CuratoryGroup.get(intersection[0].id)
+        return cg
       }
       // else
       return null

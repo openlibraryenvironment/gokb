@@ -50,65 +50,77 @@ class TippService {
       def conflict = false
       def conflicting_statements = []
 
-      tipp.coverageStatements?.each { tcs ->
-        if (c.id && tcs.id == c.id) {
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-          changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tcs, 'startDate')
-          changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
-          changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
+      if (c.id) {
+        def idMatch = TIPPCoverageStatement.findByOwnerAndId(tipp, c.id)
+
+        if (idMatch) {
+          log.debug("Matched statement by id")
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(idMatch, 'startIssue', c.startIssue)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(idMatch, 'startVolume', c.startVolume)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(idMatch, 'endVolume', c.endVolume)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(idMatch, 'endIssue', c.endIssue)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(idMatch, 'embargo', c.embargo)
+          changed |= com.k_int.ClassUtils.setStringIfDifferent(idMatch, 'coverageNote', c.coverageNote)
+          changed |= com.k_int.ClassUtils.updateDateField(parsedStart, idMatch, 'startDate')
+          changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, idMatch, 'endDate')
+          changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, idMatch, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
           cs_match = true
-          stale_coverage_ids.removeAll(tcs.id)
-        }
-        else if (!cs_match) {
-          if (!tcs.endDate && !endAsDate) {
-            conflict = true
-          }
-          else if (tcs.startVolume && tcs.startVolume == c.startVolume) {
-            log.debug("Matched CoverageStatement by startVolume")
-            cs_match = true
-          }
-          else if (tcs.startDate && tcs.startDate == startAsDate) {
-            log.debug("Matched CoverageStatement by startDate")
-            cs_match = true
-          }
-          else if (!tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate) {
-            log.debug("Matched CoverageStatement with unspecified values")
-            cs_match = true
-          }
-          else if (tcs.startDate && tcs.endDate) {
-            if (startAsDate && startAsDate > tcs.startDate && startAsDate < tcs.endDate) {
-              conflict = true
-            }
-            else if (endAsDate && endAsDate > tcs.startDate && endAsDate < tcs.endDate) {
-              conflict = true
-            }
-          }
-
-          if (conflict) {
-            conflicting_statements.add(tcs.id)
-          }
-          else if (cs_match) {
-            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
-            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
-            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
-            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
-            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
-            changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-            changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tcs, 'startDate')
-            changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
-            changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
-
-            stale_coverage_ids.removeAll(tcs.id)
-          }
+          stale_coverage_ids.removeAll(idMatch.id)
         }
         else {
-          log.debug("Matched new coverage ${c} on multiple existing coverages!")
+          log.debug("No ID match for statement!")
+        }
+      }
+      else {
+        tipp.coverageStatements?.each { tcs ->
+          if (!cs_match) {
+            if (tcs.startVolume && tcs.startVolume == c.startVolume) {
+              log.debug("Matched CoverageStatement by startVolume")
+              cs_match = true
+            }
+            else if (tcs.startDate && tcs.startDate == startAsDate) {
+              log.debug("Matched CoverageStatement by startDate")
+              cs_match = true
+            }
+            else if (!tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate) {
+              log.debug("Matched CoverageStatement with unspecified values")
+              cs_match = true
+            }
+            else if (tcs.startDate && tcs.endDate) {
+              if (startAsDate && startAsDate > tcs.startDate && startAsDate < tcs.endDate) {
+                conflict = true
+                log.debug("Found conflicting statement: new start ${startAsDate} vs ${tcs.startDate} - ${tcs.endDate}")
+              }
+              else if (endAsDate && endAsDate > tcs.startDate && endAsDate < tcs.endDate) {
+                conflict = true
+                log.debug("Found conflicting statement: new end ${endAsDate} vs ${tcs.startDate} - ${tcs.endDate}")
+              }
+            }
+
+            if (conflict) {
+              conflicting_statements.add(tcs.id)
+            }
+            else if (cs_match) {
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
+              changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
+              changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tcs, 'startDate')
+              changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
+              changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
+
+              stale_coverage_ids.removeAll(tcs.id)
+            }
+            else {
+              log.debug("No Match ..")
+            }
+          }
+          else {
+            log.debug("Already found a match ..")
+          }
         }
       }
 
@@ -117,8 +129,7 @@ class TippService {
         changed = true
       }
 
-      if (!cs_match) {
-
+      if (!c.id && !cs_match) {
         def cov_depth = null
 
         if (c.coverageDepth instanceof String) {

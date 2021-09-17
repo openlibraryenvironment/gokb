@@ -916,7 +916,7 @@ class ESSearchService{
 
         def href = (user?.hasRole('ROLE_EDITOR') && is_curator) || user?.isAdmin() ? base + obj_cls.restPath + "/${rec_id}" : null
         domainMapping['_links']['update'] = ['href': href]
-        domainMapping['_links']['delete'] = ['href': href]
+        domainMapping['_links']['delete'] = ['href': href + "/delete"]
       }
 
       domainMapping['_embedded'] = [:]

@@ -822,6 +822,7 @@ class TitleController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
   @Transactional
   def delete() {
+    log.debug("Delete Title with id ${params.id}")
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstance.findByUuid(params.id)
@@ -852,7 +853,7 @@ class TitleController {
       response.setStatus(403)
       result.message = "User is not allowed to delete this component!"
     }
-    result
+    render result as JSON
   }
 
   def isUserCurator(obj, user) {
@@ -899,7 +900,7 @@ class TitleController {
       response.setStatus(403)
       result.message = "User is not allowed to edit this component!"
     }
-    result
+    render result as JSON
   }
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])

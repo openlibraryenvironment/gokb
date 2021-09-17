@@ -114,6 +114,7 @@ class TippController {
       def curator = pkg?.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
       if (curator) {
+        log.debug("Incoming: ${reqBody}")
         def tipp_validation = TitleInstancePackagePlatform.validateDTO(reqBody, RequestContextUtils.getLocale(request))
 
         if (tipp_validation.valid) {
@@ -189,12 +190,15 @@ class TippController {
         if (tipp_validation.valid) {
           def jsonMap = obj.jsonMapping
 
-          obj = TitleInstancePackagePlatform.upsertDTO(reqBody, user)
+          obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
           errors << updateCombos(obj, reqBody)
 
           if (obj?.validate()) {
             if (errors.size() == 0) {
+
+              obj = tippService.updateCoverage(obj, reqBody)
+
               log.debug("No errors.. saving")
               obj = obj.merge(flush: true)
               result = restMappingService.mapObjectToJson(obj, params, user)

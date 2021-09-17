@@ -683,20 +683,31 @@ class Package extends KBComponent {
       if (!result.match) {
         log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
         packageHeaderDTO.variantNames.each {
+          def vname = null
 
-          if (it.trim().size() > 0) {
-            def var_pkg = Package.findByName(it)
+          if (it instanceof String) {
+            if (it.trim()) {
+              vname = it.trim()
+            }
+          } else if (it instanceof Map) {
+            if (it.variantName.trim()) {
+              vname = it.variantName.trim()
+            }
+          }
+
+          if (vname) {
+            def var_pkg = Package.findByName(vname)
 
             if (var_pkg) {
-              log.debug("Found existing package name for variantName ${it}")
+              log.debug("Found existing package name for variantName ${vname}")
             }
             else {
 
-              def variant_normname = GOKbTextUtils.normaliseString(it)
+              def variant_normname = GOKbTextUtils.normaliseString(vname)
               def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
 
               if (variant_candidates.size() == 1) {
-                log.debug("Found existing package variant name for variantName ${it}")
+                log.debug("Found existing package variant name for variantName ${vname}")
                 result.match = true
               }
             }

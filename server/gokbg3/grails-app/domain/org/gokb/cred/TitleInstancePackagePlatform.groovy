@@ -580,14 +580,17 @@ class TitleInstancePackagePlatform extends KBComponent {
 
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
+    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
     def curator = pkg?.curatoryGroups?.size() > 0 ? (user.adminStatus || user.curatoryGroups?.id.intersect(pkg?.curatoryGroups?.id)) : true
     def tipp
     if (pkg && plt && curator) {
       log.debug("See if we already have a tipp")
 
-      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : (tipp_dto.id ? TitleInstancePackagePlatform.get(tipp_dto.id) : null)
+      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
       tipp = null
+
+      log.debug("UUID result: ${uuid_tipp} for ${tipp_dto.uuid}")
 
       if (uuid_tipp) {
         if (uuid_tipp.pkg == pkg && uuid_tipp.hostPlatform == plt && (!ti || uuid_tipp.title == ti)) {
@@ -602,18 +605,20 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if (!tipp && (tipp_dto.importId || tipp_dto.titleId)) {
         tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as platform_combo  ' +
-            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
-            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
-            'and tipp.importId = ?',
-            [pkg, plt, (tipp_dto.importId ?: tipp_dto.titleId)])
+            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=? ' +
+            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ? ' +
+            'and tipp.importId = ? ' +
+            'and tipp.status != ?',
+            [pkg, plt, (tipp_dto.importId ?: tipp_dto.titleId), status_deleted])
       }
 
       if (tipps.size() == 0 && ti) {
         tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
-          'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
-          'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
-          'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
-          [pkg, plt, ti])
+          'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=? ' +
+          'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ? ' +
+          'and title_combo.toComponent=tipp and title_combo.fromComponent = ? ' +
+          'and tipp.status != ?',
+          [pkg, plt, ti, status_deleted])
       }
 
       if (!tipp) {
@@ -743,6 +748,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', TitleInstancePackagePlatform.RD_MEDIUM)
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.publicationType, tipp, 'publicationType', 'TitleInstancePackagePlatform.PublicationType')
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.language, tipp, 'language')
+      changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.status, tipp, 'status')
 
       if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
         tipp_dto.coverage = tipp_dto.coverageStatements

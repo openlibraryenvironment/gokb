@@ -293,6 +293,7 @@ class RestMappingService {
             default:
               log.debug("Default for type ${p.type}")
               log.debug("Set simple prop ${p.name} = ${newVal}");
+              if (reqBody.containsKey(p.name))
               obj[p.name] = newVal
               break;
           }

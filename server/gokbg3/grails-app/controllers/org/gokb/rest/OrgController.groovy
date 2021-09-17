@@ -25,6 +25,7 @@ class OrgController {
   def componentUpdateService
   def orgService
   def platformService
+  def FTUpdateService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -154,6 +155,7 @@ class OrgController {
               log.debug("No errors: ${errors}")
               obj.save(flush:true)
               response.status = 201
+              FTUpdateService.updateSingleItem(obj)
               result = restMappingService.mapObjectToJson(obj, params, user)
             }
             else {
@@ -226,6 +228,7 @@ class OrgController {
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush: true)
+            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -330,6 +333,7 @@ class OrgController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'
@@ -366,6 +370,7 @@ class OrgController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'

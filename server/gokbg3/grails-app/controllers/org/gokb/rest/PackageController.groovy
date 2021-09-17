@@ -39,6 +39,7 @@ class PackageController {
   def componentUpdateService
   def concurrencyManagerService
   def sessionFactory
+  def FTUpdateService
   def reviewRequestService
   def titleLookupService
   def titleHistoryService
@@ -196,6 +197,7 @@ class PackageController {
                 log.debug("No errors: ${errors}")
                 obj.save(flush: true)
                 response.status = 201
+                FTUpdateService.updateSingleItem(obj)
                 result = restMappingService.mapObjectToJson(obj, params, user)
 
                 if (update_token) {
@@ -307,6 +309,7 @@ class PackageController {
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush: true)
+            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
 
             if (update_token) {
@@ -566,6 +569,7 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'
@@ -602,6 +606,7 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'

@@ -27,6 +27,7 @@ class PlatformController {
   def restMappingService
   def componentLookupService
   def platformService
+  def FTUpdateService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -153,6 +154,7 @@ class PlatformController {
             if (errors.size() == 0) {
               log.debug("No errors: ${errors}")
               obj.save(flush:true)
+              FTUpdateService.updateSingleItem(obj)
               response.status = 201
               result = restMappingService.mapObjectToJson(obj, params, user)
             }
@@ -229,6 +231,7 @@ class PlatformController {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush:true)
+            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -313,6 +316,7 @@ class PlatformController {
 
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'
@@ -344,6 +348,7 @@ class PlatformController {
     if ( obj && obj.isEditable() ) {
       if ( curator || user.isAdmin() ) {
         obj.retire()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'
