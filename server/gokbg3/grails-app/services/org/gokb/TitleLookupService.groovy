@@ -1253,14 +1253,27 @@ class TitleLookupService {
 
         // Raise a review request
         if (added) {
+          def additionalInfo = [:]
+          def combo_ids = [ti.id]
+
+          additionalInfo.otherComponents = []
+
+          results['other_matches'].each { tlm ->
+            additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
+            combo_ids.add(tlm.id)
+          }
+
+          additionalInfo.cstring = combo_ids.sort().join('_')
+          additionalInfo.vars = [title, ti.name]
+
           reviewRequestService.raise(
             ti,
             "'${title}' added as a variant of '${ti.name}'.",
             "Match was made on 1st class identifier but title name seems to be very different.",
             user,
             project,
-            null,
-            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup('ReviewRequest.StdDesc', 'Name Mismatch'),
             componentLookupService.findCuratoryGroupOfInterest(ti, user)
           )
         }
