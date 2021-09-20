@@ -743,6 +743,12 @@ class TitleController {
       def editable = isUserCurator(obj,user) || user.isAdmin()
 
       if (editable) {
+        if (reqBody.version && obj.version > reqBody.version) {
+          response.setStatus(409)
+          result.message = message(code: "default.update.errors.message")
+          render result as JSON
+        }
+
         obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
         if ( obj.validate() ) {

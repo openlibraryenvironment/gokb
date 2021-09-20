@@ -136,7 +136,7 @@ class SourcesController {
   @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def update() {
-    Source source = Source.get(genericOIDService.oidToId(params.id))
+    Source obj = Source.get(genericOIDService.oidToId(params.id))
     def result = [:]
     def errors = [:]
     def reqBody = request.JSON
@@ -144,8 +144,8 @@ class SourcesController {
     User user = User.get(springSecurityService.principal.id)
     boolean editable = true
 
-    if ( !user.hasRole('ROLE_ADMIN') && source.curatoryGroups && source.curatoryGroups.size() > 0 ) {
-      def cur = user.curatoryGroups?.id.intersect(source.curatoryGroups?.id)
+    if ( !user.hasRole('ROLE_ADMIN') && obj.curatoryGroups && obj.curatoryGroups.size() > 0 ) {
+      def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
 
       if (!cur) {
         editable = false
@@ -153,18 +153,24 @@ class SourcesController {
     }
 
     if (editable) {
-      source = restMappingService.updateObject(source, null, reqBody)
+      if (reqBody.version && obj.version > reqBody.version) {
+        response.setStatus(409)
+        result.message = message(code: "default.update.errors.message")
+        render result as JSON
+      }
 
-      errors << updateCombos(source, reqBody, remove)
+      obj = restMappingService.updateObject(obj, null, reqBody)
+
+      errors << updateCombos(obj, reqBody, remove)
 
       if (!errors) {
-        if ( source.validate() ) {
-          source = source.merge(flush: true)
-          result = restMappingService.mapObjectToJson(source, params, user)
+        if ( obj.validate() ) {
+          obj = obj.merge(flush: true)
+          result = restMappingService.mapObjectToJson(obj, params, user)
         } else {
-          result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
+          result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(obj.errors)]
           response.setStatus(409)
-          source?.discard()
+          obj?.discard()
         }
       } else {
         response.setStatus(400)

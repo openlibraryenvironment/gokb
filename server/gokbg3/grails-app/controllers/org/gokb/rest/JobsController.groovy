@@ -201,7 +201,7 @@ class JobsController {
         result.message = "No permission to view job with ID ${params.id}."
       }
     }
-    else if (jobResult) {
+    else if (onlyArchived && jobResult) {
       if (user.superUserStatus || (job.ownerId && job.ownerId == user.id) || (job.groupId && user.curatoryGroups.find { it.id == job.groupId })) {
         def linkedComponent = jobResult.linkedItemId ? KBComponent.get(jobResult.linkedItemId) : null
 

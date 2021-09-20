@@ -202,10 +202,11 @@ class PlatformController {
     if (!obj) {
       obj = Platform.get(genericOIDService.oidToId(params.id))
     }
-    def editable = obj.isEditable()
 
     if (obj && reqBody) {
       obj.lock()
+
+      def editable = obj.isEditable()
 
       if ( editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
         def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
@@ -216,6 +217,11 @@ class PlatformController {
       }
 
       if (editable) {
+        if (reqBody.version && obj.version > reqBody.version) {
+          response.setStatus(409)
+          result.message = message(code: "default.update.errors.message")
+          render result as JSON
+        }
 
         def jsonMap = obj.jsonMapping
 

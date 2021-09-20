@@ -1256,13 +1256,6 @@ class TitleLookupService {
           def additionalInfo = [:]
           def combo_ids = [ti.id]
 
-          additionalInfo.otherComponents = []
-
-          results['other_matches'].each { tlm ->
-            additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
-            combo_ids.add(tlm.id)
-          }
-
           additionalInfo.cstring = combo_ids.sort().join('_')
           additionalInfo.vars = [title, ti.name]
 

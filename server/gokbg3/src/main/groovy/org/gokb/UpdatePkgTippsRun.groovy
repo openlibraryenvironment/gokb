@@ -729,8 +729,12 @@ class UpdatePkgTippsRun {
           def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
           if (found.size() > 0) {
             found.each {
-              if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
+              if (TitleInstancePackagePlatform.isInstance(it)
+                  && !tipps.contains(it)
+                  && it.pkg == pkg
+                  && it.status == status_current
+                  && it.hostPlatform.uuid == tippJson.hostPlatform.uuid
+                  && (!tippJson.titleId || !it.importId)) {
                 tipps.add(it)
               }
             }
@@ -748,8 +752,12 @@ class UpdatePkgTippsRun {
           def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
           if (found.size() > 0) {
             found.each {
-              if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
+              if (TitleInstancePackagePlatform.isInstance(it)
+                  && !tipps.contains(it)
+                  && it.pkg == pkg
+                  && it.status == status_current
+                  && it.hostPlatform.uuid == tippJson.hostPlatform.uuid
+                  && (!tippJson.titleId || !it.importId)) {
                 tipps.add(it)
               }
             }

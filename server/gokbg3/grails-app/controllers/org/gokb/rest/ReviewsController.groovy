@@ -83,6 +83,11 @@ class ReviewsController {
       def curator = isUserCurator(obj, user)
 
       if (curator || user.isAdmin()) {
+        if (reqBody.version && obj.version > reqBody.version) {
+          response.setStatus(409)
+          result.message = message(code: "default.update.errors.message")
+          render result as JSON
+        }
 
         if (reqBody.status) {
           def new_status = null
