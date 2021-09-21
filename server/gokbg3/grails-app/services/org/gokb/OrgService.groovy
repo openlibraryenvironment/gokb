@@ -265,7 +265,7 @@ class OrgService {
       }
     }
 
-    if (!obj.hasErrors() || errors.size() > 0) {
+    if (!obj.hasErrors() || result.errors.size() > 0) {
       new_plts.each { c ->
         if (!obj.providedPlatforms.contains(c)) {
           log.debug("Adding new platform ${c}..")
