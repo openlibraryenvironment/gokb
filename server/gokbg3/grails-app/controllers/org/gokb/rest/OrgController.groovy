@@ -217,7 +217,7 @@ class OrgController {
 
       if (editable) {
 
-        if (reqBody.version && obj.version > reqBody.version) {
+        if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
           response.setStatus(409)
           result.message = message(code: "default.update.errors.message")
           render result as JSON

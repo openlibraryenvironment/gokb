@@ -166,7 +166,7 @@ class RestMappingService {
         else {
           switch (p.type) {
             case Long.class:
-              result[p.name] = "${obj[p.name]}";
+              result[p.name] = obj[p.name] ? "${obj[p.name]}" : null;
               break;
 
             case Date.class:
