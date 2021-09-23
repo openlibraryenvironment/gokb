@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import groovy.time.TimeCategory
+
 import javax.persistence.Transient
 import java.util.regex.Matcher
 import java.util.regex.Pattern
@@ -147,30 +149,16 @@ class Source extends KBComponent {
     if (lastRun == null) {
       return true
     }
+
     if (frequency) {
-      Date today = new Date()
-      Date due = getUpdateDay(intervals.get(frequency.value))
-      if (today == due){
-        return true
+      use(TimeCategory) {
+        if (lastRun < new Date() + intervals.get(frequency.value).days) {
+          return true
+        }
       }
     }
     return false
   }
-
-
-  def getUpdateDay(int interval){
-    Date today = new Date()
-    // calculate from each first day of the year to not create a lag over the years
-    Calendar cal = Calendar.getInstance()
-    cal.set(Calendar.YEAR, Calendar.get(1))
-    cal.set(Calendar.DAY_OF_YEAR, 1)
-    Date nextUpdate = cal.getTime()
-    while (nextUpdate.before(today)){
-      nextUpdate = nextUpdate.plus(interval)
-    }
-    return nextUpdate
-  }
-
 
   def intervals = [
       "Daily"       : 1,
