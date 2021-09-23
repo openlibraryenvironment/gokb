@@ -162,7 +162,7 @@ class Source extends KBComponent {
     Date today = new Date()
     // calculate from each first day of the year to not create a lag over the years
     Calendar cal = Calendar.getInstance()
-    cal.set(Calendar.YEAR, Calendar.get(Calendar.YEAR))
+    cal.set(Calendar.YEAR, Calendar.get(1))
     cal.set(Calendar.DAY_OF_YEAR, 1)
     Date nextUpdate = cal.getTime()
     while (nextUpdate.before(today)){
