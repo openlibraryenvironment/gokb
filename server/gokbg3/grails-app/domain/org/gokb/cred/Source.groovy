@@ -152,7 +152,7 @@ class Source extends KBComponent {
 
     if (frequency) {
       use(TimeCategory) {
-        if (lastRun < new Date() + intervals.get(frequency.value).days) {
+        if (lastRun + intervals.get(frequency.value).days < new Date()) {
           return true
         }
       }
