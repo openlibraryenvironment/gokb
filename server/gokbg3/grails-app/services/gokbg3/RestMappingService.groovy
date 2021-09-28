@@ -303,218 +303,166 @@ class RestMappingService {
     obj
   }
 
-  public def updateAssoc(obj, prop, val) {
+  @Transactional
+  def updateAssoc(obj, prop, val, def cat = null) {
     log.debug("Update association $obj - $prop: $val")
     def ptype = grailsApplication.mappingContext.getPersistentEntity(obj.class.name).getPropertyByName(prop).type
 
     if (val != null) {
       if (ptype == RefdataValue) {
         def rdv = null
+        String catName = cat ? cat.desc : classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
 
-        if (val == null) {
-          obj[prop] = null
-        }
-        else {
-          String catName = classExaminationService.deriveCategoryForProperty(obj.class.name, prop)
-
+        if (!cat) {
           if (catName) {
-            def cat = RefdataCategory.findByDesc(catName)
+            cat = RefdataCategory.findByDesc(catName)
+          }
 
-            if (!cat) {
-              def catParts = catName.split('.')
+          if (!cat) {
+            def catParts = catName.split('.')
 
-              if (catParts.size() == 2) {
-                cat = RefdataCategory.findByDesc(catParts[1])
+            if (catParts.size() == 2) {
+              cat = RefdataCategory.findByDesc(catParts[1])
+            }
+          }
+        }
+
+        if (cat) {
+          if (val instanceof Integer) {
+            rdv = RefdataValue.get(val)
+
+            if (rdv) {
+              if (rdv in cat.values) {
+                if (catName == 'KBComponent.Status') {
+                  updateStatus(obj, rdv.value)
+                }
+                else {
+                  obj[prop] = rdv
+                }
+              }
+              else {
+                obj.errors.reject(
+                    'rdc.values.notFound',
+                    [rdv, cat] as Object[],
+                    '[Value {0} is not valid for category {1}!]'
+                )
+                obj.errors.rejectValue(
+                    prop,
+                    'rdc.values.notFound'
+                )
               }
             }
+            else {
+              obj.errors.reject(
+                  'default.not.found.message',
+                  [ptype, val] as Object[],
+                  '[{0} not found with id {1}]'
+              )
+              obj.errors.rejectValue(
+                  prop,
+                  'default.not.found.message'
+              )
+            }
+          }
+          else if (val instanceof Map) {
+            if (val.id && val.id != null) {
+              log.debug("Assign by id")
+              rdv = RefdataValue.get(val.id)
 
-            if (cat) {
-              if (val instanceof Integer) {
-                rdv = RefdataValue.get(val)
-
-                if (rdv) {
-                  if (rdv in cat.values) {
-                    if (catName == 'KBComponent.Status') {
-                      if (rdv.value == 'Deleted') {
-                        obj.deleteSoft()
-                      }
-                      else if (rdv.value == 'Retired') {
-                        obj.retire()
-                      }
-                      else if (rdv.value == 'Current') {
-                        obj.setActive()
-                      }
-                      else if (rdv.value == 'Expected') {
-                        obj.setExpected()
-                      }
-                    }
-                    else {
-                      obj[prop] = rdv
-                    }
+              if (rdv) {
+                if (rdv in cat.values) {
+                  if (catName == 'KBComponent.Status') {
+                    updateStatus(obj, rdv.value)
                   }
                   else {
-                    obj.errors.reject(
-                        'rdc.values.notFound',
-                        [rdv, cat] as Object[],
-                        '[Value {0} is not valid for category {1}!]'
-                    )
-                    obj.errors.rejectValue(
-                        prop,
-                        'rdc.values.notFound'
-                    )
+                    obj[prop] = rdv
                   }
                 }
                 else {
                   obj.errors.reject(
-                      'default.not.found.message',
-                      [ptype, val] as Object[],
-                      '[{0} not found with id {1}]'
-                  )
-                  obj.errors.rejectValue(
-                      prop,
-                      'default.not.found.message'
-                  )
-                }
-              }
-              else if (val instanceof Map) {
-                if (val.id) {
-                  rdv = RefdataValue.get(val.id)
-
-                  if (rdv) {
-                    if (rdv in cat.values) {
-                      if (catName == 'KBComponent.Status') {
-                        if (rdv.value == 'Deleted') {
-                          obj.deleteSoft()
-                        }
-                        else if (rdv.value == 'Retired') {
-                          obj.retire()
-                        }
-                        else if (rdv.value == 'Current') {
-                          obj.setActive()
-                        }
-                        else if (rdv.value == 'Expected') {
-                          obj.setExpected()
-                        }
-                      }
-                      else {
-                        obj[prop] = rdv
-                      }
-                    }
-                    else {
-                      obj.errors.reject(
-                          'rdc.values.notFound',
-                          [rdv, cat] as Object[],
-                          '[Value {0} is not valid for category {1}!]'
-                      )
-                      obj.errors.rejectValue(
-                          prop,
-                          'rdc.values.notFound'
-                      )
-                    }
-                  }
-                  else {
-                    obj.errors.reject(
-                        'default.not.found.message',
-                        [ptype, val.id] as Object[],
-                        '[{0} not found with id {1}]'
-                    )
-                    obj.errors.rejectValue(
-                        prop,
-                        'default.not.found.message'
-                    )
-                  }
-                }
-                else if (val.name) {
-                  rdv = RefdataCategory.lookup(catName, val.name)
-
-                  if (!rdv) {
-                    obj.errors.reject(
-                        'rdc.values.notFound',
-                        [val.name, prop] as Object[],
-                        '[{0} is not a valid value for property {1}!]'
-                    )
-                    obj.errors.rejectValue(
-                        prop,
-                        'rdc.values.notFound'
-                    )
-                  }
-                  else {
-                    if (catName == 'KBComponent.Status') {
-                      if (rdv.value == 'Deleted') {
-                        obj.deleteSoft()
-                      }
-                      else if (rdv.value == 'Retired') {
-                        obj.retire()
-                      }
-                      else if (rdv.value == 'Current') {
-                        obj.setActive()
-                      }
-                      else if (rdv.value == 'Expected') {
-                        obj.setExpected()
-                      }
-                    }
-                    else {
-                      obj[prop] = rdv
-                    }
-                  }
-                }
-              }
-              else {
-                rdv = RefdataCategory.lookup(catName, val)
-
-                if (!rdv) {
-                  obj.errors.reject(
                       'rdc.values.notFound',
-                      [val, prop] as Object[],
-                      '[{0} is not a valid value for property {1}!]'
+                      [rdv, cat] as Object[],
+                      '[Value {0} is not valid for category {1}!]'
                   )
                   obj.errors.rejectValue(
                       prop,
                       'rdc.values.notFound'
                   )
                 }
+              }
+              else {
+                log.debug("Unable to fetch rdv by ID")
+                obj.errors.reject(
+                    'default.not.found.message',
+                    [ptype, val.id] as Object[],
+                    '[{0} not found with id {1}]'
+                )
+                obj.errors.rejectValue(
+                    prop,
+                    'default.not.found.message'
+                )
+              }
+            }
+            else if (val.name) {
+              log.debug("Assign by value")
+              rdv = RefdataCategory.lookup(catName, val.name)
+
+              if (!rdv) {
+                log.debug("Unable to fetch rdv by value")
+                obj.errors.reject(
+                    'rdc.values.notFound',
+                    [val.name, prop] as Object[],
+                    '[{0} is not a valid value for property {1}!]'
+                )
+                obj.errors.rejectValue(
+                    prop,
+                    'rdc.values.notFound'
+                )
+              }
+              else {
+                if (catName == 'KBComponent.Status') {
+                  updateStatus(obj, rdv.value)
+                }
                 else {
-                  if (catName == 'KBComponent.Status') {
-                    if (val == 'Deleted') {
-                      obj.deleteSoft()
-                    }
-                    else if (val == 'Retired') {
-                      obj.retire()
-                    }
-                    else if (val == 'Current') {
-                      obj.setActive()
-                    }
-                    else if (val == 'Expected') {
-                      obj.setExpected()
-                    }
-                    else {
-                      obj.errors.reject(
-                          'rdc.values.notFound',
-                          [val] as Object[],
-                          '[{0} is not a valid status value!]'
-                      )
-                      obj.errors.rejectValue(
-                          prop,
-                          'rdc.values.notFound'
-                      )
-                    }
-                  }
-                  else {
-                    obj[prop] = rdv
-                  }
+                  obj[prop] = rdv
                 }
               }
             }
             else {
-              log.error("Could not resolve category (${obj.niceName}.${p.name})!")
+              log.error("Unable to handle value map ${val}")
             }
           }
           else {
-            log.error("Could not resolve category (${obj.niceName}.${p.name})!")
+            rdv = RefdataCategory.lookup(catName, val)
+
+            if (!rdv) {
+              log.debug("Unable to lookup rdv for ${val}")
+              obj.errors.reject(
+                  'rdc.values.notFound',
+                  [val, prop] as Object[],
+                  '[{0} is not a valid value for property {1}!]'
+              )
+              obj.errors.rejectValue(
+                  prop,
+                  'rdc.values.notFound'
+              )
+            }
+            else {
+              if (catName == 'KBComponent.Status') {
+                updateStatus(obj, rdv.value)
+              }
+              else {
+                obj[prop] = rdv
+              }
+            }
           }
+        }
+        else {
+          log.error("Could not resolve category (${obj.niceName}.${p.name})!")
         }
       }
       else {
+        log.debug("Handling non-refdata association")
         def linkObj = null
 
         if (val instanceof Integer) {
@@ -541,8 +489,11 @@ class RestMappingService {
       }
     }
     else {
+      log.debug("Set value to null")
       obj[prop] = null
     }
+
+    obj
   }
 
   @Transactional
@@ -667,6 +618,36 @@ class RestMappingService {
 
     result
   }
+
+  @Transactional
+  public def updateStatus(obj, val) {
+    if (val == 'Deleted') {
+      obj.deleteSoft()
+    }
+    else if (val == 'Retired') {
+      obj.retire()
+    }
+    else if (val == 'Current') {
+      obj.setActive()
+    }
+    else if (val == 'Expected') {
+      obj.setExpected()
+    }
+    else {
+      obj.errors.reject(
+          'rdc.values.notFound',
+          [val] as Object[],
+          '[{0} is not a valid status value!]'
+      )
+      obj.errors.rejectValue(
+          prop,
+          'rdc.values.notFound'
+      )
+    }
+
+    obj
+  }
+
 
   @Transactional
   public def updateCuratoryGroups(obj, cgs, boolean remove = true) {
@@ -802,11 +783,13 @@ class RestMappingService {
             else {
               newVariant = obj.ensureVariantName(it.variantName)
 
+              log.debug("Ensured variant: ${newVariant}")
+
               if (newVariant) {
-                log.debug("Added variant ${newVariant}")
                 changed = true
+
                 if (it.locale) {
-                  newVariant = updateAssoc(newVariant, 'locale', it.locale)
+                  newVariant = updateAssoc(newVariant, 'locale', it.locale, RefdataCategory.findByDesc(KBComponent.RD_LANGUAGE))
                 }
                 else {
                   newVariant.locale = null
@@ -816,8 +799,12 @@ class RestMappingService {
                   newVariant = updateAssoc(newVariant, 'variantType', it.variantType)
                 }
                 else {
-                  newVal.variantType = null
+                  newVariant.variantType = null
                 }
+
+                newVariant.save(flush:true)
+
+                log.debug("${newVariant.variantName} (${newVariant.locale})")
 
                 remaining << newVariant
               }

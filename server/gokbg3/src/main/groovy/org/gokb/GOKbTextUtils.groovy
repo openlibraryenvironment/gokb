@@ -177,6 +177,11 @@ class GOKbTextUtils {
     // Do spaces really add anything for our purposes here, or are random spaces more likely to creep in to the
     // source records and throw the matching? Suspect the latter, kill them for now
     normstring.trim().replaceAll(' ', '')
+
+    if ( !normstring?.trim() )
+      normstring = s
+
+    normstring
   }
 
   private static Map<List, Integer> countNgramFrequency(char[] sequence, int degree) {
