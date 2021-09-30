@@ -144,7 +144,12 @@ class PackageController {
 
         if (lookup_result.to_create) {
           def normname = Package.generateNormname(reqBody.name)
-          obj = new Package(name: reqBody.name, normname: normname).save(flush: true)
+          try {
+            obj = new Package(name: reqBody.name, normname: normname)
+          }
+          catch (grails.validation.ValidationException ve) {
+            errors << messageService.processValidationErrors(ve.errors, request_locale)
+          }
           log.debug("New Object ${obj}")
         }
         else {
@@ -158,15 +163,15 @@ class PackageController {
           }
         }
 
-        if (lookup_result.to_create && !obj) {
+        if (errors.size() > 0) {
+          log.debug("Object has validation errors!")
+        }
+        else if (lookup_result.to_create && !obj) {
           log.debug("Could not upsert object!")
           errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
         }
-        else if (obj?.hasErrors()) {
-          log.debug("Object has errors!")
-          errors << messageService.processValidationErrors(obj.errors, request_locale)
-        }
         else if (obj) {
+          obj.save(flush:true)
           def jsonMap = obj.jsonMapping
 
           jsonMap.immutable = [

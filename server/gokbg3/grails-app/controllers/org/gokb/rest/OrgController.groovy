@@ -113,7 +113,12 @@ class OrgController {
 
       if (lookup_result.to_create) {
         def normname = Org.generateNormname(reqBody.name)
-        obj = new Org(name: reqBody.name, normname: normname).save(flush:true)
+        try {
+          obj = new Org(name: reqBody.name, normname: normname)
+        }
+        catch (grails.validation.ValidationException ve) {
+          errors << messageService.processValidationErrors(ve.errors, request_locale)
+        }
         log.debug("New Object ${obj}")
       }
       else {
@@ -127,16 +132,15 @@ class OrgController {
         }
       }
 
-      if (lookup_result.to_create && !obj) {
-        log.debug("Could not upsert object!")
-        errors.object = [[badData: reqBody, message: "Unable to save object!"]]
+      if (errors.size() > 0) {
+        log.debug("Object has validation errors!")
       }
-      else if (obj?.hasErrors()) {
-        log.debug("Object has errors!")
-        errors = messageService.processValidationErrors(obj.errors, request.locale)
-        log.debug("${errors}")
+      else if (lookup_result.to_create && !obj) {
+        log.debug("Could not upsert object!")
+        errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
       }
       else if (obj) {
+        obj.save(flush:true)
         def jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
