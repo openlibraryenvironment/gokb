@@ -34,7 +34,7 @@ class ProfileController {
     def roles = []
     Role.findAll().each { role ->
       if (user.hasRole(role.authority))
-        roles.add(role)
+        roles.add([id: role.id, authority: role.authority])
     }
 
     def links = [

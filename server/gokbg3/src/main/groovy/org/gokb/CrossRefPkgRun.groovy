@@ -23,6 +23,7 @@ class CrossRefPkgRun {
   static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
   static TitleHistoryService titleHistoryService = Holders.grailsApplication.mainContext.getBean('titleHistoryService')
   static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
+  static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
   static CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
 
   def rjson // request JSON
@@ -188,7 +189,8 @@ class CrossRefPkgRun {
               user,
               null,
               (currentTippError as JSON).toString(),
-              rr_TIPPs_invalid
+              rr_TIPPs_invalid,
+              componentLookupService.findCuratoryGroupOfInterest(pkg, user)
           )
           job?.message("skipped invalid title ${(currentTippError as JSON).toString()}")
         }
@@ -361,8 +363,9 @@ class CrossRefPkgRun {
         job?.groupId = curatory_group_ids[0]
       }
       else if (curatory_group_ids?.size() > 1) {
-        log.debug("Got more than one cg candidate!")
         job?.groupId = curatory_group_ids[0]
+        log.debug("Got more than one cg candidate. Picking the first one: ${curatory_group_ids[0]}")
+        // TODO: determine which group to be picked (?)
       }
       curated_pkg = true
     }
@@ -610,7 +613,8 @@ class CrossRefPkgRun {
                 user,
                 null,
                 null,
-                rr_deleted
+                rr_deleted,
+                componentLookupService.findCuratoryGroupOfInterest(upserted_tipp, user)
             )
           }
           upserted_tipp.status = status_current

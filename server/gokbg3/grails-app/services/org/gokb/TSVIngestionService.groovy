@@ -28,6 +28,7 @@ class TSVIngestionService {
   def componentUpdateService
   def reviewRequestService
   def titleLookupService
+  def tippService
   def refdataCategory
   def sessionFactory
 
@@ -174,167 +175,6 @@ class TSVIngestionService {
       }
     }
     result
-  }
-
-  def lookupOrCreateTitle (String title,
-                           def identifiers,
-                           ingest_cfg,
-                           row_specific_config,
-                           def user = null,
-                           def project = null,
-                           publication_type) {
-    // The TitleInstance
-    TitleInstance the_title = null
-
-    if (title == null || title.trim().length() == 0) return null
-
-    // Create the normalised title.
-    String norm_title = KBComponent.generateNormname(title) ?: title
-
-    if (norm_title == null || norm_title.length() == 0) {
-      throw new RuntimeException("Null normalsed title based on title ${title}, Identifiers ${identifiers}")
-    }
-
-    // Lookup any class 1 identifier matches
-    def results = class_one_match (identifiers)
-    // The matches.
-    List< KBComponent> matches = results['matches'] as List
-
-    // log.debug("Title matches ${matches?.size()} existing entries");
-    def type = row_specific_config.defaultTypeName
-
-    if (publication_type && publication_type.toLowerCase() == 'monograph') {
-      type = "BookInstance"
-    }
-
-    def new_inst_clazz = Class.forName(type)
-
-    switch (matches.size()) {
-    case 0:
-      // No match behaviour.
-      // Check for presence of class one ID
-      if (results['class_one']) {
-        // Create the new TI.
-        // the_title = new BookInstance(name:title)
-        log.debug("Creating new ${type} and setting title to ${title}. identifiers: ${identifiers}, ${row_specific_config}")
-
-        the_title = new_inst_clazz.newInstance()
-        the_title.name = title
-        the_title.normname = norm_title
-        the_title.ids = []
-      } else {
-        // No class 1s supplied we should try and find a match on the title string.
-        log.debug ("No class 1 ids supplied. attempt lookup using norm_title")
-        // Lookup using title string match only.
-
-        the_title == new_inst_clazz.findByNormname(norm_title)
-
-        if (the_title) {
-          // log.debug("TI ${the_title} matched by name. Partial match")
-          // Add the variant.
-          def added_variant = the_title.addVariantTitle(title)
-          // Raise a review request
-
-          if (added_variant) {
-            ReviewRequest.raise(
-              the_title,
-              "'${title}' added as a variant of '${the_title.name}'.",
-              "No 1st class ID supplied but reasonable match was made on the title name.",
-              user, project
-            )
-          }
-        } else {
-          // log.debug("No TI could be matched by name. New TI, flag for review.")
-          // Could not match on title either.
-          // Create a new TI but attach a Review request to it.
-          the_title = new_inst_clazz.newInstance()
-          the_title.ids = []
-          the_title.name = title
-          ReviewRequest.raise(
-            the_title,
-            "New TI created.",
-            "No 1st class ID supplied and no match could be made on title name.",
-            user, project
-          )
-        }
-      }
-      break
-    case 1:
-      // Single component match.
-      // log.debug ("Title class one identifier lookup yielded a single match.")
-      // We should raise a review request here if the match was made by cross checking
-      // different identifier namespaces.
-      if (results['x_check_matches'].size() == 1) {
-        def data = results['x_check_matches'][0]
-        // Fire the review request.
-        ReviewRequest.raise(
-          matches[0],
-          "Identifier type mismatch.",
-          "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
-          user,
-          project
-        )
-      }
-
-      // If we made a good match on a class one identifier, but the title in the DB starts with
-      // Unknown title, then this is a title whos identifier has come from loading a file of identifiers
-      // we should use the title given instead.
-      if (matches[0] &&
-           ((matches[0].name?.startsWith('Unknown Title') && title?.length() > 0) || matches[0].name == null)) {
-        log.debug("${matches[0].name} is an unknown title - updating to ${title}")
-        the_title = matches[0]
-        the_title.name = title
-      }
-      else {
-        log.debug("handling a matched title ${matches[0].name} ==? ${title}")
-        // Now we can examine the text of the title.
-        the_title = singleTIMatch(title,
-                                  norm_title,
-                                  matches[0],
-                                  user,
-                                  project,
-                                  ingest_cfg.inconsistent_title_id_behavior,
-                                  identifiers,
-                                  row_specific_config)
-      }
-      break
-    default:
-      // Multiple matches.
-      log.warn ("Title class one identifier lookup yielded ${matches.size()} matches. This is a bad match. Ingest should skip this row.")
-      break
-    }
-
-    // If we have a title then lets set the publisher and ids...
-    if (the_title) {
-      log.debug("Got title - merge any other properties")
-
-      results['ids'].each {
-        if (!the_title.ids.contains(it)) {
-          // We should **NOT** do this in the case where we are creating a new title because the publisher listed a title
-          // in the title history group using an identifier in that group.
-          log.debug("Adding id ${it}")
-          the_title.ids.add(it)
-        }
-        else {
-          log.debug("Title already contains ${it}")
-        }
-      }
-
-      log.debug("Saving title")
-      // Try and save the result now.
-      if (the_title.save(failOnError:true, flush:true)) {
-        // log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
-      }
-      else {
-        log.error("**PROBLEM SAVING TITLE**")
-        the_title.errors.each { e ->
-          log.error("Problem saving title: ${e}")
-        }
-      }
-    }
-
-    // log.debug("lookupOrCreateTitle(${title}.....) returning ${the_title?.id}");
-    the_title
   }
 
   //for now, we can only do authors. (kbart limitation)
@@ -675,7 +515,7 @@ class TSVIngestionService {
       log.debug("Processing as kbart2")
     }
     else if (kbart_cfg == null) {
-      throw new RuntimeException("Unable to locate config information for package type ${packageType}. Registered types are ${grailsApplication.config.kbart2.mappings.keySet()}");
+      throw new RuntimeException("Unable to locate config information for package type ${packageType}. Registered types are ${grailsApplication.config.kbart2.mappings.keySet()}")
     }
 
     if (ingest_cfg == null) {
@@ -716,8 +556,8 @@ class TSVIngestionService {
       log.debug("Set progress")
       job?.setProgress(0)
 
-      def kbart_beans=[]
-      def badrows=[]
+      def kbart_beans = []
+      def badrows = []
 
       log.debug("Reading datafile")
       //we kind of assume that we need to convert to kbart
@@ -734,16 +574,16 @@ class TSVIngestionService {
 
       log.debug("Starting preflight")
 
-      def preflight_result = preflight( kbart_beans, ingest_cfg, source, packageName, providerName )
+      def preflight_result = preflight(kbart_beans, ingest_cfg, source, packageName, providerName)
 
       if (preflight_result.passed) {
 
         log.debug("Passed preflight -- ingest")
 
         Package.withNewTransaction() {
-          the_package=handlePackage(packageName,source,providerName,other_params)
+          the_package = handlePackage(packageName,source,providerName,other_params)
           assert the_package != null
-          the_package_id=the_package.id
+          the_package_id = the_package.id
           def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
           author_role_id = author_role.id
           def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
@@ -781,7 +621,7 @@ class TSVIngestionService {
 
             long rowStartTime = System.currentTimeMillis()
 
-            if ( validateRow(x, badrows, kbart_beans[x] ) ) {
+            if (validateRow(x, badrows, kbart_beans[x])) {
               writeToDB(kbart_beans[x],
                         platformUrl,
                         pkg_src,
@@ -801,7 +641,7 @@ class TSVIngestionService {
 
           job?.setProgress(x, kbart_beans.size())
 
-          if ( x % 25 == 0 ) {
+          if (x % 25 == 0) {
             cleanUpGorm()
           }
         }
@@ -818,7 +658,7 @@ class TSVIngestionService {
               def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
                                'from TitleInstancePackagePlatform as tipp, Combo as c '+
                                'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
-                              [pkg:the_package_id,dt:ingest_systime]);
+                              [pkg:the_package_id,dt:ingest_systime])
 
               q.each { tipp ->
                 log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}")
@@ -849,7 +689,7 @@ class TSVIngestionService {
         long processing_elapsed = System.currentTimeMillis() - startTime
         def average_milliseconds_per_row = kbart_beans.size() > 0 ? processing_elapsed.intdiv(kbart_beans.size()) : 0
         // 3600 seconds in an hour, * 1000ms in a second
-        def average_per_hour = average_milliseconds_per_row > 0 ? 3600000.intdiv( average_milliseconds_per_row ) : 0
+        def average_per_hour = average_milliseconds_per_row > 0 ? 3600000.intdiv(average_milliseconds_per_row) : 0
         job.message([
           timestamp: System.currentTimeMillis(),
           event: 'ProcessingComplete',
@@ -1279,7 +1119,8 @@ class TSVIngestionService {
                 user,
                 null,
                 null,
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
+                componentLookupService.findCuratoryGroupOfInterest(component, user)
               )
             } else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")
@@ -1857,7 +1698,7 @@ class TSVIngestionService {
 
       log.debug("Processing ${unmapped_cols.size()} unmapped columns")
       unmapped_cols.each { unmapped_col_idx ->
-        if (unmapped_col_idx < nl.size() && unmapped_col_idx < header.size() ) {
+        if (unmapped_col_idx < nl.size() && unmapped_col_idx < header.size()) {
           log.debug("Setting unmapped column idx ${unmapped_col_idx} ${header[unmapped_col_idx]} to ${nl[unmapped_col_idx]}")
           // result.unmapped.add([header[unmapped_col_idx], nl[unmapped_col_idx]])
           result.unmapped.add([
@@ -1873,7 +1714,7 @@ class TSVIngestionService {
       nl = csv.readNext()
     }
 
-    log.debug("\n\n Convert to KBart completed cleanly");
+    log.debug("\n\n Convert to KBart completed cleanly")
     results
   }
 
@@ -1920,27 +1761,57 @@ class TSVIngestionService {
       def parsed_start_date = parseDate(row_data.date_first_issue_online)
 
       if (parsed_start_date == null) {
-        reasons.add("Row ${rownum} contains an invalid or unrecognised date format for date_first_issue_online :: ${row_data.date_first_issue_online}");
-        result=false
+        reasons.add("Row ${rownum} contains an invalid or unrecognised date format for date_first_issue_online :: ${row_data.date_first_issue_online}")
+        result = false
       }
       else {
         Calendar calendar = new GregorianCalendar()
-        calendar.setTime(parsed_start_date);
+        calendar.setTime(parsed_start_date)
         Calendar rightNow = Calendar.getInstance()
         def this_year = rightNow.get(Calendar.YEAR)
+
         if (calendar.get(Calendar.YEAR) > this_year + 2) {  // Allow for some distance into the future.
-          reasons.add("Row ${rownum} contains a suspect date/year for date_first_issue_online :: ${row_data.date_first_issue_online}");
-          result=false
+          reasons.add("Row ${rownum} contains a suspect date/year for 'date_first_issue_online' :: ${row_data.date_first_issue_online}")
+          result = false
         }
       }
     }
 
-    if (!result) {
-      log.error("Recording bad row : ${reasons}")
-      badrows.add([rowdata:row_data,message: reasons])
+    if (row_data.date_last_issue_online != null && row_data.date_last_issue_online.trim() != '') {
+      def parsed_start_date = parseDate(row_data.date_first_issue_online)
+
+      if (parsed_start_date == null) {
+        reasons.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_last_issue_online' :: ${row_data.date_last_issue_online}")
+        result = false
+      }
     }
 
-    return result
+    if (!row_data.title_id || row_data.title_id == '') {
+      reasons.add("Row ${rownum} does not contain a value for 'title_id'")
+      result = false
+    }
+
+    if (!row_data.publication_title || row_data.publication_title == '') {
+      reasons.add("Row ${rownum} does not contain a value for 'publication_title'")
+      result = false
+    }
+
+    if (!row_data.publication_type || row_data.publication_type == '' || !TitleInstance.determineTitleClass(row_data.publication_type)) {
+      reasons.add("Row ${rownum} does not contain a valid 'publication_type' :: ${row_data.publication_type}")
+      result = false
+    }
+
+    if (!row_data.title_url || row_data.title_url == '') {
+      reasons.add("Row ${rownum} does not contain a value for 'title_url'")
+      result = false
+    }
+
+    if (!result) {
+      log.error("Recording bad row : ${reasons}")
+      badrows.add([rowdata: row_data, message: reasons])
+    }
+
+    result
   }
 
   /**
@@ -2016,11 +1887,11 @@ class TSVIngestionService {
 
     result.problems = []
     result.passed = true
-    result.probcount=0
+    result.probcount = 0
     result.packageName = packageName
     result.providerName = providerName
-    result.sourceName=source?.name
-    result.sourceId=source?.id
+    result.sourceName = source?.name
+    result.sourceId = source?.id
 
     def preflight_counter = 0
 
@@ -2037,100 +1908,56 @@ class TSVIngestionService {
     // Iterate through -- create titles
     kbart_beans.each { the_kbart ->
 
-      def row_specific_cfg = getRowSpecificCfg(ingest_cfg,the_kbart);
+      def row_specific_cfg = getRowSpecificCfg(ingest_cfg, the_kbart)
 
       TitleInstance.withNewTransaction {
 
         def identifiers = []
 
-        if (the_kbart.online_identifier && the_kbart.online_identifier.trim().length() > 0)
+        if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
           identifiers << [type: row_specific_cfg.identifierMap.online_identifier, value: the_kbart.online_identifier]
 
-        if (the_kbart.print_identifier && the_kbart.print_identifier.trim().length() > 0)
+        if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
           identifiers << [type: row_specific_cfg.identifierMap.print_identifier, value: the_kbart.print_identifier]
 
         the_kbart.additional_isbns.each { identifier ->
           if (identifier && identifier.trim().length() > 0)
-          identifiers << [type: 'isbn', value: identifier]
+            identifiers << [type: 'isbn', value: identifier]
         }
 
-        if (the_kbart.title_id && the_kbart.title_id.trim().length() > 0) {
-          log.debug("title_id ${the_kbart.title_id}");
+        if (the_kbart.zdb_id && the_kbart.zdb_id.trim()) {
+          identifiers << [type: 'zdb', value: the_kbart.zdb_id]
+        }
+
+        if (the_kbart.title_id && the_kbart.title_id.trim()) {
+          log.debug("title_id ${the_kbart.title_id}")
 
           if (ingest_cfg.providerIdentifierNamespace) {
             identifiers << [type: ingest_cfg.providerIdentifierNamespace.value, value: the_kbart.title_id]
           }
-          else {
-            identifiers << [type: 'title_id', value: the_kbart.title_id]
-          }
         }
 
-        log.debug("Preflight [${packageName}:${preflight_counter++}] title:${the_kbart.publication_title} identifiers:${identifiers}");
+        log.debug("Preflight [${packageName}:${preflight_counter++}] title:${the_kbart.publication_title} identifiers:${identifiers}")
 
         if (identifiers.size() > 0) {
-          try {
-            def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers, ingest_cfg, row_specific_cfg, the_kbart.publication_type)
+          def title_lookup_result = titleLookupService.find(
+              the_kbart.publication_title,
+              the_kbart.publisher_name,
+              identifiers,
+              TitleInstance.determineTitleClass(the_kbart.publication_type)
+          )
 
-            if (title && the_kbart.title_image && the_kbart.title_image != title.coverImage) {
-              title.coverImage = the_kbart.title_image;
-              title.save(flush: true, failOnError: true)
-            }
-
-            log.debug("Identifier match Preflight title : ${title}");
-          }
-          catch (InconsistentTitleIdentifierException itie) {
-            log.debug("Caught -- set passed to false", itie);
-
-            // First thing to do is to see if we have a rule against this source for this case - if so, apply it,
-            // If not, raise the problem so that we will know what to do next time around.
-            identifiers.sort{it.value};
-            def identifier_fingerprint_str = identifiers as JSON
-            def rule_fingerprint = "InconsistentTitleIdentifierException:${the_kbart.publication_title}:${identifier_fingerprint_str}"
-
-            if (source_rules && source_rules.rules[rule_fingerprint]) {
-              log.debug("Matched rule : ${source_rules.rules[rule_fingerprint]}")
-
-              switch (source_rules.rules[rule_fingerprint].ruleResolution) {
-                case 'variantName':
-                  log.debug("handle error case as variant name");
-                  // exception properties:: proposed_title identifiers matched_title_id matched_title
-                  def title = TitleInstance.get(itie.matched_title_id)
-                  def added_variant = title.addVariantTitle(itie.proposed_title)
-                  title.save(flush:true, failOnError:true)
-                  break;
-                case 'newTitleInTHG':
-                  log.debug("handle error case as title in title history");
-                  break;
-                default:
-                  log.error("Unhandled rule resolution : ${source_rules[rule_fingerprint].ruleResolution}");
-                  break;
-              }
-            }
-            else {
-              log.debug("No matching rule for fingerprint ${rule_fingerprint}");
-
-              result.passed = false;
-              result.problems.add (
-                [
-                  // itie.title itie.identifiers itie.matched_title_id itie.matched_title
-                  problemFingerprint:rule_fingerprint,
-                  problemSequence:result.probcount++,
-                  problemDescription:itie.message,
-                  problemCode:'InconsistentTitleIdentifierException',
-                  submittedTitle:the_kbart.publication_title,
-                  submittedIdentifiers:identifiers,
-                  matchedTitle:itie.matched_title_id
-                ])
-            }
+          if (title_lookup_result.conflicts) {
+            result.probcount++
           }
         }
         else {
-          log.warn("${packageName}:${preflight_counter++}] No identifiers. Map:${ingest_cfg.identifierMap}, print_identifier:${the_kbart.print_identifier} online_identifier:${the_kbart.online_identifier}");
+          log.warn("${packageName}:${preflight_counter++}] No identifiers. Map:${ingest_cfg.identifierMap}, print_identifier:${the_kbart.print_identifier} online_identifier:${the_kbart.online_identifier}")
         }
       }
     }
 
-    log.debug("preflight returning ${result.passed}");
+    log.debug("preflight returning ${result.passed}")
     result
   }
 
@@ -2144,17 +1971,17 @@ class TSVIngestionService {
    */
   def addCustprops(obj, props, prefix) {
     boolean changed = false
-    props.each { k,v ->
+    props.each { k, v ->
       if (k.toString().startsWith(prefix)) {
         log.debug("Got custprop match : ${k} = ${v}");
-        def trimmed_name = m.name.substring(prefix.length());
-        obj.appendToAdditionalProperty(trimmed_name, m.value);
+        def trimmed_name = m.name.substring(prefix.length())
+        obj.appendToAdditionalProperty(trimmed_name, m.value)
         changed = true
       }
     }
 
     if (changed) {
-      obj.save(flush:true, failOnError:true);
+      obj.save(flush:true, failOnError:true)
     }
 
     return;
@@ -2172,15 +1999,15 @@ class TSVIngestionService {
     boolean changed = false
     unmappedprops.each { m ->
       if ( m.name.toString().startsWith(prefix) ) {
-        log.debug("Got custprop match : ${m.name} = ${m.value}");
-        def trimmed_name = m.name.substring(prefix.length());
-        obj.appendToAdditionalProperty(trimmed_name, m.value);
+        log.debug("Got custprop match : ${m.name} = ${m.value}")
+        def trimmed_name = m.name.substring(prefix.length())
+        obj.appendToAdditionalProperty(trimmed_name, m.value)
         changed=true
       }
     }
 
     if (changed) {
-      obj.save(flush:true, failOnError:true);
+      obj.save(flush:true, failOnError:true)
     }
 
     return;

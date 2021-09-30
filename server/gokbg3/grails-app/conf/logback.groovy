@@ -23,7 +23,7 @@ appender('STDOUT', ConsoleAppender) {
 }
 
 if (Environment.isDevelopmentMode() || Environment.current == Environment.TEST) {
-  logger('com.k_int', ERROR)
+  logger('com.k_int', DEBUG)
   logger('org.gokb', DEBUG)
   logger('gokbg3', ERROR)
 
@@ -33,7 +33,7 @@ if (Environment.isDevelopmentMode() || Environment.current == Environment.TEST) 
   logger('org.gokb.CrossReferenceService', ERROR)
   logger('org.gokb.CrossRefPkgRun', DEBUG)
   logger('org.gokb.UpdatePkgTippsRun', DEBUG)
-  logger('org.gokb.PackageService', INFO)
+  logger('org.gokb.PackageService', DEBUG)
   logger('org.gokb.TippService', DEBUG)
   logger('org.gokb.CleanupService', INFO)
   logger('org.gokb.ComponentLookupService', INFO)
@@ -52,10 +52,10 @@ if (Environment.isDevelopmentMode() || Environment.current == Environment.TEST) 
   logger('org.gokb.cred.BookInstance', ERROR)
   logger('org.gokb.cred.JournalInstance', ERROR)
   logger('org.gokb.cred.RefdataCategory', ERROR)
-  logger('gokbg3.RestMappingService', ERROR)
+  logger('org.gokb.cred.Package', DEBUG)
+  logger('org.gokb.cred.TitleInstancePackagePlatform', DEBUG)
   logger('gokbg3.UserDetailsInterceptor', ERROR)
   logger('gokbg3.PreferencesInterceptor', ERROR)
-  logger('gokbg3.RestMappingService', ERROR)
 }
 else {
   logger('com.k_int', INFO)

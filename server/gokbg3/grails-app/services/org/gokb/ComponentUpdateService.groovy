@@ -20,6 +20,8 @@ class ComponentUpdateService {
   def componentLookupService
   def reviewRequestService
   def dateFormatService
+  def restMappingService
+  def sessionFactory
 
   private final Object findLock = new Object()
 
@@ -53,7 +55,8 @@ class ComponentUpdateService {
     def data_identifiers = []
     if (data instanceof JSONObject) {
       data_identifiers = data.identifiers ?: []
-    } else {
+    }
+    else {
       data_identifiers = data.ids ?: []
     }
     log.debug("Identifier processing ${data_identifiers}")
@@ -73,7 +76,8 @@ class ComponentUpdateService {
 
           if (!KBComponent.has(component, 'publisher')) {
             canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
-          } else {
+          }
+          else {
             def norm_id = Identifier.normalizeIdentifier(ci.value)
             def ns = IdentifierNamespace.findByValueIlike(namespace_val)
             canonical_identifier = Identifier.findByNamespaceAndNormnameIlike(ns, norm_id)
@@ -87,8 +91,8 @@ class ComponentUpdateService {
               log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
               def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
               hasChanged = true
-            } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
-
+            }
+            else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
               reviewRequestService.raise(
                 component,
@@ -97,9 +101,11 @@ class ComponentUpdateService {
                 user,
                 null,
                 null,
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier')
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
+                componentLookupService.findCuratoryGroupOfInterest(component, user)
               )
-            } else {
+            }
+            else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")
             }
 
@@ -132,7 +138,6 @@ class ComponentUpdateService {
 
       data.tags.each { t ->
         log.debug("Adding tag ${t.type},${t.value}")
-
         component.addToTags(
           RefdataCategory.lookupOrCreate(t.type, t.value)
         )
@@ -146,9 +151,7 @@ class ComponentUpdateService {
 
     // Add each file upload too!
     data.fileAttachments.each { fa ->
-
       if (fa?.md5) {
-
         DataFile file = DataFile.findByMd5(fa.md5) ?: new DataFile(guid: fa.guid, md5: fa.md5)
 
         // Single properties.
@@ -169,48 +172,13 @@ class ComponentUpdateService {
         // Grab the attachments.
         def attachments = component.getFileAttachments()
         if (!attachments.contains(file)) {
-
           // Add to the attached files.
           attachments.add(file)
         }
       }
     }
 
-    // If this is a component that supports curatoryGroups we should check for them.
-    if (KBComponent.has(component, 'curatoryGroups')) {
-      log.debug("Handling Curatory Groups ..")
-      def groups = component.curatoryGroups.collect { [id: it.id, name: it.name] }
-
-      data.curatoryGroups?.each { String name ->
-        if (!groups.find { it.name.toLowerCase() == name.toLowerCase() }) {
-
-          def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
-          def combo_type_cg = RefdataCategory.lookup('Combo.Type', component.getComboTypeValue('curatoryGroups'))
-          // Only add if we have the group already in the system.
-          if (group) {
-            log.debug("Adding group ${name}..")
-            def new_combo = new Combo(fromComponent: component, toComponent: group, type: combo_type_cg, status: combo_active).save(flush: true, failOnError: true)
-            hasChanged = true
-            groups << [id: group.id, name: group.name]
-          } else {
-            log.debug("Could not find linked group ${name}!")
-          }
-        }
-      }
-
-      if (sync) {
-        groups.each { cg ->
-          if (!data.curatoryGroups || !data.curatoryGroups.find { it.toLowerCase() == cg.name.toLowerCase() }) {
-            log.debug("Removing deprecated CG ${cg.name}")
-            Combo.executeUpdate("delete from Combo as c where c.fromComponent = ? and c.toComponent.id = ?", [component, cg.id])
-            component.refresh()
-            hasChanged = true
-          }
-        }
-      }
-    } else {
-      log.debug("Skipping CG handling ..")
-    }
+    checkCuratoryGroups(component, data, combo_active, sync, hasChanged)
 
     if (data.additionalProperties) {
       Set<String> props = component.additionalProperties.collect { "${it.propertyDefn?.propertyName}|${it.apValue}".toString() }
@@ -291,12 +259,115 @@ class ComponentUpdateService {
     hasChanged
   }
 
+  private void checkCuratoryGroups(KBComponent component, data, combo_active, boolean sync, hasChanged){
+    // If this is a component that supports curatoryGroups we should check for them.
+    if (KBComponent.has(component, 'curatoryGroups')){
+      log.debug("Handling Curatory Groups ..")
+      def groups = component.curatoryGroups.collect{ [id: it.id, name: it.name] }
+
+      def combo_type_cg = RefdataCategory.lookup('Combo.Type', component.getComboTypeValue('curatoryGroups'))
+      data.curatoryGroups?.each{ String name ->
+        if (!groups.find{ it.name.toLowerCase() == name.toLowerCase() }){
+          def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
+          // Only add if we have the group already in the system.
+          if (group){
+            log.debug("Adding group ${name}..")
+            new Combo(fromComponent: component, toComponent: group, type: combo_type_cg, status: combo_active)
+                .save(flush: true, failOnError: true)
+            hasChanged = true
+            groups << [id: group.id, name: group.name]
+          }
+          else{
+            log.debug("Could not find linked group ${name}!")
+          }
+        }
+      }
+
+      if (sync){
+        groups.each{ cg ->
+          if (!data.curatoryGroups || !data.curatoryGroups.find{ it.toLowerCase() == cg.name.toLowerCase() }){
+            log.debug("Removing deprecated CG ${cg.name}")
+            Combo.executeUpdate("delete from Combo as c where c.fromComponent = ? and c.toComponent.id = ?", [component, cg.id])
+            component.refresh()
+            hasChanged = true
+          }
+        }
+      }
+    }
+    else{
+      log.debug("Skipping CuratoryGroup handling for component ${component.id} ..")
+    }
+  }
+
+
   public boolean setAllRefdata(propNames, data, target, boolean createNew = false) {
     boolean changed = false
     propNames.each { String prop ->
       changed |= ClassUtils.setRefdataIfPresent(data[prop], target, prop, createNew)
     }
     changed
+  }
+
+  def bulkUpdateField(User user, cls, params) {
+    log.info("Bulk update for ${cls.name}: ${params}")
+    def result = [total: 0, errors: 0]
+    def field = params['_field']
+    int offset = 0
+    def value = params['_value']
+
+    result.total = componentLookupService.restLookup(user, ReviewRequest, params)._pagination.total
+
+    while (offset < result.total) {
+      def items = componentLookupService.restLookup(user, ReviewRequest, params).data
+
+      items.each {
+        def obj = cls.get(it.id)
+        def reqBody = [:]
+
+        reqBody[field] = value
+
+        if (isUserCurator(obj, user)) {
+          obj = restMappingService.updateObject(obj, null, reqBody)
+
+          if (obj.hasErrors()) {
+            result.errors++
+          } else {
+            obj.save(flush:true)
+          }
+        }
+        else {
+          result.errors++
+        }
+      }
+
+      offset += 10
+      cleanUpGorm()
+    }
+    result
+  }
+
+  public boolean isUserCurator(obj, user) {
+    boolean curator = user.adminStatus
+    def curated_component = KBComponent.has(obj, 'curatoryGroups') ? obj : (obj.class == TitleInstancePackagePlatform ? obj.pkg : null)
+
+    if (curated_component) {
+      if (curated_component.curatoryGroups.size() == 0 || curated_component.curatoryGroups.id.intersect(user.curatoryGroups?.id)) {
+        curator = true
+      }
+    }
+    else if (obj.class == ReviewRequest) {
+      if (obj.allocatedTo == user) {
+        curator = true
+      }
+      else if (obj.allocatedGroups?.group.id.intersect(user.curatoryGroups?.id)) {
+        curator = true
+      }
+    }
+    else {
+      curator = true
+    }
+
+    curator
   }
 
   private def createOrUpdateSource(data) {
@@ -342,5 +413,12 @@ class ComponentUpdateService {
       result.error = e
     }
     result
+  }
+
+  def cleanUpGorm() {
+    log.debug("Clean up GORM");
+    def session = sessionFactory.currentSession
+    session.flush()
+    session.clear()
   }
 }

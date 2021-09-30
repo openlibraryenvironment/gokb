@@ -267,7 +267,7 @@ class TitleLookupService {
 
             if (string_matched) {
               log.debug("TI matched by bucket.")
-              def title_match = [object: the_title, warnings: ['bucket']]
+              def title_match = [object: string_matched, warnings: ['bucket']]
 
               // this seems odd, as the_title is null and therefore has no field 'name'
               /* if (title != the_title.name) {
@@ -569,7 +569,7 @@ class TitleLookupService {
                 additionalInfo.otherComponents = []
 
                 results['other_matches'].each { tlm ->
-                  additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+                  additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
                   combo_ids.add(tlm.id)
                 }
 
@@ -617,7 +617,7 @@ class TitleLookupService {
               additionalInfo.otherComponents = []
 
               matches.each { tlm ->
-                additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+                additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
                 combo_ids.add(tlm.id)
               }
 
@@ -767,7 +767,7 @@ class TitleLookupService {
                 additionalInfo.otherComponents = []
 
                 matches.each { tlm ->
-                  additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+                  additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
                   combo_ids.add(tlm.id)
                 }
 
@@ -846,7 +846,7 @@ class TitleLookupService {
             additionalInfo.otherComponents = []
 
             matches.each { tlm ->
-              additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+              additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
               combo_ids.add(tlm.id)
             }
 
@@ -896,7 +896,7 @@ class TitleLookupService {
               additionalInfo.otherComponents = []
 
               matched_sorted.each { tlm ->
-                additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+                additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
                 combo_ids.add(tlm.id)
               }
 
@@ -947,7 +947,8 @@ class TitleLookupService {
             user,
             project,
             (rr_map.additionalInfo as JSON).toString(),
-            rr_map.type
+            rr_map.type,
+            componentLookupService.findCuratoryGroupOfInterest(the_title, user)
           )
         }
 
@@ -959,7 +960,7 @@ class TitleLookupService {
           additionalInfo.otherComponents = []
 
           results.other_types.each { tlm ->
-            additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}"])
+            additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
             combo_ids.add(tlm.id)
           }
 
@@ -1252,11 +1253,21 @@ class TitleLookupService {
 
         // Raise a review request
         if (added) {
+          def additionalInfo = [:]
+          def combo_ids = [ti.id]
+
+          additionalInfo.cstring = combo_ids.sort().join('_')
+          additionalInfo.vars = [title, ti.name]
+
           reviewRequestService.raise(
             ti,
             "'${title}' added as a variant of '${ti.name}'.",
             "Match was made on 1st class identifier but title name seems to be very different.",
-            user, project
+            user,
+            project,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup('ReviewRequest.StdDesc', 'Name Mismatch'),
+            componentLookupService.findCuratoryGroupOfInterest(ti, user)
           )
         }
         break
@@ -1428,8 +1439,10 @@ class TitleLookupService {
   def getComponentsForIdentifier(identifier) {
 
     def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def status_active = RefdataCategory.lookup('Combo.Status', 'Active')
+    def combo_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
     // was identifier.identifiedComponents
-    KBComponent.executeQuery('select DISTINCT c.fromComponent from Combo as c where c.toComponent = :id and c.type.value = :tp and c.fromComponent.status <> :del', [id: identifier, tp: 'KBComponent.Ids', del: status_deleted]);
+    KBComponent.executeQuery("select DISTINCT c.fromComponent from Combo as c where c.toComponent = :id and c.type = :tp and c.fromComponent.status <> :del and c.status = :act", [id: identifier, tp: combo_type, del: status_deleted, act: status_active]);
   }
 
   def compareIdentifierMaps(ids_one, ids_two) {

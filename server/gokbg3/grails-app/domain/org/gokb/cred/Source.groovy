@@ -1,5 +1,7 @@
 package org.gokb.cred
 
+import groovy.time.TimeCategory
+
 import javax.persistence.Transient
 import java.util.regex.Matcher
 import java.util.regex.Pattern
@@ -20,7 +22,6 @@ class Source extends KBComponent {
   RefdataValue defaultDataFormat
   IdentifierNamespace targetNamespace
   Date lastRun
-  Boolean zdbMatch = false
   Boolean ezbMatch = false
   Org responsibleParty
 
@@ -47,7 +48,6 @@ class Source extends KBComponent {
     targetNamespace(nullable:true, blank:true)
     lastRun(nullable:true,default: null)
     ezbMatch(nullable:true, default: false)
-    zdbMatch(nullable:true,default: false)
     automaticUpdates(nullable: true,default: false)
     name(validator: { val, obj ->
       if (obj.hasChanged('name')) {
@@ -126,7 +126,6 @@ class Source extends KBComponent {
       builder.'ruleset' (ruleset)
       builder.'automaticUpdates' (automaticUpdates)
       builder.'ezbMatch' (ezbMatch)
-      builder.'zdbMatch' (zdbMatch)
       builder.'lastRun' (lastRun)
       if ( targetNamespace ) {
         builder.'targetNamespace'('namespaceName': targetNamespace.name, 'value': targetNamespace.value, 'id': targetNamespace.id)
@@ -150,30 +149,16 @@ class Source extends KBComponent {
     if (lastRun == null) {
       return true
     }
-    if (frequency != null) {
-      Date today = new Date()
-      Date due = getUpdateDay(intervals.get(frequency))
-      if (today == due){
-        return true
+
+    if (frequency) {
+      use(TimeCategory) {
+        if (lastRun + intervals.get(frequency.value).days < new Date()) {
+          return true
+        }
       }
     }
     return false
   }
-
-
-  def getUpdateDay(int interval){
-    Date today = new Date()
-    // calculate from each first day of the year to not create a lag over the years
-    Calendar cal = Calendar.getInstance()
-    cal.set(Calendar.YEAR, Calendar.get(Calendar.YEAR))
-    cal.set(Calendar.DAY_OF_YEAR, 1)
-    Date nextUpdate = cal.getTime()
-    while (nextUpdate.before(today)){
-      nextUpdate = nextUpdate.plus(interval)
-    }
-    return nextUpdate
-  }
-
 
   def intervals = [
       "Daily"       : 1,

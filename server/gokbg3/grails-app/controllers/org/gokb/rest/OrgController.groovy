@@ -25,6 +25,7 @@ class OrgController {
   def componentUpdateService
   def orgService
   def platformService
+  def FTUpdateService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -43,7 +44,7 @@ class OrgController {
     if (es_search) {
       params.remove('es')
       def start_es = LocalDateTime.now()
-      result = ESSearchService.find(params)
+      result = ESSearchService.find(params, null, user)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
     }
     else {
@@ -112,7 +113,12 @@ class OrgController {
 
       if (lookup_result.to_create) {
         def normname = Org.generateNormname(reqBody.name)
-        obj = new Org(name: reqBody.name, normname: normname).save(flush:true)
+        try {
+          obj = new Org(name: reqBody.name, normname: normname)
+        }
+        catch (grails.validation.ValidationException ve) {
+          errors << messageService.processValidationErrors(ve.errors, request_locale)
+        }
         log.debug("New Object ${obj}")
       }
       else {
@@ -126,16 +132,15 @@ class OrgController {
         }
       }
 
-      if (lookup_result.to_create && !obj) {
-        log.debug("Could not upsert object!")
-        errors.object = [[badData: reqBody, message: "Unable to save object!"]]
+      if (errors.size() > 0) {
+        log.debug("Object has validation errors!")
       }
-      else if (obj?.hasErrors()) {
-        log.debug("Object has errors!")
-        errors = messageService.processValidationErrors(obj.errors, request.locale)
-        log.debug("${errors}")
+      else if (lookup_result.to_create && !obj) {
+        log.debug("Could not upsert object!")
+        errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
       }
       else if (obj) {
+        obj.save(flush:true)
         def jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
@@ -146,9 +151,7 @@ class OrgController {
             log.debug("No errors.. saving")
             obj.save()
 
-            if (reqBody.variantNames) {
-              obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
-            }
+            obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
 
             errors << updateCombos(obj, reqBody)
 
@@ -156,6 +159,7 @@ class OrgController {
               log.debug("No errors: ${errors}")
               obj.save(flush:true)
               response.status = 201
+              FTUpdateService.updateSingleItem(obj)
               result = restMappingService.mapObjectToJson(obj, params, user)
             }
             else {
@@ -217,14 +221,16 @@ class OrgController {
 
       if (editable) {
 
+        if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
+          response.setStatus(409)
+          result.message = message(code: "default.update.errors.message")
+          render result as JSON
+        }
+
         def jsonMap = obj.jsonMapping
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
-
-
-        if (reqBody.variantNames) {
-          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
-        }
+        obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
 
         errors << updateCombos(obj, reqBody, remove)
 
@@ -232,6 +238,7 @@ class OrgController {
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush: true)
+            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -268,40 +275,53 @@ class OrgController {
   private def updateCombos(obj, reqBody, boolean remove = true) {
     log.debug("Updating org combos ..")
     def errors = [:]
+    def changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+      changed |= id_result.changed
+
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
       }
     }
 
     if (reqBody.providedPlatforms instanceof Collection) {
       def plts = reqBody.providedPlatforms
 
-      def plts_errors = orgService.updatePlatforms(obj, plts, remove)
+      def plts_result = orgService.updatePlatforms(obj, plts, remove)
 
-      if (plts_errors.size() > 0) {
-        errors.providedPlatforms = plts_errors
+      changed |= plts_result.changed
+
+      if (plts_result.errors.size() > 0) {
+        errors.providedPlatforms = plts_result.errors
       }
     }
 
     if (reqBody.curatoryGroups instanceof Collection) {
-      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+      def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
-      if (cg_errors.size() > 0) {
-        errors['curatoryGroups'] = cg_errors
+      changed |= cg_result.changed
+
+      if (cg_result.errors.size() > 0) {
+        errors['curatoryGroups'] = cg_result.errors
       }
     }
 
     if (reqBody.offices instanceof Collection) {
-      def office_errors = orgService.updateOffices(obj, reqBody.offices, remove)
-      if (office_errors.size() > 0) {
-        errors['offices'] = office_errors
+      def office_result = orgService.updateOffices(obj, reqBody.offices, remove)
+      changed |= office_result.changed
+
+      if (office_result.errors.size() > 0) {
+        errors['offices'] = office_result.errors
       }
+    }
+
+    if (changed) {
+      obj.lastSeen = System.currentTimeMillis()
     }
     log.debug("After update: ${obj}")
     errors
@@ -323,6 +343,7 @@ class OrgController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'
@@ -359,6 +380,7 @@ class OrgController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'

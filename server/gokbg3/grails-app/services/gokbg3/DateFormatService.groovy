@@ -16,37 +16,46 @@ class DateFormatService {
   private static Format DATE_FORMAT = new FastDateFormat("yyyy-MM-dd", TimeZone.getDefault(), Locale.getDefault())
   private static Format TIMESTAMP_FORMAT = new FastDateFormat("yyyy-MM-dd HH:mm:ss", TimeZone.getDefault(), Locale.getDefault())
   private static Format TIMESTAMP_FORMAT_MS = new FastDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS", TimeZone.getDefault(), Locale.getDefault())
-  private static Format ISO_FORMAT = new FastDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getDefault(), Locale.getDefault())
+  private static Format ISO_FORMAT = new FastDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('GMT'), Locale.getDefault())
+  private static Format ISO_MS_FORMAT = new FastDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", TimeZone.getTimeZone('GMT'), Locale.getDefault())
 
-  String formatDate(Date date) {
+  static String formatDate(Date date) {
     DATE_FORMAT.format(date)
   }
 
-  Date parseDate(String date) {
+  static Date parseDate(String date) {
     DATE_FORMAT.parse(date)
   }
 
-  String formatTimestamp(Date date) {
+  static String formatTimestamp(Date date) {
     TIMESTAMP_FORMAT.format(date)
   }
 
-  Date parseTimestamp(String date) {
+  static Date parseTimestamp(String date) {
     TIMESTAMP_FORMAT.parse(date)
   }
 
-  String formatTimestampMs(Date date) {
+  static String formatTimestampMs(Date date) {
     TIMESTAMP_FORMAT_MS.format(date)
   }
 
-  Date parseTimestampMs(String date) {
+  static Date parseTimestampMs(String date) {
     TIMESTAMP_FORMAT_MS.parse(date)
   }
 
-  String formatIsoTimestamp(Date date) {
+  static String formatIsoTimestamp(Date date) {
     ISO_FORMAT.format(date)
   }
 
-  Date parseIsoTimestamp(String date) {
+  static Date parseIsoTimestamp(String date) {
     ISO_FORMAT.parse(date)
+  }
+
+  static String formatIsoMsTimestamp(Date date) {
+    ISO_MS_FORMAT.format(date)
+  }
+
+  static Date parseIsoMsTimestamp(String date) {
+    ISO_MS_FORMAT.parse(date)
   }
 }
