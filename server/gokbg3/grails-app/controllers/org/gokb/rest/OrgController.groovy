@@ -134,9 +134,11 @@ class OrgController {
 
       if (errors.size() > 0) {
         log.debug("Object has validation errors!")
+        response.status = 400
       }
       else if (lookup_result.to_create && !obj) {
         log.debug("Could not upsert object!")
+        response.status = 400
         errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
       }
       else if (obj) {

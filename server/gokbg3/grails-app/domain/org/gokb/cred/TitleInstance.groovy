@@ -886,6 +886,7 @@ class TitleInstance extends KBComponent {
 
   def beforeUpdate() {
     def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    def review_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
 
     if (this.isDirty('status') && this.status == deleted_status) {
       // Delete the tipps too as a TIPP should not exist without the associated
@@ -913,6 +914,8 @@ class TitleInstance extends KBComponent {
         ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = ?", [it])
         ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = ?", [it.id])
       }
+
+      this.reviewRequests*.status = review_closed
     }
   }
 
