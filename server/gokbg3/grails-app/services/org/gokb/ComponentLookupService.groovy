@@ -393,7 +393,26 @@ class ComponentLookupService {
             }
           }
 
-          if ( validLong.size() > 0 || validStr.size() > 0 ) {
+          boolean pkg_qry = false
+
+          if (validLong.size() == 1 && p.name == 'componentToReview') {
+            def ctr = KBComponent.get(validLong[0])
+
+            if (ctr?.class == Package) {
+              def tipp_ids = TitleInstancePackagePlatform.executeQuery("select id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = ? and toComponent = tipp)",[ctr])
+              def ti_ids = []
+
+              if (params.titlereviews) {
+                ti_ids = TitleInstance.executeQuery("select id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN :tippids)", [tippids: tipp_ids])
+              }
+
+              paramStr += "p.componentToReview.id IN :ctrids"
+              qryParams['ctrids'] = [ctr.id] + tipp_ids + ti_ids
+              pkg_qry = true
+            }
+          }
+
+          if (!pkg_qry && (validLong.size() > 0 || validStr.size() > 0)) {
             paramStr += "("
             if (validLong.size() > 0) {
               paramStr += "p.${p.name}.id IN :${p.name}"
@@ -413,7 +432,7 @@ class ComponentLookupService {
             }
             paramStr += ")"
           }
-          else {
+          else if (!pkg_qry) {
             addParam = false
           }
         }

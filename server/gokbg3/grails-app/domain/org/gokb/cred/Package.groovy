@@ -251,7 +251,7 @@ class Package extends KBComponent {
   }
 
   @Transient
-  public getReviews(def onlyOpen = true, def onlyCurrent = false) {
+  public getReviews(def onlyOpen = true, def onlyCurrent = false, int max = 0, int offset = 0) {
     def all_rrs = null
     def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current');
 
@@ -275,7 +275,7 @@ class Package extends KBComponent {
             and titleCombo.fromComponent=title
             and rr.componentToReview = title
             and rr.status = ?'''
-          , [this, refdata_current, refdata_open]);
+          , [this, refdata_current, refdata_open], [max: max, offset: offset]);
       }
       else {
         all_rrs = ReviewRequest.executeQuery('''select distinct rr
@@ -290,7 +290,7 @@ class Package extends KBComponent {
             and titleCombo.fromComponent=title
             and rr.componentToReview = title
             and rr.status = ?'''
-          , [this, refdata_open]);
+          , [this, refdata_open], [max: max, offset: offset]);
       }
     }
     else {
@@ -307,7 +307,7 @@ class Package extends KBComponent {
             and titleCombo.toComponent=tipp
             and titleCombo.fromComponent=title
             and rr.componentToReview = title'''
-          , [this, refdata_current]);
+          , [this, refdata_current], [max: max, offset: offset]);
       }
       else {
         all_rrs = ReviewRequest.executeQuery('''select rr
@@ -321,7 +321,7 @@ class Package extends KBComponent {
             and titleCombo.toComponent=tipp
             and titleCombo.fromComponent=title
             and rr.componentToReview = title'''
-          , [this]);
+          , [this], [max: max, offset: offset]);
       }
     }
 
