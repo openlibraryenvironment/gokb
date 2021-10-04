@@ -221,12 +221,6 @@ class JobsController {
         result.message = "No permission to view job with ID ${params.id}."
       }
     }
-    else if (params.linkedItem) {
-      KBComponent comp = KBComponent.get(params.linkedItem) ?: KBComponent.findByUuid(params.linkedItem)
-      if (comp) {
-
-      }
-    }
     else {
       result.result = "ERROR"
       response.setStatus(404)

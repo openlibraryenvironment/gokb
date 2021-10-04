@@ -1109,19 +1109,17 @@ class PackageService {
         cg = CuratoryGroup.get(it)
       }
       else if (it instanceof String) {
-        String normname = CuratoryGroup.generateNormname(it)
         cgname = it
 
-        cg = CuratoryGroup.findByNormname(normname)
+        cg = CuratoryGroup.findByNameIlike(it)
       }
       else if (it.id) {
         cg = CuratoryGroup.get(it.id)
       }
       else if (it.name) {
-        String normname = CuratoryGroup.generateNormname(it.name)
         cgname = it.name
 
-        cg = CuratoryGroup.findByNormname(normname)
+        cg = CuratoryGroup.findByNameIlike(it.name)
       }
 
       if (cg) {
@@ -1134,9 +1132,14 @@ class PackageService {
         }
       }
       else if (cgname) {
-        def new_cg = new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
-        result.curatoryGroups.add(new_cg)
-        changed = true
+        try {
+          def new_cg = new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
+          result.curatoryGroups.add(new_cg)
+          changed = true
+        }
+        catch (grails.validation.ValidationException ve) {
+          log.debug("Unable to create new CG!")
+        }
       }
     }
 
