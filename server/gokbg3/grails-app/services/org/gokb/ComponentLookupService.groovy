@@ -436,12 +436,34 @@ class ComponentLookupService {
             addParam = false
           }
         }
-        else if ( p.type == Long ) {
+        else if (p.type == Long) {
           qryParams[p.name] = alts.collect { Long.valueOf(it) }
           paramStr += "p.${p.name} IN :${p.name}"
         }
-        else if ( p.name == 'name' ){
+        else if (p.name == 'name'){
           paramStr += "lower(p.${p.name}) like lower(:${p.name})"
+          qryParams[p.name] = "%${params[p.name]}%"
+        }
+        else if (p.name == 'url' || p.name == 'primaryUrl') {
+          paramStr += "lower(p.${p.name}) like lower(:${p.name})"
+          def uri_param = null
+
+          try {
+            def url = new URL(params[p.name])
+
+            if (url.getProtocol()) {
+              uri_param = url_as_name.getHost()
+
+              if (uri_param .startsWith("www.")) {
+                uri_param = uri_param.substring(4)
+              }
+
+              log.debug("New platform name is ${platformDTO.name}.")
+            }
+          } catch (MalformedURLException) {
+            log.debug("Platform name is no valid URL")
+          }
+
           qryParams[p.name] = "%${params[p.name]}%"
         }
         else {
