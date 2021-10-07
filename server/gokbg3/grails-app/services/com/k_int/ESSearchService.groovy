@@ -16,6 +16,8 @@ import org.elasticsearch.search.sort.*
 
 import org.gokb.cred.*
 
+import org.springframework.util.StringUtils
+
 import java.text.ParseException
 import java.text.SimpleDateFormat
 
@@ -393,18 +395,45 @@ class ESSearchService{
         labelQuery.should(QueryBuilders.termQuery('uuid', qpars.label).boost(10))
       }
 
-      labelQuery.should(QueryBuilders.matchQuery('name', qpars.label).boost(2))
-      labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label).boost(1.3))
-      labelQuery.should(QueryBuilders.matchQuery('suggest', qpars.label).boost(0.6))
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.label, '"') == 2
+
+      if (doPhraseSearch) {
+        log.debug("DO phrase search!")
+        def phraseQry = qpars.label.replace('"', "")
+        log.debug("${phraseQry}")
+        labelQuery.should(QueryBuilders.matchPhraseQuery('name', phraseQry).boost(2))
+        labelQuery.should(QueryBuilders.matchPhraseQuery('altname', phraseQry))
+      }
+      else {
+        labelQuery.should(QueryBuilders.matchQuery('name', qpars.label).boost(2))
+        labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label).boost(1.3))
+        labelQuery.should(QueryBuilders.matchQuery('suggest', qpars.label).boost(0.6))
+      }
       labelQuery.minimumNumberShouldMatch(1)
 
       query.must(labelQuery)
     }
     else if (qpars.name) {
-      query.must(QueryBuilders.matchQuery('name', qpars.name))
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.name, '"') == 2
+
+      if (doPhraseSearch) {
+        def phraseQry = qpars.name.replace('"', "")
+        query.must(QueryBuilders.matchPhraseQuery('name', phraseQry))
+      }
+      else {
+        query.must(QueryBuilders.matchQuery('name', qpars.name))
+      }
     }
     else if (qpars.altname) {
-      query.must(QueryBuilders.matchQuery('altname', qpars.altname))
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.altname, '"') == 2
+
+      if (doPhraseSearch) {
+        def phraseQry = qpars.altname.replace('"', "")
+        query.must(QueryBuilders.matchPhraseQuery('altname', phraseQry))
+      }
+      else {
+        query.must(QueryBuilders.matchQuery('altname', qpars.altname))
+      }
     }
     else if (qpars.suggest) {
       query.must(QueryBuilders.matchQuery('suggest', qpars.suggest).boost(0.6))
@@ -1082,7 +1111,10 @@ class ESSearchService{
     def idmap = []
     ids.each { id ->
       def ns = IdentifierNamespace.findByValueIlike(id.namespace)
-      idmap << [namespace : [value: id.namespace, name: ns.name, id: ns.id], value: id.value ]
+
+      if (ns) {
+        idmap << [ namespace : [value: id.namespace, name: ns.name, id: ns.id], value: id.value ]
+      }
     }
     idmap
   }
