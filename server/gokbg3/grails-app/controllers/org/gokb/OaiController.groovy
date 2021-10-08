@@ -512,6 +512,7 @@ class OaiController {
         def returnAttrs = true
         def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def request_map = params
+        def cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled)
         request_map.keySet().removeAll(['controller','action','id'])
 
         if ( params.resumptionToken && ( params.resumptionToken.trim() ) ) {
@@ -623,7 +624,7 @@ class OaiController {
           wClause = true
         }
 
-        if(status_filter && status_filter.size() > 0){
+        if (status_filter && status_filter.size() > 0) {
           status_filter.eachWithIndex { val, index ->
             if(!wClause){
               query += 'where '
@@ -650,18 +651,7 @@ class OaiController {
           }
         }
 
-        if(from){
-          if(!wClause){
-            query += 'where '
-            wClause = true
-          }
-          else{
-            query += ' and '
-          }
-          query += 'o.lastUpdated > :lupdf'
-          query_params.put('lupdf', from)
-        }
-        else if ((params.from != null)&&(params.from.trim())) {
+        if (!from && params.from != null && params.from.trim()) {
           def fparam = params.from
 
           if( params.from.length() == 10 ) {
@@ -670,17 +660,6 @@ class OaiController {
 
           try {
             from = dateFormatService.parseIsoTimestamp(fparam)
-
-            if(!wClause){
-              query += 'where '
-              wClause = true
-            }
-            else{
-              query += ' and '
-            }
-
-            query += 'o.lastUpdated > :lupdf'
-            query_params.put('lupdf', from)
           }
           catch (Exception pe) {
             errors.add([code:'badArgument', name: 'from', expl: 'This date format is not supported.'])
@@ -688,18 +667,7 @@ class OaiController {
           }
         }
 
-        if (until) {
-          if(!wClause){
-            query += 'where '
-            wClause = true
-          }
-          else{
-            query += ' and '
-          }
-          query += 'o.lastUpdated < :lupd'
-          query_params.put('lupd', until)
-        }
-        else if ((params.until != null)&&(params.until.trim())) {
+        if (!until && params.until != null && params.until.trim()) {
           def uparam = params.until
 
           if( params.until.length() == 10 ) {
@@ -708,18 +676,6 @@ class OaiController {
 
           try {
             until = dateFormatService.parseIsoTimestamp(uparam)
-
-            if(!wClause){
-              query += 'where '
-              wClause = true
-            }
-            else{
-              query += ' and '
-            }
-
-            query += 'o.lastUpdated < :lupd'
-
-            query_params.put('lupd', until)
           }
           catch (Exception pe) {
             errors.add([code:'badArgument', name: 'until', expl: 'This date format is not supported.'])
@@ -728,24 +684,25 @@ class OaiController {
         }
 
         // Only return cached packages
-        if (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled) {
+        if (cachedPackageResponse) {
           File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
           def cached_uuids = []
 
           for (File file : dir.listFiles()) {
             def nameParts = file.name.split('_')
+            Date last_cache = new Date(file.lastModified())
             if (from && until) {
-              if (dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) > from && dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) < until) {
+              if (last_cache > from && last_cache < until) {
                 cached_uuids.add(nameParts[0])
               }
             }
             else if (from) {
-              if (dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) > from) {
+              if (last_cache > from) {
                 cached_uuids.add(nameParts[0])
               }
             }
             else if (until) {
-              if (dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) < until) {
+              if (last_cache < until) {
                 cached_uuids.add(nameParts[0])
               }
             }
@@ -772,6 +729,30 @@ class OaiController {
           }
 
           wClause = true
+        }
+        else {
+          if (from) {
+            if (!wClause) {
+              query += 'where '
+              wClause = true
+            }
+            else {
+              query += ' and '
+            }
+            query += 'o.lastUpdated > :lupdf'
+            query_params.put('lupdf', from)
+          }
+          if (until) {
+            if (!wClause) {
+              query += 'where '
+              wClause = true
+            }
+            else {
+              query += ' and '
+            }
+            query += 'o.lastUpdated < :lupd'
+            query_params.put('lupd', until)
+          }
         }
 
         log.debug("qry is: ${query}");
@@ -819,7 +800,7 @@ class OaiController {
                     mkp.'header' () {
                       identifier("${rec.class.name}:${rec.id}")
                       uuid(rec.uuid)
-                      datestamp(dateFormatService.formatIsoTimestamp(rec.lastUpdated))
+                      datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? getCacheDateForPkgUuid(rec.uuid) : rec.lastUpdated))
                       if (rec.status == status_deleted) {
                         status('deleted')
                       }
@@ -886,5 +867,18 @@ class OaiController {
     writer << xml.bind(resp)
 
     render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
+  }
+
+  private Date getCacheDateForPkgUuid(uuid) {
+    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    def cached_uuids = []
+
+    for (File file : dir.listFiles()) {
+      if (file.name.contains(uuid)) {
+        return new Date(file.lastModified())
+      }
+    }
+
+    return null
   }
 }
