@@ -177,10 +177,13 @@ class GOKbTextUtils {
     // Do spaces really add anything for our purposes here, or are random spaces more likely to creep in to the
     // source records and throw the matching? Suspect the latter, kill them for now
     normstring = normstring.trim()
-    normstring?.replaceAll(' ', '')
 
-    if (!normstring?.trim())
+    if (normstring) {
+      normstring = normstring.replaceAll(' ', '')
+    }
+    else {
       normstring = s.trim()
+    }
 
     normstring
   }

@@ -450,9 +450,11 @@ class UpdatePkgTippsRun {
   private Map handleTIPP(JSONObject tippJson) {
     Map tippError = [:]
     def stash = tippJson.title
+    log.debug("${stash}")
     tippJson.title = null
     def validation_result = TitleInstancePackagePlatform.validateDTO(tippJson, locale)
     tippJson.title = stash
+    log.debug("${tippJson.title}")
     log.debug("validate TIPP ${tippJson.name ?: tippJson.title.name}")
     if (!validation_result.valid) {
       invalidTipps << tippJson
@@ -540,7 +542,7 @@ class UpdatePkgTippsRun {
               "Multiple Identifier Matches for TIPP.",
               user,
               null,
-              additionalInfo as JSON,
+              (additionalInfo as JSON).toString(),
               RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple Matches'),
               componentLookupService.findCuratoryGroupOfInterest(tipp, user)
           )
@@ -646,7 +648,16 @@ class UpdatePkgTippsRun {
       def something = esSearchService.find(map)
       if (something.records?.size() > 0) {
         log.debug("found by titleId in ES")
-        something.records.each { tipps << TitleInstancePackagePlatform.findByUuid(it.uuid) }
+        something.records.each {
+          def tipp = TitleInstancePackagePlatform.findByUuid(it.uuid)
+
+          if (tipp) {
+            tipps << tipp
+          }
+          else  {
+            log.warn("ES record TIPP ${it.uuid} does not exist!")
+          }
+        }
         return tipps
       }
       // database search
@@ -703,7 +714,16 @@ class UpdatePkgTippsRun {
 
       if (something.records?.size() > 0) {
         log.debug("found by provider namespace ID in ES")
-        something.records.each { tipps << TitleInstancePackagePlatform.findByUuid(it.uuid) }
+        something.records.each {
+          def tipp = TitleInstancePackagePlatform.findByUuid(it.uuid)
+
+          if (tipp) {
+            tipps << tipp
+          }
+          else  {
+            log.warn("ES record TIPP ${it.uuid} does not exist!")
+          }
+        }
         return tipps
       }
 

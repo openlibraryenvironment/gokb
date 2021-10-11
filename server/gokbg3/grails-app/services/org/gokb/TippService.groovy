@@ -232,16 +232,17 @@ class TippService {
             null,
             null,
             [otherComponents: ti] as JSON,
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch"),
-            tipp.pkg.curatoryGroups?.size() == 1 ? tipp.pkg.curatoryGroups[0] : null
-            // TODO: use currently active CG if tipp.curatoryGroups?.size() != 1)
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch")
         )
       }
     }
     else if (found.to_create == true) {
+      log.debug("No existing title matched, creating ${tipp.name}")
       // unknown title
       ti = Class.forName(title_class_name).newInstance()
       ti.name = tipp.name
+
+      log.debug("Set name ${ti.name} ..")
       ti.save(flush: true)
       titleLookupService.addPublisher(tipp.publisherName, ti)
       tipp.ids.each {
@@ -402,34 +403,32 @@ class TippService {
     // TODO: check if the ReviewRequest was raised already before issuing a new one
     if (tipp.reviewRequests.size() < 1) {
       if (found.matches.size > 1) {
-        def collection = []
+        def additionalInfo = [otherComponents: []]
         found.matches.each { comp ->
-          collection << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name]
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
         }
         reviewRequestService.raise(
             tipp,
             "TIPP matched several titles",
-            "TIPP ${tipp.name} coudn't be linked.",
+            "TIPP ${tipp.name} coudn't be linked.".toString(),
             null,
             null,
-            [otherComponents: collection] as JSON,
-          RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches"),
-          tipp.pkg.curatoryGroups?.size() == 1 ? tipp.pkg.curatoryGroups[0] : null
-          // TODO: use currently active CG if tipp.curatoryGroups?.size() != 1
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches")
         )
       }
       if (found.conflicts.size > 0) {
-        def collection = []
+        def additionalInfo = [otherComponents: []]
         found.conflicts.each { comp ->
-          collection << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name]
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
         }
         reviewRequestService.raise(
             tipp,
             "TIPP conflicts",
-            "TIPP ${tipp.name} conflicts with other titles.",
+            "TIPP ${tipp.name} conflicts with other titles.".toString(),
             null,
             null,
-            [otherComponents: collection] as JSON,
+            (additionalInfo as JSON).toString(),
             RefdataCategory.lookup("ReviewRequest.StdDesc", "Major Identifier Mismatch")
         )
       }

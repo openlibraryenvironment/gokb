@@ -35,8 +35,6 @@ class ComponentUpdateService {
     // Set the name.
     def hasChanged = false
 
-    component.refresh()
-
     if (data.name?.trim() && (!component.name || (sync && component.name != data.name))) {
       component.name = data.name
       hasChanged = true
@@ -254,7 +252,8 @@ class ComponentUpdateService {
     if (hasChanged) {
       component.lastSeen = new Date().getTime()
     }
-    component.merge(flush: true)
+
+    component.save(flush: true)
 
     hasChanged
   }

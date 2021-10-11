@@ -50,7 +50,7 @@ class FTUpdateService {
         result.altname = []
         result.listStatus = kbc.listStatus?.value
         result.editStatus = kbc.editStatus?.value
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
@@ -103,7 +103,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.roles = []
         kbc.roles.each { role ->
           result.roles.add(role.value)
@@ -138,7 +138,7 @@ class FTUpdateService {
         result.cpname = kbc.provider?.name
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
           result.curatoryGroups.add(cg.name)
@@ -172,7 +172,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
@@ -195,7 +195,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
@@ -218,7 +218,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
@@ -242,7 +242,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
@@ -263,7 +263,7 @@ class FTUpdateService {
           result.curatoryGroups.add(cg.name)
         }
         result.titleType = kbc.title?.niceName ?: 'Unknown'
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.url = kbc.url
         if (kbc.title?.niceName == 'Journal') {
           result.coverage = []
