@@ -153,7 +153,7 @@ class UpdatePkgTippsRun {
         for (def json_tipp : rjson.tipps) {
           idx++
           def currentTippError = [index: idx]
-          log.info("Handling #$idx TIPP ${json_tipp.name ?: json_tipp.title.name}")
+          log.debug("Handling #$idx TIPP ${json_tipp.name ?: json_tipp.title.name}")
 
           if ((json_tipp.package == null) && (pkg.id)) {
             json_tipp.package = [internalId: pkg.id,

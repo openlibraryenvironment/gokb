@@ -181,6 +181,12 @@ class TitleAugmentService {
         new Combo(fromComponent: titleInstance, toComponent: pub_obj, type: publisher_combo).save(flush: true, failOnError: true)
       }
     }
+
+    def full_title = info.subtitle ? "${info.title}: ${info.subtitle}" : info.title
+
+    if (titleInstance.normname != KBComponent.generateNormname(full_title)) {
+      titleInstance.name = full_title
+    }
   }
 
   def doEnrichment() {
