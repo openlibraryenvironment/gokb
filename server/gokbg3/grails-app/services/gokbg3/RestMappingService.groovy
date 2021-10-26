@@ -243,9 +243,11 @@ class RestMappingService {
     }
     else if (obj.class == ReviewRequest && embed_active.contains('allocatedGroups')) {
       result.allocatedGroups = []
-
+      def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
       obj.allocatedGroups?.each {
-        result.allocatedGroups << [name: it.group.name, id: it.group.id]
+        if (it.status == inProgress){
+          result.allocatedGroups << [name: it.group.name, id: it.group.id]
+        }
       }
     }
 
