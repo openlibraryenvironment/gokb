@@ -27,6 +27,7 @@ class PlatformController {
   def restMappingService
   def componentLookupService
   def platformService
+  def FTUpdateService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -110,7 +111,12 @@ class PlatformController {
 
       if (lookup_result.to_create) {
         def normname = Platform.generateNormname(reqBody.name)
-        obj = new Platform(name: reqBody.name, normname: normname).save(flush:true)
+        try {
+          obj = new Platform(name: reqBody.name, normname: normname)
+        }
+        catch (grails.validation.ValidationException ve) {
+          errors << messageService.processValidationErrors(ve.errors, request_locale)
+        }
         log.debug("New Object ${obj}")
       }
       else {
@@ -124,16 +130,15 @@ class PlatformController {
         }
       }
 
-      if (lookup_result.to_create && !obj) {
-        log.debug("Could not upsert object!")
-        errors.object = [[baddata: reqBody, message:"Unable to save object!"]]
+      if (errors.size() > 0) {
+        log.debug("Object has validation errors!")
       }
-      else if (obj?.hasErrors()) {
-        log.debug("Object has errors!")
-        errors = messageService.processValidationErrors(obj.errors, request.locale)
-        log.debug("${errors}")
+      else if (lookup_result.to_create && !obj) {
+        log.debug("Could not upsert object!")
+        errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
       }
       else if (obj) {
+        obj.save(flush:true)
         def jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
@@ -153,6 +158,7 @@ class PlatformController {
             if (errors.size() == 0) {
               log.debug("No errors: ${errors}")
               obj.save(flush:true)
+              FTUpdateService.updateSingleItem(obj)
               response.status = 201
               result = restMappingService.mapObjectToJson(obj, params, user)
             }
@@ -200,10 +206,11 @@ class PlatformController {
     if (!obj) {
       obj = Platform.get(genericOIDService.oidToId(params.id))
     }
-    def editable = obj.isEditable()
 
     if (obj && reqBody) {
       obj.lock()
+
+      def editable = obj.isEditable()
 
       if ( editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
         def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
@@ -214,6 +221,11 @@ class PlatformController {
       }
 
       if (editable) {
+        if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
+          response.setStatus(409)
+          result.message = message(code: "default.update.errors.message")
+          render result as JSON
+        }
 
         def jsonMap = obj.jsonMapping
 
@@ -229,6 +241,7 @@ class PlatformController {
           if(errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush:true)
+            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -313,6 +326,7 @@ class PlatformController {
 
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'
@@ -344,6 +358,7 @@ class PlatformController {
     if ( obj && obj.isEditable() ) {
       if ( curator || user.isAdmin() ) {
         obj.retire()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'

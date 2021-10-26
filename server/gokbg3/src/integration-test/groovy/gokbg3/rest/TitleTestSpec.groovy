@@ -198,4 +198,35 @@ class TitleTestSpec extends AbstractAuthSpec {
     // resp.status == 200 // OK
     resp.json?.data?.size() == 1
   }
+  void "test send stale update info"() {
+    def urlPath = getUrlPath()
+    last = true
+    def id = JournalInstance.findByName("TestJournal").id
+
+    when:
+    def json_record = [
+      name: "TestJournalV1"
+    ]
+
+    String accessToken = getAccessToken()
+    RestResponse resp1 = rest.put("${urlPath}/rest/titles/$id") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(json_record as JSON)
+    }
+
+    def json_stale_record = [
+      name: "TestJournalV2",
+      version: "0"
+    ]
+
+    RestResponse resp2 = rest.put("${urlPath}/rest/titles/$id") {
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(json_stale_record as JSON)
+    }
+    then:
+    resp1.status == 200 // OK
+    resp2.status == 409
+  }
 }

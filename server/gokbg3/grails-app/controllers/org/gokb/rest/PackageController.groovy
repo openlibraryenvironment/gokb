@@ -39,6 +39,7 @@ class PackageController {
   def componentUpdateService
   def concurrencyManagerService
   def sessionFactory
+  def FTUpdateService
   def reviewRequestService
   def titleLookupService
   def titleHistoryService
@@ -143,7 +144,12 @@ class PackageController {
 
         if (lookup_result.to_create) {
           def normname = Package.generateNormname(reqBody.name)
-          obj = new Package(name: reqBody.name, normname: normname).save(flush: true)
+          try {
+            obj = new Package(name: reqBody.name, normname: normname)
+          }
+          catch (grails.validation.ValidationException ve) {
+            errors << messageService.processValidationErrors(ve.errors, request_locale)
+          }
           log.debug("New Object ${obj}")
         }
         else {
@@ -157,15 +163,15 @@ class PackageController {
           }
         }
 
-        if (lookup_result.to_create && !obj) {
+        if (errors.size() > 0) {
+          log.debug("Object has validation errors!")
+        }
+        else if (lookup_result.to_create && !obj) {
           log.debug("Could not upsert object!")
           errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
         }
-        else if (obj?.hasErrors()) {
-          log.debug("Object has errors!")
-          errors << messageService.processValidationErrors(obj.errors, request_locale)
-        }
         else if (obj) {
+          obj.save(flush:true)
           def jsonMap = obj.jsonMapping
 
           jsonMap.immutable = [
@@ -196,6 +202,7 @@ class PackageController {
                 log.debug("No errors: ${errors}")
                 obj.save(flush: true)
                 response.status = 201
+                FTUpdateService.updateSingleItem(obj)
                 result = restMappingService.mapObjectToJson(obj, params, user)
 
                 if (update_token) {
@@ -272,6 +279,11 @@ class PackageController {
         }
       }
       if (editable) {
+        if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
+          response.setStatus(409)
+          result.message = message(code: "default.update.errors.message")
+          render result as JSON
+        }
 
         def jsonMap = obj.jsonMapping
 
@@ -307,6 +319,7 @@ class PackageController {
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush: true)
+            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
 
             if (update_token) {
@@ -345,22 +358,27 @@ class PackageController {
   private def updateCombos(obj, reqBody, boolean remove = true, user) {
     log.debug("Updating package combos ..")
     def errors = [:]
+    def changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+      changed |= id_result.changed
+
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
       }
     }
 
     if (reqBody.curatoryGroups) {
-      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+      def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
-      if (cg_errors.size() > 0) {
-        errors['curatoryGroups'] = cg_errors
+      changed |= cg_result.changed
+
+      if (cg_result.errors.size() > 0) {
+        errors['curatoryGroups'] = cg_result.errors
       }
     }
 
@@ -406,6 +424,7 @@ class PackageController {
           }
 
           def new_combo = new Combo(fromComponent: obj, toComponent: prov, type: combo_type).save(flush: true)
+          changed = true
 
           obj.refresh()
         }
@@ -416,6 +435,7 @@ class PackageController {
     }
     else if (reqBody.provider == null) {
       obj.provider = null
+      changed = true
     }
 
     if (reqBody.nominalPlatform != null || reqBody.platform != null) {
@@ -438,6 +458,7 @@ class PackageController {
           }
 
           def new_combo = new Combo(fromComponent: obj, toComponent: plt, type: combo_type).save(flush: true)
+          changed = true
 
           obj.refresh()
         }
@@ -448,6 +469,7 @@ class PackageController {
     }
     else if (reqBody.nominalPlatform == null || reqBody.platform == null) {
       obj.nominalPlatform = null
+      changed = true
     }
 
     if (reqBody.tipps) {
@@ -521,6 +543,7 @@ class PackageController {
               }
 
               upserted_tipp = upserted_tipp?.save(flush: true)
+              changed = true
             }
           }
           else {
@@ -532,6 +555,10 @@ class PackageController {
           }
         }
       }
+    }
+
+    if (changed) {
+      obj.lastSeen = System.currentTimeMillis()
     }
     errors
   }
@@ -552,6 +579,7 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'
@@ -588,6 +616,7 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'

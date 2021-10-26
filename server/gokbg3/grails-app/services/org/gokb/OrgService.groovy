@@ -207,7 +207,7 @@ class OrgService {
     def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
     def old_combos = obj.getCombosByPropertyName('providedPlatforms')
     Set new_plts = []
-    def errors = []
+    def result = [changed: false, errors: []]
     plts.each { plt ->
       Platform plt_obj = null
 
@@ -229,29 +229,41 @@ class OrgService {
           if (lookup.to_create) {
             plt_obj = Platform.upsertDTO(plt)
           }
-          else {
+          else if (lookup.matches.size() == 1) {
             lookup.matches?.each { mid, info ->
               log.debug("Handling platform with ID ${mid}..")
-              if (!plt_obj && errors.size() == 0) {
-                def plt_candidate = Platform.get(mid)
+              def plt_candidate = Platform.get(mid)
 
-                if (plt_candidate && plt_candidate.provider == null) {
-                  plt_obj = plt_candidate
-                }
-                else if (!plt_candidate) {
-                  errors << [message: "Unable to lookup platform!", code: 404, baddata: plt]
-                }
-                else {
-                  errors << [message: "Matched Platform already has a Provider!", code: 409, baddata: plt]
-                }
+              if (!plt_candidate) {
+                result.errors << [message: "Unable to lookup platform!", code: 404, baddata: plt]
+              }
+              else if (new_plts.contains(plt_candidate)) {
+                log.warn("Platform without ID is already linked to this provider!")
+              }
+              else if (plt_candidate.provider == null || plt_candidate.provider == obj) {
+                plt_obj = plt_candidate
               }
               else {
-                log.debug("Not overwriting or adding while errors exist!")
+                def provider_map = [[id: plt_candidate.provider.id, uuid: plt_candidate.provider.uuid, name: plt_candidate.provider.name]]
+                result.errors << [message: "Matched Platform already has another Provider!", code: 409, baddata: plt, links: provider_map]
+              }
+            }
+          }
+          else {
+            def other_providers = []
+
+            lookup.matches?.each { mid, info ->
+              log.debug("Handling platform with ID ${mid}..")
+              def plt_candidate = Platform.get(mid)
+
+              if (plt_candidate && plt_candidate.provider && plt_candidate.provider != obj && !other_providers.contains(plt_candidate.provider)) {
+                other_providers << plt_candidate.provider
               }
             }
 
-            if (lookup.matches?.size() > 1) {
-              log.warn("Multiple matches for platform info ${plt}!")
+            if (other_providers.size() > 0) {
+              def provider_map = other_providers.collect { [id: it.id, uuid: it.uuid, name: it.name] }
+              result.errors << [message: "Matched Platforms that already have other providers!", code: 409, baddata: plt, links: provider_map]
             }
           }
         }
@@ -261,15 +273,16 @@ class OrgService {
         new_plts << plt_obj
       }
       else {
-        errors << [message: "Unable to lookup platform!", code: 404, baddata: plt]
+        result.errors << [message: "Unable to lookup platform!", code: 404, baddata: plt]
       }
     }
 
-    if (!obj.hasErrors() || errors.size() > 0) {
+    if (!obj.hasErrors() || result.errors.size() > 0) {
       new_plts.each { c ->
         if (!obj.providedPlatforms.contains(c)) {
           log.debug("Adding new platform ${c}..")
           def new_combo = new Combo(fromComponent: c, toComponent: obj, type: plt_combo_type).save(flush: true)
+          result.changed = true
         }
         else {
           log.debug("Existing platform ${c}..")
@@ -285,12 +298,13 @@ class OrgService {
           if (!new_plts.contains(element.fromComponent)) {
             // Remove.
             element.delete()
+            result.changed = true
           }
         }
       }
     }
     log.debug("New plts: ${obj.providedPlatforms}")
-    errors
+    result
   }
 
   public def updateOffices(Org org, offices, boolean remove = true) {
@@ -299,20 +313,19 @@ class OrgService {
     RefdataValue STATUS_ACTIVE = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
     def function_rdc = RefdataCategory.findByLabel(Office.RD_FUNCTION)
+    def old_combos = org.getCombosByPropertyName('offices')
     def new_offices = []
-    def errors = []
+    def result = [changed: false, errors: []]
 
     offices.each { office ->
       def office_obj = null
 
-      if (office instanceof String) {
-        office_obj = Office.findByNameIlike(office)
-      }
-      else if (office instanceof Integer) {
+      if (office instanceof Integer) {
         office_obj = Office.get(office)
       }
       else if (office instanceof Map) {
-        office_obj = Office.get(office.id) ?: Office.findByNameIlike(office.name)
+        office_obj = office.id ? Office.get(office.id) : null
+
         if (!office_obj) {
           // create new office
           def lang = office.language
@@ -348,16 +361,29 @@ class OrgService {
         // create combo to connect org & office
         new Combo(fromComponent: office_obj, toComponent: org, type: OFFICE_ORG, status: STATUS_ACTIVE).save(flush: true)
         new_offices << office_obj
+        result.changed = true
       }
       else {
-        errors << [message: "Unable to lookup or create office!", baddata: office]
+        result.errors << [message: "Unable to lookup or create office!", baddata: office]
       }
     }
 
     if (remove) {
-      org.offices.retainAll(new_offices)
+      Iterator items = old_combos.iterator();
+      List removedCombos = []
+      Object element;
+      while (items.hasNext()) {
+        element = items.next();
+        if (!new_plts.contains(element.fromComponent)) {
+          // Remove.
+          element.delete()
+          result.changed = true
+        }
+      }
     }
+
     log.debug("New offices: ${new_offices}")
-    errors
+
+    result
   }
 }

@@ -25,6 +25,7 @@ class ReviewsController {
   def restMappingService
   def reviewRequestService
   def componentLookupService
+  def componentUpdateService
 
   @Secured(['ROLE_CONTRIBUTOR', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -79,9 +80,14 @@ class ReviewsController {
     if (obj && reqBody) {
       obj.lock()
 
-      def curator = isUserCurator(obj, user)
+      def curator = componentUpdateService.isUserCurator(obj, user)
 
       if (curator || user.isAdmin()) {
+        if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
+          response.setStatus(409)
+          result.message = message(code: "default.update.errors.message")
+          render result as JSON
+        }
 
         if (reqBody.status) {
           def new_status = null
@@ -339,7 +345,7 @@ class ReviewsController {
     def obj = ReviewRequest.get(genericOIDService.oidToId(params.id))
 
     if ( obj && obj.isDeletable() ) {
-      def curator = isUserCurator(obj, user)
+      def curator = componentUpdateService.isUserCurator(obj, user)
 
       if ( curator || user.isAdmin() ) {
         obj.status = RefdataCategory.lookup('ReviewRequest.Status','Deleted')
@@ -430,9 +436,35 @@ class ReviewsController {
   }
 
 
+  @Secured(value=["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def bulk() {
+    def result = ['result':'OK', 'params': params]
+    def user = User.get(springSecurityService.principal.id)
+
+    if (params['_field']?.trim() && params['_value']?.trim()) {
+      def report = componentUpdateService.bulkUpdateField(user, ReviewRequest, params)
+
+      if (report.errors > 0) {
+        result.result = 'ERROR'
+        result.report = report
+        response.setStatus(403)
+        result.message = "Unable to change ${params['_field']} for ${report.error} of ${report.total} items."
+      } else {
+        result.message = "Successfully changed ${params['_field']} for ${report.total} items."
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(400)
+      result.message = "Missing required params '_field' and '_value'"
+    }
+    render result as JSON
+  }
+
+
   private def isUserCurator(obj, user) {
     def curator = false
-
     if (obj.allocatedTo == user) {
       curator = true
     }
@@ -446,7 +478,7 @@ class ReviewsController {
   private def generateLinks(obj,user) {
     def base = grailsApplication.config.serverURL + "/rest" + obj.restPath + "/${obj.id}"
     def linksObj = [self:[href:base]]
-    def curator = isUserCurator(obj,user)
+    def curator = componentUpdateService.isUserCurator(obj, user)
 
     if (curator || user.isAdmin()) {
       linksObj.update = [href:base]

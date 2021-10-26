@@ -267,7 +267,7 @@ class TitleLookupService {
 
             if (string_matched) {
               log.debug("TI matched by bucket.")
-              def title_match = [object: the_title, warnings: ['bucket']]
+              def title_match = [object: string_matched, warnings: ['bucket']]
 
               // this seems odd, as the_title is null and therefore has no field 'name'
               /* if (title != the_title.name) {
@@ -1253,14 +1253,20 @@ class TitleLookupService {
 
         // Raise a review request
         if (added) {
+          def additionalInfo = [:]
+          def combo_ids = [ti.id]
+
+          additionalInfo.cstring = combo_ids.sort().join('_')
+          additionalInfo.vars = [title, ti.name]
+
           reviewRequestService.raise(
             ti,
             "'${title}' added as a variant of '${ti.name}'.",
             "Match was made on 1st class identifier but title name seems to be very different.",
             user,
             project,
-            null,
-            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup('ReviewRequest.StdDesc', 'Name Mismatch'),
             componentLookupService.findCuratoryGroupOfInterest(ti, user)
           )
         }

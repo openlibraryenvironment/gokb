@@ -42,6 +42,8 @@ class PackageExportSpec extends Specification {
   }
 
   def cleanup() {
+    pack1.expunge()
+    pack2.expunge()
     tipp1.expunge()
     tipp2.expunge()
     tipp3.expunge()
@@ -49,8 +51,6 @@ class PackageExportSpec extends Specification {
     journal1.expunge()
     journal2.expunge()
     journal3.expunge()
-    pack1.expunge()
-    pack2.expunge()
     plt.expunge()
   }
 

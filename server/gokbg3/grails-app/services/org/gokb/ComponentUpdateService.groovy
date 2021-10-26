@@ -20,6 +20,8 @@ class ComponentUpdateService {
   def componentLookupService
   def reviewRequestService
   def dateFormatService
+  def restMappingService
+  def sessionFactory
 
   private final Object findLock = new Object()
 
@@ -32,8 +34,6 @@ class ComponentUpdateService {
 
     // Set the name.
     def hasChanged = false
-
-    component.refresh()
 
     if (data.name?.trim() && (!component.name || (sync && component.name != data.name))) {
       component.name = data.name
@@ -252,7 +252,8 @@ class ComponentUpdateService {
     if (hasChanged) {
       component.lastSeen = new Date().getTime()
     }
-    component.merge(flush: true)
+
+    component.save(flush: true)
 
     hasChanged
   }
@@ -306,6 +307,68 @@ class ComponentUpdateService {
     changed
   }
 
+  def bulkUpdateField(User user, cls, params) {
+    log.info("Bulk update for ${cls.name}: ${params}")
+    def result = [total: 0, errors: 0]
+    def field = params['_field']
+    int offset = 0
+    def value = params['_value']
+
+    result.total = componentLookupService.restLookup(user, ReviewRequest, params)._pagination.total
+
+    while (offset < result.total) {
+      def items = componentLookupService.restLookup(user, ReviewRequest, params).data
+
+      items.each {
+        def obj = cls.get(it.id)
+        def reqBody = [:]
+
+        reqBody[field] = value
+
+        if (isUserCurator(obj, user)) {
+          obj = restMappingService.updateObject(obj, null, reqBody)
+
+          if (obj.hasErrors()) {
+            result.errors++
+          } else {
+            obj.save(flush:true)
+          }
+        }
+        else {
+          result.errors++
+        }
+      }
+
+      offset += 10
+      cleanUpGorm()
+    }
+    result
+  }
+
+  public boolean isUserCurator(obj, user) {
+    boolean curator = user.adminStatus
+    def curated_component = KBComponent.has(obj, 'curatoryGroups') ? obj : (obj.class == TitleInstancePackagePlatform ? obj.pkg : null)
+
+    if (curated_component) {
+      if (curated_component.curatoryGroups.size() == 0 || curated_component.curatoryGroups.id.intersect(user.curatoryGroups?.id)) {
+        curator = true
+      }
+    }
+    else if (obj.class == ReviewRequest) {
+      if (obj.allocatedTo == user) {
+        curator = true
+      }
+      else if (obj.allocatedGroups?.group.id.intersect(user.curatoryGroups?.id)) {
+        curator = true
+      }
+    }
+    else {
+      curator = true
+    }
+
+    curator
+  }
+
   private def createOrUpdateSource(data) {
     log.debug("assertSource, data = ${data}");
     def result = [:]
@@ -349,5 +412,12 @@ class ComponentUpdateService {
       result.error = e
     }
     result
+  }
+
+  def cleanUpGorm() {
+    log.debug("Clean up GORM");
+    def session = sessionFactory.currentSession
+    session.flush()
+    session.clear()
   }
 }

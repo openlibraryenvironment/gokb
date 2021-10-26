@@ -38,8 +38,8 @@ class TippTestSpec extends AbstractAuthSpec {
     testPlatform = Platform.findByName("TippTestPlat") ?: new Platform(name: "TippTestPlat").save(flush: true)
     testTitle = JournalInstance.findByName("TippTestJournal") ?: new JournalInstance(name: "TippTestJournal").save(flush: true)
     testGroup = CuratoryGroup.findByName("cgtipptest") ?: new CuratoryGroup(name: "cgtipptest").save(flush: true)
-    def coverage = new TIPPCoverageStatement(startVolume: 1, startIssue: 1, coverageDepth: RefdataCategory.lookup("Coverage.Depth", "Selected Articles")).save()
-    previousTipp = TitleInstancePackagePlatform.findByName("previous TIPP") ?: new TitleInstancePackagePlatform(name: "previous TIPP", pkg: testPackage, hostPlatform: testPlatform, url: "http://some.uri/", coverageStatements: [coverage]).save(flush: true)
+    previousTipp = TitleInstancePackagePlatform.findByName("previous TIPP") ?: new TitleInstancePackagePlatform(name: "previous TIPP", pkg: testPackage, hostPlatform: testPlatform, url: "http://some.uri/").save(flush: true)
+    def coverage = new TIPPCoverageStatement(owner: previousTipp, startVolume: 1, startIssue: 1, coverageDepth: RefdataCategory.lookup("Coverage.Depth", "Selected Articles")).save(flush: true)
   }
 
   def cleanup() {
@@ -93,7 +93,7 @@ class TippTestSpec extends AbstractAuthSpec {
         url          : "http://host-url.test/old",
         coverage     : [
             [
-                startDate    : "2010-01-01",
+                startDate    : "2005-01-01",
                 startVolume  : "1",
                 startIssue   : "1",
                 coverageDepth: "Fulltext"
@@ -130,16 +130,17 @@ class TippTestSpec extends AbstractAuthSpec {
     given:
     sleep(200)
     def tipp = TitleInstancePackagePlatform.findByUrl("http://some.uri/")
+    def coverage_id = tipp.coverageStatements[0].id
     def upd_body = [
         pkg               : testPackage.id,
         hostPlatform      : testPlatform.id,
         title             : testTitle.id,
         name              : "new TIPP name",
         publisherName     : "some Publisher",
-        url               : "http://host-url.test/new",
+        url               : "http://new-url.url",
         coverageStatements: [
             [
-                id           : tipp.coverageStatements[0].id,
+                id           : coverage_id,
                 startDate    : "2005-01-01",
                 startVolume  : "1",
                 startIssue   : "1",
@@ -159,7 +160,7 @@ class TippTestSpec extends AbstractAuthSpec {
     when:
     last = true
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("${urlPath}/rest/tipps/${tipp.id}?_embed=coverageStatements") {
+    RestResponse resp = rest.put("${urlPath}/rest/tipps/${tipp.id}") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -167,11 +168,12 @@ class TippTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200 // OK
+    resp.json.id == tipp.id
     resp.json.url == upd_body.url
     resp.json.name == "new TIPP name"
     resp.json.publisherName == "some Publisher"
     resp.json._embedded.coverageStatements?.size() == 2
-    resp.json._embedded.coverageStatements.collect { it.id }.contains(tipp.coverageStatements[0].id.toInteger()) == true
+    resp.json._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
   }
 
 }

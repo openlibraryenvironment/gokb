@@ -114,6 +114,7 @@ class TippController {
       def curator = pkg?.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
       if (curator) {
+        log.debug("Incoming: ${reqBody}")
         def tipp_validation = TitleInstancePackagePlatform.validateDTO(reqBody, RequestContextUtils.getLocale(request))
 
         if (tipp_validation.valid) {
@@ -187,14 +188,23 @@ class TippController {
         def tipp_validation = TitleInstancePackagePlatform.validateDTO(reqBody, RequestContextUtils.getLocale(request))
 
         if (tipp_validation.valid) {
+          if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
+            response.setStatus(409)
+            result.message = message(code: "default.update.errors.message")
+            render result as JSON
+          }
+
           def jsonMap = obj.jsonMapping
 
-          obj = TitleInstancePackagePlatform.upsertDTO(reqBody, user)
+          obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
           errors << updateCombos(obj, reqBody)
 
           if (obj?.validate()) {
             if (errors.size() == 0) {
+
+              obj = tippService.updateCoverage(obj, reqBody)
+
               log.debug("No errors.. saving")
               obj = obj.merge(flush: true)
               result = restMappingService.mapObjectToJson(obj, params, user)
@@ -243,10 +253,14 @@ class TippController {
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
+      }
+
+      if (id_result.changed) {
+        obj.lastSeen = System.currentTimeMillis()
       }
     }
 

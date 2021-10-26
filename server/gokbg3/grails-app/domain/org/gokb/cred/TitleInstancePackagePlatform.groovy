@@ -580,14 +580,17 @@ class TitleInstancePackagePlatform extends KBComponent {
 
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
+    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     def trimmed_url = tipp_dto.url ? tipp_dto.url.trim() : null
     def curator = pkg?.curatoryGroups?.size() > 0 ? (user.adminStatus || user.curatoryGroups?.id.intersect(pkg?.curatoryGroups?.id)) : true
     def tipp
     if (pkg && plt && curator) {
       log.debug("See if we already have a tipp")
 
-      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : (tipp_dto.id ? TitleInstancePackagePlatform.get(tipp_dto.id) : null)
+      def uuid_tipp = tipp_dto.uuid ? TitleInstancePackagePlatform.findByUuid(tipp_dto.uuid) : null
       tipp = null
+
+      log.debug("UUID result: ${uuid_tipp} for ${tipp_dto.uuid}")
 
       if (uuid_tipp) {
         if (uuid_tipp.pkg == pkg && uuid_tipp.hostPlatform == plt && (!ti || uuid_tipp.title == ti)) {
@@ -602,18 +605,20 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       if (!tipp && (tipp_dto.importId || tipp_dto.titleId)) {
         tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as platform_combo  ' +
-            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
-            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
-            'and tipp.importId = ?',
-            [pkg, plt, (tipp_dto.importId ?: tipp_dto.titleId)])
+            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=? ' +
+            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ? ' +
+            'and tipp.importId = ? ' +
+            'and tipp.status != ?',
+            [pkg, plt, (tipp_dto.importId ?: tipp_dto.titleId), status_deleted])
       }
 
       if (tipps.size() == 0 && ti) {
         tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
-            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?' +
-            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?' +
-            'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
-            [pkg, plt, ti])
+          'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=? ' +
+          'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ? ' +
+          'and title_combo.toComponent=tipp and title_combo.fromComponent = ? ' +
+          'and tipp.status != ?',
+          [pkg, plt, ti, status_deleted])
       }
 
       if (!tipp) {
@@ -743,31 +748,21 @@ class TitleInstancePackagePlatform extends KBComponent {
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.medium, tipp, 'medium', TitleInstancePackagePlatform.RD_MEDIUM)
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.publicationType, tipp, 'publicationType', 'TitleInstancePackagePlatform.PublicationType')
       changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.language, tipp, 'language')
+      changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_dto.status, tipp, 'status')
 
       if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
         tipp_dto.coverage = tipp_dto.coverageStatements
       }
 
-      def known_coverage_ids = []
+      if (!tipp.importId && (tipp_dto.importId || tipp_dto.titleId)) {
+        tipp.importId = tipp_dto.importId ?: tipp_dto.titleId
+      }
+
+      def stale_coverage_ids = tipp.coverageStatements.collect { it.id }
 
       tipp_dto.coverage.each { c ->
         def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
         def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
-
-        if (c.id) {
-          known_coverage_ids.add(c.id as Long)
-        }
-
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
-        changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
-        changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tipp, 'startDate')
-        changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tipp, 'endDate')
-        changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
-
         def cs_match = false
         def conflict = false
         def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
@@ -787,6 +782,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
             cs_match = true
+            stale_coverage_ids.removeAll(tcs.id)
           }
           else if (!cs_match) {
             if (!tcs.endDate && !endAsDate) {
@@ -814,7 +810,7 @@ class TitleInstancePackagePlatform extends KBComponent {
             }
 
             if (conflict) {
-              conflicting_statements.add(tcs)
+              conflicting_statements.add(tcs.id)
             }
             else if (cs_match) {
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
@@ -825,7 +821,9 @@ class TitleInstancePackagePlatform extends KBComponent {
               changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
               changed |= com.k_int.ClassUtils.updateDateField(parsedStart, tcs, 'startDate')
               changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
-              changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
+              changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tcs, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
+
+              stale_coverage_ids.removeAll(tcs.id)
             }
           }
           else {
@@ -834,7 +832,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         }
 
         for (def cst : conflicting_statements) {
-          tipp.removeFromCoverageStatements(cst)
+          tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(cst))
         }
 
         if (!cs_match) {
@@ -867,24 +865,17 @@ class TitleInstancePackagePlatform extends KBComponent {
                              'endDate': endAsDate
           )
         }
-        // refdata setStringIfDifferent(tipp, 'coverageDepth', c.coverageDepth)
       }
 
-      // remove previous coverage statements from TIPP
-      def old_cs = []
-      tipp.coverageStatements?.each { old_cs << it }
-      if (known_coverage_ids?.size() > 0) {
-        for (def cs : old_cs) {
-          if (cs.id && !known_coverage_ids.contains(cs.id)) {
-            tipp.removeFromCoverageStatements(cs)
-          }
-        }
+      // remove missing coverage statements from TIPP
+      stale_coverage_ids.each {
+        tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(it))
       }
 
       // prices
       if (tipp_dto.prices && tipp_dto.prices.size() > 0) {
         tipp_dto.prices.each { price ->
-          if (!price.id && (price.price || price.amount))
+          if (!price.id && (price.price || price.amount) )
             tipp.setPrice(String.isInstance(price.type) ? price.type : price.type.name,
                 "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
                 price.startDate ? DateFormatService.parseDate(price.startDate) : null,
@@ -1051,9 +1042,13 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Transient
   public getTitleIds() {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [title, refdata_ids, status_active], [readOnly: true]);
+    def result = []
+
+    if (title) {
+      def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
+      def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+      result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [title, refdata_ids, status_active], [readOnly: true]);
+    }
     result
   }
 

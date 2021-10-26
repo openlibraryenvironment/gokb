@@ -394,7 +394,26 @@ class ComponentLookupService {
             }
           }
 
-          if ( validLong.size() > 0 || validStr.size() > 0 ) {
+          boolean pkg_qry = false
+
+          if (validLong.size() == 1 && p.name == 'componentToReview') {
+            def ctr = KBComponent.get(validLong[0])
+
+            if (ctr?.class == Package) {
+              def tipp_ids = TitleInstancePackagePlatform.executeQuery("select id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = ? and toComponent = tipp)",[ctr])
+              def ti_ids = []
+
+              if (params.titlereviews) {
+                ti_ids = TitleInstance.executeQuery("select id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN :tippids)", [tippids: tipp_ids])
+              }
+
+              paramStr += "p.componentToReview.id IN :ctrids"
+              qryParams['ctrids'] = [ctr.id] + tipp_ids + ti_ids
+              pkg_qry = true
+            }
+          }
+
+          if (!pkg_qry && (validLong.size() > 0 || validStr.size() > 0)) {
             paramStr += "("
             if (validLong.size() > 0) {
               paramStr += "p.${p.name}.id IN :${p.name}"
@@ -414,16 +433,38 @@ class ComponentLookupService {
             }
             paramStr += ")"
           }
-          else {
+          else if (!pkg_qry) {
             addParam = false
           }
         }
-        else if ( p.type == Long ) {
+        else if (p.type == Long) {
           qryParams[p.name] = alts.collect { Long.valueOf(it) }
           paramStr += "p.${p.name} IN :${p.name}"
         }
-        else if ( p.name == 'name' ){
+        else if (p.name == 'name'){
           paramStr += "lower(p.${p.name}) like lower(:${p.name})"
+          qryParams[p.name] = "%${params[p.name]}%"
+        }
+        else if (p.name == 'url' || p.name == 'primaryUrl') {
+          paramStr += "lower(p.${p.name}) like lower(:${p.name})"
+          def uri_param = null
+
+          try {
+            def url = new URL(params[p.name])
+
+            if (url.getProtocol()) {
+              uri_param = url_as_name.getHost()
+
+              if (uri_param .startsWith("www.")) {
+                uri_param = uri_param.substring(4)
+              }
+
+              log.debug("New platform name is ${platformDTO.name}.")
+            }
+          } catch (MalformedURLException) {
+            log.debug("Platform name is no valid URL")
+          }
+
           qryParams[p.name] = "%${params[p.name]}%"
         }
         else {
@@ -666,11 +707,14 @@ class ComponentLookupService {
     }
     // TODO: to be extended for further comparision objects
     if (component.curatoryGroups?.size() == 1){
-      return component.curatoryGroups[0]
+      CuratoryGroup cg = CuratoryGroup.get(component.curatoryGroups[0].id)
+
+      return cg
     }
     if (component.curatoryGroups?.size() == 0){
       if (user?.curatoryGroups?.size() == 1){
-        return user.curatoryGroups[0]
+        CuratoryGroup cg = CuratoryGroup.get(user.curatoryGroups[0].id)
+        return cg
       }
       // else
       return null
@@ -678,7 +722,8 @@ class ComponentLookupService {
     if (component.curatoryGroups.size() > 1){
       def intersection = component.curatoryGroups.intersect(user?.curatoryGroups)
       if (intersection.size() == 1){
-        return intersection[0]
+        CuratoryGroup cg = CuratoryGroup.get(intersection[0].id)
+        return cg
       }
       // else
       return null

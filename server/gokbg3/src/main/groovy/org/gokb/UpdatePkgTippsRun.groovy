@@ -450,9 +450,11 @@ class UpdatePkgTippsRun {
   private Map handleTIPP(JSONObject tippJson) {
     Map tippError = [:]
     def stash = tippJson.title
+    log.debug("${stash}")
     tippJson.title = null
     def validation_result = TitleInstancePackagePlatform.validateDTO(tippJson, locale)
     tippJson.title = stash
+    log.debug("${tippJson.title}")
     log.debug("validate TIPP ${tippJson.name ?: tippJson.title.name}")
     if (!validation_result.valid) {
       invalidTipps << tippJson
@@ -477,9 +479,6 @@ class UpdatePkgTippsRun {
           }
           tipp = new TitleInstancePackagePlatform(
               [
-                  'pkg'                        : Package.get(tippJson.package.internalId),
-                  'title'                      : null,
-                  'hostPlatform'               : Platform.get(tippJson.hostPlatform.internalId),
                   'url'                        : tippJson.url,
                   'uuid'                       : tippJson.uuid,
                   'status'                     : tippJson.status ? RefdataCategory.lookup(KBComponent.RD_STATUS, tippJson.status) : null,
@@ -490,11 +489,17 @@ class UpdatePkgTippsRun {
                   'parentPublicationTitleId'   : tippJson.parent_publication_title_id,
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                   'publisherName'              : tippJson.publisherName,
-                  'ids'                        : idents,
                   'importId'                   : tippJson.titleId ?: null,
                   'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : tippJson.package.updateDate,
                   'accessEndDate'              : tippJson.accessEndDate ? dateFormatService.parseDate(tippJson.accessEndDate) : null]
-          ).save()
+          ).save(flush:true)
+
+          def pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
+          new Combo(toComponent: tipp, fromComponent: pkg, type: pkg_combo_type).save(flush: true, failOnError: true)
+
+          def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
+          new Combo(toComponent: tipp, fromComponent: Platform.get(tippJson.hostPlatform.internalId), type: plt_combo_type).save(flush: true, failOnError: true)
+
 //          idents.each { tipp.ids << it }
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
@@ -537,7 +542,7 @@ class UpdatePkgTippsRun {
               "Multiple Identifier Matches for TIPP.",
               user,
               null,
-              additionalInfo as JSON,
+              (additionalInfo as JSON).toString(),
               RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple Matches'),
               componentLookupService.findCuratoryGroupOfInterest(tipp, user)
           )
@@ -643,7 +648,16 @@ class UpdatePkgTippsRun {
       def something = esSearchService.find(map)
       if (something.records?.size() > 0) {
         log.debug("found by titleId in ES")
-        something.records.each { tipps << TitleInstancePackagePlatform.findByUuid(it.uuid) }
+        something.records.each {
+          def tipp = TitleInstancePackagePlatform.findByUuid(it.uuid)
+
+          if (tipp) {
+            tipps << tipp
+          }
+          else  {
+            log.warn("ES record TIPP ${it.uuid} does not exist!")
+          }
+        }
         return tipps
       }
       // database search
@@ -700,7 +714,16 @@ class UpdatePkgTippsRun {
 
       if (something.records?.size() > 0) {
         log.debug("found by provider namespace ID in ES")
-        something.records.each { tipps << TitleInstancePackagePlatform.findByUuid(it.uuid) }
+        something.records.each {
+          def tipp = TitleInstancePackagePlatform.findByUuid(it.uuid)
+
+          if (tipp) {
+            tipps << tipp
+          }
+          else  {
+            log.warn("ES record TIPP ${it.uuid} does not exist!")
+          }
+        }
         return tipps
       }
 
@@ -726,8 +749,12 @@ class UpdatePkgTippsRun {
           def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
           if (found.size() > 0) {
             found.each {
-              if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
+              if (TitleInstancePackagePlatform.isInstance(it)
+                  && !tipps.contains(it)
+                  && it.pkg == pkg
+                  && it.status == status_current
+                  && it.hostPlatform.uuid == tippJson.hostPlatform.uuid
+                  && (!tippJson.titleId || !it.importId)) {
                 tipps.add(it)
               }
             }
@@ -745,8 +772,12 @@ class UpdatePkgTippsRun {
           def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
           if (found.size() > 0) {
             found.each {
-              if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it)
-                  && it.pkg == pkg && it.status == status_current && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
+              if (TitleInstancePackagePlatform.isInstance(it)
+                  && !tipps.contains(it)
+                  && it.pkg == pkg
+                  && it.status == status_current
+                  && it.hostPlatform.uuid == tippJson.hostPlatform.uuid
+                  && (!tippJson.titleId || !it.importId)) {
                 tipps.add(it)
               }
             }
