@@ -238,8 +238,13 @@ class BootStrap {
         // log.info("Default batch loader config");
         // defaultBulkLoaderConfig();
 
-        log.debug("Register users and override default admin password");
+        log.debug("Register users and override default admin password")
         registerUsers()
+
+        if (grailsApplication.config.gokb.packageOaiCaching.enabled) {
+            log.debug("Ensuring Package cache dates")
+            registerPkgCache()
+        }
 
         log.debug("Ensuring ElasticSearch index")
         ensureEsIndices()
@@ -1173,4 +1178,20 @@ class BootStrap {
         }
     }
 
+    def registerPkgCache () {
+        File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+        File[] files = dir.listFiles()
+
+        for (def file : files) {
+            def fileNameParts = file.name.split('_')
+            def pkg = Package.findByUuid(fileNameParts[0])
+
+            if (pkg) {
+                Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(file.lastModified()), pkg.id])
+            }
+            else {
+                log.warn("Unable to find package for XML cache file ${file.name}!")
+            }
+        }
+    }
 }

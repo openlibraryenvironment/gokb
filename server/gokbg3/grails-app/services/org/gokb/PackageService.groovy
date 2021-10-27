@@ -1459,8 +1459,10 @@ class PackageService {
 
   void sendFile(Package pkg, ExportType type, def response) {
     String fileName = generateExportFileName(pkg, type)
+
     try {
       File file = new File(exportFilePath() + fileName)
+
       if (!file.isFile()) {
         if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
           createKbartExport(pkg, type)
@@ -1479,7 +1481,6 @@ class PackageService {
       IOUtils.copy(inFile, out)
       inFile.close()
       out.close()
-      file.delete()
     }
     catch (Exception e) {
       log.error("Problem with sending export", e);
@@ -1679,9 +1680,10 @@ class PackageService {
     String lastUpdate = dateFormatService.formatTimestamp(pkg.lastUpdated)
     StringBuilder name = new StringBuilder()
     if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE] ) {
-      name.append(toCamelCase(pkg.provider?.name ? pkg.provider.name : "unknown Provider")).append('_')
+      name.append(toCamelCase(pkg.provider?.name ? pkg.provider.name : "Unknown Provider")).append('_')
           .append(toCamelCase(pkg.global.value)).append('_')
           .append(toCamelCase(pkg.name))
+          .append(type == ExportType.KBART_TITLE ? '_Processed' : '')
     }
     else {
       name.append("GoKBPackage-").append(pkg.id)
@@ -1837,6 +1839,8 @@ class PackageService {
                 'status'(item.status?.value)
                 'editStatus'(item.editStatus?.value)
                 'language'(item.language?.value)
+                'lastUpdated'(item.lastUpdated ? dateFormatService.formatIsoTimestamp(item.lastUpdated) : null)
+                'shortcode'(item.shortcode)
 
                 // Identifiers
                 'identifiers' {
@@ -1882,6 +1886,17 @@ class PackageService {
                     'group' {
                       'name'(cg.name)
                     }
+                  }
+                }
+
+                if (item.source) {
+                  'source' {
+                    'name'(item.source.name)
+                    'url'(item.source.url)
+                    'defaultAccessURL'(item.source.defaultAccessURL)
+                    'explanationAtSource'(item.source.explanationAtSource)
+                    'contextualNotes'(item.source.contextualNotes)
+                    'frequency'(item.source.frequency?.value)
                   }
                 }
 
@@ -1966,6 +1981,7 @@ class PackageService {
           }
 
           FileUtils.moveFile(tmpFile, cachedRecord)
+          Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(cachedRecord.lastModified()), item.id])
         }
         else if (item.lastUpdated <= new Date(cachedRecord.lastModified())) {
           result = 'SKIPPED_NO_CHANGE'

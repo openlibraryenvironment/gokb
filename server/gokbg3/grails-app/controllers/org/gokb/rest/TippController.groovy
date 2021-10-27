@@ -167,6 +167,7 @@ class TippController {
   def update() {
     def result = ['result': 'OK', 'params': params]
     def reqBody = request.JSON
+    def remove = (request.method == 'PUT')
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstancePackagePlatform.findByUuid(params.id)
@@ -197,6 +198,12 @@ class TippController {
           def jsonMap = obj.jsonMapping
 
           obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+
+          def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+          if (variant_result.errors.size() > 0) {
+            errors.variantNames = variant_result.errors
+          }
 
           errors << updateCombos(obj, reqBody)
 
