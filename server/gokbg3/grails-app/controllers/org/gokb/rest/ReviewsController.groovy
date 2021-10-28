@@ -404,16 +404,23 @@ class ReviewsController {
   }
 
 
+  /**
+   * Check if the ReviewRequest given by @params.id can be deescalated.
+   */
+  def isDeescalatable() {
+    render getDeescalationTargetGroupId(params.id, params.activeGroupId, params) as JSON
+  }
+
+
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def deescalate(){
-    def result = ['params': params]
-    ReviewRequest rr = params.id ? ReviewRequest.get(genericOIDService.oidToId(params.id)) : null
-    CuratoryGroup deescalatingGroup = request.JSON?.activeGroup?.id ? CuratoryGroup.findById(request.JSON.activeGroup.id) : null
-    AllocatedReviewGroup deescArg, targetArg
-    if (rr && deescalatingGroup){
-      deescArg = AllocatedReviewGroup.findByGroupAndReview(deescalatingGroup, rr)
-      targetArg = deescArg?.escalatedFrom ?: null
+    def result = getDeescalationTargetGroupId(params.id, request.JSON.activeGroup.id, params)
+    if (result.target?.result == 'OK'){
+      ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
+      CuratoryGroup deescalatingGroup = CuratoryGroup.findById(result.target.deescalatingGroup)
+      AllocatedReviewGroup deescArg = AllocatedReviewGroup.findByGroupAndReview(deescalatingGroup, rr)
+      AllocatedReviewGroup targetArg = deescArg?.escalatedFrom ?: null
       if (deescArg && targetArg){
         def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
         def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
@@ -427,10 +434,6 @@ class ReviewsController {
         result.result = 'ERROR'
         response.setStatus(400)
       }
-    }
-    else{
-      result.result = 'ERROR'
-      response.setStatus(404)
     }
     render result as JSON
   }
@@ -514,7 +517,6 @@ class ReviewsController {
         }
       }
     }
-
     if (!escalatingGroup){
       // Couldn't get escalation group by activeGroup, try allocated groups
       def argsExisting = rr.allocatedGroups
@@ -523,7 +525,6 @@ class ReviewsController {
         result.message = "The requested ReviewRequest can not be escalated due to missing both, active group and group allocations."
         return result
       }
-
       def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
       List<AllocatedReviewGroup> inProgressARGs = AllocatedReviewGroup.findAllByStatus(inProgress)
       if (inProgressARGs.isEmpty()){
@@ -560,6 +561,34 @@ class ReviewsController {
     result.escalatingGroup = escalatingGroup.id
     result.escalationTargetGroup = escalatedToCG.id
     result.message = "The requested ReviewRequest can be escalated."
+    return result
+  }
+
+  private JSON getDeescalationTargetGroupId(def rrId, def activeGroupId, def params){
+    def result = ['result':'ERROR', 'isDeescalatable':false, 'params': params]
+    ReviewRequest rr = params.id ? ReviewRequest.get(genericOIDService.oidToId(params.id)) : null
+    if (!rr){
+      response.setStatus(404)
+      result.message = "ReviewRequest not found for id ${rrId}."
+      return result
+    }
+    CuratoryGroup deescalatingGroup = CuratoryGroup.findById(activeGroupId)
+    if (!deescalatingGroup){
+      response.setStatus(404)
+      result.message = "Could not get curatory group to be deescalated from."
+      return result
+    }
+    AllocatedReviewGroup deescArg, targetArg
+    deescArg = AllocatedReviewGroup.findByGroupAndReview(deescalatingGroup, rr)
+    targetArg = deescArg?.escalatedFrom ?: null
+    if (deescArg && targetArg){
+      response.setStatus(200)
+      result.result = 'OK'
+      result.isDeescalatable = true
+      result.deescalatingGroup = deescalatingGroup.id
+      result.escalationTargetGroup = targetArg.group.id
+      result.message = "The requested ReviewRequest can be deescalated."
+    }
     return result
   }
 }

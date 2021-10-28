@@ -112,6 +112,7 @@ class UrlMappings {
       patch "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
       get "/reviews/escalatable/$id/$activeGroupId"(controller: 'reviews', namespace: 'rest', action: 'isEscalatable')
       put "/reviews/escalate/$id"(controller: 'reviews', namespace: 'rest', action: 'escalate')
+      get "/reviews/deescalatable/$id/$activeGroupId"(controller: 'reviews', namespace: 'rest', action: 'isDeescalatable')
       put "/reviews/deescalate/$id"(controller: 'reviews', namespace: 'rest', action: 'deescalate')
 
       get "/curatoryGroups/$id/reviews"(controller: 'curatoryGroups', namespace: 'rest', action: 'getReviews')
