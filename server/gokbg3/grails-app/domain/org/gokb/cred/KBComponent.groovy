@@ -1183,7 +1183,7 @@ where cp.owner = :c
 
         // not already a name
         // Make sure not already a variant name
-        def existing_variants = this.class.executeQuery("from ${this.class.simpleName} as o where exists (select 1 from KBComponentVariantName where normVariantName = ?)".toString(), [normname])
+        def existing_variants = this.class.executeQuery("from ${this.class.simpleName} as o where exists (select 1 from KBComponentVariantName where owner = o and normVariantName = ?)".toString(), [normname])
         if (existing_variants.size() == 0) {
           result = new KBComponentVariantName(owner: this, variantName: name).save()
         } else {
