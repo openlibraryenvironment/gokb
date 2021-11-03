@@ -381,7 +381,7 @@ class ReviewsController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def escalate(){
-    def result = getEscalationTargetGroupId(params.id, request.JSON?.activeGroup?.id, params)
+    def result = getEscalationTargetGroupId(params.id, request.JSON?.activeGroup, params)
     if (result.target?.result == 'OK'){
       CuratoryGroup escalatingGroup = CuratoryGroup.findById(result.target.escalatingGroup)
       CuratoryGroup targetGroup = escalatingGroup.superordinatedGroup
@@ -400,7 +400,7 @@ class ReviewsController {
         response.setStatus(500)
       }
     }
-    render result as JSON
+    render result
   }
 
 
@@ -415,7 +415,7 @@ class ReviewsController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def deescalate(){
-    def result = getDeescalationTargetGroupId(params.id, request.JSON.activeGroup.id, params)
+    def result = getDeescalationTargetGroupId(params.id, request.JSON.activeGroup, params)
     if (result.target?.result == 'OK'){
       ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
       CuratoryGroup deescalatingGroup = CuratoryGroup.findById(result.target.deescalatingGroup)
@@ -427,11 +427,11 @@ class ReviewsController {
         deescArg.status = inactive
         deescArg.escalatedFrom = null
         targetArg.status = inProgress
-        result.result = 'OK'
+        result.target.result = 'OK'
         response.setStatus(200)
       }
       else{
-        result.result = 'ERROR'
+        result.target.result = 'ERROR'
         response.setStatus(400)
       }
     }
