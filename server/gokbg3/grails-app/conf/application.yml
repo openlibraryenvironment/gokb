@@ -159,6 +159,8 @@ environments:
                 enabled: false
             zdbAugment:
                 enabled: false
+            ezbAugment:
+                enabled: false
             es:
                 cluster: gokbg3-dev
                 host: localhost
@@ -199,6 +201,8 @@ environments:
             packageOaiCaching:
                 enabled: false
             zdbAugment:
+                enabled: false
+            ezbAugment:
                 enabled: false
             es:
                 cluster: gokbg3-test
@@ -249,6 +253,8 @@ environments:
             packageOaiCaching:
                 enabled: true
             zdbAugment:
+                enabled: false
+            ezbAugment:
                 enabled: false
             ygorUrl: null
             languagesUrl : null

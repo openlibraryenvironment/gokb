@@ -5,80 +5,36 @@ import groovyx.net.http.*
 import org.apache.http.entity.mime.*
 import org.apache.http.entity.mime.content.*
 
-class ZdbAPIService {
 
+class EzbAPIService {
   static transactional = false
   def endpoint = 'zdb'
   def grailsApplication
 
   def config = [
     version: [
-      kxp: "1.2",
       zdb: "1.1"
     ],
     recordSchema: [
-      kxp: "picaxml",
       zdb: "PicaPlus-xml"
     ],
     issTerm: [
-      kxp: "pica.iss=",
       zdb: "dnb.iss="
     ],
     onlineOnly: [
-      kxp: " and pica.bbg=O*",
       zdb: " and dnb.frm=O"
     ],
     prefix: [
-      kxp: "zs:",
       zdb: ""
     ],
     baseUrl: [
-      kxp: "http://sru.k10plus.de/k10plus",
       zdb: "http://services.dnb.de/sru/zdb"
     ]
   ]
 
   @javax.annotation.PostConstruct
   def init() {
-    log.debug("Initialising rest endpoint for ZDB service...");
-    // endpoint = checkKxpAccess() ? 'kxp' : 'zdb'
-  }
-
-  def checkKxpAccess () {
-    boolean result = true
-
-    def testUrl = "https://sru.k10plus.de/k10plus"
-    def testClient = new RESTClient(testUrl)
-
-    try {
-      testClient.request(GET, ContentType.XML) { request ->
-        uri.query = [
-          version: config.version.kxp,
-          operation: "searchRetrieve",
-          recordSchema: config.recordSchema.kxp,
-          maximumRecords: "10",
-          query: "pica.zdb=2936849-2"
-        ]
-        response.success = { resp, data ->
-          if (data?.diagnostics.isEmpty()) {
-            log.debug("KXP access established ..")
-          }
-          else {
-            log.debug("KXP access denied ..")
-            result = false
-          }
-        }
-        response.failure = { resp, data ->
-          log.debug("KXP returned error status ${resp.status}")
-          result = false
-        }
-      }
-    }
-    catch (Exception e) {
-      log.debug("Exception trying to lookup KXP access..", e)
-      result = false
-    }
-    result
+    log.debug("Initialising rest endpoint for EZB service...")
   }
 
   def lookup(String name, def ids) {
@@ -101,15 +57,7 @@ class ZdbAPIService {
 
               if (!data.records.children().isEmpty()) {
                 data.records.record.findAll { rec ->
-                  def zdb_info = null
-
-                  if (endpoint == 'kxp') {
-                    zdb_info = getKxpInfo(rec)
-                  }
-                  else {
-                    zdb_info = getZdbInfo(rec)
-                  }
-
+                  def zdb_info = getZdbInfo(rec)
                   if (zdb_info) {
                     log.debug("Found ID candidate ${zdb_info.id}")
                     if (id.namespace.value == 'eissn' && !candidate_ids.direct.find { it.id == zdb_info.id }) {
@@ -125,7 +73,7 @@ class ZdbAPIService {
           }
         }
         catch ( Exception e ) {
-          e.printStackTrace();
+          e.printStackTrace()
         }
       }
     }
@@ -136,33 +84,6 @@ class ZdbAPIService {
     else {
       return candidate_ids.parallel
     }
-  }
-
-  def getKxpInfo(record, isOnline) {
-    def result = [:]
-    def rec = record.recordData.record
-
-    result.id = rec.'*'.find { it.@tag == '006Z' }.subfield[0].text()
-
-    rec.'*'.findAll { it.@tag == '039D' }.each { lf ->
-      def validLink = false
-      def idVal = null
-
-      lf.'*'.each { subfield ->
-        if (subfield.@code == 'R') {
-          validLink = subfield.text().startsWith('O')
-        }
-        if (subfield.@code == '7') {
-          idVal = subfield.text().substring(5, subfield.text().length())
-        }
-      }
-
-      if (validLink) {
-        result.id = idVal
-      }
-    }
-
-    result
   }
 
   def getZdbInfo(record) {
@@ -276,6 +197,6 @@ class ZdbAPIService {
 
   @javax.annotation.PreDestroy
   def destroy() {
-    log.debug("Destroy");
+    log.debug("Destroy")
   }
 }

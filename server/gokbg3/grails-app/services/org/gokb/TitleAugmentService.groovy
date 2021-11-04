@@ -1,17 +1,11 @@
 package org.gokb
 
-import org.gokb.refine.*;
 import org.gokb.cred.*;
 
-import groovy.util.slurpersupport.GPathResult
-import static groovyx.net.http.ContentType.*
 import static groovyx.net.http.Method.*
 import groovyx.net.http.*
 import org.apache.http.entity.mime.*
 import org.apache.http.entity.mime.content.*
-import java.nio.charset.Charset
-import org.apache.http.*
-import org.apache.http.protocol.*
 import grails.converters.JSON
 
 
@@ -23,8 +17,8 @@ class TitleAugmentService {
   def reviewRequestService
   def zdbAPIService
 
-  def augment(titleInstance) {
-    log.debug("TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
+  def augmentZdb(titleInstance) {
+    log.debug("Augment ZDB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
     CuratoryGroup editorialGroup = grailsApplication.config.gokb.editorialAdmin?.journals ? CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.editorialAdmin.journals) : null
 
     if ( titleInstance.niceName == 'Journal' ) {
@@ -143,6 +137,136 @@ class TitleAugmentService {
               (additionalInfo as JSON).toString(),
               rr_type,
               editorialGroup
+            )
+          }
+        }
+      }
+      else {
+        log.debug("Skipping title with existing RR ..")
+      }
+    }
+  }
+
+  def augmentEzb(titleInstance) {
+    log.debug("Augment EZB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
+    CuratoryGroup editorialGroup = grailsApplication.config.gokb.editorialAdmin?.journals ? CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.editorialAdmin.journals) : null
+
+    if ( titleInstance.niceName == 'Journal' ) {
+      def rr_no_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'No EZB Results')
+      def rr_type = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple EZB Results')
+      def rr_in_use = RefdataCategory.lookup('ReviewRequest.StdDesc', 'EZB Title Overlap')
+      def existing_rr = ReviewRequest.executeQuery("select rr.id from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc IN (:types)", [ti: titleInstance, types: [rr_type, rr_in_use]])
+
+      if (existing_rr.size() == 0) {
+        def candidates = zdbAPIService.lookup(titleInstance.name, titleInstance.ids) // TODO continue changing from ZDB to EZB here
+        RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+        RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+
+        if (candidates.size() == 1) {
+          def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0].id)
+          def conflicts = Combo.executeQuery("from Combo as c where c.fromComponent IN (select ti from TitleInstance as ti where ti.status != :deleted) and c.fromComponent != :tic and c.toComponent = :idc and c.type = :ctype", [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
+
+          if (conflicts.size() > 0) {
+            log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${new_id.identifiedComponents}")
+            if (conflicts.size() == 1) {
+              setNewTitleInfo(conflicts[0].fromComponent, candidates[0])
+            }
+
+            def additionalInfo = [
+                otherComponents: conflicts.collect { [id: it.fromComponent.id, name: it.fromComponent.name, oid: it.fromComponent.logEntityId, uuid: it.fromComponent.uuid] }
+            ]
+
+            reviewRequestService.raise(
+                titleInstance,
+                "Review all titles for possible discrepancies",
+                "Matched ZDB-ID is already linked to another title instance.",
+                null,
+                null,
+                (additionalInfo as JSON).toString(),
+                rr_in_use,
+                editorialGroup
+            )
+          }
+          else {
+            log.debug("Adding new ZDB-ID ${new_id}")
+            new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
+          }
+
+          setNewTitleInfo(titleInstance, candidates[0])
+        }
+        else if (candidates.size == 0){
+          if (titleInstance.ids.collect { it.namespace.value == 'issn' || it.namespace.value == 'eissn' }) {
+            log.debug("No ZDB result for ids of title ${titleInstance} (${titleInstance.ids.collect { it.value }})")
+
+            if (titleInstance.reviewRequests.collect { it.stdDesc == rr_no_results}.size() == 0) {
+              reviewRequestService.raise(
+                  titleInstance,
+                  "Check for reference ID",
+                  "No ZDB matches for linked ISSNs",
+                  null,
+                  null,
+                  null,
+                  rr_no_results,
+                  editorialGroup
+              )
+            }
+          }
+        }
+        else {
+          log.debug("Multiple ZDB-ID candidates for title ${titleInstance}")
+
+          def name_candidates = []
+
+          candidates.each {
+            if (it.title == titleInstance.name) {
+              name_candidates.add (it)
+            }
+          }
+
+          if (name_candidates.size() == 1) {
+            def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', name_candidates[0].id)
+            def conflicts = Combo.executeQuery("from Combo as c where c.fromComponent IN (select ti from TitleInstance as ti where ti.status != :deleted) and c.fromComponent != :tic and c.toComponent = :idc and c.type = :ctype", [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
+
+            if (conflicts.size() > 0) {
+              log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${new_id.identifiedComponents}")
+              if (conflicts.size() == 1) {
+                setNewTitleInfo(conflicts[0].fromComponent, candidates[0])
+              }
+
+              def additionalInfo = [
+                  otherComponents: new_id.identifiedComponents.collect { [id: it.id, name: it.name, oid: it.logEntityId, uuid: it.uuid] }
+              ]
+
+              reviewRequestService.raise(
+                  titleInstance,
+                  "Review all titles for possible discrepancies",
+                  "Matched ZDB-ID is already linked to another title instance.",
+                  null,
+                  null,
+                  (additionalInfo as JSON).toString(),
+                  rr_in_use,
+                  editorialGroup
+              )
+            }
+            else {
+              log.debug("Adding new ZDB-ID ${new_id}")
+              new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
+            }
+          }
+          else {
+            def additionalInfo = [
+                candidates: candidates
+            ]
+
+            reviewRequestService.raise(
+                titleInstance,
+                "Choose the correct ZDB-ID from the list of candidates",
+                "Multiple ZDB-IDs found for ISSN ids",
+                null,
+                null,
+                (additionalInfo as JSON).toString(),
+                rr_type,
+                editorialGroup
             )
           }
         }

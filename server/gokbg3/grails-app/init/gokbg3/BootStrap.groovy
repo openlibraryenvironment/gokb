@@ -882,6 +882,9 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Coverage Mismatch").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'No ZDB Results').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'ZDB Title Overlap').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Multiple EZB Results').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'No EZB Results').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'EZB Title Overlap').save(flush: true, failOnError: true)
 
 
         RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save(flush: true, failOnError: true)
