@@ -9,7 +9,6 @@ import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.JournalInstance
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.TIPPCoverageStatement
-import org.gokb.rest.TippController
 import org.grails.web.json.JSONObject
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
@@ -34,7 +33,7 @@ class TippService {
    * @param reqBody data extracted from JSON
    * @return the updated TIPP
    */
-  public def updateCoverage(tipp, reqBody) {
+  def updateCoverage(tipp, reqBody) {
     def cov_list = reqBody.coverageStatements ?: reqBody.coverage
     def stale_coverage_ids = tipp.coverageStatements.collect { it.id }
 
@@ -198,6 +197,7 @@ class TippService {
   }
 
   void matchTitle(TitleInstancePackagePlatform tipp) {
+    TitleInstance ti
     def found
     final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
     def title_changed = false
@@ -214,17 +214,18 @@ class TippService {
         my_ids,
         title_class_name
     )
-    // additional check with coverage statement to find the correct title
-    if (found.matches?.size() > 1 && tipp.coverageStatements?.size() > 0) {
-      coverageCheck(tipp, found)
+    TIPPCoverageStatement currentCov = tipp.coverageStatements?.size() > 0 ?
+        latestNonFuture(tipp.coverageStatements) : null
+
+    if (found.matches?.size() > 1) {
+      // additional check with most recent coverage statement to find the correct title
+      coverageCheck(tipp, found, currentCov)
+      // found.matches.size() is now 0 or 1
     }
 
-    TitleInstance ti
     if (found.matches.size() == 1) {
       // exactly one match
       ti = found.matches[0].object
-      TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
-
       if (currentCov && ((ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) || (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo))) {
         reviewRequestService.raise(tipp,
             "TIPP coverage conflicts title publishing data",
@@ -237,47 +238,10 @@ class TippService {
       }
     }
     else if (found.to_create == true) {
-      log.debug("No existing title matched, creating ${tipp.name}")
-      // unknown title
-      ti = Class.forName(title_class_name).newInstance()
-      ti.name = tipp.name
-
-      log.debug("Set name ${ti.name} ..")
-      ti.save(flush: true)
-      titleLookupService.addPublisher(tipp.publisherName, ti)
-      tipp.ids.each {
-        ti.ids << it
-        if (it.namespace == ZDB_NS) {
-          // TODO: ZDB-Enrichment for new Journals with ZDB-ID already present
-        }
-      }
-      // Add the core data.
-      componentUpdateService.ensureCoreData(ti, tipp, false, null)
-
-      title_changed |= componentUpdateService.setAllRefdata([
-          'medium', 'language'
-      ], tipp, ti)
-
-      def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(tipp.dateFirstInPrint.format("yyyy-MM-dd")) : null
-      def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(tipp.dateFirstOnline.format("yyyy-MM-dd")) : null
-
-      title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
-      title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
-
-      titleLookupService.addPublisher(tipp.publisherName, ti)
-
-      if (title_class_name == 'org.gokb.cred.BookInstance') {
-        log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
-        title_changed |= ti.addMonographFields(new JSONObject([//editionNumber        : null,
-                                                               //editionDifferentiator: null,
-                                                               editionStatement: tipp.editionStatement,
-                                                               volumeNumber    : tipp.volumeNumber,
-                                                               //summaryOfContent     : null,
-                                                               firstAuthor     : tipp.firstAuthor,
-                                                               firstEditor     : tipp.firstEditor]))
-      }
-      ti.merge(flush: true)
+      // there is no match, but the IDs qualify for a title creation
+      ti = createTitleInstanceFromTipp(tipp, title_class_name, ZDB_NS, title_changed, ti)
     }
+
     if (ti) {
       tipp.title = ti
       tipp.save()
@@ -287,6 +251,50 @@ class TippService {
       coverageCheck(tipp, found)
     }
     handleFindConflicts(tipp, found)
+  }
+
+  private TitleInstance createTitleInstanceFromTipp(TitleInstancePackagePlatform tipp, String title_class_name, IdentifierNamespace ZDB_NS, boolean title_changed, TitleInstance ti){
+    log.debug("No existing title matched, creating ${tipp.name}")
+    // unknown title
+    ti = Class.forName(title_class_name).newInstance()
+    ti.name = tipp.name
+
+    log.debug("Set name ${ti.name} ..")
+    ti.save(flush: true)
+    titleLookupService.addPublisher(tipp.publisherName, ti)
+    tipp.ids.each{
+      ti.ids << it
+      if (it.namespace == ZDB_NS){
+        // TODO: ZDB-Enrichment for new Journals with ZDB-ID already present
+      }
+    }
+    // Add the core data.
+    componentUpdateService.ensureCoreData(ti, tipp, false, null)
+
+    title_changed |= componentUpdateService.setAllRefdata([
+        'medium', 'language'
+    ], tipp, ti)
+
+    def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(tipp.dateFirstInPrint.format("yyyy-MM-dd")) : null
+    def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(tipp.dateFirstOnline.format("yyyy-MM-dd")) : null
+
+    title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
+    title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
+
+    titleLookupService.addPublisher(tipp.publisherName, ti)
+
+    if (title_class_name == 'org.gokb.cred.BookInstance'){
+      log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
+      title_changed |= ti.addMonographFields(new JSONObject([//editionNumber        : null,
+                                                             //editionDifferentiator: null,
+                                                             editionStatement: tipp.editionStatement,
+                                                             volumeNumber    : tipp.volumeNumber,
+                                                             //summaryOfContent     : null,
+                                                             firstAuthor     : tipp.firstAuthor,
+                                                             firstEditor     : tipp.firstEditor]))
+    }
+    ti.merge(flush: true)
+    ti
   }
 
   def copyTitleData(ConcurrencyManagerService.Job job = null) {
@@ -356,9 +364,8 @@ class TippService {
     }
   }
 
-  private void coverageCheck(tipp, found) {
+  private void coverageCheck(tipp, found, TIPPCoverageStatement latest) {
     // find the latest coverage
-    TIPPCoverageStatement latest = latest(tipp.coverageStatements)
     if (latest && found.matches.size > 1) {
       // too many identifier matches
       def covMatch = []
@@ -380,16 +387,17 @@ class TippService {
     }
   }
 
-  private TIPPCoverageStatement latest(def covStmts) {
+  private TIPPCoverageStatement latestNonFuture(def covStmts) {
     def latest = null
     if (covStmts?.size() > 0) {
       def today = LocalDate.now()
       covStmts.each {
-        if (latest == null ||
+        if (latest == null
             // a valid date beats a null
-            !latest.startDate && it.startDate && today.isAfter(it.startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()) ||
+            ||
+            it.startDate && today.isAfter(it.startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
+            && (!latest.startDate || latest.startDate < it.startDate)
             // a valid date beats a prior date
-            latest.startDate && it.startDate && today.isAfter(it.startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()) && latest.startDate < it.startDate
         ) {
           latest = it
         }
