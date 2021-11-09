@@ -2,18 +2,15 @@ package org.gokb
 
 import static groovyx.net.http.Method.*
 import groovyx.net.http.*
-import org.apache.http.entity.mime.*
-import org.apache.http.entity.mime.content.*
-
 
 class EzbAPIService {
   static transactional = false
-  def endpoint = 'ezb'
+  def endpoint = 'rzblx1'
   def grailsApplication
 
   def config = [
     baseUrl: [
-      rzblx1: "http://rzblx1.uni-regensburg.de/ezeit/searchres.phtml?bibid=HBZ"
+      rzblx1: "http://rzblx1.uni-regensburg.de/ezeit/searchres.phtml?bibid=HBZ&"
     ],
     queryByZdbId: [
       rzblx1: "jq_type1=ZD&jq_term1="
@@ -21,8 +18,11 @@ class EzbAPIService {
     queryByIssn: [
       rzblx1: "jq_type1=IS&jq_term1="
     ],
-    formatIdentifier: [
-      rzblx1: "xmloutput=1&xmlv=3"
+    xmloutput: [
+      rzblx1: "1"
+    ],
+    xmlv: [
+      rzblx1: "3"
     ]
   ]
 
@@ -35,15 +35,20 @@ class EzbAPIService {
     def candidate_ids = [direct: [], parallel: []]
 
     ids.each { id ->
-      if (id.namespace.value == 'eissn' || id.namespace.value == 'issn') {
+      String queryTerm
+      if (id.namespace.value in ['eissn', 'issn']) {
+        queryTerm = config.queryByIssn[endpoint]
+      }
+      else if (id.namespace.value == 'zdb'){
+        queryTerm = config.queryByZdbId[endpoint]
+      }
+      if (queryTerm) {
         try {
-          new RESTClient(config.baseUrl[endpoint]).request(GET, ContentType.XML) { request ->
+          new RESTClient(config.baseUrl[endpoint] + queryTerm + id.value).request(GET, ContentType.XML) { request ->
             uri.query = [
-              version: config.version[endpoint],
-              operation: "searchRetrieve",
-              recordSchema: config.recordSchema[endpoint],
-              maximumRecords: "10",
-              query: config.issTerm[endpoint] + id.value + config.onlineOnly[endpoint]
+              hits_per_page: "10",
+              xmloutput: config.xmloutput[endpoint],
+              xmlv: config.xmlv[endpoint]
             ]
 
             response.success = { resp, data ->
@@ -63,6 +68,9 @@ class EzbAPIService {
                   }
                 }
               }
+            }
+            response.failure = { resp ->
+              log.debug("Got no results for " + id.namespace.value + " : " + id.value)
             }
           }
         }
@@ -91,11 +99,13 @@ class EzbAPIService {
     def fromDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'a'}
     def toDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'b'}
 
-    if (fromDate)
+    if (fromDate){
       result.publishedFrom = fromDate.text()
+    }
 
-    if (toDate)
+    if (toDate){
       result.publishedTo = toDate.text()
+    }
 
     def pubName = rec.global.'*'.find { it.@id == '033A' }.'*'.find {it.@id == 'n'}
 

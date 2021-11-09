@@ -4,8 +4,6 @@ import org.gokb.cred.*;
 
 import static groovyx.net.http.Method.*
 import groovyx.net.http.*
-import org.apache.http.entity.mime.*
-import org.apache.http.entity.mime.content.*
 import grails.converters.JSON
 
 
