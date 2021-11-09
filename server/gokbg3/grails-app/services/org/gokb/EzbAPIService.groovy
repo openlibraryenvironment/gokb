@@ -8,27 +8,21 @@ import org.apache.http.entity.mime.content.*
 
 class EzbAPIService {
   static transactional = false
-  def endpoint = 'zdb'
+  def endpoint = 'ezb'
   def grailsApplication
 
   def config = [
-    version: [
-      zdb: "1.1"
-    ],
-    recordSchema: [
-      zdb: "PicaPlus-xml"
-    ],
-    issTerm: [
-      zdb: "dnb.iss="
-    ],
-    onlineOnly: [
-      zdb: " and dnb.frm=O"
-    ],
-    prefix: [
-      zdb: ""
-    ],
     baseUrl: [
-      zdb: "http://services.dnb.de/sru/zdb"
+      rzblx1: "http://rzblx1.uni-regensburg.de/ezeit/searchres.phtml?bibid=HBZ"
+    ],
+    queryByZdbId: [
+      rzblx1: "jq_type1=ZD&jq_term1="
+    ],
+    queryByIssn: [
+      rzblx1: "jq_type1=IS&jq_term1="
+    ],
+    formatIdentifier: [
+      rzblx1: "xmloutput=1&xmlv=3"
     ]
   ]
 
