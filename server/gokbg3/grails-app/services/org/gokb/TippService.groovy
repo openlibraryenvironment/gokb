@@ -180,21 +180,59 @@ class TippService {
     tipp
   }
 
-  def matchPackage(Package aPackage) {
+  def matchPackage(Package aPackage, def job = null) {
+    log.debug("Matching titles for package ${aPackage}")
+    def more = true
+    int offset = 0
+    def total = TitleInstancePackagePlatform.executeQuery(
+      'select count(tipp.id) from TitleInstancePackagePlatform as tipp , Combo as c1 ' +
+          'where c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 ' +
+          'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2)',
+      [
+        pkg : aPackage,
+        rdv1: RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
+        rdv2: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
+      ]
+    )[0]
+
     def tippIDs = TitleInstancePackagePlatform.executeQuery(
-        'select tipp.id from TitleInstancePackagePlatform as tipp , Combo as c1 ' +
-            'where c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 and c1.status=:act ' +
-            'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2 and cmb.status=:act)',
-        [
-            act : RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE),
-            pkg : aPackage,
-            rdv1: RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
-            rdv2: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
-        ])
-    log.debug("found ${tippIDs.size()} unbound TIPPs in package $aPackage")
-    tippIDs.each { id ->
-      matchTitle(TitleInstancePackagePlatform.get(id))
+      'select tipp.id from TitleInstancePackagePlatform as tipp , Combo as c1 ' +
+          'where c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 ' +
+          'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2)',
+      [
+          pkg : aPackage,
+          rdv1: RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
+          rdv2: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
+      ]
+    )
+
+    while (tippIDs.size() > 0) {
+      def batchSize = tippIDs.size() > 50 ? 50 : tippIDs.size()
+      def batch = tippIDs.take(batchSize)
+      tippIDs = tippIDs.drop(batchSize)
+
+      batch.each { id ->
+        matchTitle(TitleInstancePackagePlatform.get(id))
+        offset++
+      }
+      // Get the current session.
+      def session = sessionFactory.currentSession
+      // flush and clear the session.
+      session.flush()
+      session.clear()
+
+      if (job) {
+        job.setProgress((total + offset), total*2)
+      }
+
+
+      if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
+        log.debug("cancelling package title matching for job #${job?.uuid}")
+        more = false
+        break
+      }
     }
+    log.debug("Finished title matching for ${offset} Titles")
   }
 
   void matchTitle(TitleInstancePackagePlatform tipp) {

@@ -29,6 +29,7 @@ class TippController {
   def messageService
   def restMappingService
   def componentLookupService
+  def componentUpdateService
   def tippService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
@@ -318,6 +319,133 @@ class TippController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
+      }
+      else {
+        result.result = 'ERROR'
+        response.setStatus(403)
+        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+      }
+    }
+    else if (!obj) {
+      result.result = 'ERROR'
+      response.setStatus(404)
+      result.message = "TIPP or connected Package not found!"
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(403)
+      result.message = "User is not allowed to edit this component!"
+    }
+    render result as JSON
+  }
+
+  @Secured(value=["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def bulk() {
+    log.debug("Bulk update: ${params} - ${request.post}")
+    def result = ['result':'OK', 'params': params]
+    def user = User.get(springSecurityService.principal.id)
+    def reqBody = request.post ? request.JSON : null
+
+    if (reqBody?.status) {
+      def status_rdv = null
+
+      if (reqBody.status instanceof String) {
+        status_rdv = RefdataCategory.lookup('KBComponent.Status', reqBody.status)
+      }
+      else {
+        status_rdv = RefdataValue.findByOwnerAndId(RefdataCategory.findByLabel('KBcomponent.Status'), reqBody.status)
+      }
+
+      if (status_rdv) {
+        def accessible = []
+        def connected_pkg = []
+        def errors = []
+
+        for (def tippId: reqBody.items) {
+          def tipp = TitleInstancePackagePlatform.findById(tippId)
+
+          if (tipp && componentUpdateService.isUserCurator(tipp, user)) {
+            if (!connected_pkg.contains(tipp.pkg.id)) {
+              connected_pkg.add(tipp.pkg.id)
+            }
+            accessible.add(tipp.id)
+          }
+          else {
+            errors.add(tippId)
+          }
+        }
+
+        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set status = :status, lastUpdated = :date where id IN (:ids)", [status: status_rdv, ids: accessible, date: new Date()])
+
+        connected_pkg.each {
+          def pkg = Package.get(it)
+
+          pkg?.lastSeen = System.currentTimeMillis()
+        }
+
+        if (errors.size() > 0) {
+          result.result = 'ERROR'
+          result.errors = errors
+          result.message = "Skipped ${errors.size()}/${reqBody.items.size()} items due to missing authorization!"
+        }
+      }
+      else {
+        result.result = 'ERROR'
+        response.setStatus(400)
+        result.message = "Unable to reference status type!"
+      }
+    }
+    else if (params['_field']?.trim() && params['_value']?.trim()) {
+      def report = componentUpdateService.bulkUpdateField(user, TitleInstancePackagePlatform, params)
+
+      if (report.errors > 0) {
+        result.result = 'ERROR'
+        result.report = report
+        response.setStatus(403)
+        result.message = "Unable to change ${params['_field']} for ${report.error} of ${report.total} items."
+      } else {
+        result.message = "Successfully changed ${params['_field']} for ${report.total} items."
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(400)
+      result.message = "Missing required params '_field' and '_value'"
+    }
+
+    render result as JSON
+  }
+
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
+  @Transactional
+  def setStatus() {
+    def result = ['result': 'OK', 'params': params]
+    def user = User.get(springSecurityService.principal.id)
+    def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.findById(genericOIDService.oidToId(params.id))
+
+    if (obj?.pkg && obj.isEditable()) {
+      def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
+
+      if (curator || user.isAdmin()) {
+        def status_rdv = null
+
+        if (params.int('status')) {
+          status_rdv = RefdataValue.get(params.int('status'))
+        }
+        else {
+          status_rdv = RefdataCategory.lookup('KBComponent.status', params.status)
+        }
+
+        if (status_rdv) {
+          obj.status = status_rdv
+          obj.save(flush: true)
+        }
+        else {
+          result.result = 'ERROR'
+          response.setStatus(400)
+          result.message = "Unable to reference status type!"
+        }
       }
       else {
         result.result = 'ERROR'

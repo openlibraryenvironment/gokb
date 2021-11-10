@@ -164,7 +164,7 @@ class BootStrap {
 
         def ctr = 0;
         KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
-            KBComponent kbc = KBComponent.get(kbc_id)
+            def kbc = KBComponent.get(kbc_id)
             log.debug("Repair component with no normalised name.. ${kbc.class.name} ${kbc.id} ${kbc.name}");
             kbc.generateNormname()
             kbc.save(flush: true, failOnError: true);

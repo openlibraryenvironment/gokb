@@ -1,5 +1,6 @@
 package org.gokb
 
+import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ESSearchService
 import gokbg3.DateFormatService
@@ -208,7 +209,7 @@ class UpdatePkgTippsRun {
             break
           }
 
-          job?.setProgress(idx, total)
+          job?.setProgress(idx, total*2)
 
           if (idx % 100 == 0) {
             log.info("Clean up");
@@ -261,7 +262,6 @@ class UpdatePkgTippsRun {
                   log.debug("flush session");
                   cleanupService.cleanUpGorm()
                 }
-                job?.setProgress(removedNum + rjson.tipps.size(), total)
               }
             }
 
@@ -299,14 +299,13 @@ class UpdatePkgTippsRun {
           }
         }
 
-        tippService.matchPackage(pkg)
+        tippService.matchPackage(pkg, job)
 
         log.debug("final flush");
         cleanupService.cleanUpGorm()
 
-        if (!cancelled) {
-          job?.setProgress(100)
-        }
+        job?.setProgress(100)
+
       } catch (Exception e) {
         log.error("exception caught: ", e)
         Package.withNewSession {
@@ -502,6 +501,22 @@ class UpdatePkgTippsRun {
 
 //          idents.each { tipp.ids << it }
           componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
+
+          ['firstAuthor', 'volumeNumber', 'editionStatement', 'firstEditor'].each { propName ->
+            tipp[propName] = tippJson[propName] ?: tipp[propName]
+          }
+
+          if (tippJson.dateFirstInPrint) {
+            ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippJson.dateFirstInPrint), tipp, 'dateFirstInPrint')
+          }
+          else {
+            log.debug("No dateFirstInPrint -> ${tippJson.dateFirstInPrint}")
+          }
+
+          if (tippJson.dateFirstOnline) {
+            ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippJson.dateFirstOnline), tipp, 'dateFirstOnline')
+          }
+
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
         }
         else {
@@ -513,6 +528,17 @@ class UpdatePkgTippsRun {
           ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
            'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'importId'].each { propName ->
             tipp[propName] = tippJson[propName] ?: tipp[propName]
+          }
+
+          if (tippJson.dateFirstInPrint) {
+            ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippJson.dateFirstInPrint), tipp, 'dateFirstInPrint')
+          }
+          else {
+            log.debug("No dateFirstInPrint -> ${tippJson.dateFirstInPrint}")
+          }
+
+          if (tippJson.dateFirstOnline) {
+            ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippJson.dateFirstOnline), tipp, 'dateFirstOnline')
           }
 
           tipp.language = tippJson.language ? RefdataCategory.lookup(KBComponent.RD_LANGUAGE, tippJson.language) : tipp.language
@@ -666,11 +692,9 @@ class UpdatePkgTippsRun {
               'where c1.fromComponent = :pkg ' +
               'and c1.toComponent = tipp ' +
               'and c1.type = :typ1 ' +
-              'and c1.status = :cStatus ' +
               'and c2.fromComponent = :plt ' +
               'and c2.toComponent = tipp ' +
               'and c2.type = :typ2 ' +
-              'and c2.status = :cStatus ' +
               'and tipp.importId = :tid ' +
               'and tipp.status = :tStatus  ' +
               'order by tipp.id',
@@ -678,7 +702,6 @@ class UpdatePkgTippsRun {
            typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
            plt    : Platform.get(tippJson.hostPlatform.internalId),
            typ2   : RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps'),
-           cStatus: RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE),
            tid    : tippJson.titleId,
            tStatus: status_current]
       )
