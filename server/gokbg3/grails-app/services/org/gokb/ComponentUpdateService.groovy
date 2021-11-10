@@ -21,6 +21,7 @@ class ComponentUpdateService {
   def reviewRequestService
   def dateFormatService
   def restMappingService
+  def classExaminationService
   def sessionFactory
 
   private final Object findLock = new Object()
@@ -315,18 +316,21 @@ class ComponentUpdateService {
     def result = [total: 0, errors: 0]
     def field = params['_field']
     int offset = 0
-    def value = params['_value']
+    int max = 50
+    def value = null
 
-    result.total = componentLookupService.restLookup(user, cls, params)._pagination.total
+    result.total = componentLookupService.restLookup(user, cls, params, null, true)._pagination.total
 
     while (offset < result.total) {
-      def items = componentLookupService.restLookup(user, cls, params).data
+      params.limit = max
+
+      def items = componentLookupService.restLookup(user, cls, params, null, true).data
 
       items.each {
-        def obj = cls.get(it.id)
+        def obj = cls.get(it)
         def reqBody = [:]
 
-        reqBody[field] = value
+        reqBody[field] = params['value']
 
         if (isUserCurator(obj, user)) {
           obj = restMappingService.updateObject(obj, null, reqBody)
@@ -340,9 +344,10 @@ class ComponentUpdateService {
         else {
           result.errors++
         }
+        offset++
       }
 
-      offset += 10
+      log.debug("Finished ${offset}/${result.total}")
       cleanUpGorm()
     }
     result
