@@ -239,11 +239,14 @@ class ComponentUpdateService {
       for (def priceData : data.prices) {
         def val = priceData.price ?: priceData.amount ?: null
         def typ = priceData.priceType ? priceData.priceType.value : priceData.type ?: null
+        def startDate = priceData.startDate ? (priceData.startDate instanceof Date ? priceData.startDate : dateFormatService.parseDate(priceData.startDate.toString())) : null
+        def endDate = priceData.endDate ? (priceData.endDate instanceof Date ? priceData.endDate : dateFormatService.parseDate(priceData.endDate.toString())) : null
+
         if (val != null && priceData.currency && typ) {
           component.setPrice(typ,
             "${val} ${priceData.currency}",
-            priceData.startDate ? dateFormatService.parseDate(priceData.startDate.toString()) : null,
-            priceData.endDate ? dateFormatService.parseDate(priceData.endDate.toString()) : null)
+            startDate,
+            endDate)
           hasChanged = true
         }
       }
@@ -314,10 +317,10 @@ class ComponentUpdateService {
     int offset = 0
     def value = params['_value']
 
-    result.total = componentLookupService.restLookup(user, ReviewRequest, params)._pagination.total
+    result.total = componentLookupService.restLookup(user, cls, params)._pagination.total
 
     while (offset < result.total) {
-      def items = componentLookupService.restLookup(user, ReviewRequest, params).data
+      def items = componentLookupService.restLookup(user, cls, params).data
 
       items.each {
         def obj = cls.get(it.id)

@@ -148,6 +148,9 @@ class UrlMappings {
       get "/databases"(controller: 'title', namespace: 'rest', action:'index') { type = 'database' }
 
       post "/tipps/$id/retire"(controller: 'tipp', namespace: 'rest', action:'retire')
+      post "/tipps/bulk"(controller: 'tipp', namespace: 'rest', action: 'bulk')
+      get "/tipps/bulk"(controller: 'tipp', namespace: 'rest', action: 'bulk')
+      get "/tipps/$id/set-status"(controller: 'tipp', namespace: 'rest', action: 'setStatus')
       get "/tipps/$id/coverage"(controller: 'tipp', namespace: 'rest', action: 'getCoverage')
       get "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'show')
       put "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'update')
@@ -155,6 +158,8 @@ class UrlMappings {
       post "/tipps"(controller: 'tipp', namespace: 'rest', action: 'save')
       get "/tipps"(controller: 'tipp', namespace: 'rest', action: 'index')
 
+      get "/package-titles/bulk"(controller: 'tipp', namespace: 'rest', action: 'bulk')
+      get "/package-titles/$id/set-status"(controller: 'tipp', namespace: 'rest', action: 'setStatus')
       get "/package-titles/$id/coverage"(controller: 'tipp', namespace: 'rest', action: 'getCoverage')
       get "/package-titles/$id"(controller: 'tipp', namespace: 'rest', action: 'show')
       put "/package-titles/$id"(controller: 'tipp', namespace: 'rest', action: 'update')

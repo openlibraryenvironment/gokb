@@ -517,32 +517,37 @@ class RestMappingService {
           id = Identifier.get(i)
         }
         else if (i instanceof Map) {
-          def ns_val = i.namespace ?: i.type
-
-          if (i.value && ns_val) {
-            def ns = null
-
-            if (ns_val instanceof String) {
-              ns = ns_val
-            }
-            else if (ns_val) {
-              ns = IdentifierNamespace.get(ns_val)?.value ?: null
-            }
-
-            try {
-              if (ns) {
-                id = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, i.value)
-              }
-            }
-            catch (grails.validation.ValidationException ve) {
-              log.debug("Could not create ID ${ns}:${i.value}")
-
-              result.errors << messageService.processValidationErrors(ve.errors)
-            }
+          if (i.id) {
+            id = Identifier.get(i.id)
           }
           else {
-            result.errors << [message: messageService.resolveCode('identifier.value.IllegalIDForm', null, null), baddata: i]
-            valid = false
+            def ns_val = i.namespace ?: i.type
+
+            if (i.value && ns_val) {
+              def ns = null
+
+              if (ns_val instanceof String) {
+                ns = ns_val
+              }
+              else if (ns_val) {
+                ns = IdentifierNamespace.get(ns_val)?.value ?: null
+              }
+
+              try {
+                if (ns) {
+                  id = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, i.value)
+                }
+              }
+              catch (grails.validation.ValidationException ve) {
+                log.debug("Could not create ID ${ns}:${i.value}")
+
+                result.errors << messageService.processValidationErrors(ve.errors)
+              }
+            }
+            else {
+              result.errors << [message: messageService.resolveCode('identifier.value.IllegalIDForm', null, null), baddata: i]
+              valid = false
+            }
           }
         }
         else {
@@ -551,7 +556,7 @@ class RestMappingService {
           log.error("Could not identify ID form!")
         }
 
-        if (id && !obj.hasErrors() && valid) {
+        if (id && valid) {
           log.debug("Adding id ${id} to current set")
           new_ids << id
         }
@@ -586,8 +591,8 @@ class RestMappingService {
           }
         }
 
-        if (remove) {
-          Iterator items = id_combos.iterator();
+        if (remove && result.errors.size() == 0) {
+          Iterator items = id_combos.iterator()
           List removedIds = []
           Object element;
           while (items.hasNext()) {
@@ -710,6 +715,7 @@ class RestMappingService {
 
   public def updateVariantNames(obj, vals, boolean remove = true) {
     log.debug("Update Variants ${vals} ..")
+    def result = [changed: false, errors: []]
     def changed = false
     def remaining = []
     def notFound = []
@@ -737,15 +743,7 @@ class RestMappingService {
               }
               else {
                 log.debug("Could not add variant ${it}!")
-                obj.errors.reject(
-                    'component.addToList.denied.label',
-                    ['variantNames'] as Object[],
-                    '[Could not process list of items for property {0}]'
-                )
-                obj.errors.rejectValue(
-                    'variantNames',
-                    'component.addToList.denied.label'
-                )
+                result.errors << [message: "Could not add variant ${it} since it is already a variant for another component.", code: 'inUse', baddata: it]
               }
             }
           }
@@ -780,7 +778,9 @@ class RestMappingService {
 
             if (dupes) {
               log.debug("Not adding duplicate variant")
-              remaining << dupes
+
+              if (!remaining.contains(dupes))
+                remaining << dupes
             }
             else {
               newVariant = obj.ensureVariantName(it.variantName)
@@ -804,7 +804,12 @@ class RestMappingService {
                   newVariant.variantType = null
                 }
 
-                newVariant.save(flush:true)
+                if (!newVariant.hasErrors()) {
+                  newVariant.save(flush:true)
+                }
+                else {
+                  log.error("Unable to set details for variant: ${newVariant.errors}")
+                }
 
                 log.debug("${newVariant.variantName} (${newVariant.locale})")
 
@@ -812,15 +817,7 @@ class RestMappingService {
               }
               else {
                 log.debug("Could not add variant ${it}!")
-                obj.errors.reject(
-                    'component.addToList.denied.label',
-                    ['variantNames'] as Object[],
-                    '[Could not process list of items for property {0}]'
-                )
-                obj.errors.rejectValue(
-                    'variantNames',
-                    'component.addToList.denied.label'
-                )
+                result.errors << [message: "Could not add variant ${it.variantName} since it is already a variant for another component.", code: 'inUse', baddata: it]
               }
             }
           }
@@ -831,7 +828,7 @@ class RestMappingService {
       }
 
       if (notFound.size() == 0) {
-        if (!obj.hasErrors() && remove) {
+        if (!result.errors && remove) {
           obj.variantNames.each { vn ->
             if (!remaining.contains(vn)) {
               toRemove.add(vn.id)
@@ -851,15 +848,9 @@ class RestMappingService {
       }
       else {
         log.debug("Unable to look up variants ..")
-        obj.errors.reject(
-            'component.addToList.denied.label',
-            ['variantNames'] as Object[],
-            '[Could not process list of items for property {0}]'
-        )
-        obj.errors.rejectValue(
-            'variantNames',
-            'component.addToList.denied.label'
-        )
+        notFound.each {
+          result.errors << [message: "Could not add variant ${it} since it is already a variant for another component.", code: 'inUse', baddata: it]
+        }
       }
 
       if (changed) {
@@ -868,17 +859,9 @@ class RestMappingService {
     }
     catch (Exception e) {
       log.debug("Unable to process variants:", e)
-      obj.errors.reject(
-          'component.addToList.denied.label',
-          ['variantNames'] as Object[],
-          '[Could not process list of items for property {0}]'
-      )
-      obj.errors.rejectValue(
-          'variantNames',
-          'component.addToList.denied.label'
-      )
+      result.errors << [message: "Unable to process variants!", code: 500, baddata: vals]
     }
-    obj
+    result
   }
 
   @Transactional

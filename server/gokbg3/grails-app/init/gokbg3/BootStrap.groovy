@@ -164,7 +164,7 @@ class BootStrap {
 
         def ctr = 0;
         KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
-            KBComponent kbc = KBComponent.get(kbc_id)
+            def kbc = KBComponent.get(kbc_id)
             log.debug("Repair component with no normalised name.. ${kbc.class.name} ${kbc.id} ${kbc.name}");
             kbc.generateNormname()
             kbc.save(flush: true, failOnError: true);
@@ -238,8 +238,13 @@ class BootStrap {
         // log.info("Default batch loader config");
         // defaultBulkLoaderConfig();
 
-        log.debug("Register users and override default admin password");
+        log.debug("Register users and override default admin password")
         registerUsers()
+
+        if (grailsApplication.config.gokb.packageOaiCaching.enabled) {
+            log.debug("Ensuring Package cache dates")
+            registerPkgCache()
+        }
 
         log.debug("Ensuring ElasticSearch index")
         ensureEsIndices()
@@ -1174,4 +1179,20 @@ class BootStrap {
         }
     }
 
+    def registerPkgCache () {
+        File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+        File[] files = dir.listFiles()
+
+        for (def file : files) {
+            def fileNameParts = file.name.split('_')
+            def pkg = Package.findByUuid(fileNameParts[0])
+
+            if (pkg) {
+                Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(file.lastModified()), pkg.id])
+            }
+            else {
+                log.warn("Unable to find package for XML cache file ${file.name}!")
+            }
+        }
+    }
 }

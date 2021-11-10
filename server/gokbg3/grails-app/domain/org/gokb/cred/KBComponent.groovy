@@ -1174,7 +1174,7 @@ where cp.owner = :c
       def normname = generateNormname(name)
 
       // Check that name is not already a name or a variant, if so, add it.
-      def existing_component = KBComponent.findByNormname(normname)
+      def existing_component = this.class.findByNormname(normname)
 
       if (existing_component == null) {
 
@@ -1183,11 +1183,11 @@ where cp.owner = :c
 
         // not already a name
         // Make sure not already a variant name
-        def existing_variants = KBComponentVariantName.findAllByNormVariantName(normname)
+        def existing_variants = this.class.executeQuery("from ${this.class.simpleName} as o where exists (select 1 from KBComponentVariantName where owner = o and normVariantName = ?)".toString(), [normname])
         if (existing_variants.size() == 0) {
           result = new KBComponentVariantName(owner: this, variantName: name).save()
         } else {
-          log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
+          log.debug("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name for ${existing_variants}....");
         }
 
       } else {
