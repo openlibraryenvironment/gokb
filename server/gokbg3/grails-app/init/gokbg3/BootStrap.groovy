@@ -4,6 +4,7 @@ import grails.util.Environment
 import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
+import org.apache.commons.collections.CollectionUtils
 import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
@@ -974,10 +975,41 @@ class BootStrap {
 
         lookupOrCreateCuratoryGroupTypes()
 
+        // Can be activated on local development instances.
+        // assignMissingCGsToRRs()
+
         LanguagesService.initialize()
 
         log.debug("Deleting any null refdata values");
         RefdataValue.executeUpdate('delete from RefdataValue where value is null');
+    }
+
+    // Can be activated on local development instances.
+    private void assignMissingCGsToRRs(){
+        def rrsWithoutCGs = ReviewRequest.findAll()
+        Iterator it = rrsWithoutCGs.iterator()
+        while (it.hasNext()){
+            ReviewRequest next = it.next()
+            if (!CollectionUtils.isEmpty(next.getAllocatedGroups())){
+                rrsWithoutCGs.remove(next)
+            }
+        }
+        for (rr in rrsWithoutCGs){
+            if (KBComponent.has(rr.componentToReview, 'curatoryGroups')){
+                createArgForFirstCG(rr)
+            }
+        }
+    }
+
+    private void createArgForFirstCG(ReviewRequest rr){
+        for (group in rr.componentToReview.curatoryGroups){
+            if (group){
+                new AllocatedReviewGroup(
+                    group: group, review: rr, status: RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+                ).save(flush: true)
+                return
+            }
+        }
     }
 
     private void lookupOrCreateCuratoryGroupTypes(){
