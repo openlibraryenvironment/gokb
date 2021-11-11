@@ -400,7 +400,7 @@ class ReviewsController {
         response.setStatus(500)
       }
     }
-    render result
+    render result as JSON
   }
 
 
@@ -491,7 +491,7 @@ class ReviewsController {
   }
 
 
-  private JSON getEscalationTargetGroupId(def rrId, def activeGroupId, def params){
+  private def getEscalationTargetGroupId(def rrId, def activeGroupId, def params){
     def result = ['result':'ERROR', 'isEscalatable':false, 'params': params]
 
     def rr = ReviewRequest.get(genericOIDService.oidToId(rrId))
