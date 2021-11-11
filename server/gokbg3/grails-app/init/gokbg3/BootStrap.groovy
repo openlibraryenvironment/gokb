@@ -29,7 +29,6 @@ class BootStrap {
     def ComponentStatisticService
     def concurrencyManagerService
     def ESWrapperService
-    //def titleLookupService
 
     def init = { servletContext ->
 
@@ -116,7 +115,6 @@ class BootStrap {
                 }
             }
 
-
             // Make sure admin user has all the system roles.
             [contributorRole, userRole, editorRole, adminRole, apiRole, suRole].each { role ->
                 log.debug("Ensure admin user has ${role} role");
@@ -126,22 +124,10 @@ class BootStrap {
             }
         }
 
-
         if (grailsApplication.config.gokb.decisionSupport) {
             log.debug("Configuring default decision support parameters");
             DSConfig();
         }
-
-//    String fs = grailsApplication.config.project_dir
-//    log.debug("Theme:: ${grailsApplication.config.gokb.theme}");
-//
-//    log.debug("Make sure project files directory exists, config says it's at ${fs}");
-//    File f = new File(fs)
-//    if ( ! f.exists() ) {
-//      log.debug("Creating upload directory path.")
-//      f.mkdirs()
-//    }
-
 
         refdataCats()
 
@@ -151,14 +137,11 @@ class BootStrap {
 
         CuratoryGroup.withTransaction() {
             if (grailsApplication.config.gokb.defaultCuratoryGroup != null) {
-
                 log.debug("Ensure curatory group: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
-
                 def local_cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup) ?:
                     new CuratoryGroup(name: grailsApplication.config.gokb?.defaultCuratoryGroup).save(flush: true, failOnError: true);
             }
         }
-
 
         log.info("GoKB missing normalised component names");
 
@@ -234,10 +217,6 @@ class BootStrap {
             log.info("Ensured ${ns_obj}!")
         }
 
-
-        // log.info("Default batch loader config");
-        // defaultBulkLoaderConfig();
-
         log.debug("Register users and override default admin password")
         registerUsers()
 
@@ -248,7 +227,6 @@ class BootStrap {
 
         log.debug("Ensuring ElasticSearch index")
         ensureEsIndices()
-
 
         Job hk_job = concurrencyManagerService.createJob {
             cleanupService.housekeeping()
@@ -374,13 +352,10 @@ class BootStrap {
     }
 
     def alterDefaultMetaclass = {
-
         // Inject helpers to Domain classes.
         grailsApplication.domainClasses.each { GrailsClass domainClass ->
-
             // Extend the domain class.
             DomainClassExtender.extend(domainClass)
-
         }
     }
 
@@ -392,7 +367,6 @@ class BootStrap {
             p.tags.add(content_provider_role);
             p.save(flush: true);
         }
-
     }
 
     def defaultSortKeys() {
@@ -414,10 +388,8 @@ class BootStrap {
         }
     }
 
-
     def destroy = {
     }
-
 
     def refdataCats() {
         RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS,
@@ -817,17 +789,6 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("Combo.Status", Combo.STATUS_SUPERSEDED).save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("Combo.Status", Combo.STATUS_EXPIRED).save(flush: true, failOnError: true)
 
-        //    RefdataCategory.lookupOrCreate('ComboType','Unknown').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Previous').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Model').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Parent').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Translated').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Absorbed').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Merged').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Renamed').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Split').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Transferred').save()
-
         RefdataCategory.lookupOrCreate('License.Type', 'Template').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('License.Type', 'Other').save(flush: true, failOnError: true)
 
@@ -836,7 +797,6 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType', 'Acronym').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType', 'Minor Change').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType', 'Nickname').save(flush: true, failOnError: true)
-
 
         RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale', 'en_US').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale', 'en_GB').save(flush: true, failOnError: true)
@@ -966,7 +926,6 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Combo.Type', 'IngestionProfile.Source').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.type', 'Source.CuratoryGroups').save(flush: true, failOnError: true)
 
-
         RefdataCategory.lookupOrCreate('MembershipRole', 'Administrator').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('MembershipRole', 'Member').save(flush: true, failOnError: true)
 
@@ -1013,10 +972,30 @@ class BootStrap {
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Technical Support').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Other').save(flush: true, failOnError: true)
 
+        lookupOrCreateCuratoryGroupTypes()
+
         LanguagesService.initialize()
 
         log.debug("Deleting any null refdata values");
         RefdataValue.executeUpdate('delete from RefdataValue where value is null');
+    }
+
+    private void lookupOrCreateCuratoryGroupTypes(){
+        if (!CuratoryGroupType.findByName("Journal Package Curators")){
+            CuratoryGroupType.create(level: CuratoryGroupType.Level.PACKAGE, name: "Journal Package Curators", flush: true)
+        }
+        if (!CuratoryGroupType.findByName("E-Book Package Curators")){
+            CuratoryGroupType.create(level: CuratoryGroupType.Level.PACKAGE, name: "E-Book Package Curators", flush: true)
+        }
+        if (!CuratoryGroupType.findByName("Journal Title Curators")){
+            CuratoryGroupType.create(level: CuratoryGroupType.Level.TITLE, name: "Journal Title Curators", flush: true)
+        }
+        if (!CuratoryGroupType.findByName("E-Book Title Curators")){
+            CuratoryGroupType.create(level: CuratoryGroupType.Level.TITLE, name: "E-Book Title Curators", flush: true)
+        }
+        if (!CuratoryGroupType.findByName("Journal Central Curators")){
+            CuratoryGroupType.create(level: CuratoryGroupType.Level.CENTRAL, name: "Journal Central Curators", flush: true)
+        }
     }
 
     def sourceObjects() {
