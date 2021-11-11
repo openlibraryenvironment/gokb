@@ -981,31 +981,26 @@ class BootStrap {
     }
 
     private void lookupOrCreateCuratoryGroupTypes(){
-        if (!CuratoryGroupType.findByName("Journal Package Curators")){
-            CuratoryGroupType.create(level: CuratoryGroupType.Level.PACKAGE, name: "Journal Package Curators", flush: true)
-        }
-        if (!CuratoryGroupType.findByName("E-Book Package Curators")){
-            CuratoryGroupType.create(level: CuratoryGroupType.Level.PACKAGE, name: "E-Book Package Curators", flush: true)
-        }
-        if (!CuratoryGroupType.findByName("Journal Title Curators")){
-            CuratoryGroupType.create(level: CuratoryGroupType.Level.TITLE, name: "Journal Title Curators", flush: true)
-        }
-        if (!CuratoryGroupType.findByName("E-Book Title Curators")){
-            CuratoryGroupType.create(level: CuratoryGroupType.Level.TITLE, name: "E-Book Title Curators", flush: true)
-        }
-        if (!CuratoryGroupType.findByName("Journal Central Curators")){
-            CuratoryGroupType.create(level: CuratoryGroupType.Level.CENTRAL, name: "Journal Central Curators", flush: true)
-        }
+        CuratoryGroupType.findByName("Journal Package Curators") ?:
+            new CuratoryGroupType(level: CuratoryGroupType.Level.PACKAGE, name: "Journal Package Curators").save(flush: true, failOnError: true)
+        CuratoryGroupType.findByName("E-Book Package Curators") ?:
+            new CuratoryGroupType(level: CuratoryGroupType.Level.PACKAGE, name: "E-Book Package Curators").save(flush: true, failOnError: true)
+        CuratoryGroupType.findByName("Journal Title Curators") ?:
+            new CuratoryGroupType(level: CuratoryGroupType.Level.TITLE, name: "Journal Title Curators").save(flush: true, failOnError: true)
+        CuratoryGroupType.findByName("E-Book Title Curators") ?:
+            new CuratoryGroupType(level: CuratoryGroupType.Level.TITLE, name: "E-Book Title Curators").save(flush: true, failOnError: true)
+        CuratoryGroupType.findByName("Journal Central Curators") ?:
+            new CuratoryGroupType(level: CuratoryGroupType.Level.CENTRAL, name: "Journal Central Curators").save(flush: true, failOnError: true)
     }
 
     def sourceObjects() {
         log.debug("Lookup or create source objects")
-        def ybp_source = Source.findByName('YBP') ?: new Source(name: 'YBP').save(flush: true, failOnError: true)
-        def cup_source = Source.findByName('CUP') ?: new Source(name: 'CUP').save(flush: true, failOnError: true)
-        def wiley_source = Source.findByName('WILEY') ?: new Source(name: 'WILEY').save(flush: true, failOnError: true)
-        def cufts_source = Source.findByName('CUFTS') ?: new Source(name: 'CUFTS').save(flush: true, failOnError: true)
-        def askews_source = Source.findByName('ASKEWS') ?: new Source(name: 'ASKEWS').save(flush: true, failOnError: true)
-        def ebsco_source = Source.findByName('EBSCO') ?: new Source(name: 'EBSCO').save(flush: true, failOnError: true)
+        Source.findByName('YBP') ?: new Source(name: 'YBP').save(flush: true, failOnError: true)
+        Source.findByName('CUP') ?: new Source(name: 'CUP').save(flush: true, failOnError: true)
+        Source.findByName('WILEY') ?: new Source(name: 'WILEY').save(flush: true, failOnError: true)
+        Source.findByName('CUFTS') ?: new Source(name: 'CUFTS').save(flush: true, failOnError: true)
+        Source.findByName('ASKEWS') ?: new Source(name: 'ASKEWS').save(flush: true, failOnError: true)
+        Source.findByName('EBSCO') ?: new Source(name: 'EBSCO').save(flush: true, failOnError: true)
     }
 
 
