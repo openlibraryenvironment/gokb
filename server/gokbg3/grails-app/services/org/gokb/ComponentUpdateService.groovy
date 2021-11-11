@@ -326,25 +326,40 @@ class ComponentUpdateService {
 
       def items = componentLookupService.restLookup(user, cls, params, null, true).data
 
-      items.each {
-        def obj = cls.get(it)
-        def reqBody = [:]
+      if (cls == TitleInstancePackagePlatform && params.pkg?.trim() && field == 'status') {
+        def pkg = Package.get(params.int('pkg'))
+        def status_rdv = params.int('_value') ? RefdataValue.get(params.int('_value')) : RefdataCategory.lookup('KBComponent.Status', params['_value'])
 
-        reqBody[field] = params['value']
-
-        if (isUserCurator(obj, user)) {
-          obj = restMappingService.updateObject(obj, null, reqBody)
-
-          if (obj.hasErrors()) {
-            result.errors++
-          } else {
-            obj.save(flush:true)
-          }
+        if (pkg && isUserCurator(pkg, user) && status_rdv?.owner?.label == 'KBComponent.Status') {
+          TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set status = :status, lastUpdated = :date where id IN (:ids)", [status: status_rdv, ids: items, date: new Date()])
+          offset += max
         }
         else {
-          result.errors++
+          offset = result.total
+          result.errors = result.total
         }
-        offset++
+      }
+      else {
+        items.each {
+          def obj = cls.get(it)
+          def reqBody = [:]
+
+          reqBody[field] = params['_value']
+
+          if (isUserCurator(obj, user)) {
+            obj = restMappingService.updateObject(obj, null, reqBody)
+
+            if (obj.hasErrors()) {
+              result.errors++
+            } else {
+              obj.save(flush:true)
+            }
+          }
+          else {
+            result.errors++
+          }
+          offset++
+        }
       }
 
       log.debug("Finished ${offset}/${result.total}")
