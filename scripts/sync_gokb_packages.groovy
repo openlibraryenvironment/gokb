@@ -39,7 +39,7 @@ while ( moredata ) {
         data.TIPPs.TIPP.each { xmltipp ->
 
           // TIPP.
-          def newtipp = directAddFields (xmltipp, ['medium', 'url', 'series', 'subjectArea', 'status', 'name', 'lastUpdated', 'publisherName', 'dateFirstInPrint', 'dateFirstOnline', 'publicationType', 'firstAuthor', 'volumeNumber', 'editionStatement', 'firstEditor', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'lastChangedExternal', 'importId'], addCoreItems ( xmltipp ))
+          def newtipp = directAddFields (xmltipp, ['medium', 'url', 'series', 'subjectArea', 'publisherName', 'dateFirstInPrint', 'dateFirstOnline', 'publicationType', 'firstAuthor', 'volumeNumber', 'editionStatement', 'firstEditor', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'lastChangedExternal', 'importId'], addCoreItems ( xmltipp ))
           newtipp.accessStartDate = cleanText( xmltipp.access.'@start'.text() )
           newtipp.accessEndDate = cleanText( xmltipp.access.'@end'.text() )
 
@@ -71,9 +71,9 @@ while ( moredata ) {
             else if (type == 'BookInstance'|| type == 'Monograph') {
                 newtipp.title.type = 'Book'
             }
-            newtipp.platform = directAddFields (xmltipp.platform, ['primaryUrl'], addCoreItems ( xmltipp.platform ))
             resourceFieldMap['tipps'].add(newtipp)
           }
+          newtipp.platform = directAddFields (xmltipp.platform, ['primaryUrl'], addCoreItems ( xmltipp.platform ))
         }
       }
       config.lastTimestamp = rec.header.datestamp.text()
