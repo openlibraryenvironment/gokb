@@ -524,7 +524,7 @@ class UpdatePkgTippsRun {
             def tipp_ids = ctipp.ids.collect { ido -> { type: ido.namespace.value, value: ido.value }}
 
             tipp_ids.each { tid ->
-              if (jsonIdMap[tid.type] && jsonIdMap[tid.type] != tid.value) {
+              if (jsonIdMap[tid.type] && jsonIdMap[tid.type] != tid.value && tid.type != 'pisbn') {
                 id_mismatches[tid.type] = jsonIdMap[tid.type]
               }
             }
@@ -536,6 +536,7 @@ class UpdatePkgTippsRun {
               full_matches << ctipp
             }
           }
+
           if (full_matches.size() > 0) {
             tipp = full_matches[0]
             // update Data

@@ -188,7 +188,11 @@ class PackageController {
               log.debug("No errors.. saving")
               obj.save()
 
-              obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+              def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+
+              if (variant_result.errors.size() > 0) {
+                errors.variantNames = variant_result.errors
+              }
 
               if (generateToken) {
                 String charset = (('a'..'z') + ('0'..'9')).join()
@@ -298,7 +302,12 @@ class PackageController {
         ]
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
-        obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        if (variant_result.errors.size() > 0) {
+          errors.variantNames = variant_result.errors
+        }
 
         errors << updateCombos(obj, reqBody, remove, user)
 

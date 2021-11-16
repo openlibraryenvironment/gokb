@@ -31,7 +31,7 @@ import org.apache.commons.io.FilenameUtils
 
 abstract class GOKbSyncBase extends Script {
 
-  String sourceBase = 'http://gokb.openlibraryfoundation.org/'
+  String sourceBase = 'https://gokb.org/'
   int source_timeout_retry = 3
   long source_timeout_wait = 5 * 1000 // (5 seconds)
   def sourceResponseType = XML

@@ -203,7 +203,8 @@ class ComponentLookupService {
    * @param context : Possible override of the self link path
    */
 
-  public def restLookup (user, cls, params, def context = null) {
+  public def restLookup (user, cls, params, def context = null, boolean idOnly = false) {
+    log.debug("restLookup: ${params}")
     def result = [:]
     def hqlQry = "from ${cls.simpleName} as p".toString()
     def qryParams = new HashMap()
@@ -399,15 +400,16 @@ class ComponentLookupService {
             def ctr = KBComponent.get(validLong[0])
 
             if (ctr?.class == Package) {
-              def tipp_ids = TitleInstancePackagePlatform.executeQuery("select id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = ? and toComponent = tipp)",[ctr])
+              def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = ? and toComponent = tipp)",[ctr])
               def ti_ids = []
 
               if (params.titlereviews) {
-                ti_ids = TitleInstance.executeQuery("select id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN :tippids)", [tippids: tipp_ids])
+                ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN :tippids)", [tippids: tipp_ids])
               }
 
               paramStr += "p.componentToReview.id IN :ctrids"
               qryParams['ctrids'] = [ctr.id] + tipp_ids + ti_ids
+              log.debug("${qryParams['ctrids'].size()}")
               pkg_qry = true
             }
           }
@@ -559,7 +561,7 @@ class ComponentLookupService {
       }
 
       log.debug("${obj}")
-      result.data << restMappingService.mapObjectToJson(obj, params, user)
+      result.data << (idOnly ? obj.id : restMappingService.mapObjectToJson(obj, params, user))
     }
 
     result['_pagination'] = [

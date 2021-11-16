@@ -153,7 +153,11 @@ class OrgController {
             log.debug("No errors.. saving")
             obj.save()
 
-            obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+            def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+
+            if (variant_result.errors.size() > 0) {
+              errors.variantNames = variant_result.errors
+            }
 
             errors << updateCombos(obj, reqBody)
 
@@ -179,15 +183,15 @@ class OrgController {
         else {
           result.result = 'ERROR'
           response.setStatus(400)
-          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+          errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
       }
     }
     else {
-      errors = [badData: reqBody, message: "Unable to save organization!"]
+      errors.object = [[badData: reqBody, message: "Unable to save organization!"]]
     }
 
-    if (errors) {
+    if (errors.size() > 0) {
       result.result = 'ERROR'
       result.error = errors
     }
@@ -232,7 +236,12 @@ class OrgController {
         def jsonMap = obj.jsonMapping
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
-        obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        if (variant_result.errors.size() > 0) {
+          errors.variantNames = variant_result.errors
+        }
 
         errors << updateCombos(obj, reqBody, remove)
 
@@ -244,6 +253,7 @@ class OrgController {
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
+            log.debug("Errors: ${errors}")
             response.setStatus(400)
             result.message = message(code: "default.update.errors.message")
           }

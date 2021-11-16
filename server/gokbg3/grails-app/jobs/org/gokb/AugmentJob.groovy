@@ -25,14 +25,17 @@ class AugmentJob {
       def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
       def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
       def zdbNs = IdentifierNamespace.findByValue('zdb')
+      def issnNs = []
+      issnNs << IdentifierNamespace.findByValue('issn')
+      issnNs << IdentifierNamespace.findByValue('eissn')
       def journals
       int offset = 0
 
-      def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) from JournalInstance as ti where ti.status = :current and not exists ( Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns )",[current: status_current, ctype: idComboType, ns: zdbNs])[0]
+      def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) from JournalInstance as ti where ti.status = :current and not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)",[current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs])[0]
 
       // find the next 100 titles that don't have a suncat ID
       while (offset < count_journals_without_zdb_id) {
-        def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id from JournalInstance as ti where ti.status = :current and not exists ( Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns )",[current: status_current, ctype: idComboType, ns: zdbNs],[offset: offset, max: 20])
+        def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id from JournalInstance as ti where ti.status = :current and not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)",[current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs],[offset: offset, max: 20])
 
         log.debug("Processing ${count_journals_without_zdb_id}");
 

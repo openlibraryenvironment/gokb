@@ -40,6 +40,7 @@ class Package extends KBComponent {
   String listVerifier
   User userListVerifier
   Date listVerifiedDate
+  Date lastCachedDate
   String descriptionURL
 
   private static refdataDefaults = [

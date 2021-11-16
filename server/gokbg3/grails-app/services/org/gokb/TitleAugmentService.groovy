@@ -185,7 +185,10 @@ class TitleAugmentService {
     def full_title = info.subtitle ? "${info.title}: ${info.subtitle}" : info.title
 
     if (titleInstance.normname != KBComponent.generateNormname(full_title)) {
+      def old_title = titleInstance.name
       titleInstance.name = full_title
+      titleInstance.addVariantTitle(old_title)
+      titleInstance.save()
     }
   }
 
