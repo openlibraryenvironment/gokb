@@ -71,9 +71,9 @@ while ( moredata ) {
             else if (type == 'BookInstance'|| type == 'Monograph') {
                 newtipp.title.type = 'Book'
             }
-            resourceFieldMap['tipps'].add(newtipp)
           }
           newtipp.platform = directAddFields (xmltipp.platform, ['primaryUrl'], addCoreItems ( xmltipp.platform ))
+          resourceFieldMap['tipps'].add(newtipp)
         }
       }
       config.lastTimestamp = rec.header.datestamp.text()
