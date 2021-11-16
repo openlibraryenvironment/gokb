@@ -258,23 +258,7 @@ class TippService {
     }
 
     TitleInstance ti
-    if (found.matches.size() == 1) {
-      // exactly one match
-      ti = found.matches[0].object
-      TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
-
-      if (currentCov && ((ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) || (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo))) {
-        reviewRequestService.raise(tipp,
-            "TIPP coverage conflicts title publishing data",
-            "TIPP ${tipp.name} was linked, check coverage",
-            null,
-            null,
-            [otherComponents: ti] as JSON,
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch")
-        )
-      }
-    }
-    else if (found.to_create == true) {
+    if (found.to_create == true) {
       log.debug("No existing title matched, creating ${tipp.name}")
       // unknown title
       ti = Class.forName(title_class_name).newInstance()
@@ -316,9 +300,26 @@ class TippService {
       }
       ti.merge(flush: true)
     }
+    else if (found.matches.size() == 1) {
+      // exactly one match
+      ti = found.matches[0].object
+      TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
+
+      if (currentCov && ((ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) || (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo))) {
+        reviewRequestService.raise(tipp,
+            "TIPP coverage conflicts title publishing data",
+            "TIPP ${tipp.name} was linked, check coverage",
+            null,
+            null,
+            [otherComponents: ti] as JSON,
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch")
+        )
+      }
+    }
+
     if (ti) {
       tipp.title = ti
-      tipp.save()
+      tipp.save(flush: true)
       log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
     if (tipp.coverageStatements?.size() > 0) {

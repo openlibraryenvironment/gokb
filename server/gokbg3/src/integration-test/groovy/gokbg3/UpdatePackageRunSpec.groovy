@@ -90,7 +90,10 @@ class UpdatePackageRunSpec extends Specification {
     ['9783-442X', '9783-4420', '9784-442X', '978-3-16-148410-0'].each {
       Identifier.findByValue(it)?.expunge()
     }
-    ['TestJournalTIPP', 'TestBookTIPP'].each {
+    ['Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
+      TitleInstance.findByName(it)?.expunge()
+    }
+    ['TestJournalTIPP', 'TestBookTIPP', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
   }
@@ -519,7 +522,7 @@ class UpdatePackageRunSpec extends Specification {
       if (tipp.importId == "titleID")
         journal = tipp
     }
-    journal.ids.size() == 6
+    journal.ids.size() == 4
   }
 
   void "Test updatePackageTipps :: new record"() {

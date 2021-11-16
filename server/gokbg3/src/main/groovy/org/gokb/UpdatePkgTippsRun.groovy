@@ -154,7 +154,7 @@ class UpdatePkgTippsRun {
         for (def json_tipp : rjson.tipps) {
           idx++
           def currentTippError = [index: idx]
-          log.info("Handling #$idx TIPP ${json_tipp.name ?: json_tipp.title.name}")
+          log.debug("Handling #$idx TIPP ${json_tipp.name ?: json_tipp.title.name}")
 
           if ((json_tipp.package == null) && (pkg.id)) {
             json_tipp.package = [internalId: pkg.id,
@@ -521,7 +521,7 @@ class UpdatePkgTippsRun {
           }
 
           current_tipps.each { ctipp ->
-            def tipp_ids = ctipp.ids.collect { ido -> { type: ido.namespace.value, value: ido.value }}
+            def tipp_ids = ctipp.ids.collect { ido -> [type: ido.namespace.value, value: ido.value]}
 
             tipp_ids.each { tid ->
               if (jsonIdMap[tid.type] && jsonIdMap[tid.type] != tid.value && tid.type != 'pisbn') {
@@ -719,8 +719,16 @@ class UpdatePkgTippsRun {
     componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
     // overwrite String properties with JSON values
     ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
-    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'importId', 'subjectArea', 'series', 'medium'].each { propName ->
+    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'importId', 'subjectArea', 'series'].each { propName ->
       tipp[propName] = tippJson[propName] ?: tipp[propName]
+    }
+
+    if (tippJson.medium) {
+      def tmed = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, tippJson.medium)
+
+      if (tmed) {
+        tipp.medium = tmed
+      }
     }
 
     if (tippJson.dateFirstInPrint) {
@@ -828,9 +836,9 @@ class UpdatePkgTippsRun {
            tid    : tippJson.titleId,
            tStatus: status_current]
       )
-      if (tippsList.size() > 0) {
+      if (tippList.size() > 0) {
         log.debug("found by titleId in DB")
-        return tippsList
+        return tippList
       }
     }
 
