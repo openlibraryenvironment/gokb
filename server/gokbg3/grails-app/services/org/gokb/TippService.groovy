@@ -453,7 +453,7 @@ class TippService {
             null,
             null,
             (additionalInfo as JSON).toString(),
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches"),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
             (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
         )
       }
@@ -473,7 +473,7 @@ class TippService {
                 null,
                 null,
                 (additionalInfo as JSON).toString(),
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Mismatch'),
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
                 (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
               )
             }
@@ -499,7 +499,7 @@ class TippService {
               null,
               null,
               (additionalInfo as JSON).toString(),
-              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Major Identifier Mismatch'),
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict'),
               (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
             )
           }
@@ -517,7 +517,7 @@ class TippService {
               null,
               null,
               (additionalInfo as JSON).toString(),
-              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Minor Identifier Mismatch'),
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
               (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
             )
           }
@@ -536,7 +536,7 @@ class TippService {
             null,
             null,
             (additionalInfo as JSON).toString(),
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Major Identifier Mismatch"),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
             (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
         )
       }

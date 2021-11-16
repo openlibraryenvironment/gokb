@@ -882,6 +882,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Coverage Mismatch").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'No ZDB Results').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'ZDB Title Overlap').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Title Matches').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict').save(flush: true, failOnError: true)
