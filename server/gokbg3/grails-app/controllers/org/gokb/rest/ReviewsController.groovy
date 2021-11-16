@@ -373,8 +373,14 @@ class ReviewsController {
   /**
    * Check if the ReviewRequest given by @params.id can be escalated.
    */
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   def isEscalatable() {
-    render getEscalationTargetGroupId(params.id, params.activeGroupId, params) as JSON
+    def result = getEscalationTargetGroupId(params.id, params.activeGroupId, params)
+    if (response.getStatus() == 409){
+      // 409 is allowed here, no need to trigger an error
+      result.result = 'OK'
+    }
+    render result as JSON
   }
 
 
@@ -407,6 +413,7 @@ class ReviewsController {
   /**
    * Check if the ReviewRequest given by @params.id can be deescalated.
    */
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   def isDeescalatable() {
     render getDeescalationTargetGroupId(params.id, params.activeGroupId, params) as JSON
   }
