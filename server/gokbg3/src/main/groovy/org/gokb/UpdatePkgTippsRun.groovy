@@ -911,7 +911,7 @@ class UpdatePkgTippsRun {
     }
     else if ("MONOGRAPH".equalsIgnoreCase(tippJson.type)) {
       // Book
-      ['isbn', 'pisbn', 'doi'].each { ns_value ->
+      ['isbn', 'doi'].each { ns_value ->
         if (jsonIdMap[ns_value]) {
           def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
           if (found.size() > 0) {
