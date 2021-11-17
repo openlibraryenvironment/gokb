@@ -26,6 +26,7 @@ class TippController {
   def genericOIDService
   def springSecurityService
   def ESSearchService
+  def FTUpdateService
   def messageService
   def restMappingService
   def componentLookupService
@@ -125,6 +126,8 @@ class TippController {
 
             errors << updateCombos(obj, reqBody)
 
+            FTUpdateService.updateSingleItem(obj)
+
             if (errors.size() == 0) {
               result = restMappingService.mapObjectToJson(obj, params, user)
             }
@@ -183,7 +186,7 @@ class TippController {
       def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
       if (curator || user.isAdmin()) {
-        reqBody.title = obj.title?.id
+        reqBody.title = obj.title?.id ?: reqBody.title
         reqBody.hostPlatform = obj.hostPlatform.id
         reqBody.pkg = obj.pkg.id
         reqBody.id = reqBody.id?:params.id // storing the TIPP ID in the JSON data for later use in upsertDTO
@@ -215,6 +218,7 @@ class TippController {
 
               log.debug("No errors.. saving")
               obj = obj.merge(flush: true)
+              FTUpdateService.updateSingleItem(obj)
               result = restMappingService.mapObjectToJson(obj, params, user)
             }
             else {
@@ -255,7 +259,7 @@ class TippController {
 
   @Transactional
   private def updateCombos(obj, reqBody, boolean remove = true) {
-    log.debug("Updating title combos ..")
+    log.debug("Updating TIPP combos ..")
     def errors = [:]
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
@@ -270,6 +274,10 @@ class TippController {
       if (id_result.changed) {
         obj.lastSeen = System.currentTimeMillis()
       }
+    }
+
+    if (obj.title == null && reqBody.title?.id) {
+      obj.title = TitleInstance.get(reqBody.title.id)
     }
 
     errors
