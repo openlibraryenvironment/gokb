@@ -39,7 +39,7 @@ while ( moredata ) {
         data.TIPPs.TIPP.each { xmltipp ->
 
           // TIPP.
-          def newtipp = directAddFields (xmltipp, ['medium', 'url', 'series', 'subjectArea'], addCoreItems ( xmltipp ))
+          def newtipp = directAddFields (xmltipp, ['medium', 'url', 'series', 'subjectArea', 'publisherName', 'dateFirstInPrint', 'dateFirstOnline', 'publicationType', 'firstAuthor', 'volumeNumber', 'editionStatement', 'firstEditor', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'lastChangedExternal', 'importId'], addCoreItems ( xmltipp ))
           newtipp.accessStartDate = cleanText( xmltipp.access.'@start'.text() )
           newtipp.accessEndDate = cleanText( xmltipp.access.'@end'.text() )
 
@@ -59,23 +59,21 @@ while ( moredata ) {
           }
 
           // Title.
-          newtipp.title = addCoreItems ( xmltipp.title )
-
-          String type = "${cleanText(xmltipp.title.type?.text())}"
-
-          if (!type || type == 'JournalInstance' || type == 'Serial') {
-            newtipp.title.type = 'Serial'
+          if (xmltipp.title){
+            newtipp.title = addCoreItems ( xmltipp.title )
+            String type = "${cleanText(xmltipp.title.type?.text())}"
+            if (!type || type == 'JournalInstance' || type == 'Serial') {
+                newtipp.title.type = 'Serial'
+            }
+            else if (type == 'DatabaseInstance') {
+                newtipp.title.type = 'Database'
+            }
+            else if (type == 'BookInstance'|| type == 'Monograph') {
+                newtipp.title.type = 'Book'
+            }
           }
-          else if (type == 'DatabaseInstance') {
-            newtipp.title.type = 'Database'
-          }
-          else if (type == 'BookInstance'|| type == 'Monograph') {
-            newtipp.title.type = 'Book'
-          }
-
           newtipp.platform = directAddFields (xmltipp.platform, ['primaryUrl'], addCoreItems ( xmltipp.platform ))
-
-          resourceFieldMap['tipps'].add(newtipp);
+          resourceFieldMap['tipps'].add(newtipp)
         }
       }
       config.lastTimestamp = rec.header.datestamp.text()
