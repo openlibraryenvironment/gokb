@@ -276,8 +276,22 @@ class TippController {
       }
     }
 
-    if (obj.title == null && reqBody.title?.id) {
-      obj.title = TitleInstance.get(reqBody.title.id)
+    if (obj.title == null && reqBody.title) {
+      def ti = null
+
+      if (reqBody.title instanceof Integer) {
+        ti = TitleInstance.get(reqBody.title)
+      }
+      else if (reqBody.title instanceof Map && reqBody.title.id) {
+        ti = TitleInstance.get(reqBody.title.id)
+      }
+
+      if (ti) {
+        obj.title = ti
+      }
+      else {
+        errors.title = [[message: "Unable to reference provided reference title!", baddata: reqBody.title, code: 'notFound']]
+      }
     }
 
     errors
