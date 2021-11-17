@@ -376,9 +376,12 @@ class ReviewsController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   def isEscalatable() {
     def result = getEscalationTargetGroupId(params.id, params.activeGroupId, params)
-    if (response.getStatus() == 409){
-      // 409 is allowed here, no need to trigger an error
+    if (response.getStatus() != 404){
+      // errors are fine here, unless the ReviewRequest can't be found.
+      // No need to trigger an error then,
+      // the date of interest is transferred by `isEscalatable`
       result.result = 'OK'
+      response.setStatus(200)
     }
     render result as JSON
   }
@@ -415,7 +418,15 @@ class ReviewsController {
    */
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   def isDeescalatable() {
-    render getDeescalationTargetGroupId(params.id, params.activeGroupId, params) as JSON
+    def result = getDeescalationTargetGroupId(params.id, params.activeGroupId, params)
+    if (response.getStatus() != 404){
+      // errors are fine here, unless the ReviewRequest can't be found.
+      // No need to trigger an error then,
+      // the date of interest is transferred by `isEscalatable`
+      result.result = 'OK'
+      response.setStatus(200)
+    }
+    render result as JSON
   }
 
 
