@@ -1919,6 +1919,14 @@ class PackageService {
                         'dateFirstInPrint'(tipp.dateFirstInPrint)
                         'dateFirstOnline'(tipp.dateFirstOnline)
                         'medium'(tipp.format?.value)
+                        'format'(tipp.medium?.value)
+                        'volumeNumber'(tipp.volumeNumber)
+                        'editionStatement'(tipp.editionStatement)
+                        'firstAuthor'(tipp.firstAuthor)
+                        'firstEditor'(tipp.firstEditor)
+                        'parentPublicationTitleId'(tipp.parentPublicationTitleId)
+                        'precedingPublicationTitleId'(tipp.precedingPublicationTitleId)
+                        'lastChangedExternal'(tipp.lastChangedExternal)
                         'publicationType'(tipp.publicationType?.value)
                         if (tipp.title) {
                           'title'('id': tipp.title.id, 'uuid': tipp.title.uuid) {
