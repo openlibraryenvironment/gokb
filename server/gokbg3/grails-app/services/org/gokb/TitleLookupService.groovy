@@ -347,6 +347,7 @@ class TitleLookupService {
                 title_match.conflicts << [
                   message: "Value ${it.incoming.value} for namespace ${it.incoming.namespace.value} conflicts with existing value ${it.matched.value}",
                   field  : "identifier.value",
+                  namespace: it.incoming.namespace.value,
                   value  : it.incoming.value,
                   matched: it.matched.value
                 ]
@@ -374,7 +375,13 @@ class TitleLookupService {
               if (rid.namespace == mid.namespace && rid.value != mid.value) {
                 if (!mti.ids.contains(rid)) {
                   full_match = false
-                  id_conflicts.add([message: "Value ${rid.value} for namespace ${rid.namespace.value} conflicts with existing value ${mid.value}", field: "identifier.value", value: rid.value, matched: mid.value])
+                  id_conflicts.add([
+                    message: "Value ${rid.value} for namespace ${rid.namespace.value} conflicts with existing value ${mid.value}",
+                    field: "identifier.value",
+                    namespace: rid.namespace.value,
+                    value: rid.value,
+                    matched: mid.value
+                  ])
                 }
               }
             }
@@ -403,7 +410,7 @@ class TitleLookupService {
             log.debug("One match for all identifiers")
             def title_match = [object: all_matched[0], conflicts: [], warnings: ['other_matches']]
 
-            if (!all_matched[0].name.equals(title)) {
+            if (all_matched[0].normname != KBComponent.generateNormname(title)) {
               title_match.conflicts << [message: "Title name differs from matched value ${all_matched[0].name}", field: "name", value: title, matched: all_matched[0].name]
             }
 
