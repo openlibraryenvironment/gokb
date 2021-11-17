@@ -766,6 +766,11 @@ class UpdatePkgTippsRun {
     }
     // search TIPPs for json.title_id == tipp.importId
     if (tippJson.titleId) {
+      /**
+      * Exclude ES-lookup for now because of missing matches of newly created TIPPs
+      * Reevaluate with v8.19.
+      */
+
       // elastic search
       // TypeConvertingMap map = [
       //     componentType    : 'TitleInstancePackagePlatform',
@@ -845,6 +850,11 @@ class UpdatePkgTippsRun {
     // search for package provider namespace identifier
     IdentifierNamespace providerNamespace = Package.get(pkg.id).provider?.titleNamespace
     if (providerNamespace && jsonIdMap[providerNamespace.value]) {
+      /**
+      * Exclude ES-lookup for now because of missing matches of newly created TIPPs
+      * Reevaluate with v8.19.
+      */
+
       // elastic search
       // TypeConvertingMap map = [
       //     componentType     : 'TitleInstancePackagePlatform',
