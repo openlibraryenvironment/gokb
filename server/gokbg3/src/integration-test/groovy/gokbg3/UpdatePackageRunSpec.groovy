@@ -451,11 +451,11 @@ class UpdatePackageRunSpec extends Specification {
                     ],
                     [
                         "type" : "eissn",
-                        "value": "1520-5118"
+                        "value": "9783-4420"
                     ],
                     [
                         "type" : "issn",
-                        "value": "0021-8561"
+                        "value": "9783-442X"
                     ]
 
                 ],
@@ -517,10 +517,12 @@ class UpdatePackageRunSpec extends Specification {
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
-    def journal
-    matching_pkgs[0].tipps.each { tipp ->
-      if (tipp.importId == "titleID")
-        journal = tipp
+    matching_pkgs[0].tipps.size() == 2
+    def journal = null
+    matching_pkgs[0].tipps.each {
+        if (it.importId == 'titleID') {
+            journal = it
+        }
     }
     journal.ids.size() == 4
   }
