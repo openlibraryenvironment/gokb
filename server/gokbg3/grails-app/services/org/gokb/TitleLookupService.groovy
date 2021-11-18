@@ -29,7 +29,8 @@ class TitleLookupService {
     // Get the class 1 identifier namespaces.
     Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
     def xcheck = grailsApplication.config.identifiers.cross_checks
-    RefdataValue status_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    def status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
 
     // Return the list of class 1 identifiers we have found or created, as well as the
     // list of matches
@@ -165,7 +166,7 @@ class TitleLookupService {
                     def dproxied = ClassUtils.deproxy(c);
 
                     // Only add if it's a title.
-                    if (dproxied.class.name == ti_class.name) {
+                    if (dproxied.class.name == ti_class.name && dproxied.status != status_deleted) {
 
                       log.debug("Found ${id_def.value} in ${ns} namespace.")
 
@@ -177,7 +178,7 @@ class TitleLookupService {
                       ]
 
                       TitleInstance the_ti = (dproxied as TitleInstance)
-                      def combo_active = Combo.executeQuery("from Combo as c where fromComponent = :ti and toComponent = :xcid and status != :sa", [ti: the_ti, xcid: xc_id, sa: status_deleted])
+                      def combo_active = Combo.executeQuery("from Combo as c where fromComponent = :ti and toComponent = :xcid and status != :sa", [ti: the_ti, xcid: xc_id, sa: combo_deleted])
 
                       // Don't add repeated matches
                       if (result['matches'].contains(the_ti)) {
@@ -1016,17 +1017,17 @@ class TitleLookupService {
         }
       }
 
-      if (!publisher) {
-        publisher = new Org(name: publisher_name)
-        publisher.save()
-      }
+      // if (!publisher) {
+      //   publisher = new Org(name: publisher_name)
+      //   publisher.save()
+      // }
       // publisher present
       log.debug("Found publisher ${publisher}");
       def orgs = ti.getPublisher()
       log.debug("Check for dupes in ${orgs}")
 
       // Has the publisher ever existed in the list against this title.
-      if (!orgs.contains(publisher)) {
+      if (publisher && !orgs.contains(publisher)) {
 
         // First publisher added?
         boolean not_first = orgs.size() > 0

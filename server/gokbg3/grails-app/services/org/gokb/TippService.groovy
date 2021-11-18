@@ -11,6 +11,7 @@ import org.gokb.cred.RefdataValue
 import org.gokb.cred.TIPPCoverageStatement
 import org.gokb.rest.TippController
 import org.grails.web.json.JSONObject
+import org.gokb.cred.Identifier
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.TitleInstance
@@ -235,17 +236,19 @@ class TippService {
     log.debug("Finished title matching for ${offset} Titles")
   }
 
-  synchronized matchTitle(TitleInstancePackagePlatform tipp) {
+  def matchTitle(tipp) {
     def found
     final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
     def title_changed = false
     def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
+    tipp.refresh()
 
     // remap Identifiers
-    def my_ids = []
-    tipp.ids.each {
-      my_ids << [value: it.value, type: it.namespace.value]
-    }
+    def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = ? and toComponent = i)", [tipp])
+    def my_ids = tipp_ids.collect { [value: it.value, type: it.namespace.value] }
+
+    log.debug("TIPP Ids: ${my_ids} (by query: tipp_ids.size())")
+
     found = titleLookupService.find(
         tipp.name,
         tipp.getPublisherName(),
@@ -267,14 +270,8 @@ class TippService {
       log.debug("Set name ${ti.name} ..")
       ti.save(flush: true)
       titleLookupService.addPublisher(tipp.publisherName, ti)
-      tipp.ids.each {
-        ti.ids << it
-        if (it.namespace == ZDB_NS) {
-          // TODO: ZDB-Enrichment for new Journals with ZDB-ID already present
-        }
-      }
-      // Add the core data.
-      componentUpdateService.ensureCoreData(ti, tipp, false, null)
+      log.debug("Transfering new ti ids: ${tipp.ids}")
+      titleLookupService.addIdentifiers(tipp_ids, ti)
 
       title_changed |= componentUpdateService.setAllRefdata([
           'medium', 'language'
@@ -285,8 +282,6 @@ class TippService {
 
       title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
       title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
-
-      titleLookupService.addPublisher(tipp.publisherName, ti)
 
       if (title_class_name == 'org.gokb.cred.BookInstance') {
         log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
@@ -319,6 +314,8 @@ class TippService {
 
     if (ti) {
       tipp.title = ti
+      titleLookupService.addIdentifiers(tipp_ids, ti)
+      titleLookupService.addPublisher(tipp.publisherName, ti)
       tipp.save(flush: true)
       log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
