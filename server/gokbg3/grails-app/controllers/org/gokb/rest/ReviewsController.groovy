@@ -6,7 +6,10 @@ import grails.plugin.springsecurity.annotation.Secured
 import groovy.json.JsonOutput
 import org.apache.commons.lang.StringUtils
 import org.gokb.cred.AllocatedReviewGroup
+import org.gokb.cred.BookInstance
 import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.DatabaseInstance
+import org.gokb.cred.JournalInstance
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
@@ -391,21 +394,17 @@ class ReviewsController {
   @Transactional
   def escalate(){
     def result = getEscalationTargetGroupId(params.id, request.JSON?.activeGroup, params)
-    if (result.target?.result == 'OK'){
-      CuratoryGroup escalatingGroup = CuratoryGroup.findById(result.target.escalatingGroup)
+    if (result.isEscalatable){
+      CuratoryGroup escalatingGroup = CuratoryGroup.findById(result.escalatingGroup)
       CuratoryGroup targetGroup = escalatingGroup.superordinatedGroup
-      AllocatedReviewGroup arg = AllocatedReviewGroup.findByGroup(escalatingGroup)
+      AllocatedReviewGroup arg = AllocatedReviewGroup.findByGroupAndReview(escalatingGroup, ReviewRequest.findById(params.id))
       AllocatedReviewGroup newArg = reviewRequestService.escalate(arg, targetGroup)
       if (newArg){
-        ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
-        def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
-        rr.allocatedGroups.each{ ag -> ag.status = inactive }
-        newArg.status = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
-        result.target.message = "The requested ReviewRequest has been escalated."
+        result.message = "The requested ReviewRequest has been escalated."
       }
       else{
-        result.target.message = "All preconditions for an escalation have been met. Could not escalate anyway."
-        result.target.result = 'ERROR'
+        result.message = "All preconditions for an escalation have been met. Could not escalate anyway."
+        result.result = 'ERROR'
         response.setStatus(500)
       }
     }
@@ -434,9 +433,9 @@ class ReviewsController {
   @Transactional
   def deescalate(){
     def result = getDeescalationTargetGroupId(params.id, request.JSON.activeGroup, params)
-    if (result.target?.result == 'OK'){
+    if (result.result == 'OK'){
       ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
-      CuratoryGroup deescalatingGroup = CuratoryGroup.findById(result.target.deescalatingGroup)
+      CuratoryGroup deescalatingGroup = CuratoryGroup.findById(result.deescalatingGroup)
       AllocatedReviewGroup deescArg = AllocatedReviewGroup.findByGroupAndReview(deescalatingGroup, rr)
       AllocatedReviewGroup targetArg = deescArg?.escalatedFrom ?: null
       if (deescArg && targetArg){
@@ -445,11 +444,11 @@ class ReviewsController {
         deescArg.status = inactive
         deescArg.escalatedFrom = null
         targetArg.status = inProgress
-        result.target.result = 'OK'
+        result.result = 'OK'
         response.setStatus(200)
       }
       else{
-        result.target.result = 'ERROR'
+        result.result = 'ERROR'
         response.setStatus(400)
       }
     }
@@ -523,40 +522,23 @@ class ReviewsController {
       result.message = "ReviewRequest for id ${rrId} may not be edited."
       return result
     }
+    if (!rr.componentToReview?.class in [BookInstance.class, DatabaseInstance.class, JournalInstance.class]){
+      response.setStatus(405)
+      result.message = "ReviewRequest belongs to the un-escalatable class ${rr.componentToReview?.class().getSimpleName()}"
+      return result
+    }
 
     CuratoryGroup escalatingGroup = null
     if (activeGroupId){
       String id = String.valueOf(activeGroupId)
       if (!StringUtils.isEmpty(id)){
         CuratoryGroup toBeChecked = CuratoryGroup.findById(id)
-        List<AllocatedReviewGroup> argCandidates = AllocatedReviewGroup.findAllByGroupAndReview(toBeChecked, rr)
+        RefdataValue inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+        List<AllocatedReviewGroup> argCandidates = AllocatedReviewGroup.findAllByGroupAndReviewAndStatus(toBeChecked, rr, inProgress)
         if (argCandidates.size() == 1){
           escalatingGroup = toBeChecked
         }
       }
-    }
-    if (!escalatingGroup){
-      // Couldn't get escalation group by activeGroup, try allocated groups
-      def argsExisting = rr.allocatedGroups
-      if (!argsExisting || argsExisting.isEmpty()){
-        response.setStatus(409)
-        result.message = "The requested ReviewRequest can not be escalated due to missing both, active group and group allocations."
-        return result
-      }
-      def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
-      List<AllocatedReviewGroup> inProgressARGs = AllocatedReviewGroup.findAllByStatus(inProgress)
-      if (inProgressARGs.isEmpty()){
-        response.setStatus(409)
-        result.message = "The requested ReviewRequest can not be escalated due to missing group allocations being in progress."
-        return result
-      }
-      if (inProgressARGs.size() > 1){
-        response.setStatus(409)
-        result.message = "The requested ReviewRequest can not be escalated due to multiple group allocations being in progress."
-        return result
-      }
-      escalatingGroup = inProgressARGs.get(0).group
-      result.escalatingAllocatedReviewGroup = inProgressARGs.get(0).id
     }
 
     if (!escalatingGroup){
@@ -565,7 +547,9 @@ class ReviewsController {
       return result
     }
 
+    CuratoryGroup editorialGroup = grailsApplication.config.gokb.editorialAdmin?.journals ? CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.editorialAdmin.journals) : null
     CuratoryGroup escalatedToCG = escalatingGroup.superordinatedGroup
+
     if (!escalatedToCG){
       response.setStatus(409)
       result.message = "Could not escalate due to missing superordinated group."
@@ -582,7 +566,7 @@ class ReviewsController {
     return result
   }
 
-  private JSON getDeescalationTargetGroupId(def rrId, def activeGroupId, def params){
+  private def getDeescalationTargetGroupId(def rrId, def activeGroupId, def params){
     def result = ['result':'ERROR', 'isDeescalatable':false, 'params': params]
     ReviewRequest rr = params.id ? ReviewRequest.get(genericOIDService.oidToId(params.id)) : null
     if (!rr){
