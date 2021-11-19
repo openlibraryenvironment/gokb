@@ -487,9 +487,9 @@ class PackageController {
         def ti_errors = []
 
         if (tipp_dto.title && tipp_dto.title instanceof Map) {
-          if (!tipp_dto.id) {
+          if (!tipp_dto.title.id) {
             try {
-              def ti = TitleInstance.upsertDTO(titleLookupservice, tipp_dto.title, user)
+              def ti = TitleInstance.upsertDTO(titleLookupService, tipp_dto.title, user)
 
               if (ti) {
                 tipp_dto.title = ti.id
