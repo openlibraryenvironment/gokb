@@ -8,6 +8,7 @@ import org.gokb.cred.BookInstance
 import org.gokb.cred.Identifier
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.KBComponent
+import org.gokb.cred.Org
 import org.gokb.cred.Package
 import org.gokb.cred.Platform
 import org.gokb.cred.RefdataCategory
@@ -28,6 +29,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
   private Platform plt
   private TitleInstance book, journal
   private Identifier isbn
+  private Org publisher
 
   @Autowired
   TippService tippService
@@ -38,8 +40,9 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
   def setup() {
     pkg = new Package(name: "Test Package").save()
     plt = new Platform(name: "Test Platform").save()
-    isbn = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5')
-    book = new BookInstance(name: "Book 1", ids: [isbn])
+    isbn = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5').save()
+    book = new BookInstance(name: "Book 1", ids: [isbn]).save()
+    publisher = new Org(name: "Publizistenname").save()
   }
 
   def cleanup() {
@@ -47,6 +50,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     plt.expunge()
     book.expunge()
     isbn.expunge()
+    publisher.expunge()
   }
 
   void "Test create new title from a minimal TIPP"() {
@@ -71,6 +75,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
 
     then:
     tipp.title != null
+    tipp.expunge()
   }
 
   void "Test create new BookInstance from a full TIPP"() {
@@ -128,6 +133,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     tipp.dateFirstOnline == tipp.title.dateFirstOnline
     tipp.medium.value == tipp.title.medium.value
     tipp.title.publisher*.name.contains(tipp.publisherName)
+    tipp.expunge()
   }
 
   void "Test attach existing title with a TIPP by its IDs"() {
@@ -144,17 +150,18 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
       'editStatus'     : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
       'language'       : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, 'ger'),
       'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph"),
-      'ids'            : [my_isbn]
     ]
 
     when:
-    TitleInstancePackagePlatform tipp = new TitleInstancePackagePlatform(tmap)
-//    tipp.ids = [my_isbn]
+    TitleInstancePackagePlatform tipp = new TitleInstancePackagePlatform(tmap).save()
+    tipp.ids.add(my_isbn)
+    tipp.save(flush: true)
 
     tippService.matchTitle(tipp)
 
     then:
     tipp.title == book
+    tipp.expunge()
   }
 
   @Rollback

@@ -21,6 +21,7 @@ class ComponentUpdateService {
   def reviewRequestService
   def dateFormatService
   def restMappingService
+  def classExaminationService
   def sessionFactory
 
   private final Object findLock = new Object()
@@ -239,11 +240,14 @@ class ComponentUpdateService {
       for (def priceData : data.prices) {
         def val = priceData.price ?: priceData.amount ?: null
         def typ = priceData.priceType ? priceData.priceType.value : priceData.type ?: null
+        def startDate = priceData.startDate ? (priceData.startDate instanceof Date ? priceData.startDate : dateFormatService.parseDate(priceData.startDate.toString())) : null
+        def endDate = priceData.endDate ? (priceData.endDate instanceof Date ? priceData.endDate : dateFormatService.parseDate(priceData.endDate.toString())) : null
+
         if (val != null && priceData.currency && typ) {
           component.setPrice(typ,
             "${val} ${priceData.currency}",
-            priceData.startDate ? dateFormatService.parseDate(priceData.startDate.toString()) : null,
-            priceData.endDate ? dateFormatService.parseDate(priceData.endDate.toString()) : null)
+            startDate,
+            endDate)
           hasChanged = true
         }
       }
@@ -312,34 +316,53 @@ class ComponentUpdateService {
     def result = [total: 0, errors: 0]
     def field = params['_field']
     int offset = 0
-    def value = params['_value']
+    int max = 50
+    def value = null
 
-    result.total = componentLookupService.restLookup(user, ReviewRequest, params)._pagination.total
+    result.total = componentLookupService.restLookup(user, cls, params, null, true)._pagination.total
 
     while (offset < result.total) {
-      def items = componentLookupService.restLookup(user, ReviewRequest, params).data
+      params.limit = max
 
-      items.each {
-        def obj = cls.get(it.id)
-        def reqBody = [:]
+      def items = componentLookupService.restLookup(user, cls, params, null, true).data
 
-        reqBody[field] = value
+      if (cls == TitleInstancePackagePlatform && params.pkg?.trim() && field == 'status') {
+        def pkg = Package.get(params.int('pkg'))
+        def status_rdv = params.int('_value') ? RefdataValue.get(params.int('_value')) : RefdataCategory.lookup('KBComponent.Status', params['_value'])
 
-        if (isUserCurator(obj, user)) {
-          obj = restMappingService.updateObject(obj, null, reqBody)
-
-          if (obj.hasErrors()) {
-            result.errors++
-          } else {
-            obj.save(flush:true)
-          }
+        if (pkg && isUserCurator(pkg, user) && status_rdv?.owner?.label == 'KBComponent.Status') {
+          TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set status = :status, lastUpdated = :date where id IN (:ids)", [status: status_rdv, ids: items, date: new Date()])
+          offset += max
         }
         else {
-          result.errors++
+          offset = result.total
+          result.errors = result.total
+        }
+      }
+      else {
+        items.each {
+          def obj = cls.get(it)
+          def reqBody = [:]
+
+          reqBody[field] = params['_value']
+
+          if (isUserCurator(obj, user)) {
+            obj = restMappingService.updateObject(obj, null, reqBody)
+
+            if (obj.hasErrors()) {
+              result.errors++
+            } else {
+              obj.save(flush:true)
+            }
+          }
+          else {
+            result.errors++
+          }
+          offset++
         }
       }
 
-      offset += 10
+      log.debug("Finished ${offset}/${result.total}")
       cleanUpGorm()
     }
     result

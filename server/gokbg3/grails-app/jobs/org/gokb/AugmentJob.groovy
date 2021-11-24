@@ -11,7 +11,7 @@ class AugmentJob {
 
   // Every five minutes
   static triggers = {
-    cron name: 'TitleAugmentJobTrigger', cronExpression: "0 0 22 * * ?", startDelay:60000
+    cron name: 'TitleAugmentJobTrigger', cronExpression: "0 0/5 * * * ? *", startDelay:60000
   }
 
   def execute() {
@@ -44,10 +44,12 @@ class AugmentJob {
           log.debug("Attempting zdb augment on ${ti.id} ${ti.name}");
           titleAugmentService.augmentZdb(ti)
 
-          if (offset++ % 40 == 0) {
+          if (offset % 40 == 0) {
             cleanUpGorm()
           }
         }
+
+        offset += 20
       }
 
       log.info("Finished ZDB augment job, augmenting ${count_journals_without_zdb_id} Journals.")
