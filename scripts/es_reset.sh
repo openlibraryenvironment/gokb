@@ -4,7 +4,7 @@ export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && p
 export MAPPING_FILE=$SCRIPT_DIR"/../server/gokbg3/grails-app/conf/elasticsearch/es_mapping.json"
 export SETTINGS_FILE=$SCRIPT_DIR"/../server/gokbg3/grails-app/conf/elasticsearch/es_settings.json"
 
-printf 'Reset ES indexes for index name \"$INDEXNAME\"\n'
+printf "Reset ES indexes for index name $INDEXNAME \n"
 
 printf "Drop old index\n"
 curl -XDELETE "http://localhost:9200/$INDEXNAME"

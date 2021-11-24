@@ -24,6 +24,7 @@ class TitleController {
   def genericOIDService
   def springSecurityService
   def ESSearchService
+  def FTUpdateService
   def messageService
   def restMappingService
   def titleLookupService
@@ -229,6 +230,7 @@ class TitleController {
 
               if (errors.size() == 0) {
                 response.setStatus(201)
+                FTUpdateService.updateSingleItem(obj)
                 result = restMappingService.mapObjectToJson(obj, params, user)
               }
               else {
@@ -768,6 +770,7 @@ class TitleController {
 
           if ( errors.size() == 0 ) {
             obj = obj.save(flush:true)
+            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -1028,6 +1031,8 @@ class TitleController {
               }
             }
           }
+
+          obj.deleteSoft()
         }
         else {
           result.result = 'ERROR'

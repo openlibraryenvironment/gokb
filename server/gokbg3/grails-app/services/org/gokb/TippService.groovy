@@ -11,6 +11,7 @@ import org.gokb.cred.RefdataValue
 import org.gokb.cred.TIPPCoverageStatement
 import org.gokb.rest.TippController
 import org.grails.web.json.JSONObject
+import org.gokb.cred.Identifier
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.TitleInstance
@@ -235,17 +236,18 @@ class TippService {
     log.debug("Finished title matching for ${offset} Titles")
   }
 
-  void matchTitle(TitleInstancePackagePlatform tipp) {
+  def matchTitle(tipp) {
     def found
     final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
     def title_changed = false
     def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
 
     // remap Identifiers
-    def my_ids = []
-    tipp.ids.each {
-      my_ids << [value: it.value, type: it.namespace.value]
-    }
+    def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = ? and toComponent = i)", [tipp])
+    def my_ids = tipp_ids.collect { [value: it.value, type: it.namespace.value] }
+
+    log.debug("TIPP Ids: ${my_ids} (by query: tipp_ids.size())")
+
     found = titleLookupService.find(
         tipp.name,
         tipp.getPublisherName(),
@@ -258,7 +260,41 @@ class TippService {
     }
 
     TitleInstance ti
-    if (found.matches.size() == 1) {
+    if (found.to_create == true) {
+      log.debug("No existing title matched, creating ${tipp.name}")
+      // unknown title
+      ti = Class.forName(title_class_name).newInstance()
+      ti.name = tipp.name
+
+      log.debug("Set name ${ti.name} ..")
+      ti.save(flush: true)
+      titleLookupService.addPublisher(tipp.publisherName, ti)
+      log.debug("Transfering new ti ids: ${tipp.ids}")
+      titleLookupService.addIdentifiers(tipp_ids, ti)
+
+      title_changed |= componentUpdateService.setAllRefdata([
+          'medium', 'language'
+      ], tipp, ti)
+
+      def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(tipp.dateFirstInPrint.format("yyyy-MM-dd")) : null
+      def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(tipp.dateFirstOnline.format("yyyy-MM-dd")) : null
+
+      title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
+      title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
+
+      if (title_class_name == 'org.gokb.cred.BookInstance') {
+        log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
+        title_changed |= ti.addMonographFields(new JSONObject([//editionNumber        : null,
+                                                               //editionDifferentiator: null,
+                                                               editionStatement: tipp.editionStatement,
+                                                               volumeNumber    : tipp.volumeNumber,
+                                                               //summaryOfContent     : null,
+                                                               firstAuthor     : tipp.firstAuthor,
+                                                               firstEditor     : tipp.firstEditor]))
+      }
+      ti.merge(flush: true)
+    }
+    else if (found.matches.size() == 1) {
       // exactly one match
       ti = found.matches[0].object
       TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
@@ -274,51 +310,12 @@ class TippService {
         )
       }
     }
-    else if (found.to_create == true) {
-      log.debug("No existing title matched, creating ${tipp.name}")
-      // unknown title
-      ti = Class.forName(title_class_name).newInstance()
-      ti.name = tipp.name
 
-      log.debug("Set name ${ti.name} ..")
-      ti.save(flush: true)
-      titleLookupService.addPublisher(tipp.publisherName, ti)
-      tipp.ids.each {
-        ti.ids << it
-        if (it.namespace == ZDB_NS) {
-          // TODO: ZDB-Enrichment for new Journals with ZDB-ID already present
-        }
-      }
-      // Add the core data.
-      componentUpdateService.ensureCoreData(ti, tipp, false, null)
-
-      title_changed |= componentUpdateService.setAllRefdata([
-          'medium', 'language'
-      ], tipp, ti)
-
-      def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(tipp.dateFirstInPrint.format("yyyy-MM-dd")) : null
-      def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(tipp.dateFirstOnline.format("yyyy-MM-dd")) : null
-
-      title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
-      title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
-
-      titleLookupService.addPublisher(tipp.publisherName, ti)
-
-      if (title_class_name == 'org.gokb.cred.BookInstance') {
-        log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
-        title_changed |= ti.addMonographFields(new JSONObject([//editionNumber        : null,
-                                                               //editionDifferentiator: null,
-                                                               editionStatement: tipp.editionStatement,
-                                                               volumeNumber    : tipp.volumeNumber,
-                                                               //summaryOfContent     : null,
-                                                               firstAuthor     : tipp.firstAuthor,
-                                                               firstEditor     : tipp.firstEditor]))
-      }
-      ti.merge(flush: true)
-    }
     if (ti) {
       tipp.title = ti
-      tipp.save()
+      titleLookupService.addIdentifiers(tipp_ids, ti)
+      titleLookupService.addPublisher(tipp.publisherName, ti)
+      tipp.save(flush: true)
       log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
     if (tipp.coverageStatements?.size() > 0) {
@@ -443,7 +440,7 @@ class TippService {
       if (found.matches.size > 1) {
         def additionalInfo = [otherComponents: []]
         found.matches.each { comp ->
-          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid, conflicts: comp.conflicts]
         }
         reviewRequestService.raise(
             tipp,
@@ -452,9 +449,77 @@ class TippService {
             null,
             null,
             (additionalInfo as JSON).toString(),
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Multiple Matches")
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
+            (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
         )
       }
+      else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
+        found.matches.each { comp ->
+          def otherComponent = [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+          def mismatches = []
+
+          comp.conflicts.each { conflict ->
+            if (conflict.field == "identifier.namespace") {
+              def additionalInfo = [otherComponents: [otherComponent], conflict: conflict]
+
+              reviewRequestService.raise(
+                tipp,
+                conflict.message,
+                "Check Title identifiers",
+                null,
+                null,
+                (additionalInfo as JSON).toString(),
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
+                (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+              )
+            }
+            else if (conflict.field == "identifier.value") {
+              def id_map = [:]
+              id_map[conflict.namespace] = conflict.value
+
+              mismatches << id_map
+            }
+          }
+
+          if (mismatches.size() > 0 && found.to_create) {
+            def additionalInfo = [
+              otherComponents: [otherComponent],
+              mismatches: mismatches,
+              vars: [comp.object.name, mismatches]
+            ]
+
+            reviewRequestService.raise(
+              tipp.title,
+              "Identifier mismatch",
+              "Title ${comp.object.name} matched, but ingest identifiers ${mismatches} differ from existing ones in the same namespaces.",
+              null,
+              null,
+              (additionalInfo as JSON).toString(),
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict'),
+              (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+            )
+          }
+          else if (mismatches.size() > 0 && !found.to_create) {
+            def additionalInfo = [
+              otherComponents: [otherComponent],
+              mismatches: mismatches,
+              vars: [comp.object.name, mismatches]
+            ]
+
+            reviewRequestService.raise(
+              tipp.title,
+              it.message,
+              "Check Title identifiers",
+              null,
+              null,
+              (additionalInfo as JSON).toString(),
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
+              (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+            )
+          }
+        }
+      }
+
       if (found.conflicts.size > 0) {
         def additionalInfo = [otherComponents: []]
         found.conflicts.each { comp ->
@@ -467,7 +532,8 @@ class TippService {
             null,
             null,
             (additionalInfo as JSON).toString(),
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Major Identifier Mismatch")
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
+            (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
         )
       }
     }
