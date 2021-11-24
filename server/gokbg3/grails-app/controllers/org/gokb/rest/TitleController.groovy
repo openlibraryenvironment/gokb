@@ -1031,6 +1031,8 @@ class TitleController {
               }
             }
           }
+
+          obj.deleteSoft()
         }
         else {
           result.result = 'ERROR'
