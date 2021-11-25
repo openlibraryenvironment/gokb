@@ -151,48 +151,28 @@ class TitleAugmentService {
     CuratoryGroup editorialGroup = grailsApplication.config.gokb.editorialAdmin?.journals ? CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.editorialAdmin.journals) : null
 
     if ( titleInstance.niceName == 'Journal' ) {
-      def rr_no_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'No EZB Results')
-      def rr_type = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple EZB Results')
+      def rr_multi_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple EZB Results')
       def rr_in_use = RefdataCategory.lookup('ReviewRequest.StdDesc', 'EZB Title Overlap')
-      def existing_rr = ReviewRequest.executeQuery("select rr.id from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc IN (:types)", [ti: titleInstance, types: [rr_type, rr_in_use]])
+      def rr_info = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Information')
+      def existing_rr = ReviewRequest.executeQuery("select rr.id from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc IN (:types)", [ti: titleInstance, types: [rr_multi_results, rr_in_use]])
 
       if (existing_rr.size() == 0) {
-        def candidates = ezbAPIService.lookup(titleInstance.name, titleInstance.ids)
-        RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
-        RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
-        String ezbId = EzbAPIService.getJourId(candidates[0])
-        if (candidates.size() == 1) {
-          def newId = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
-          def conflicts = Combo.executeQuery("from Combo as c where c.fromComponent IN (select ti from TitleInstance as ti where ti.status != :deleted) and c.fromComponent != :tic and c.toComponent = :idc and c.type = :ctype", [deleted: status_deleted, tic: titleInstance, idc: newId, ctype: idComboType])
-          if (conflicts.size() > 0) {
-            log.debug("Matched EZB-ID ${newId.namespace.value}:${newId.value} is already connected to other instances: ${newId.identifiedComponents}")
-            if (conflicts.size() == 1) {
-              setNewTitleInfo(conflicts[0].fromComponent, ezbId)
-            }
-            def additionalInfo = [
-                otherComponents: conflicts.collect { [id: it.fromComponent.id, name: it.fromComponent.name, oid: it.fromComponent.logEntityId, uuid: it.fromComponent.uuid] }
-            ]
-            reviewRequestService.raise(
-                titleInstance,
-                "Review all titles for possible discrepancies",
-                "Matched EZB-ID is already linked to another title instance.",
-                null,
-                null,
-                (additionalInfo as JSON).toString(),
-                rr_in_use,
-                editorialGroup
-            )
-          }
-          else {
-            new Combo(fromComponent: titleInstance, toComponent: newId, type: idComboType).save(flush: true, failOnError: true)
-            log.debug("Added new EZB-ID ${newId} .")
-          }
-          setNewTitleInfo(titleInstance, ezbId)
+        def ezbCandidates = ezbAPIService.lookup(titleInstance.name, titleInstance.ids)
+        RefdataValue comboTypeId = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+        RefdataValue statusDeleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+        String ezbId
+        if (ezbCandidates.size() == 1) {
+          // 1 EZB match ==> create Combo from ReviewRequest to EZB identifier
+          ezbId = EzbAPIService.getJourId(ezbCandidates[0])
+          def newOrExistingEzbId = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
+          new Combo(fromComponent: titleInstance, toComponent: newOrExistingEzbId, type: comboTypeId).save(flush: true, failOnError: true)
+          log.debug("Added new EZB-ID ${newOrExistingEzbId} .")
         }
-        else if (candidates.size == 0){
+        else if (ezbCandidates.size() == 0){
+          // no EZB match ==> raise ReviewRequest with type Information
           if (titleInstance.ids.collect { it.namespace.value == 'issn' || it.namespace.value == 'eissn' }) {
             log.debug("No EZB result for ids of title ${titleInstance} (${titleInstance.ids.collect { it.value }})")
-            if (titleInstance.reviewRequests.collect { it.stdDesc == rr_no_results}.size() == 0) {
+            if (titleInstance.reviewRequests.collect {it.stdDesc == rr_info}.size() == 0) {
               reviewRequestService.raise(
                   titleInstance,
                   "Check for reference ID",
@@ -200,7 +180,7 @@ class TitleAugmentService {
                   null,
                   null,
                   null,
-                  rr_no_results,
+                  rr_info,
                   editorialGroup
               )
             }
@@ -208,51 +188,46 @@ class TitleAugmentService {
         }
         else {
           log.debug("Multiple EZB-ID candidates for title ${titleInstance}")
-          def name_candidates = []
-          candidates.each {
+          def nameCandidates = []
+          ezbCandidates.each {
             if (it.title == titleInstance.name) {
-              name_candidates.add (it)
+              nameCandidates.add (it)
             }
           }
-          if (name_candidates.size() == 1) {
-            def newId = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
-            def conflicts = Combo.executeQuery("from Combo as c where c.fromComponent IN (select ti from TitleInstance as ti where ti.status != :deleted) and c.fromComponent != :tic and c.toComponent = :idc and c.type = :ctype", [deleted: status_deleted, tic: titleInstance, idc: newId, ctype: idComboType])
-            if (conflicts.size() > 0) {
-              log.debug("Matched EZB-ID ${newId.namespace.value}:${newId.value} is already connected to other instances: ${newId.identifiedComponents}")
-              if (conflicts.size() == 1) {
-                setNewTitleInfo(conflicts[0].fromComponent, candidates[0])
+          if (nameCandidates.size() == 1) {
+            // found 1 EZB match by name matching
+            ezbId = EzbAPIService.getJourId(nameCandidates[0])
+            def newOrExistingEzbId = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
+            log.debug("Adding new EZB-ID ${newOrExistingEzbId}")
+            new Combo(fromComponent: titleInstance, toComponent: newOrExistingEzbId, type: comboTypeId).save(flush: true, failOnError: true)
+          }
+          else if (nameCandidates.size() == 0) {
+            // found multiple matches by ID matching but 0 EZB match by name matching (very unlikely)
+            if (titleInstance.ids.collect { it.namespace.value == 'issn' || it.namespace.value == 'eissn' }) {
+              log.debug("Multiple EZB results for ID, but no EZB result for names of title ${titleInstance} (${titleInstance.ids.collect { it.value }})")
+              if (titleInstance.reviewRequests.collect {it.stdDesc == rr_info}.size() == 0) {
+                reviewRequestService.raise(
+                    titleInstance,
+                    "No action required.",
+                    "No EZB matches for title name",
+                    null,
+                    null,
+                    null,
+                    rr_info,
+                    editorialGroup
+                )
               }
-              def additionalInfo = [
-                  otherComponents: newId.identifiedComponents.collect { [id: it.id, name: it.name, oid: it.logEntityId, uuid: it.uuid] }
-              ]
-              reviewRequestService.raise(
-                  titleInstance,
-                  "Review all titles for possible discrepancies",
-                  "Matched EZB-ID is already linked to another title instance.",
-                  null,
-                  null,
-                  (additionalInfo as JSON).toString(),
-                  rr_in_use,
-                  editorialGroup
-              )
-            }
-            else {
-              log.debug("Adding new EZB-ID ${newId}")
-              new Combo(fromComponent: titleInstance, toComponent: newId, type: idComboType).save(flush: true, failOnError: true)
             }
           }
           else {
-            def additionalInfo = [
-                candidates: candidates
-            ]
             reviewRequestService.raise(
                 titleInstance,
-                "Choose the correct EZB-ID from the list of candidates",
-                "Multiple EZB-IDs found for ISSN ids",
+                "No action required.",
+                "Multiple EZB-IDs found for ISSN and title name",
                 null,
                 null,
-                (additionalInfo as JSON).toString(),
-                rr_type,
+                ([candidates: ezbCandidates] as JSON).toString(),
+                rr_info,
                 editorialGroup
             )
           }
@@ -265,11 +240,11 @@ class TitleAugmentService {
   }
 
   private void setNewTitleInfo(titleInstance, info) {
-    if (!titleInstance.publishedFrom && info.publishedFrom) {
+    if ((!titleInstance.hasProperty('publishedFrom') || !titleInstance.publishedFrom) && info.publishedFrom) {
       log.debug("Adding new start journal start date ..")
       com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedFrom), titleInstance, 'publishedFrom')
     }
-    if (!titleInstance.publishedTo && info.publishedTo) {
+    if ((!titleInstance.hasProperty('publishedTo') || !titleInstance.publishedTo) && info.publishedTo) {
       log.debug("Adding new start journal end date ..")
       com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedTo), titleInstance, 'publishedTo')
     }
