@@ -141,6 +141,11 @@ class OaiController {
       if (oid) {
         record = KBComponent.findByUuid(oid)
 
+        if (record && record?.class.name != result.className) {
+          record = null
+          errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown or illegal in this repository.'])
+        }
+
         if (!record) {
           record = genericOIDService.resolveOID(oid)
         }

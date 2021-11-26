@@ -30,12 +30,13 @@ class AugmentJob {
       issnNs << IdentifierNamespace.findByValue('eissn')
       def journals
       int offset = 0
+      int batchSize = 50
 
       def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) from JournalInstance as ti where ti.status = :current and not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)",[current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs])[0]
 
-      // find the next 100 titles that don't have a suncat ID
+      // find the next 100 titles that don't have a ZDB-ID
       while (offset < count_journals_without_zdb_id) {
-        def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id from JournalInstance as ti where ti.status = :current and not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)",[current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs],[offset: offset, max: 20])
+        def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id from JournalInstance as ti where ti.status = :current and not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)",[current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs],[offset: offset, max: batchSize])
 
         log.debug("Processing ${count_journals_without_zdb_id}");
 
@@ -43,13 +44,11 @@ class AugmentJob {
           def ti = TitleInstance.get(ti_id)
           log.debug("Attempting augment on ${ti.id} ${ti.name}");
           titleAugmentService.augment(ti)
-
-          if (offset % 40 == 0) {
-            cleanUpGorm()
-          }
         }
 
-        offset += 20
+        cleanUpGorm()
+
+        offset += batchSize
       }
 
       log.info("Finished augmenting ${count_journals_without_zdb_id} Journals")

@@ -123,12 +123,12 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.status == 200 // OK
     resp.json.url == upd_body.url
     resp.json._embedded.coverageStatements?.size() == 1
+    resp.json._embedded.prices?.size() == 1
     resp.json.publisherName == "other Publisher"
   }
 
   void "test /rest/tipps/<id> PUT"() {
     given:
-    sleep(200)
     def tipp = TitleInstancePackagePlatform.findByUrl("http://some.uri/")
     def coverage_id = tipp.coverageStatements[0].id
     def upd_body = [
@@ -154,6 +154,16 @@ class TippTestSpec extends AbstractAuthSpec {
                 startIssue   : "1",
                 coverageDepth: "Fulltext"
             ]
+        ],
+        ids: [
+          [
+            type: 'issn',
+            value: '3245-2341'
+          ],
+          [
+            type: 'eissn',
+            value: '3241-2541'
+          ]
         ]
     ]
     def urlPath = getUrlPath()
@@ -172,6 +182,7 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.json.url == upd_body.url
     resp.json.name == "new TIPP name"
     resp.json.publisherName == "some Publisher"
+    resp.json._embedded.ids?.size() == 2
     resp.json._embedded.coverageStatements?.size() == 2
     resp.json._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
   }
