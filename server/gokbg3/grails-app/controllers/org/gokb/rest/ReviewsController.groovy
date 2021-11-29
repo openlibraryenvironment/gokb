@@ -496,7 +496,7 @@ class ReviewsController {
   }
 
 
-  private def getEscalationTargetGroupId(def rrId, int activeGroupId, def params){
+  private def getEscalationTargetGroupId(def rrId, def activeGroupId, def params){
     def result = ['result':'ERROR', 'isEscalatable':false, 'params': params]
 
     def rr = ReviewRequest.get(genericOIDService.oidToId(rrId))
@@ -511,21 +511,25 @@ class ReviewsController {
       return result
     }
 
-    String componentClass
-    if (!rr.componentToReview?.class in [BookInstance.class, DatabaseInstance.class, JournalInstance.class]){
-      componentClass = rr.componentToReview?.class.getSimpleName()
+    String componentClass = rr.componentToReview?.class.getSimpleName()
+    if (!componentClass in [BookInstance.class.getSimpleName(), DatabaseInstance.class.getSimpleName(), JournalInstance.class.getSimpleName()]){
       response.setStatus(405)
       result.message = "ReviewRequest belongs to the un-escalatable class ${componentClass}"
       return result
     }
 
     CuratoryGroup escalatingGroup = null
-    if (activeGroupId > 0){
-      CuratoryGroup toBeChecked = CuratoryGroup.findById(activeGroupId)
-      RefdataValue inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
-      List<AllocatedReviewGroup> argCandidates = AllocatedReviewGroup.findAllByGroupAndReviewAndStatus(toBeChecked, rr, inProgress)
-      if (argCandidates.size() == 1){
-        escalatingGroup = toBeChecked
+    try{
+      activeGroupId = Integer.valueOf(activeGroupId)
+    }
+    finally{
+      if (activeGroupId instanceof Integer && activeGroupId > 0){
+        CuratoryGroup toBeChecked = CuratoryGroup.findById(activeGroupId)
+        RefdataValue inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+        List<AllocatedReviewGroup> argCandidates = AllocatedReviewGroup.findAllByGroupAndReviewAndStatus(toBeChecked, rr, inProgress)
+        if (argCandidates.size() == 1){
+          escalatingGroup = toBeChecked
+        }
       }
     }
 
@@ -535,9 +539,12 @@ class ReviewsController {
       return result
     }
 
-    CuratoryGroup editorialGroup = grailsApplication.config.gokb.editorialAdmin?.${componentClass} ?
-        CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.editorialAdmin.${componentClass}) : null
+    CuratoryGroup editorialGroup = grailsApplication.config.gokb.centralGroups && grailsApplication.config.gokb.centralGroups['componentClass'] ?
+        CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.centralGroups['componentClass']) : null
     CuratoryGroup escalatedToCG = escalatingGroup.superordinatedGroup
+    if (!escalatedToCG && componentClass == "JournalInstance"){
+      escalatedToCG = editorialGroup
+    }
     if (!escalatedToCG){
       response.setStatus(409)
       result.message = "Could not escalate due to missing superordinated group."

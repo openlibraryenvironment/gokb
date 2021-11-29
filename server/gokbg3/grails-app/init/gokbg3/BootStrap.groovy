@@ -136,16 +136,10 @@ class BootStrap {
 
         migrateDiskFilesToDatabase()
 
-        CuratoryGroup.withTransaction() {
-            if (grailsApplication.config.gokb.defaultCuratoryGroup != null) {
-                log.debug("Ensure curatory group: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
-                def local_cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup) ?:
-                    new CuratoryGroup(name: grailsApplication.config.gokb?.defaultCuratoryGroup).save(flush: true, failOnError: true);
-            }
-        }
+        ensureCuratoryGroup(grailsApplication.config.gokb.defaultCuratoryGroup)
+        ensureCuratoryGroup(grailsApplication.config.gokb.centralGroups?.JournalInstance)
 
         log.info("GoKB missing normalised component names");
-
         def ctr = 0;
         KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
             def kbc = KBComponent.get(kbc_id)
@@ -242,6 +236,16 @@ class BootStrap {
         ComponentStatisticService.updateCompStats()
 
         log.info("GoKB Init complete");
+    }
+
+    private Object ensureCuratoryGroup(String groupName){
+        CuratoryGroup.withTransaction(){
+            if (groupName != null){
+                log.debug("Ensure curatory group: ${groupName}");
+                def local_cg = CuratoryGroup.findByName(groupName) ?:
+                    new CuratoryGroup(name: groupName).save(flush: true, failOnError: true);
+            }
+        }
     }
 
     def defaultBulkLoaderConfig() {
