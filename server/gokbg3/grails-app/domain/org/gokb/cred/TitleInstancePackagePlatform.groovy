@@ -1004,15 +1004,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           'primaryUrl'(hostPlatform.primaryUrl?.trim())
           'name'(hostPlatform.name?.trim())
         }
-        'access'([start: (accessStartDate ? DateFormatService.formatIsoTimestamp(accessStartDate) : null), end: (accessEndDate ? DateFormatService.formatIsoTimestamp(accessEndDate) : null)])
+        'access'([start: (accessStartDate ? DateFormatService.formatTimestamp(accessStartDate) : null), end: (accessEndDate ? DateFormatService.formatTimestamp(accessEndDate) : null)])
         def cov_statements = getCoverageStatements()
         if (cov_statements?.size() > 0) {
           cov_statements.each { tcs ->
             'coverage'(
-                startDate: (tcs.startDate ? DateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+                startDate: (tcs.startDate ? DateFormatService.formatTimestamp(tcs.startDate) : null),
                 startVolume: (tcs.startVolume),
                 startIssue: (tcs.startIssue),
-                endDate: (tcs.endDate ? DateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+                endDate: (tcs.endDate ? DateFormatService.formatTimestamp(tcs.endDate) : null),
                 endVolume: (tcs.endVolume),
                 endIssue: (tcs.endIssue),
                 coverageDepth: (tcs.coverageDepth?.value ?: null),

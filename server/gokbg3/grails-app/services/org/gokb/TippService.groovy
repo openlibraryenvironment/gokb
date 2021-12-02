@@ -260,7 +260,7 @@ class TippService {
       coverageCheck(tipp, found)
     }
 
-    TitleInstance ti
+    TitleInstance ti = null
     if (found.to_create == true) {
       log.debug("No existing title matched, creating ${tipp.name}")
       // unknown title
@@ -298,6 +298,7 @@ class TippService {
     else if (found.matches.size() == 1) {
       // exactly one match
       ti = found.matches[0].object
+      log.debug("Matched title ${ti} for ${tipp}!")
       TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
 
       if (currentCov && ((ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) || (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo))) {
@@ -399,16 +400,21 @@ class TippService {
       // too many identifier matches
       def covMatch = []
       for (def comp : found.matches) {
-        if (JournalInstance.isInstance(comp)) {
-          JournalInstance journal = JournalInstance(comp)
+        if (JournalInstance.isInstance(comp.object)) {
           if (// starts too early OR
-              journal.publishedFrom && latest.startDate && latest.startDate < journal.publishedFrom ||
+              (comp.object.publishedFrom && latest.startDate && latest.startDate < comp.object.publishedFrom) ||
               // ends too late
-              journal.publishedTo && latest.endDate && latest.endDate > journal.publishedTo)
+              (comp.object.publishedTo && latest.endDate && latest.endDate > comp.object.publishedTo)) {
+            log.debug("Excluded title match ${comp} based on coverage conflicts.")
             // no match
             break
-          else
-            covMatch << journal
+          }
+          else {
+            covMatch << comp
+          }
+        }
+        else {
+          log.debug("Skipping title match with class ${comp?.object?.class}")
         }
       }
       if (covMatch.size() == 1)
@@ -450,8 +456,7 @@ class TippService {
             null,
             null,
             (additionalInfo as JSON).toString(),
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
-            (tipp.pkg?.curatoryGroups?.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
         )
       }
       else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
@@ -470,8 +475,7 @@ class TippService {
                 null,
                 null,
                 (additionalInfo as JSON).toString(),
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
-                (tipp?.pkg?.curatoryGroups?.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict')
               )
             }
             else if (conflict.field == "identifier.value") {
@@ -496,8 +500,7 @@ class TippService {
               null,
               null,
               (additionalInfo as JSON).toString(),
-              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict'),
-              (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict')
             )
           }
           else if (mismatches.size() > 0 && !found.to_create) {
@@ -514,11 +517,26 @@ class TippService {
               null,
               null,
               (additionalInfo as JSON).toString(),
-              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
-              (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict')
             )
           }
         }
+      }
+      else if (tipp.title == null) {
+        def additionalInfo = [otherComponents: []]
+        found.matches.each { comp ->
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+        }
+
+        reviewRequestService.raise(
+            tipp,
+            "TIPP conflicts",
+            "TIPP ${tipp.name} conflicts with other titles.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict")
+        )
       }
 
       if (found.conflicts.size > 0) {
@@ -533,8 +551,7 @@ class TippService {
             null,
             null,
             (additionalInfo as JSON).toString(),
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
-            (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict")
         )
       }
     }

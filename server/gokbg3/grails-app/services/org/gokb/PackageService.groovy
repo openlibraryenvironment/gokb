@@ -1246,27 +1246,33 @@ class PackageService {
           query.setParameter('ct', combo_tipps)
 
           ScrollableResults tippIDs = query.scroll(ScrollMode.FORWARD_ONLY)
+          int ctr = 0
 
-          while (tippIDs.next()) {
-            def tipp_id = tippIDs.get(0);
-            TitleInstancePackagePlatform.withNewSession {
+          TitleInstancePackagePlatform.withNewSession { tsession ->
+            while (tippIDs.next()) {
+              def tipp_id = tippIDs.get(0)
               TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+
               kbartRecordsFor(tipp, exportType).each { record ->
                 KBART_FIELDS.eachWithIndex { fieldName, i ->
                   writer.write(sanitize(record[fieldName]))
                   writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
                 }
               }
+
+              if (ctr % 50 == 0) {
+                tsession.flush()
+                tsession.clear()
+              }
+              ctr++
             }
           }
           tippIDs.close()
-
-          writer.flush();
-          writer.close();
+          writer.close()
         }
       }
       catch (Exception e) {
-        log.error("Problem with creating KBART export data", e);
+        log.error("Problem with creating KBART export data", e)
       }
     }
   }
@@ -1348,10 +1354,9 @@ class PackageService {
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
 
-          while (tipps.next()) {
-
-            def tipp_id = tipps.get(0);
-            TitleInstancePackagePlatform.withNewSession {
+          TitleInstancePackagePlatform.withNewSession { tsession ->
+            while (tipps.next()) {
+              def tipp_id = tipps.get(0);
               TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
 
               if (tipp.coverageStatements?.size() > 0) {
@@ -1440,15 +1445,18 @@ class PackageService {
                         sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title.getIdentifierValue('DOI')) + '\t' +
                         sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')) + '\t' +
                         sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')) +
-                        '\n');
+                        '\n')
               }
-              tipp.discard();
+
+              if (ctr % 50 == 0) {
+                tsession.flush()
+                tsession.clear()
+              }
+              ctr++
             }
           }
           tipps.close()
-
-          writer.flush();
-          writer.close();
+          writer.close()
         }
       }
     }
@@ -1470,9 +1478,14 @@ class PackageService {
           createTsvExport(pkg)
         file = new File(exportFilePath() + fileName)
       }
+      else if (Duration.between(Instant.ofEpochMilli(file.lastModified()), Instant.now()).getSeconds() < 2) {
+        while (Duration.between(Instant.ofEpochMilli(file.lastModified()), Instant.now()).getSeconds() < 2) {
+          sleep(1000)
+        }
+      }
       InputStream inFile = new FileInputStream(file)
 
-      response.setContentType('text/tab-separated-values');
+      response.setContentType('text/tab-separated-values')
       response.setHeader("Content-Disposition", "attachment; filename=\"${fileName.substring(0, fileName.length() - 13)}.tsv\"")
       response.setHeader("Content-Encoding", "UTF-8")
       response.setContentLength(file.bytes.length)
@@ -1483,7 +1496,7 @@ class PackageService {
       out.close()
     }
     catch (Exception e) {
-      log.error("Problem with sending export", e);
+      log.error("Problem with sending export", e)
     }
   }
 
@@ -1724,6 +1737,18 @@ class PackageService {
     return ''
   }
 
+  private String selectDateField(tippPropValue, titlePropValue, ExportType exportType) {
+    if (tippPropValue && titlePropValue){
+      return (exportType==ExportType.KBART_TIPP) ? dateFormatService.formatDate(tippPropValue) : dateFormatService.formatDate(titlePropValue)
+    }
+    else if (tippPropValue){
+      return dateFormatService.formatDate(tippPropValue)
+    } else if (titlePropValue){
+      return dateFormatService.formatDate(titlePropValue)
+    }
+    return ''
+  }
+
   private def kbartRecordsFor (TitleInstancePackagePlatform tipp, ExportType exportType) {
     def recordList = []
     def record = [:]
@@ -1738,14 +1763,14 @@ class PackageService {
       record.online_identifier = pick(tipp.getIdentifierValue('eISSN'), tipp.title?.getIdentifierValue('eISSN'), exportType)
     }
     record.title_url = tipp.url
-    record.first_author = pick(tipp.firstAuthor, tipp.title?.hasProperty('firstAuthor')?tipp.title.firstAuthor:null, exportType)
-    record.first_editor = pick(tipp.firstEditor, tipp.title?.hasProperty('firstEditor')?tipp.title.firstEditor:null, exportType)
-    record.date_monograph_published_print = pick(tipp.dateFirstInPrint, tipp.title?.hasProperty('dateFirstInPrint')?tipp.title.dateFirstInPrint:null, exportType)
-    record.date_monograph_published_online = pick(tipp.dateFirstOnline, tipp.title?.hasProperty('dateFirstOnline')?tipp.title.dateFirstOnline:null, exportType)
-    record.monograph_volume = pick(tipp.volumeNumber, tipp.title?.hasProperty('volumeNumber')?tipp.title.volumeNumber:null, exportType)
-    record.monograph_edition = pick(tipp.editionStatement, tipp.title?.hasProperty('editionStatement')?tipp.title.editionStatement:null, exportType)
+    record.first_author = pick(tipp.firstAuthor, tipp.title?.hasProperty('firstAuthor') ? tipp.title.firstAuthor : null, exportType)
+    record.first_editor = pick(tipp.firstEditor, tipp.title?.hasProperty('firstEditor') ? tipp.title.firstEditor : null, exportType)
+    record.date_monograph_published_print = selectDateField(tipp.dateFirstInPrint, tipp.title?.hasProperty('dateFirstInPrint') ? tipp.title.dateFirstInPrint : null, exportType)
+    record.date_monograph_published_online = selectDateField(tipp.dateFirstOnline, tipp.title?.hasProperty('dateFirstOnline') ? tipp.title.dateFirstOnline : null, exportType)
+    record.monograph_volume = pick(tipp.volumeNumber, tipp.title?.hasProperty('volumeNumber') ? tipp.title.volumeNumber : null, exportType)
+    record.monograph_edition = pick(tipp.editionStatement, tipp.title?.hasProperty('editionStatement') ? tipp.title.editionStatement : null, exportType)
     record.title_id = pick(tipp.importId, tipp.title?.id, exportType)
-    record.publisher_name = pick (tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
+    record.publisher_name = pick(tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
     record.preceding_publication_title_id = pick(tipp.precedingPublicationTitleId, tipp.title?.getPrecedingTitleId(), exportType)
     record.parent_publication_title_id = tipp.parentPublicationTitleId
     record.access_type = pick(tipp.paymentType, null, exportType)
@@ -1755,11 +1780,11 @@ class PackageService {
 
     if (tipp.coverageStatements.size() > 0 ){
       // several records
-      tipp.coverageStatements.each{cst ->
-        record.date_first_issue_online = cst.startDate
+      tipp.coverageStatements.each { cst ->
+        record.date_first_issue_online = cst.startDate ? dateFormatService.formatDate(cst.startDate) : null
         record.num_first_issue_online = cst.startIssue
         record.num_first_vol_online = cst.startVolume
-        record.date_last_issue_online = cst.endDate
+        record.date_last_issue_online = cst.endDate ? dateFormatService.formatDate(cst.endDate) : null
         record.num_last_issue_online = cst.endIssue
         record.num_last_vol_online = cst.endVolume
         record.embargo_info = cst.embargo
@@ -1771,10 +1796,10 @@ class PackageService {
     }
     else{
       // just one
-      record.date_first_issue_online = tipp.startDate
+      record.date_first_issue_online = tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null
       record.num_first_issue_online = tipp.startIssue
       record.num_first_vol_online = tipp.startVolume
-      record.date_last_issue_online = tipp.endDate
+      record.date_last_issue_online = tipp.endDate ? dateFormatService.formatDate(tipp.endDate) : null
       record.num_last_issue_online = tipp.endIssue
       record.num_last_vol_online = tipp.endVolume
       record.embargo_info = tipp.embargo
@@ -1952,15 +1977,15 @@ class PackageService {
                           'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
                           'name'(tipp.hostPlatform.name?.trim())
                         }
-                        'access'(start: tipp.accessStartDate ? dateFormatService.formatIsoTimestamp(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatIsoTimestamp(tipp.accessEndDate) : null)
+                        'access'(start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null)
                         def cov_statements = getCoverageStatements(tipp.id)
                         if (cov_statements?.size() > 0) {
                           cov_statements.each { tcs ->
                             'coverage'(
-                              startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+                              startDate: (tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null),
                               startVolume: (tcs.startVolume),
                               startIssue: (tcs.startIssue),
-                              endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+                              endDate: (tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null),
                               endVolume: (tcs.endVolume),
                               endIssue: (tcs.endIssue),
                               coverageDepth: (tcs.coverageDepth?.value ?: null),
@@ -1990,6 +2015,9 @@ class PackageService {
 
           FileUtils.moveFile(tmpFile, cachedRecord)
           Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(cachedRecord.lastModified()), item.id])
+          createKbartExport(item, ExportType.KBART_TIPP)
+          createKbartExport(item, ExportType.KBART_TITLE)
+          createTsvExport(item)
         }
         else if (item.lastUpdated <= new Date(cachedRecord.lastModified())) {
           result = 'SKIPPED_NO_CHANGE'

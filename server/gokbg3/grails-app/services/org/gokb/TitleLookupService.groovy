@@ -1009,11 +1009,11 @@ class TitleLookupService {
 
       if (!publisher || publisher.status == status_deleted) {
         def variant_normname = GOKbTextUtils.normaliseString(publisher_name)
-        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status != ?", [variant_normname, status_deleted]);
+        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status != ?", [variant_normname, status_deleted])
         if (candidate_orgs.size() == 1) {
           publisher = candidate_orgs[0]
         } else {
-          log.error("Unable to match unique pub");
+          log.info("Unable to match unique pub ${publisher_name}")
         }
       }
 
