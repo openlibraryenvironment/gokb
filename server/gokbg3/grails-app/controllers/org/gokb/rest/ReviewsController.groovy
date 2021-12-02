@@ -396,10 +396,15 @@ class ReviewsController {
     def result = getEscalationTargetGroupId(params.id, request.JSON?.activeGroup, params)
     if (result.isEscalatable){
       CuratoryGroup escalatingGroup = CuratoryGroup.findById(result.escalatingGroup)
-      CuratoryGroup targetGroup = escalatingGroup.superordinatedGroup
       AllocatedReviewGroup arg = AllocatedReviewGroup.findByGroupAndReview(escalatingGroup, ReviewRequest.findById(params.id))
-      AllocatedReviewGroup newArg = reviewRequestService.escalate(arg, targetGroup)
+      AllocatedReviewGroup newArg = reviewRequestService.escalate(arg, CuratoryGroup.findById(result.escalationTargetGroup))
       if (newArg){
+        ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
+        def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
+        rr.allocatedGroups.each{
+          ag -> ag.status = inactive
+        }
+        newArg.status = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
         result.message = "The requested ReviewRequest has been escalated."
       }
       else{
