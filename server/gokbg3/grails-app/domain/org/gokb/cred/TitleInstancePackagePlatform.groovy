@@ -931,8 +931,8 @@ class TitleInstancePackagePlatform extends KBComponent {
         builder.'subjectArea'(subjectArea)
         builder.'series'(series)
         builder.'publisherName'(publisherName)
-        builder.'dateFirstInPrint'(dateFirstInPrint ? DateFormatService.formatIsoTimestamp(dateFirstInPrint) : null)
-        builder.'dateFirstOnline'(dateFirstOnline ? DateFormatService.formatIsoTimestamp(dateFirstOnline) : null)
+        builder.'dateFirstInPrint'(dateFirstInPrint ? DateFormatService.formatDate(dateFirstInPrint) : null)
+        builder.'dateFirstOnline'(dateFirstOnline ? DateFormatService.formatDate(dateFirstOnline) : null)
         builder.'firstAuthor'(firstAuthor)
         builder.'publicationType'(publicationType?.value)
         builder.'volumeNumber'(volumeNumber)
@@ -1004,15 +1004,15 @@ class TitleInstancePackagePlatform extends KBComponent {
           'primaryUrl'(hostPlatform.primaryUrl?.trim())
           'name'(hostPlatform.name?.trim())
         }
-        'access'([start: (accessStartDate ? DateFormatService.formatTimestamp(accessStartDate) : null), end: (accessEndDate ? DateFormatService.formatTimestamp(accessEndDate) : null)])
+        'access'([start: (accessStartDate ? DateFormatService.formatDate(accessStartDate) : null), end: (accessEndDate ? DateFormatService.formatDate(accessEndDate) : null)])
         def cov_statements = getCoverageStatements()
         if (cov_statements?.size() > 0) {
           cov_statements.each { tcs ->
             'coverage'(
-                startDate: (tcs.startDate ? DateFormatService.formatTimestamp(tcs.startDate) : null),
+                startDate: (tcs.startDate ? DateFormatService.formatDate(tcs.startDate) : null),
                 startVolume: (tcs.startVolume),
                 startIssue: (tcs.startIssue),
-                endDate: (tcs.endDate ? DateFormatService.formatTimestamp(tcs.endDate) : null),
+                endDate: (tcs.endDate ? DateFormatService.formatDate(tcs.endDate) : null),
                 endVolume: (tcs.endVolume),
                 endIssue: (tcs.endIssue),
                 coverageDepth: (tcs.coverageDepth?.value ?: null),
@@ -1028,9 +1028,9 @@ class TitleInstancePackagePlatform extends KBComponent {
                 builder.'type'(price.priceType.value)
                 builder.'amount'(price.price)
                 builder.'currency'(price.currency)
-                builder.'startDate'(price.startDate)
+                builder.'startDate'(DateFormatService.formatDate(price.startDate))
                 if (price.endDate) {
-                  builder.'endDate'(price.endDate)
+                  builder.'endDate'(DateFormatService.formatDate(price.endDate))
                 }
               }
             }

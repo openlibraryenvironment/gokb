@@ -496,7 +496,7 @@ class TippService {
             reviewRequestService.raise(
               tipp.title,
               "Identifier mismatch",
-              "Title ${comp.object.name} matched, but ingest identifiers ${mismatches} differ from existing ones in the same namespaces.",
+              "Title ${comp.object.name} matched, but the name and ingest identifiers ${mismatches} differ from existing ones in the same namespaces.",
               null,
               null,
               (additionalInfo as JSON).toString(),
@@ -512,7 +512,7 @@ class TippService {
 
             reviewRequestService.raise(
               tipp.title,
-              it.message,
+              "Title ${comp.object.name} matched, but ingest identifiers ${mismatches} differ from existing ones in the same namespaces.",
               "Check Title identifiers",
               null,
               null,
