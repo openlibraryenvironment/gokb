@@ -1028,9 +1028,9 @@ class TitleInstancePackagePlatform extends KBComponent {
                 builder.'type'(price.priceType.value)
                 builder.'amount'(price.price)
                 builder.'currency'(price.currency)
-                builder.'startDate'(DateFormatService.formatDate(price.startDate))
+                builder.'startDate'(price.startDate ? DateFormatService.formatDate(price.startDate) : null)
                 if (price.endDate) {
-                  builder.'endDate'(DateFormatService.formatDate(price.endDate))
+                  builder.'endDate'(price.startDate ? DateFormatService.formatDate(price.endDate) : null)
                 }
               }
             }

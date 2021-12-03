@@ -338,8 +338,8 @@ class TitleInstance extends KBComponent {
             builder.'editionDifferentiator'(this.editionDifferentiator)
             builder.'editionStatement'(this.editionStatement)
             builder.'volumeNumber'(this.volumeNumber)
-            builder.'dateFirstInPrint'(DateFormatService.formatDate(this.dateFirstInPrint))
-            builder.'dateFirstOnline'(DateFormatService.formatDate(this.dateFirstOnline))
+            builder.'dateFirstInPrint'(this.dateFirstInPrint ? DateFormatService.formatDate(this.dateFirstInPrint) : null)
+            builder.'dateFirstOnline'(this.dateFirstOnline ? DateFormatService.formatDate(this.dateFirstOnline) : null)
             builder.'firstEditor'(this.firstEditor)
             builder.'firstAuthor'(this.firstAuthor)
           }
@@ -349,8 +349,8 @@ class TitleInstance extends KBComponent {
           builder.'type'(this.class.simpleName)
           builder.'OAStatus'(OAStatus?.value)
           builder.'continuingSeries'(continuingSeries?.value)
-          builder.'publishedFrom'(DateFormatService.formatDate(this.publishedFrom))
-          builder.'publishedTo'(DateFormatService.formatDate(this.publishedTo))
+          builder.'publishedFrom'(this.publishedFrom ? DateFormatService.formatDate(this.publishedFrom) : null)
+          builder.'publishedTo'(this.publishedTo ? DateFormatService.formatDate(this.publishedTo)  : null)
 
           builder.'publishers' {
             publisher_combos?.each { Combo pc ->
@@ -368,10 +368,10 @@ class TitleInstance extends KBComponent {
                 builder."publisher"(['id': pub_org.id, 'uuid': pub_org.uuid]) {
                   "name"(pub_org.name)
                   if (pc.startDate) {
-                    "startDate"(DateFormatService.formatDate(pc.startDate))
+                    "startDate"(pc.startDate ? DateFormatService.formatDate(pc.startDate) : null)
                   }
                   if (pc.endDate) {
-                    "endDate"(DateFormatService.formatDate(pc.endDate))
+                    "endDate"(pc.endDate ? DateFormatService.formatDate(pc.endDate) : null)
                   }
                   if (pc.status) {
                     "status"(pc.status.value)
@@ -399,7 +399,7 @@ class TitleInstance extends KBComponent {
             builder.history() {
               history.each { he ->
                 builder.historyEvent(['id': he.id]) {
-                  "date"(DateFormatService.formatDate(he.date))
+                  "date"(he.date ? DateFormatService.formatDate(he.date) : null)
                   he.from.each { hti ->
                     if (hti) {
                       "from" {
