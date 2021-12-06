@@ -134,6 +134,7 @@ class OrgController {
 
       if (errors.size() > 0) {
         log.debug("Object has validation errors!")
+        obj.discard()
         response.status = 400
       }
       else if (lookup_result.to_create && !obj) {
@@ -143,48 +144,32 @@ class OrgController {
       }
       else if (obj) {
         obj.save(flush:true)
+        response.status = 201
         def jsonMap = obj.jsonMapping
 
         log.debug("Updating ${obj}")
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
         if (obj.validate()) {
-          if (errors.size() == 0) {
-            log.debug("No errors.. saving")
-            obj.save()
+          log.debug("No errors.. saving")
+          obj.save()
 
-            def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+          def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
 
-            if (variant_result.errors.size() > 0) {
-              errors.variantNames = variant_result.errors
-            }
-
-            errors << updateCombos(obj, reqBody)
-
-            if (errors.size() == 0) {
-              log.debug("No errors: ${errors}")
-              obj.save(flush:true)
-              response.status = 201
-              FTUpdateService.updateSingleItem(obj)
-              result = restMappingService.mapObjectToJson(obj, params, user)
-            }
-            else {
-              result.result = 'ERROR'
-              log.debug("There were errors setting combo props!")
-              obj.discard()
-              result.error = errors
-            }
+          if (variant_result.errors.size() > 0) {
+            errors.variantNames = variant_result.errors
           }
-          else {
-            response.setStatus(400)
-            result.message = message(code: "default.create.errors.message")
-          }
+
+          errors << updateCombos(obj, reqBody)
         }
         else {
-          result.result = 'ERROR'
-          response.setStatus(400)
           errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
+        if (obj?.id != null && grailsApplication.config.gokb.ftupdate_enabled == true) {
+          FTUpdateService.updateSingleItem(obj)
+        }
+
+        result = restMappingService.mapObjectToJson(obj, params, user)
       }
     }
     else {
@@ -193,6 +178,9 @@ class OrgController {
 
     if (errors.size() > 0) {
       result.result = 'ERROR'
+      if (!obj || obj.id == null) {
+        response.setStatus(400)
+      }
       result.error = errors
     }
 
@@ -249,7 +237,6 @@ class OrgController {
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush: true)
-            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -262,6 +249,9 @@ class OrgController {
           result.result = 'ERROR'
           response.setStatus(400)
           errors << messageService.processValidationErrors(obj.errors, request.locale)
+        }
+        if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+          FTUpdateService.updateSingleItem(obj)
         }
       }
       else {
@@ -355,7 +345,9 @@ class OrgController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
-        FTUpdateService.updateSingleItem(obj)
+        if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+          FTUpdateService.updateSingleItem(obj)
+        }
       }
       else {
         result.result = 'ERROR'
@@ -392,7 +384,9 @@ class OrgController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
-        FTUpdateService.updateSingleItem(obj)
+        if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+          FTUpdateService.updateSingleItem(obj)
+        }
       }
       else {
         result.result = 'ERROR'

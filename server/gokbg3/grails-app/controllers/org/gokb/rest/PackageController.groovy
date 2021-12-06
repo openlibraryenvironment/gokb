@@ -206,7 +206,6 @@ class PackageController {
                 log.debug("No errors: ${errors}")
                 obj.save(flush: true)
                 response.status = 201
-                FTUpdateService.updateSingleItem(obj)
                 result = restMappingService.mapObjectToJson(obj, params, user)
 
                 if (update_token) {
@@ -232,6 +231,9 @@ class PackageController {
             obj.discard()
             response.setStatus(400)
             errors << messageService.processValidationErrors(obj.errors, request_locale)
+          }
+          if (obj?.id != null && grailsApplication.config.gokb.ftupdate_enabled == true) {
+            FTUpdateService.updateSingleItem(obj)
           }
         }
       }
@@ -328,7 +330,6 @@ class PackageController {
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush: true)
-            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
 
             if (update_token) {
@@ -344,6 +345,9 @@ class PackageController {
           result.result = 'ERROR'
           response.setStatus(400)
           errors << messageService.processValidationErrors(obj.errors, request_locale)
+        }
+        if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+          FTUpdateService.updateSingleItem(obj)
         }
       }
       else {
@@ -423,20 +427,8 @@ class PackageController {
       catch (Exception e) {
       }
 
-      if (prov) {
-        if (!obj.hasErrors() && errors.size() == 0 && prov != obj.provider) {
-          def combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Provider')
-          def current_combo = Combo.findByFromComponentAndType(obj, combo_type)
-
-          if (current_combo) {
-            current_combo.delete(flush: true)
-          }
-
-          def new_combo = new Combo(fromComponent: obj, toComponent: prov, type: combo_type).save(flush: true)
-          changed = true
-
-          obj.refresh()
-        }
+      if (prov && prov != obj.provider) {
+        obj.provider = prov
       }
       else {
         errors.provider = [[message: "Could not find provider Org with id ${reqBody.provider}!", baddata: reqBody.provider]]
@@ -457,20 +449,8 @@ class PackageController {
       catch (Exception e) {
       }
 
-      if (plt) {
-        if (!obj.hasErrors() && errors.size() == 0 && plt != obj.nominalPlatform) {
-          def combo_type = RefdataCategory.lookup('Combo.Type', 'Package.NominalPlatform')
-          def current_combo = Combo.findByFromComponentAndType(obj, combo_type)
-
-          if (current_combo) {
-            current_combo.delete(flush: true)
-          }
-
-          def new_combo = new Combo(fromComponent: obj, toComponent: plt, type: combo_type).save(flush: true)
-          changed = true
-
-          obj.refresh()
-        }
+      if (plt && plt != obj.nominalPlatform) {
+        obj.nominalPlatform = plt
       }
       else {
         errors.nominalPlatform = [[message: "Could not find platform with id ${reqBody.nominalPlatform}!", baddata: plt_id]]
@@ -568,6 +548,7 @@ class PackageController {
 
     if (changed) {
       obj.lastSeen = System.currentTimeMillis()
+      obj.save()
     }
     errors
   }
@@ -588,7 +569,9 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
-        FTUpdateService.updateSingleItem(obj)
+        if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+          FTUpdateService.updateSingleItem(obj)
+        }
       }
       else {
         result.result = 'ERROR'

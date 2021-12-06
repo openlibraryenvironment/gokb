@@ -194,56 +194,49 @@ class TitleController {
           obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
           if ( obj.validate() ) {
-            if (errors.size() == 0 ) {
-              obj.save(flush:true)
+            obj.save(flush:true)
 
-              if (title_lookup.matches.size() > 0) {
-                def additionalInfo = [:]
-                def combo_ids = [obj.id]
+            if (title_lookup.matches.size() > 0) {
+              def additionalInfo = [:]
+              def combo_ids = [obj.id]
 
-                additionalInfo.otherComponents = []
+              additionalInfo.otherComponents = []
 
-                title_lookup.matches.each { tlm ->
-                  additionalInfo.otherComponents.add([oid:"${tlm.object.id}", name:"${tlm.object.name}"])
-                  combo_ids.add(tlm.object.id)
-                }
-
-                additionalInfo.cstring = combo_ids.sort().join('_')
-
-                ReviewRequest.raise(
-                  obj,
-                  "New TI created.",
-                  "There have been possible conflicts with other existing titles.",
-                  user,
-                  null,
-                  (additionalInfo as JSON).toString()
-                )
+              title_lookup.matches.each { tlm ->
+                additionalInfo.otherComponents.add([oid:"${tlm.object.id}", name:"${tlm.object.name}"])
+                combo_ids.add(tlm.object.id)
               }
 
-              def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+              additionalInfo.cstring = combo_ids.sort().join('_')
 
-              if (variant_result.errors.size() > 0) {
-                errors.variantNames = variant_result.errors
-              }
-
-              errors << updateCombos(obj, reqBody)
-
-              if (errors.size() == 0) {
-                response.setStatus(201)
-                FTUpdateService.updateSingleItem(obj)
-                result = restMappingService.mapObjectToJson(obj, params, user)
-              }
-              else {
-                result.message = message(code: 'default.create.errors.message')
-              }
+              ReviewRequest.raise(
+                obj,
+                "New TI created.",
+                "There have been possible conflicts with other existing titles.",
+                user,
+                null,
+                (additionalInfo as JSON).toString()
+              )
             }
-            else {
-              result.message = message(code: 'default.create.errors.message')
+
+            def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+
+            if (variant_result.errors.size() > 0) {
+              errors.variantNames = variant_result.errors
             }
+
+            errors << updateCombos(obj, reqBody)
+
+            result = restMappingService.mapObjectToJson(obj, params, user)
+            response.setStatus(201)
           }
           else {
             result.result = 'ERROR'
             errors << messageService.processValidationErrors(obj.errors, request.locale)
+          }
+
+          if (obj?.id != null && grailsApplication.config.gokb.ftupdate_enabled == true) {
+            FTUpdateService.updateSingleItem(obj)
           }
         }
         else {
@@ -277,7 +270,9 @@ class TitleController {
     if (errors.size() > 0) {
       log.debug("Errors: ${errors}")
       result.result = 'ERROR'
-      response.setStatus(400)
+      if (!obj || obj.id == null) {
+        response.setStatus(400)
+      }
       result.error = errors
     }
 
@@ -770,7 +765,6 @@ class TitleController {
 
           if ( errors.size() == 0 ) {
             obj = obj.save(flush:true)
-            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -782,6 +776,9 @@ class TitleController {
           result.result = 'ERROR'
           response.setStatus(400)
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+        }
+        if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+          FTUpdateService.updateSingleItem(obj)
         }
       }
       else {

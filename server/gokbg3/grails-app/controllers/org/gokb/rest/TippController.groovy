@@ -123,20 +123,17 @@ class TippController {
           def obj = TitleInstancePackagePlatform.upsertDTO(reqBody, user)
 
           if (obj?.validate()) {
-
+            response.status = 201
             errors << updateCombos(obj, reqBody)
 
-            FTUpdateService.updateSingleItem(obj)
-
-            if (errors.size() == 0) {
-              result = restMappingService.mapObjectToJson(obj, params, user)
-            }
+            result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
             result.result = 'ERROR'
             result.message = "There have been validation errors while creating the object!"
             response.setStatus(400)
             errors = messageService.processValidationErrors(obj.errors, request.locale)
+            obj?.expunge()
           }
         }
         else {
@@ -212,25 +209,21 @@ class TippController {
           errors << updateCombos(obj, reqBody)
 
           if (obj?.validate()) {
-            if (errors.size() == 0) {
+            obj = tippService.updateCoverage(obj, reqBody)
 
-              obj = tippService.updateCoverage(obj, reqBody)
-
-              log.debug("No errors.. saving")
-              obj = obj.merge(flush: true)
-              FTUpdateService.updateSingleItem(obj)
-              result = restMappingService.mapObjectToJson(obj, params, user)
-            }
-            else {
-              response.setStatus(400)
-              result.message = message(code: "default.update.errors.message")
-            }
+            log.debug("No errors.. saving")
+            obj = obj.merge(flush: true)
           }
           else {
             result.result = 'ERROR'
             response.setStatus(400)
             errors = messageService.processValidationErrors(obj.errors, request.locale)
           }
+          if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+            FTUpdateService.updateSingleItem(obj)
+          }
+
+          result = restMappingService.mapObjectToJson(obj, params, user)
         }
         else {
           result.result = 'ERROR'
