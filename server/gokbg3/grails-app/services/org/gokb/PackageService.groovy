@@ -1941,8 +1941,8 @@ class PackageService {
                         'series'(tipp.series)
                         'subjectArea'(tipp.subjectArea)
                         'publisherName'(tipp.publisherName)
-                        'dateFirstInPrint'(dateFormatService.formatDate(tipp.dateFirstInPrint))
-                        'dateFirstOnline'(dateFormatService.formatDate(tipp.dateFirstOnline))
+                        'dateFirstInPrint'(tipp.dateFirstInPrint ? dateFormatService.formatDate(tipp.dateFirstInPrint) : null)
+                        'dateFirstOnline'(tipp.dateFirstOnline ? dateFormatService.formatDate(tipp.dateFirstOnline) : null)
                         'medium'(tipp.format?.value)
                         'format'(tipp.medium?.value)
                         'volumeNumber'(tipp.volumeNumber)
@@ -1951,13 +1951,17 @@ class PackageService {
                         'firstEditor'(tipp.firstEditor)
                         'parentPublicationTitleId'(tipp.parentPublicationTitleId)
                         'precedingPublicationTitleId'(tipp.precedingPublicationTitleId)
-                        'lastChangedExternal'(tipp.lastChangedExternal)
+                        'lastChangedExternal'(tipp.lastChangedExternal ? dateFormatService.formatDate(tipp.lastChangedExternal) : null)
                         'publicationType'(tipp.publicationType?.value)
                         if (tipp.title) {
                           'title'('id': tipp.title.id, 'uuid': tipp.title.uuid) {
                             'name'(tipp.title.name?.trim())
                             'type'(getTitleClass(tipp.title.id))
                             'status'(tipp.title.status?.value)
+                            if (getTitleClass(tipp.title.id) == 'BookInstance') {
+                              'dateFirstInPrint'(tipp.title.dateFirstInPrint ? dateFormatService.formatDate(tipp.title.dateFirstInPrint) : null)
+                              'dateFirstOnline'(tipp.title.dateFirstOnline ? dateFormatService.formatDate(tipp.title.dateFirstOnline) : null)
+                            }
                             'identifiers' {
                               getTitleIds(tipp.title.id).each { tid ->
                                 'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
