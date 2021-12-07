@@ -5,6 +5,7 @@ import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import org.gokb.cred.Combo
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.JournalInstance
 import org.gokb.cred.RefdataValue
@@ -450,7 +451,7 @@ class TippService {
             null,
             (additionalInfo as JSON).toString(),
             RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
-            (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+            (tipp.pkg?.curatoryGroups?.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
         )
       }
       else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
@@ -470,7 +471,7 @@ class TippService {
                 null,
                 (additionalInfo as JSON).toString(),
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
-                (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+                (tipp?.pkg?.curatoryGroups?.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
               )
             }
             else if (conflict.field == "identifier.value") {

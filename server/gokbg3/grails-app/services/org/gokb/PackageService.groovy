@@ -1806,7 +1806,7 @@ class PackageService {
         def fileName = "${item.uuid}_${dateFormatService.formatIsoMsTimestamp(item.lastUpdated)}.xml"
         File cachedRecord = new File("${dir}/${fileName}")
 
-        if (!cachedRecord.exists() || (item.lastUpdated > new Date(cachedRecord.lastModified()) && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 30)) {
+        if (!cachedRecord.exists() || (item.lastUpdated > new Date(cachedRecord.lastModified()) && Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() > 30 && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 30)) {
           File tmpFile = new File("/tmp/${fileName}.tmp")
 
           if (tmpFile.exists()) {

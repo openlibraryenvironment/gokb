@@ -888,16 +888,14 @@ class TitleInstance extends KBComponent {
     def review_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
 
     if (this.isDirty('status') && this.status == deleted_status) {
-      // Delete the tipps too as a TIPP should not exist without the associated
-      // title.
+      // Delete all TIPP combos and TIPLs
       def tipps = getTipps()
       def tipls = getTipls()
 
       if (tipps?.size() > 0) {
         def tipp_ids = tipps?.collect { it.id }
-        Date now = new Date()
 
-        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdated = :now where t.id IN (:ttd) and t.status != :del", [del: deleted_status, ttd: tipp_ids, now: now])
+        Combo.executeUpdate("delete from Combo as c where c.fromComponent = :ti and c.toComponent.id IN (:ttd)", [ti: this, ttd: tipp_ids])
       }
 
       if (tipps?.size() > 0) {
