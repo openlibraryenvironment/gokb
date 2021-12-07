@@ -535,19 +535,29 @@ class ReviewsController {
         if (argCandidates.size() == 1){
           escalatingGroup = toBeChecked
         }
+        else if (argCandidates.size() > 1){
+          response.setStatus(409)
+          result.message = "Could not get curatory group to be escalated from due to multiple group candidates."
+          return result
+        }
+        else{
+          response.setStatus(404)
+          result.message = "Could not get curatory group to be escalated from due to missing active curatory group."
+          return result
+        }
+      }
+      else{
+        response.setStatus(404)
+        result.message = "Could not get curatory group to be escalated from due to missing active curatory group id."
+        return result
       }
     }
 
-    if (!escalatingGroup){
-      response.setStatus(404)
-      result.message = "Could not get curatory group to be escalated from."
-      return result
-    }
-
-    CuratoryGroup editorialGroup = grailsApplication.config.gokb.centralGroups && grailsApplication.config.gokb.centralGroups['componentClass'] ?
-        CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.centralGroups['componentClass']) : null
+    CuratoryGroup editorialGroup = grailsApplication.config.gokb.centralGroups &&
+        grailsApplication.config.gokb.centralGroups[componentClass] ?
+        CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.centralGroups[componentClass]) : null
     CuratoryGroup escalatedToCG = escalatingGroup.superordinatedGroup
-    if (!escalatedToCG && componentClass == "JournalInstance"){
+    if (!escalatedToCG && componentClass == "JournalInstance" && escalatingGroup != editorialGroup){
       escalatedToCG = editorialGroup
     }
     if (!escalatedToCG){
@@ -584,7 +594,6 @@ class ReviewsController {
     deescArg = AllocatedReviewGroup.findByGroupAndReview(deescalatingGroup, rr)
     targetArg = deescArg?.escalatedFrom ?: null
     if (deescArg && targetArg){
-      response.setStatus(200)
       result.result = 'OK'
       result.isDeescalatable = true
       result.deescalatingGroup = deescalatingGroup.id
