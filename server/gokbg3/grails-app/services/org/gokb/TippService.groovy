@@ -468,7 +468,7 @@ class TippService {
             null,
             (additionalInfo as JSON).toString(),
             RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
-            (tipp.pkg?.curatoryGroups?.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+            cg
         )
       }
       else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
@@ -487,7 +487,8 @@ class TippService {
                 null,
                 null,
                 (additionalInfo as JSON).toString(),
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict')
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
+                cg
               )
             }
             else if (conflict.field == "identifier.value") {
@@ -549,7 +550,8 @@ class TippService {
             null,
             null,
             (additionalInfo as JSON).toString(),
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict")
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
+            cg
         )
       }
     }
