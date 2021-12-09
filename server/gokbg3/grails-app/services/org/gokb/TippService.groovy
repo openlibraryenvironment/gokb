@@ -279,7 +279,8 @@ class TippService {
             null,
             null,
             [otherComponents: ti] as JSON,
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch")
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch"),
+            group
         )
       }
     }
