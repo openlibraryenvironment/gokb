@@ -1,6 +1,7 @@
 package org.gokb
 
 import grails.util.Holders
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.TitleInstance
@@ -15,7 +16,7 @@ class TippMatchingJob {
 
   static triggers = {
     // Cron timer.
-    cron name: 'TippMatchingTrigger', cronExpression: "0 0 4 * * ?"
+    cron name: 'TippMatchingTrigger', cronExpression: "0 * * * * ?"
   }
 
   def tippService
@@ -45,7 +46,8 @@ class TippMatchingJob {
           def rrList = ReviewRequest.findAllByComponentToReviewAndDateCreatedGreaterThan(tipp, tipp.dateCreated)
           if (rrList.size() == 0) {
             log.debug("match tipp $tipp")
-            tippService.matchTitle(tipp)
+            def group = tipp.pkg.curatoryGroups?.size() > 0 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null
+            tippService.matchTitle(tipp, group)
           }
           else {
             log.debug("tipp $tipp has ${rrList.size()} recent Review Requests and is ignored.")

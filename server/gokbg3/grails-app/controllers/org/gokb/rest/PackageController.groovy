@@ -291,10 +291,6 @@ class PackageController {
 
         def jsonMap = obj.jsonMapping
 
-        jsonMap.ignore = [
-            'lastProject',
-        ]
-
         jsonMap.immutable = [
             'userListVerifier',
             'listVerifiedDate',
