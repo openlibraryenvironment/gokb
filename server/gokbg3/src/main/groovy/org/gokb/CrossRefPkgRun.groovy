@@ -366,15 +366,15 @@ class CrossRefPkgRun {
     boolean curated_pkg = false
     def user_groups = user.curatoryGroups
 
-    if (rjson.activeCuratoryGroupId) {
-      def active_group = CuratoryGroup.get(rjson.activeCuratoryGroupId)
+    if (rjson.packageHeader.activeCuratoryGroupId) {
+      def active_group = CuratoryGroup.get(rjson.packageHeader.activeCuratoryGroupId)
 
       if (active_group && user_groups.contains(active_group)) {
-        job?.groupId = rjson.activeCuratoryGroupId
+        job?.groupId = rjson.packageHeader.activeCuratoryGroupId
       }
     }
     else if (pkg.curatoryGroups && pkg.curatoryGroups?.size() > 0) {
-      curatory_group_ids = user_groups?.id?.intersect(pkg.curatoryGroups?.id)
+      def curatory_group_ids = user_groups?.id?.intersect(pkg.curatoryGroups?.id)
       if (curatory_group_ids?.size() == 1) {
         job?.groupId = curatory_group_ids[0]
       }

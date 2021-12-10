@@ -1791,6 +1791,7 @@ class PackageService {
     def result = 'OK'
     def attr = [:]
     File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    File tempDir = new File('/tmp/gokb/oai/')
 
     Package.withNewSession {
       Package item = Package.get(id)
@@ -1800,14 +1801,30 @@ class PackageService {
           dir.mkdirs()
         }
 
+        if (!tempDir.exists()) {
+          tempDir.mkdirs()
+        }
+
         attr["xmlns:gokb"] = 'http://gokb.org/oai_metadata/'
         def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
 
         def fileName = "${item.uuid}_${dateFormatService.formatIsoMsTimestamp(item.lastUpdated)}.xml"
         File cachedRecord = new File("${dir}/${fileName}")
+        def currentCacheFile = null
+        Date currentCacheDate
 
-        if (!cachedRecord.exists() || (item.lastUpdated > new Date(cachedRecord.lastModified()) && Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() > 30 && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 30)) {
-          File tmpFile = new File("/tmp/${fileName}.tmp")
+        for (File file : dir.listFiles()) {
+          if (file.name.contains(item.uuid)) {
+            def datepart = file.name.split('_')[1]
+            currentCacheFile = file
+            currentCacheDate = dateFormatService.parseIsoMsTimestamp(datepart.substr(0, datepart.length() - 4))
+          }
+        }
+
+
+
+        if (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() > 30 && (!currentCacheFile || item.lastUpdated > currentCacheDate)) {
+          File tmpFile = new File("${tempDir}/${fileName}.tmp")
 
           if (tmpFile.exists()) {
             tmpFile.delete()

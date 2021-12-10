@@ -372,11 +372,11 @@ class UpdatePkgTippsRun {
     boolean curated_pkg = false
     CuratoryGroup[] user_groups = user.curatoryGroups
 
-    if (rjson.activeCuratoryGroupId) {
-      def active_group = CuratoryGroup.get(rjson.activeCuratoryGroupId)
+    if (rjson.packageHeader.activeCuratoryGroupId) {
+      def active_group = CuratoryGroup.get(rjson.packageHeader.activeCuratoryGroupId)
 
       if (active_group && user_groups.contains(active_group)) {
-        job?.groupId = rjson.activeCuratoryGroupId
+        job?.groupId = rjson.packageHeader.activeCuratoryGroupId
       }
     }
     else if (pkg.curatoryGroups && pkg.curatoryGroups?.size() > 0) {
