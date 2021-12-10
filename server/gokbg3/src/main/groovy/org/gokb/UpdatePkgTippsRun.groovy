@@ -166,7 +166,7 @@ class UpdatePkgTippsRun {
 
           if ((json_tipp.package == null) && (pkg.id)) {
             json_tipp.package = [internalId: pkg.id,
-                                 updateDate: rjson.fileNameDate ? dateFormatService.parseDate(rjson.fileNameDate) : new Date()]
+                                 updateDate: rjson.packageHeader.fileNameDate ? dateFormatService.parseDate(rjson.packageHeader.fileNameDate) : new Date()]
           }
           else {
             log.error("No package")
