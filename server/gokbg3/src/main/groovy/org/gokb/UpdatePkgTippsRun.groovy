@@ -219,7 +219,7 @@ class UpdatePkgTippsRun {
 
           job?.setProgress(idx, total*2)
 
-          if (idx % 100 == 0) {
+          if (idx % 50 == 0) {
             log.info("Clean up");
             cleanupService.cleanUpGorm()
           }

@@ -206,7 +206,7 @@ class OrgService {
   public def updatePlatforms(obj, plts, boolean remove = true) {
     def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
     def old_combos = obj.getCombosByPropertyName('providedPlatforms')
-    Set new_plts = []
+    def new_plts = []
     def result = [changed: false, errors: []]
     plts.each { plt ->
       Platform plt_obj = null
@@ -374,7 +374,7 @@ class OrgService {
       Object element;
       while (items.hasNext()) {
         element = items.next();
-        if (!new_plts.contains(element.fromComponent)) {
+        if (!new_offices.contains(element.fromComponent)) {
           // Remove.
           element.delete()
           result.changed = true
