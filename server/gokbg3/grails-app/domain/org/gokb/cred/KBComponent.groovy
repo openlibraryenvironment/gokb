@@ -507,39 +507,18 @@ where cp.owner = :c
 
   @Transient
   static KBComponent lookupByIO(String idtype, String idvalue) {
-    // println("lookupByIO(${idtype},${idvalue})");
-    // Component(ids) -> (fromComponent) Combo (toComponent) -> (identifiedComponents) Identifier
     def result = null
-    def crit = KBComponent.createCriteria()
-    def db_results = crit.list {
+    def normid = Identifier.normalizeIdentifier(idvalue)
+    def namespace = IdentifierNamespace.findByValueIlike(idtype)
 
-      createAlias('outgoingCombos', 'ogc')
-      createAlias('ogc.type', 'ogcType')
-      createAlias('ogcType.owner', 'ogcOwner')
+    if (normid && namespace) {
+      def id = Identifier.findByNamespaceAndNormname(namespace, normid)
 
-      createAlias('ogc.toComponent', 'tc')
-      createAlias('tc.namespace', 'tcNamespace')
-
-      and {
-        eq 'ogcOwner.desc', 'Combo.Type'
-        eq 'ogcType.value', 'KBComponent.Ids'
-
-        eq 'tc.value', idvalue
-        eq 'tcNamespace.value', idtype
+      id?.identifiedComponents.each { component ->
+        if (!result) {
+          result = component
+        }
       }
-
-      projections {
-        distinct 'id'
-      }
-    }
-
-    switch (db_results.size()) {
-      case 1:
-        result = KBComponent.get(db_results[0])
-        break
-//      case {it > 1} :
-//        // Error. Should only match 1...
-//        break
     }
 
     result
@@ -547,34 +526,19 @@ where cp.owner = :c
 
   @Transient
   static KBComponent[] lookupAllByIO(String idtype, String idvalue) {
-    // println("lookupByIO(${idtype},${idvalue})");
-    // Component(ids) -> (fromComponent) Combo (toComponent) -> (identifiedComponents) Identifier
-    def result = null
-    def crit = KBComponent.createCriteria()
-    def db_results = crit.list {
+    def result = []
+    def normid = Identifier.normalizeIdentifier(idvalue)
+    def namespace = IdentifierNamespace.findByValueIlike(idtype)
 
-      createAlias('outgoingCombos', 'ogc')
-      createAlias('ogc.type', 'ogcType')
-      createAlias('ogcType.owner', 'ogcOwner')
+    if (normid && namespace) {
+      def id = Identifier.findByNamespaceAndNormname(namespace, normid)
 
-      createAlias('ogc.toComponent', 'tc')
-      createAlias('tc.namespace', 'tcNamespace')
-
-      and {
-        eq 'ogcOwner.desc', 'Combo.Type'
-        eq 'ogcType.value', 'KBComponent.Ids'
-
-        eq 'tc.value', idvalue
-        eq 'tcNamespace.value', idtype
-      }
-
-      projections {
-        distinct 'id'
+      id?.identifiedComponents.each { component ->
+        if (!result.contains(component)) {
+          result.add(component)
+        }
       }
     }
-
-    result = []
-    db_results.each{result.add(KBComponent.get(it))};
 
     result
   }
