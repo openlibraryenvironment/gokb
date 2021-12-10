@@ -2008,11 +2008,14 @@ class PackageService {
           FileUtils.moveFile(tmpFile, cachedRecord)
           Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(cachedRecord.lastModified()), item.id])
         }
-        else if (item.lastUpdated <= new Date(cachedRecord.lastModified())) {
+        else if (currentCacheFile && item.lastUpdated <= currentCacheDate) {
           result = 'SKIPPED_NO_CHANGE'
         }
-        else if (Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() <= 30) {
+        else if (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() <= 30) {
           result = 'SKIPPED_CURRENTLY_CHANGING'
+        }
+        else {
+          result = 'SKIPPED_DEFAULT'
         }
       }
       else {
