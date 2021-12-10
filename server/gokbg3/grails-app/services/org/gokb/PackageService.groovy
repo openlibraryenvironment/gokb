@@ -1817,7 +1817,7 @@ class PackageService {
           if (file.name.contains(item.uuid)) {
             def datepart = file.name.split('_')[1]
             currentCacheFile = file
-            currentCacheDate = dateFormatService.parseIsoMsTimestamp(datepart.substr(0, datepart.length() - 4))
+            currentCacheDate = dateFormatService.parseIsoMsTimestamp(datepart.substring(0, datepart.length() - 4))
           }
         }
 
