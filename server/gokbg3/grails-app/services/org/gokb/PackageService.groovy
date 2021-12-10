@@ -1821,8 +1821,6 @@ class PackageService {
           }
         }
 
-
-
         if (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() > 30 && (!currentCacheFile || item.lastUpdated > currentCacheDate)) {
           File tmpFile = new File("${tempDir}/${fileName}.tmp")
 
