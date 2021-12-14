@@ -1748,7 +1748,7 @@ class PackageService {
     record.publisher_name = pick (tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
     record.preceding_publication_title_id = pick(tipp.precedingPublicationTitleId, tipp.title?.getPrecedingTitleId(), exportType)
     record.parent_publication_title_id = tipp.parentPublicationTitleId
-    record.access_type = pick(tipp.paymentType, null, exportType)
+    record.access_type = pick((tipp.paymentType && ['OA','Uncharged'].contains(tipp.paymentType) ? 'F' : 'P'), null, exportType)
     record.zdb_id = pick(tipp.getIdentifierValue('ZDB'), tipp.title?.getIdentifierValue('ZDB'), exportType)
     record.gokb_tipp_uid = tipp.uuid
     record.gokb_title_uid = tipp.title?.uuid
@@ -1791,6 +1791,7 @@ class PackageService {
     def result = 'OK'
     def attr = [:]
     File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    File tempDir = new File('/tmp/gokb/oai/')
 
     Package.withNewSession {
       Package item = Package.get(id)
@@ -1800,14 +1801,28 @@ class PackageService {
           dir.mkdirs()
         }
 
+        if (!tempDir.exists()) {
+          tempDir.mkdirs()
+        }
+
         attr["xmlns:gokb"] = 'http://gokb.org/oai_metadata/'
         def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
 
         def fileName = "${item.uuid}_${dateFormatService.formatIsoMsTimestamp(item.lastUpdated)}.xml"
         File cachedRecord = new File("${dir}/${fileName}")
+        def currentCacheFile = null
+        Date currentCacheDate
 
-        if (!cachedRecord.exists() || (item.lastUpdated > new Date(cachedRecord.lastModified()) && Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() > 30 && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 30)) {
-          File tmpFile = new File("/tmp/${fileName}.tmp")
+        for (File file : dir.listFiles()) {
+          if (file.name.contains(item.uuid)) {
+            def datepart = file.name.split('_')[1]
+            currentCacheFile = file
+            currentCacheDate = dateFormatService.parseIsoMsTimestamp(datepart.substring(0, datepart.length() - 4))
+          }
+        }
+
+        if (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() > 30 && (!currentCacheFile || item.lastUpdated > currentCacheDate)) {
+          File tmpFile = new File("${tempDir}/${fileName}.tmp")
 
           if (tmpFile.exists()) {
             tmpFile.delete()
@@ -1991,11 +2006,14 @@ class PackageService {
           FileUtils.moveFile(tmpFile, cachedRecord)
           Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(cachedRecord.lastModified()), item.id])
         }
-        else if (item.lastUpdated <= new Date(cachedRecord.lastModified())) {
+        else if (currentCacheFile && item.lastUpdated <= currentCacheDate) {
           result = 'SKIPPED_NO_CHANGE'
         }
-        else if (Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() <= 30) {
+        else if (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() <= 30) {
           result = 'SKIPPED_CURRENTLY_CHANGING'
+        }
+        else {
+          result = 'SKIPPED_DEFAULT'
         }
       }
       else {

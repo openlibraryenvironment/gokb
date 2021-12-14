@@ -534,6 +534,7 @@ class UpdatePackageRunSpec extends Specification {
         "packageHeader": [
             "breakable"      : "No",
             "consistent"     : "Yes",
+            "activeCuratoryGroupId": CuratoryGroup.findByName('TestGroup1').id,
             "editStatus"     : "In Progress",
             "fixed"          : "No",
             "global"         : "Consortium",
