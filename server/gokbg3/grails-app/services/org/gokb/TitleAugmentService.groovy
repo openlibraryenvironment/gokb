@@ -1,12 +1,9 @@
 package org.gokb
 
-import org.gokb.cred.*;
-
+import org.gokb.cred.*
 import static groovyx.net.http.Method.*
 import groovyx.net.http.*
 import grails.converters.JSON
-
-
 
 class TitleAugmentService {
 
@@ -21,12 +18,16 @@ class TitleAugmentService {
     CuratoryGroup editorialGroup = grailsApplication.config.gokb.editorialAdmin?.journals ? CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.editorialAdmin.journals) : null
 
     if ( titleInstance.niceName == 'Journal' ) {
-      def rr_no_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'No ZDB Results')
-      def rr_type = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple ZDB Results')
       def rr_in_use = RefdataCategory.lookup('ReviewRequest.StdDesc', 'ZDB Title Overlap')
-      def existing_rr = ReviewRequest.executeQuery("select rr.id from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc IN (:types)", [ti: titleInstance, types: [rr_type, rr_in_use]])
+      def status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+      def status_closed = RefdataCategory.lookup("ReviewRequest.Status", "Closed")
+      def existing_inuse = ReviewRequest.executeQuery("from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc = :type and rr.status = :status", [ti: titleInstance, type: rr_in_use, status: status_open])
 
-      if (existing_rr.size() == 0) {
+      if (existing_inuse?.size() == 0) {
+        def rr_no_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'No ZDB Results')
+        def rr_multiple = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple ZDB Results')
+        def existing_noresults = ReviewRequest.executeQuery("from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc = :type", [ti: titleInstance, type: rr_no_results])
+        def existing_multiple = ReviewRequest.executeQuery("from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc = :type", [ti: titleInstance, type: rr_multiple])
         def candidates = zdbAPIService.lookup(titleInstance.name, titleInstance.ids)
         RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
         RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
@@ -59,12 +60,27 @@ class TitleAugmentService {
           else {
             log.debug("Adding new ZDB-ID ${new_id}")
             new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
+
+            titleInstance.tipps.each {
+              it.lastSeen = new Date().getTime()
+              it.save()
+            }
+
+            existing_noresults.each {
+              it.status = status_closed
+              it.save()
+            }
+
+            existing_multiple.each {
+              it.status = status_closed
+              it.save()
+            }
           }
 
           setNewTitleInfo(titleInstance, candidates[0])
         }
         else if (candidates.size == 0){
-          if (titleInstance.ids.collect { it.namespace.value == 'issn' || it.namespace.value == 'eissn' }) {
+          if (existing_noresults.size() == 0 && titleInstance.ids.collect { it.namespace.value == 'issn' || it.namespace.value == 'eissn' }) {
             log.debug("No ZDB result for ids of title ${titleInstance} (${titleInstance.ids.collect { it.value }})")
 
             if (titleInstance.reviewRequests.collect { it.stdDesc == rr_no_results}.size() == 0) {
@@ -81,13 +97,13 @@ class TitleAugmentService {
             }
           }
         }
-        else {
+        else if (existing_multiple.size() == 0) {
           log.debug("Multiple ZDB-ID candidates for title ${titleInstance}")
 
           def name_candidates = []
 
           candidates.each {
-            if (it.title == titleInstance.name) {
+            if (KBComponent.generateNormname(it.title) == titleInstance.normname) {
               name_candidates.add (it)
             }
           }
@@ -120,9 +136,24 @@ class TitleAugmentService {
             else {
               log.debug("Adding new ZDB-ID ${new_id}")
               new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
+
+              titleInstance.tipps.each {
+                it.lastSeen = new Date().getTime()
+                it.save()
+              }
+
+              existing_noresults.each {
+                it.status = status_closed
+                it.save()
+              }
+
+              existing_multiple.each {
+                it.status = status_closed
+                it.save()
+              }
             }
           }
-          else {
+          else if (candidates.size() > 1) {
             def additionalInfo = [
               candidates: candidates
             ]
@@ -134,7 +165,7 @@ class TitleAugmentService {
               null,
               null,
               (additionalInfo as JSON).toString(),
-              rr_type,
+              rr_multiple,
               editorialGroup
             )
           }
@@ -274,31 +305,32 @@ class TitleAugmentService {
       def old_title = titleInstance.name
       titleInstance.name = full_title
       titleInstance.addVariantTitle(old_title)
-      titleInstance.save()
     }
+
+    titleInstance.save(flush: true)
   }
 
   def doEnrichment() {
     // Iterate though titles touched since last cursor
-    // def title_ids = TitleInstance.executeQuery("select id from TitleInstance");
+    // def title_ids = TitleInstance.executeQuery("select id from TitleInstance")
     // title_ids.each { ti_id ->
-    //   def title = TitleInstance.get(ti_id);
-    //   console.log("Process ${ti_id} ${title.name}");
+    //   def title = TitleInstance.get(ti_id)
+    //   console.log("Process ${ti_id} ${title.name}")
     //   synchronized(this) {
-    //     this.sleep(1000);
+    //     this.sleep(1000)
     //   }
     // }
-    crossrefSync();
+    crossrefSync()
   }
 
   def crossrefSync() {
-    def endpoint = 'http://api.crossref.org';
+    def endpoint = 'http://api.crossref.org'
     def target_service = new RESTClient(endpoint)
-    def offset = 0;
-    def num_processed = 1;
+    def offset = 0
+    def num_processed = 1
 
     while ( num_processed > 0 ) {
-      num_processed = 0;
+      num_processed = 0
       try {
         target_service.request(GET) { request ->
           uri.path='/journals'
@@ -309,24 +341,24 @@ class TitleAugmentService {
 
           response.success = { resp, data ->
             data.message.items.each { item ->
-              log.debug("item:: ${item.title}");
-              offset++;
+              log.debug("item:: ${item.title}")
+              offset++
             }
             num_processed = data.message.'total-results'
           }
           response.failure = { resp ->
-            log.error("Error - ${resp}");
+            log.error("Error - ${resp}")
           }
         }
       }
       catch ( Exception e ) {
-        e.printStackTrace();
+        e.printStackTrace()
       }
       finally {
       }
 
       synchronized(this) {
-        Thread.sleep(5000);
+        Thread.sleep(5000)
       }
     }
 
