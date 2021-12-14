@@ -899,7 +899,7 @@ class TitleInstance extends KBComponent {
         Combo.executeUpdate("delete from Combo as c where c.fromComponent = :ti and c.toComponent.id IN (:ttd)", [ti: this, ttd: tipp_ids])
       }
 
-      if (tipps?.size() > 0) {
+      if (tipls?.size() > 0) {
         def tipl_ids = tipls?.collect { it.id }
         Date now = new Date()
 
