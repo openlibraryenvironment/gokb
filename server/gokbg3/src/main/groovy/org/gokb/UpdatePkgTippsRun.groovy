@@ -536,7 +536,7 @@ class UpdatePkgTippsRun {
             def tipp_ids = ctipp.ids.collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
 
             tipp_ids.each { tid ->
-              if (jsonIdMap[tid.type] && Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname && tid.type != 'pisbn') {
+              if (jsonIdMap[tid.type] && Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname && tid.type in ['zdb', 'eissn', 'issn', 'doi', 'isbn']) {
                 id_mismatches[tid.type] = jsonIdMap[tid.type]
               }
             }
