@@ -133,35 +133,6 @@ class ReviewRequest implements Auditable {
     return AllocatedReviewGroup.findAllByReview(this)
   }
 
-  def allocateGroup(group) {
-    def result = false
-    def existing = AllocatedReviewGroup.findAllByReviewAndGroup(this, group)
-
-    if (!existing) {
-      AllocatedReviewGroup.create(group, this)
-      result = true
-    }
-
-    result
-  }
-
-  def claim(group) {
-    def result = true
-    def existing = this.allocatedGroups
-
-    if (existing.collect {it.group == group}?.size() > 0) {
-      existing.each { eg ->
-        if (eg.group != group && eg.status != null) {
-          result = false
-        }
-      }
-    }
-    else {
-      result = false
-    }
-
-    result
-  }
 
   def afterInsert() {
     def user = springSecurityService?.currentUser

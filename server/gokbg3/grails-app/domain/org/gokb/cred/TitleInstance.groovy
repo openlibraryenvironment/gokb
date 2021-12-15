@@ -5,7 +5,6 @@ import org.grails.web.json.JSONObject
 import java.time.LocalDateTime
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
-import org.gokb.DomainClassExtender
 import groovy.util.logging.*
 
 @Slf4j
