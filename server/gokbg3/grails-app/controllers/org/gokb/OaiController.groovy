@@ -134,18 +134,27 @@ class OaiController {
       def oid = params.identifier
       def record = null
       def returnAttrs = true
+      def cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled)
       def request_map = params
+      def legalClassNames = (result.className == 'org.gokb.cred.TitleInstance' ? ['org.gokb.cred.TitleInstance', 'org.gokb.cred.BookInstance', 'org.gokb.cred.JournalInstance', 'org.gokb.cred.DatabaseInstance', 'org.gokb.cred.OtherInstance'] : [result.className])
       request_map.keySet().removeAll(['controller','action','id'])
 
       if (oid) {
         record = KBComponent.findByUuid(oid)
 
-        if (!record) {
+        if (record && !legalClassNames.contains(record.class.name)) {
+          record = null
+          errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown for this endpoint.'])
+        }
+        else if (!record) {
           record = genericOIDService.resolveOID(oid)
         }
 
-        if( !record ) {
+        if (!record && errors.size() == 0) {
           errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown or illegal in this repository.'])
+        }
+        else if (record && cachedPackageResponse && !record.lastCachedDate) {
+          errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The requested resource is not yet ready for exchange. Please try again later.'])
         }
       }
       else {
@@ -193,7 +202,7 @@ class OaiController {
               xml.'header'() {
                 identifier("${record.class.name}:${record.id}")
                 uuid(record.uuid)
-                datestamp(dateFormatService.formatIsoTimestamp(record.lastUpdated))
+                datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? record.lastCachedDate : record.lastUpdated))
                 if (record.status == status_deleted) {
                   status('deleted')
                 }
@@ -309,7 +318,7 @@ class OaiController {
 
     def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
 
-    if(!prefixHandler) {
+    if (!prefixHandler) {
       errors.add([code: 'cannotDisseminateFormat', name: 'metadataPrefix', expl: 'Metadata format missing or not supported'])
     }
 
@@ -320,8 +329,8 @@ class OaiController {
     def query = result.oaiConfig.query
     def wClause = false
 
-    if(from){
-      if(!wClause){
+    if (from) {
+      if (!wClause) {
         query += 'where '
         wClause = true
       }
@@ -331,17 +340,17 @@ class OaiController {
       query += 'o.lastUpdated > ?'
       query_params.add(from)
     }
-    else if ((params.from != null)&&(params.from.trim())) {
+    else if (params.from != null && params.from.trim()) {
       def fparam = params.from
 
-      if( params.from.length() == 10 ) {
+      if (params.from.length() == 10) {
         fparam += 'T00:00:00Z'
       }
 
       try {
         from = dateFormatService.parseIsoTimestamp(fparam)
 
-        if(!wClause){
+        if (!wClause) {
           query += 'where '
           wClause = true
         }
@@ -359,8 +368,8 @@ class OaiController {
       }
     }
 
-    if(until){
-      if(!wClause){
+    if (until) {
+      if (!wClause) {
         query += 'where '
         wClause = true
       }
@@ -370,21 +379,21 @@ class OaiController {
       query += 'o.lastUpdated < ?'
       query_params.add(until)
     }
-    else if ((params.until != null)&&(params.until.trim())) {
+    else if (params.until != null && params.until.trim()) {
       def uparam = params.until
 
-      if( params.until.length() == 10 ) {
+      if (params.until.length() == 10) {
         uparam += 'T00:00:00Z'
       }
 
       try {
         until = dateFormatService.parseIsoTimestamp(uparam)
 
-        if(!wClause){
+        if (!wClause) {
           query += 'where '
           wClause = true
         }
-        else{
+        else {
           query += ' and '
         }
 
@@ -398,7 +407,7 @@ class OaiController {
       }
     }
 
-    if(errors) {
+    if (errors) {
       log.debug("Request had errors .. not executing query!")
     }
     else {
@@ -407,7 +416,7 @@ class OaiController {
 
       log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
 
-      if ( offset + records.size() < rec_count ) {
+      if (offset + records.size() < rec_count) {
         // Query returns more records than sent, we will need a resumption token
         resumption = "${from?dateFormatService.formatIsoTimestamp(from):''}|${until?dateFormatService.formatIsoTimestamp(until):''}|${offset+records.size()}|${metadataPrefix}"
       }
@@ -508,10 +517,11 @@ class OaiController {
         def max = result.oaiConfig.pageSize ?: 10
         def rec_count = null
         def records = []
-        def order_by_clause = 'order by o.lastUpdated'
         def returnAttrs = true
         def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def request_map = params
+        def cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled)
+        def order_by_clause = cachedPackageResponse ? 'order by o.lastCachedDate' : 'order by o.lastUpdated'
         request_map.keySet().removeAll(['controller','action','id'])
 
         if ( params.resumptionToken && ( params.resumptionToken.trim() ) ) {
@@ -608,6 +618,18 @@ class OaiController {
           }
         }
 
+        if (cachedPackageResponse) {
+          if(!wClause){
+            query += 'where '
+            wClause = true
+          }
+          else{
+            query += ' and '
+          }
+
+          query += 'o.lastCachedDate is not null'
+        }
+
         if (result.oaiConfig.id == 'tipps') {
           if(!wClause){
             query += 'where '
@@ -623,7 +645,7 @@ class OaiController {
           wClause = true
         }
 
-        if(status_filter && status_filter.size() > 0){
+        if (status_filter && status_filter.size() > 0) {
           status_filter.eachWithIndex { val, index ->
             if(!wClause){
               query += 'where '
@@ -650,18 +672,7 @@ class OaiController {
           }
         }
 
-        if(from){
-          if(!wClause){
-            query += 'where '
-            wClause = true
-          }
-          else{
-            query += ' and '
-          }
-          query += 'o.lastUpdated > :lupdf'
-          query_params.put('lupdf', from)
-        }
-        else if ((params.from != null)&&(params.from.trim())) {
+        if (!from && params.from != null && params.from.trim()) {
           def fparam = params.from
 
           if( params.from.length() == 10 ) {
@@ -670,17 +681,6 @@ class OaiController {
 
           try {
             from = dateFormatService.parseIsoTimestamp(fparam)
-
-            if(!wClause){
-              query += 'where '
-              wClause = true
-            }
-            else{
-              query += ' and '
-            }
-
-            query += 'o.lastUpdated > :lupdf'
-            query_params.put('lupdf', from)
           }
           catch (Exception pe) {
             errors.add([code:'badArgument', name: 'from', expl: 'This date format is not supported.'])
@@ -688,18 +688,7 @@ class OaiController {
           }
         }
 
-        if (until) {
-          if(!wClause){
-            query += 'where '
-            wClause = true
-          }
-          else{
-            query += ' and '
-          }
-          query += 'o.lastUpdated < :lupd'
-          query_params.put('lupd', until)
-        }
-        else if ((params.until != null)&&(params.until.trim())) {
+        if (!until && params.until != null && params.until.trim()) {
           def uparam = params.until
 
           if( params.until.length() == 10 ) {
@@ -708,18 +697,6 @@ class OaiController {
 
           try {
             until = dateFormatService.parseIsoTimestamp(uparam)
-
-            if(!wClause){
-              query += 'where '
-              wClause = true
-            }
-            else{
-              query += ' and '
-            }
-
-            query += 'o.lastUpdated < :lupd'
-
-            query_params.put('lupd', until)
           }
           catch (Exception pe) {
             errors.add([code:'badArgument', name: 'until', expl: 'This date format is not supported.'])
@@ -727,51 +704,40 @@ class OaiController {
           }
         }
 
-        // Only return cached packages
-        if (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled) {
-          File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
-          def cached_uuids = []
-
-          for (File file : dir.listFiles()) {
-            def nameParts = file.name.split('_')
-            if (from && until) {
-              if (dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) > from && dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) < until) {
-                cached_uuids.add(nameParts[0])
-              }
-            }
-            else if (from) {
-              if (dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) > from) {
-                cached_uuids.add(nameParts[0])
-              }
-            }
-            else if (until) {
-              if (dateFormatService.parseIsoMsTimestamp(nameParts[1].minus('.xml')) < until) {
-                cached_uuids.add(nameParts[0])
-              }
-            }
-            else {
-              cached_uuids.add(nameParts[0])
-            }
-          }
-
-          if(!wClause){
+        if (from) {
+          if (!wClause) {
             query += 'where '
             wClause = true
           }
-          else{
+          else {
             query += ' and '
           }
 
-          if (cached_uuids.size() > 0) {
-            query += 'o.uuid IN (:cached)'
-            query_params.put('cached', cached_uuids)
+          if (cachedPackageResponse) {
+            query += 'o.lastCachedDate > :lupdf'
           }
           else {
-            query += 'o.uuid = :cached'
-            query_params.put('cached', 'empty')
+            query += 'o.lastUpdated > :lupdf'
           }
 
-          wClause = true
+          query_params.put('lupdf', from)
+        }
+        if (until) {
+          if (!wClause) {
+            query += 'where '
+            wClause = true
+          }
+          else {
+            query += ' and '
+          }
+
+          if (cachedPackageResponse) {
+            query += 'o.lastCachedDate < :lupd'
+          }
+          else {
+            query += 'o.lastUpdated < :lupd'
+          }
+          query_params.put('lupd', until)
         }
 
         log.debug("qry is: ${query}");
@@ -819,7 +785,7 @@ class OaiController {
                     mkp.'header' () {
                       identifier("${rec.class.name}:${rec.id}")
                       uuid(rec.uuid)
-                      datestamp(dateFormatService.formatIsoTimestamp(rec.lastUpdated))
+                      datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? rec.lastCachedDate : rec.lastUpdated))
                       if (rec.status == status_deleted) {
                         status('deleted')
                       }
@@ -886,5 +852,18 @@ class OaiController {
     writer << xml.bind(resp)
 
     render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
+  }
+
+  private Date getCacheDateForPkgUuid(uuid) {
+    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    def cached_uuids = []
+
+    for (File file : dir.listFiles()) {
+      if (file.name.contains(uuid)) {
+        return new Date(file.lastModified())
+      }
+    }
+
+    return null
   }
 }

@@ -97,7 +97,7 @@ class PlatformService {
       matches[vm.id] << ['field': 'name', value: platformDTO.name, message:"Provided name matched a variant of an existing platform!"]
     }
 
-    if( platformDTO.variantNames?.size() > 0 ){
+    if (platformDTO.variantNames?.size() > 0)  {
       log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
       platformDTO.variantNames.each {
         def variant = null

@@ -10,6 +10,7 @@ import grails.util.Holders
 import groovy.transform.Synchronized
 import grails.validation.ValidationException
 import groovy.util.logging.*
+import org.grails.web.json.JSONObject
 
 import javax.annotation.Nonnull
 
@@ -203,7 +204,8 @@ class ComponentLookupService {
    * @param context : Possible override of the self link path
    */
 
-  public def restLookup (user, cls, params, def context = null) {
+  public def restLookup (user, cls, params, def context = null, boolean idOnly = false) {
+    log.debug("restLookup: ${params}")
     def result = [:]
     def hqlQry = "from ${cls.simpleName} as p".toString()
     def qryParams = new HashMap()
@@ -393,7 +395,27 @@ class ComponentLookupService {
             }
           }
 
-          if ( validLong.size() > 0 || validStr.size() > 0 ) {
+          boolean pkg_qry = false
+
+          if (validLong.size() == 1 && p.name == 'componentToReview') {
+            def ctr = KBComponent.get(validLong[0])
+
+            if (ctr?.class == Package) {
+              def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = ? and toComponent = tipp)",[ctr])
+              def ti_ids = []
+
+              if (params.titlereviews) {
+                ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN :tippids)", [tippids: tipp_ids])
+              }
+
+              paramStr += "p.componentToReview.id IN :ctrids"
+              qryParams['ctrids'] = [ctr.id] + tipp_ids + ti_ids
+              log.debug("${qryParams['ctrids'].size()}")
+              pkg_qry = true
+            }
+          }
+
+          if (!pkg_qry && (validLong.size() > 0 || validStr.size() > 0)) {
             paramStr += "("
             if (validLong.size() > 0) {
               paramStr += "p.${p.name}.id IN :${p.name}"
@@ -413,16 +435,38 @@ class ComponentLookupService {
             }
             paramStr += ")"
           }
-          else {
+          else if (!pkg_qry) {
             addParam = false
           }
         }
-        else if ( p.type == Long ) {
+        else if (p.type == Long) {
           qryParams[p.name] = alts.collect { Long.valueOf(it) }
           paramStr += "p.${p.name} IN :${p.name}"
         }
-        else if ( p.name == 'name' ){
+        else if (p.name == 'name'){
           paramStr += "lower(p.${p.name}) like lower(:${p.name})"
+          qryParams[p.name] = "%${params[p.name]}%"
+        }
+        else if (p.name == 'url' || p.name == 'primaryUrl') {
+          paramStr += "lower(p.${p.name}) like lower(:${p.name})"
+          def uri_param = null
+
+          try {
+            def url = new URL(params[p.name])
+
+            if (url.getProtocol()) {
+              uri_param = url_as_name.getHost()
+
+              if (uri_param .startsWith("www.")) {
+                uri_param = uri_param.substring(4)
+              }
+
+              log.debug("New platform name is ${platformDTO.name}.")
+            }
+          } catch (MalformedURLException) {
+            log.debug("Platform name is no valid URL")
+          }
+
           qryParams[p.name] = "%${params[p.name]}%"
         }
         else {
@@ -469,6 +513,7 @@ class ComponentLookupService {
 
     if (cls == ReviewRequest && params['allocatedGroups']) {
       def cgs = params.list('allocatedGroups')
+      def inactive = RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive')
       def validCgs = []
 
       cgs.each { cg ->
@@ -482,7 +527,6 @@ class ComponentLookupService {
 
       if (validCgs.size() > 0 ) {
         log.debug("Filtering for CGs: ${validCgs}")
-
         if (first) {
           hqlQry += " WHERE "
           first = false
@@ -490,9 +534,9 @@ class ComponentLookupService {
         else {
           hqlQry += " AND "
         }
-
-        hqlQry += "exists (select 1 from AllocatedReviewGroup as ag where ag.review = p and ag.group IN :alg)"
+        hqlQry += "exists (select 1 from AllocatedReviewGroup as ag where ag.review = p and ag.group IN :alg and ag.status != :inactive)"
         qryParams['alg'] = validCgs
+        qryParams['inactive'] = inactive
       }
     }
 
@@ -518,7 +562,7 @@ class ComponentLookupService {
       }
 
       log.debug("${obj}")
-      result.data << restMappingService.mapObjectToJson(obj, params, user)
+      result.data << (idOnly ? obj.id : restMappingService.mapObjectToJson(obj, params, user))
     }
 
     result['_pagination'] = [
@@ -643,7 +687,23 @@ class ComponentLookupService {
   }
 
 
-  def findCuratoryGroupOfInterest(component, User user = null){
+  CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null, JSONObject activeGroup = null){
+    // Find by activeGroup
+    CuratoryGroup activeCuratoryGroup = null
+    if (activeGroup?.uuid){
+      activeCuratoryGroup = CuratoryGroup.findByUuid(activeGroup.uuid)
+    }
+    else if (activeGroup?.id){
+      activeCuratoryGroup = CuratoryGroup.findById(activeGroup.id)
+    }
+    else if (activeGroup?.name){
+      activeCuratoryGroup = CuratoryGroup.findByName(activeGroup.name)
+    }
+    if (activeCuratoryGroup){
+      return activeCuratoryGroup
+    }
+
+    // Not found by activeGroup --> Get by other arguments
     if (!KBComponent.has(component, 'curatoryGroups')){
       return null
     }

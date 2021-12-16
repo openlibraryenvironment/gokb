@@ -201,7 +201,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     precedingPublicationId column: 'tipp_preceding_publication_id'
     lastChangedExternal column: 'tipp_last_change_ext'
     medium column: 'tipp_medium_rv_fk'
-    importId column: 'tipp_import_id'
+    importId column: 'tipp_import_id', index: 'kbc_import_id_idx'
   }
 
   static constraints = {
@@ -710,23 +710,31 @@ class TitleInstancePackagePlatform extends KBComponent {
         changed = true
       }
 
-      if (tipp_dto.paymentType && tipp_dto.paymentType.length() > 0) {
+      if (tipp_dto.paymentType) {
+        if (tipp_dto.paymentType instanceof String) {
+          def payment_statement
 
-        def payment_statement
+          if (tipp_dto.paymentType == 'P') {
+            payment_statement = 'Paid'
+          }
+          else if (tipp_dto.paymentType == 'F') {
+            payment_statement = 'OA'
+          }
+          else {
+            payment_statement = tipp_dto.paymentType
+          }
 
-        if (tipp_dto.paymentType == 'P') {
-          payment_statement = 'Paid'
+          def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
+
+          if (payment_ref) tipp.paymentType = payment_ref
         }
-        else if (tipp_dto.paymentType == 'F') {
-          payment_statement = 'OA'
-        }
-        else {
-          payment_statement = tipp_dto.paymentType
-        }
+        else if (tipp_dto.paymentType instanceof Integer) {
+          def int_rdv = RefdataValue.get(tipp_dto.paymentType)
 
-        def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
-
-        if (payment_ref) tipp.paymentType = payment_ref
+          if (int_rdv?.owner.value == 'TitleInstancePackagePlatform.PaymentType') {
+            tipp.paymentType = int_rdv
+          }
+        }
       }
 
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', trimmed_url)

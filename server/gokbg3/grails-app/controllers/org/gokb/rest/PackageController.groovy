@@ -76,6 +76,7 @@ class PackageController {
       def countTippsParams = [:]
       countTippsParams.componentType = "TIPP"
       countTippsParams.tippPackage = obj.uuid
+      countTippsParams.status = "Current"
       countTippsParams.max = 0
       obj['_tippCount'] = ESSearchService.find(countTippsParams)?._pagination?.total ?: 0
     }
@@ -190,7 +191,11 @@ class PackageController {
               log.debug("No errors.. saving")
               obj.save()
 
-              obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+              def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+
+              if (variant_result.errors.size() > 0) {
+                errors.variantNames = variant_result.errors
+              }
 
               if (generateToken) {
                 String charset = (('a'..'z') + ('0'..'9')).join()
@@ -289,10 +294,6 @@ class PackageController {
 
         def jsonMap = obj.jsonMapping
 
-        jsonMap.ignore = [
-            'lastProject',
-        ]
-
         jsonMap.immutable = [
             'userListVerifier',
             'listVerifiedDate',
@@ -300,7 +301,12 @@ class PackageController {
         ]
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
-        obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        if (variant_result.errors.size() > 0) {
+          errors.variantNames = variant_result.errors
+        }
 
         errors << updateCombos(obj, reqBody, remove, user)
 
@@ -480,9 +486,9 @@ class PackageController {
         def ti_errors = []
 
         if (tipp_dto.title && tipp_dto.title instanceof Map) {
-          if (!tipp_dto.id) {
+          if (!tipp_dto.title.id) {
             try {
-              def ti = TitleInstance.upsertDTO(titleLookupservice, tipp_dto.title, user)
+              def ti = TitleInstance.upsertDTO(titleLookupService, tipp_dto.title, user)
 
               if (ti) {
                 tipp_dto.title = ti.id

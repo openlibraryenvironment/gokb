@@ -29,7 +29,8 @@ class TitleLookupService {
     // Get the class 1 identifier namespaces.
     Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
     def xcheck = grailsApplication.config.identifiers.cross_checks
-    RefdataValue status_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+    def status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
 
     // Return the list of class 1 identifiers we have found or created, as well as the
     // list of matches
@@ -165,7 +166,7 @@ class TitleLookupService {
                     def dproxied = ClassUtils.deproxy(c);
 
                     // Only add if it's a title.
-                    if (dproxied.class.name == ti_class.name) {
+                    if (dproxied.class.name == ti_class.name && dproxied.status != status_deleted) {
 
                       log.debug("Found ${id_def.value} in ${ns} namespace.")
 
@@ -177,7 +178,7 @@ class TitleLookupService {
                       ]
 
                       TitleInstance the_ti = (dproxied as TitleInstance)
-                      def combo_active = Combo.executeQuery("from Combo as c where fromComponent = :ti and toComponent = :xcid and status != :sa", [ti: the_ti, xcid: xc_id, sa: status_deleted])
+                      def combo_active = Combo.executeQuery("from Combo as c where fromComponent = :ti and toComponent = :xcid and status != :sa", [ti: the_ti, xcid: xc_id, sa: combo_deleted])
 
                       // Don't add repeated matches
                       if (result['matches'].contains(the_ti)) {
@@ -347,6 +348,7 @@ class TitleLookupService {
                 title_match.conflicts << [
                   message: "Value ${it.incoming.value} for namespace ${it.incoming.namespace.value} conflicts with existing value ${it.matched.value}",
                   field  : "identifier.value",
+                  namespace: it.incoming.namespace.value,
                   value  : it.incoming.value,
                   matched: it.matched.value
                 ]
@@ -374,7 +376,13 @@ class TitleLookupService {
               if (rid.namespace == mid.namespace && rid.value != mid.value) {
                 if (!mti.ids.contains(rid)) {
                   full_match = false
-                  id_conflicts.add([message: "Value ${rid.value} for namespace ${rid.namespace.value} conflicts with existing value ${mid.value}", field: "identifier.value", value: rid.value, matched: mid.value])
+                  id_conflicts.add([
+                    message: "Value ${rid.value} for namespace ${rid.namespace.value} conflicts with existing value ${mid.value}",
+                    field: "identifier.value",
+                    namespace: rid.namespace.value,
+                    value: rid.value,
+                    matched: mid.value
+                  ])
                 }
               }
             }
@@ -403,7 +411,7 @@ class TitleLookupService {
             log.debug("One match for all identifiers")
             def title_match = [object: all_matched[0], conflicts: [], warnings: ['other_matches']]
 
-            if (!all_matched[0].name.equals(title)) {
+            if (all_matched[0].normname != KBComponent.generateNormname(title)) {
               title_match.conflicts << [message: "Title name differs from matched value ${all_matched[0].name}", field: "name", value: title, matched: all_matched[0].name]
             }
 
@@ -1009,17 +1017,17 @@ class TitleLookupService {
         }
       }
 
-      if (!publisher) {
-        publisher = new Org(name: publisher_name)
-        publisher.save()
-      }
+      // if (!publisher) {
+      //   publisher = new Org(name: publisher_name)
+      //   publisher.save()
+      // }
       // publisher present
       log.debug("Found publisher ${publisher}");
       def orgs = ti.getPublisher()
       log.debug("Check for dupes in ${orgs}")
 
       // Has the publisher ever existed in the list against this title.
-      if (!orgs.contains(publisher)) {
+      if (publisher && !orgs.contains(publisher)) {
 
         // First publisher added?
         boolean not_first = orgs.size() > 0

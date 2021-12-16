@@ -1,7 +1,6 @@
 package org.gokb
 
 import org.gokb.cred.*
-import com.k_int.ClassUtils
 
 class ReviewRequestService {
 
@@ -57,4 +56,16 @@ class ReviewRequestService {
     }
     req
   }
+
+
+  AllocatedReviewGroup escalate(AllocatedReviewGroup arg, CuratoryGroup cg){
+    arg.status = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
+    AllocatedReviewGroup result = AllocatedReviewGroup.findByGroupAndReview(cg, arg.review) ?:
+        AllocatedReviewGroup.create(cg, arg.review, false)
+    result.escalatedFrom = arg
+    result.status = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+    result.save()
+    result
+  }
+
 }

@@ -90,7 +90,10 @@ class UpdatePackageRunSpec extends Specification {
     ['9783-442X', '9783-4420', '9784-442X', '978-3-16-148410-0'].each {
       Identifier.findByValue(it)?.expunge()
     }
-    ['TestJournalTIPP', 'TestBookTIPP'].each {
+    ['Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
+      TitleInstance.findByName(it)?.expunge()
+    }
+    ['TestJournalTIPP', 'TestBookTIPP', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
   }
@@ -448,11 +451,11 @@ class UpdatePackageRunSpec extends Specification {
                     ],
                     [
                         "type" : "eissn",
-                        "value": "1520-5118"
+                        "value": "9783-4420"
                     ],
                     [
                         "type" : "issn",
-                        "value": "0021-8561"
+                        "value": "9783-442X"
                     ]
 
                 ],
@@ -514,12 +517,14 @@ class UpdatePackageRunSpec extends Specification {
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
-    def journal
-    matching_pkgs[0].tipps.each { tipp ->
-      if (tipp.importId == "titleID")
-        journal = tipp
+    matching_pkgs[0].tipps.size() == 2
+    def journal = null
+    matching_pkgs[0].tipps.each {
+        if (it.importId == 'titleID') {
+            journal = it
+        }
     }
-    journal.ids.size() == 6
+    journal.ids.size() == 4
   }
 
   void "Test updatePackageTipps :: new record"() {
@@ -529,6 +534,7 @@ class UpdatePackageRunSpec extends Specification {
         "packageHeader": [
             "breakable"      : "No",
             "consistent"     : "Yes",
+            "activeCuratoryGroupId": CuratoryGroup.findByName('TestGroup1').id,
             "editStatus"     : "In Progress",
             "fixed"          : "No",
             "global"         : "Consortium",

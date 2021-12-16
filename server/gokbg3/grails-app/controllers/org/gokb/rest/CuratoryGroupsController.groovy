@@ -5,7 +5,9 @@ import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+import org.apache.commons.lang.StringUtils
 import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.CuratoryGroupType
 import org.gokb.cred.JobResult
 import org.gokb.cred.KBComponent
 import org.gokb.cred.ReviewRequest
@@ -51,10 +53,12 @@ class CuratoryGroupsController {
 
     if (sortField) {
       curGroups = curGroups.toSorted { a, b ->
-        if (sortOrder == "desc")
+        if (sortOrder == "desc"){
           b[sortField].toString().toLowerCase() <=> a[sortField].toString().toLowerCase()
-        else
+        }
+        else{
           a[sortField].toString().toLowerCase() <=> b[sortField].toString().toLowerCase()
+        }
       }
     }
     def result = [data: []]
@@ -217,12 +221,14 @@ class CuratoryGroupsController {
     def sort = params.sort ?: null
     def order = params.order ?: null
     def group = CuratoryGroup.get(params.id)
+    def inactive = RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive')
     User user = User.get(springSecurityService.principal.id)
     def errors = [:]
 
     if (group) {
-      def qry = "where exists (select arg from AllocatedReviewGroup arg where arg.group = :group and arg.review = rr)"
-      def qryParams = [group:group]
+      def qry = "where exists (select arg from AllocatedReviewGroup arg" +
+                              "where arg.group = :group and arg.review = rr and arc.status != :inactive)"
+      def qryParams = [group:group, inactive:inactive]
       def sortQry = ""
 
       if (params.status) {
@@ -359,6 +365,73 @@ class CuratoryGroupsController {
     }
     log.debug("Return ${result}")
 
+    render result as JSON
+  }
+
+
+  @Secured(value=["hasRole('ROLE_ADMIN')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def connectGroups() {
+    def result = ['result':'ERROR',
+                  'params': params]
+    if (!params.superordinateId || !params.subordinateId){
+      response.setStatus(422)
+      result.message = "Missing params. Requested parameters are 'superordinateId' and 'subordinateId'"
+    }
+    else{
+      CuratoryGroup superordinate = CuratoryGroup.get(genericOIDService.oidToId(params.superordinateId))
+      CuratoryGroup subordinate = CuratoryGroup.get(genericOIDService.oidToId(params.subordinateId))
+      if (!superordinate || !subordinate){
+        response.setStatus(404)
+        result.message = "CuratoryGroup combination not found for superordinate id ${params.superordinateId} and subordinate id ${params.subordinateId}."
+      }
+      else if (!(superordinate.type.level > subordinate.type.level)){
+        response.setStatus(409)
+        result.message = "The given CuratoryGroups are not connectable in the requested way for hierarchic reasons."
+      }
+      else{
+        try{
+          superordinate.subordinatedGroups << subordinate
+          subordinate.superordinatedGroup = superordinate
+          result.result = 'OK'
+          response.setStatus(200)
+          result.message = "Curatory Groups have been connected."
+        }
+        catch(Exception e){
+          response.setStatus(500)
+          result.message = "Could not process request to connect CuratoryGroups."
+        }
+      }
+    }
+    render result as JSON
+  }
+
+
+  @Secured("hasRole('ROLE_ADMIN') and isAuthenticated()")
+  @Transactional
+  def createGroupType() {
+    def result = [:]
+    CuratoryGroupType.Level level
+    String name
+    try{
+      level = params.level?.toUpperCase()
+      if (StringUtils.isEmpty(params.name)){
+        throw new Exception("Missing param name.")
+      }
+      name = params.name
+    }
+    catch (Exception e){
+      result.result = 'ERROR'
+      response.setStatus(500)
+      result.message = "No CuratoryGroupType found for these params. ".concat(e.getMessage())
+    }
+    if (level && name){
+      CuratoryGroupType cgt = new CuratoryGroupType(level:level, name:name)
+      cgt.dump()
+      result.result = 'OK'
+      response.setStatus(200)
+      result.message = "Created CuratoryGroupType ".concat(cgt.toString())
+    }
     render result as JSON
   }
 }

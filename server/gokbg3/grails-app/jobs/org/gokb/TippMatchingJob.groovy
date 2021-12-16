@@ -1,11 +1,11 @@
 package org.gokb
 
 import grails.util.Holders
+import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
-import org.springframework.beans.factory.annotation.Autowired
 
 import java.time.LocalDateTime
 
@@ -19,8 +19,8 @@ class TippMatchingJob {
     cron name: 'TippMatchingTrigger', cronExpression: "0 0 4 * * ?"
   }
 
-  @Autowired
-  TippService tippService
+  def tippService
+  def sessionFactory
 
   def execute() {
     // this shouldn't run while TIPPs are imported (@UpdatePackageTippsRun.groovy):
@@ -28,29 +28,41 @@ class TippMatchingJob {
     synchronized (UpdatePkgTippsRun.LOCK){
 
     def startTime = LocalDateTime.now()
+
     TitleInstance.withNewSession {
+      def count = 0
       def tippIDs = TitleInstancePackagePlatform.executeQuery(
           "select id from TitleInstancePackagePlatform tipp where status != :sdel and not exists (select c from Combo as c where c.type = :ctype and c.toComponent = tipp)",
           [sdel : RefdataCategory.lookup('KBComponent.Status', 'Deleted'),
-           ctype: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')])
-      log.debug("${tippIDs.size()} detached TIPPs to check")
+          ctype: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')])
+      log.info("${tippIDs.size()} detached TIPPs to check")
+
       for (Long tippID : tippIDs) {
         log.debug("begin tipp")
+        count++
         TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippID)
         // ignore Tipp if RR.Date > Tipp.Date
         if (tipp) {
           def rrList = ReviewRequest.findAllByComponentToReviewAndDateCreatedGreaterThan(tipp, tipp.dateCreated)
           if (rrList.size() == 0) {
             log.debug("match tipp $tipp")
-            tippService.matchTitle(tipp)
+            def group = tipp.pkg.curatoryGroups?.size() > 0 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null
+            tippService.matchTitle(tipp, group)
           }
           else {
             log.debug("tipp $tipp has ${rrList.size()} recent Review Requests and is ignored.")
           }
           log.debug("end tipp")
         }
+
+        if (count % 50 == 0) {
+          def session = sessionFactory.currentSession
+          // flush and clear the session.
+          session.flush()
+          session.clear()
+        }
       }
-      log.debug("end matching Job after ${(LocalDateTime.now().minusNanos(startTime.getNano())).second} sec and ${tippIDs.size()} TIPPs")
+      log.info("end matching Job after ${(LocalDateTime.now().minusNanos(startTime.getNano())).second} sec and ${tippIDs.size()} TIPPs")
     }}
   }
 }

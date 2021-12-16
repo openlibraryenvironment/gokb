@@ -38,6 +38,7 @@ class CrossRefPkgRun {
   int removedNum = 0
   def invalidTipps = []
   Package pkg
+  CuratoryGroup activeGroup
   def pkg_validation
   def pltCache = [:] // DTO.name : validPlatformInstance
   Job job = null
@@ -81,7 +82,7 @@ class CrossRefPkgRun {
       springSecurityService.reauthenticate(user.username)
       user = User.get(user.id)
 
-      // check permissions
+      // check api permissions
       if (!(user?.apiUserStatus)) {
         globalError([code   : 403,
                      message: messageService.resolveCode('crossRef.package.error.apiRole', [], locale)]
@@ -90,6 +91,7 @@ class CrossRefPkgRun {
 
         return jsonResult
       }
+
       // validate and upsert header pkg
       if (!(rjson?.packageHeader?.name)) {
         globalError([code   : 400,
@@ -103,7 +105,7 @@ class CrossRefPkgRun {
       pkg_validation = Package.validateDTO(rjson.packageHeader, locale)
 
       if (!pkg_validation.valid) {
-        globalError([code   : 403,
+        globalError([code   : 400,
                      message: messageService.resolveCode('crossRef.package.error.validation.global', null, locale),
                      errors : pkg_validation.errors]
         )
@@ -112,18 +114,24 @@ class CrossRefPkgRun {
         return jsonResult
       }
       // upsert Package
+
+      if (rjson.packageUuid) {
+        rjson.packageHeader.uuid = rjson.packageUuid
+      }
+
       def proxy = packageService.upsertDTO(rjson.packageHeader, user)
 
       if (!proxy) {
-        globalError([code   : 400,
-                     message: messageService.resolveCode('crossRef.package.error', null, locale),
+        globalError([code   : 403,
+                     message: messageService.resolveCode('crossRef.package.error.denied', null, locale),
         ])
         job?.endTime = new Date()
 
         return jsonResult
       }
 
-      pkg = Package.get(proxy.id)
+      pkg = ClassUtils.deproxy(proxy)
+      componentUpdateService.ensureCoreData(pkg, rjson.packageHeader, fullsync, user)
       jsonResult.pkgId = pkg.id
       job?.linkedItem = [name: pkg.name,
                          type: "Package",
@@ -131,6 +139,7 @@ class CrossRefPkgRun {
                          uuid: pkg.uuid]
       job?.message("found Package ${pkg.name} (uuid: ${pkg.uuid})")
 
+      checkActiveGroup()
       handleUpdateToken()
 
       existing_tipp_ids = TitleInstance.executeQuery(
@@ -190,7 +199,7 @@ class CrossRefPkgRun {
               null,
               (currentTippError as JSON).toString(),
               rr_TIPPs_invalid,
-              componentLookupService.findCuratoryGroupOfInterest(pkg, user)
+              (activeGroup ?: componentLookupService.findCuratoryGroupOfInterest(pkg, user))
           )
           job?.message("skipped invalid title ${(currentTippError as JSON).toString()}")
         }
@@ -272,7 +281,8 @@ class CrossRefPkgRun {
                 user,
                 null,
                 (additionalInfo as JSON).toString(),
-                rr_TIPPs_retired
+                rr_TIPPs_retired,
+                (activeGroup ?: componentLookupService.findCuratoryGroupOfInterest(pkg, user))
             )
           }
         }
@@ -354,39 +364,41 @@ class CrossRefPkgRun {
     job?.message(error.message)
   }
 
-  private def handleUpdateToken() {
+  private def checkActiveGroup() {
     boolean curated_pkg = false
-    def curatory_group_ids = null
-    if (pkg.curatoryGroups && pkg.curatoryGroups?.size() > 0) {
-      curatory_group_ids = user.curatoryGroups?.id?.intersect(pkg.curatoryGroups?.id)
+    def user_groups = user.curatoryGroups
+
+    if (rjson.packageHeader.activeCuratoryGroupId) {
+      int group_id = rjson.packageHeader.activeCuratoryGroupId as int
+      def active_group = CuratoryGroup.get(group_id)
+
+      if (active_group && user_groups.contains(active_group)) {
+        job?.groupId = group_id
+        activeGroup = active_group
+      }
+    }
+    else if (pkg.curatoryGroups && pkg.curatoryGroups?.size() > 0) {
+      def curatory_group_ids = user_groups?.id?.intersect(pkg.curatoryGroups?.id)
       if (curatory_group_ids?.size() == 1) {
         job?.groupId = curatory_group_ids[0]
+        activeGroup = CuratoryGroup.get(curatory_group_ids[0])
       }
-      else if (curatory_group_ids?.size() > 1) {
-        job?.groupId = curatory_group_ids[0]
-        log.debug("Got more than one cg candidate. Picking the first one: ${curatory_group_ids[0]}")
-        // TODO: determine which group to be picked (?)
-      }
-      curated_pkg = true
     }
+  }
 
-    if (curatory_group_ids || !curated_pkg
-        || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
-      componentUpdateService.ensureCoreData(pkg, rjson.packageHeader, fullsync, user)
+  private def handleUpdateToken() {
+    if (!pkg_validation.match && rjson.packageHeader.generateToken) {
+      String charset = (('a'..'z') + ('0'..'9')).join()
+      def tokenValue = RandomStringUtils.random(255, charset.toCharArray())
 
-      if (!pkg_validation.match && rjson.packageHeader.generateToken) {
-        String charset = (('a'..'z') + ('0'..'9')).join()
-        def tokenValue = RandomStringUtils.random(255, charset.toCharArray())
-
-        if (pkg.updateToken) {
-          def currentToken = pkg.updateToken
-          pkg.updateToken = null
-          currentToken.delete(flush: true)
-        }
-
-        def update_token = new UpdateToken(pkg: pkg, updateUser: user, value: tokenValue).merge(flush: true)
-        jsonResult.updateToken = update_token.value
+      if (pkg.updateToken) {
+        def currentToken = pkg.updateToken
+        pkg.updateToken = null
+        currentToken.delete(flush: true)
       }
+
+      def update_token = new UpdateToken(pkg: pkg, updateUser: user, value: tokenValue).merge(flush: true)
+      jsonResult.updateToken = update_token.value
     }
   }
 
@@ -614,7 +626,7 @@ class CrossRefPkgRun {
                 null,
                 null,
                 rr_deleted,
-                componentLookupService.findCuratoryGroupOfInterest(upserted_tipp, user)
+                (activeGroup ?: componentLookupService.findCuratoryGroupOfInterest(upserted_tipp, user))
             )
           }
           upserted_tipp.status = status_current
@@ -631,7 +643,8 @@ class CrossRefPkgRun {
               user,
               null,
               (additionalInfo as JSON).toString(),
-              rr_nonCurrent
+              rr_nonCurrent,
+              (activeGroup ?: componentLookupService.findCuratoryGroupOfInterest(upserted_tipp, user))
           )
         }
       }
