@@ -914,6 +914,12 @@ class TitleInstance extends KBComponent {
 
       this.reviewRequests*.status = review_closed
     }
+
+    if (this.isDirty('name')) {
+      this.shortcode = generateShortcode(this.name)
+      generateNormname()
+      generateComponentHash()
+    }
   }
 
   def afterInsert() {

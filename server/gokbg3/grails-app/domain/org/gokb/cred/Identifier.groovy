@@ -110,6 +110,11 @@ class Identifier extends KBComponent {
     }
   }
 
+  public def getActiveIdentifiedComponents() {
+    def combo_active = RefdataCategory.lookup('Combo.Status', 'Active')
+    result = this.identifiedComponents.collect { it.status == combo_active }
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (obj != null) {
