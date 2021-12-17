@@ -514,7 +514,7 @@ where cp.owner = :c
     if (normid && namespace) {
       def id = Identifier.findByNamespaceAndNormname(namespace, normid)
 
-      id?.identifiedComponents.each { component ->
+      id?.activeIdentifiedComponents.each { component ->
         if (!result) {
           result = component
         }
@@ -533,7 +533,7 @@ where cp.owner = :c
     if (normid && namespace) {
       def id = Identifier.findByNamespaceAndNormname(namespace, normid)
 
-      id?.identifiedComponents.each { component ->
+      id?.activeIdentifiedComponents.each { component ->
         if (!result.contains(component)) {
           result.add(component)
         }

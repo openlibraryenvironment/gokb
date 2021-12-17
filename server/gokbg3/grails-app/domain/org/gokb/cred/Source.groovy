@@ -49,21 +49,6 @@ class Source extends KBComponent {
     lastRun(nullable:true,default: null)
     ezbMatch(nullable:true, default: false)
     automaticUpdates(nullable: true,default: false)
-    name(validator: { val, obj ->
-      if (obj.hasChanged('name')) {
-        if (val && val.trim()) {
-          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          def dupes = Source.findAllByNameIlikeAndStatusNotEqual(val, status_deleted);
-
-          if (dupes.size() > 0 && dupes.any {it != obj}) {
-            return ['notUnique']
-          }
-        }
-        else {
-          return ['notNull']
-        }
-      }
-    })
   }
 
   public static final String restPath = "/sources"
