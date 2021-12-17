@@ -1409,14 +1409,16 @@ class PackageController {
     if (pkg) {
       def upload_mime_type = request.getFile("submissionFile")?.contentType
       def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
-      def deposit_token = java.util.UUID.randomUUID().toString();
-      def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
+      def deposit_token = java.util.UUID.randomUUID().toString()
+      def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token)
       def user = User.get(springSecurityService.principal.id)
-      def info = analyse(temp_file);
+      def active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
+      def title_ns = params.int('titleIdNamespace') ? IdentifierNamespace.get(params.int('titleIdNamespace')) : null
+      def info = analyse(temp_file)
       def new_datafile_id = null
 
-      log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
-      def existing_file = DataFile.findByMd5(info.md5sumHex);
+      log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
+      def existing_file = DataFile.findByMd5(info.md5sumHex)
 
       if ( existing_file != null ) {
         log.debug("Found a match !")
@@ -1424,7 +1426,7 @@ class PackageController {
         new_datafile_id = existing_file.id
       }
       else {
-        log.debug("Create new datafile");
+        log.debug("Create new datafile")
         def new_datafile = new DataFile(
                                         guid:deposit_token,
                                         md5:info.md5sumHex,
@@ -1433,7 +1435,7 @@ class PackageController {
                                         filesize:info.filesize,
                                         uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
 
-        log.debug("Saved new datafile : ${new_datafile.id}");
+        log.debug("Saved new datafile : ${new_datafile.id}")
         new_datafile_id = new_datafile.id
         new_datafile.fileData = temp_file.getBytes()
         new_datafile.save(failOnError:true,flush:true)
@@ -1441,7 +1443,7 @@ class PackageController {
 
       if (new_datafile_id) {
         Job background_job = concurrencyManagerService.createJob { Job job ->
-          TSVIngestionService.ingest2('kbart2', pkg.name, (pkg.nominalPlatform?.primaryUrl ?: null), pkg.source, new_datafile_id, job)
+          TSVIngestionService.ingest2('kbart2', pkg.name, (pkg.nominalPlatform?.primaryUrl ?: null), pkg.source, new_datafile_id, job, null, title_ns)
         }
 
         background_job.ownerId = user.id

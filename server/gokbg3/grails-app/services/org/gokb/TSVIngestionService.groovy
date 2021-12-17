@@ -847,10 +847,10 @@ class TSVIngestionService {
 
         def identifiers = []
 
-        if (the_kbart.online_identifier && the_kbart.online_identifier.trim().length() > 0)
+        if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
           identifiers << [type:row_specific_config.identifierMap.online_identifier, value:the_kbart.online_identifier]
 
-        if (the_kbart.print_identifier && the_kbart.print_identifier.trim().length() > 0)
+        if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
           identifiers << [type:row_specific_config.identifierMap.print_identifier, value:the_kbart.print_identifier]
 
         the_kbart.additional_isbns.each { identifier ->
@@ -859,15 +859,16 @@ class TSVIngestionService {
           }
         }
 
-        if (the_kbart.title_id && the_kbart.title_id.trim().length() > 0) {
+        if (the_kbart.title_id && the_kbart.title_id.trim()) {
           log.debug("title_id ${the_kbart.title_id}")
 
           if ( ingest_cfg.providerIdentifierNamespace ) {
-            identifiers << [type:ingest_cfg.providerIdentifierNamespace.value, value:the_kbart.title_id]
+            identifiers << [type:ingest_cfg.providerIdentifierNamespace, value:the_kbart.title_id]
           }
-          else {
-            identifiers << [type:'title_id', value:the_kbart.title_id]
-          }
+        }
+
+        if (the_kbart.zdb_id && the_kbart.zdb_id.trim()) {
+          identifiers << [type: 'zdb', value: the_kbart.zdb_id]
         }
 
         the_kbart.each { k, v ->
@@ -887,70 +888,14 @@ class TSVIngestionService {
         def titleClass = TitleInstance.determineTitleClass(the_kbart.publication_type)
 
         if (titleClass && identifiers.size() > 0) {
-          def title = titleLookupService.findOrCreate(the_kbart.publication_title, the_kbart.publisher_name, identifiers, user, null, titleClass)
-
-          if ( title ) {
-
-            log.debug("title found: for ${the_kbart.publication_title}:${title}")
-
-            if (title) {
-              def sync_obj = [
-                'name': the_kbart.publication_title,
-                'identifiers': identifiers
-              ]
-
-              componentUpdateService.ensureCoreData(title, sync_obj, false, user)
-
-              // The title.save s are necessary as adding to the combos collection dirties the title object
-              // These should be rewritten to manually create combo objects instead.
-
-              log.debug("addOtherFieldsToTitle")
-              addOtherFieldsToTitle(title, the_kbart, ingest_cfg)
-
-              log.debug("Adding publisher")
-              if (the_kbart.publisher_name && the_kbart.publisher_name.length() > 0) {
-                addPublisher(the_kbart.publisher_name, title)
-              }
-
-              log.debug("Adding first author")
-              if (the_kbart.first_author && the_kbart.first_author.trim().length() > 0) {
-                addPerson(the_kbart.first_author, author_role, title)
-              }
-
-              log.debug("Adding Person")
-              if (the_kbart.first_editor && the_kbart.first_editor.trim().length() > 0) {
-                addPerson(the_kbart.first_editor, editor_role, title)
-              }
-
-              log.debug("Adding subjects")
-              addSubjects(the_kbart.subjects, title)
-
-              log.debug("Adding additional authors")
-              the_kbart.additional_authors.each { author ->
-                addPerson(author, author_role, title)
-              }
-
-              title.source = source
-              title.save(flush:true, failOnError:true)
-
-              def pre_create_tipp_time = System.currentTimeMillis()
-              manualUpsertTIPP(source,
-                  the_kbart,
-                  the_package,
-                  title,
-                  platform,
-                  ingest_date,
-                  ingest_systime,
-                  identifiers
-              )
-
-            } else {
-               log.warn("problem getting the title...")
-            }
-          }
-          else {
-            badrows.add([rowdata: the_kbart, message: 'Unable to lookup or create title'])
-          }
+          manualUpsertTIPP(source,
+              the_kbart,
+              the_package,
+              platform,
+              ingest_date,
+              ingest_systime,
+              identifiers
+          )
         }
         else {
           log.debug("Skipping row - no identifiers")
@@ -960,15 +905,6 @@ class TSVIngestionService {
     } else {
       log.warn("couldn't reslove platform - title not added.")
     }
-  }
-
-  def addOtherFieldsToTitle(title, the_kbart, ingest_cfg) {
-    title.medium = RefdataCategory.lookupOrCreate("TitleInstance.Medium", ingest_cfg.defaultMedium ?: "eBook")
-    // title.editionNumber=the_kbart.monograph_edition
-    // title.dateFirstInPrint=parseDate(the_kbart.date_monograph_published_print)
-    // title.dateFirstOnline=parseDate(the_kbart.date_monograph_published_online)
-    // title.volumeNumber=the_kbart.monograph_volume
-    title.save(failOnError:true, flush:true)
   }
 
   Date parseDate(String datestr) {
@@ -988,20 +924,19 @@ class TSVIngestionService {
   def manualUpsertTIPP(the_source,
                        the_kbart,
                        the_package,
-                       the_title,
                        the_platform,
                        ingest_date,
                        ingest_systime,
                        identifiers) {
 
-    log.debug("TSVIngestionService::manualUpsertTIPP with pkg:${the_package}, ti:${the_title}, plat:${the_platform}, date:${ingest_date}")
+    log.debug("TSVIngestionService::manualUpsertTIPP with pkg:${the_package}, plat:${the_platform}, date:${ingest_date}")
 
-    assert the_package != null && the_title != null && the_platform != null
+    assert the_package != null && the_platform != null
 
     def tipp_values = [
       url:the_kbart.title_url ?: '',
       embargo:the_kbart.embargo_info ?: '',
-      coverageDepth:the_kbart.coverageDepth ?: '',
+      coverageDepth:the_kbart.coverage_depth?: '',
       coverageNote:the_kbart.coverage_note ?: '',
       startDate:the_kbart.date_first_issue_online,
       startVolume:the_kbart.num_first_vol_online,
@@ -1010,64 +945,197 @@ class TSVIngestionService {
       endVolume:the_kbart.num_last_vol_online,
       endIssue:the_kbart.num_last_issue_online,
       source:the_source,
-      accessStartDate:ingest_date,
+      importId:the_kbart.title_id,
+      name: the_kbart.publication_title,
+      publicationType: the_kbart.publication_type,
+      parentPublicationTitleId: the_kbart.parent_publication_title_id,
+      precedingPublicationTitleId: the_kbart.preceding_publication_title_id,
+      firstAuthor: the_kbart.first_author,
+      publisherName: the_kbart.publisher_name,
+      volumeNumber: the_kbart.monograph_volume,
+      editionStatement: the_kbart.monograph_edition,
+      firstEditor: the_kbart.first_editor,
+      url: the_kbart.title_url,
+      subjectArea: the_kbart.subject_area ?: (the_kbart.subject ?: the_kbart.primary_subject),
+      series: the_kbart.series,
+      language: the_kbart.language,
+      medium: the_kbart.medium,
+      accessStartDate:the_kbart.access_start_date ?: ingest_date,
+      accessEndDate: the_kbart.access_end_date,
       lastSeen:ingest_systime
     ]
 
-    def tipp = null;
+    def tipp = null
+    def idMap = [:]
 
-    log.debug("Lookup existing TIPP");
+    identifiers.each { tid ->
+      idMap[tid.type] = tid.value
+    }
+
+    log.debug("Lookup existing TIPP by importId");
     def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
     def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
-    def tipps = TitleInstance.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
-                                           'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=? '+
-                                           'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ? '+
-                                           'and title_combo.toComponent=tipp and title_combo.fromComponent = ? ',
-                                          [the_package,the_platform,the_title])
+    def tipps = TitleInstancePackagePlatform.executeQuery(
+        'select tipp from TitleInstancePackagePlatform as tipp, Combo as c1, Combo as c2 ' +
+            'where c1.fromComponent = :pkg ' +
+            'and c1.toComponent = tipp ' +
+            'and c1.type = :typ1 ' +
+            'and c2.fromComponent = :plt ' +
+            'and c2.toComponent = tipp ' +
+            'and c2.type = :typ2 ' +
+            'and tipp.importId = :tid ' +
+            'and tipp.status = :tStatus  ' +
+            'order by tipp.id',
+        [
+          pkg    : the_package,
+          typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
+          plt    : the_platform,
+          typ2   : RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps'),
+          tid    : the_kbart.title_id,
+          tStatus: status_current
+        ]
+    )
 
-    if (tipps.size() > 0) {
-      switch (tipps.size()) {
-        case 1:
-          log.debug("found")
+    if (tipps.size() == 0) {
+      IdentifierNamespace providerNamespace = the_package.provider?.titleNamespace
+      TypeConvertingMap map = [
+          componentType     : 'TitleInstancePackagePlatform',
+          identfiers        : providerNamespace.value + ',' + the_kbart.title_id,
+          pkg               : the_package.uuid,
+          platform          : the_platform.uuid,
+          skipDomainMapping : true
+      ]
 
-          if (the_kbart.title_url && the_kbart.title_url.size() > 0) {
-            if (!tipps[0].url || tipps[0].url == trimmed_url) {
-              tipp = tipps[0]
-            } else {
-              log.debug("matched tipp has a different url..")
-            }
-          } else {
-            tipp = tipps[0]
+      def something = esSearchService.find(map)
+
+      if (something.records?.size() > 0) {
+        log.debug("found by provider namespace ID in ES")
+        something.records.each {
+          def tipp = TitleInstancePackagePlatform.findByUuid(it.uuid)
+
+          if (tipp) {
+            tipps << tipp
           }
-          break
-        case 0:
-          log.debug("not found")
-
-          break
-        default:
-          if (the_kbart.title_url && the_kbart.title_url.size() > 0) {
-            tipps = tipps.findAll { !it.url || it.url == trimmed_url }
-            log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
+          else  {
+            log.warn("ES record TIPP ${it.uuid} does not exist!")
           }
-
-          def cur_tipps = tipps.findAll { it.status == status_current }
-          def ret_tipps = tipps.findAll { it.status == status_retired }
-
-          if (cur_tipps.size() > 0) {
-            tipp = cur_tipps[0]
-
-            log.warn("found ${cur_tipps.size()} current TIPPs!")
-          } else if (ret_tipps.size() > 0) {
-            tipp = ret_tipps[0]
-
-            log.warn("found ${ret_tipps.size()} retired TIPPs!")
-          } else {
-            log.debug("None of the matched TIPPs are 'Current' or 'Retired'!")
-          }
-          break
+        }
       }
     }
 
+    if (tipps.size() == 0) {
+      def titleClass = TitleInstance.determineTitleClass(the_kbart.publication_type)
+      // search for other Identifiers, depending on publicationType
+      if (titleClass == "org.gokb.cred.JournalInstance") {
+        // Journal
+        ['zdb', 'eissn', 'issn', 'doi'].each { ns_value ->
+          if (idMap[ns_value]) {
+            def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
+            if (found.size() > 0) {
+              found.each {
+                if (TitleInstancePackagePlatform.isInstance(it)
+                    && !tipps.contains(it)
+                    && it.pkg == the_package
+                    && it.status == status_current
+                    && it.hostPlatform == the_platform
+                    && (!the_kbart.title_id || !it.importId)) {
+                  tipps.add(it)
+                }
+              }
+            }
+          }
+        }
+        if (tipps.size() > 0) {
+          log.debug("found by journal identifier set")
+        }
+      }
+      else if (titleClass == "org.gokb.cred.BookInstance") {
+        // Book
+        ['isbn', 'doi'].each { ns_value ->
+          if (idMap[ns_value]) {
+            def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, idMap[ns_value])
+            if (found.size() > 0) {
+              found.each {
+                if (TitleInstancePackagePlatform.isInstance(it)
+                    && !tipps.contains(it)
+                    && it.pkg == the_package
+                    && it.status == status_current
+                    && it.hostPlatform == the_platform
+                    && (!the_kbart.title_id || !it.importId)) {
+                  tipps.add(it)
+                }
+              }
+            }
+          }
+        }
+        if (tipps.size() > 0) {
+          log.debug("found by monograph identifier set")
+        }
+      }
+    }
+
+    if (tipps.size() > 0) {
+      log.debug("Found ${current_tipps.size()} matching TIPP(s)")
+      def full_matches = []
+      def mismatches = []
+      def id_mismatches = [:]
+
+      def jsonIdMap = [:]
+      tippJson.identifiers.each { jsonId ->
+        jsonIdMap[jsonId.type] = jsonId.value
+      }
+      if (jsonIdMap.size() == 0) {
+        tippJson.title.identifiers.each { jsonId ->
+          jsonIdMap[jsonId.type] = jsonId.value
+        }
+      }
+
+      current_tipps.each { ctipp ->
+        def tipp_ids = ctipp.ids.collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
+
+        tipp_ids.each { tid ->
+          if (jsonIdMap[tid.type] && Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname && tid.type in ['zdb', 'eissn', 'issn', 'doi', 'isbn']) {
+            id_mismatches[tid.type] = jsonIdMap[tid.type]
+          }
+        }
+
+        if (id_mismatches.size() > 0) {
+          mismatches << ctipp
+        }
+        else {
+          full_matches << ctipp
+        }
+      }
+
+      if (full_matches.size() > 0) {
+        tipp = full_matches[0]
+        // update Data
+        log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
+
+        if (full_matches.size() > 1) {
+          log.debug("multimatch (${full_matches.size()}) for $tipp")
+          def additionalInfo = [otherComponents: []]
+
+          full_matches.eachWithIndex { ct, idx ->
+            if (idx > 0) {
+              additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
+            }
+          }
+
+          // RR für Multimatch generieren
+          def myRR = reviewRequestService.raise(
+              tipp,
+              "Ambiguous KBART Record Matches",
+              "A KBART record has been matched on multiple package titles.",
+              user,
+              null,
+              (additionalInfo as JSON).toString(),
+              RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
+              componentLookupService.findCuratoryGroupOfInterest(tipp, user)
+          )
+        }
+      }
+    }
 
     if (tipp == null) {
       log.debug("create a new tipp as at ${ingest_date}")
@@ -1079,10 +1147,10 @@ class TSVIngestionService {
       // Copy the new tipp_values from the file into our new object
       def tipp_fields = [
         pkg: the_package,
-        title: the_title,
         hostPlatform: the_platform,
         url: the_kbart.title_url,
-        name: the_kbart.publication_title
+        name: the_kbart.publication_title,
+        importId: the_kbart.title_id
       ]
 
       tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
@@ -1135,95 +1203,8 @@ class TSVIngestionService {
       }
     }
 
-    def parsedStart = GOKbTextUtils.completeDateString(tipp_values.startDate)
-    def parsedEnd = GOKbTextUtils.completeDateString(tipp_values.endDate, false)
-
-    def cs_match = false
-    def conflict = false
-    def startAsDate = (parsedStart ? Date.from( parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-    def endAsDate = (parsedEnd ? Date.from( parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-    def conflicting_statements = []
-
-    tipp.coverageStatements?.each { tcs ->
-      if (!cs_match) {
-        if (!tcs.endDate && !endAsDate) {
-          conflict = true
-        }
-        else if (tcs.startVolume && tcs.startVolume == tipp_values.startVolume) {
-          log.debug("Matched CoverageStatement by startVolume")
-          cs_match = true
-        }
-        else if (tcs.startDate && tcs.startDate == startAsDate) {
-          log.debug("Matched CoverageStatement by startDate")
-          cs_match = true
-        }
-        else if (!tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate) {
-          log.debug("Matched CoverageStatement with unspecified values")
-          cs_match = true
-        }
-        else if (tcs.startDate && tcs.endDate) {
-          if (startAsDate && startAsDate > tcs.startDate && startAsDate < tcs.endDate) {
-            conflict = true
-          }
-          else if (endAsDate && endAsDate > tcs.startDate && endAsDate < tcs.endDate) {
-            conflict = true
-          }
-        }
-
-        if (conflict) {
-          conflicting_statements.add(tcs)
-        }
-        else if (cs_match) {
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', tipp_values.startIssue)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', tipp_values.startVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', tipp_values.endVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', tipp_values.endIssue)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', tipp_values.embargo)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', tipp_values.coverageNote)
-          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart,tcs,'startDate')
-          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd,tcs,'endDate')
-          changed |= com.k_int.ClassUtils.setRefdataIfPresent(tipp_values.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
-        }
-      }
-      else {
-        log.warn("Multiple coverage statements matched!")
-      }
-    }
-
-    for (def cst : conflicting_statements) {
-      tipp.removeFromCoverageStatements(cst)
-    }
-
-    if (!cs_match) {
-
-      def cov_depth = null
-
-      if (tipp_values.coverageDepth instanceof String) {
-        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', tipp_values.coverageDepth) ?: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
-      } else if (tipp_values.coverageDepth instanceof Integer) {
-        cov_depth = RefdataValue.get(c.coverageDepth)
-      } else if (tipp_values.coverageDepth instanceof Map) {
-        if (tipp_values.coverageDepth.id) {
-          cov_depth = RefdataValue.get(tipp_values.coverageDepth.id)
-        } else {
-          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (tipp_values.coverageDepth.name ?: tipp_values.coverageDepth.value))
-        }
-      }
-
-      def new_tcs = [
-        'startVolume': tipp_values.startVolume,
-        'startIssue': tipp_values.startIssue,
-        'endVolume': tipp_values.endVolume,
-        'endIssue': tipp_values.endIssue,
-        'embargo': tipp_values.embargo,
-        'coverageDepth': cov_depth,
-        'coverageNote': tipp_values.coverageNote,
-        'startDate': startAsDate,
-        'endDate': endAsDate
-      ]
-
-      tipp.addToCoverageStatements(new_tcs)
-    }
+    tippService.updateCoverage(tipp, tipp_values)
+    updateTippData(tipp, tipp_values)
 
     // log.debug("Values updated, set lastSeen");
 
@@ -1242,6 +1223,38 @@ class TSVIngestionService {
     addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.')
 
     log.debug("manualUpsertTIPP returning")
+  }
+
+  def updateTippData(tipp, newVals) {
+    componentUpdateService.ensureCoreData(tipp, newVals, fullsync, user)
+    // overwrite String properties with JSON values
+    ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
+    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'importId', 'subjectArea', 'series'].each { propName ->
+      tipp[propName] = newVals[propName] ?: tipp[propName]
+    }
+
+    if (newVals.dateFirstInPrint) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(newVals.dateFirstInPrint), tipp, 'dateFirstInPrint')
+    }
+    else {
+      log.debug("No dateFirstInPrint -> ${newVals.dateFirstInPrint}")
+    }
+
+    if (newVals.dateFirstOnline) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(newVals.dateFirstOnline), tipp, 'dateFirstOnline')
+    }
+
+    if (newVals.accessStartDate) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(newVals.accessStartDate), tipp, 'accessStartDate')
+    }
+
+    if (newVals.accessEndDate) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(newVals.accessEndDate), tipp, 'accessEndDate')
+    }
+
+    ClassUtils.setRefdataIfPresent(newVals.medium, tipp, 'medium')
+    ClassUtils.setRefdataIfPresent(newVals.language, tipp, 'language')
+    ClassUtils.setRefdataIfPresent(newVals.publicationType, tipp, 'publicationType')
   }
 
   def setTypedProperties(tipp, props, field, regex, type) {
@@ -1933,7 +1946,7 @@ class TSVIngestionService {
           log.debug("title_id ${the_kbart.title_id}")
 
           if (ingest_cfg.providerIdentifierNamespace) {
-            identifiers << [type: ingest_cfg.providerIdentifierNamespace.value, value: the_kbart.title_id]
+            identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id]
           }
         }
 
