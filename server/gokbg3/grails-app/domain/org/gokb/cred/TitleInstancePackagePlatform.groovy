@@ -603,15 +603,6 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       def tipps = []
 
-      if (!tipp && (tipp_dto.importId || tipp_dto.titleId)) {
-        tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as platform_combo  ' +
-            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=? ' +
-            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ? ' +
-            'and tipp.importId = ? ' +
-            'and tipp.status != ?',
-            [pkg, plt, (tipp_dto.importId ?: tipp_dto.titleId), status_deleted])
-      }
-
       if (tipps.size() == 0 && ti) {
         tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
           'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=? ' +
@@ -644,12 +635,12 @@ class TitleInstancePackagePlatform extends KBComponent {
             break;
           default:
             if (trimmed_url && trimmed_url.size() > 0) {
-              tipps = tipps.findAll { !it.url || it.url == trimmed_url };
+              tipps = tipps.findAll { !it.url || it.url == trimmed_url }
               log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
             }
 
-            def cur_tipps = tipps.findAll { it.status == status_current };
-            def ret_tipps = tipps.findAll { it.status == status_retired };
+            def cur_tipps = tipps.findAll { it.status == status_current }
+            def ret_tipps = tipps.findAll { it.status == status_retired }
 
             if (cur_tipps.size() > 0) {
               tipp = cur_tipps[0]
