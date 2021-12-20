@@ -8,6 +8,7 @@ import com.k_int.ClassUtils
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+import grails.util.TypeConvertingMap
 
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
@@ -1011,10 +1012,10 @@ class TSVIngestionService {
       if (something.records?.size() > 0) {
         log.debug("found by provider namespace ID in ES")
         something.records.each {
-          def tipp = TitleInstancePackagePlatform.findByUuid(it.uuid)
+          def tipp_uuid_match = TitleInstancePackagePlatform.findByUuid(it.uuid)
 
-          if (tipp) {
-            tipps << tipp
+          if (tipp_uuid_match) {
+            tipps << tipp_uuid_match
           }
           else  {
             log.warn("ES record TIPP ${it.uuid} does not exist!")
@@ -1519,7 +1520,7 @@ class TSVIngestionService {
 
     while (nl != null) {
       Map result = [:]
-      if  nl.length > 0) {
+      if (nl.length > 0) {
 
         for (key in col_positions.keySet()) {
 
