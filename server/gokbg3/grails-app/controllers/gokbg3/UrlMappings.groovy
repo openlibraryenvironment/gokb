@@ -110,11 +110,17 @@ class UrlMappings {
       post "/reviews"(controller: 'reviews', namespace: 'rest', action: 'save')
       put "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
       patch "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
+      get "/reviews/escalatable/$id/$activeGroupId"(controller: 'reviews', namespace: 'rest', action: 'isEscalatable')
+      put "/reviews/escalate/$id"(controller: 'reviews', namespace: 'rest', action: 'escalate')
+      get "/reviews/deescalatable/$id/$activeGroupId"(controller: 'reviews', namespace: 'rest', action: 'isDeescalatable')
+      put "/reviews/deescalate/$id"(controller: 'reviews', namespace: 'rest', action: 'deescalate')
 
       get "/curatoryGroups/$id/reviews"(controller: 'curatoryGroups', namespace: 'rest', action: 'getReviews')
       get "/curatoryGroups/$id/jobs"(controller: 'curatoryGroups', namespace: 'rest', action: 'getJobs')
       get "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'show')
       get "/curatoryGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'index')
+      post "/curatoryGroups/createGroupType"(controller: 'curatoryGroups', namespace: 'rest', action: 'createGroupType')
+      post "/curatoryGroups/connectGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'connectGroups')
 
       get "/roles"(controller: 'roles', namespace: 'rest', action: 'index')
 

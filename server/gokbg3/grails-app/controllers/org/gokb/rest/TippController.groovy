@@ -181,8 +181,6 @@ class TippController {
     }
 
     if (obj?.pkg && reqBody) {
-      obj.lock()
-
       def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
       if (curator || user.isAdmin()) {

@@ -713,39 +713,39 @@ class PackageService {
       }
     }
 
-    if (packageHeaderDTO.ids?.size() > 0) {
-      ids_list.each { rid ->
-        Identifier the_id = null
+    // if (packageHeaderDTO.ids?.size() > 0) {
+    //   ids_list.each { rid ->
+    //     Identifier the_id = null
 
-        if (rid instanceof Integer) {
-          the_id = Identifier.get(rid)
-        }
-        else {
-          def ns_field = rid.type ?: rid.namespace
-          def ns = null
+    //     if (rid instanceof Integer) {
+    //       the_id = Identifier.get(rid)
+    //     }
+    //     else {
+    //       def ns_field = rid.type ?: rid.namespace
+    //       def ns = null
 
-          if (ns_field) {
-            if (ns_field instanceof Integer) {
-              ns = IdentifierNamespace.get(ns_field)
-            }
-            else {
-              ns = IdentifierNamespace.findByValueIlike(ns_field)
-            }
+    //       if (ns_field) {
+    //         if (ns_field instanceof Integer) {
+    //           ns = IdentifierNamespace.get(ns_field)
+    //         }
+    //         else {
+    //           ns = IdentifierNamespace.findByValueIlike(ns_field)
+    //         }
 
-            if (ns) {
-              def match = Package.lookupByIO(ns.value, rid.value)
+    //         if (ns) {
+    //           def match = Package.lookupByIO(ns.value, rid.value)
 
-              if (match) {
-                if (!matches["${ns.id}"])
-                  matches["${ns.id}"] = []
+    //           if (match && match.status != status_deleted) {
+    //             if (!matches["${ns.id}"])
+    //               matches["${ns.id}"] = []
 
-                matches["${ns.id}"] << [field: 'ids', value: rid.value, message: "An existing package was matched by a supplied identifier!"]
-              }
-            }
-          }
-        }
-      }
-    }
+    //             matches["${ns.id}"] << [field: 'ids', value: rid.value, message: "An existing package was matched by a supplied identifier!"]
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
 
     def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
     def variant_matches = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
@@ -770,7 +770,8 @@ class PackageService {
         }
 
         if (variant) {
-          def name_matches = Package.findAllByName(variant)
+          def var_norm = Package.generateNormname(variant)
+          def name_matches = Package.findAllByNormnameAndStatusNotEqual(var_norm, status_deleted)
 
           name_matches.each { nm ->
             if (!matches["${nm.id}"])
@@ -1748,7 +1749,7 @@ class PackageService {
     record.publisher_name = pick (tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
     record.preceding_publication_title_id = pick(tipp.precedingPublicationTitleId, tipp.title?.getPrecedingTitleId(), exportType)
     record.parent_publication_title_id = tipp.parentPublicationTitleId
-    record.access_type = pick(tipp.paymentType, null, exportType)
+    record.access_type = pick((tipp.paymentType && ['OA','Uncharged'].contains(tipp.paymentType) ? 'F' : 'P'), null, exportType)
     record.zdb_id = pick(tipp.getIdentifierValue('ZDB'), tipp.title?.getIdentifierValue('ZDB'), exportType)
     record.gokb_tipp_uid = tipp.uuid
     record.gokb_title_uid = tipp.title?.uuid

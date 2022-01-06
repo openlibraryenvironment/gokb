@@ -43,6 +43,7 @@ class UpdatePkgTippsRun {
   int removedNum = 0
   def invalidTipps = []
   Package pkg
+  CuratoryGroup activeGroup
   def pkg_validation
   def pltCache = [:] // DTO.name : validPlatformInstance
   Job job = null
@@ -146,7 +147,7 @@ class UpdatePkgTippsRun {
                           uuid: pkg.uuid]
         job?.message("found Package ${pkg.name} (uuid: ${pkg.uuid})")
 
-        setActiveGroup()
+        checkActiveGroup()
         handleUpdateToken()
 
         existing_tipp_ids = TitleInstance.executeQuery(
@@ -368,9 +369,9 @@ class UpdatePkgTippsRun {
     job?.message(error.message)
   }
 
-  private def setActiveGroup() {
+  private def checkActiveGroup() {
     boolean curated_pkg = false
-    CuratoryGroup[] user_groups = user.curatoryGroups
+    def user_groups = user.curatoryGroups
 
     if (rjson.packageHeader.activeCuratoryGroupId) {
       int group_id = rjson.packageHeader.activeCuratoryGroupId as int
@@ -378,12 +379,14 @@ class UpdatePkgTippsRun {
 
       if (active_group && user_groups.contains(active_group)) {
         job?.groupId = group_id
+        activeGroup = active_group
       }
     }
     else if (pkg.curatoryGroups && pkg.curatoryGroups?.size() > 0) {
       def curatory_group_ids = user_groups?.id?.intersect(pkg.curatoryGroups?.id)
       if (curatory_group_ids?.size() == 1) {
         job?.groupId = curatory_group_ids[0]
+        activeGroup = CuratoryGroup.get(curatory_group_ids[0])
       }
     }
   }
@@ -533,7 +536,7 @@ class UpdatePkgTippsRun {
             def tipp_ids = ctipp.ids.collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
 
             tipp_ids.each { tid ->
-              if (jsonIdMap[tid.type] && Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname && tid.type != 'pisbn') {
+              if (jsonIdMap[tid.type] && Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname && tid.type in ['zdb', 'eissn', 'issn', 'doi', 'isbn']) {
                 id_mismatches[tid.type] = jsonIdMap[tid.type]
               }
             }

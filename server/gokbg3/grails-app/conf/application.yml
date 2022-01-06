@@ -170,6 +170,8 @@ environments:
                     orgs: gokborgs
                     packages: gokbpackages
                     platforms: gokbplatforms
+            centralGroups:
+                JournalInstance: 'Journal Central Curators'
         cache:
             headers:
                 enabled: false
@@ -213,6 +215,8 @@ environments:
                     orgs: gokborgs
                     packages: gokbpackages
                     platforms: gokbplatforms
+            centralGroups:
+                JournalInstance: 'Journal Central Curators'
         grails:
             mail:
                 port: 3025
@@ -267,6 +271,8 @@ environments:
                     orgs: gokborgs
                     packages: gokbpackages
                     platforms: gokbplatforms
+            centralGroups:
+                JournalInstance: 'Journal Central Curators'
 gokb:
     defaultCuratoryGroup: Local
     ftupdate_enabled: true

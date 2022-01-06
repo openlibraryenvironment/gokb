@@ -74,6 +74,7 @@ class PackageController {
       def countTippsParams = [:]
       countTippsParams.componentType = "TIPP"
       countTippsParams.tippPackage = obj.uuid
+      countTippsParams.status = "Current"
       countTippsParams.max = 0
       obj['_tippCount'] = ESSearchService.find(countTippsParams)?._pagination?.total ?: 0
     }

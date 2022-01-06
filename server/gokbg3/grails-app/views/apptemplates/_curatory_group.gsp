@@ -24,6 +24,10 @@
 				<g:manyToOneReferenceTypedown owner="${d}" field="owner" baseClass="org.gokb.cred.User">${d.owner?.username}</g:manyToOneReferenceTypedown>
 			</dd>
 		</sec:ifAnyGranted>
+		<sec:ifAnyGranted roles="ROLE_ADMIN">
+			<dt><g:annotatedLabel owner="${d}" property="type">Type</g:annotatedLabel></dt>
+			<dd><g:manyToOneReferenceTypedown owner="${d}" field="type" baseClass="org.gokb.cred.CuratoryGroupType">${d.type}</g:manyToOneReferenceTypedown></dd>
+		</sec:ifAnyGranted>
 		<g:if test="${ user.isAdmin() || d.owner == user }">
 	  	<dt><g:annotatedLabel owner="${d}" property="users">Members</g:annotatedLabel></dt>
 			<dd>
