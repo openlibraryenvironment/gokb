@@ -81,14 +81,14 @@ class PlatformController {
       }
       else {
         result.message = "Object ID could not be resolved!"
-        response.setStatus(404)
+        response.status = 404
         result.code = 404
         result.result = 'ERROR'
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 400
       result.code = 400
       result.message = 'No object id supplied!'
     }
@@ -132,10 +132,12 @@ class PlatformController {
 
       if (errors.size() > 0) {
         log.debug("Object has validation errors!")
+        response.status = 400
       }
       else if (lookup_result.to_create && !obj) {
         log.debug("Could not upsert object!")
         errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
+        response.status = 400
       }
       else if (obj) {
         obj.save(flush:true)
@@ -160,14 +162,16 @@ class PlatformController {
 
           if (obj?.id != null && grailsApplication.config.gokb.ftupdate_enabled == true) {
             FTUpdateService.updateSingleItem(obj)
+          else {
+            response.status = 400
+            result.message = message(code:"default.create.errors.message")
           }
           result = restMappingService.mapObjectToJson(obj, params, user)
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(400)
-          errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
-          obj.expunge()
+          response.status = 400
+          errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
       }
     }
@@ -200,7 +204,7 @@ class PlatformController {
     if (obj && reqBody) {
       def editable = obj.isEditable()
 
-      if ( editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0 ) {
+      if (editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0) {
         def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
 
         if (!cur) {
@@ -210,7 +214,7 @@ class PlatformController {
 
       if (editable) {
         if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
-          response.setStatus(409)
+          response.status = 409
           result.message = message(code: "default.update.errors.message")
           render result as JSON
         }
@@ -227,20 +231,20 @@ class PlatformController {
 
         errors << updateCombos(obj, reqBody, remove)
 
-        if ( obj.validate() ) {
+        if (obj.validate()) {
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
-            response.setStatus(400)
+            response.status = 400
             result.message = message(code:"default.update.errors.message")
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(400)
+          response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
         if (grailsApplication.config.gokb.ftupdate_enabled == true) {
@@ -249,14 +253,14 @@ class PlatformController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(404)
-      result.message = "Package not found or empty request body!"
+      response.status = 404
+      result.message = "Platform not found or empty request body!"
     }
 
     if (errors.size() > 0) {
@@ -324,18 +328,18 @@ class PlatformController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
-        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+        response.status = 403
+        result.message = "User must belong to at least one curatory group of an existing platform to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
-      result.message = "Package not found or empty request body!"
+      response.status = 404
+      result.message = "Platform not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to delete this component!"
     }
     render result as JSON
@@ -358,18 +362,18 @@ class PlatformController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to edit this component!"
     }
     render result as JSON
