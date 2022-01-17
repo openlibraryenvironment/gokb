@@ -137,14 +137,14 @@ class TitleController {
       }
       else {
         result.message = "Object ID could not be resolved!"
-        response.setStatus(404)
+        response.status = 404
         result.code = 404
         result.result = 'ERROR'
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 400
       result.code = 400
       result.message = 'No object id supplied!'
     }
@@ -254,12 +254,12 @@ class TitleController {
       }
     }
     else if (!type) {
-      response.setStatus(400)
+      response.status = 400
       result.result = 'ERROR'
       result.message = "Unrecognized title type!"
     }
     else if (type == TitleInstance) {
-      response.setStatus(400)
+      response.status = 400
       result.result = 'ERROR'
       result.message = "Specific title type required!"
     }
@@ -271,7 +271,7 @@ class TitleController {
       log.debug("Errors: ${errors}")
       result.result = 'ERROR'
       if (!obj || obj.id == null) {
-        response.setStatus(400)
+        response.status = 400
       }
       result.error = errors
     }
@@ -745,7 +745,7 @@ class TitleController {
 
       if (editable) {
         if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
-          response.setStatus(409)
+          response.status = 409
           result.message = message(code: "default.update.errors.message")
           render result as JSON
         }
@@ -769,12 +769,12 @@ class TitleController {
           }
           else {
             result.message = message(code:'default.update.errors.message')
-            response.setStatus(400)
+            response.status = 400
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(400)
+          response.status = 400
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
         if (grailsApplication.config.gokb.ftupdate_enabled == true) {
@@ -783,13 +783,13 @@ class TitleController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of the title to make changes!"
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
 
@@ -853,18 +853,18 @@ class TitleController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing title to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "TitleInstance not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to delete this component!"
     }
     render result as JSON
@@ -900,18 +900,18 @@ class TitleController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to edit this component!"
     }
     render result as JSON
@@ -965,7 +965,7 @@ class TitleController {
     else {
       result.result = 'ERROR'
       result.message = "Title id ${params.id} could not be resolved!"
-      response.setStatus(404)
+      response.status = 404
     }
 
     render result as JSON
@@ -1033,24 +1033,24 @@ class TitleController {
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(404)
+          response.status = 404
           result.message = "Unable to reference target title!"
         }
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Title not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to edit this component!"
     }
     render result as JSON

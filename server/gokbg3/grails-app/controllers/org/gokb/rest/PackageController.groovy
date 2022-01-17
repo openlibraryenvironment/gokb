@@ -223,13 +223,13 @@ class PackageController {
               result.result = 'ERROR'
               obj.discard()
               result.message = message(code: "default.create.errors.message")
-              response.setStatus(400)
+              response.status = 400
             }
           }
           else {
             result.result = 'ERROR'
             obj.discard()
-            response.setStatus(400)
+            response.status = 400
             errors << messageService.processValidationErrors(obj.errors, request_locale)
           }
           if (obj?.id != null && grailsApplication.config.gokb.ftupdate_enabled == true) {
@@ -242,7 +242,7 @@ class PackageController {
       }
     }
     else {
-      response.setStatus(400)
+      response.status = 400
       errors.object = [[baddata: reqBody, message: "Unable to save package!"]]
     }
 
@@ -251,7 +251,7 @@ class PackageController {
       result.errors = errors
 
       if (response.status == 200) {
-        response.setStatus(400)
+        response.status = 400
       }
     }
 
@@ -286,7 +286,7 @@ class PackageController {
       }
       if (editable) {
         if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
-          response.setStatus(409)
+          response.status = 409
           result.message = message(code: "default.update.errors.message")
           render result as JSON
         }
@@ -337,13 +337,13 @@ class PackageController {
             }
           }
           else {
-            response.setStatus(400)
+            response.status = 400
             result.message = message(code: "default.update.errors.message")
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(400)
+          response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request_locale)
         }
         if (grailsApplication.config.gokb.ftupdate_enabled == true) {
@@ -352,13 +352,13 @@ class PackageController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
 
@@ -575,18 +575,18 @@ class PackageController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to delete this component!"
     }
     render result as JSON
@@ -612,18 +612,18 @@ class PackageController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to edit this component!"
     }
     render result as JSON
@@ -677,7 +677,7 @@ class PackageController {
     else {
       result.result = 'ERROR'
       result.message = "Package id ${params.id} could not be resolved!"
-      response.setStatus(404)
+      response.status = 404
     }
 
     render result as JSON
@@ -754,31 +754,31 @@ class PackageController {
           }
           else {
             result.result = 'ERROR'
-            response.setStatus(400)
+            response.status = 400
             result.errors = errors
             result.message = "There have been errors creating TIPPs!"
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(400)
+          response.status = 400
           result.message = "Missing expected array of TIPPs!"
         }
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!reqBody) {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 400
       result.message = "Missing JSON payload!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 400
       result.message = "Missing ID for connected package!"
     }
 
@@ -818,12 +818,12 @@ class PackageController {
         else {
           log.error("Unable to reference update token!")
           result.message = "Unable to reference update token!"
-          response.setStatus(400)
+          response.status = 400
           result.result = "ERROR"
         }
       }
       else {
-        response.setStatus(401)
+        response.status = 401
       }
 
       if (params.fullsync == "true" && request_user?.adminStatus) {
@@ -1373,7 +1373,7 @@ class PackageController {
         result.result = "ERROR"
         result.message = messageService.resolveCode('crossRef.package.error.name', [], request_locale)
         result.errors = [name: [[message: messageService.resolveCode('crossRef.package.error.name', null, request_locale), baddata: null]]]
-        response.setStatus(400)
+        response.status = 400
       }
       else {
         log.debug("Unable to reference user!")

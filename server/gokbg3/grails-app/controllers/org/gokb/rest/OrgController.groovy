@@ -84,14 +84,14 @@ class OrgController {
       }
       else {
         result.message = "Object ID could not be resolved!"
-        response.setStatus(404)
+        response.status = 404
         result.code = 404
         result.result = 'ERROR'
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 400
       result.code = 400
       result.message = 'No object id supplied!'
     }
@@ -179,7 +179,7 @@ class OrgController {
     if (errors.size() > 0) {
       result.result = 'ERROR'
       if (!obj || obj.id == null) {
-        response.setStatus(400)
+        response.status = 400
       }
       result.error = errors
     }
@@ -216,7 +216,7 @@ class OrgController {
       if (editable) {
 
         if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
-          response.setStatus(409)
+          response.status = 409
           result.message = message(code: "default.update.errors.message")
           render result as JSON
         }
@@ -241,13 +241,13 @@ class OrgController {
           }
           else {
             log.debug("Errors: ${errors}")
-            response.setStatus(400)
+            response.status = 400
             result.message = message(code: "default.update.errors.message")
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(400)
+          response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
         if (grailsApplication.config.gokb.ftupdate_enabled == true) {
@@ -256,13 +256,13 @@ class OrgController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
 
@@ -351,18 +351,18 @@ class OrgController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to delete this component!"
     }
     render result as JSON
@@ -390,18 +390,18 @@ class OrgController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing organization to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Organization not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to edit this component!"
     }
     render result as JSON

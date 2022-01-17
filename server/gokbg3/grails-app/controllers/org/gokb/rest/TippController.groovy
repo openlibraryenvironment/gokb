@@ -84,14 +84,14 @@ class TippController {
       }
       else {
         result.message = "Object ID could not be resolved!"
-        response.setStatus(404)
+        response.status = 404
         result.code = 404
         result.result = 'ERROR'
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 400
       result.code = 400
       result.message = 'No object id supplied!'
     }
@@ -131,27 +131,27 @@ class TippController {
           else {
             result.result = 'ERROR'
             result.message = "There have been validation errors while creating the object!"
-            response.setStatus(400)
+            response.status = 400
             errors = messageService.processValidationErrors(obj.errors, request.locale)
             obj?.expunge()
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(400)
+          response.status = 400
           result.message = "There have been validation errors!"
           errors = tipp_validation.errors
         }
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
 
@@ -191,7 +191,7 @@ class TippController {
 
         if (tipp_validation.valid) {
           if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
-            response.setStatus(409)
+            response.status = 409
             result.message = message(code: "default.update.errors.message")
             render result as JSON
           }
@@ -216,7 +216,7 @@ class TippController {
           }
           else {
             result.result = 'ERROR'
-            response.setStatus(400)
+            response.status = 400
             errors = messageService.processValidationErrors(obj.errors, request.locale)
           }
           if (grailsApplication.config.gokb.ftupdate_enabled == true) {
@@ -227,20 +227,20 @@ class TippController {
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(400)
+          response.status = 400
           result.message = "There have been validation errors!"
           errors = tipp_validation.errors
         }
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
 
@@ -305,18 +305,18 @@ class TippController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!obj || !obj.pkg) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to delete this component!"
     }
     render result as JSON
@@ -337,18 +337,18 @@ class TippController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "TIPP or connected Package not found!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to edit this component!"
     }
     render result as JSON
@@ -407,7 +407,7 @@ class TippController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(400)
+        response.status = 400
         result.message = "Unable to reference status type!"
       }
     }
@@ -417,7 +417,7 @@ class TippController {
       if (report.errors > 0) {
         result.result = 'ERROR'
         result.report = report
-        response.setStatus(403)
+        response.status = 403
         result.message = "Unable to change ${params['_field']} for ${report.error} of ${report.total} items."
       } else {
         result.message = "Successfully changed ${params['_field']} for ${report.total} items."
@@ -425,7 +425,7 @@ class TippController {
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 400
       result.message = "Missing required params '_field' and '_value'"
     }
 
@@ -458,24 +458,24 @@ class TippController {
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(400)
+          response.status = 400
           result.message = "Unable to reference status type!"
         }
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "TIPP or connected Package not found!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to edit this component!"
     }
     render result as JSON
@@ -494,7 +494,7 @@ class TippController {
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "TIPP not found!"
     }
     render result as JSON
