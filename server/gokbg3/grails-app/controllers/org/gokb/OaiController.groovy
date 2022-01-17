@@ -136,24 +136,24 @@ class OaiController {
       def returnAttrs = true
       def cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled)
       def request_map = params
+      def legalClassNames = (result.className == 'org.gokb.cred.TitleInstance' ? ['org.gokb.cred.TitleInstance', 'org.gokb.cred.BookInstance', 'org.gokb.cred.JournalInstance', 'org.gokb.cred.DatabaseInstance', 'org.gokb.cred.OtherInstance'] : [result.className])
       request_map.keySet().removeAll(['controller','action','id'])
 
       if (oid) {
         record = KBComponent.findByUuid(oid)
 
-        if (record && record?.class.name != result.className) {
+        if (record && !legalClassNames.contains(record.class.name)) {
           record = null
-          errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown or illegal in this repository.'])
+          errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown for this endpoint.'])
         }
-
-        if (!record) {
+        else if (!record) {
           record = genericOIDService.resolveOID(oid)
         }
 
-        if( !record ) {
+        if (!record && errors.size() == 0) {
           errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown or illegal in this repository.'])
         }
-        else if (cachedPackageResponse && !record.lastCachedDate) {
+        else if (record && cachedPackageResponse && !record.lastCachedDate) {
           errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The requested resource is not yet ready for exchange. Please try again later.'])
         }
       }

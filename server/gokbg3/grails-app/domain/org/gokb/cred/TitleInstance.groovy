@@ -5,7 +5,6 @@ import org.grails.web.json.JSONObject
 import java.time.LocalDateTime
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
-import org.gokb.DomainClassExtender
 import groovy.util.logging.*
 
 @Slf4j
@@ -899,7 +898,7 @@ class TitleInstance extends KBComponent {
         Combo.executeUpdate("delete from Combo as c where c.fromComponent = :ti and c.toComponent.id IN (:ttd)", [ti: this, ttd: tipp_ids])
       }
 
-      if (tipps?.size() > 0) {
+      if (tipls?.size() > 0) {
         def tipl_ids = tipls?.collect { it.id }
         Date now = new Date()
 
@@ -914,6 +913,12 @@ class TitleInstance extends KBComponent {
       }
 
       this.reviewRequests*.status = review_closed
+    }
+
+    if (this.isDirty('name')) {
+      this.shortcode = generateShortcode(this.name)
+      generateNormname()
+      generateComponentHash()
     }
   }
 

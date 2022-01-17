@@ -186,6 +186,7 @@ class TippService {
     log.debug("Matching titles for package ${aPackage}")
     def more = true
     int offset = 0
+    CuratoryGroup group = job?.groupId ? CuratoryGroup.get(job?.groupId) : null
     def total = TitleInstancePackagePlatform.executeQuery(
       'select count(tipp.id) from TitleInstancePackagePlatform as tipp , Combo as c1 ' +
           'where c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 ' +
@@ -214,7 +215,7 @@ class TippService {
       tippIDs = tippIDs.drop(batchSize)
 
       batch.each { id ->
-        matchTitle(TitleInstancePackagePlatform.get(id))
+        matchTitle(TitleInstancePackagePlatform.get(id), group)
         offset++
       }
       // Get the current session.
@@ -237,11 +238,15 @@ class TippService {
     log.debug("Finished title matching for ${offset} Titles")
   }
 
-  def matchTitle(tipp) {
+  def matchTitle(tipp, CuratoryGroup group = null) {
     def found
-    final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
-    def title_changed = false
     def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
+    final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
+    def pkg = Package.executeQuery("from Package as pkg where exists (select 1 from Combo where fromComponent = pkg and toComponent = :tipp)", [tipp: tipp])[0]
+
+    if (!group) {
+      group = pkg.curatoryGroups[0]
+    }
 
     // remap Identifiers
     def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = ? and toComponent = i)", [tipp])
@@ -255,45 +260,11 @@ class TippService {
         my_ids,
         title_class_name
     )
-    // additional check with coverage statement to find the correct title
-    if (found.matches?.size() > 1 && tipp.coverageStatements?.size() > 0) {
-      coverageCheck(tipp, found)
-    }
 
     TitleInstance ti
     if (found.to_create == true) {
       log.debug("No existing title matched, creating ${tipp.name}")
-      // unknown title
-      ti = Class.forName(title_class_name).newInstance()
-      ti.name = tipp.name
-
-      log.debug("Set name ${ti.name} ..")
-      ti.save(flush: true)
-      titleLookupService.addPublisher(tipp.publisherName, ti)
-      log.debug("Transfering new ti ids: ${tipp.ids}")
-      titleLookupService.addIdentifiers(tipp_ids, ti)
-
-      title_changed |= componentUpdateService.setAllRefdata([
-          'medium', 'language'
-      ], tipp, ti)
-
-      def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(tipp.dateFirstInPrint.format("yyyy-MM-dd")) : null
-      def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(tipp.dateFirstOnline.format("yyyy-MM-dd")) : null
-
-      title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
-      title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
-
-      if (title_class_name == 'org.gokb.cred.BookInstance') {
-        log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
-        title_changed |= ti.addMonographFields(new JSONObject([//editionNumber        : null,
-                                                               //editionDifferentiator: null,
-                                                               editionStatement: tipp.editionStatement,
-                                                               volumeNumber    : tipp.volumeNumber,
-                                                               //summaryOfContent     : null,
-                                                               firstAuthor     : tipp.firstAuthor,
-                                                               firstEditor     : tipp.firstEditor]))
-      }
-      ti.merge(flush: true)
+      ti = createTitleFromTippData(tipp, tipp_ids)
     }
     else if (found.matches.size() == 1) {
       // exactly one match
@@ -301,15 +272,30 @@ class TippService {
       TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
 
       if (currentCov && ((ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) || (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo))) {
-        reviewRequestService.raise(tipp,
+        reviewRequestService.raise(
+            tipp,
             "TIPP coverage conflicts title publishing data",
             "TIPP ${tipp.name} was linked, check coverage",
             null,
             null,
             [otherComponents: ti] as JSON,
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch")
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch"),
+            group
         )
       }
+    }
+    else if (found.matches.size() > 1 && tipp.coverageStatements?.size() > 0) {
+      coverageCheck(tipp, found)
+
+      if (found.matches.size() == 1) {
+        ti = found.matches[0].object
+      }
+      else if (found.matches.size() == 0) {
+        ti = createTitleFromTippData(tipp, tipp_ids)
+      }
+    }
+    else {
+      log.debug("No new title and no match, ensuring correct review is attached to the TIPP..")
     }
 
     if (ti) {
@@ -319,10 +305,43 @@ class TippService {
       tipp.save(flush: true)
       log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
-    if (tipp.coverageStatements?.size() > 0) {
-      coverageCheck(tipp, found)
+    handleFindConflicts(tipp, found, group)
+  }
+
+  def createTitleFromTippData(tipp, tipp_ids) {
+    def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
+    def ti = Class.forName(title_class_name).newInstance()
+    def title_changed = false
+    ti.name = tipp.name
+
+    log.debug("Set name ${ti.name} ..")
+    ti.save(flush: true)
+    titleLookupService.addPublisher(tipp.publisherName, ti)
+    log.debug("Transfering new ti ids: ${tipp.ids}")
+    titleLookupService.addIdentifiers(tipp_ids, ti)
+
+    title_changed |= componentUpdateService.setAllRefdata([
+        'medium', 'language'
+    ], tipp, ti)
+
+    def firstInPrint = tipp.dateFirstInPrint ? GOKbTextUtils.completeDateString(tipp.dateFirstInPrint.format("yyyy-MM-dd")) : null
+    def firstOnline = tipp.dateFirstOnline ? GOKbTextUtils.completeDateString(tipp.dateFirstOnline.format("yyyy-MM-dd")) : null
+
+    title_changed |= ti.hasProperty('dateFirstInPrint') ? ClassUtils.updateDateField(firstInPrint, ti, 'dateFirstInPrint') : false
+    title_changed |= ti.hasProperty('dateFirstOnline') ? ClassUtils.updateDateField(firstOnline, ti, 'dateFirstOnline') : false
+
+    if (title_class_name == 'org.gokb.cred.BookInstance') {
+      log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
+      title_changed |= ti.addMonographFields(new JSONObject([//editionNumber        : null,
+                                                              //editionDifferentiator: null,
+                                                              editionStatement: tipp.editionStatement,
+                                                              volumeNumber    : tipp.volumeNumber,
+                                                              //summaryOfContent     : null,
+                                                              firstAuthor     : tipp.firstAuthor,
+                                                              firstEditor     : tipp.firstEditor]))
     }
-    handleFindConflicts(tipp, found)
+    ti.save()
+    ti
   }
 
   def copyTitleData(ConcurrencyManagerService.Job job = null) {
@@ -399,16 +418,15 @@ class TippService {
       // too many identifier matches
       def covMatch = []
       for (def comp : found.matches) {
-        if (JournalInstance.isInstance(comp)) {
-          JournalInstance journal = JournalInstance(comp)
+        if (JournalInstance.isInstance(comp.object)) {
           if (// starts too early OR
-              journal.publishedFrom && latest.startDate && latest.startDate < journal.publishedFrom ||
+              comp.object.publishedFrom && latest.startDate && latest.startDate < comp.object.publishedFrom ||
               // ends too late
-              journal.publishedTo && latest.endDate && latest.endDate > journal.publishedTo)
+              comp.object.publishedTo && latest.endDate && latest.endDate > comp.object.publishedTo)
             // no match
             break
           else
-            covMatch << journal
+            covMatch << comp
         }
       }
       if (covMatch.size() == 1)
@@ -434,7 +452,7 @@ class TippService {
     return latest
   }
 
-  private void handleFindConflicts(TitleInstancePackagePlatform tipp, def found) {
+  private void handleFindConflicts(TitleInstancePackagePlatform tipp, def found, CuratoryGroup cg = null) {
     // use this to create ReviewRequests as needed
     // TODO: check if the ReviewRequest was raised already before issuing a new one
     if (tipp.reviewRequests.size() < 1) {
@@ -451,7 +469,7 @@ class TippService {
             null,
             (additionalInfo as JSON).toString(),
             RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
-            (tipp.pkg?.curatoryGroups?.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+            cg
         )
       }
       else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
@@ -471,7 +489,7 @@ class TippService {
                 null,
                 (additionalInfo as JSON).toString(),
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
-                (tipp?.pkg?.curatoryGroups?.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+                cg
               )
             }
             else if (conflict.field == "identifier.value") {
@@ -497,7 +515,7 @@ class TippService {
               null,
               (additionalInfo as JSON).toString(),
               RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict'),
-              (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+              cg
             )
           }
           else if (mismatches.size() > 0 && !found.to_create) {
@@ -509,13 +527,13 @@ class TippService {
 
             reviewRequestService.raise(
               tipp.title,
-              it.message,
+              comp.message,
               "Check Title identifiers",
               null,
               null,
               (additionalInfo as JSON).toString(),
               RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
-              (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+              cg
             )
           }
         }
@@ -534,7 +552,7 @@ class TippService {
             null,
             (additionalInfo as JSON).toString(),
             RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
-            (tipp.pkg.curatoryGroups.size() == 1 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null)
+            cg
         )
       }
     }

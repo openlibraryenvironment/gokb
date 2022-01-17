@@ -620,6 +620,27 @@ class Package extends KBComponent {
     return result;
   }
 
+  def beforeUpdate() {
+    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    if (this.isDirty('name')) {
+      this.shortcode = generateShortcode(this.name)
+      generateNormname()
+      generateComponentHash()
+    }
+
+    if (this.isDirty('status') && this.status == deleted_status) {
+      if (this.source && this.source.name == this.name) {
+        this.source.status = deleted_status
+      }
+    }
+
+    def user = springSecurityService?.currentUser
+    if (user != null) {
+      this.lastUpdatedBy = user
+    }
+  }
+
   public void addCuratoryGroupIfNotPresent(String cgname) {
     boolean add_needed = true;
     curatoryGroups.each { cgtest ->

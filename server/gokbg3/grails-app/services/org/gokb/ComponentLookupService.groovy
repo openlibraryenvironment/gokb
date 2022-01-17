@@ -10,6 +10,7 @@ import grails.util.Holders
 import groovy.transform.Synchronized
 import grails.validation.ValidationException
 import groovy.util.logging.*
+import org.grails.web.json.JSONObject
 
 import javax.annotation.Nonnull
 
@@ -512,6 +513,7 @@ class ComponentLookupService {
 
     if (cls == ReviewRequest && params['allocatedGroups']) {
       def cgs = params.list('allocatedGroups')
+      def inactive = RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive')
       def validCgs = []
 
       cgs.each { cg ->
@@ -525,7 +527,6 @@ class ComponentLookupService {
 
       if (validCgs.size() > 0 ) {
         log.debug("Filtering for CGs: ${validCgs}")
-
         if (first) {
           hqlQry += " WHERE "
           first = false
@@ -533,9 +534,9 @@ class ComponentLookupService {
         else {
           hqlQry += " AND "
         }
-
-        hqlQry += "exists (select 1 from AllocatedReviewGroup as ag where ag.review = p and ag.group IN :alg)"
+        hqlQry += "exists (select 1 from AllocatedReviewGroup as ag where ag.review = p and ag.group IN :alg and ag.status != :inactive)"
         qryParams['alg'] = validCgs
+        qryParams['inactive'] = inactive
       }
     }
 
@@ -686,7 +687,23 @@ class ComponentLookupService {
   }
 
 
-  def findCuratoryGroupOfInterest(component, User user = null){
+  CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null, JSONObject activeGroup = null){
+    // Find by activeGroup
+    CuratoryGroup activeCuratoryGroup = null
+    if (activeGroup?.uuid){
+      activeCuratoryGroup = CuratoryGroup.findByUuid(activeGroup.uuid)
+    }
+    else if (activeGroup?.id){
+      activeCuratoryGroup = CuratoryGroup.findById(activeGroup.id)
+    }
+    else if (activeGroup?.name){
+      activeCuratoryGroup = CuratoryGroup.findByName(activeGroup.name)
+    }
+    if (activeCuratoryGroup){
+      return activeCuratoryGroup
+    }
+
+    // Not found by activeGroup --> Get by other arguments
     if (!KBComponent.has(component, 'curatoryGroups')){
       return null
     }

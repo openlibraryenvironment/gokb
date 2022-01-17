@@ -4,6 +4,7 @@ import grails.util.Environment
 import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
+import org.apache.commons.collections.CollectionUtils
 import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
@@ -29,7 +30,6 @@ class BootStrap {
     def ComponentStatisticService
     def concurrencyManagerService
     def ESWrapperService
-    //def titleLookupService
 
     def init = { servletContext ->
 
@@ -116,7 +116,6 @@ class BootStrap {
                 }
             }
 
-
             // Make sure admin user has all the system roles.
             [contributorRole, userRole, editorRole, adminRole, apiRole, suRole].each { role ->
                 log.debug("Ensure admin user has ${role} role");
@@ -126,22 +125,10 @@ class BootStrap {
             }
         }
 
-
         if (grailsApplication.config.gokb.decisionSupport) {
             log.debug("Configuring default decision support parameters");
             DSConfig();
         }
-
-//    String fs = grailsApplication.config.project_dir
-//    log.debug("Theme:: ${grailsApplication.config.gokb.theme}");
-//
-//    log.debug("Make sure project files directory exists, config says it's at ${fs}");
-//    File f = new File(fs)
-//    if ( ! f.exists() ) {
-//      log.debug("Creating upload directory path.")
-//      f.mkdirs()
-//    }
-
 
         refdataCats()
 
@@ -149,19 +136,10 @@ class BootStrap {
 
         migrateDiskFilesToDatabase()
 
-        CuratoryGroup.withTransaction() {
-            if (grailsApplication.config.gokb.defaultCuratoryGroup != null) {
-
-                log.debug("Ensure curatory group: ${grailsApplication.config.gokb?.defaultCuratoryGroup}");
-
-                def local_cg = CuratoryGroup.findByName(grailsApplication.config.gokb?.defaultCuratoryGroup) ?:
-                    new CuratoryGroup(name: grailsApplication.config.gokb?.defaultCuratoryGroup).save(flush: true, failOnError: true);
-            }
-        }
-
+        ensureCuratoryGroup(grailsApplication.config.gokb.defaultCuratoryGroup)
+        ensureCuratoryGroup(grailsApplication.config.gokb.centralGroups?.JournalInstance)
 
         log.info("GoKB missing normalised component names");
-
         def ctr = 0;
         KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
             def kbc = KBComponent.get(kbc_id)
@@ -234,10 +212,6 @@ class BootStrap {
             log.info("Ensured ${ns_obj}!")
         }
 
-
-        // log.info("Default batch loader config");
-        // defaultBulkLoaderConfig();
-
         log.debug("Register users and override default admin password")
         registerUsers()
 
@@ -248,7 +222,6 @@ class BootStrap {
 
         log.debug("Ensuring ElasticSearch index")
         ensureEsIndices()
-
 
         Job hk_job = concurrencyManagerService.createJob {
             cleanupService.housekeeping()
@@ -263,6 +236,16 @@ class BootStrap {
         ComponentStatisticService.updateCompStats()
 
         log.info("GoKB Init complete");
+    }
+
+    private Object ensureCuratoryGroup(String groupName){
+        CuratoryGroup.withTransaction(){
+            if (groupName != null){
+                log.debug("Ensure curatory group: ${groupName}");
+                def local_cg = CuratoryGroup.findByName(groupName) ?:
+                    new CuratoryGroup(name: groupName).save(flush: true, failOnError: true);
+            }
+        }
     }
 
     def defaultBulkLoaderConfig() {
@@ -374,13 +357,10 @@ class BootStrap {
     }
 
     def alterDefaultMetaclass = {
-
         // Inject helpers to Domain classes.
         grailsApplication.domainClasses.each { GrailsClass domainClass ->
-
             // Extend the domain class.
             DomainClassExtender.extend(domainClass)
-
         }
     }
 
@@ -392,7 +372,6 @@ class BootStrap {
             p.tags.add(content_provider_role);
             p.save(flush: true);
         }
-
     }
 
     def defaultSortKeys() {
@@ -414,10 +393,8 @@ class BootStrap {
         }
     }
 
-
     def destroy = {
     }
-
 
     def refdataCats() {
         RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS,
@@ -817,17 +794,6 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("Combo.Status", Combo.STATUS_SUPERSEDED).save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("Combo.Status", Combo.STATUS_EXPIRED).save(flush: true, failOnError: true)
 
-        //    RefdataCategory.lookupOrCreate('ComboType','Unknown').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Previous').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Model').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Parent').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Translated').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Absorbed').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Merged').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Renamed').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Split').save()
-        //    RefdataCategory.lookupOrCreate('ComboType','Transferred').save()
-
         RefdataCategory.lookupOrCreate('License.Type', 'Template').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('License.Type', 'Other').save(flush: true, failOnError: true)
 
@@ -836,7 +802,6 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType', 'Acronym').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType', 'Minor Change').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('KBComponentVariantName.VariantType', 'Nickname').save(flush: true, failOnError: true)
-
 
         RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale', 'en_US').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('KBComponentVariantName.Locale', 'en_GB').save(flush: true, failOnError: true)
@@ -861,6 +826,7 @@ class BootStrap {
 
         RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Claimed').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'In Progress').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Minor Identifier Mismatch').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Major Identifier Mismatch').save(flush: true, failOnError: true)
@@ -974,7 +940,6 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Combo.Type', 'IngestionProfile.Source').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Combo.type', 'Source.CuratoryGroups').save(flush: true, failOnError: true)
 
-
         RefdataCategory.lookupOrCreate('MembershipRole', 'Administrator').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('MembershipRole', 'Member').save(flush: true, failOnError: true)
 
@@ -1021,20 +986,66 @@ class BootStrap {
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Technical Support').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Other').save(flush: true, failOnError: true)
 
+        lookupOrCreateCuratoryGroupTypes()
+
+        // Can be activated on local development instances.
+        // assignMissingCGsToRRs()
+
         LanguagesService.initialize()
 
         log.debug("Deleting any null refdata values");
         RefdataValue.executeUpdate('delete from RefdataValue where value is null');
     }
 
+    // Can be activated on local development instances.
+    private void assignMissingCGsToRRs(){
+        def rrsWithoutCGs = ReviewRequest.findAll()
+        Iterator it = rrsWithoutCGs.iterator()
+        while (it.hasNext()){
+            ReviewRequest next = it.next()
+            if (!CollectionUtils.isEmpty(next.getAllocatedGroups())){
+                rrsWithoutCGs.remove(next)
+            }
+        }
+        for (rr in rrsWithoutCGs){
+            if (KBComponent.has(rr.componentToReview, 'curatoryGroups')){
+                createArgForFirstCG(rr)
+            }
+        }
+    }
+
+    private void createArgForFirstCG(ReviewRequest rr){
+        for (group in rr.componentToReview.curatoryGroups){
+            if (group){
+                new AllocatedReviewGroup(
+                    group: group, review: rr, status: RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+                ).save(flush: true)
+                return
+            }
+        }
+    }
+
+    private void lookupOrCreateCuratoryGroupTypes(){
+        CuratoryGroupType.findByName("Journal Package Curators") ?:
+            new CuratoryGroupType(level: CuratoryGroupType.Level.PACKAGE, name: "Journal Package Curators").save(flush: true, failOnError: true)
+        CuratoryGroupType.findByName("E-Book Package Curators") ?:
+            new CuratoryGroupType(level: CuratoryGroupType.Level.PACKAGE, name: "E-Book Package Curators").save(flush: true, failOnError: true)
+        CuratoryGroupType.findByName("Journal Title Curators") ?:
+            new CuratoryGroupType(level: CuratoryGroupType.Level.TITLE, name: "Journal Title Curators").save(flush: true, failOnError: true)
+        CuratoryGroupType.findByName("E-Book Title Curators") ?:
+            new CuratoryGroupType(level: CuratoryGroupType.Level.TITLE, name: "E-Book Title Curators").save(flush: true, failOnError: true)
+        CuratoryGroupType.findByName("Journal Central Curators") ?:
+            new CuratoryGroupType(level: CuratoryGroupType.Level.CENTRAL, name: "Journal Central Curators").save(flush: true, failOnError: true)
+    }
+
     def sourceObjects() {
         log.debug("Lookup or create source objects")
-        def ybp_source = Source.findByName('YBP') ?: new Source(name: 'YBP').save(flush: true, failOnError: true)
-        def cup_source = Source.findByName('CUP') ?: new Source(name: 'CUP').save(flush: true, failOnError: true)
-        def wiley_source = Source.findByName('WILEY') ?: new Source(name: 'WILEY').save(flush: true, failOnError: true)
-        def cufts_source = Source.findByName('CUFTS') ?: new Source(name: 'CUFTS').save(flush: true, failOnError: true)
-        def askews_source = Source.findByName('ASKEWS') ?: new Source(name: 'ASKEWS').save(flush: true, failOnError: true)
-        def ebsco_source = Source.findByName('EBSCO') ?: new Source(name: 'EBSCO').save(flush: true, failOnError: true)
+        Source.findByName('YBP') ?: new Source(name: 'YBP').save(flush: true, failOnError: true)
+        Source.findByName('CUP') ?: new Source(name: 'CUP').save(flush: true, failOnError: true)
+        Source.findByName('WILEY') ?: new Source(name: 'WILEY').save(flush: true, failOnError: true)
+        Source.findByName('CUFTS') ?: new Source(name: 'CUFTS').save(flush: true, failOnError: true)
+        Source.findByName('ASKEWS') ?: new Source(name: 'ASKEWS').save(flush: true, failOnError: true)
+        Source.findByName('EBSCO') ?: new Source(name: 'EBSCO').save(flush: true, failOnError: true)
     }
 
 

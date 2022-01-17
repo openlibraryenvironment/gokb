@@ -110,6 +110,17 @@ class Identifier extends KBComponent {
     }
   }
 
+  public def getActiveIdentifiedComponents() {
+    def result = []
+    def combos = this.getCombosByPropertyNameAndStatus('identifiedComponents', 'Active')
+
+    combos.each {
+      result << it.fromComponent
+    }
+
+    result
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (obj != null) {

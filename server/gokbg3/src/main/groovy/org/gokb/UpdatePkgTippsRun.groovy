@@ -43,6 +43,7 @@ class UpdatePkgTippsRun {
   int removedNum = 0
   def invalidTipps = []
   Package pkg
+  CuratoryGroup activeGroup
   def pkg_validation
   def pltCache = [:] // DTO.name : validPlatformInstance
   Job job = null
@@ -88,7 +89,7 @@ class UpdatePkgTippsRun {
         user = User.get(user.id)
         job?.ownerId = user.id
 
-        // check permissions
+        // check api permissions
         if (!(user?.apiUserStatus)) {
           globalError([code   : 403,
                        message: messageService.resolveCode('crossRef.package.error.apiRole', [], locale)]
@@ -97,6 +98,7 @@ class UpdatePkgTippsRun {
 
           return jsonResult
         }
+
         // validate and upsert header pkg
         if (!(rjson?.packageHeader?.name)) {
           globalError([code   : 400,
@@ -106,11 +108,12 @@ class UpdatePkgTippsRun {
 
           return jsonResult
         }
+
         // Package Validation
         pkg_validation = Package.validateDTO(rjson.packageHeader, locale)
 
         if (!pkg_validation.valid) {
-          globalError([code   : 403,
+          globalError([code   : 400,
                        message: messageService.resolveCode('crossRef.package.error.validation.global', null, locale),
                        errors : pkg_validation.errors]
           )
@@ -118,11 +121,16 @@ class UpdatePkgTippsRun {
 
           return jsonResult
         }
+
         // upsert Package
+        if (rjson.packageUuid) {
+          rjson.packageHeader.uuid = rjson.packageUuid
+        }
+
         def proxy = packageService.upsertDTO(rjson.packageHeader, user)
 
         if (!proxy) {
-          globalError([code   : 400,
+          globalError([code   : 403,
                        message: messageService.resolveCode('crossRef.package.error', null, locale),
           ])
           job?.endTime = new Date()
@@ -130,15 +138,16 @@ class UpdatePkgTippsRun {
           return jsonResult
         }
 
-        pkg = Package.get(proxy.id)
-
+        pkg = ClassUtils.deproxy(proxy)
+        componentUpdateService.ensureCoreData(pkg, rjson.packageHeader, fullsync, user)
         jsonResult.pkgId = pkg.id
         job?.linkedItem = [name: pkg.name,
-                           type: "Package",
-                           id  : pkg.id,
-                           uuid: pkg.uuid]
+                          type: "Package",
+                          id  : pkg.id,
+                          uuid: pkg.uuid]
         job?.message("found Package ${pkg.name} (uuid: ${pkg.uuid})")
 
+        checkActiveGroup()
         handleUpdateToken()
 
         existing_tipp_ids = TitleInstance.executeQuery(
@@ -211,7 +220,7 @@ class UpdatePkgTippsRun {
 
           job?.setProgress(idx, total*2)
 
-          if (idx % 100 == 0) {
+          if (idx % 50 == 0) {
             log.info("Clean up");
             cleanupService.cleanUpGorm()
           }
@@ -250,8 +259,8 @@ class UpdatePkgTippsRun {
                 else {
                   to_retire.retire()
                   to_retire.accessEndDate = to_retire.accessEndDate ?:
-                      (rjson.packageHeader.fileNameDate ?
-                          dateFormatService.parseDate(rjson.packageHeader.fileNameDate) : new Date())
+                      (rjson.fileNameDate ?
+                          dateFormatService.parseDate(rjson.fileNameDate) : new Date())
                 }
 
                 log.info("${fullsync ? 'delete' : 'retire'} TIPP [$ix]")
@@ -360,38 +369,41 @@ class UpdatePkgTippsRun {
     job?.message(error.message)
   }
 
-  private def handleUpdateToken() {
+  private def checkActiveGroup() {
     boolean curated_pkg = false
-    def curatory_group_ids = null
-    if (pkg.curatoryGroups && pkg.curatoryGroups?.size() > 0) {
-      curatory_group_ids = user.curatoryGroups?.id?.intersect(pkg.curatoryGroups?.id)
+    def user_groups = user.curatoryGroups
+
+    if (rjson.packageHeader.activeCuratoryGroupId) {
+      int group_id = rjson.packageHeader.activeCuratoryGroupId as int
+      def active_group = CuratoryGroup.get(group_id)
+
+      if (active_group && user_groups.contains(active_group)) {
+        job?.groupId = group_id
+        activeGroup = active_group
+      }
+    }
+    else if (pkg.curatoryGroups && pkg.curatoryGroups?.size() > 0) {
+      def curatory_group_ids = user_groups?.id?.intersect(pkg.curatoryGroups?.id)
       if (curatory_group_ids?.size() == 1) {
         job?.groupId = curatory_group_ids[0]
+        activeGroup = CuratoryGroup.get(curatory_group_ids[0])
       }
-      else if (curatory_group_ids?.size() > 1) {
-        log.debug("Got more than one cg candidate!")
-        job?.groupId = curatory_group_ids[0]
-      }
-      curated_pkg = true
     }
+  }
 
-    if (curatory_group_ids || !curated_pkg
-        || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER'))) {
-      componentUpdateService.ensureCoreData(pkg, rjson.packageHeader, fullsync, user)
+  private def handleUpdateToken() {
+    if (!pkg_validation.match && rjson.packageHeader.generateToken) {
+      String charset = (('a'..'z') + ('0'..'9')).join()
+      def tokenValue = RandomStringUtils.random(255, charset.toCharArray())
 
-      if (!pkg_validation.match && rjson.packageHeader.generateToken) {
-        String charset = (('a'..'z') + ('0'..'9')).join()
-        def tokenValue = RandomStringUtils.random(255, charset.toCharArray())
-
-        if (pkg.updateToken) {
-          def currentToken = pkg.updateToken
-          pkg.updateToken = null
-          currentToken.delete(flush: true)
-        }
-
-        def update_token = new UpdateToken(pkg: pkg, updateUser: user, value: tokenValue).merge(flush: true)
-        jsonResult.updateToken = update_token.value
+      if (pkg.updateToken) {
+        def currentToken = pkg.updateToken
+        pkg.updateToken = null
+        currentToken.delete(flush: true)
       }
+
+      def update_token = new UpdateToken(pkg: pkg, updateUser: user, value: tokenValue).merge(flush: true)
+      jsonResult.updateToken = update_token.value
     }
   }
 
@@ -521,10 +533,10 @@ class UpdatePkgTippsRun {
           }
 
           current_tipps.each { ctipp ->
-            def tipp_ids = ctipp.ids.collect { ido -> [type: ido.namespace.value, value: ido.value]}
+            def tipp_ids = ctipp.ids.collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
 
             tipp_ids.each { tid ->
-              if (jsonIdMap[tid.type] && jsonIdMap[tid.type] != tid.value && tid.type != 'pisbn') {
+              if (jsonIdMap[tid.type] && Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname && tid.type in ['zdb', 'eissn', 'issn', 'doi', 'isbn']) {
                 id_mismatches[tid.type] = jsonIdMap[tid.type]
               }
             }

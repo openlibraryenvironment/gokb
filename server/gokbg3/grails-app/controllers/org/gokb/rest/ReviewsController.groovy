@@ -1,18 +1,20 @@
 package org.gokb.rest
 
-
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
 import groovy.json.JsonOutput
+import org.apache.commons.lang.StringUtils
+import org.gokb.cred.AllocatedReviewGroup
+import org.gokb.cred.BookInstance
+import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.DatabaseInstance
+import org.gokb.cred.JournalInstance
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.User
-
-import java.time.Duration
-import java.time.LocalDateTime
 
 @Transactional(readOnly = true)
 class ReviewsController {
@@ -246,7 +248,6 @@ class ReviewsController {
 
       if (reqBody.componentToReview instanceof Integer) {
         def comp = KBComponent.get(reqBody.componentToReview)
-
         if (comp) {
           pars.componentToReview = comp
         }
@@ -303,7 +304,7 @@ class ReviewsController {
               null,
               pars.additionalInfo,
               pars.stdDesc,
-              componentLookupService.findCuratoryGroupOfInterest(pars.componentToReview, user)
+              componentLookupService.findCuratoryGroupOfInterest(pars.componentToReview, user, reqBody.activeGroup)
           )
 
           if (obj) {
@@ -361,12 +362,100 @@ class ReviewsController {
     else if (!obj) {
       result.result = 'ERROR'
       response.status = 404
-      result.message = "TitleInstance not found or empty request body!"
+      result.message = "ReviewRequest not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
       response.status = 403
-      result.message = "User is not allowed to delete this component!"
+      result.message = "User is not allowed to delete this ReviewRequest!"
+    }
+    render result as JSON
+  }
+
+
+  /**
+   * Check if the ReviewRequest given by @params.id can be escalated.
+   */
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
+  def isEscalatable() {
+    def result = getEscalationTargetGroupId(params.id, params.activeGroupId, params)
+    if (response.getStatus() != 404){
+      // errors are fine here, unless the ReviewRequest can't be found.
+      // No need to trigger an error then,
+      // the date of interest is transferred by `isEscalatable`
+      result.result = 'OK'
+      response.setStatus(200)
+    }
+    render result as JSON
+  }
+
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def escalate(){
+    def result = getEscalationTargetGroupId(params.id, request.JSON?.activeGroup, params)
+    if (result.isEscalatable){
+      CuratoryGroup escalatingGroup = CuratoryGroup.findById(result.escalatingGroup)
+      AllocatedReviewGroup arg = AllocatedReviewGroup.findByGroupAndReview(escalatingGroup, ReviewRequest.findById(params.id))
+      AllocatedReviewGroup newArg = reviewRequestService.escalate(arg, CuratoryGroup.findById(result.escalationTargetGroup))
+      if (newArg){
+        ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
+        def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
+        rr.allocatedGroups.each{
+          ag -> ag.status = inactive
+        }
+        newArg.status = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+        result.message = "The requested ReviewRequest has been escalated."
+      }
+      else{
+        result.message = "All preconditions for an escalation have been met. Could not escalate anyway."
+        result.result = 'ERROR'
+        response.status = 500
+      }
+    }
+    render result as JSON
+  }
+
+
+  /**
+   * Check if the ReviewRequest given by @params.id can be deescalated.
+   */
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
+  def isDeescalatable() {
+    def result = getDeescalationTargetGroupId(params.id, params.activeGroupId, params)
+    if (response.getStatus() != 404){
+      // errors are fine here, unless the ReviewRequest can't be found.
+      // No need to trigger an error then,
+      // the date of interest is transferred by `isEscalatable`
+      result.result = 'OK'
+      response.status 200
+    }
+    render result as JSON
+  }
+
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def deescalate(){
+    def result = getDeescalationTargetGroupId(params.id, request.JSON.activeGroup, params)
+    if (result.result == 'OK'){
+      ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
+      CuratoryGroup deescalatingGroup = CuratoryGroup.findById(result.deescalatingGroup)
+      AllocatedReviewGroup deescArg = AllocatedReviewGroup.findByGroupAndReview(deescalatingGroup, rr)
+      AllocatedReviewGroup targetArg = deescArg?.escalatedFrom ?: null
+      if (deescArg && targetArg){
+        def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
+        def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+        deescArg.status = inactive
+        deescArg.escalatedFrom = null
+        targetArg.status = inProgress
+        result.result = 'OK'
+        response.status = 200
+      }
+      else{
+        result.result = 'ERROR'
+        response.status = 400
+      }
     }
     render result as JSON
   }
@@ -395,9 +484,9 @@ class ReviewsController {
       response.status = 400
       result.message = "Missing required params '_field' and '_value'"
     }
-
     render result as JSON
   }
+
 
   private def generateLinks(obj,user) {
     def base = grailsApplication.config.serverURL + "/rest" + obj.restPath + "/${obj.id}"
@@ -408,7 +497,109 @@ class ReviewsController {
       linksObj.update = [href:base]
       linksObj.delete = [href:base]
     }
-
     return linksObj
+  }
+
+
+  private def getEscalationTargetGroupId(def rrId, def activeGroupId, def params){
+    def result = ['result':'ERROR', 'isEscalatable':false, 'params': params]
+
+    def rr = ReviewRequest.get(genericOIDService.oidToId(rrId))
+    if (!rr){
+      response.status = 404
+      result.message = "ReviewRequest not found for id ${rrId}."
+      return result
+    }
+    if (!rr.isEditable()){
+      response.status = 403
+      result.message = "ReviewRequest for id ${rrId} may not be edited."
+      return result
+    }
+
+    String componentClass = rr.componentToReview?.class.getSimpleName()
+    if (!componentClass in [BookInstance.class.getSimpleName(), DatabaseInstance.class.getSimpleName(), JournalInstance.class.getSimpleName()]){
+      response.status = 400
+      result.message = "ReviewRequest belongs to the un-escalatable class ${componentClass}"
+      return result
+    }
+
+    CuratoryGroup escalatingGroup = null
+    try{
+      activeGroupId = Integer.valueOf(activeGroupId)
+    }
+    finally{
+      if (activeGroupId instanceof Integer && activeGroupId > 0){
+        CuratoryGroup toBeChecked = CuratoryGroup.findById(activeGroupId)
+        RefdataValue inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+        List<AllocatedReviewGroup> argCandidates = AllocatedReviewGroup.findAllByGroupAndReviewAndStatus(toBeChecked, rr, inProgress)
+        if (argCandidates.size() == 1){
+          escalatingGroup = toBeChecked
+        }
+        else if (argCandidates.size() > 1){
+          response.status = 409
+          result.message = "Could not get curatory group to be escalated from due to multiple group candidates."
+          return result
+        }
+        else{
+          response.status = 404
+          result.message = "Could not get curatory group to be escalated from due to missing active curatory group."
+          return result
+        }
+      }
+      else{
+        response.status = 404
+        result.message = "Could not get curatory group to be escalated from due to missing active curatory group id."
+        return result
+      }
+    }
+
+    CuratoryGroup editorialGroup = grailsApplication.config.gokb.centralGroups &&
+        grailsApplication.config.gokb.centralGroups[componentClass] ?
+        CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.centralGroups[componentClass]) : null
+    CuratoryGroup escalatedToCG = escalatingGroup.superordinatedGroup
+    if (!escalatedToCG && componentClass == "JournalInstance" && escalatingGroup != editorialGroup){
+      escalatedToCG = editorialGroup
+    }
+    if (!escalatedToCG){
+      response.status = 409
+      result.message = "Could not escalate due to missing superordinated group."
+      return result
+    }
+
+    // all conditions are met
+    response.status = 200
+    result.result = 'OK'
+    result.isEscalatable = true
+    result.escalatingGroup = escalatingGroup.id
+    result.escalationTargetGroup = escalatedToCG.id
+    result.message = "The requested ReviewRequest can be escalated."
+    return result
+  }
+
+  private def getDeescalationTargetGroupId(def rrId, def activeGroupId, def params){
+    def result = ['result':'ERROR', 'isDeescalatable':false, 'params': params]
+    ReviewRequest rr = params.id ? ReviewRequest.get(genericOIDService.oidToId(params.id)) : null
+    if (!rr){
+      response.status = 404
+      result.message = "ReviewRequest not found for id ${rrId}."
+      return result
+    }
+    CuratoryGroup deescalatingGroup = CuratoryGroup.findById(activeGroupId)
+    if (!deescalatingGroup){
+      response.status = 404
+      result.message = "Could not get curatory group to be deescalated from."
+      return result
+    }
+    AllocatedReviewGroup deescArg, targetArg
+    deescArg = AllocatedReviewGroup.findByGroupAndReview(deescalatingGroup, rr)
+    targetArg = deescArg?.escalatedFrom ?: null
+    if (deescArg && targetArg){
+      result.result = 'OK'
+      result.isDeescalatable = true
+      result.deescalatingGroup = deescalatingGroup.id
+      result.escalationTargetGroup = targetArg.group.id
+      result.message = "The requested ReviewRequest can be deescalated."
+    }
+    return result
   }
 }
