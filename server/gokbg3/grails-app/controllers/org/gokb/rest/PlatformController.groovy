@@ -162,6 +162,7 @@ class PlatformController {
 
           if (obj?.id != null && grailsApplication.config.gokb.ftupdate_enabled == true) {
             FTUpdateService.updateSingleItem(obj)
+          }
           else {
             response.status = 400
             result.message = message(code:"default.create.errors.message")
