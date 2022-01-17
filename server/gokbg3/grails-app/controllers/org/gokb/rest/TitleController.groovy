@@ -228,7 +228,7 @@ class TitleController {
             errors << updateCombos(obj, reqBody)
 
             result = restMappingService.mapObjectToJson(obj, params, user)
-            response.setStatus(201)
+            response.status = 201
           }
           else {
             result.result = 'ERROR'
