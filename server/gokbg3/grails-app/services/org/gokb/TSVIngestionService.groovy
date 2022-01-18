@@ -29,6 +29,7 @@ class TSVIngestionService {
   def componentUpdateService
   def reviewRequestService
   def titleLookupService
+  def ESSearchService
   def tippService
   def refdataCategory
   def sessionFactory
@@ -460,6 +461,7 @@ class TSVIngestionService {
     }
 
     def the_profile = IngestionProfile.get(the_profile_id)
+    def default_group = CuratoryGroup.findByName('Local')
 
     if (the_profile == null)      {
       log.error("Unable to datafile for ID ${datafile_id}")
@@ -477,8 +479,9 @@ class TSVIngestionService {
                    ip_id,
                    ingest_cfg,
                    'N',
-                   ['curatoryGroup': 'Local'],
-                   user)
+                   null,
+                   user,
+                   group)
   }
 
 
@@ -494,7 +497,8 @@ class TSVIngestionService {
              ingest_cfg = null,
              incremental = null,
              other_params = null,
-             user = null) {
+             user_id = null,
+             group_id = null) {
 
     log.debug("ingest2...")
     def result = [:]
@@ -507,7 +511,6 @@ class TSVIngestionService {
     def datafile = DataFile.read(datafile_id)
     log.debug("Got Datafile")
     def src_id = source.id
-    def user_id = user.id
 
     def kbart_cfg = grailsApplication.config.kbart2.mappings[packageType?.value.toString()]
     log.debug("Looking up config for ${packageType} ${packageType?.class.name} : ${kbart_cfg ? 'Found' : 'Not Found'}")
@@ -581,8 +584,8 @@ class TSVIngestionService {
 
         log.debug("Passed preflight -- ingest")
 
-        Package.withNewTransaction() {
-          the_package = handlePackage(packageName,source,providerName,other_params)
+        Package.withTransaction() {
+          the_package = handlePackage(packageName, source, providerName, other_params)
           assert the_package != null
           the_package_id = the_package.id
           def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
@@ -591,8 +594,9 @@ class TSVIngestionService {
           editor_role_id = editor_role.id
 
 
-          if (other_params.curatoryGroup) {
-            the_package.addCuratoryGroupIfNotPresent(other_params.curatoryGroup)
+          if (group_id) {
+            def group = CuratoryGroup.get(group_id)
+            the_package.addCuratoryGroupIfNotPresent(group.name)
             the_package.save(flush:true, failOnError:true)
           }
           else if (grailsApplication.config.gokb?.defaultCuratoryGroup) {
@@ -609,7 +613,7 @@ class TSVIngestionService {
 
         for (int x = 0; x < kbart_beans.size; x++) {
 
-          Package.withNewTransaction {
+          Package.withTransaction {
 
             def author_role = RefdataValue.get(author_role_id)
             def editor_role = RefdataValue.get(editor_role_id)
@@ -634,7 +638,8 @@ class TSVIngestionService {
                         ingest_cfg,
                         badrows,
                         row_specific_cfg,
-                        user_id)
+                        user_id,
+                        group_id)
             }
 
             log.debug("ROW ELAPSED : ${System.currentTimeMillis() - rowStartTime}")
@@ -653,7 +658,7 @@ class TSVIngestionService {
         }
         else {
           log.debug("Expunging old tipps [Tipps belonging to ${the_package_id} last seen prior to ${ingest_date}] - ${packageName}")
-          TitleInstancePackagePlatform.withNewTransaction {
+          TitleInstancePackagePlatform.withTransaction {
             try {
               // Find all tipps in this package which have a lastSeen before the ingest date
               def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
@@ -702,7 +707,7 @@ class TSVIngestionService {
         ])
 
 
-        Package.withNewTransaction {
+        Package.withTransaction {
           try {
             def update_agent = User.findByUsername('IngestAgent')
             // insertBenchmark updateBenchmark
@@ -729,18 +734,22 @@ class TSVIngestionService {
 
         // Raise a review request against the datafile
         def preflight_json = preflight_result as JSON
-        DataFile.withNewTransaction {
+
+        DataFile.withTransaction {
           def writeable_datafile = DataFile.get(datafile.id)
-          ReviewRequest req = new ReviewRequest (
-              status	: RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open'),
-              raisedBy : user,
-              allocatedTo : user,
-              descriptionOfCause : "Ingest of datafile ${datafile.id} / ${datafile.name} failed preflight",
-              reviewRequest : "Generate rules to handle error cases.",
-              refineProject: null,
-              additionalInfo: preflight_json.toString(),
-              componentToReview:writeable_datafile
-              ).save(flush:true, failOnError:true)
+          def group = group_id ? CuratoryGroup.get(group_id) : null
+          def user = User.get(user_id)
+
+          ReviewRequest req = reviewRequestService.raise(
+              writeable_datafile,
+              "Generate rules to handle error cases.",
+              "Ingest of datafile ${datafile.id} / ${datafile.name} failed preflight",
+              user,
+              null,
+              preflight_json.toString(),
+              null,
+              group
+          )
 
           job.message([timestamp: System.currentTimeMillis(), event: 'FailedPreflight', message: "Failed Preflight, see review request ${req.id}"])
         }
@@ -755,7 +764,7 @@ class TSVIngestionService {
     job?.setProgress(100)
     job.endTime = new Date()
 
-    JobResult.withNewSession {
+    JobResult.withTransaction {
       def result_object = JobResult.findByUuid(job?.uuid)
       if (!result_object) {
         def job_map = [
@@ -794,7 +803,8 @@ class TSVIngestionService {
                 ingest_cfg,
                 badrows,
                 row_specific_config,
-                user_id) {
+                user_id,
+                group_id) {
 
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
@@ -803,7 +813,6 @@ class TSVIngestionService {
 
     //first we need a platform:
     def platform = null; // handlePlatform(platform_url.host, source)
-    def user = User.get(user_id)
 
     log.debug("default platform via default platform URL ${platform_url}, ${platform_url?.class?.name} ${platform_url} title_url:${the_kbart.title_url}")
 
@@ -895,7 +904,9 @@ class TSVIngestionService {
               platform,
               ingest_date,
               ingest_systime,
-              identifiers
+              identifiers,
+              user_id,
+              group_id,
           )
         }
         else {
@@ -928,12 +939,16 @@ class TSVIngestionService {
                        the_platform,
                        ingest_date,
                        ingest_systime,
-                       identifiers) {
+                       identifiers,
+                       user_id,
+                       group_id) {
 
     log.debug("TSVIngestionService::manualUpsertTIPP with pkg:${the_package}, plat:${the_platform}, date:${ingest_date}")
 
     assert the_package != null && the_platform != null
 
+    def user = User.get(user_id)
+    def group = group_id ? CuratoryGroup.get(group_id) : null
     def tipp_values = [
       url:the_kbart.title_url ?: '',
       embargo:the_kbart.embargo_info ?: '',
@@ -1007,7 +1022,7 @@ class TSVIngestionService {
           skipDomainMapping : true
       ]
 
-      def something = esSearchService.find(map)
+      def something = ESSearchService.find(map)
 
       if (something.records?.size() > 0) {
         log.debug("found by provider namespace ID in ES")
@@ -1031,7 +1046,7 @@ class TSVIngestionService {
         // Journal
         ['zdb', 'eissn', 'issn', 'doi'].each { ns_value ->
           if (idMap[ns_value]) {
-            def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
+            def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, idMap[ns_value])
             if (found.size() > 0) {
               found.each {
                 if (TitleInstancePackagePlatform.isInstance(it)
@@ -1081,22 +1096,14 @@ class TSVIngestionService {
       def mismatches = []
       def id_mismatches = [:]
 
-      def jsonIdMap = [:]
-      tippJson.identifiers.each { jsonId ->
-        jsonIdMap[jsonId.type] = jsonId.value
-      }
-      if (jsonIdMap.size() == 0) {
-        tippJson.title.identifiers.each { jsonId ->
-          jsonIdMap[jsonId.type] = jsonId.value
-        }
-      }
+
 
       current_tipps.each { ctipp ->
         def tipp_ids = ctipp.ids.collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
 
         tipp_ids.each { tid ->
-          if (jsonIdMap[tid.type] && Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname && tid.type in ['zdb', 'eissn', 'issn', 'doi', 'isbn']) {
-            id_mismatches[tid.type] = jsonIdMap[tid.type]
+          if (idMap[tid.type] && Identifier.normalizeIdentifier(idMap[tid.type]) != tid.normname && tid.type in ['zdb', 'eissn', 'issn', 'doi', 'isbn']) {
+            id_mismatches[tid.type] = idMap[tid.type]
           }
         }
 
@@ -1124,7 +1131,7 @@ class TSVIngestionService {
           }
 
           // RR für Multimatch generieren
-          def myRR = reviewRequestService.raise(
+          reviewRequestService.raise(
               tipp,
               "Ambiguous KBART Record Matches",
               "A KBART record has been matched on multiple package titles.",
@@ -1132,7 +1139,7 @@ class TSVIngestionService {
               null,
               (additionalInfo as JSON).toString(),
               RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
-              componentLookupService.findCuratoryGroupOfInterest(tipp, user)
+              group ?: componentLookupService.findCuratoryGroupOfInterest(tipp, user)
           )
         }
       }
@@ -1157,7 +1164,7 @@ class TSVIngestionService {
       tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
     }
 
-    Set<String> ids = tipp.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
+    Set<String> existing_ids = tipp.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
     RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
     RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
@@ -1167,8 +1174,7 @@ class TSVIngestionService {
       String testKey = "${ci.type}|${ci.value}".toString()
 
       if (namespace_val && ci.value && ci.type.toLowerCase() != "originediturl") {
-
-        if (!ids.contains(testKey)) {
+        if (!existing_ids.contains(testKey)) {
           def canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
 
           log.debug("Checking identifiers of component ${tipp.id}")
@@ -1189,14 +1195,14 @@ class TSVIngestionService {
                 null,
                 null,
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
-                componentLookupService.findCuratoryGroupOfInterest(component, user)
+                group ?: componentLookupService.findCuratoryGroupOfInterest(component, user)
               )
             } else {
               log.debug("Identifier combo is already present, probably via titleLookupService.")
             }
 
             // Add the value for comparison.
-            ids << testKey
+            existing_ids << testKey
           } else {
             log.debug("Could not find or create Identifier!")
           }
@@ -1205,7 +1211,7 @@ class TSVIngestionService {
     }
 
     tippService.updateCoverage(tipp, tipp_values)
-    updateTippData(tipp, tipp_values)
+    updateTippData(tipp, tipp_values, user)
 
     // log.debug("Values updated, set lastSeen");
 
@@ -1223,10 +1229,13 @@ class TSVIngestionService {
     addCustprops(tipp, the_kbart, 'tipp.custprops.')
     addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.')
 
+    // Match title
+    tippService.matchTitle(tipp, group)
+
     log.debug("manualUpsertTIPP returning")
   }
 
-  def updateTippData(tipp, newVals) {
+  def updateTippData(tipp, newVals, user) {
     componentUpdateService.ensureCoreData(tipp, newVals, fullsync, user)
     // overwrite String properties with JSON values
     ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
@@ -1367,7 +1376,7 @@ class TSVIngestionService {
         result=packages[0]
         log.debug("match package found: ${result}")
         // See if any properties have changed.
-        if (!result.description == other_params.description) {
+        if (other_params?.description && !result.description == other_params.description) {
           result.description = other_params.description
           result.save(flush:true, failOnError:true)
         }
@@ -1390,7 +1399,7 @@ class TSVIngestionService {
 
     packageProperties.each { pp ->
       // consider See if pp.regex matches any of the properties
-      props.keySet().grep(pp.regex).each { prop ->
+      props?.keySet().grep(pp.regex).each { prop ->
         log.debug("Property ${prop} matched config ${pp}")
 
         switch ( pp.type ) {

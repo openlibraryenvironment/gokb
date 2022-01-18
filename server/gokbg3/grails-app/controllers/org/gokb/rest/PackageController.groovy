@@ -1414,8 +1414,11 @@ class PackageController {
       def user = User.get(springSecurityService.principal.id)
       def active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
       def title_ns = params.int('titleIdNamespace') ? IdentifierNamespace.get(params.int('titleIdNamespace')) : null
+      def addOnly = params.boolean('addOnly') ?: false
       def info = analyse(temp_file)
       def new_datafile_id = null
+      def platform_url = pkg.nominalPlatform?.primaryUrl ?: null
+      def pkg_source = pkg.source
 
       log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
       def existing_file = DataFile.findByMd5(info.md5sumHex)
@@ -1443,22 +1446,37 @@ class PackageController {
 
       if (new_datafile_id) {
         Job background_job = concurrencyManagerService.createJob { Job job ->
-          TSVIngestionService.ingest2('kbart2', pkg.name, (pkg.nominalPlatform?.primaryUrl ?: null), pkg.source, new_datafile_id, job, null, title_ns)
+          TSVIngestionService.ingest2(
+                                      'kbart2',
+                                      pkg.name,
+                                      platform_url,
+                                      pkg_source,
+                                      new_datafile_id,
+                                      job,
+                                      null,
+                                      title_ns,
+                                      null,
+                                      null,
+                                      (addOnly ? 'Y' : 'N'),
+                                      null,
+                                      user.id,
+                                      active_group.id)
         }
 
+        background_job.groupId = active_group.id ?: null
         background_job.ownerId = user.id
-        background_job.description = "KBART REST ingest (${pkg.name})"
+        background_job.description = "KBART REST ingest (${pkg.name})".toString()
         background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'KBART Ingest')
         background_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
-        background_job.message("Starting upsert for Package ${pkg.name}")
-        background_job.startTime = new Date()
+        background_job.message("Starting upsert for Package ${pkg.name}".toString())
         background_job.startOrQueue()
+        background_job.startTime = new Date()
 
         result.jobId = background_job.uuid
       }
       else {
         log.debug("Unable to reference DataFile!")
-        response.setStatus(500)
+        response.status = 500
         result.message = "There has been an error processing the KBART file!"
       }
     }
