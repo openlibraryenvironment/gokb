@@ -72,6 +72,7 @@ class PlatformService {
               like("name", "${urlHost}")
               like("primaryUrl", "%${urlHost}%")
             }
+            ne("status", status_deleted)
           }
 
           url_candidates.each { um ->

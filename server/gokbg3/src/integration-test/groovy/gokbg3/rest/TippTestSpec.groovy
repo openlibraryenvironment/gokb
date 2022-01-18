@@ -120,7 +120,7 @@ class TippTestSpec extends AbstractAuthSpec {
     }
 
     then:
-    resp.status == 200 // OK
+    resp.status == 201 // CREATED
     resp.json.url == upd_body.url
     resp.json._embedded.coverageStatements?.size() == 1
     resp.json._embedded.prices?.size() == 1
