@@ -56,13 +56,13 @@ class ReviewsController {
     }
     else if (!obj) {
       result.message = "Object ID could not be resolved!"
-      response.setStatus(404)
+      response.status = 404
       result.code = 404
       result.result = 'ERROR'
     }
     else {
       result.message = "Access to object was denied!"
-      response.setStatus(403)
+      response.status = 403
       result.code = 403
       result.result = 'ERROR'
     }
@@ -87,7 +87,7 @@ class ReviewsController {
 
       if (curator || user.isAdmin()) {
         if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
-          response.setStatus(409)
+          response.status = 409
           result.message = message(code: "default.update.errors.message")
           render result as JSON
         }
@@ -194,25 +194,25 @@ class ReviewsController {
             result._links = generateLinks(obj, user)
           }
           else {
-            response.setStatus(400)
+            response.status = 400
             result.message = message(code:"default.update.errors.message")
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(400)
+          response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
 
@@ -258,7 +258,7 @@ class ReviewsController {
       else {
         errors.componentToReview = [[message: "Missing component to be reviewed!"]]
         result.message = "Request payload must contain the component to be reviewed"
-        response.setStatus(400)
+        response.status = 400
       }
 
       if (reqBody.additionalInfo) {
@@ -314,27 +314,27 @@ class ReviewsController {
             result._links = generateLinks(obj, user)
           }
           else {
-            response.setStatus(500)
+            response.status = 500
             result.result = 'ERROR'
             result.message = "Unable to create request for review!"
           }
         }
         catch (Exception e) {
           log.error("Error creating Review", e)
-          response.setStatus(500)
+          response.status = 500
           result.result = 'ERROR'
           result.message = "There was an error creating the request."
         }
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(400)
+        response.status = 400
         result.errors = errors
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to delete this component!"
     }
     render result as JSON
@@ -355,18 +355,18 @@ class ReviewsController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing title to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "ReviewRequest not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to delete this ReviewRequest!"
     }
     render result as JSON
@@ -410,7 +410,7 @@ class ReviewsController {
       else{
         result.message = "All preconditions for an escalation have been met. Could not escalate anyway."
         result.result = 'ERROR'
-        response.setStatus(500)
+        response.status = 500
       }
     }
     render result as JSON
@@ -428,7 +428,7 @@ class ReviewsController {
       // No need to trigger an error then,
       // the date of interest is transferred by `isEscalatable`
       result.result = 'OK'
-      response.setStatus(200)
+      response.status 200
     }
     render result as JSON
   }
@@ -450,11 +450,11 @@ class ReviewsController {
         deescArg.escalatedFrom = null
         targetArg.status = inProgress
         result.result = 'OK'
-        response.setStatus(200)
+        response.status = 200
       }
       else{
         result.result = 'ERROR'
-        response.setStatus(400)
+        response.status = 400
       }
     }
     render result as JSON
@@ -473,7 +473,7 @@ class ReviewsController {
       if (report.errors > 0) {
         result.result = 'ERROR'
         result.report = report
-        response.setStatus(403)
+        response.status = 403
         result.message = "Unable to change ${params['_field']} for ${report.error} of ${report.total} items."
       } else {
         result.message = "Successfully changed ${params['_field']} for ${report.total} items."
@@ -481,7 +481,7 @@ class ReviewsController {
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 400
       result.message = "Missing required params '_field' and '_value'"
     }
     render result as JSON
@@ -506,19 +506,19 @@ class ReviewsController {
 
     def rr = ReviewRequest.get(genericOIDService.oidToId(rrId))
     if (!rr){
-      response.setStatus(404)
+      response.status = 404
       result.message = "ReviewRequest not found for id ${rrId}."
       return result
     }
     if (!rr.isEditable()){
-      response.setStatus(403)
+      response.status = 403
       result.message = "ReviewRequest for id ${rrId} may not be edited."
       return result
     }
 
     String componentClass = rr.componentToReview?.class.getSimpleName()
     if (!componentClass in [BookInstance.class.getSimpleName(), DatabaseInstance.class.getSimpleName(), JournalInstance.class.getSimpleName()]){
-      response.setStatus(405)
+      response.status = 400
       result.message = "ReviewRequest belongs to the un-escalatable class ${componentClass}"
       return result
     }
@@ -536,18 +536,18 @@ class ReviewsController {
           escalatingGroup = toBeChecked
         }
         else if (argCandidates.size() > 1){
-          response.setStatus(409)
+          response.status = 409
           result.message = "Could not get curatory group to be escalated from due to multiple group candidates."
           return result
         }
         else{
-          response.setStatus(404)
+          response.status = 404
           result.message = "Could not get curatory group to be escalated from due to missing active curatory group."
           return result
         }
       }
       else{
-        response.setStatus(404)
+        response.status = 404
         result.message = "Could not get curatory group to be escalated from due to missing active curatory group id."
         return result
       }
@@ -561,13 +561,13 @@ class ReviewsController {
       escalatedToCG = editorialGroup
     }
     if (!escalatedToCG){
-      response.setStatus(409)
+      response.status = 409
       result.message = "Could not escalate due to missing superordinated group."
       return result
     }
 
     // all conditions are met
-    response.setStatus(200)
+    response.status = 200
     result.result = 'OK'
     result.isEscalatable = true
     result.escalatingGroup = escalatingGroup.id
@@ -580,13 +580,13 @@ class ReviewsController {
     def result = ['result':'ERROR', 'isDeescalatable':false, 'params': params]
     ReviewRequest rr = params.id ? ReviewRequest.get(genericOIDService.oidToId(params.id)) : null
     if (!rr){
-      response.setStatus(404)
+      response.status = 404
       result.message = "ReviewRequest not found for id ${rrId}."
       return result
     }
     CuratoryGroup deescalatingGroup = CuratoryGroup.findById(activeGroupId)
     if (!deescalatingGroup){
-      response.setStatus(404)
+      response.status = 404
       result.message = "Could not get curatory group to be deescalated from."
       return result
     }
