@@ -45,7 +45,7 @@ class Package extends KBComponent {
 
   private static refdataDefaults = [
     "scope"      : "Front File",
-    "listStatus" : "Checked",
+    "listStatus" : "In Progress",
     "breakable"  : "Unknown",
     "consistent" : "Unknown",
     "fixed"      : "Unknown",

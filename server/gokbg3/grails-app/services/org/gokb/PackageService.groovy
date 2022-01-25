@@ -8,7 +8,7 @@ import grails.io.IOUtils
 import groovy.util.logging.Slf4j
 import groovy.xml.MarkupBuilder
 import groovy.xml.StreamingMarkupBuilder
-import groovyx.net.http.RESTClient
+import groovyx.net.http.*
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
@@ -16,12 +16,15 @@ import org.hibernate.ScrollMode
 import org.hibernate.ScrollableResults
 import org.hibernate.Session
 import org.hibernate.type.StandardBasicTypes
+import org.mozilla.universalchardet.UniversalDetector
 import org.springframework.util.FileCopyUtils
 
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -62,10 +65,12 @@ class PackageService {
   def genericOIDService
   def restMappingService
   ComponentLookupService componentLookupService
+  def TSVIngestionService
   def grailsApplication
   def messageService
   def concurrencyManagerService
   def dateFormatService
+
   private static final String[] KBART_FIELDS = ['publication_title',
      'print_identifier',
      'online_identifier',
@@ -95,7 +100,6 @@ class PackageService {
      'gokb_tipp_uid',
      'gokb_title_uid']
 
-  public static boolean running = false;
   public static final enum ExportType {
     KBART_TIPP, KBART_TITLE, TSV
   }
@@ -1542,139 +1546,305 @@ class PackageService {
     input.close()
   }
 
-  def synchronized updateFromSource(Package p, def user = null) {
-    log.debug("updateFromSource")
-    def result = null
-    boolean started = false
-    if (running == false) {
-      running = true
-      log.debug("UpdateFromSource started")
-      result = startSourceUpdate(p, user) ? 'OK' : 'ERROR'
-      running = false
+  def startSourceUpdate(Package pkg, def user = null, Job job = null) {
+    log.debug("Source update start..")
+    def result = [result: 'OK']
+
+    Package.withNewSession {
+      Package p = Package.get(pkg.id)
+      def datafile_id = null
+      def platform_url = p.nominalPlatform.primaryUrl
+      def pkg_source = p.source
+      def preferred_group = p.curatoryGroups?.size() > 0 ? p.curatoryGroups[0] : null
+      def title_ns = pkg_source.targetNamespace ?: (p.provider?.titleNamespace ?: null)
+
+      if (pkg_source?.url) {
+        def src_url = null
+        def dynamic_date = false
+        LocalDate extracted_date
+        def file_info = [:]
+
+        pkg_source.lastRun = new Date()
+        pkg_source.save(flush: true)
+
+        try {
+          src_url = new URL(pkg_source.url)
+        }
+        catch (Exception e) {
+          log.debug("Invalid source URL!")
+          result.result = 'ERROR'
+          result.messageCode = 'kbart.errors.url.invalid'
+          result.message = "Provided URL is not valid!"
+
+          return result
+        }
+
+        if (src_url) {
+          def existing_string = src_url.toString()
+          String local_date_string = LocalDate.now().toString()
+
+          if (existing_string ==~ /\{YYYY-MM-DD\}\.[tsv|txt]$/) {
+            src_url = new URL(existing_string.replace('{YYYY-MM-DD}', local_date_string))
+            dynamic_date = true
+          }
+          else {
+            def date_pattern_match = (existing_string =~ /([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))\.[tsv|txt]$/)
+
+            if (date_pattern_match.size() > 0) {
+              String matched_date_string = date_pattern_match[0].split("\\.")[0]
+              extracted_date = LocalDate.parse(matched_date_string)
+            }
+          }
+        }
+        else {
+          log.debug("No source URL!")
+          result.result = 'ERROR'
+          result.messageCode = 'kbart.errors.url.missing'
+          result.message = "Package source does not have an URL!"
+
+          return result
+        }
+
+        if (src_url?.getProtocol() in ['http', 'https']) {
+          def deposit_token = java.util.UUID.randomUUID().toString()
+          File tmp_file = createTempFile(deposit_token)
+
+          if (!extracted_date || pkg_source.lastRun == null) {
+            file_info = fetchKbartFile(tmp_file, src_url)
+          }
+
+          if (file_info.accessError) {
+            result.result = 'ERROR'
+            result.messageCode = 'kbart.errors.url.html'
+            result.message = "URL returned HTML, indicating provider configuration issues!"
+
+            return result
+          } else if (file_info.status == 403) {
+            log.debug("URL request failed!")
+            result.result = 'ERROR'
+            result.messageCode = 'kbart.errors.url.denied'
+            result.message = "URL request returned 403 ACCESS DENIED, skipping further tries!"
+
+            return result
+          }
+
+          if (!file_info.file_name && (dynamic_date || extracted_date)) {
+            LocalDate active_date = LocalDate.now()
+
+            while (active_date.isAfter(LocalDate.now().minusDays(30))) {
+              active_date = active_date.minusDays(1)
+              src_url = new URL(src_url.toString().replace(/([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))/, active_date.toString()))
+              sleep(500)
+              file_info = fetchKbartFile(tmp_file, src_url)
+            }
+          }
+
+          log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
+
+          if ((file_info.file_name?.endsWith('.tsv') || file_info.file_name?.endsWith('.txt')) && (file_info.content_mime_type?.startsWith("text/plain") || file_info.content_mime_type?.startsWith("text/tab-separated-values") || file_info.content_mime_type == 'application/octet-stream')) {
+            try {
+              MessageDigest md5_digest = MessageDigest.getInstance("MD5")
+              UniversalDetector detector = new UniversalDetector()
+              FileInputStream fis = new FileInputStream(tmp_file)
+              BufferedInputStream inputStream = new BufferedInputStream(fis)
+              int total_size = 0
+              byte[] dataBuffer = new byte[4096]
+              int bytesRead
+
+              while ((bytesRead = inputStream.read(dataBuffer, 0, 4096)) != -1) {
+                md5_digest.update(dataBuffer, 0, bytesRead)
+                total_size += bytesRead
+                detector.handleData(dataBuffer, 0, bytesRead)
+              }
+
+              detector.dataEnd()
+              byte[] md5sum = md5_digest.digest()
+              file_info.md5sumHex = new BigInteger(1, md5sum).toString(16)
+
+              String encoding = detector.getDetectedCharset()
+
+              if (encoding in ['UTF-8', 'US-ASCII']) {
+                def existing_file = DataFile.findByMd5(file_info.md5sumHex)
+
+                if (existing_file) {
+                  log.debug("Already fetched this file ..")
+                  datafile_id = existing_file.id
+                }
+                else {
+                  log.debug("Create new datafile")
+                  def new_datafile = new DataFile(
+                                                  guid: deposit_token,
+                                                  md5: file_info.md5sumHex,
+                                                  uploadName: file_info.file_name,
+                                                  name: file_info.file_name,
+                                                  filesize: total_size,
+                                                  uploadMimeType: file_info.content_mime_type).save(failOnError:true, flush:true)
+
+                  log.debug("Saved new datafile : ${new_datafile.id}")
+                  datafile_id = new_datafile.id
+                  new_datafile.fileData = tmp_file.getBytes()
+                  new_datafile.save(failOnError:true,flush:true)
+                }
+              }
+              else {
+                result.result = 'ERROR'
+                result.messageCode = 'kbart.errors.url.charset'
+                result.message = "KBART is not UTF-8!"
+              }
+            } catch (IOException e) {
+                // handle exception
+                e.printStackTrace()
+            }
+
+            if (datafile_id) {
+              result = TSVIngestionService.ingest2(
+                                            'kbart2',
+                                            p.name,
+                                            platform_url,
+                                            pkg_source,
+                                            datafile_id,
+                                            job,
+                                            null,
+                                            title_ns,
+                                            null,
+                                            null,
+                                            'N',
+                                            null,
+                                            null,
+                                            preferred_group?.id ?: null)
+            }
+            else {
+              log.debug("Unable to reference DataFile!")
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.unknown'
+              result.message = "There were errors saving the KBART file!"
+            }
+          }
+          else {
+            result.result = 'ERROR'
+            result.messageCode = 'kbart.errors.url.mime.type'
+            result.message = "KBART URL returned a wrong content type!"
+            log.debug("KBART url ${src_url} returned MIME type ${content_mime_type}")
+          }
+        }
+        // else if (src_url.getProtocol() in ['ftp', 'sftp']) {
+        else {
+          result.result = 'ERROR'
+          result.messageCode = 'kbart.errors.url.protocol'
+          result.message = "KBART URL has an unsupported protocol!"
+        }
+      }
     }
-    else {
-      log.debug("update skipped - already running")
-      result = 'ALREADY_RUNNING'
+
+    return result
+  }
+
+  private def fetchKbartFile(File tmp_file, URL src_url) {
+    def result = [content_mime_type: null, file_name: null]
+    HttpURLConnection connection
+
+    try {
+      connection = (HttpURLConnection) src_url.openConnection()
+      connection.addRequestProperty("User-Agent", "GOKb KBART Update")
+      connection.setInstanceFollowRedirects(true)
     }
+    catch (IOException e) {
+        e.printStackTrace()
+    }
+    connection.connect()
+    result.status = connection.getResponseCode()
+
+    if (result.status == HttpURLConnection.HTTP_OK) {
+      result.content_mime_type = connection.getContentType()
+      if (result.content_mime_type.startsWith('text/html')) {
+        log.debug("Got HTML result!")
+        log.debug("${connection.getContent()}")
+        result.accessError = true
+      }
+      else {
+        def file_name = connection.getHeaderField("Content-Disposition").split('filename=')[1]
+        result.file_name = file_name.replaceAll(/\"/, '')
+        FileUtils.copyInputStreamToFile(connection.getInputStream(), tmp_file)
+      }
+    }
+    else if (result.status != HttpURLConnection.HTTP_NOT_FOUND) {
+      log.debug("KBART fetch status: ${result.status}")
+      log.debug("${connection.getContent()}")
+    }
+
     result
   }
 
-  /**
-   * this method calls Ygor to perform an automated Update on this package.
-   * Bad configurations will result in failure.
-   * The autoUpdate frequency in the source is ignored: the update starts immediately.
-   */
-  private boolean startSourceUpdate(Package p, def user = null) {
-    log.debug("Source update start..")
-    boolean error = false
-    def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
+  def analyseFile(temp_file) {
 
-    if (ygorBaseUrl?.endsWith('/')) {
-      ygorBaseUrl = ygorBaseUrl.length() - 1
+    def result=[:]
+    result.filesize = 0;
+
+    log.debug("analyze...");
+
+    // Create a checksum for the file..
+    MessageDigest md5_digest = MessageDigest.getInstance("MD5")
+    InputStream md5_is = new FileInputStream(temp_file)
+    byte[] md5_buffer = new byte[8192]
+    int md5_read = 0;
+    while( (md5_read = md5_is.read(md5_buffer)) >= 0) {
+      md5_digest.update(md5_buffer, 0, md5_read)
+      result.filesize += md5_read
     }
+    md5_is.close();
+    byte[] md5sum = md5_digest.digest();
+    result.md5sumHex = new BigInteger(1, md5sum).toString(16)
 
-    def updateTrigger
-    def tokenValue = p.updateToken?.value ?: null
-    def respData
+    log.debug("MD5 is ${result.md5sumHex}")
+    result
+  }
 
-    if (user) {
-      String charset = (('a'..'z') + ('0'..'9')).join()
-      tokenValue = RandomStringUtils.random(255, charset.toCharArray())
-
-      if (p.updateToken) {
-        def currentToken = p.updateToken
-        p.updateToken = null
-        currentToken.delete(flush: true)
-      }
-
-      def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush: true)
+  private byte[] getByteContent(InputStream inputStream){
+    ByteArrayOutputStream baos = new ByteArrayOutputStream()
+    byte[] buf = new byte[4096]
+    int n = 0
+    while ((n = inputStream.read(buf)) >= 0){
+      baos.write(buf, 0, n)
     }
+    baos.toByteArray()
+  }
 
-    if (tokenValue && ygorBaseUrl) {
-      def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
-      updateTrigger = new RESTClient(ygorBaseUrl + path)
+  static String urlStringToFileString(String url){
+    url.replace("://", "_").replace(".", "_").replace("/", "_")
+  }
 
-      try {
-        log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}")
-        updateTrigger.request(GET) { request ->
-          response.success = { resp, data ->
-            log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => success")
-            // wait for ygor to finish the enrichment
-            boolean processing = true
-            respData = data
-            if (!respData || !respData.jobId) {
-              log.error("no ygor job Id received, skipping update of ${p.id}!")
-              if (respData?.message) {
-                log.error("ygor message: ${respData.message}")
-              }
-              processing = false
-              error = true
-            }
-            def statusService = new RESTClient(ygorBaseUrl + "/enrichment/getStatus?jobId=${respData.jobId}")
+  def copyUploadedFile(inputfile, deposit_token) {
+    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '/tmp/gokb/ingest'
+    log.debug("copyUploadedFile...");
+    def sub1 = deposit_token.substring(0,2)
+    def sub2 = deposit_token.substring(2,4)
+    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}")
+    def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}"
+    def temp_file = new File(temp_file_name)
 
-            while (processing == true) {
-              log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId}")
-              statusService.request(GET) { req ->
-                response.success = { statusResp, statusData ->
-                  log.debug("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => success")
-                  log.debug("status of Ygor ${statusData.status} gokbJob #${statusData.gokbJobId}")
-                  if (statusData.status == 'FINISHED_UNDEFINED') {
-                    processing = false
-                    log.debug("No valid URLs found.")
-                  }
+    // Copy the upload file to a temporary space
+    inputfile.transferTo(temp_file);
 
-                  if (statusData.gokbJobId) {
-                    processing = false
-                    task {
-                      log.debug("task start...")
-                      Job job = concurrencyManagerService.getJob(Integer.parseInt(statusData.gokbJobId))
-                      while (!job.isDone() && job.get() == null) {
-                        this.wait(5000) // 5 sec
-                        log.debug("checking xRefPackage status...")
-                      }
-                      log.debug("xRefPackage Job done!")
-                      def xRefResult = job.get()
-                      if (xRefResult) {
-                        if (xRefResult.result == "OK") {
-                          log.debug("xRefPackage result OK")
-                          Package.withNewSession {
-                            def pkg = Package.get(xRefResult.pkgId)
-                            pkg.source.lastRun = new Date()
-                            pkg.source.save(flush: true)
-                          }
-                          log.debug("set ${p.source.getNormname()}.lastRun = now")
-                        }
-                      }
-                    }
-                  }
-                  else {
-                    this.wait(10000) // 10 sec
-                  }
-                }
-                response.failure = { statusResp, statusData ->
-                  log.error("GET ygor/enrichment/getStatus?jobId=${respData.jobId} => failure")
-                  log.error("ygor response message: $statusData.message")
-                  processing = false
-                  error = true
-                }
-              }
-            }
-          }
-          response.failure = { resp ->
-            log.error("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => failure")
-            log.error("ygor response: ${resp.responseBase}")
-            error = true
-          }
-        }
-      } catch (Exception e) {
-        log.error("SourceUpdate Exception:", e);
-        error = true
-      }
+    temp_file
+  }
+
+  def createTempFile(deposit_token) {
+    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '/tmp/gokb/ingest'
+    def sub1 = deposit_token.substring(0,2)
+    def sub2 = deposit_token.substring(2,4)
+    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}")
+    def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}"
+    def temp_file = new File(temp_file_name)
+
+    temp_file
+  }
+
+  private def validateUploadDir(path) {
+    File f = new File(path);
+    if ( ! f.exists() ) {
+      log.debug("Creating upload directory path")
+      f.mkdirs();
     }
-    else {
-      log.debug("No user provided and no existing updateToken found!")
-    }
-    return !error
   }
 
   private String generateExportFileName(Package pkg, ExportType type) {

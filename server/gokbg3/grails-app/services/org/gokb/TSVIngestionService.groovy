@@ -36,10 +36,6 @@ class TSVIngestionService {
 
   def possible_date_formats = [
     new SimpleDateFormat('yyyy-MM-dd'), // Default format Owen is pushing ATM.
-    new SimpleDateFormat('yyyy/MM/dd'),
-    new SimpleDateFormat('dd/MM/yyyy'),
-    new SimpleDateFormat('dd/MM/yy'),
-    new SimpleDateFormat('yyyy/MM'),
     new SimpleDateFormat('yyyy-MM'),
     new SimpleDateFormat('yyyy')
   ]
@@ -501,7 +497,7 @@ class TSVIngestionService {
              group_id = null) {
 
     log.debug("ingest2...")
-    def result = [:]
+    def result = [result: 'OK']
     result.messages = []
 
     long start_time = System.currentTimeMillis()
@@ -509,7 +505,7 @@ class TSVIngestionService {
     // Read does no dirty checking
     log.debug("Get Datafile ${datafile_id}")
     def datafile = DataFile.read(datafile_id)
-    log.debug("Got Datafile")
+    log.debug("Got Datafile ${datafile.uploadName}")
     def src_id = source.id
 
     def kbart_cfg = grailsApplication.config.kbart2.mappings[packageType?.value.toString()]
@@ -537,12 +533,12 @@ class TSVIngestionService {
 
       if (!ingest_cfg.polymorphicRows) {
         ingest_cfg.polymorphicRows = [
-          'Serial':[
+          'serial':[
             identifierMap: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
             defaultMedium: 'Serial',
             defaultTypeName: 'org.gokb.cred.JournalInstance'
           ],
-          'Monograph':[
+          'monograph':[
             identifierMap: ['print_identifier': 'pisbn', 'online_identifier': 'isbn'],
             defaultMedium: 'Book',
             defaultTypeName: 'org.gokb.cred.BookInstance'
@@ -555,7 +551,8 @@ class TSVIngestionService {
       log.debug("Initialise start time")
 
       def ingest_systime = start_time
-      def ingest_date = new java.sql.Timestamp(start_time)
+      def date_pattern_matches = (datafile.uploadName =~ /[\d]{4}-[\d]{2}-[\d]{2}/)
+      def ingest_date = date_pattern_matches?.size() > 0 ? date_pattern_matches[0] : LocalDate.now().toString()
 
       log.debug("Set progress")
       job?.setProgress(0)
@@ -597,10 +594,6 @@ class TSVIngestionService {
           if (group_id) {
             def group = CuratoryGroup.get(group_id)
             the_package.addCuratoryGroupIfNotPresent(group.name)
-            the_package.save(flush:true, failOnError:true)
-          }
-          else if (grailsApplication.config.gokb?.defaultCuratoryGroup) {
-            the_package.addCuratoryGroupIfNotPresent(grailsApplication.config.gokb?.defaultCuratoryGroup)
             the_package.save(flush:true, failOnError:true)
           }
         }
@@ -663,19 +656,20 @@ class TSVIngestionService {
               // Find all tipps in this package which have a lastSeen before the ingest date
               def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
                                'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                               'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
-                              [pkg:the_package_id,dt:ingest_systime])
+                               'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null and tipp.status = :sc',
+                              [pkg:the_package_id, dt:ingest_systime, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])
 
               q.each { tipp ->
                 log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}")
-                // tipp.deleteSoft()
-                tipp.accessEndDate = new Date()
+                ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(ingest_date), tipp, 'accessEndDate')
+                tipp.retire()
                 tipp.save(failOnError:true, flush:true)
               }
               log.debug("Completed tipp cleanup")
             }
             catch (Exception e) {
               log.error("Problem", e)
+              result.result = 'ERROR'
             }
             finally {
               log.debug("Done")
@@ -685,6 +679,7 @@ class TSVIngestionService {
 
         if (badrows.size() > 0) {
           def msg = "There are ${badrows.size()} bad rows -- write to badfile and report"
+          result.badrows = badrows
           job.message([timestamp: System.currentTimeMillis(), message: msg, event: 'BadRows', count: badrows.size()])
 
           badrows.each {
@@ -734,6 +729,7 @@ class TSVIngestionService {
 
         // Raise a review request against the datafile
         def preflight_json = preflight_result as JSON
+        result.result = 'ERROR'
 
         DataFile.withTransaction {
           def writeable_datafile = DataFile.get(datafile.id)
@@ -758,6 +754,7 @@ class TSVIngestionService {
     }
     catch (Exception e) {
       job.message(e.toString())
+      result.result = 'ERROR'
       log.error("Problem", e)
     }
 
@@ -772,7 +769,7 @@ class TSVIngestionService {
             description : (job?.description),
             resultObject: (job.messages as JSON).toString(),
             type        : (job?.type),
-            statusText  : (job.messages.last()),
+            statusText  : (result.result),
             ownerId     : (job?.ownerId),
             groupId     : (job?.groupId),
             startTime   : (job?.startTime),
@@ -960,7 +957,6 @@ class TSVIngestionService {
       endDate:the_kbart.date_last_issue_online,
       endVolume:the_kbart.num_last_vol_online,
       endIssue:the_kbart.num_last_issue_online,
-      source:the_source,
       importId:the_kbart.title_id,
       name: the_kbart.publication_title,
       publicationType: the_kbart.publication_type,
@@ -970,6 +966,8 @@ class TSVIngestionService {
       publisherName: the_kbart.publisher_name,
       volumeNumber: the_kbart.monograph_volume,
       editionStatement: the_kbart.monograph_edition,
+      dateFirstInPrint: the_kbart.date_monograph_published_print,
+      dateFirstOnline: the_kbart.date_monograph_published_online,
       firstEditor: the_kbart.first_editor,
       url: the_kbart.title_url,
       subjectArea: the_kbart.subject_area ?: (the_kbart.subject ?: the_kbart.primary_subject),
@@ -978,7 +976,8 @@ class TSVIngestionService {
       medium: the_kbart.medium,
       accessStartDate:the_kbart.access_start_date ?: ingest_date,
       accessEndDate: the_kbart.access_end_date,
-      lastSeen:ingest_systime
+      lastSeen:ingest_systime,
+      identifiers: identifiers
     ]
 
     def tipp = null
@@ -988,55 +987,31 @@ class TSVIngestionService {
       idMap[tid.type] = tid.value
     }
 
-    log.debug("Lookup existing TIPP by importId");
-    def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
-    def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
-    def tipps = TitleInstancePackagePlatform.executeQuery(
-        'select tipp from TitleInstancePackagePlatform as tipp, Combo as c1, Combo as c2 ' +
-            'where c1.fromComponent = :pkg ' +
-            'and c1.toComponent = tipp ' +
-            'and c1.type = :typ1 ' +
-            'and c2.fromComponent = :plt ' +
-            'and c2.toComponent = tipp ' +
-            'and c2.type = :typ2 ' +
-            'and tipp.importId = :tid ' +
-            'and tipp.status = :tStatus  ' +
-            'order by tipp.id',
-        [
-          pkg    : the_package,
-          typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
-          plt    : the_platform,
-          typ2   : RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps'),
-          tid    : the_kbart.title_id,
-          tStatus: status_current
-        ]
-    )
+    log.debug("Lookup existing TIPP by importId")
 
-    if (tipps.size() == 0) {
-      IdentifierNamespace providerNamespace = the_package.provider?.titleNamespace
-      TypeConvertingMap map = [
-          componentType     : 'TitleInstancePackagePlatform',
-          identfiers        : providerNamespace.value + ',' + the_kbart.title_id,
-          pkg               : the_package.uuid,
-          platform          : the_platform.uuid,
-          skipDomainMapping : true
-      ]
-
-      def something = ESSearchService.find(map)
-
-      if (something.records?.size() > 0) {
-        log.debug("found by provider namespace ID in ES")
-        something.records.each {
-          def tipp_uuid_match = TitleInstancePackagePlatform.findByUuid(it.uuid)
-
-          if (tipp_uuid_match) {
-            tipps << tipp_uuid_match
-          }
-          else  {
-            log.warn("ES record TIPP ${it.uuid} does not exist!")
-          }
-        }
-      }
+    if (the_kbart.title_id) {
+      def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+      def status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
+      def tipps = TitleInstancePackagePlatform.executeQuery(
+          'select tipp from TitleInstancePackagePlatform as tipp, Combo as c1, Combo as c2 ' +
+              'where c1.fromComponent = :pkg ' +
+              'and c1.toComponent = tipp ' +
+              'and c1.type = :typ1 ' +
+              'and c2.fromComponent = :plt ' +
+              'and c2.toComponent = tipp ' +
+              'and c2.type = :typ2 ' +
+              'and tipp.importId = :tid ' +
+              'and tipp.status = :tStatus  ' +
+              'order by tipp.id',
+          [
+            pkg    : the_package,
+            typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
+            plt    : the_platform,
+            typ2   : RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps'),
+            tid    : the_kbart.title_id,
+            tStatus: status_current
+          ]
+      )
     }
 
     if (tipps.size() == 0) {
@@ -1088,17 +1063,41 @@ class TSVIngestionService {
           log.debug("found by monograph identifier set")
         }
       }
+
+      if (tipps.size() == 0) {
+        TypeConvertingMap map = [
+            componentType     : 'TitleInstancePackagePlatform',
+            identifiers       : the_kbart.title_id,
+            pkg               : the_package.uuid,
+            platform          : the_platform.uuid,
+            skipDomainMapping : true
+        ]
+
+        def something = ESSearchService.find(map)
+
+        if (something.records?.size() > 0) {
+          log.debug("found by provider namespace ID in ES")
+          something.records.each {
+            def tipp_uuid_match = TitleInstancePackagePlatform.findByUuid(it.uuid)
+
+            if (tipp_uuid_match) {
+              tipps << tipp_uuid_match
+            }
+            else  {
+              log.warn("ES record TIPP ${it.uuid} does not exist!")
+            }
+          }
+        }
+      }
     }
 
     if (tipps.size() > 0) {
-      log.debug("Found ${current_tipps.size()} matching TIPP(s)")
+      log.debug("Found ${tipps.size()} matching TIPP(s)")
       def full_matches = []
       def mismatches = []
       def id_mismatches = [:]
 
-
-
-      current_tipps.each { ctipp ->
+      tipps.each { ctipp ->
         def tipp_ids = ctipp.ids.collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
 
         tipp_ids.each { tid ->
@@ -1164,52 +1163,6 @@ class TSVIngestionService {
       tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
     }
 
-    Set<String> existing_ids = tipp.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
-    RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
-
-    identifiers.each { ci ->
-      def namespace_val = ci.type ?: ci.namespace
-      String testKey = "${ci.type}|${ci.value}".toString()
-
-      if (namespace_val && ci.value && ci.type.toLowerCase() != "originediturl") {
-        if (!existing_ids.contains(testKey)) {
-          def canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
-
-          log.debug("Checking identifiers of component ${tipp.id}")
-          if (canonical_identifier) {
-            def duplicate = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [canonical_identifier, tipp])
-
-            if (duplicate.size() == 0) {
-              log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
-              def new_id = new Combo(fromComponent: tipp, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
-            } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
-
-              log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
-              reviewRequestService.raise(
-                component,
-                "Review ID status.",
-                "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
-                user,
-                null,
-                null,
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
-                group ?: componentLookupService.findCuratoryGroupOfInterest(component, user)
-              )
-            } else {
-              log.debug("Identifier combo is already present, probably via titleLookupService.")
-            }
-
-            // Add the value for comparison.
-            existing_ids << testKey
-          } else {
-            log.debug("Could not find or create Identifier!")
-          }
-        }
-      }
-    }
-
     tippService.updateCoverage(tipp, tipp_values)
     updateTippData(tipp, tipp_values, user)
 
@@ -1236,11 +1189,11 @@ class TSVIngestionService {
   }
 
   def updateTippData(tipp, newVals, user) {
-    componentUpdateService.ensureCoreData(tipp, newVals, fullsync, user)
+    componentUpdateService.ensureCoreData(tipp, newVals, false, user)
     // overwrite String properties with JSON values
     ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
     'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'importId', 'subjectArea', 'series'].each { propName ->
-      tipp[propName] = newVals[propName] ?: tipp[propName]
+      tipp[propName] = newVals[propName]?.trim() ? newVals[propName].trim() : tipp[propName]
     }
 
     if (newVals.dateFirstInPrint) {
@@ -1453,9 +1406,9 @@ class TSVIngestionService {
     switch (platforms.size()) {
       case 0:
         //no match. create a new platform!
-        log.debug("Create new platform ${host}, ${host}, ${the_source}")
+        log.debug("Create new platform ${host}, ${host}")
         def newUrl = protocol + "://" + orig_host
-        result = new Platform( name: host, primaryUrl: newUrl, source: the_source)
+        result = new Platform(name: host, primaryUrl: newUrl)
 
         // log.debug("Validate new platform");
         // result.validate();
@@ -1497,7 +1450,7 @@ class TSVIngestionService {
   def getKbartBeansFromKBartFile(the_data) {
     log.debug("kbart2 file, so use CSV to Bean") //except that this doesn't always work :(
     def results = []
-    def charset = 'ISO-8859-1' // 'UTF-8'
+    def charset = 'UTF-8'
 
     def csv = new CSVReader(
         new InputStreamReader(
@@ -1533,7 +1486,7 @@ class TSVIngestionService {
 
         for (key in col_positions.keySet()) {
 
-          log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
+          // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
 
           if (key && key.length() > 0) {
             //so, springer files seem to start with a dodgy character (int) 65279
@@ -1547,7 +1500,10 @@ class TSVIngestionService {
 
                 if (col_positions[key] != null && col_positions[key] < nl.length) {
                   if (nl[col_positions[key]].length() > 4092) {
-                    throw new RuntimeException("Unexpectedly long value in row ${rownum} -- Probable miscoded quote in line. Correct and resubmit")
+                    throw new RuntimeException("Unexpectedly long value in row ${rownum} -- Probably miscoded quote in line. Correct and resubmit")
+                  }
+                  else if (nl[col_positions[key]].contains('�')) {
+                    throw new RuntimeException("Found UTF-8 replacement char in row ${rownum} -- Probably saved non-UTF-8 file as UTF-8!")
                   }
                   else{
                     result[key]=nl[col_positions[key]]
@@ -1565,7 +1521,6 @@ class TSVIngestionService {
         log.warn("Possible malformed last row")
       }
 
-      log.debug("${result}")
       // log.debug(new KBartRecord(result))
       //this is a cheat cos I don't get why springer files don't work!
       // results<<new KBartRecord(result)
@@ -1573,7 +1528,6 @@ class TSVIngestionService {
       nl = csv.readNext()
       rownum++
     }
-    log.debug("${results}")
     results
   }
 
@@ -1777,7 +1731,7 @@ class TSVIngestionService {
   def validateRow(rownum, badrows, row_data) {
     log.debug("Validate :: ${row_data}")
     def result = true
-    def reasons = []
+    def errors = []
 
     // check the_kbart.date_first_issue_online is present and validates
     if (row_data.date_first_issue_online != null && row_data.date_first_issue_online.trim() != '') {
@@ -1786,17 +1740,6 @@ class TSVIngestionService {
       if (parsed_start_date == null) {
         reasons.add("Row ${rownum} contains an invalid or unrecognised date format for date_first_issue_online :: ${row_data.date_first_issue_online}")
         result = false
-      }
-      else {
-        Calendar calendar = new GregorianCalendar()
-        calendar.setTime(parsed_start_date)
-        Calendar rightNow = Calendar.getInstance()
-        def this_year = rightNow.get(Calendar.YEAR)
-
-        if (calendar.get(Calendar.YEAR) > this_year + 2) {  // Allow for some distance into the future.
-          reasons.add("Row ${rownum} contains a suspect date/year for 'date_first_issue_online' :: ${row_data.date_first_issue_online}")
-          result = false
-        }
       }
     }
 
@@ -1809,17 +1752,35 @@ class TSVIngestionService {
       }
     }
 
-    if (!row_data.title_id || row_data.title_id == '') {
+    if (row_data.date_monograph_published_online != null && row_data.date_monograph_published_online.trim() != '') {
+      def parsed_start_date = parseDate(row_data.date_monograph_published_online)
+
+      if (parsed_start_date == null) {
+        reasons.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_online' :: ${row_data.date_monograph_published_online}")
+        result = false
+      }
+    }
+
+    if (row_data.date_monograph_published_print != null && row_data.date_monograph_published_print.trim() != '') {
+      def parsed_start_date = parseDate(row_data.date_monograph_published_print)
+
+      if (parsed_start_date == null) {
+        reasons.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_print' :: ${row_data.date_monograph_published_online}")
+        result = false
+      }
+    }
+
+    if (!row_data.title_id || !row_data.title_id.trim()) {
       reasons.add("Row ${rownum} does not contain a value for 'title_id'")
       result = false
     }
 
-    if (!row_data.publication_title || row_data.publication_title == '') {
+    if (!row_data.publication_title || !row_data.publication_title.trim()) {
       reasons.add("Row ${rownum} does not contain a value for 'publication_title'")
       result = false
     }
 
-    if (!row_data.publication_type || row_data.publication_type == '' || !TitleInstance.determineTitleClass(row_data.publication_type)) {
+    if (!row_data.publication_type || !row_data.publication_type.trim() || !TitleInstance.determineTitleClass(row_data.publication_type)) {
       reasons.add("Row ${rownum} does not contain a valid 'publication_type' :: ${row_data.publication_type}")
       result = false
     }
@@ -1831,8 +1792,9 @@ class TSVIngestionService {
 
     if (!result) {
       log.error("Recording bad row : ${reasons}")
-      badrows.add([rowdata: row_data, message: reasons])
+      badrows.add([rowdata: row_data, errors: [], message: reasons, index: rownum])
     }
+    else if ()
 
     result
   }
@@ -1873,7 +1835,7 @@ class TSVIngestionService {
 
     if (cfg.polymorphicRows && cfg.discriminatorColumn) {
       if (row[cfg.discriminatorColumn]) {
-        def row_specific_cfg = cfg.polymorphicRows[row[cfg.discriminatorColumn]]
+        def row_specific_cfg = cfg.polymorphicRows[row[cfg.discriminatorColumn].toLowerCase()]
 
         if (row_specific_cfg) {
           result = row_specific_cfg
@@ -1917,16 +1879,6 @@ class TSVIngestionService {
     result.sourceId = source?.id
 
     def preflight_counter = 0
-
-    def source_rules = null
-
-    if (source.ruleset) {
-      log.debug("read source ruleset ${source.ruleset}")
-      source_rules = JSON.parse(source.ruleset)
-      source_rules.rules.keySet().each {
-        log.debug("Rule Fingerprint : ${it}")
-      }
-    }
 
     // Iterate through -- create titles
     kbart_beans.each { the_kbart ->

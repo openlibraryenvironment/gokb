@@ -11,7 +11,6 @@ import grails.plugin.springsecurity.annotation.Secured
 
 import groovyx.net.http.URIBuilder
 
-import java.security.MessageDigest
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -1403,19 +1402,19 @@ class PackageController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def ingestKbart() {
     log.debug("Form post")
-    def result = [result: 'OK']
+    def result = ['result': 'OK']
     Package pkg = Package.get(params.id)
+    def user = User.get(springSecurityService.principal.id)
 
-    if (pkg) {
+    if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
       def upload_mime_type = request.getFile("submissionFile")?.contentType
       def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
       def deposit_token = java.util.UUID.randomUUID().toString()
-      def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token)
-      def user = User.get(springSecurityService.principal.id)
+      def temp_file = packageService.copyUploadedFile(request.getFile("submissionFile"), deposit_token)
       def active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
       def title_ns = params.int('titleIdNamespace') ? IdentifierNamespace.get(params.int('titleIdNamespace')) : null
       def addOnly = params.boolean('addOnly') ?: false
-      def info = analyse(temp_file)
+      def info = packageService.analyseFile(temp_file)
       def new_datafile_id = null
       def platform_url = pkg.nominalPlatform?.primaryUrl ?: null
       def pkg_source = pkg.source
@@ -1466,7 +1465,7 @@ class PackageController {
         background_job.groupId = active_group.id ?: null
         background_job.ownerId = user.id
         background_job.description = "KBART REST ingest (${pkg.name})".toString()
-        background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'KBART Ingest')
+        background_job.type = RefdataCategory.lookup('Job.Type', 'KBARTIngest')
         background_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
         background_job.message("Starting upsert for Package ${pkg.name}".toString())
         background_job.startOrQueue()
@@ -1476,68 +1475,72 @@ class PackageController {
       }
       else {
         log.debug("Unable to reference DataFile!")
+        result.result = 'ERROR'
         response.status = 500
         result.message = "There has been an error processing the KBART file!"
       }
     }
+    else if (!pkg) {
+      response.status = 404
+      result.result = 'ERROR'
+      result.message = "Unable to reference package!"
+    }
     else {
-        response.status = 404
-        result.message = "Unable to reference package!"
+      result.result = 'ERROR'
+      response.status = 403
+      result.message = "User must belong to at least one curatory group of an existing package to make changes!"
     }
 
-    return result as JSON
+    render result as JSON
   }
 
-  private def analyse(temp_file) {
+  @Transactional
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
+  def triggerSourceUpdate() {
+    def result = ['result': 'OK']
+    def active_group = params.int('activeGroup')
+    def async = params.boolean('async') ?: true
+    Package pkg = Package.get(params.id)
+    def user = User.get(springSecurityService.principal.id)
 
-    def result=[:]
-    result.filesize = 0;
+    if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
+      Job background_job = concurrencyManagerService.createJob { Job job ->
+        result = packageService.startSourceUpdate(pkg, user, job)
+      }
 
-    log.debug("analyze...");
+      background_job.groupId = active_group
+      background_job.ownerId = user?.id ?: null
+      background_job.description = "KBART Source ingest (${pkg.name})".toString()
+      background_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+      background_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+      background_job.message("Starting upsert for Package ${pkg.name}".toString())
+      background_job.startOrQueue()
+      background_job.startTime = new Date()
 
-    // Create a checksum for the file..
-    MessageDigest md5_digest = MessageDigest.getInstance("MD5");
-    InputStream md5_is = new FileInputStream(temp_file);
-    byte[] md5_buffer = new byte[8192];
-    int md5_read = 0;
-    while( (md5_read = md5_is.read(md5_buffer)) >= 0) {
-      md5_digest.update(md5_buffer, 0, md5_read);
-      result.filesize += md5_read
+      if (async) {
+        result.jobId = background_job.uuid
+      }
+      else {
+        def job_result = background_job.get()
+        result = job_result
+      }
     }
-    md5_is.close();
-    byte[] md5sum = md5_digest.digest();
-    result.md5sumHex = new BigInteger(1, md5sum).toString(16);
-
-    log.debug("MD5 is ${result.md5sumHex}");
-    result
-  }
-
-
-  private def copyUploadedFile(inputfile, deposit_token) {
-    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '/tmp/gokb/ingest'
-    log.debug("copyUploadedFile...");
-    def sub1 = deposit_token.substring(0,2);
-    def sub2 = deposit_token.substring(2,4);
-    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}");
-    def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
-    def temp_file = new File(temp_file_name);
-
-    // Copy the upload file to a temporary space
-    inputfile.transferTo(temp_file);
-
-    temp_file
-  }
-
-  private def validateUploadDir(path) {
-    File f = new File(path);
-    if ( ! f.exists() ) {
-      log.debug("Creating upload directory path")
-      f.mkdirs();
+    else if (!pkg) {
+      response.status = 404
+      result.result = 'ERROR'
+      result.message = "Unable to reference package!"
     }
+    else {
+      result.result = 'ERROR'
+      response.status = 403
+      result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+    }
+
+    render result as JSON
   }
 
   private def cleanUpGorm(session) {
-    log.debug("Clean up GORM");
+    log.debug("Clean up GORM")
 
     // flush and clear the session.
     session.flush()

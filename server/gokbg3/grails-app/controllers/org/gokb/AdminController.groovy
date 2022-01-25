@@ -351,7 +351,6 @@ class AdminController {
   def cleanJobList() {
     log.debug("clean job list..")
     def jobs = concurrencyManagerService.jobs
-    def maxId = jobs.max { it.key }.key
 
     jobs.each { k, j ->
       if (j.isDone()) {
