@@ -18,7 +18,7 @@ class PlatformService {
     def matches = new HashMap()
     Boolean viable_url = false
 
-    if (platformDTO.name.startsWith("http")) {
+    if (platformDTO.name?.startsWith("http")) {
       try {
         log.debug("checking if platform name is an URL..")
 
@@ -42,9 +42,9 @@ class PlatformService {
       }
     }
 
-    def name_candidates = Platform.executeQuery("from Platform where name = ? and status != ? ", [platformDTO.name, status_deleted])
+    def name_candidates = Platform.findAllByNameIlikeAndStatusNotEqual(platformDTO.name?.trim(), status_deleted)
 
-    name_candidates.each {
+    name_candidates?.each {
       if (!matches[it.id]) {
         matches[it.id] = []
       }

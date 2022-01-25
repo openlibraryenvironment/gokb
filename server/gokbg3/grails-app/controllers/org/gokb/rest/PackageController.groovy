@@ -427,7 +427,7 @@ class PackageController {
       if (prov && prov != obj.provider) {
         obj.provider = prov
       }
-      else {
+      else if (!prov) {
         errors.provider = [[message: "Could not find provider Org with id ${reqBody.provider}!", baddata: reqBody.provider]]
       }
     }
@@ -449,7 +449,7 @@ class PackageController {
       if (plt && plt != obj.nominalPlatform) {
         obj.nominalPlatform = plt
       }
-      else {
+      else if (!plt) {
         errors.nominalPlatform = [[message: "Could not find platform with id ${reqBody.nominalPlatform}!", baddata: plt_id]]
       }
     }

@@ -287,7 +287,6 @@ class CuratoryGroupsController {
       }
       else{
         try{
-          superordinate.subordinatedGroups << subordinate
           subordinate.superordinatedGroup = superordinate
           result.result = 'OK'
           response.setStatus(200)
