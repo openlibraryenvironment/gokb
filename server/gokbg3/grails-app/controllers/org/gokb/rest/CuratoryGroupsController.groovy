@@ -281,6 +281,7 @@ class CuratoryGroupsController {
     else {
       CuratoryGroup superordinate = CuratoryGroup.get(genericOIDService.oidToId(params.superordinateId))
       CuratoryGroup subordinate = CuratoryGroup.get(genericOIDService.oidToId(params.subordinateId))
+
       if (!superordinate || !subordinate) {
         response.status = 404
         result.message = "CuratoryGroup combination not found for superordinate id ${params.superordinateId} and subordinate id ${params.subordinateId}."
@@ -289,7 +290,7 @@ class CuratoryGroupsController {
         response.status = 400
         result.message = "One or both of the provided groups do not have any type set."
       }
-      else if (superordinate.type.level.levelNumber == 75) {
+      else if (superordinate.type.level == CuratoryGroupType.Level.CENTRAL) {
         response.status = 409
         result.message = "Setting a central group as superordinate is not permissible."
       }
