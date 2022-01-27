@@ -283,4 +283,148 @@ class TitleAugmentService {
 
     // {"status":"ok","message-type":"journal-list","message-version":"1.0.0","message":{"items":[],"total-results":39790,"query":{"search-terms":null,"start-index":70000},"items-per-page":20}}
   }
+
+  def TitleInstance addPerson (person_name, role, ti, user = null, project = null) {
+    if (person_name && person_name.trim()) {
+      def norm_person_name = KBComponent.generateNormname(person_name)
+      def person = org.gokb.cred.Person.findAllByNormname(norm_person_name)
+      // log.debug("this was found for person: ${person}");
+      switch (person.size()) {
+        case 0:
+          // log.debug("Person lookup yielded no matches.")
+          def the_person = new Person(name: person_name, normname: norm_person_name)
+
+          if (the_person.save(failOnError: true, flush: true)) {
+            // log.debug("saved ${the_person.name}")
+            person << the_person
+            ReviewRequest.raise(
+            ti,
+            "'${the_person}' added as ${role.value} of '${ti.name}'.",
+              "This person did not exist before, so has been newly created",
+            user, project)
+          }
+          else {
+            the_person.errors.each { error ->
+              log.error("problem saving ${the_person.name}:${error}")
+            }
+          }
+        case 1:
+          def people = ti.getPeople() ?: []
+          // log.debug("ti.getPeople ${people}")
+          // Has the person ever existed in the list against this title.
+          boolean done = false;
+          for (cp in people) {
+            if (!done && cp.person.id == person[0].id && cp.role.id == role.id) {
+              done = true;
+            }
+          }
+
+          if (!done) {
+            def componentPerson = new ComponentPerson(component: ti, person: person, role: role)
+
+            // log.debug("people did not contain this person")
+            // First person added?
+
+            boolean not_first = people.size() > 0
+            boolean added = componentPerson.save(failOnError: true, flush: true)
+
+            if (!added) {
+              componentPerson.errors.each { error ->
+                log.error("problem saving ${componentPerson}:${error}")
+              }
+            }
+
+            // Raise a review request, if needed.
+            if (not_first && added) {
+              ReviewRequest.raise( ti,
+                      "Added '${person.name}' as ${role.value} on '${ti.name}'.",
+                      "Person supplied in ingested file is additional to any already present on BI.",
+                      user,
+                      project)
+            }
+          }
+          break
+        default:
+        // log.debug ("Person lookup yielded ${person.size()} matches. Not really sure which person to use, so not using any.")
+          break
+      }
+    }
+    ti
+  }
+
+  def TitleInstance addSubjects(the_subjects, the_title) {
+    if (the_subjects) {
+      for (the_subject in the_subjects) {
+        def norm_subj_name = KBComponent.generateNormname(the_subject)
+        def subject = Subject.findAllByNormname(norm_subj_name) //no alt names for subjects
+        // log.debug("this was found for subject: ${subject}")
+        if (!subject) {
+          // log.debug("subject not found, creating a new one")
+          subject = new Subject(name: the_subject, normname: norm_subj_name)
+          subject.save(failOnError: true, flush: true)
+        }
+        boolean done = false
+        def componentSubjects = the_title.subjects ?: []
+
+        for (cs in componentSubjects) {
+          if (!done && cs.subject.id == subject.id) {
+            done = true
+          }
+        }
+        if (!done) {
+          def cs = new ComponentSubject(component: the_title, subject: subject)
+          cs.save(failOnError: true, flush: true)
+        }
+      }
+    }
+    the_title
+  }
+
+  def TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
+    if (publisher_name != null && publisher_name.trim()) {
+      log.debug("Add publisher \"${publisher_name}\"")
+      Org publisher = Org.findByName(publisher_name)
+      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+      def norm_pub_name = Org.generateNormname(publisher_name)
+
+      if (!publisher) {
+        // Lookup using norm name.
+        log.debug("Using normname \"${norm_pub_name}\" for lookup")
+        publisher = Org.findByNormname(norm_pub_name)
+      }
+
+      if (!publisher || publisher.status == status_deleted) {
+        def variant_normname = GOKbTextUtils.normaliseString(publisher_name)
+        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?", [variant_normname, status_deleted])
+
+        if (candidate_orgs.size() == 1) {
+          publisher = candidate_orgs[0]
+        }
+        else if (candidate_orgs.size() == 0) {
+          publisher = new Org(name: publisher_name, normname: norm_pub_name).save(flush: true, failOnError: true)
+        }
+        else {
+          log.error("Unable to match unique pub")
+        }
+      }
+
+      // Found a publisher.
+      if (publisher) {
+        log.debug("Found publisher ${publisher}")
+        def orgs = ti.getPublisher()
+
+        // Has the publisher ever existed in the list against this title.
+        if (!orgs.contains(publisher)) {
+
+          // First publisher added?
+          boolean not_first = orgs.size() > 0
+
+          // Added a publisher?
+          ti.changePublisher(publisher)
+        }
+      }
+    }
+
+    ti
+  }
 }

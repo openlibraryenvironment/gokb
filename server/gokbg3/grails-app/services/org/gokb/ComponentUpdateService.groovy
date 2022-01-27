@@ -51,86 +51,15 @@ class ComponentUpdateService {
     ], data, component)
 
     // Identifiers
-    def data_identifiers = []
-    if (data instanceof JSONObject) {
-      data_identifiers = data.identifiers ?: []
-    }
-    else {
-      data_identifiers = data.ids ?: []
-    }
-    log.debug("Identifier processing ${data_identifiers}")
-    Set<String> ids = component.ids.collect { "${it.namespace?.value}|${Identifier.normalizeIdentifier(ci.value)}".toString() }
-    RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    RefdataValue combo_type_id = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
+    def data_identifiers = data.identifiers ?: data.ids
 
-    data_identifiers.each { ci ->
-      def namespace_val = ci.namespace?.value ?: ci.type
-      String testKey = "${namespace_val}|${Identifier.normalizeIdentifier(ci.value)}".toString()
-
-      if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {
-
-        if (!ids.contains(testKey)) {
-          def canonical_identifier = null
-
-          if (!KBComponent.has(component, 'publisher')) {
-            canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
-          }
-          else {
-            def norm_id = Identifier.normalizeIdentifier(ci.value)
-            def ns = IdentifierNamespace.findByValueIlike(namespace_val)
-            canonical_identifier = Identifier.findByNamespaceAndNormnameIlike(ns, norm_id)
-          }
-
-          log.debug("Checking identifiers of component ${component.id}")
-          if (canonical_identifier) {
-            def duplicate = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [canonical_identifier, component])
-
-            if (duplicate.size() == 0) {
-              log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
-              def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
-              hasChanged = true
-            }
-            else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
-              log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
-              reviewRequestService.raise(
-                component,
-                "Review ID status.",
-                "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
-                user,
-                null,
-                null,
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
-                componentLookupService.findCuratoryGroupOfInterest(component, user)
-              )
-            }
-            else {
-              log.debug("Identifier combo is already present, probably via titleLookupService.")
-            }
-          } else {
-            log.debug("Could not find or create Identifier!")
-          }
-        }
-      }
-    }
-
-    if (sync) {
-      log.debug("Cleaning up deprecated IDs ..")
-      component.ids.each { ci ->
-        if (!data_identifiers.collect { "${((it instanceof Identifier) ? it.namespace.value : it.type).toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString() }.contains("${ci.namespace.value}|${Identifier.normalizeIdentifier(ci.value)}".toString())) {
-          def ctr = Combo.executeQuery("from Combo as c where c.toComponent = ? and c.fromComponent = ?", [ci, component])
-
-          if (ctr.size() == 1) {
-            ctr[0].delete()
-            hasChanged = true
-          }
-        }
-      }
+    if (data_identifiers) {
+      hasChanged |= updateIdentifiers(component, data_identifiers, user, group, sync)
     }
 
     // Flags
     if (data.hasProperty('tags')) {
-      log.debug("Tag Processing: ${data.tags}");
+      log.debug("Tag Processing: ${data.tags}")
 
       data.tags.each { t ->
         log.debug("Adding tag ${t.type},${t.value}")
@@ -174,7 +103,7 @@ class ComponentUpdateService {
       }
     }
 
-    checkCuratoryGroups(component, data, combo_active, sync, hasChanged)
+    hasChanged |= checkCuratoryGroups(component, data, sync)
 
     if (data.additionalProperties) {
       Set<String> props = component.additionalProperties.collect { "${it.propertyDefn?.propertyName}|${it.apValue}".toString() }
@@ -207,7 +136,7 @@ class ComponentUpdateService {
     // Variant names.
     if (data.variantNames) {
       for (String name : data.variantNames) {
-        if (name?.trim().size() > 0 && !variants.find { it.variantName == name }) {
+        if (name?.trim() && !variants.find { it.variantName == name }) {
           // Add the variant name.
           log.debug("Adding variantName ${name} to ${component} ..")
 
@@ -259,13 +188,17 @@ class ComponentUpdateService {
     hasChanged
   }
 
-  private void checkCuratoryGroups(KBComponent component, data, combo_active, boolean sync, hasChanged){
+  private def checkCuratoryGroups(KBComponent component, data, boolean sync){
     // If this is a component that supports curatoryGroups we should check for them.
+    boolean hasChanged = false
+
     if (KBComponent.has(component, 'curatoryGroups')){
       log.debug("Handling Curatory Groups ..")
       def groups = component.curatoryGroups.collect{ [id: it.id, name: it.name] }
 
-      def combo_type_cg = RefdataCategory.lookup('Combo.Type', component.getComboTypeValue('curatoryGroups'))
+      RefdataValue combo_type_cg = RefdataCategory.lookup('Combo.Type', component.getComboTypeValue('curatoryGroups'))
+      RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+
       data.curatoryGroups?.each{ String name ->
         if (!groups.find{ it.name.toLowerCase() == name.toLowerCase() }){
           def group = CuratoryGroup.findByNormname(CuratoryGroup.generateNormname(name))
@@ -297,19 +230,22 @@ class ComponentUpdateService {
     else{
       log.debug("Skipping CuratoryGroup handling for component ${component.id} ..")
     }
+
+    hasChanged
   }
 
-  def updateIdentifiers(component, Map new_ids, User user = null, CuratoryGroup group = null, boolean remove = false) {
-    Set<String> existing_ids = component.ids.collect { "${it.namespace?.value}|${Identifier.normalizeIdentifier(ci.value)}".toString() }
+  def updateIdentifiers(component, new_ids, User user = null, CuratoryGroup group = null, boolean remove = false) {
+    boolean hasChanged = false
+    Set<String> existing_ids = component.ids.collect { "${it.namespace?.value}|${Identifier.normalizeIdentifier(it.value)}".toString() }
     RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
     RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
     new_ids.each { ci ->
       def namespace_val = ci.type ?: ci.namespace
-      String testKey = "${ci.type}|${ci.value}".toString()
+      String testKey = "${namespace_val}|${ci.value}".toString()
 
-      if (namespace_val && ci.value && ci.type.toLowerCase() != "originediturl") {
+      if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {
         if (!existing_ids.contains(testKey)) {
           def canonical_identifier = componentLookupService.lookupOrCreateCanonicalIdentifier(namespace_val, ci.value)
 
@@ -319,6 +255,7 @@ class ComponentUpdateService {
             if (duplicate.size() == 0) {
               log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
               def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
+              hasChanged = true
             } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
@@ -354,10 +291,12 @@ class ComponentUpdateService {
           if (ctr.size() == 1) {
             log.debug("Removing stale ID ${ci} from ${component}")
             ctr[0].delete()
+            hasChanged = true
           }
         }
       }
     }
+    hasChanged
   }
 
   public boolean setAllRefdata(propNames, data, target, boolean createNew = false) {
