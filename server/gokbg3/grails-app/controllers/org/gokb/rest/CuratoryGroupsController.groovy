@@ -271,30 +271,44 @@ class CuratoryGroupsController {
     def result = ['result':'ERROR',
                   'params': params]
     if (!params.superordinateId || !params.subordinateId){
-      response.setStatus(422)
+      response.status = 422
       result.message = "Missing params. Requested parameters are 'superordinateId' and 'subordinateId'"
     }
-    else{
+    else if (params.superordinateId == params.subordinateId) {
+      response.status = 422
+      result.message = "A group cannot be set as its own superordinate."
+    }
+    else {
       CuratoryGroup superordinate = CuratoryGroup.get(genericOIDService.oidToId(params.superordinateId))
       CuratoryGroup subordinate = CuratoryGroup.get(genericOIDService.oidToId(params.subordinateId))
-      if (!superordinate || !subordinate){
-        response.setStatus(404)
+
+      if (!superordinate || !subordinate) {
+        response.status = 404
         result.message = "CuratoryGroup combination not found for superordinate id ${params.superordinateId} and subordinate id ${params.subordinateId}."
       }
-      else if (!(superordinate.type.level > subordinate.type.level)){
-        response.setStatus(409)
+      else if (!subordinate.type || !superordinate.type) {
+        response.status = 400
+        result.message = "One or both of the provided groups do not have any type set."
+      }
+      else if (superordinate.type.level == CuratoryGroupType.Level.CENTRAL) {
+        response.status = 409
+        result.message = "Setting a central group as superordinate is not permissible."
+      }
+      else if (!(superordinate.type?.level > subordinate.type?.level)){
+        response.status = 409
         result.message = "The given CuratoryGroups are not connectable in the requested way for hierarchic reasons."
       }
-      else{
-        try{
-          superordinate.subordinatedGroups << subordinate
+      else {
+        try {
           subordinate.superordinatedGroup = superordinate
+          subordinate.save(flush: true)
           result.result = 'OK'
-          response.setStatus(200)
+          response.status = 200
           result.message = "Curatory Groups have been connected."
         }
-        catch(Exception e){
-          response.setStatus(500)
+        catch (Exception e) {
+          e.printStackTrace()
+          response.status = 500
           result.message = "Could not process request to connect CuratoryGroups."
         }
       }
