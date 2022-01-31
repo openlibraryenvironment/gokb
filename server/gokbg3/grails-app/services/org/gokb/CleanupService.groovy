@@ -466,6 +466,8 @@ class CleanupService {
     }
 
     int total = results.size()
+    log.debug("Got ${total} candidates: ${results}")
+
     long projected_deletes = 0
     def to_delete = []
     for (int i=0; i<total; i++) {
@@ -483,7 +485,7 @@ class CleanupService {
       // 3 = Number of occurances
       projected_deletes += (result[3] - 1)
       while (i<(total - 1) && from_id == results[i+1][1] && to_id == results[i+1][2]) {
-
+        log.debug("Adding deletion for ${results[i]}")
         // Increment i here so we keep the index up to date for the outer loop too!
         i++
         to_delete << results[i][0]
