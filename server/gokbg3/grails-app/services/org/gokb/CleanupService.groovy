@@ -456,7 +456,7 @@ class CleanupService {
 
     // Use Groovy with() method to invoke multiple methods
     // on the sqlQuery object.
-      final results = sqlQuery.with {
+    final results = sqlQuery.with {
 
         // Set value for parameter startId.
       setLong('rdvId', id_combo_type_id)
@@ -482,12 +482,7 @@ class CleanupService {
 
       // 3 = Number of occurances
       projected_deletes += (result[3] - 1)
-      while (i<(total - 1) && from_id == results[i+1][1] && to_id == results[i+1][2]) {
-
-        // Increment i here so we keep the index up to date for the outer loop too!
-        i++
-        to_delete << results[i][0]
-      }
+      to_delete << results[i][0]
     }
 
     // We can also check the number of occurances from the query as an added safety check.
