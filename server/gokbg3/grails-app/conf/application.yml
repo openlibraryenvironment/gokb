@@ -159,8 +159,10 @@ environments:
                 enabled: false
             zdbAugment:
                 enabled: false
+                rrCurators: ZDB
             ezbAugment:
                 enabled: false
+                rrCurators: EZB
             es:
                 cluster: gokbg3-dev
                 host: localhost
@@ -204,8 +206,10 @@ environments:
                 enabled: false
             zdbAugment:
                 enabled: false
+                rrCurators: ZDB
             ezbAugment:
                 enabled: false
+                rrCurators: EZB
             es:
                 cluster: gokbg3-test
                 host: localhost
@@ -258,8 +262,10 @@ environments:
                 enabled: true
             zdbAugment:
                 enabled: false
+                rrCurators: ZDB
             ezbAugment:
                 enabled: false
+                rrCurators: EZB
             ygorUrl: null
             languagesUrl : null
             es:

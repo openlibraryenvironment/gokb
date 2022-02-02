@@ -15,7 +15,8 @@ class TitleAugmentService {
 
   def augmentZdb(titleInstance) {
     log.debug("Augment ZDB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
-    CuratoryGroup editorialGroup = grailsApplication.config.gokb.editorialAdmin?.journals ? CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.editorialAdmin.journals) : null
+    CuratoryGroup editorialGroup = grailsApplication.config.gokb.zdbAugment?.rrCurators ?
+        CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.zdbAugment.rrCurators) : null
 
     if ( titleInstance.niceName == 'Journal' ) {
       def rr_in_use = RefdataCategory.lookup('ReviewRequest.StdDesc', 'ZDB Title Overlap')
@@ -179,7 +180,8 @@ class TitleAugmentService {
 
   def augmentEzb(titleInstance) {
     log.debug("Augment EZB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
-    CuratoryGroup editorialGroup = grailsApplication.config.gokb.editorialAdmin?.journals ? CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.editorialAdmin.journals) : null
+    CuratoryGroup editorialGroup = grailsApplication.config.gokb.ezbAugment?.rrCurators ?
+        CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.ezbAugment.rrCurators) : null
 
     if ( titleInstance.niceName == 'Journal' ) {
       def rr_multi_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple EZB Results')
