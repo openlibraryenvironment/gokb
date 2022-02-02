@@ -18,7 +18,7 @@ class CuratoryGroup extends KBComponent {
     includes KBComponent.mapping
   }
 
-  static mappedBy = [users: "curatoryGroups", ]
+  static mappedBy = [users: "curatoryGroups", subordinatedGroups: "superordinatedGroup"]
 
   static manyByCombo = [
     licenses: License,
