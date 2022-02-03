@@ -552,20 +552,6 @@ class ReviewsController {
         return result
       }
     }
-
-    CuratoryGroup editorialGroup = grailsApplication.config.gokb.centralGroups &&
-        grailsApplication.config.gokb.centralGroups[componentClass] ?
-        CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.centralGroups[componentClass]) : null
-    CuratoryGroup escalatedToCG = escalatingGroup.superordinatedGroup
-    if (!escalatedToCG && componentClass == "JournalInstance" && escalatingGroup != editorialGroup){
-      escalatedToCG = editorialGroup
-    }
-    if (!escalatedToCG){
-      response.status = 409
-      result.message = "Could not escalate due to missing superordinated group."
-      return result
-    }
-
     // all conditions are met
     response.status = 200
     result.result = 'OK'

@@ -21,7 +21,7 @@ class AugmentJob {
 
   def augZdb() {
     if (grailsApplication.config.gokb.zdbAugment.enabled) {
-      log.info("Starting ZDB augment job.");
+      log.info("Starting ZDB augment job.")
       def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
       def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
       def zdbNs = IdentifierNamespace.findByValue('zdb')
@@ -32,12 +32,12 @@ class AugmentJob {
       int offset = 0
       int batchSize = 50
 
-      def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) from JournalInstance as ti where ti.status = :current and not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)",[current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs])[0]
+      def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) from JournalInstance as ti where ti.status = :current and not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)", [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs])[0]
 
       // find the next 100 titles that don't have a ZDB-ID
       while (offset < count_journals_without_zdb_id) {
-        def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id from JournalInstance as ti where ti.status = :current and not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)",[current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs],[offset: offset, max: batchSize])
-        log.debug("Processing ${count_journals_without_zdb_id} journals.")
+        def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id from JournalInstance as ti where ti.status = :current and not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)", [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs], [offset: offset, max: batchSize])
+        log.debug("Processing ${count_journals_without_zdb_id} journals for ZDB enrichment.")
         journals_without_zdb_id.each { ti_id ->
           def ti = TitleInstance.get(ti_id)
           log.debug("Attempting zdb augment on ${ti.id} ${ti.name}")
@@ -81,7 +81,7 @@ class AugmentJob {
   }
 
   def cleanUpGorm() {
-    log.debug("Clean up GORM");
+    log.debug("Clean up GORM")
     def session = sessionFactory.currentSession
     session.flush()
     session.clear()
