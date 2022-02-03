@@ -247,4 +247,47 @@ class GOKbTextUtils {
     }
     result
   }
+
+  public static String cleanTitleString(String title) {
+    if (title) {
+      title = removeSpaces(escapeBackslashes(title.trim()))
+
+      if (title.indexOf('@') > 0 && title.indexOf(' @') < 8) {
+        title = title.replaceFirst(/\s@/, ' ')
+      }
+    }
+
+    return title
+  }
+
+  /**
+   * Removes double spaces. Removes leading and ending spaces.
+   * Returns null if null given.
+   * Returns "" if empty string given
+   *
+   * @param str
+   * @return
+   */
+  static String removeSpaces(String str) {
+    if (!str){
+      return str
+    }
+    return str.replaceAll(/\s+/, " ").replaceAll(/\s*:\s*/, ": ").replaceAll(/\s*,\s*/, ", ")
+  }
+
+
+  /**
+   * Removes double spaces. Removes leading and ending spaces.
+   * Returns null if null given.
+   * Returns "" if empty string given
+   *
+   * @param str
+   * @return
+   */
+  static String escapeBackslashes(String str) {
+    if (!str){
+      return str
+    }
+    return str.replaceAll("\b", "\\\\b").replaceAll("\n", "\\\\n")
+  }
 }
