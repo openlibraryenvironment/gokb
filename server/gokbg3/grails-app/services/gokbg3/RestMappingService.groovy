@@ -16,6 +16,7 @@ class RestMappingService {
   def genericOIDService
   def classExaminationService
   def componentLookupService
+  def componentUpdateService
   def messageSource
   def messageService
   def dateFormatService
@@ -71,8 +72,7 @@ class RestMappingService {
     def base = grailsApplication.config.serverURL + "/rest"
     def curatedClass = obj.respondsTo('curatoryGroups')
     def jsonMap = null
-    def is_curator = true
-    def userGroups = user ? user.curatoryGroups : null
+    def is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
@@ -82,23 +82,9 @@ class RestMappingService {
       result['_links'] = [:]
       result['_links']['self'] = ['href': base + obj.restPath + "/${obj.id}"]
 
-      if (curatedClass && obj.curatoryGroups?.size() > 0) {
-        is_curator = user?.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
-      }
-
-      if (obj.class.simpleName == 'TitleInstancePackagePlatform' && obj.pkg?.curatoryGroups?.size() > 0) {
-        is_curator = userGroups ? userGroups.id.intersect(obj.pkg.curatoryGroups?.id) : false
-      }
-
-      if (obj.class.simpleName == 'ReviewRequest' && obj.allocatedGroups?.size() > 0) {
-        def allocated_groups = obj.allocatedGroups?.collect { arg -> [id: arg.group.id] } ?: []
-
-        is_curator = userGroups ? userGroups.id.intersect(allocated_groups.id) : false
-      }
-
       result.type = obj.niceName
 
-      def href = (obj.isEditable() && is_curator) || user?.isAdmin() ? base + obj.restPath + "/${obj.id}" : null
+      def href = ((obj.isEditable() && is_curator) || user?.isAdmin()) ? base + obj.restPath + "/${obj.id}" : null
       result._links.update = ['href': href]
       result._links.delete = ['href': href]
 
