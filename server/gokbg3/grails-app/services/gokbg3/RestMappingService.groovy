@@ -850,6 +850,49 @@ class RestMappingService {
     result
   }
 
+  def updatePrices(obj, prices, boolean remove = true) {
+    def result = [changed: false, errors: []]
+    def existing_prices = obj.prices
+    def new_prices = []
+
+    try {
+      prices?.each { price ->
+        if (price.price || price.amount) {
+          def item = obj.setPrice(String.isInstance(price.type) ? price.type : price.type.name,
+              "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
+              price.startDate ? dateFormatService.parseDate(price.startDate) : null,
+              price.endDate ? dateFormatService.parseDate(price.endDate) : null)
+
+          if (item) {
+            new_list << item
+            result.changed = true
+          }
+        }
+      }
+
+      if (remove == true) {
+        Iterator items = existing_prices.iterator()
+        Object element
+
+        while (items.hasNext()) {
+          element = items.next()
+
+          if (!new_prices.contains(element)) {
+            // Remove.
+            element.delete()
+            result.changed = true
+          }
+        }
+      }
+    }
+    catch (Exception e) {
+      log.debug("Unable to process prices:", e)
+      result.errors << [message: "Unable to process prices!", code: 500, baddata: prices]
+    }
+
+    result
+  }
+
   @Transactional
   public def updatePublisher(obj, new_pubs, boolean remove = true) {
     def result = [changed: false, errors: []]
@@ -862,7 +905,7 @@ class RestMappingService {
 
     if (new_pubs instanceof Collection) {
       new_pubs.each { pub ->
-        if (!pubs_to_add.collect { it.id == pub }) {
+        if (!pubs_to_add.findAll { it.id == pub }) {
           pubs_to_add << Org.get(pub)
         }
         else {
@@ -871,7 +914,7 @@ class RestMappingService {
       }
     }
     else {
-      if (!pubs_to_add.collect { it.id == new_pubs }) {
+      if (!pubs_to_add.findAll { it.id == new_pubs }) {
         pubs_to_add << Org.get(new_pubs)
       }
       else {

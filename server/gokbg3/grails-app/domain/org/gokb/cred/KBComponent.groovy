@@ -1500,17 +1500,18 @@ where cp.owner = :c
   /**
    * Set a price formatted as "nnnn.nn" or "nnnn.nn CUR"
    */
-  public void setPrice(String type, String price, Date startDate = null, Date endDate = null) {
-    Float f = null;
-    RefdataValue rdv_type = null;
-    RefdataValue rdv_currency = null;
+  public ComponentPrice setPrice(String type, String price, Date startDate = null, Date endDate = null) {
+    def result = null
+    Float f = null
+    RefdataValue rdv_type = null
+    RefdataValue rdv_currency = null
 
     if (price) {
-      Date today = todayNoTime()
+      Date today = java.sql.Timestamp.valueOf(LocalDate.now().atStartOfDay())
       Date start = startDate ?: today
       Date end = endDate
 
-      String[] price_components = price.trim().split(' ');
+      String[] price_components = price.trim().split(' ')
       f = Float.parseFloat(price_components[0])
       rdv_type = RefdataCategory.lookupOrCreate('Price.type', type ?: 'list').save(flush: true, failOnError: true)
 
@@ -1534,8 +1535,10 @@ where cp.owner = :c
         // enter the new price
         prices << cp
         save()
+        result = cp
       }
     }
+    result
   }
 
   @Transient
