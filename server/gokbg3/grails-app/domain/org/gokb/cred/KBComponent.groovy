@@ -12,6 +12,7 @@ import grails.plugins.orm.auditable.AuditEventType
 import org.gokb.GOKbTextUtils
 
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 
 /**
  * Abstract base class for GoKB Components.
@@ -1513,10 +1514,10 @@ where cp.owner = :c
 
       String[] price_components = price.trim().split(' ')
       f = Float.parseFloat(price_components[0])
-      rdv_type = RefdataCategory.lookupOrCreate('Price.type', type ?: 'list').save(flush: true, failOnError: true)
+      rdv_type = RefdataCategory.lookup('Price.type', type ?: 'list').save(flush: true, failOnError: true)
 
       if (price_components.length == 2) {
-        rdv_currency = RefdataCategory.lookupOrCreate('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
+        rdv_currency = RefdataCategory.lookup('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
       }
 
       ComponentPrice cp = new ComponentPrice(

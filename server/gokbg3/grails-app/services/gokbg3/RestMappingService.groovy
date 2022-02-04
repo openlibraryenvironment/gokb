@@ -3,6 +3,7 @@ package gokbg3
 import com.k_int.ClassUtils
 
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 import org.gokb.cred.*
 import org.gokb.GOKbTextUtils
@@ -152,7 +153,7 @@ class RestMappingService {
         else {
           switch (p.type) {
             case Long.class:
-              result[p.name] = obj[p.name] ? "${obj[p.name]}" : null;
+              result[p.name] = obj[p.name] ? "${obj[p.name]}" : null
               break;
 
             case Date.class:
@@ -852,41 +853,54 @@ class RestMappingService {
 
   def updatePrices(obj, prices, boolean remove = true) {
     def result = [changed: false, errors: []]
-    def existing_prices = obj.prices
+    def existing_prices_ids = obj.prices?.collect { it.id }
     def new_prices = []
 
     try {
       prices?.each { price ->
         if (price.price || price.amount) {
-          def item = obj.setPrice(String.isInstance(price.type) ? price.type : price.type.name,
-              "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
-              price.startDate ? dateFormatService.parseDate(price.startDate) : null,
-              price.endDate ? dateFormatService.parseDate(price.endDate) : null)
+          boolean valid = true
+          LocalDateTime parsedStart = GOKbTextUtils.completeDateString(price.startDate)
+          LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(price.endDate, false)
+          Date startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+          Date endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+          def type_val = price.type ?: price.priceType
 
-          if (item) {
-            new_list << item
-            result.changed = true
+          if (type_val instanceof Map) {
+            type_val = type_val.name ?: type.value
+          }
+
+          if (parsedStart && parsedEnd && parsedEnd < parsedStart) {
+            valid = false
+            result.errors << [message: "Price end date must be after its start date!", code: 500, baddata: price]
+          }
+
+          if (valid) {
+            def item = obj.setPrice(type_val,
+                "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
+                price.startDate ? dateFormatService.parseDate(price.startDate) : null,
+                price.endDate ? dateFormatService.parseDate(price.endDate) : null)
+
+            if (item) {
+              new_prices << item
+              result.changed = true
+            }
           }
         }
       }
 
       if (remove == true) {
-        Iterator items = existing_prices.iterator()
-        Object element
-
-        while (items.hasNext()) {
-          element = items.next()
-
-          if (!new_prices.contains(element)) {
-            // Remove.
-            element.delete()
-            result.changed = true
+        existing_prices_ids.each { ep ->
+          if (!new_prices.findAll { it.id == ep }) {
+            ComponentPrice cp_to_delete = ComponentPrice.get(ep)
+            obj.removeFromPrices(cp_to_delete)
+            cp_to_delete.delete()
           }
         }
       }
     }
     catch (Exception e) {
-      log.debug("Unable to process prices:", e)
+      log.error("Unable to process prices:", e)
       result.errors << [message: "Unable to process prices!", code: 500, baddata: prices]
     }
 

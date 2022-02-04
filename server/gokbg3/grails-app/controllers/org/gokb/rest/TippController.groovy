@@ -199,6 +199,7 @@ class TippController {
           obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
           if (reqBody.variantNames != null) {
+            log.debug("Updating variantNames ..")
             def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
 
             if (variant_result.errors.size() > 0) {
@@ -207,6 +208,7 @@ class TippController {
           }
 
           if (reqBody.prices != null) {
+            log.debug("Updating prices ..")
             def prices_result = restMappingService.updatePrices(obj, reqBody.prices, remove)
 
             if (prices_result.errors.size() > 0) {
