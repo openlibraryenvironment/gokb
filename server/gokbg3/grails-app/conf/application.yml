@@ -157,6 +157,8 @@ environments:
                 enabled: false
             packageOaiCaching:
                 enabled: false
+            augment:
+                cron: "0 30 * * * ? *"
             zdbAugment:
                 enabled: false
                 rrCurators: ZDB
@@ -204,6 +206,8 @@ environments:
                 enabled: false
             packageOaiCaching:
                 enabled: false
+            augment:
+                cron: "0 30 * * * ? *"
             zdbAugment:
                 enabled: false
                 rrCurators: ZDB
@@ -260,6 +264,8 @@ environments:
                 enabled: false
             packageOaiCaching:
                 enabled: true
+            augment:
+                cron: "0 30 * * * ? *"
             zdbAugment:
                 enabled: false
                 rrCurators: ZDB

@@ -9,9 +9,8 @@ class AugmentJob {
   def titleAugmentService
   def sessionFactory
 
-  // Every five minutes
   static triggers = {
-    cron name: 'TitleAugmentJobTrigger', cronExpression: "0 30 * * * ? *", startDelay:60000
+    // see Bootstrap.groovy
   }
 
   def execute() {

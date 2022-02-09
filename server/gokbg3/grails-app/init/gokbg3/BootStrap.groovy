@@ -5,6 +5,7 @@ import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
 import org.apache.commons.collections.CollectionUtils
+import org.gokb.AugmentJob
 import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
@@ -235,7 +236,9 @@ class BootStrap {
         log.debug("Checking for missing component statistics")
         ComponentStatisticService.updateCompStats()
 
-        log.info("GoKB Init complete");
+        AugmentJob.schedule(grailsApplication.config.gokb.augment.cron)
+
+        log.info("GoKB Init complete")
     }
 
     private Object ensureCuratoryGroup(String groupName){
