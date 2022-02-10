@@ -152,6 +152,22 @@ class RestMappingService {
         }
         else {
           switch (p.type) {
+            case Float.class:
+              if (p.name == 'price') {
+                String pstring = obj[p.name] ? "${obj[p.name].trunc(2)}" : null
+
+                if (pstring) {
+                  if (!pstring.contains('.')) {
+                    pstring += ".00"
+                  }
+                  else if (pstring.indexOf('.') == pstring.length() - 2) {
+                    pstring += "0"
+                  }
+                }
+
+                result[p.name] = pstring
+                break
+              }
             case Long.class:
               result[p.name] = obj[p.name] ? "${obj[p.name]}" : null
               break;
@@ -878,14 +894,20 @@ class RestMappingService {
           if (valid) {
             def item = obj.setPrice(type_val,
                 "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
-                price.startDate ? dateFormatService.parseDate(price.startDate) : null,
-                price.endDate ? dateFormatService.parseDate(price.endDate) : null)
+                startAsDate,
+                endAsDate)
 
             if (item) {
               new_prices << item
               result.changed = true
             }
+            else if (price.id) {
+              new_prices << ComponentPrice.get(price.id)
+            }
           }
+        }
+        else {
+          result.errors << [message: "Skipping invalid price!", code: 500, baddata: price]
         }
       }
 
