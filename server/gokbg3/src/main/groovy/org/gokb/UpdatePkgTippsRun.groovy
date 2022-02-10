@@ -166,8 +166,7 @@ class UpdatePkgTippsRun {
           log.debug("Handling #$idx TIPP ${json_tipp.name ?: json_tipp.title.name}")
 
           if ((json_tipp.package == null) && (pkg.id)) {
-            json_tipp.package = [internalId: pkg.id,
-                                 updateDate: rjson.packageHeader.fileNameDate ? dateFormatService.parseDate(rjson.packageHeader.fileNameDate) : new Date()]
+            json_tipp.package = [internalId: pkg.id]
           }
           else {
             log.error("No package")
@@ -501,7 +500,7 @@ class UpdatePkgTippsRun {
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                   'publisherName'              : tippJson.publisherName,
                   'importId'                   : tippJson.titleId ?: null,
-                  'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : tippJson.package.updateDate,
+                  'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : null,
                   'accessEndDate'              : tippJson.accessEndDate ? dateFormatService.parseDate(tippJson.accessEndDate) : null]
           ).save(flush:true)
 
@@ -597,7 +596,7 @@ class UpdatePkgTippsRun {
                     'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                     'publisherName'              : tippJson.publisherName,
                     'importId'                   : tippJson.titleId ?: null,
-                    'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : tippJson.package.updateDate,
+                    'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : null,
                     'accessEndDate'              : tippJson.accessEndDate ? dateFormatService.parseDate(tippJson.accessEndDate) : null]
             ).save(flush:true)
 
