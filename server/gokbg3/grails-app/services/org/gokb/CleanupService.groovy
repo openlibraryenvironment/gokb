@@ -466,6 +466,8 @@ class CleanupService {
     }
 
     int total = results.size()
+    log.debug("Got ${total} candidates: ${results}")
+
     long projected_deletes = 0
     def to_delete = []
     for (int i=0; i<total; i++) {

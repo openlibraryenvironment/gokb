@@ -516,6 +516,19 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def zdbSync() {
+    Job j = concurrencyManagerService.createJob { job ->
+      titleAugmentService.syncZdbInfo(job)
+    }.startOrQueue()
+
+    log.debug "Triggering ZDB sync, job #${j.uuid}"
+    j.description = "Update journal information from ZDB data"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Sync ZDB data')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   @Secured(['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'])
   def setupAcl() {
 

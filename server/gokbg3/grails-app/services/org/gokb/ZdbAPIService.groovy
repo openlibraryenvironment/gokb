@@ -30,6 +30,10 @@ class ZdbAPIService {
       kxp: "pica.iss=",
       zdb: "dnb.iss="
     ],
+    zdbTerm: [
+      kxp: "pica.zdb=",
+      zdb: "dnb.zdbid="
+    ],
     onlineOnly: [
       kxp: " and pica.bbg=O*",
       zdb: " and dnb.frm=O"
@@ -88,10 +92,10 @@ class ZdbAPIService {
   }
 
   def lookup(String name, def ids) {
-    def candidate_ids = [direct: [], parallel: []]
+    def candidate_ids = [direct: [], parallel: [], matched: []]
 
     ids.each { id ->
-      if (id.namespace.value == 'eissn' || id.namespace.value == 'issn') {
+      if (id.namespace.value == 'eissn' || id.namespace.value == 'issn' || id.namespace.value == 'zdb') {
         try {
           new RESTClient(config.baseUrl[endpoint]).request(GET, ContentType.XML) { request ->
             uri.query = [
@@ -99,7 +103,7 @@ class ZdbAPIService {
               operation: "searchRetrieve",
               recordSchema: config.recordSchema[endpoint],
               maximumRecords: "10",
-              query: config.issTerm[endpoint] + id.value + config.onlineOnly[endpoint]
+              query: (id.namespace.value == 'zdb' ? config.zdbTerm[endpoint] : config.issTerm[endpoint]) + id.value + config.onlineOnly[endpoint]
             ]
 
             response.success = { resp, data ->
@@ -124,6 +128,9 @@ class ZdbAPIService {
                     else if (!candidate_ids.parallel.find { it.id == zdb_info.id }) {
                       candidate_ids.parallel.add(zdb_info)
                     }
+                    else if (id.namespace.value == 'zdb') {
+                      candidate_ids.matched.add(zdb_info)
+                    }
                   }
                 }
               }
@@ -135,8 +142,10 @@ class ZdbAPIService {
         }
       }
     }
-
-    if (candidate_ids.direct.size() > 0) {
+    if (candidate_ids.matched.size() > 0) {
+      return candidate_ids.matched
+    }
+    else if (candidate_ids.direct.size() > 0) {
       return candidate_ids.direct
     }
     else {
@@ -176,8 +185,24 @@ class ZdbAPIService {
     def rec = record.recordData.record
 
     result.id = rec.global.'*'.find { it.@id == '006Z' }[0].text()
-    result.title = rec.global.'*'.find { it.@id == '021A' }.'*'.find {it.@id == 'a'}.text()
-    result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'a'}.text() ?: null
+    result.mainTitle = rec.global.'*'.find { it.@id == '021A' }.'*'.find {it.@id == 'a'}.text().trim()
+    result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'r'}.text()?.trim() ?: null
+
+    if (!result.subtitle) {
+      result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'a'}.text()?.trim() ?: null
+    }
+
+    result.displayTitle = rec.global.'*'.find { it.@id == '025@' }.'*'.find {it.@id == 'a'}.text()?.trim() ?: null
+
+    result.title = GOKbTextUtils.cleanTitleString(result.mainTitle)
+
+    if (result.subtitle) {
+      result.subtitle = GOKbTextUtils.cleanTitleString(result.subtitle)
+      result.title = result.title  + '. ' + result.subtitle
+    }
+    else if (result.displayTitle) {
+      result.title = GOKbTextUtils.cleanTitleString(result.displayTitle)
+    }
 
     def fromDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'a'}
     def toDate = rec.global.'*'.find { it.@id == '011@'}.'*'.find {it.@id == 'b'}
