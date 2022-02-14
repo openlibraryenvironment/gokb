@@ -4,13 +4,13 @@ import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
 import groovy.json.JsonOutput
-import org.apache.commons.lang.StringUtils
 import org.gokb.cred.AllocatedReviewGroup
 import org.gokb.cred.BookInstance
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.DatabaseInstance
 import org.gokb.cred.JournalInstance
 import org.gokb.cred.KBComponent
+import org.gokb.cred.Package
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.ReviewRequest
@@ -428,7 +428,7 @@ class ReviewsController {
       // No need to trigger an error then,
       // the date of interest is transferred by `isEscalatable`
       result.result = 'OK'
-      response.status 200
+      response.status = 200
     }
     render result as JSON
   }
@@ -557,7 +557,9 @@ class ReviewsController {
         grailsApplication.config.gokb.centralGroups[componentClass] ?
         CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.centralGroups[componentClass]) : null
     CuratoryGroup escalatedToCG = escalatingGroup.superordinatedGroup
-    if (!escalatedToCG && componentClass == "JournalInstance" && escalatingGroup != editorialGroup){
+    if (!escalatedToCG && escalatingGroup != editorialGroup &&
+        componentClass in [BookInstance.class.getSimpleName(), DatabaseInstance.class.getSimpleName(),
+                           JournalInstance.class.getSimpleName(), Package.class.getSimpleName()]){
       escalatedToCG = editorialGroup
     }
     if (!escalatedToCG){
