@@ -202,7 +202,7 @@ class JobsController {
       }
     }
     else if (onlyArchived && jobResult) {
-      if (user.superUserStatus || (job.ownerId && job.ownerId == user.id) || (job.groupId && user.curatoryGroups.find { it.id == job.groupId })) {
+      if (user.superUserStatus || (jobResult.ownerId && jobResult.ownerId == user.id) || (jobResult.groupId && user.curatoryGroups.find { it.id == jobResult.groupId })) {
         def linkedComponent = jobResult.linkedItemId ? KBComponent.get(jobResult.linkedItemId) : null
 
         result.uuid = jobResult.uuid
