@@ -164,10 +164,11 @@ class UpdatePkgTippsRun {
           idx++
           def currentTippError = [index: idx]
           log.debug("Handling #$idx TIPP ${json_tipp.name ?: json_tipp.title.name}")
-
           if ((json_tipp.package == null) && (pkg.id)) {
-            json_tipp.package = [internalId: pkg.id,
-                                 updateDate: rjson.packageHeader.fileNameDate ? dateFormatService.parseDate(rjson.packageHeader.fileNameDate) : new Date()]
+            json_tipp.package = [internalId: pkg.id]
+            if (rjson.packageHeader.fileNameDate) {
+              json_tipp.updateDate = dateFormatService.parseDate(rjson.packageHeader.fileNameDate)
+            }
           }
           else {
             log.error("No package")
@@ -221,7 +222,7 @@ class UpdatePkgTippsRun {
           job?.setProgress(idx, total*2)
 
           if (idx % 50 == 0) {
-            log.info("Clean up");
+            log.info("Clean up")
             cleanupService.cleanUpGorm()
           }
         }
@@ -268,7 +269,7 @@ class UpdatePkgTippsRun {
                 to_retire.save(failOnError: true)
 
                 if ((++removedNum) % 50 == 0) {
-                  log.debug("flush session");
+                  log.debug("flush session")
                   cleanupService.cleanUpGorm()
                 }
               }
@@ -310,7 +311,7 @@ class UpdatePkgTippsRun {
 
         tippService.matchPackage(pkg, job)
 
-        log.debug("final flush");
+        log.debug("final flush")
         cleanupService.cleanUpGorm()
 
         job?.setProgress(100)
@@ -676,11 +677,11 @@ class UpdatePkgTippsRun {
         // Probably, these tipp.status are overwritten already
         if (tipp.status != status_deleted && tippJson.status == "Deleted") {
           tipp.deleteSoft()
-          removedNum++;
+          removedNum++
         }
         else if (tipp.status != status_retired && tippJson.status == "Retired") {
           tipp.retire()
-          removedNum++;
+          removedNum++
         }
         else if (tipp.status != status_current && (!tippJson.status || tippJson.status == "Current")) {
           if (tipp.isDeleted() && !fullsync) {
