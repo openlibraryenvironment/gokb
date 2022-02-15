@@ -77,13 +77,13 @@ class IdentifierController {
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
       } else {
         result.message = "Object ID could not be resolved!"
-        response.setStatus(404)
+        response.status = 404
         result.code = 404
         result.result = 'ERROR'
       }
     } else {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 400
       result.code = 400
       result.message = 'No object id supplied!'
     }
@@ -123,7 +123,7 @@ class IdentifierController {
         }
         catch (Exception e) {
           result.message = "Unable to create Identifier: ${e.cause}"
-          response.setStatus(500)
+          response.status = 500
         }
 
         log.debug("After Identifier lookup: ${obj}")
@@ -152,14 +152,14 @@ class IdentifierController {
                 comp.save(flush:true)
 
                 params['_embed'] = params['_embed'] ?: 'identifiedComponents'
-                response.setStatus(201)
+                response.status = 201
 
                 result = restMappingService.mapObjectToJson(obj, params, user)
                 log.debug("Got mapped ID with component! ${result}")
               }
               else {
                 result.message = "Access to object was denied!"
-                response.setStatus(403)
+                response.status = 403
                 result.code = 403
                 result.result = 'ERROR'
               }
@@ -167,7 +167,7 @@ class IdentifierController {
             else {
               result.message = "Component could not be resolved!"
               result.badData = [component: reqBody.component]
-              response.setStatus(400)
+              response.status = 400
               result.code = 400
               result.result = 'ERROR'
             }
@@ -181,7 +181,7 @@ class IdentifierController {
       } else {
         result.message = "Namespace could not be resolved!"
         result.badData = [namespace: reqBody.namespace]
-        response.setStatus(400)
+        response.status = 400
         result.code = 400
         result.result = 'ERROR'
       }
@@ -192,7 +192,7 @@ class IdentifierController {
     if (errors) {
       result.result = 'ERROR'
       if (response.status == 200) {
-        response.setStatus(400)
+        response.status = 400
       }
       result.error = errors
     }
@@ -213,16 +213,16 @@ class IdentifierController {
         obj.deleteSoft()
       } else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     } else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 400
       result.message = "Package not found or empty request body!"
     } else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to delete this component!"
     }
     render result as JSON

@@ -25,7 +25,7 @@ appender('STDOUT', ConsoleAppender) {
 if (Environment.isDevelopmentMode() || Environment.current == Environment.TEST) {
   logger('com.k_int', DEBUG)
   logger('org.gokb', DEBUG)
-  logger('gokbg3', ERROR)
+  logger('gokbg3', INFO)
 
   logger('org.gokb.DomainClassExtender', WARN)
   logger('org.gokb.ClassExaminationService', WARN)
@@ -35,7 +35,7 @@ if (Environment.isDevelopmentMode() || Environment.current == Environment.TEST) 
   logger('org.gokb.UpdatePkgTippsRun', DEBUG)
   logger('org.gokb.PackageService', DEBUG)
   logger('org.gokb.TippService', DEBUG)
-  logger('org.gokb.CleanupService', INFO)
+  logger('org.gokb.CleanupService', DEBUG)
   logger('org.gokb.ComponentLookupService', INFO)
   logger('org.gokb.ComponentStatisticService', INFO)
   logger('org.gokb.ComponentUpdateService', DEBUG)

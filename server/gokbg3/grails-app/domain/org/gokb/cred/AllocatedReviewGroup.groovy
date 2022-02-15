@@ -7,12 +7,13 @@ class AllocatedReviewGroup implements Serializable {
   CuratoryGroup group
   ReviewRequest review
   RefdataValue status
+	AllocatedReviewGroup escalatedFrom
+
 
 	boolean equals(other) {
 		if (!(other instanceof AllocatedReviewGroup)) {
 			return false
 		}
-
 		other.group?.id == group?.id &&
 			other.review?.id == review?.id
 	}
@@ -30,7 +31,11 @@ class AllocatedReviewGroup implements Serializable {
 	}
 
 	static AllocatedReviewGroup create(CuratoryGroup grp, ReviewRequest rr, boolean flush = false) {
-		new AllocatedReviewGroup(group: grp, review: rr).save(flush: flush)
+		new AllocatedReviewGroup(
+				group: grp,
+				review: rr,
+				status: RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+		).save(flush: flush)
 	}
 
 	static boolean remove(CuratoryGroup group, ReviewRequest review, boolean flush = false) {
@@ -38,7 +43,6 @@ class AllocatedReviewGroup implements Serializable {
 		if (!instance) {
 			return false
 		}
-
 		instance.delete(flush: flush)
 		true
 	}
@@ -53,6 +57,7 @@ class AllocatedReviewGroup implements Serializable {
 
 	static mapping = {
 		id composite: ['review', 'group']
+		escalatedFrom column: 'arg_escalated_from'
 		version false
 	}
 

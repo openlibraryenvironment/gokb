@@ -6,16 +6,19 @@ class CuratoryGroup extends KBComponent {
 
   User owner
   String email
+  CuratoryGroupType type
+  CuratoryGroup superordinatedGroup
 
   static hasMany = [
     users: User,
+    subordinatedGroups: CuratoryGroup
   ]
 
   static mapping = {
     includes KBComponent.mapping
   }
 
-  static mappedBy = [users: "curatoryGroups", ]
+  static mappedBy = [users: "curatoryGroups", subordinatedGroups: "superordinatedGroup"]
 
   static manyByCombo = [
     licenses: License,
@@ -52,6 +55,8 @@ class CuratoryGroup extends KBComponent {
       }
     })
     email (nullable: true, blank: false, email: true)
+    superordinatedGroup (nullable:true, blank:false)
+    subordinatedGroups (empty:true)
   }
 
   public String getRestPath() {

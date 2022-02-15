@@ -137,14 +137,14 @@ class TitleController {
       }
       else {
         result.message = "Object ID could not be resolved!"
-        response.setStatus(404)
+        response.status = 404
         result.code = 404
         result.result = 'ERROR'
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(400)
+      response.status = 400
       result.code = 400
       result.message = 'No object id supplied!'
     }
@@ -194,56 +194,49 @@ class TitleController {
           obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
           if ( obj.validate() ) {
-            if (errors.size() == 0 ) {
-              obj.save(flush:true)
+            obj.save(flush:true)
 
-              if (title_lookup.matches.size() > 0) {
-                def additionalInfo = [:]
-                def combo_ids = [obj.id]
+            if (title_lookup.matches.size() > 0) {
+              def additionalInfo = [:]
+              def combo_ids = [obj.id]
 
-                additionalInfo.otherComponents = []
+              additionalInfo.otherComponents = []
 
-                title_lookup.matches.each { tlm ->
-                  additionalInfo.otherComponents.add([oid:"${tlm.object.id}", name:"${tlm.object.name}"])
-                  combo_ids.add(tlm.object.id)
-                }
-
-                additionalInfo.cstring = combo_ids.sort().join('_')
-
-                ReviewRequest.raise(
-                  obj,
-                  "New TI created.",
-                  "There have been possible conflicts with other existing titles.",
-                  user,
-                  null,
-                  (additionalInfo as JSON).toString()
-                )
+              title_lookup.matches.each { tlm ->
+                additionalInfo.otherComponents.add([oid:"${tlm.object.id}", name:"${tlm.object.name}"])
+                combo_ids.add(tlm.object.id)
               }
 
-              def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+              additionalInfo.cstring = combo_ids.sort().join('_')
 
-              if (variant_result.errors.size() > 0) {
-                errors.variantNames = variant_result.errors
-              }
-
-              errors << updateCombos(obj, reqBody)
-
-              if (errors.size() == 0) {
-                response.setStatus(201)
-                FTUpdateService.updateSingleItem(obj)
-                result = restMappingService.mapObjectToJson(obj, params, user)
-              }
-              else {
-                result.message = message(code: 'default.create.errors.message')
-              }
+              ReviewRequest.raise(
+                obj,
+                "New TI created.",
+                "There have been possible conflicts with other existing titles.",
+                user,
+                null,
+                (additionalInfo as JSON).toString()
+              )
             }
-            else {
-              result.message = message(code: 'default.create.errors.message')
+
+            def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+
+            if (variant_result.errors.size() > 0) {
+              errors.variantNames = variant_result.errors
             }
+
+            errors << updateCombos(obj, reqBody)
+
+            result = restMappingService.mapObjectToJson(obj, params, user)
+            response.status = 201
           }
           else {
             result.result = 'ERROR'
             errors << messageService.processValidationErrors(obj.errors, request.locale)
+          }
+
+          if (obj?.id != null && grailsApplication.config.gokb.ftupdate_enabled == true) {
+            FTUpdateService.updateSingleItem(obj)
           }
         }
         else {
@@ -261,12 +254,12 @@ class TitleController {
       }
     }
     else if (!type) {
-      response.setStatus(400)
+      response.status = 400
       result.result = 'ERROR'
       result.message = "Unrecognized title type!"
     }
     else if (type == TitleInstance) {
-      response.setStatus(400)
+      response.status = 400
       result.result = 'ERROR'
       result.message = "Specific title type required!"
     }
@@ -277,7 +270,9 @@ class TitleController {
     if (errors.size() > 0) {
       log.debug("Errors: ${errors}")
       result.result = 'ERROR'
-      response.setStatus(400)
+      if (!obj || obj.id == null) {
+        response.status = 400
+      }
       result.error = errors
     }
 
@@ -750,7 +745,7 @@ class TitleController {
 
       if (editable) {
         if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
-          response.setStatus(409)
+          response.status = 409
           result.message = message(code: "default.update.errors.message")
           render result as JSON
         }
@@ -770,29 +765,31 @@ class TitleController {
 
           if ( errors.size() == 0 ) {
             obj = obj.save(flush:true)
-            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
             result.message = message(code:'default.update.errors.message')
-            response.setStatus(400)
+            response.status = 400
           }
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(400)
+          response.status = 400
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
+        }
+        if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+          FTUpdateService.updateSingleItem(obj)
         }
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of the title to make changes!"
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
 
@@ -856,18 +853,18 @@ class TitleController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing title to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "TitleInstance not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to delete this component!"
     }
     render result as JSON
@@ -903,18 +900,18 @@ class TitleController {
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Package not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to edit this component!"
     }
     render result as JSON
@@ -968,7 +965,7 @@ class TitleController {
     else {
       result.result = 'ERROR'
       result.message = "Title id ${params.id} could not be resolved!"
-      response.setStatus(404)
+      response.status = 404
     }
 
     render result as JSON
@@ -1036,24 +1033,24 @@ class TitleController {
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(404)
+          response.status = 404
           result.message = "Unable to reference target title!"
         }
       }
       else {
         result.result = 'ERROR'
-        response.setStatus(403)
+        response.status = 403
         result.message = "User must belong to at least one curatory group of an existing package to make changes!"
       }
     }
     else if (!obj) {
       result.result = 'ERROR'
-      response.setStatus(404)
+      response.status = 404
       result.message = "Title not found or empty request body!"
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User is not allowed to edit this component!"
     }
     render result as JSON

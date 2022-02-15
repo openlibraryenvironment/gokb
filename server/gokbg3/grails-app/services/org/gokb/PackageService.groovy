@@ -713,39 +713,39 @@ class PackageService {
       }
     }
 
-    if (packageHeaderDTO.ids?.size() > 0) {
-      ids_list.each { rid ->
-        Identifier the_id = null
+    // if (packageHeaderDTO.ids?.size() > 0) {
+    //   ids_list.each { rid ->
+    //     Identifier the_id = null
 
-        if (rid instanceof Integer) {
-          the_id = Identifier.get(rid)
-        }
-        else {
-          def ns_field = rid.type ?: rid.namespace
-          def ns = null
+    //     if (rid instanceof Integer) {
+    //       the_id = Identifier.get(rid)
+    //     }
+    //     else {
+    //       def ns_field = rid.type ?: rid.namespace
+    //       def ns = null
 
-          if (ns_field) {
-            if (ns_field instanceof Integer) {
-              ns = IdentifierNamespace.get(ns_field)
-            }
-            else {
-              ns = IdentifierNamespace.findByValueIlike(ns_field)
-            }
+    //       if (ns_field) {
+    //         if (ns_field instanceof Integer) {
+    //           ns = IdentifierNamespace.get(ns_field)
+    //         }
+    //         else {
+    //           ns = IdentifierNamespace.findByValueIlike(ns_field)
+    //         }
 
-            if (ns) {
-              def match = Package.lookupByIO(ns.value, rid.value)
+    //         if (ns) {
+    //           def match = Package.lookupByIO(ns.value, rid.value)
 
-              if (match) {
-                if (!matches["${ns.id}"])
-                  matches["${ns.id}"] = []
+    //           if (match && match.status != status_deleted) {
+    //             if (!matches["${ns.id}"])
+    //               matches["${ns.id}"] = []
 
-                matches["${ns.id}"] << [field: 'ids', value: rid.value, message: "An existing package was matched by a supplied identifier!"]
-              }
-            }
-          }
-        }
-      }
-    }
+    //             matches["${ns.id}"] << [field: 'ids', value: rid.value, message: "An existing package was matched by a supplied identifier!"]
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
 
     def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
     def variant_matches = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
@@ -770,7 +770,8 @@ class PackageService {
         }
 
         if (variant) {
-          def name_matches = Package.findAllByName(variant)
+          def var_norm = Package.generateNormname(variant)
+          def name_matches = Package.findAllByNormnameAndStatusNotEqual(var_norm, status_deleted)
 
           name_matches.each { nm ->
             if (!matches["${nm.id}"])
@@ -1773,7 +1774,7 @@ class PackageService {
     record.publisher_name = pick(tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
     record.preceding_publication_title_id = pick(tipp.precedingPublicationTitleId, tipp.title?.getPrecedingTitleId(), exportType)
     record.parent_publication_title_id = tipp.parentPublicationTitleId
-    record.access_type = pick(tipp.paymentType, null, exportType)
+    record.access_type = pick((tipp.paymentType && ['OA','Uncharged'].contains(tipp.paymentType) ? 'F' : 'P'), null, exportType)
     record.zdb_id = pick(tipp.getIdentifierValue('ZDB'), tipp.title?.getIdentifierValue('ZDB'), exportType)
     record.gokb_tipp_uid = tipp.uuid
     record.gokb_title_uid = tipp.title?.uuid
@@ -1816,6 +1817,7 @@ class PackageService {
     def result = 'OK'
     def attr = [:]
     File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    File tempDir = new File('/tmp/gokb/oai/')
 
     Package.withNewSession {
       Package item = Package.get(id)
@@ -1825,14 +1827,28 @@ class PackageService {
           dir.mkdirs()
         }
 
+        if (!tempDir.exists()) {
+          tempDir.mkdirs()
+        }
+
         attr["xmlns:gokb"] = 'http://gokb.org/oai_metadata/'
         def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
 
         def fileName = "${item.uuid}_${dateFormatService.formatIsoMsTimestamp(item.lastUpdated)}.xml"
         File cachedRecord = new File("${dir}/${fileName}")
+        def currentCacheFile = null
+        Date currentCacheDate
 
-        if (!cachedRecord.exists() || (item.lastUpdated > new Date(cachedRecord.lastModified()) && Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() > 30 && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 30)) {
-          File tmpFile = new File("/tmp/${fileName}.tmp")
+        for (File file : dir.listFiles()) {
+          if (file.name.contains(item.uuid)) {
+            def datepart = file.name.split('_')[1]
+            currentCacheFile = file
+            currentCacheDate = dateFormatService.parseIsoMsTimestamp(datepart.substring(0, datepart.length() - 4))
+          }
+        }
+
+        if (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() > 30 && (!currentCacheFile || item.lastUpdated > currentCacheDate)) {
+          File tmpFile = new File("${tempDir}/${fileName}.tmp")
 
           if (tmpFile.exists()) {
             tmpFile.delete()
@@ -2023,11 +2039,14 @@ class PackageService {
           createKbartExport(item, ExportType.KBART_TITLE)
           createTsvExport(item)
         }
-        else if (item.lastUpdated <= new Date(cachedRecord.lastModified())) {
+        else if (currentCacheFile && item.lastUpdated <= currentCacheDate) {
           result = 'SKIPPED_NO_CHANGE'
         }
-        else if (Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() <= 30) {
+        else if (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() <= 30) {
           result = 'SKIPPED_CURRENTLY_CHANGING'
+        }
+        else {
+          result = 'SKIPPED_DEFAULT'
         }
       }
       else {

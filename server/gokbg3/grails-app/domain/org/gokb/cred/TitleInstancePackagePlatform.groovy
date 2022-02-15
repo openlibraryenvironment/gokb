@@ -201,7 +201,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     precedingPublicationId column: 'tipp_preceding_publication_id'
     lastChangedExternal column: 'tipp_last_change_ext'
     medium column: 'tipp_medium_rv_fk'
-    importId column: 'tipp_import_id'
+    importId column: 'tipp_import_id', index: 'kbc_import_id_idx'
   }
 
   static constraints = {
@@ -603,15 +603,6 @@ class TitleInstancePackagePlatform extends KBComponent {
 
       def tipps = []
 
-      if (!tipp && (tipp_dto.importId || tipp_dto.titleId)) {
-        tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as platform_combo  ' +
-            'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=? ' +
-            'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ? ' +
-            'and tipp.importId = ? ' +
-            'and tipp.status != ?',
-            [pkg, plt, (tipp_dto.importId ?: tipp_dto.titleId), status_deleted])
-      }
-
       if (tipps.size() == 0 && ti) {
         tipps = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  ' +
           'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=? ' +
@@ -644,12 +635,12 @@ class TitleInstancePackagePlatform extends KBComponent {
             break;
           default:
             if (trimmed_url && trimmed_url.size() > 0) {
-              tipps = tipps.findAll { !it.url || it.url == trimmed_url };
+              tipps = tipps.findAll { !it.url || it.url == trimmed_url }
               log.debug("found ${tipps.size()} tipps for URL ${trimmed_url}")
             }
 
-            def cur_tipps = tipps.findAll { it.status == status_current };
-            def ret_tipps = tipps.findAll { it.status == status_retired };
+            def cur_tipps = tipps.findAll { it.status == status_current }
+            def ret_tipps = tipps.findAll { it.status == status_retired }
 
             if (cur_tipps.size() > 0) {
               tipp = cur_tipps[0]
@@ -710,23 +701,31 @@ class TitleInstancePackagePlatform extends KBComponent {
         changed = true
       }
 
-      if (tipp_dto.paymentType && tipp_dto.paymentType.length() > 0) {
+      if (tipp_dto.paymentType) {
+        if (tipp_dto.paymentType instanceof String) {
+          def payment_statement
 
-        def payment_statement
+          if (tipp_dto.paymentType == 'P') {
+            payment_statement = 'Paid'
+          }
+          else if (tipp_dto.paymentType == 'F') {
+            payment_statement = 'OA'
+          }
+          else {
+            payment_statement = tipp_dto.paymentType
+          }
 
-        if (tipp_dto.paymentType == 'P') {
-          payment_statement = 'Paid'
+          def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
+
+          if (payment_ref) tipp.paymentType = payment_ref
         }
-        else if (tipp_dto.paymentType == 'F') {
-          payment_statement = 'OA'
-        }
-        else {
-          payment_statement = tipp_dto.paymentType
-        }
+        else if (tipp_dto.paymentType instanceof Integer) {
+          def int_rdv = RefdataValue.get(tipp_dto.paymentType)
 
-        def payment_ref = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", payment_statement)
-
-        if (payment_ref) tipp.paymentType = payment_ref
+          if (int_rdv?.owner.value == 'TitleInstancePackagePlatform.PaymentType') {
+            tipp.paymentType = int_rdv
+          }
+        }
       }
 
       changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'url', trimmed_url)
