@@ -11,7 +11,9 @@ import grails.plugins.orm.auditable.Auditable
 import grails.plugins.orm.auditable.AuditEventType
 import org.gokb.GOKbTextUtils
 
-import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 /**
  * Abstract base class for GoKB Components.
@@ -1500,22 +1502,25 @@ where cp.owner = :c
   /**
    * Set a price formatted as "nnnn.nn" or "nnnn.nn CUR"
    */
-  public void setPrice(String type, String price, Date startDate = null, Date endDate = null) {
-    Float f = null;
-    RefdataValue rdv_type = null;
-    RefdataValue rdv_currency = null;
+  public ComponentPrice setPrice(String type, String price, Date startDate = null, Date endDate = null) {
+    def result = null
+    Float f = null
+    RefdataValue rdv_type = null
+    RefdataValue rdv_currency = null
 
     if (price) {
-      Date today = todayNoTime()
+      Date today = Date.from(LocalDate.now().atStartOfDay().atZone(ZoneId.systemDefault()).toInstant())
       Date start = startDate ?: today
       Date end = endDate
 
-      String[] price_components = price.trim().split(' ');
+      log.debug("handling new price ${price} ..")
+
+      String[] price_components = price.trim().split(' ')
       f = Float.parseFloat(price_components[0])
-      rdv_type = RefdataCategory.lookupOrCreate('Price.type', type ?: 'list').save(flush: true, failOnError: true)
+      rdv_type = RefdataCategory.lookup('Price.type', type ?: 'list')
 
       if (price_components.length == 2) {
-        rdv_currency = RefdataCategory.lookupOrCreate('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
+        rdv_currency = RefdataCategory.lookup('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
       }
 
       ComponentPrice cp = new ComponentPrice(
@@ -1525,6 +1530,9 @@ where cp.owner = :c
         startDate: start,
         endDate: end,
         price: f)
+
+      log.debug("Handling final price object ${cp}")
+
       prices = prices ?: []
       // does this price exist already?
       if (!prices.contains(cp)) {
@@ -1534,8 +1542,10 @@ where cp.owner = :c
         // enter the new price
         prices << cp
         save()
+        result = cp
       }
     }
+    result
   }
 
   @Transient

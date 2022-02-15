@@ -198,10 +198,22 @@ class TippController {
 
           obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
-          def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+          if (reqBody.variantNames != null) {
+            log.debug("Updating variantNames ..")
+            def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
 
-          if (variant_result.errors.size() > 0) {
-            errors.variantNames = variant_result.errors
+            if (variant_result.errors.size() > 0) {
+              errors.variantNames = variant_result.errors
+            }
+          }
+
+          if (reqBody.prices != null) {
+            log.debug("Updating prices ..")
+            def prices_result = restMappingService.updatePrices(obj, reqBody.prices, remove)
+
+            if (prices_result.errors.size() > 0) {
+              errors.prices = prices_result.errors
+            }
           }
 
           errors << updateCombos(obj, reqBody)

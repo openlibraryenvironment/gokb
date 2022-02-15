@@ -3,6 +3,7 @@ package gokbg3
 import com.k_int.ClassUtils
 
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 import org.gokb.cred.*
 import org.gokb.GOKbTextUtils
@@ -151,8 +152,24 @@ class RestMappingService {
         }
         else {
           switch (p.type) {
+            case Float.class:
+              if (p.name == 'price') {
+                String pstring = obj[p.name] ? "${obj[p.name].trunc(2)}" : null
+
+                if (pstring) {
+                  if (!pstring.contains('.')) {
+                    pstring += ".00"
+                  }
+                  else if (pstring.indexOf('.') == pstring.length() - 2) {
+                    pstring += "0"
+                  }
+                }
+
+                result[p.name] = pstring
+                break
+              }
             case Long.class:
-              result[p.name] = obj[p.name] ? "${obj[p.name]}" : null;
+              result[p.name] = obj[p.name] ? "${obj[p.name]}" : null
               break;
 
             case Date.class:
@@ -850,6 +867,68 @@ class RestMappingService {
     result
   }
 
+  def updatePrices(obj, prices, boolean remove = true) {
+    def result = [changed: false, errors: []]
+    def existing_prices_ids = obj.prices?.collect { it.id }
+    def new_prices = []
+
+    try {
+      prices?.each { price ->
+        if (price.price || price.amount) {
+          boolean valid = true
+          LocalDateTime parsedStart = GOKbTextUtils.completeDateString(price.startDate)
+          LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(price.endDate, false)
+          Date startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+          Date endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+          def type_val = price.type ?: price.priceType
+
+          if (type_val instanceof Map) {
+            type_val = type_val.name ?: type.value
+          }
+
+          if (parsedStart && parsedEnd && parsedEnd < parsedStart) {
+            valid = false
+            result.errors << [message: "Price end date must be after its start date!", code: 500, baddata: price]
+          }
+
+          if (valid) {
+            def item = obj.setPrice(type_val,
+                "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
+                startAsDate,
+                endAsDate)
+
+            if (item) {
+              new_prices << item
+              result.changed = true
+            }
+            else if (price.id) {
+              new_prices << ComponentPrice.get(price.id)
+            }
+          }
+        }
+        else {
+          result.errors << [message: "Skipping invalid price!", code: 500, baddata: price]
+        }
+      }
+
+      if (remove == true) {
+        existing_prices_ids.each { ep ->
+          if (!new_prices.findAll { it.id == ep }) {
+            ComponentPrice cp_to_delete = ComponentPrice.get(ep)
+            obj.removeFromPrices(cp_to_delete)
+            cp_to_delete.delete()
+          }
+        }
+      }
+    }
+    catch (Exception e) {
+      log.error("Unable to process prices:", e)
+      result.errors << [message: "Unable to process prices!", code: 500, baddata: prices]
+    }
+
+    result
+  }
+
   @Transactional
   public def updatePublisher(obj, new_pubs, boolean remove = true) {
     def result = [changed: false, errors: []]
@@ -862,7 +941,7 @@ class RestMappingService {
 
     if (new_pubs instanceof Collection) {
       new_pubs.each { pub ->
-        if (!pubs_to_add.collect { it.id == pub }) {
+        if (!pubs_to_add.findAll { it.id == pub }) {
           pubs_to_add << Org.get(pub)
         }
         else {
@@ -871,7 +950,7 @@ class RestMappingService {
       }
     }
     else {
-      if (!pubs_to_add.collect { it.id == new_pubs }) {
+      if (!pubs_to_add.findAll { it.id == new_pubs }) {
         pubs_to_add << Org.get(new_pubs)
       }
       else {
