@@ -261,7 +261,7 @@ class TippService {
         title_class_name
     )
 
-    TitleInstance ti
+    TitleInstance ti = null
     if (found.to_create == true) {
       log.debug("No existing title matched, creating ${tipp.name}")
       ti = createTitleFromTippData(tipp, tipp_ids)
@@ -269,6 +269,7 @@ class TippService {
     else if (found.matches.size() == 1) {
       // exactly one match
       ti = found.matches[0].object
+      log.debug("Matched title ${ti} for ${tipp}!")
       TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
 
       if (currentCov && ((ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) || (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo))) {
@@ -420,13 +421,19 @@ class TippService {
       for (def comp : found.matches) {
         if (JournalInstance.isInstance(comp.object)) {
           if (// starts too early OR
-              comp.object.publishedFrom && latest.startDate && latest.startDate < comp.object.publishedFrom ||
+              (comp.object.publishedFrom && latest.startDate && latest.startDate < comp.object.publishedFrom) ||
               // ends too late
-              comp.object.publishedTo && latest.endDate && latest.endDate > comp.object.publishedTo)
+              (comp.object.publishedTo && latest.endDate && latest.endDate > comp.object.publishedTo)) {
+            log.debug("Excluded title match ${comp} based on coverage conflicts.")
             // no match
             break
-          else
+          }
+          else {
             covMatch << comp
+          }
+        }
+        else {
+          log.debug("Skipping title match with class ${comp?.object?.class}")
         }
       }
       if (covMatch.size() == 1)
@@ -510,7 +517,7 @@ class TippService {
             reviewRequestService.raise(
               tipp.title,
               "Identifier mismatch",
-              "Title ${comp.object.name} matched, but ingest identifiers ${mismatches} differ from existing ones in the same namespaces.",
+              "Title ${comp.object.name} matched, but the name and ingest identifiers ${mismatches} differ from existing ones in the same namespaces.",
               null,
               null,
               (additionalInfo as JSON).toString(),
@@ -537,6 +544,22 @@ class TippService {
             )
           }
         }
+      }
+      else if (tipp.title == null) {
+        def additionalInfo = [otherComponents: []]
+        found.matches.each { comp ->
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+        }
+
+        reviewRequestService.raise(
+            tipp,
+            "TIPP conflicts",
+            "TIPP ${tipp.name} conflicts with other titles.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict")
+        )
       }
 
       if (found.conflicts.size > 0) {

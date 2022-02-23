@@ -2,6 +2,8 @@ package org.gokb.cred
 
 import org.grails.web.json.JSONObject
 
+import gokbg3.DateFormatService
+
 import java.time.LocalDateTime
 import javax.persistence.Transient
 import org.gokb.GOKbTextUtils
@@ -335,8 +337,8 @@ class TitleInstance extends KBComponent {
             builder.'editionDifferentiator'(this.editionDifferentiator)
             builder.'editionStatement'(this.editionStatement)
             builder.'volumeNumber'(this.volumeNumber)
-            builder.'dateFirstInPrint'(this.dateFirstInPrint)
-            builder.'dateFirstOnline'(this.dateFirstOnline)
+            builder.'dateFirstInPrint'(this.dateFirstInPrint ? DateFormatService.formatDate(this.dateFirstInPrint) : null)
+            builder.'dateFirstOnline'(this.dateFirstOnline ? DateFormatService.formatDate(this.dateFirstOnline) : null)
             builder.'firstEditor'(this.firstEditor)
             builder.'firstAuthor'(this.firstAuthor)
           }
@@ -346,8 +348,8 @@ class TitleInstance extends KBComponent {
           builder.'type'(this.class.simpleName)
           builder.'OAStatus'(OAStatus?.value)
           builder.'continuingSeries'(continuingSeries?.value)
-          builder.'publishedFrom'(publishedFrom)
-          builder.'publishedTo'(publishedTo)
+          builder.'publishedFrom'(this.publishedFrom ? DateFormatService.formatDate(this.publishedFrom) : null)
+          builder.'publishedTo'(this.publishedTo ? DateFormatService.formatDate(this.publishedTo)  : null)
 
           builder.'publishers' {
             publisher_combos?.each { Combo pc ->
@@ -365,13 +367,13 @@ class TitleInstance extends KBComponent {
                 builder."publisher"(['id': pub_org.id, 'uuid': pub_org.uuid]) {
                   "name"(pub_org.name)
                   if (pc.startDate) {
-                    "startDate"(pc.startDate)
+                    "startDate"(pc.startDate ? DateFormatService.formatDate(pc.startDate) : null)
                   }
                   if (pc.endDate) {
-                    "endDate"(pc.endDate)
+                    "endDate"(pc.endDate ? DateFormatService.formatDate(pc.endDate) : null)
                   }
                   if (pc.status) {
-                    "status"(pc.status)
+                    "status"(pc.status.value)
                   }
                   builder."identifiers" {
                     org_ids?.each { org_id ->
@@ -396,7 +398,7 @@ class TitleInstance extends KBComponent {
             builder.history() {
               history.each { he ->
                 builder.historyEvent(['id': he.id]) {
-                  "date"(he.date)
+                  "date"(he.date ? DateFormatService.formatDate(he.date) : null)
                   he.from.each { hti ->
                     if (hti) {
                       "from" {
@@ -460,12 +462,12 @@ class TitleInstance extends KBComponent {
                   builder.'prices'() {
                     tipp.prices.each { price ->
                       builder.'price' {
-                        builder.'type'(price.priceType.value)
+                        builder.'type'(price.priceType?.value)
                         builder.'amount'(price.price)
                         builder.'currency'(price.currency)
-                        builder.'startDate'(price.startDate)
+                        builder.'startDate'(price.startDate ? DateFormatService.formatDate(price.startDate) : null)
                         if (price.endDate) {
-                          builder.'endDate'(price.endDate)
+                          builder.'endDate'(price.endDate ? DateFormatService.formatDate(price.endDate) : null)
                         }
                       }
                     }
@@ -476,10 +478,10 @@ class TitleInstance extends KBComponent {
                 if (cov_statements?.size() > 0) {
                   cov_statements.each { tcs ->
                     'coverage'(
-                      startDate: (tcs.startDate ? "${tcs.startDate.toInstant().toString()}" : null),
+                      startDate: (tcs.startDate ? DateFormatService.formatDate(tcs.startDate) : null),
                       startVolume: tcs.startVolume,
                       startIssue: tcs.startIssue,
-                      endDate: (tcs.endDate ? "${tcs.endDate.toInstant().toString()}" : null),
+                      endDate: (tcs.endDate ? DateFormatService.formatDate(tcs.endDate) : null),
                       endVolume: tcs.endVolume,
                       endIssue: tcs.endIssue,
                       coverageDepth: tcs.coverageDepth?.value ?: tipp.coverageDepth?.value,
@@ -491,10 +493,10 @@ class TitleInstance extends KBComponent {
                 else {
 
                   builder.'coverage'(
-                    startDate: (tipp.startDate ? "${tipp.startDate.toInstant().toString()}" : null),
+                    startDate: (tipp.startDate ? DateFormatService.formatDate(tipp.startDate) : null),
                     startVolume: tipp.startVolume,
                     startIssue: tipp.startIssue,
-                    endDate: (tipp.endDate ? "${tipp.endDate.toInstant().toString()}" : null),
+                    endDate: (tipp.endDate ? DateFormatService.formatDate(tipp.endDate) : null),
                     endVolume: tipp.endVolume,
                     endIssue: tipp.endIssue,
                     coverageDepth: tipp.coverageDepth?.value,
