@@ -186,11 +186,12 @@ class ReviewsController {
           errors.componentToReview = [[message: "Changing the connected component of an existing review is not allowed!", baddata: reqBody.componentToReview]]
         }
 
-        if( obj.validate() ) {
-          if(errors.size() == 0) {
+        if (obj.validate()) {
+          if (errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
+            result.additionalInfo = obj.additional
 
             result._links = generateLinks(obj, user)
           }
@@ -230,113 +231,106 @@ class ReviewsController {
     def reqBody = request.JSON
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
+    def obj = null
+    def pars = [
+      componentToReview: null,
+      reviewRequest: null,
+      descriptionOfCause: null,
+      additionalInfo: null,
+      stdDesc: null
+    ]
 
-    if ( ReviewRequest.isTypeCreatable() ) {
-      def obj = null
-      def pars = [
-        componentToReview: null,
-        reviewRequest: null,
-        descriptionOfCause: null,
-        additionalInfo: null,
-        stdDesc: null
-      ]
+    if (reqBody.reviewRequest?.trim())
+      pars.reviewRequest = reqBody.reviewRequest.trim()
 
-      if (reqBody.reviewRequest?.trim())
-        pars.reviewRequest = reqBody.reviewRequest.trim()
+    if (reqBody.descriptionOfCause?.trim())
+      pars.descriptionOfCause = reqBody.descriptionOfCause.trim()
 
-      if (reqBody.descriptionOfCause?.trim())
-        pars.descriptionOfCause = reqBody.descriptionOfCause.trim()
+    if (reqBody.componentToReview instanceof Integer) {
+      def comp = KBComponent.get(reqBody.componentToReview)
+      if (comp) {
+        pars.componentToReview = comp
+      }
+      else {
+        errors.componentToReview = [[message: "Unable to lookup component to be reviewed!", baddata: reqBody.componentToReview]]
+      }
+    }
+    else {
+      errors.componentToReview = [[message: "Missing component to be reviewed!"]]
+      result.message = "Request payload must contain the component to be reviewed"
+      response.status = 400
+    }
 
-      if (reqBody.componentToReview instanceof Integer) {
-        def comp = KBComponent.get(reqBody.componentToReview)
-        if (comp) {
-          pars.componentToReview = comp
-        }
-        else {
-          errors.componentToReview = [[message: "Unable to lookup component to be reviewed!", baddata: reqBody.componentToReview]]
+    if (reqBody.additionalInfo) {
+      try {
+        pars.additionalInfo = JsonOutput.toJson(reqBody.additionalInfo)
+      }
+      catch (Exception e) {
+        errors.additionalInfo = [[message: "Unable to save additional Info", baddata: reqBody.additionalInfo]]
+      }
+    }
+
+    if (reqBody.stdDesc || reqBody.type) {
+      def desc = null
+      def reqDesc = reqBody?.stdDesc ?: reqBody.type
+      def cat = RefdataCategory.findByLabel('ReviewRequest.StdDesc')
+
+      if (reqDesc instanceof Integer) {
+        def rdv = RefdataValue.get(reqBody.stdDesc)
+
+        if (rdv && rdv in cat.values) {
+          desc = rdv
         }
       }
       else {
-        errors.componentToReview = [[message: "Missing component to be reviewed!"]]
-        result.message = "Request payload must contain the component to be reviewed"
-        response.status = 400
+        desc = RefdataCategory.lookup('ReviewRequest.StdDesc', reqDesc)
       }
 
-      if (reqBody.additionalInfo) {
-        try {
-          pars.additionalInfo = JsonOutput.toJson(reqBody.additionalInfo)
-        }
-        catch (Exception e) {
-          errors.additionalInfo = [[message: "Unable to save additional Info", baddata: reqBody.additionalInfo]]
-        }
+      if (desc) {
+        pars.stdDesc = desc
       }
+      else {
+        errors.stdDesc = [[message: "Illegal value for standard description provided!", baddata: reqDesc]]
+      }
+    }
 
-      if (reqBody.stdDesc || reqBody.type) {
-        def desc = null
-        def reqDesc = reqBody?.stdDesc ?: reqBody.type
-        def cat = RefdataCategory.findByLabel('ReviewRequest.StdDesc')
+    if (errors.size() == 0) {
+      try {
+        obj = reviewRequestService.raise(
+            pars.componentToReview,
+            pars.reviewRequest,
+            pars.descriptionOfCause,
+            user,
+            null,
+            pars.additionalInfo,
+            pars.stdDesc,
+            componentLookupService.findCuratoryGroupOfInterest(pars.componentToReview, user, reqBody.activeGroup)
+        )
 
-        if (reqDesc instanceof Integer) {
-          def rdv = RefdataValue.get(reqBody.stdDesc)
+        if (obj) {
+          result = restMappingService.mapObjectToJson(obj, params, user)
+          result.additionalInfo = obj.additional
+          response.status = 201
 
-          if (rdv && rdv in cat.values) {
-            desc = rdv
-          }
+          result._links = generateLinks(obj, user)
         }
         else {
-          desc = RefdataCategory.lookup('ReviewRequest.StdDesc', reqDesc)
-        }
-
-        if (desc) {
-          pars.stdDesc = desc
-        }
-        else {
-          errors.stdDesc = [[message: "Illegal value for standard description provided!", baddata: reqDesc]]
-        }
-      }
-
-      if (errors.size() == 0) {
-        try {
-          obj = reviewRequestService.raise(
-              pars.componentToReview,
-              pars.reviewRequest,
-              pars.descriptionOfCause,
-              user,
-              null,
-              pars.additionalInfo,
-              pars.stdDesc,
-              componentLookupService.findCuratoryGroupOfInterest(pars.componentToReview, user, reqBody.activeGroup)
-          )
-
-          if (obj) {
-            result = restMappingService.mapObjectToJson(obj, params, user)
-            response.status = 201
-
-            result._links = generateLinks(obj, user)
-          }
-          else {
-            response.status = 500
-            result.result = 'ERROR'
-            result.message = "Unable to create request for review!"
-          }
-        }
-        catch (Exception e) {
-          log.error("Error creating Review", e)
           response.status = 500
           result.result = 'ERROR'
-          result.message = "There was an error creating the request."
+          result.message = "Unable to create request for review!"
         }
       }
-      else {
+      catch (Exception e) {
+        log.error("Error creating Review", e)
+        response.status = 500
         result.result = 'ERROR'
-        response.status = 400
-        result.errors = errors
+        result.message = "There was an error creating the request."
       }
     }
     else {
       result.result = 'ERROR'
-      response.status = 403
-      result.message = "User is not allowed to delete this component!"
+      response.status = 400
+      result.errors = errors
     }
     render result as JSON
   }
@@ -368,7 +362,7 @@ class ReviewsController {
     else {
       result.result = 'ERROR'
       response.status = 403
-      result.message = "User is not allowed to delete this ReviewRequest!"
+      result.message = "User is not allowed to delete this request!"
     }
     render result as JSON
   }
@@ -379,7 +373,18 @@ class ReviewsController {
    */
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   def isEscalatable() {
-    def result = getEscalationTargetGroupId(params.id, params.activeGroupId, params)
+    def result = [result: 'OK']
+    ReviewRequest obj = ReviewRequest.findById(params.id)
+
+    if (obj) {
+      result = getEscalationTargetGroupId(obj, params.activeGroupId, params)
+    }
+    else {
+      response.status = 404
+      result.result = 'ERROR'
+      result.message = "Unable to lookup request object."
+      result.error = [object: [[message: "Unable to lookup request object by id.", code: '404', value: params.id]]]
+    }
 
     render result as JSON
   }
@@ -387,36 +392,54 @@ class ReviewsController {
 
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
-  def escalate(){
-    def result = getEscalationTargetGroupId(params.id, request.JSON?.activeGroup, params)
+  def escalate() {
+    def result = [result: 'OK']
+    ReviewRequest obj = ReviewRequest.findById(params.id)
+    User user = User.get(springSecurityService.principal.id)
+    CuratoryGroup escalatingGroup = CuratoryGroup.findById(request.JSON?.activeGroup)
 
-    if (result.isEscalatable){
-      CuratoryGroup escalatingGroup = CuratoryGroup.findById(result.escalatingGroup.id)
-      AllocatedReviewGroup arg = AllocatedReviewGroup.findByGroupAndReview(escalatingGroup, ReviewRequest.findById(params.id))
-      AllocatedReviewGroup newArg = reviewRequestService.escalate(arg, CuratoryGroup.findById(result.escalationTargetGroup.id))
+    if (obj && escalatingGroup) {
+      result = getEscalationTargetGroupId(obj, escalatingGroup.id, params)
 
-      if (newArg){
-        ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
-        def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
-        rr.allocatedGroups.each { ag ->
-          ag.status = inactive
-          ag.save()
+      if (result.isEscalatable){
+        if (user.curatoryGroups.contains(escalatingGroup)) {
+          AllocatedReviewGroup arg = AllocatedReviewGroup.findByGroupAndReview(escalatingGroup, ReviewRequest.findById(params.id))
+          AllocatedReviewGroup newArg = reviewRequestService.escalate(arg, CuratoryGroup.findById(result.escalationTargetGroup.id))
+
+          if (newArg){
+            ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
+            def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
+            rr.allocatedGroups.each { ag ->
+              ag.status = inactive
+              ag.save()
+            }
+            newArg.status = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+            result.message = "The requested ReviewRequest has been escalated."
+          }
+          else{
+            result.message = "All preconditions for an escalation have been met. Could not escalate anyway."
+            result.result = 'ERROR'
+            response.status = 500
+          }
         }
-        newArg.status = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
-        result.message = "The requested ReviewRequest has been escalated."
-      }
-      else{
-        result.message = "All preconditions for an escalation have been met. Could not escalate anyway."
-        result.result = 'ERROR'
-        response.status = 500
+        else {
+          response.status = 403
+          result.result = 'ERROR'
+          result.message = "User does not belong to the active group."
+        }
       }
     }
-    else if (response.status == 200) {
-      if (result.escalatingGroup) {
-        response.status = 403
+    else {
+      response.status = 404
+      result.result = 'ERROR'
+
+      if (!obj) {
+        result.message = "Unable to lookup request object."
+        result.error = [object: [[message: "Unable to lookup request object by id.", code: '404', value: params.id]]]
       }
       else {
-        response.status = 400
+        result.message = "Unable to lookup active group."
+        result.error = [activeGroup: [[message: "Unable to lookup active group object by id.", code: '404', value: request.JSON?.activeGroup]]]
       }
     }
 
@@ -429,7 +452,18 @@ class ReviewsController {
    */
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   def isDeescalatable() {
-    def result = getDeescalationTargetGroupId(params.id, params.activeGroupId, params)
+    def result = [result: 'OK']
+    ReviewRequest obj = ReviewRequest.findById(params.id)
+
+    if (obj) {
+      result = getDeescalationTargetGroupId(obj, request.JSON?.activeGroup, params)
+    }
+    else {
+      response.status = 404
+      result.result = 'ERROR'
+      result.message = "Unable to lookup request object."
+      result.errors = [object: [[message: "Unable to lookup request object by id.", code: '404', value: params.id]]]
+    }
 
     render result as JSON
   }
@@ -438,37 +472,55 @@ class ReviewsController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def deescalate(){
-    def result = getDeescalationTargetGroupId(params.id, request.JSON.activeGroup, params)
+    def result = [result: 'OK']
+    User user = User.get(springSecurityService.principal.id)
+    ReviewRequest obj = ReviewRequest.findById(params.id)
+    CuratoryGroup deescalatingGroup = CuratoryGroup.findById(request.JSON?.activeGroup)
 
-    if (result.isDeescalatable){
-      ReviewRequest rr = ReviewRequest.get(genericOIDService.oidToId(params.id))
-      CuratoryGroup deescalatingGroup = CuratoryGroup.findById(result.deescalatingGroup.id)
-      AllocatedReviewGroup deescArg = AllocatedReviewGroup.findByGroupAndReview(deescalatingGroup, rr)
-      AllocatedReviewGroup targetArg = deescArg?.escalatedFrom ?: null
+    if (obj && deescalatingGroup) {
+      result = getDeescalationTargetGroupId(obj, request.JSON?.activeGroup, params)
 
-      if (deescArg && targetArg){
-        def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
-        def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
-        deescArg.status = inactive
-        deescArg.escalatedFrom = null
-        deescArg.save()
-        targetArg.status = inProgress
-        targetArg.save()
-        response.status = 200
-      }
-      else{
-        result.result = 'ERROR'
-        response.status = 400
+      if (result.isDeescalatable){
+        if (user.curatoryGroups.contains(deescalatingGroup)) {
+          AllocatedReviewGroup deescArg = AllocatedReviewGroup.findByGroupAndReview(deescalatingGroup, obj)
+          AllocatedReviewGroup targetArg = deescArg?.escalatedFrom ?: null
+
+          if (deescArg && targetArg){
+            def inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
+            def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+            deescArg.status = inactive
+            deescArg.escalatedFrom = null
+            deescArg.save()
+            targetArg.status = inProgress
+            targetArg.save()
+            response.status = 200
+          }
+          else{
+            result.result = 'ERROR'
+            response.status = 400
+          }
+        }
+        else {
+          response.status = 403
+          result.result = 'ERROR'
+
+        }
       }
     }
-    else if (response.status == 200) {
-      if (result.deescalatingGroup) {
-        response.status = 403
+    else {
+      response.status = 404
+      result.result = 'ERROR'
+
+      if (!obj) {
+        result.message = "Unable to lookup request object."
+        result.errors = [object: [[message: "Unable to lookup request object by id.", code: '404', value: params.id]]]
       }
       else {
-        response.status = 400
+        result.message = "Unable to lookup active group."
+        result.errors = [activeGroup: [[message: "Unable to lookup active group object by id.", code: '404', value: request.JSON?.activeGroup]]]
       }
     }
+
     render result as JSON
   }
 
@@ -513,10 +565,8 @@ class ReviewsController {
   }
 
 
-  private def getEscalationTargetGroupId(def rrId, def activeGroupId, def params) {
+  private def getEscalationTargetGroupId(rr, def activeGroupId, def params) {
     def result = ['result':'OK', 'isEscalatable':false, 'params': params]
-
-    def rr = ReviewRequest.get(genericOIDService.oidToId(rrId))
 
     if (!rr) {
       response.status = 404
@@ -527,38 +577,33 @@ class ReviewsController {
 
     CuratoryGroup escalatingGroup = null
 
-    try{
-      activeGroupId = Integer.valueOf(activeGroupId)
-    }
-    finally{
-      if (activeGroupId instanceof Integer && activeGroupId > 0) {
-        CuratoryGroup toBeChecked = CuratoryGroup.findById(activeGroupId)
-        RefdataValue inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
-        List<AllocatedReviewGroup> argCandidates = AllocatedReviewGroup.findAllByGroupAndReviewAndStatus(toBeChecked, rr, inProgress)
+    if (activeGroupId) {
+      CuratoryGroup toBeChecked = CuratoryGroup.findById(activeGroupId)
+      RefdataValue inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+      List<AllocatedReviewGroup> argCandidates = AllocatedReviewGroup.findAllByGroupAndReviewAndStatus(toBeChecked, rr, inProgress)
 
-        if (argCandidates.size() == 1) {
-          escalatingGroup = toBeChecked
-          result.escalatingGroup = [id: escalatingGroup.id, name: escalatingGroup.name, uuid: escalatingGroup.uuid]
-        }
-        else if (argCandidates.size() > 1) {
-          response.status = 409
-          result.result = 'ERROR'
-          result.message = "Could not get curatory group to be escalated from due to multiple group candidates."
-          return result
-        }
-        else{
-          response.status = 404
-          result.result = 'ERROR'
-          result.message = "Could not get curatory group to be escalated from due to missing active curatory group."
-          return result
-        }
+      if (argCandidates.size() == 1) {
+        escalatingGroup = toBeChecked
+        result.escalatingGroup = [id: escalatingGroup.id, name: escalatingGroup.name, uuid: escalatingGroup.uuid]
+      }
+      else if (argCandidates.size() > 1) {
+        response.status = 409
+        result.result = 'ERROR'
+        result.message = "Could not get curatory group to be escalated from due to multiple group candidates."
+        return result
       }
       else{
         response.status = 404
         result.result = 'ERROR'
-        result.message = "Could not get curatory group to be escalated from due to missing active curatory group id."
+        result.message = "Could not get curatory group to be escalated from due to missing active curatory group."
         return result
       }
+    }
+    else{
+      response.status = 404
+      result.result = 'ERROR'
+      result.message = "Could not get curatory group to be escalated from due to missing active curatory group id."
+      return result
     }
 
     String componentClass = rr.componentToReview?.class.getSimpleName()
@@ -593,16 +638,8 @@ class ReviewsController {
     return result
   }
 
-  private def getDeescalationTargetGroupId(def rrId, def activeGroupId, def params) {
+  private def getDeescalationTargetGroupId(rr, def activeGroupId, def params) {
     def result = ['result':'OK', 'isDeescalatable': false, 'params': params]
-    ReviewRequest rr = params.id ? ReviewRequest.get(genericOIDService.oidToId(params.id)) : null
-
-    if (!rr) {
-      response.status = 404
-      result.result = 'ERROR'
-      result.message = "ReviewRequest not found for id ${rrId}."
-      return result
-    }
 
     CuratoryGroup deescalatingGroup = CuratoryGroup.findById(activeGroupId)
 
