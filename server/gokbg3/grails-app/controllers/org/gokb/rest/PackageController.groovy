@@ -39,6 +39,7 @@ class PackageController {
   def componentUpdateService
   def concurrencyManagerService
   def sessionFactory
+  def FTUpdateService
   def reviewRequestService
   def titleLookupService
   def titleHistoryService
@@ -59,7 +60,7 @@ class PackageController {
     if (es_search) {
       params.remove('es')
       def start_es = LocalDateTime.now()
-      result = ESSearchService.find(params)
+      result = ESSearchService.find(params, null, user)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
     }
     else {
@@ -73,6 +74,7 @@ class PackageController {
       def countTippsParams = [:]
       countTippsParams.componentType = "TIPP"
       countTippsParams.tippPackage = obj.uuid
+      countTippsParams.status = "Current"
       countTippsParams.max = 0
       obj['_tippCount'] = ESSearchService.find(countTippsParams)?._pagination?.total ?: 0
     }
@@ -143,7 +145,12 @@ class PackageController {
 
         if (lookup_result.to_create) {
           def normname = Package.generateNormname(reqBody.name)
-          obj = new Package(name: reqBody.name, normname: normname).save(flush: true)
+          try {
+            obj = new Package(name: reqBody.name, normname: normname)
+          }
+          catch (grails.validation.ValidationException ve) {
+            errors << messageService.processValidationErrors(ve.errors, request_locale)
+          }
           log.debug("New Object ${obj}")
         }
         else {
@@ -157,21 +164,21 @@ class PackageController {
           }
         }
 
-        if (lookup_result.to_create && !obj) {
+        if (errors.size() > 0) {
+          log.debug("Object has validation errors!")
+        }
+        else if (lookup_result.to_create && !obj) {
           log.debug("Could not upsert object!")
           errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
         }
-        else if (obj?.hasErrors()) {
-          log.debug("Object has errors!")
-          errors << messageService.processValidationErrors(obj.errors, request_locale)
-        }
         else if (obj) {
+          obj.save(flush:true)
           def jsonMap = obj.jsonMapping
 
           jsonMap.immutable = [
-            'userListVerifier',
-            'listVerifiedDate',
-            'listStatus'
+              'userListVerifier',
+              'listVerifiedDate',
+              'listStatus'
           ]
 
           log.debug("Updating ${obj}")
@@ -182,8 +189,10 @@ class PackageController {
               log.debug("No errors.. saving")
               obj.save()
 
-              if (reqBody.variantNames) {
-                obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+              def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+
+              if (variant_result.errors.size() > 0) {
+                errors.variantNames = variant_result.errors
               }
 
               if (generateToken) {
@@ -198,6 +207,7 @@ class PackageController {
                 log.debug("No errors: ${errors}")
                 obj.save(flush: true)
                 response.status = 201
+                FTUpdateService.updateSingleItem(obj)
                 result = restMappingService.mapObjectToJson(obj, params, user)
 
                 if (update_token) {
@@ -274,23 +284,26 @@ class PackageController {
         }
       }
       if (editable) {
+        if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
+          response.setStatus(409)
+          result.message = message(code: "default.update.errors.message")
+          render result as JSON
+        }
 
         def jsonMap = obj.jsonMapping
 
-        jsonMap.ignore = [
-          'lastProject',
-        ]
-
         jsonMap.immutable = [
-          'userListVerifier',
-          'listVerifiedDate',
-          'listStatus'
+            'userListVerifier',
+            'listVerifiedDate',
+            'listStatus'
         ]
 
         obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-        if (reqBody.variantNames) {
-          obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+        def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+        if (variant_result.errors.size() > 0) {
+          errors.variantNames = variant_result.errors
         }
 
         errors << updateCombos(obj, reqBody, remove, user)
@@ -312,6 +325,7 @@ class PackageController {
           if (errors.size() == 0) {
             log.debug("No errors.. saving")
             obj = obj.merge(flush: true)
+            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
 
             if (update_token) {
@@ -350,22 +364,27 @@ class PackageController {
   private def updateCombos(obj, reqBody, boolean remove = true, user) {
     log.debug("Updating package combos ..")
     def errors = [:]
+    def changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+      changed |= id_result.changed
+
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
       }
     }
 
     if (reqBody.curatoryGroups) {
-      def cg_errors = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+      def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
-      if (cg_errors.size() > 0) {
-        errors['curatoryGroups'] = cg_errors
+      changed |= cg_result.changed
+
+      if (cg_result.errors.size() > 0) {
+        errors['curatoryGroups'] = cg_result.errors
       }
     }
 
@@ -411,6 +430,7 @@ class PackageController {
           }
 
           def new_combo = new Combo(fromComponent: obj, toComponent: prov, type: combo_type).save(flush: true)
+          changed = true
 
           obj.refresh()
         }
@@ -421,6 +441,7 @@ class PackageController {
     }
     else if (reqBody.provider == null) {
       obj.provider = null
+      changed = true
     }
 
     if (reqBody.nominalPlatform != null || reqBody.platform != null) {
@@ -443,6 +464,7 @@ class PackageController {
           }
 
           def new_combo = new Combo(fromComponent: obj, toComponent: plt, type: combo_type).save(flush: true)
+          changed = true
 
           obj.refresh()
         }
@@ -453,6 +475,7 @@ class PackageController {
     }
     else if (reqBody.nominalPlatform == null || reqBody.platform == null) {
       obj.nominalPlatform = null
+      changed = true
     }
 
     if (reqBody.tipps) {
@@ -461,9 +484,9 @@ class PackageController {
         def ti_errors = []
 
         if (tipp_dto.title && tipp_dto.title instanceof Map) {
-          if (!tipp_dto.id) {
+          if (!tipp_dto.title.id) {
             try {
-              def ti = TitleInstance.upsertDTO(titleLookupservice, tipp_dto.title, user)
+              def ti = TitleInstance.upsertDTO(titleLookupService, tipp_dto.title, user)
 
               if (ti) {
                 tipp_dto.title = ti.id
@@ -473,9 +496,9 @@ class PackageController {
               log.error("ValidationException attempting to cross reference title", ve);
               valid_ti = false
               def validation_errors = [
-                message: "Title ${tipp_dto.title?.name} failed validation!",
-                baddata: tipp_dto.title,
-                errors : messageService.processValidationErrors(ve.errors)
+                  message: "Title ${tipp_dto.title?.name} failed validation!",
+                  baddata: tipp_dto.title,
+                  errors : messageService.processValidationErrors(ve.errors)
               ]
               ti_errors.add(validation_errors)
             }
@@ -511,10 +534,12 @@ class PackageController {
 
               if (tipp_dto.status instanceof String) {
                 tipp_status = RefdataCategory.lookup('KBComponent.Status', tipp_dto.status)
-              } else if (tipp_dto.status instanceof Integer) {
+              }
+              else if (tipp_dto.status instanceof Integer) {
                 def id_rdv = RefdataValue.get(tipp_dto.status)
                 tipp_status = id_rdv.owner.label == 'KBComponent.Status' ? id_rdv : null
-              } else if (tipp_dto.status instanceof Map) {
+              }
+              else if (tipp_dto.status instanceof Map) {
                 def id_rdv = RefdataValue.get(tipp_dto.status.id)
                 tipp_status = id_rdv.owner.label == 'KBComponent.Status' ? id_rdv : null
               }
@@ -524,6 +549,7 @@ class PackageController {
               }
 
               upserted_tipp = upserted_tipp?.save(flush: true)
+              changed = true
             }
           }
           else {
@@ -535,6 +561,10 @@ class PackageController {
           }
         }
       }
+    }
+
+    if (changed) {
+      obj.lastSeen = System.currentTimeMillis()
     }
     errors
   }
@@ -555,6 +585,7 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'
@@ -591,6 +622,7 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
+        FTUpdateService.updateSingleItem(obj)
       }
       else {
         result.result = 'ERROR'
@@ -662,6 +694,31 @@ class PackageController {
       response.setStatus(404)
     }
 
+    render result as JSON
+  }
+
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+  def jobs() {
+    def result = [:]
+    int max = params.limit ? params.int('limit') : 10
+    int offset = params.offset ? params.int('offset') : 0
+
+    log.debug("jobs :: ${params}")
+    def obj = Package.findByUuid(params.id)?:Package.get(params.id)
+
+    log.debug("Jobs for Package: ${obj}")
+
+    if (obj) {
+        if (params.boolean('archived') == true) {
+          result.data = []
+          JobsController.filterJobResults('linkedItemId', obj.id, max, offset, result)
+        }
+        else {
+          concurrencyManagerService.getComponentJobs(obj.id, max, offset).each { k, v ->
+            result[k] = v
+          }
+        }
+      }
     render result as JSON
   }
 
@@ -844,11 +901,11 @@ class PackageController {
                       if (title_validation && !title_validation.valid) {
                         log.warn("Not valid after title validation ${tipp.title}");
                         def preval_errors = [
-                          code   : 400,
-                          message: messageService.resolveCode('crossRef.package.tipps.error.title.preValidation', [tipp.title.name, title_validation.errors], locale),
-                          baddata: tipp.title,
-                          idx    : idx,
-                          errors : title_validation.errors
+                            code   : 400,
+                            message: messageService.resolveCode('crossRef.package.tipps.error.title.preValidation', [tipp.title.name, title_validation.errors], locale),
+                            baddata: tipp.title,
+                            idx    : idx,
+                            errors : title_validation.errors
                         ]
                         errors.add(preval_errors)
                       }
@@ -863,13 +920,13 @@ class PackageController {
 
                           try {
                             ti = titleLookupService.findOrCreate(
-                              titleObj.name,
-                              titleObj.publisher,
-                              titleObj.identifiers,
-                              user,
-                              null,
-                              title_class_name,
-                              titleObj.uuid
+                                titleObj.name,
+                                titleObj.publisher,
+                                titleObj.identifiers,
+                                user,
+                                null,
+                                title_class_name,
+                                titleObj.uuid
                             )
 
                             if (ti?.id && !ti.hasErrors()) {
@@ -888,9 +945,9 @@ class PackageController {
                               componentUpdateService.ensureCoreData(ti, titleObj, fullsync, user)
 
                               title_changed |= componentUpdateService.setAllRefdata([
-                                'OAStatus', 'medium', 'language',
-                                'pureOA', 'continuingSeries',
-                                'reasonRetired'
+                                  'OAStatus', 'medium', 'language',
+                                  'pureOA', 'continuingSeries',
+                                  'reasonRetired'
                               ], titleObj, ti)
 
                               def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
@@ -942,11 +999,11 @@ class PackageController {
                             valid_ti = false
                             valid = false
                             def validation_errors = [
-                              code   : 400,
-                              message: messageService.resolveCode('crossRef.package.tipps.error.title.validation', [tipp?.title?.name], locale),
-                              baddata: tipp,
-                              idx    : idx,
-                              errors : messageService.processValidationErrors(ve.errors)
+                                code   : 400,
+                                message: messageService.resolveCode('crossRef.package.tipps.error.title.validation', [tipp?.title?.name], locale),
+                                baddata: tipp,
+                                idx    : idx,
+                                errors : messageService.processValidationErrors(ve.errors)
                             ]
                             errors.add(validation_errors)
                           }
@@ -980,11 +1037,11 @@ class PackageController {
                         log.warn("Not valid after platform validation ${tipp_plt_dto}");
 
                         def plt_errors = [
-                          code   : 400,
-                          idx    : idx,
-                          message: messageService.resolveCode('crossRef.package.tipps.error.platform.preValidation', [tipp_plt_dto?.name], locale),
-                          baddata: tipp_plt_dto,
-                          errors : valid_plt.errors
+                            code   : 400,
+                            idx    : idx,
+                            message: messageService.resolveCode('crossRef.package.tipps.error.platform.preValidation', [tipp_plt_dto?.name], locale),
+                            baddata: tipp_plt_dto,
+                            errors : valid_plt.errors
                         ]
                         errors.add([])
                       }
@@ -1018,11 +1075,11 @@ class PackageController {
                             valid = false
 
                             def plt_errors = [
-                              code   : 400,
-                              message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tipp_plt_dto], locale),
-                              baddata: tipp_plt_dto,
-                              idx    : idx,
-                              errors : messageService.processValidationErrors(ve.errors)
+                                code   : 400,
+                                message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tipp_plt_dto], locale),
+                                baddata: tipp_plt_dto,
+                                idx    : idx,
+                                errors : messageService.processValidationErrors(ve.errors)
                             ]
                             errors.add(plt_errors)
                           }
@@ -1072,11 +1129,11 @@ class PackageController {
                       log.debug("TIPP Validation failed on ${tipp}")
                       valid = false
                       def tipp_errors = [
-                        'code' : 400,
-                        idx    : idx,
-                        message: messageService.resolveCode('crossRef.package.tipps.error.preValidation', [tipp.title.name, validation_result.errors], locale),
-                        baddata: tipp,
-                        errors : validation_result.errors
+                          'code' : 400,
+                          idx    : idx,
+                          message: messageService.resolveCode('crossRef.package.tipps.error.preValidation', [tipp.title.name, validation_result.errors], locale),
+                          baddata: tipp,
+                          errors : validation_result.errors
                       ]
                       errors.add(tipp_errors)
                     }
@@ -1135,11 +1192,11 @@ class PackageController {
                       valid = false
                       tipp_fails++
                       def tipp_errors = [
-                        code   : 400,
-                        idx    : idx,
-                        message: messageService.resolveCode('crossRef.package.tipps.error.validation', [tipp.title.name], locale),
-                        baddata: tipp,
-                        errors : messageService.processValidationErrors(ve.errors)
+                          code   : 400,
+                          idx    : idx,
+                          message: messageService.resolveCode('crossRef.package.tipps.error.validation', [tipp.title.name], locale),
+                          baddata: tipp,
+                          errors : messageService.processValidationErrors(ve.errors)
                       ]
                       errors.add(tipp_errors)
 
@@ -1151,10 +1208,10 @@ class PackageController {
                       valid = false
                       tipp_fails++
                       def tipp_errors = [
-                        code   : 500,
-                        idx    : idx,
-                        message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
-                        baddata: tipp
+                          code   : 500,
+                          idx    : idx,
+                          message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
+                          baddata: tipp
                       ]
                       errors.add(tipp_errors)
 
@@ -1185,10 +1242,10 @@ class PackageController {
                       valid = false
                       tipp_fails++
                       def tipp_errors = [
-                        code   : 500,
-                        idx    : idx,
-                        message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
-                        baddata: tipp
+                          code   : 500,
+                          idx    : idx,
+                          message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
+                          baddata: tipp
                       ]
                       errors.add(tipp_errors)
                     }
@@ -1232,13 +1289,14 @@ class PackageController {
                       }
                       if (num_removed_tipps > 0) {
                         reviewRequestService.raise(
-                          the_pkg,
-                          "TIPPs retired.",
-                          "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
-                          user,
-                          null,
-                          null,
-                          RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired')
+                            the_pkg,
+                            "TIPPs retired.",
+                            "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
+                            user,
+                            null,
+                            null,
+                            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired'),
+                            componentLookupService.findCuratoryGroupOfInterest(the_pkg, user)
                         )
                       }
                     }
@@ -1274,13 +1332,13 @@ class PackageController {
                     }
 
                     reviewRequestService.raise(
-                      the_pkg,
-                      "Invalid TIPPs.",
-                      "An update for this package failed because of invalid TIPP information (JOB ${job.uuid}).",
-                      user,
-                      null,
-                      (additionalInfo as JSON).toString(),
-                      RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs')
+                        the_pkg,
+                        "Invalid TIPPs.",
+                        "An update for this package failed because of invalid TIPP information (JOB ${job.uuid}).",
+                        user,
+                        null,
+                        (additionalInfo as JSON).toString(),
+                        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs')
                     )
                   }
                 }

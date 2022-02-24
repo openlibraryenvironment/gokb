@@ -7,6 +7,7 @@ import grails.transaction.Rollback
 import org.gokb.cred.Package
 import org.gokb.cred.Platform
 import org.gokb.cred.JournalInstance
+import org.gokb.cred.RefdataCategory
 import org.gokb.cred.TitleInstancePackagePlatform
 import org.gokb.cred.TIPPCoverageStatement
 import org.gokb.cred.CuratoryGroup
@@ -26,6 +27,7 @@ class TippTestSpec extends AbstractAuthSpec {
   def testTitle
   def testPlatform
   def testGroup
+  def previousTipp
   def last = false
 
   def setupSpec() {
@@ -36,6 +38,8 @@ class TippTestSpec extends AbstractAuthSpec {
     testPlatform = Platform.findByName("TippTestPlat") ?: new Platform(name: "TippTestPlat").save(flush: true)
     testTitle = JournalInstance.findByName("TippTestJournal") ?: new JournalInstance(name: "TippTestJournal").save(flush: true)
     testGroup = CuratoryGroup.findByName("cgtipptest") ?: new CuratoryGroup(name: "cgtipptest").save(flush: true)
+    previousTipp = TitleInstancePackagePlatform.findByName("previous TIPP") ?: new TitleInstancePackagePlatform(name: "previous TIPP", pkg: testPackage, hostPlatform: testPlatform, url: "http://some.uri/").save(flush: true)
+    def coverage = new TIPPCoverageStatement(owner: previousTipp, startVolume: 1, startIssue: 1, coverageDepth: RefdataCategory.lookup("Coverage.Depth", "Selected Articles")).save(flush: true)
   }
 
   def cleanup() {
@@ -45,6 +49,8 @@ class TippTestSpec extends AbstractAuthSpec {
       Platform.findByName("TippTestPlat")?.expunge()
       JournalInstance.findByName("TippTestJournal")?.expunge()
       CuratoryGroup.findByName("cgtipptest")?.expunge()
+      TitleInstancePackagePlatform.findByName("previous TIPP")?.expunge()
+      TitleInstancePackagePlatform.findByName("new TIPP name")?.expunge()
     }
   }
 
@@ -66,7 +72,7 @@ class TippTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/tipps") {
+    RestResponse resp = rest.get("${urlPath}/rest/tipps?_embed=prices") {
       // headers
       accept('application/json')
       auth("Bearer $accessToken")
@@ -74,26 +80,35 @@ class TippTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200 // OK
     resp.json != null
+    resp.json.data['_embedded'].prices.size() > 0
   }
 
   void "test /rest/tipps POST"() {
     given:
     def upd_body = [
-        pkg         : testPackage.id,
-        hostPlatform: testPlatform.id,
-        name        : "TippName",
-        title       : testTitle.id,
-        url         : "http://host-url.test/old",
-        coverage    : [
+        pkg          : testPackage.id,
+        hostPlatform : testPlatform.id,
+        name         : "TippName",
+        title        : testTitle.id,
+        url          : "http://host-url.test/old",
+        coverage     : [
             [
-                startDate    : "2010-01-01",
+                startDate    : "2005-01-01",
                 startVolume  : "1",
                 startIssue   : "1",
                 coverageDepth: "Fulltext"
             ]
         ],
-            publisherName: "other Publisher"
+        publisherName: "other Publisher",
+        prices       : [
+            [
+                type    : [name: 'list'],
+                price   : 12.95,
+                currency: [name: "EUR"]
+            ]
+        ]
     ]
+
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
@@ -103,27 +118,29 @@ class TippTestSpec extends AbstractAuthSpec {
       auth("Bearer $accessToken")
       body(upd_body as JSON)
     }
+
     then:
     resp.status == 200 // OK
     resp.json.url == upd_body.url
     resp.json._embedded.coverageStatements?.size() == 1
+    resp.json._embedded.prices?.size() == 1
     resp.json.publisherName == "other Publisher"
   }
 
   void "test /rest/tipps/<id> PUT"() {
     given:
-    sleep(200)
-    def tipp = TitleInstancePackagePlatform.findByUrl("http://host-url.test/old")
+    def tipp = TitleInstancePackagePlatform.findByUrl("http://some.uri/")
+    def coverage_id = tipp.coverageStatements[0].id
     def upd_body = [
         pkg               : testPackage.id,
         hostPlatform      : testPlatform.id,
         title             : testTitle.id,
-        name              : "TippName",
+        name              : "new TIPP name",
         publisherName     : "some Publisher",
-        url               : "http://host-url.test/new",
+        url               : "http://new-url.url",
         coverageStatements: [
             [
-                id           : tipp.coverageStatements[0].id,
+                id           : coverage_id,
                 startDate    : "2005-01-01",
                 startVolume  : "1",
                 startIssue   : "1",
@@ -137,6 +154,16 @@ class TippTestSpec extends AbstractAuthSpec {
                 startIssue   : "1",
                 coverageDepth: "Fulltext"
             ]
+        ],
+        ids: [
+          [
+            type: 'issn',
+            value: '3245-2341'
+          ],
+          [
+            type: 'eissn',
+            value: '3241-2541'
+          ]
         ]
     ]
     def urlPath = getUrlPath()
@@ -151,10 +178,13 @@ class TippTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200 // OK
+    resp.json.id == tipp.id
     resp.json.url == upd_body.url
-    resp.json.name == "TippName"
+    resp.json.name == "new TIPP name"
     resp.json.publisherName == "some Publisher"
+    resp.json._embedded.ids?.size() == 2
     resp.json._embedded.coverageStatements?.size() == 2
-    resp.json._embedded.coverageStatements.collect { it.id }.contains(tipp.coverageStatements[0].id.toInteger()) == true
+    resp.json._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
   }
+
 }

@@ -24,6 +24,7 @@ class TitleController {
   def genericOIDService
   def springSecurityService
   def ESSearchService
+  def FTUpdateService
   def messageService
   def restMappingService
   def titleLookupService
@@ -58,7 +59,7 @@ class TitleController {
       params.remove('es')
       params.remove('type')
       def start_es = LocalDateTime.now()
-      result = ESSearchService.find(params)
+      result = ESSearchService.find(params, null, user)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
     }
     else {
@@ -219,14 +220,17 @@ class TitleController {
                 )
               }
 
-              if (reqBody.variantNames) {
-                obj = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+              def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+
+              if (variant_result.errors.size() > 0) {
+                errors.variantNames = variant_result.errors
               }
 
               errors << updateCombos(obj, reqBody)
 
               if (errors.size() == 0) {
                 response.setStatus(201)
+                FTUpdateService.updateSingleItem(obj)
                 result = restMappingService.mapObjectToJson(obj, params, user)
               }
               else {
@@ -745,19 +749,28 @@ class TitleController {
       def editable = isUserCurator(obj,user) || user.isAdmin()
 
       if (editable) {
+        if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
+          response.setStatus(409)
+          result.message = message(code: "default.update.errors.message")
+          render result as JSON
+        }
+
         obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
 
         if ( obj.validate() ) {
           log.debug("No errors.. updating combos..")
 
-          if (reqBody.variantNames) {
-            obj = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+          def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+          if (variant_result.errors.size() > 0) {
+            errors.variantNames = variant_result.errors
           }
 
           errors << updateCombos(obj, reqBody, remove)
 
           if ( errors.size() == 0 ) {
             obj = obj.save(flush:true)
+            FTUpdateService.updateSingleItem(obj)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
@@ -793,22 +806,32 @@ class TitleController {
   @Transactional
   private def updateCombos(obj, reqBody, boolean remove = true) {
     log.debug("Updating title combos ..")
+    def changed = false
     def errors = [:]
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+      changed |= id_result.changed
+
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
       }
     }
 
-    def pub_errors = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
+    def pub_result = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
 
-    if (pub_errors.size() > 0)
-      errors.publisher = pub_errors
+    changed |= pub_result.changed
+
+    if (pub_result.errors.size() > 0) {
+      errors.publisher = pub_result.errors
+    }
+
+    if (changed) {
+      obj.lastSeen = System.currentTimeMillis()
+    }
 
     errors
   }
@@ -816,6 +839,7 @@ class TitleController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod='DELETE')
   @Transactional
   def delete() {
+    log.debug("Delete Title with id ${params.id}")
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstance.findByUuid(params.id)
@@ -846,7 +870,7 @@ class TitleController {
       response.setStatus(403)
       result.message = "User is not allowed to delete this component!"
     }
-    result
+    render result as JSON
   }
 
   def isUserCurator(obj, user) {
@@ -893,7 +917,7 @@ class TitleController {
       response.setStatus(403)
       result.message = "User is not allowed to edit this component!"
     }
-    result
+    render result as JSON
   }
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
@@ -947,6 +971,91 @@ class TitleController {
       response.setStatus(404)
     }
 
+    render result as JSON
+  }
+
+  @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def merge() {
+    def result = ['result':'OK', 'params': params]
+    def user = User.get(springSecurityService.principal.id)
+    def obj = TitleInstance.findByUuid(params.id) ?: TitleInstance.get(genericOIDService.oidToId(params.id))
+
+    if (obj && obj.isEditable()) {
+      def curator = isUserCurator(obj, user)
+
+      if (curator || user.isAdmin()) {
+        def target = obj.class.get(params.int('target'))
+
+        if (target) {
+          if (params.list('tipps')?.size() > 0) {
+            params.list('tipps').each { tipp ->
+              def tipp_combo = Combo.executeQuery("from Combo where fromComponent = :title and toComponent.id = :tippId", [title: obj, tippId: Long.valueOf(tipp)])
+
+              if (tipp_combo?.size() == 1) {
+                tipp_combo[0].fromComponent = target
+              }
+            }
+          }
+          else if (params.boolean('mergeTipps')) {
+            obj.tipps.each { tipp ->
+              def tippObj = TitleInstancePackagePlatform.get(tipp.id)
+
+              tippObj.title = target
+            }
+          }
+
+          if (params.list('ids')?.size() > 0) {
+            params.list('ids').each { tid ->
+              def idObj = Identifier.get(Long.valueOf(tid))
+
+              if (idObj && !target.ids.contains(idObj)) {
+                target.ids.add(idObj)
+              }
+            }
+          }
+          else if (params.boolean('mergeIds')) {
+            def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+
+            obj.ids.each{ old_id ->
+
+              def old_combo = Combo.findByFromComponentAndToComponent(obj, old_id)
+
+              def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = ? and c.fromComponent = ? and c.type = ?", [old_id, target, id_combo_type])
+              if (!dupes || dupes.size() == 0){
+                log.debug("Adding Identifier ${old_id} to ${target}")
+                Combo new_id = new Combo(toComponent: old_id, fromComponent: target, type: id_combo_type, status: old_combo.status).save(flush: true, failOnError: true)
+              }
+              else{
+                log.debug("Identifier ${old_id} is already connected to ${target}..")
+              }
+            }
+          }
+
+          obj.deleteSoft()
+        }
+        else {
+          result.result = 'ERROR'
+          response.setStatus(404)
+          result.message = "Unable to reference target title!"
+        }
+      }
+      else {
+        result.result = 'ERROR'
+        response.setStatus(403)
+        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+      }
+    }
+    else if (!obj) {
+      result.result = 'ERROR'
+      response.setStatus(404)
+      result.message = "Title not found or empty request body!"
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(403)
+      result.message = "User is not allowed to edit this component!"
+    }
     render result as JSON
   }
 

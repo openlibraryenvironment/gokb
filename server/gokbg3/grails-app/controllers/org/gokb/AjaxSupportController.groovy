@@ -224,14 +224,24 @@ class AjaxSupportController {
       format:'simple'
     ],
     'TitleInstance.Medium' : [
-      domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-      required:true,
-      qryParams:[],
-      rdvCat: "TitleInstance.Medium",
-      cols:['value'],
-      format:'simple'
+        domain:'RefdataValue',
+        countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+        rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+        required:true,
+        qryParams:[],
+        rdvCat: "TitleInstance.Medium",
+        cols:['value'],
+        format:'simple'
+    ],
+    'TitleInstancePackagePlatform.Medium' : [
+        domain:'RefdataValue',
+        countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+        rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+        required:true,
+        qryParams:[],
+        rdvCat: "TitleInstancePackagePlatform.Medium",
+        cols:['value'],
+        format:'simple'
     ],
     'TitleInstancePackagePlatform.CoverageDepth' : [
       domain:'RefdataValue',

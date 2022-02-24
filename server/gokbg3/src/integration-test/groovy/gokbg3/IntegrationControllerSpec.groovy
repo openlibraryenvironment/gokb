@@ -411,6 +411,7 @@ class IntegrationControllerSpec extends Specification {
     matching_pkgs[0].id == resp.json.pkgId
     matching_pkgs[0].tipps?.size() == 1
     matching_pkgs[0].tipps[0].importId == "wildeTitleId"
+    matching_pkgs[0].tipps[0].coverageStatements.size() == 1
     matching_pkgs[0].provider?.name == "American Chemical"
     matching_pkgs[0].ids?.size() == 1
   }
@@ -1206,5 +1207,123 @@ class IntegrationControllerSpec extends Specification {
     resp.json.errors.tipps[0].title.firstAuthor.message == "too long"
     resp.json.errors.tipps[0].title.firstEditor.message == "too long"
     resp.json.errors.tipps[0].tipp.identifiers.zdb.baddata == "1483109-0X"
+  }
+
+  void "Test updatePkgTipps new package"() {
+    given:
+    def json_record = [
+      "updateToken": "TestUpdateToken",
+      "packageHeader": [
+        "breakable": "No",
+        "consistent": "Yes",
+        "editStatus": "In Progress",
+        "listStatus": "Checked",
+        "fixed": "No",
+        "global": "Consortium",
+        "identifiers": [
+          [
+            "type": "isil",
+            "value": "ZDB-3-ACS"
+          ]
+        ],
+        "name": "TestTokenPackageUpdate",
+        "nominalPlatform": [
+          "name": "ACS Publications",
+          "primaryUrl": "https://pubs.acs.org"
+        ],
+        "nominalProvider": "American Chemical Society"
+      ],
+      "tipps": [
+        [
+          "accessEnd": "",
+          "accessStart": "",
+          "medium": "Electronic",
+          "name": "TippName for Allgemeine und spezielle Pharmakologie",
+          "platform": [
+            "name": "ACS Publications",
+            "primaryUrl": "https://pubs.acs.org"
+          ],
+          "status": "Current",
+          "prices": [
+            [
+              "type": "list",
+              "currency": "EUR",
+              "amount": 123.45,
+              "startDate": "2010-01-31"
+            ],
+            [
+              "type": "topup",
+              "currency": "USD",
+              "amount": 43.12,
+              "startDate": "2020-01-01"
+            ]
+          ],
+          "status": "Current",
+          "series": "Mystery Cloud",
+          "subjectArea": "Fringe",
+          "dateFirstOnline": "2020-01-01",
+          "dateFirstInPrint": "2018",
+          "firstAuthor": "TestAuthor",
+          "firstEditor": "TestEditor",
+          "editionStatement": "1",
+          "volumeNumber": "87",
+          "coverage": [
+            [
+              "coverageDepth": "fulltext"
+            ]
+          ],
+          "identifiers": [
+            [
+              "type": "isbn",
+              "value": "978-3-437-42523-3"
+            ]
+          ],
+          "title": [
+            "identifiers": [
+              [
+                "type": "isbn",
+                "value": "978-3-437-42523-3"
+              ]
+            ],
+            "publisher_history": [
+              [
+                "endDate": "",
+                "name": "ACS TestOrg",
+                "startDate": "1990",
+                "status": ""
+              ]
+            ],
+            "name": "Allgemeine und spezielle Pharmakologie",
+          ],
+          "publisherName": "ACS TestOrg",
+          "publicationType": "Serial",
+          "url": "http://pubs.acs.org/journal/jafcau"
+        ]
+      ]
+    ] as JSON
+    when: "Caller asks for this package to be imported"
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/updatePackageTipps") {
+      body(json_record)
+    }
+
+    then: "The request is sucessfully processed"
+    resp.json?.message?.startsWith('Created')
+    expect: "The Package updater is set correctly"
+    sleep(200)
+    def pkg = Package.get(resp.json.pkgId)
+    pkg.tipps?.size() == 1
+    pkg.tipps[0].name.startsWith("TippName")
+    pkg.tipps[0].dateFirstInPrint != null
+    pkg.tipps[0].dateFirstOnline != null
+    pkg.tipps[0].firstAuthor == "TestAuthor"
+    pkg.tipps[0].firstEditor == "TestEditor"
+    pkg.tipps[0].editionStatement != null
+    pkg.tipps[0].volumeNumber != null
+    pkg.name == "TestTokenPackageUpdate"
+    def title = pkg.tipps[0].title //JournalInstance.findByName("Journal of agricultural and food chemistry")
+    title.publisher?.size() == 1
+    title.publisher[0].name == "ACS TestOrg"
+    title.name == pkg.tipps[0].name
   }
 }

@@ -35,16 +35,11 @@ class FTUpdateService {
     }
   }
 
-  def doFTUpdate() {
-    log.debug("doFTUpdate")
-    log.debug("Execute IndexUpdateJob starting at ${new Date()}")
-    def start_time = System.currentTimeMillis()
-    def esclient = ESWrapperService.getClient()
+  def buildEsRecord (kbc) {
+    def result = [:]
 
-    try {
-      updateES(esclient, org.gokb.cred.Package.class) { org.gokb.cred.Package kbc ->
-        def result = null
-        result = [:]
+    switch (kbc.class) {
+      case org.gokb.cred.Package:
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
@@ -54,7 +49,8 @@ class FTUpdateService {
         result.sortname = kbc.name
         result.altname = []
         result.listStatus = kbc.listStatus?.value
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.editStatus = kbc.editStatus?.value
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
@@ -68,6 +64,7 @@ class FTUpdateService {
         result.nominalPlatformName = kbc.nominalPlatform?.name ?: ""
         result.nominalPlatformUuid = kbc.nominalPlatform?.uuid ?: ""
         result.scope = kbc.scope ? kbc.scope.value : ""
+        result.global = kbc.global ? kbc.global.value : ""
         if (kbc.listVerifiedDate)
           result.listVerifiedDate = dateFormatService.formatIsoTimestamp(kbc.listVerifiedDate)
         if (kbc.source) {
@@ -93,11 +90,8 @@ class FTUpdateService {
                                   namespaceName: idc.toComponent.namespace.name])
         }
         result.componentType = kbc.class.simpleName
-        result
-      }
-
-      updateES(esclient, org.gokb.cred.Org.class) { org.gokb.cred.Org kbc ->
-        def result = [:]
+        break
+      case org.gokb.cred.Org:
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
@@ -109,7 +103,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.roles = []
         kbc.roles.each { role ->
           result.roles.add(role.value)
@@ -134,11 +128,8 @@ class FTUpdateService {
           platform.name = plt.name ?: ""
           result.platforms.add(platform)
         }
-        result
-      }
-
-      updateES(esclient, org.gokb.cred.Platform.class) { org.gokb.cred.Platform kbc ->
-        def result = [:]
+        break
+      case org.gokb.cred.Platform:
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
@@ -147,7 +138,7 @@ class FTUpdateService {
         result.cpname = kbc.provider?.name
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
           result.curatoryGroups.add(cg.name)
@@ -166,19 +157,14 @@ class FTUpdateService {
                                   namespaceName: idc.toComponent.namespace.name])
         }
         result.componentType = kbc.class.simpleName
-        result
-      }
-
-      updateES(esclient, org.gokb.cred.JournalInstance.class) { org.gokb.cred.JournalInstance kbc ->
-        def result = null
+        break
+      case org.gokb.cred.JournalInstance:
         def current_pub = kbc.currentPublisher
-        result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
         result.sortname = kbc.name
         result.updater = 'journal'
-        // result.publisher = kbc.currentPublisher?.name
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
@@ -186,7 +172,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
@@ -195,19 +181,13 @@ class FTUpdateService {
                                   namespaceName: idc.toComponent.namespace.name])
         }
         result.componentType = kbc.class.simpleName
-        // log.debug("process ${result}")
-        result
-      }
-
-      updateES(esclient, org.gokb.cred.DatabaseInstance.class) { org.gokb.cred.DatabaseInstance kbc ->
-        def result = null
+        break
+      case org.gokb.cred.DatabaseInstance:
         def current_pub = kbc.currentPublisher
-        result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
         result.sortname = kbc.name
-        // result.publisher = kbc.currentPublisher?.name
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
@@ -215,7 +195,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
@@ -224,21 +204,13 @@ class FTUpdateService {
                                   namespaceName: idc.toComponent.namespace.name])
         }
         result.componentType = kbc.class.simpleName
-        // log.debug("process ${result}")
-        result
-      }
-
-      updateES(esclient, org.gokb.cred.OtherInstance.class) { org.gokb.cred.OtherInstance kbc ->
-
-        def result = null
+        break
+      case org.gokb.cred.OtherInstance:
         def current_pub = kbc.currentPublisher
-
-        result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
         result.sortname = kbc.name
-        // result.publisher = kbc.currentPublisher?.name
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
@@ -246,7 +218,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
@@ -255,20 +227,13 @@ class FTUpdateService {
                                   namespaceName: idc.toComponent.namespace.name])
         }
         result.componentType = kbc.class.simpleName
-        // log.debug("process ${result}")
-        result
-      }
-
-      updateES(esclient, org.gokb.cred.BookInstance.class) { org.gokb.cred.BookInstance kbc ->
-        def result = null
+        break
+      case org.gokb.cred.BookInstance:
         def current_pub = kbc.currentPublisher
-
-        result = [:]
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
         result.sortname = kbc.name
-//         result.publisher = kbc.currentPublisher?.name
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
@@ -277,7 +242,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
@@ -286,14 +251,8 @@ class FTUpdateService {
                                   namespaceName: idc.toComponent.namespace.name])
         }
         result.componentType = kbc.class.simpleName
-        // log.debug("process ${result}")
-        result
-      }
-
-      updateES(esclient, TitleInstancePackagePlatform.class) {
-
-        def result = [:]
-        TitleInstancePackagePlatform kbc = TitleInstancePackagePlatform.get(it.id)
+        break
+      case org.gokb.cred.TitleInstancePackagePlatform:
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name ?: (kbc.title?.name ?: null)
@@ -304,7 +263,7 @@ class FTUpdateService {
           result.curatoryGroups.add(cg.name)
         }
         result.titleType = kbc.title?.niceName ?: 'Unknown'
-        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated)
+        result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.url = kbc.url
         if (kbc.title?.niceName == 'Journal') {
           result.coverage = []
@@ -436,9 +395,30 @@ class FTUpdateService {
             price.endDate = dateFormatService.formatIsoTimestamp(p.endDate)
           result.prices.add(price)
         }
+        break
+      default:
+        result = null
+        break
+    }
 
-        result
-      }
+    result
+  }
+
+  def doFTUpdate() {
+    log.debug("doFTUpdate")
+    log.debug("Execute IndexUpdateJob starting at ${new Date()}")
+    def start_time = System.currentTimeMillis()
+    def esclient = ESWrapperService.getClient()
+
+    try {
+      updateES(esclient, org.gokb.cred.Package.class)
+      updateES(esclient, org.gokb.cred.Org.class)
+      updateES(esclient, org.gokb.cred.Platform.class)
+      updateES(esclient, org.gokb.cred.JournalInstance.class)
+      updateES(esclient, org.gokb.cred.DatabaseInstance.class)
+      updateES(esclient, org.gokb.cred.OtherInstance.class)
+      updateES(esclient, org.gokb.cred.BookInstance.class)
+      updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class)
     }
     catch (Exception e) {
       log.error("Problem", e)
@@ -446,7 +426,19 @@ class FTUpdateService {
     running = false
   }
 
-  def updateES(esclient, domain, recgen_closure) {
+  def updateSingleItem(kbc) {
+    def esclient = ESWrapperService.getClient()
+    def idx_record = buildEsRecord(kbc)
+    def es_index = ESSearchService.indicesPerType.get(idx_record['componentType'])
+
+    if (idx_record != null) {
+      def recid = idx_record['_id'].toString()
+      idx_record.remove('_id')
+      esclient.prepareIndex(es_index, 'component', recid).setSource(idx_record).get()
+    }
+  }
+
+  def updateES(esclient, domain) {
 
     log.debug("updateES(${domain}...)")
     cleanUpGorm()
@@ -488,7 +480,7 @@ class FTUpdateService {
         }
         Object r = domain.get(r_id)
         log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
-        def idx_record = recgen_closure(r)
+        def idx_record = buildEsRecord(r)
         def es_index = ESSearchService.indicesPerType.get(idx_record['componentType'])
         if (idx_record != null) {
           def recid = idx_record['_id'].toString()

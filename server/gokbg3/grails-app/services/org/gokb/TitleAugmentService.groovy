@@ -1,7 +1,7 @@
 package org.gokb
 
-import org.gokb.refine.*;
-import org.gokb.cred.*;
+import org.gokb.refine.*
+import org.gokb.cred.*
 
 import groovy.util.slurpersupport.GPathResult
 import static groovyx.net.http.ContentType.*
@@ -28,82 +28,203 @@ class TitleAugmentService {
     CuratoryGroup editorialGroup = grailsApplication.config.gokb.editorialAdmin?.journals ? CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.editorialAdmin.journals) : null
 
     if ( titleInstance.niceName == 'Journal' ) {
-      def candidates = zdbAPIService.lookup(titleInstance.name, titleInstance.ids)
-      RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
-      RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+      def rr_in_use = RefdataCategory.lookup('ReviewRequest.StdDesc', 'ZDB Title Overlap')
+      def status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+      def status_closed = RefdataCategory.lookup("ReviewRequest.Status", "Closed")
+      def existing_inuse = ReviewRequest.executeQuery("from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc = :type and rr.status = :status", [ti: titleInstance, type: rr_in_use, status: status_open])
 
-      if (candidates.size() == 1) {
-        def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0].id)
-        def conflicts = Combo.executeQuery("from Combo as c where c.fromComponent IN (select ti from TitleInstance as ti where ti.status != :deleted) and c.fromComponent != :tic and c.toComponent = :idc and c.type = :ctype", [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
+      if (existing_inuse?.size() == 0) {
+        def rr_no_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'No ZDB Results')
+        def rr_multiple = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple ZDB Results')
+        def existing_noresults = ReviewRequest.executeQuery("from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc = :type", [ti: titleInstance, type: rr_no_results])
+        def existing_multiple = ReviewRequest.executeQuery("from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc = :type", [ti: titleInstance, type: rr_multiple])
+        def candidates = zdbAPIService.lookup(titleInstance.name, titleInstance.ids)
+        RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+        RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
 
-        if (conflicts.size() > 0) {
-          log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${new_id.identifiedComponents}")
+        if (candidates.size() == 1) {
+          def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0].id)
+          def conflicts = Combo.executeQuery("from Combo as c where c.fromComponent IN (select ti from TitleInstance as ti where ti.status != :deleted) and c.fromComponent != :tic and c.toComponent = :idc and c.type = :ctype", [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
 
-          conflicts.each { cc ->
-            if (!cc.fromComponent.publishedFrom && candidates[0].publishedFrom) {
-              log.debug("Adding new start journal start date ..")
-              com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedFrom), cc.fromComponent, 'publishedFrom')
+          if (conflicts.size() > 0) {
+            log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${new_id.identifiedComponents}")
+            if (conflicts.size() == 1) {
+              setNewTitleInfo(conflicts[0].fromComponent, candidates[0])
             }
-            if (!cc.fromComponent.publishedTo && candidates[0].publishedTo) {
-              log.debug("Adding new start journal end date ..")
-              com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedTo), cc.fromComponent, 'publishedTo')
+
+            def additionalInfo = [
+              otherComponents: conflicts.collect { [id: it.fromComponent.id, name: it.fromComponent.name, oid: it.fromComponent.logEntityId, uuid: it.fromComponent.uuid] }
+            ]
+
+            reviewRequestService.raise(
+              titleInstance,
+              "Review all titles for possible discrepancies",
+              "Matched ZDB-ID is already linked to another title instance.",
+              null,
+              null,
+              (additionalInfo as JSON).toString(),
+              rr_in_use,
+              editorialGroup
+            )
+          }
+          else {
+            log.debug("Adding new ZDB-ID ${new_id}")
+            new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
+
+            titleInstance.tipps.each {
+              it.lastSeen = new Date().getTime()
+              it.save()
+            }
+
+            existing_noresults.each {
+              it.status = status_closed
+              it.save()
+            }
+
+            existing_multiple.each {
+              it.status = status_closed
+              it.save()
+            }
+          }
+
+          setNewTitleInfo(titleInstance, candidates[0])
+        }
+        else if (candidates.size == 0){
+          if (existing_noresults.size() == 0 && titleInstance.ids.collect { it.namespace.value == 'issn' || it.namespace.value == 'eissn' }) {
+            log.debug("No ZDB result for ids of title ${titleInstance} (${titleInstance.ids.collect { it.value }})")
+
+            if (titleInstance.reviewRequests.collect { it.stdDesc == rr_no_results}.size() == 0) {
+              reviewRequestService.raise(
+                titleInstance,
+                "Check for reference ID",
+                "No ZDB matches for linked ISSNs",
+                null,
+                null,
+                null,
+                rr_no_results,
+                editorialGroup
+              )
             }
           }
         }
-        else {
-          log.debug("Adding new ZDB-ID ${new_id}")
-          new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
-        }
+        else if (existing_multiple.size() == 0) {
+          log.debug("Multiple ZDB-ID candidates for title ${titleInstance}")
 
-        if (!titleInstance.publishedFrom && candidates[0].publishedFrom) {
-          log.debug("Adding new start journal start date ..")
-          com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedFrom), titleInstance, 'publishedFrom')
-        }
-        if (!titleInstance.publishedTo && candidates[0].publishedTo) {
-          log.debug("Adding new start journal end date ..")
-          com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(candidates[0].publishedTo), titleInstance, 'publishedTo')
-        }
+          def name_candidates = []
 
-        if (!titleInstance.currentPublisher && candidates[0].publisher) {
-          def pub_obj = Org.findByNameAndStatusNot(candidates[0].publisher, status_deleted)
-
-          if (!pub_obj) {
-            def variant_normname = GOKbTextUtils.normaliseString(candidates[0].publisher)
-            def var_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted])
-
-            if (var_candidates.size() == 1) {
-              pub_obj = var_candidates[0]
+          candidates.each {
+            if (KBComponent.generateNormname(it.title) == titleInstance.normname) {
+              name_candidates.add (it)
             }
           }
 
-          if (pub_obj) {
-            def publisher_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
-            new Combo(fromComponent: titleInstance, toComponent: pub_obj, type: publisher_combo).save(flush: true, failOnError: true)
+          if (name_candidates.size() == 1) {
+            def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', name_candidates[0].id)
+            def conflicts = Combo.executeQuery("from Combo as c where c.fromComponent IN (select ti from TitleInstance as ti where ti.status != :deleted) and c.fromComponent != :tic and c.toComponent = :idc and c.type = :ctype", [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
+
+            if (conflicts.size() > 0) {
+              log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${new_id.identifiedComponents}")
+              if (conflicts.size() == 1) {
+                setNewTitleInfo(conflicts[0].fromComponent, candidates[0])
+              }
+
+              def additionalInfo = [
+                otherComponents: new_id.identifiedComponents.collect { [id: it.id, name: it.name, oid: it.logEntityId, uuid: it.uuid] }
+              ]
+
+              reviewRequestService.raise(
+                titleInstance,
+                "Review all titles for possible discrepancies",
+                "Matched ZDB-ID is already linked to another title instance.",
+                null,
+                null,
+                (additionalInfo as JSON).toString(),
+                rr_in_use,
+                editorialGroup
+              )
+            }
+            else {
+              log.debug("Adding new ZDB-ID ${new_id}")
+              new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
+
+              titleInstance.tipps.each {
+                it.lastSeen = new Date().getTime()
+                it.save()
+              }
+
+              existing_noresults.each {
+                it.status = status_closed
+                it.save()
+              }
+
+              existing_multiple.each {
+                it.status = status_closed
+                it.save()
+              }
+            }
+          }
+          else if (candidates.size() > 1) {
+            def additionalInfo = [
+              candidates: candidates
+            ]
+
+            reviewRequestService.raise(
+              titleInstance,
+              "Choose the correct ZDB-ID from the list of candidates",
+              "Multiple ZDB-IDs found for ISSN ids",
+              null,
+              null,
+              (additionalInfo as JSON).toString(),
+              rr_multiple,
+              editorialGroup
+            )
           }
         }
-      }
-      else if (candidates.size == 0){
-        log.debug("No ZDB result for ids of title ${titleInstance}")
       }
       else {
-        log.debug("Multiple ZDB-ID candidates for title ${titleInstance}")
-
-        def additionalInfo = [
-          candidates: candidates
-        ]
-
-        reviewRequestService.raise(
-          titleInstance,
-          "Choose correct the ZDB-ID from the list of candidates",
-          "Multiple ZDB-IDs found for ISSN ids",
-          null,
-          null,
-          (additionalInfo as JSON).toString(),
-          RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple ZDB Results'),
-          editorialGroup
-        )
+        log.debug("Skipping title with existing RR ..")
       }
     }
+  }
+
+  private void setNewTitleInfo(titleInstance, info) {
+    if (!titleInstance.publishedFrom && info.publishedFrom) {
+      log.debug("Adding new start journal start date ..")
+      com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedFrom), titleInstance, 'publishedFrom')
+    }
+    if (!titleInstance.publishedTo && info.publishedTo) {
+      log.debug("Adding new start journal end date ..")
+      com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedTo), titleInstance, 'publishedTo')
+    }
+
+    if (!titleInstance.currentPublisher && info.publisher) {
+      RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+      def pub_obj = Org.findByNameAndStatusNot(info.publisher, status_deleted)
+
+      if (!pub_obj) {
+        def variant_normname = GOKbTextUtils.normaliseString(info.publisher)
+        def var_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted])
+
+        if (var_candidates.size() == 1) {
+          pub_obj = var_candidates[0]
+        }
+      }
+
+      if (pub_obj) {
+        def publisher_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
+        new Combo(fromComponent: titleInstance, toComponent: pub_obj, type: publisher_combo).save(flush: true, failOnError: true)
+      }
+    }
+
+    def full_title = info.subtitle ? "${info.title}: ${info.subtitle}" : info.title
+
+    if (titleInstance.normname != KBComponent.generateNormname(full_title)) {
+      def old_title = titleInstance.name
+      titleInstance.name = full_title
+      titleInstance.addVariantTitle(old_title)
+    }
+
+    titleInstance.save(flush: true)
   }
 
   def doEnrichment() {

@@ -7,7 +7,9 @@ import grails.gorm.transactions.Transactional
 import grails.io.IOUtils
 import groovy.util.logging.Slf4j
 import groovy.xml.MarkupBuilder
+import groovy.xml.StreamingMarkupBuilder
 import groovyx.net.http.RESTClient
+import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
 import org.hibernate.ScrollMode
@@ -711,39 +713,39 @@ class PackageService {
       }
     }
 
-    if (packageHeaderDTO.ids?.size() > 0) {
-      ids_list.each { rid ->
-        Identifier the_id = null
+    // if (packageHeaderDTO.ids?.size() > 0) {
+    //   ids_list.each { rid ->
+    //     Identifier the_id = null
 
-        if (rid instanceof Integer) {
-          the_id = Identifier.get(rid)
-        }
-        else {
-          def ns_field = rid.type ?: rid.namespace
-          def ns = null
+    //     if (rid instanceof Integer) {
+    //       the_id = Identifier.get(rid)
+    //     }
+    //     else {
+    //       def ns_field = rid.type ?: rid.namespace
+    //       def ns = null
 
-          if (ns_field) {
-            if (ns_field instanceof Integer) {
-              ns = IdentifierNamespace.get(ns_field)
-            }
-            else {
-              ns = IdentifierNamespace.findByValueIlike(ns_field)
-            }
+    //       if (ns_field) {
+    //         if (ns_field instanceof Integer) {
+    //           ns = IdentifierNamespace.get(ns_field)
+    //         }
+    //         else {
+    //           ns = IdentifierNamespace.findByValueIlike(ns_field)
+    //         }
 
-            if (ns) {
-              def match = Package.lookupByIO(ns.value, rid.value)
+    //         if (ns) {
+    //           def match = Package.lookupByIO(ns.value, rid.value)
 
-              if (match) {
-                if (!matches["${nc.id}"])
-                  matches["${nc.id}"] = []
+    //           if (match && match.status != status_deleted) {
+    //             if (!matches["${ns.id}"])
+    //               matches["${ns.id}"] = []
 
-                matches["${nc.id}"] << [field: 'ids', value: rid.value, message: "An existing package was matched by a supplied identifier!"]
-              }
-            }
-          }
-        }
-      }
-    }
+    //             matches["${ns.id}"] << [field: 'ids', value: rid.value, message: "An existing package was matched by a supplied identifier!"]
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
 
     def variant_normname = GOKbTextUtils.normaliseString(packageHeaderDTO.name)
     def variant_matches = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
@@ -768,7 +770,8 @@ class PackageService {
         }
 
         if (variant) {
-          def name_matches = Package.findAllByName(variant)
+          def var_norm = Package.generateNormname(variant)
+          def name_matches = Package.findAllByNormnameAndStatusNotEqual(var_norm, status_deleted)
 
           name_matches.each { nm ->
             if (!matches["${nm.id}"])
@@ -1107,19 +1110,17 @@ class PackageService {
         cg = CuratoryGroup.get(it)
       }
       else if (it instanceof String) {
-        String normname = CuratoryGroup.generateNormname(it)
         cgname = it
 
-        cg = CuratoryGroup.findByNormname(normname)
+        cg = CuratoryGroup.findByNameIlike(it)
       }
       else if (it.id) {
         cg = CuratoryGroup.get(it.id)
       }
       else if (it.name) {
-        String normname = CuratoryGroup.generateNormname(it.name)
         cgname = it.name
 
-        cg = CuratoryGroup.findByNormname(normname)
+        cg = CuratoryGroup.findByNameIlike(it.name)
       }
 
       if (cg) {
@@ -1132,9 +1133,14 @@ class PackageService {
         }
       }
       else if (cgname) {
-        def new_cg = new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
-        result.curatoryGroups.add(new_cg)
-        changed = true
+        try {
+          def new_cg = new CuratoryGroup(name: cgname).save(flush: true, failOnError: true)
+          result.curatoryGroups.add(new_cg)
+          changed = true
+        }
+        catch (grails.validation.ValidationException ve) {
+          log.debug("Unable to create new CG!")
+        }
       }
     }
 
@@ -1163,7 +1169,6 @@ class PackageService {
                 url            : sourceMap.url,
                 frequency      : sourceMap.frequency,
                 ezbMatch       : (sourceMap.ezbMatch ?: false),
-                zdbMatch       : (sourceMap.zdbMatch ?: false),
                 automaticUpdate: (sourceMap.automaticUpdate ?: false),
                 targetNamespace: namespace
             ]
@@ -1180,7 +1185,6 @@ class PackageService {
             changed |= ClassUtils.setStringIfDifferent(src, 'frequency', sourceMap.frequency)
             changed |= ClassUtils.setStringIfDifferent(src, 'url', sourceMap.url)
             changed |= ClassUtils.setBooleanIfDifferent(src, 'ezbMatch', sourceMap.ezbMatch)
-            changed |= ClassUtils.setBooleanIfDifferent(src, 'zdbMatch', sourceMap.zdbMatch)
             changed |= ClassUtils.setBooleanIfDifferent(src, 'automaticUpdate', sourceMap.automaticUpdate)
 
             if (namespace && namespace != src.targetNamespace) {
@@ -1456,8 +1460,10 @@ class PackageService {
 
   void sendFile(Package pkg, ExportType type, def response) {
     String fileName = generateExportFileName(pkg, type)
+
     try {
       File file = new File(exportFilePath() + fileName)
+
       if (!file.isFile()) {
         if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
           createKbartExport(pkg, type)
@@ -1476,7 +1482,6 @@ class PackageService {
       IOUtils.copy(inFile, out)
       inFile.close()
       out.close()
-      file.delete()
     }
     catch (Exception e) {
       log.error("Problem with sending export", e);
@@ -1676,9 +1681,10 @@ class PackageService {
     String lastUpdate = dateFormatService.formatTimestamp(pkg.lastUpdated)
     StringBuilder name = new StringBuilder()
     if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE] ) {
-      name.append(toCamelCase(pkg.provider?.name ? pkg.provider.name : "unknown Provider")).append('_')
+      name.append(toCamelCase(pkg.provider?.name ? pkg.provider.name : "Unknown Provider")).append('_')
           .append(toCamelCase(pkg.global.value)).append('_')
           .append(toCamelCase(pkg.name))
+          .append(type == ExportType.KBART_TITLE ? '_Processed' : '')
     }
     else {
       name.append("GoKBPackage-").append(pkg.id)
@@ -1743,7 +1749,7 @@ class PackageService {
     record.publisher_name = pick (tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
     record.preceding_publication_title_id = pick(tipp.precedingPublicationTitleId, tipp.title?.getPrecedingTitleId(), exportType)
     record.parent_publication_title_id = tipp.parentPublicationTitleId
-    record.access_type = pick(tipp.paymentType, null, exportType)
+    record.access_type = pick((tipp.paymentType && ['OA','Uncharged'].contains(tipp.paymentType) ? 'F' : 'P'), null, exportType)
     record.zdb_id = pick(tipp.getIdentifierValue('ZDB'), tipp.title?.getIdentifierValue('ZDB'), exportType)
     record.gokb_tipp_uid = tipp.uuid
     record.gokb_title_uid = tipp.title?.uuid
@@ -1786,6 +1792,7 @@ class PackageService {
     def result = 'OK'
     def attr = [:]
     File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    File tempDir = new File('/tmp/gokb/oai/')
 
     Package.withNewSession {
       Package item = Package.get(id)
@@ -1795,30 +1802,219 @@ class PackageService {
           dir.mkdirs()
         }
 
+        if (!tempDir.exists()) {
+          tempDir.mkdirs()
+        }
+
         attr["xmlns:gokb"] = 'http://gokb.org/oai_metadata/'
+        def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
 
-        def location = "${dir}/${item.uuid}_${item.lastUpdated.toInstant()}.xml"
-        File cachedRecord = new File(location)
+        def fileName = "${item.uuid}_${dateFormatService.formatIsoMsTimestamp(item.lastUpdated)}.xml"
+        File cachedRecord = new File("${dir}/${fileName}")
+        def currentCacheFile = null
+        Date currentCacheDate
 
-        if (!cachedRecord.exists() || (item.lastUpdated > new Date(cachedRecord.lastModified()) && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 30)) {
+        for (File file : dir.listFiles()) {
+          if (file.name.contains(item.uuid)) {
+            def datepart = file.name.split('_')[1]
+            currentCacheFile = file
+            currentCacheDate = dateFormatService.parseIsoMsTimestamp(datepart.substring(0, datepart.length() - 4))
+          }
+        }
+
+        if (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() > 30 && (!currentCacheFile || item.lastUpdated > currentCacheDate)) {
+          File tmpFile = new File("${tempDir}/${fileName}.tmp")
+
+          if (tmpFile.exists()) {
+            tmpFile.delete()
+          }
+
+          def fileWriter = new BufferedWriter(new FileWriter(tmpFile, true))
+
+          def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps');
+          def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps');
+          def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps');
+          def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted');
+          String tipp_hql = "from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)"
+          def tipp_hql_params = [pkg: item, ctype: refdata_package_tipps]
+          def tipps_count = item.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
+          def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+          def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+          def pkg_ids = Identifier.executeQuery("select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [item, refdata_ids, status_active], [readOnly: true])
+          String cName = item.class.name
+
+          log.info("Starting package caching for ${item.name} with ${tipps_count} TIPPs..")
+
+          fileWriter << new StreamingMarkupBuilder().bind {
+            mkp.declareNamespace(xsd:'http://www.w3.org/2001/XMLSchema')
+            'gokb'(attr) {
+              'package'('id': (item.id), 'uuid': (item.uuid)) {
+
+                // Single props.
+                'name'(item.name)
+                'status'(item.status?.value)
+                'editStatus'(item.editStatus?.value)
+                'language'(item.language?.value)
+                'lastUpdated'(item.lastUpdated ? dateFormatService.formatIsoTimestamp(item.lastUpdated) : null)
+                'shortcode'(item.shortcode)
+
+                // Identifiers
+                'identifiers' {
+                  pkg_ids?.each { tid ->
+                    'identifier'('namespace': tid[0], 'namespaceName': tid[1], 'value': tid[2], 'type': tid[3])
+                  }
+                }
+
+                // Variant Names
+                'variantNames' {
+                  item.variantNames.each { vn ->
+                    'variantName'(vn.variantName)
+                  }
+                }
+
+                'scope'(item.scope?.value)
+                'listStatus'(item.listStatus?.value)
+                'breakable'(item.breakable?.value)
+                'consistent'(item.consistent?.value)
+                'fixed'(item.fixed?.value)
+                'paymentType'(item.paymentType?.value)
+                'global'(item.global?.value)
+                'globalNote'(item.globalNote)
+                'contentType'(item.contentType?.value)
+
+                if (item.nominalPlatform) {
+                  'nominalPlatform'(id: item.nominalPlatform.id, uuid: item.nominalPlatform.uuid) {
+                    'primaryUrl'(item.nominalPlatform.primaryUrl)
+                    'name'(item.nominalPlatform.name)
+                  }
+                }
+
+                if (item.provider) {
+                  'nominalProvider'(id: item.provider.id, uuid: item.provider.uuid) {
+                    'name'(item.provider.name)
+                  }
+                }
+
+                'listVerifiedDate'(item.listVerifiedDate ? dateFormatService.formatIsoTimestamp(item.listVerifiedDate) : null)
+
+                'curatoryGroups' {
+                  item.curatoryGroups.each { cg ->
+                    'group' {
+                      'name'(cg.name)
+                    }
+                  }
+                }
+
+                if (item.source) {
+                  'source' {
+                    'name'(item.source.name)
+                    'url'(item.source.url)
+                    'defaultAccessURL'(item.source.defaultAccessURL)
+                    'explanationAtSource'(item.source.explanationAtSource)
+                    'contextualNotes'(item.source.contextualNotes)
+                    'frequency'(item.source.frequency?.value)
+                  }
+                }
+
+                'dateCreated'(dateFormatService.formatIsoTimestamp(item.dateCreated))
+                'TIPPs'(count: tipps_count) {
+                  int offset = 0
+                  while (offset < tipps_count) {
+                    log.debug("Fetching TIPPs batch ${offset}/${tipps_count}")
+                    def tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
+                    log.debug("fetch complete ..")
+                    offset += 50
+                    tipps.each { tipp ->
+                      'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
+                        'status'(tipp.status?.value)
+                        'name'(tipp.name)
+                        'lastUpdated'(tipp.lastUpdated ? dateFormatService.formatIsoTimestamp(tipp.lastUpdated) : null)
+                        'series'(tipp.series)
+                        'subjectArea'(tipp.subjectArea)
+                        'publisherName'(tipp.publisherName)
+                        'dateFirstInPrint'(tipp.dateFirstInPrint)
+                        'dateFirstOnline'(tipp.dateFirstOnline)
+                        'medium'(tipp.format?.value)
+                        'format'(tipp.medium?.value)
+                        'volumeNumber'(tipp.volumeNumber)
+                        'editionStatement'(tipp.editionStatement)
+                        'firstAuthor'(tipp.firstAuthor)
+                        'firstEditor'(tipp.firstEditor)
+                        'parentPublicationTitleId'(tipp.parentPublicationTitleId)
+                        'precedingPublicationTitleId'(tipp.precedingPublicationTitleId)
+                        'lastChangedExternal'(tipp.lastChangedExternal)
+                        'publicationType'(tipp.publicationType?.value)
+                        if (tipp.title) {
+                          'title'('id': tipp.title.id, 'uuid': tipp.title.uuid) {
+                            'name'(tipp.title.name?.trim())
+                            'type'(getTitleClass(tipp.title.id))
+                            'status'(tipp.title.status?.value)
+                            'identifiers' {
+                              getTitleIds(tipp.title.id).each { tid ->
+                                'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                              }
+                            }
+                          }
+                        }
+                        else {
+                          'title'()
+                        }
+                        'identifiers' {
+                          getTippIds(tipp.id).each { tid ->
+                            'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                          }
+                        }
+                        'platform'(id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid) {
+                          'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
+                          'name'(tipp.hostPlatform.name?.trim())
+                        }
+                        'access'(start: tipp.accessStartDate ? dateFormatService.formatIsoTimestamp(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatIsoTimestamp(tipp.accessEndDate) : null)
+                        def cov_statements = getCoverageStatements(tipp.id)
+                        if (cov_statements?.size() > 0) {
+                          cov_statements.each { tcs ->
+                            'coverage'(
+                              startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+                              startVolume: (tcs.startVolume),
+                              startIssue: (tcs.startIssue),
+                              endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+                              endVolume: (tcs.endVolume),
+                              endIssue: (tcs.endIssue),
+                              coverageDepth: (tcs.coverageDepth?.value ?: null),
+                              coverageNote: (tcs.coverageNote),
+                              embargo: (tcs.embargo)
+                            )
+                          }
+                        }
+                        'url'(tipp.url ?: "")
+                      }
+                    }
+                    cleanUpGorm()
+                    log.debug("Batch complete ..")
+                  }
+                }
+              }
+            }
+          }
+          log.info("Finished processing ${tipps_count} TIPPs ..")
+          fileWriter.close()
+
           def removal = removeCacheEntriesForItem(item.uuid)
 
           if (removal) {
             log.debug("Removed stale cache files ..")
           }
 
-          def fileWriter = new FileWriter(location)
-          def recordXml = new MarkupBuilder(fileWriter)
-          item.toGoKBXml(recordXml, attr)
-          fileWriter.close()
+          FileUtils.moveFile(tmpFile, cachedRecord)
+          Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(cachedRecord.lastModified()), item.id])
         }
-        else if (item.lastUpdated <= new Date(cachedRecord.lastModified())) {
-          log.debug("Package had no new changes ..")
+        else if (currentCacheFile && item.lastUpdated <= currentCacheDate) {
           result = 'SKIPPED_NO_CHANGE'
         }
-        else if (Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() <= 30) {
+        else if (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() <= 30) {
           result = 'SKIPPED_CURRENTLY_CHANGING'
-          log.debug("Skipping Package that is currently receiving changes ..")
+        }
+        else {
+          result = 'SKIPPED_DEFAULT'
         }
       }
       else {
@@ -1827,6 +2023,31 @@ class PackageService {
       }
     }
 
+    result
+  }
+
+  private def getTitleIds(Long title_id) {
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [title_id, refdata_ids, status_active], [readOnly: true]);
+    result
+  }
+
+  private def getTippIds(Long tipp_id) {
+    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
+    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [tipp_id, refdata_ids, status_active], [readOnly: true]);
+    result
+  }
+
+  private def getTitleClass(Long title_id) {
+    def result = KBComponent.get(title_id)?.class.getSimpleName();
+
+    result
+  }
+
+  private def getCoverageStatements(Long tipp_id) {
+    def result = TIPPCoverageStatement.executeQuery("from TIPPCoverageStatement as tcs where tcs.owner.id = :tipp", ['tipp': tipp_id], [readOnly: true])
     result
   }
 

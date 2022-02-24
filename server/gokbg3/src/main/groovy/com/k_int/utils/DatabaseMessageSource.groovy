@@ -39,7 +39,7 @@ class DatabaseMessageSource extends AbstractMessageSource {
               format = messageBundleMessageSource?.resolveCode(code, locale)
             }
             catch ( Exception e ) {
-              logger.error("couldn't resolve message code $code", e)
+              // logger.error("couldn't resolve message code $code", e)
               // Something went badly wrong, return the code as the messge and carry on.
               // System.err.println("Problem trying to lookup message with key ${cache_key}");
               format = new MessageFormat(code, locale)

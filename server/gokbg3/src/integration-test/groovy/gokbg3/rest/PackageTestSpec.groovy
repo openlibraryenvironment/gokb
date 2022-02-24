@@ -45,11 +45,11 @@ class PackageTestSpec extends AbstractAuthSpec {
     def kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
     def freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
     testSource = Source.findByName("PackTestSource") ?: new Source(
-      name: "PackTestSource",
-      url: "https://org/package",
-      frequency: freq,
-      defaultSupplyMethod: http,
-      defaultDataFormat: kbart)
+        name: "PackTestSource",
+        url: "https://org/package",
+        frequency: freq,
+        defaultSupplyMethod: http,
+        defaultDataFormat: kbart)
     //.save(flush: true)
   }
 
@@ -135,15 +135,22 @@ class PackageTestSpec extends AbstractAuthSpec {
   void "test /rest/packages post with new tipps"() {
     given:
     def upd_body = [
-      name : "TestPackageWithTipps",
-      tipps: [
-        [
-          title       : testTitle.id,
-          hostPlatform: testPlt.id,
-          url         : "http://testpkgwithtipp.test",
-          name        : "TIPP Name"
+        name : "TestPackageWithTipps",
+        tipps: [
+            [
+                title       : testTitle.id,
+                hostPlatform: testPlt.id,
+                url         : "http://testpkgwithtipp.test",
+                name        : "TIPP Name",
+                prices      : [
+                    [
+                        type    : 'list',
+                        amount  : 34.50,
+                        currency: 'GBP'
+                    ]
+                ]
+            ]
         ]
-      ]
     ]
     def urlPath = getUrlPath()
     last = true
@@ -165,24 +172,24 @@ class PackageTestSpec extends AbstractAuthSpec {
   void "test /rest/packages post with provider, source and platform"() {
     given:
     def new_body = [
-      name           : "TestPackageWithProviderAndPlatform",
-      breakable      : "Yes",
-      consistent     : "Yes",
-      description    : "kjkljslkdfsdf",
-      descriptionURL : "https://heise.de",
-      fixed          : "Yes",
-      global         : "Consortium",
-      globalNote     : "Testing Consortium",
-      ids            : [
-        [
-          "value"    : "1213-123X",
-          "namespace": "issn"
-        ]
-      ],
-      provider       : testOrg.id,
-      nominalPlatform: testPlt.id,
-      source         : [id: testSource.id],
-      scope          : [name: "Front File"]
+        name           : "TestPackageWithProviderAndPlatform",
+        breakable      : "Yes",
+        consistent     : "Yes",
+        description    : "kjkljslkdfsdf",
+        descriptionURL : "https://heise.de",
+        fixed          : "Yes",
+        global         : "Consortium",
+        globalNote     : "Testing Consortium",
+        ids            : [
+            [
+                "value"    : "1213-123X",
+                "namespace": "issn"
+            ]
+        ],
+        provider       : testOrg.id,
+        nominalPlatform: testPlt.id,
+        source         : [id: testSource.id],
+        scope          : [name: "Front File"]
     ] as JSON
     def urlPath = getUrlPath()
     last = true

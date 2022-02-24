@@ -26,9 +26,12 @@ class TippController {
   def genericOIDService
   def springSecurityService
   def ESSearchService
+  def FTUpdateService
   def messageService
   def restMappingService
   def componentLookupService
+  def componentUpdateService
+  def tippService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -46,7 +49,7 @@ class TippController {
     if (es_search) {
       params.remove('es')
       def start_es = LocalDateTime.now()
-      result = ESSearchService.find(params)
+      result = ESSearchService.find(params, null, user)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
     }
     else {
@@ -113,6 +116,7 @@ class TippController {
       def curator = pkg?.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
       if (curator) {
+        log.debug("Incoming: ${reqBody}")
         def tipp_validation = TitleInstancePackagePlatform.validateDTO(reqBody, RequestContextUtils.getLocale(request))
 
         if (tipp_validation.valid) {
@@ -121,6 +125,8 @@ class TippController {
           if (obj?.validate()) {
 
             errors << updateCombos(obj, reqBody)
+
+            FTUpdateService.updateSingleItem(obj)
 
             if (errors.size() == 0) {
               result = restMappingService.mapObjectToJson(obj, params, user)
@@ -165,6 +171,7 @@ class TippController {
   def update() {
     def result = ['result': 'OK', 'params': params]
     def reqBody = request.JSON
+    def remove = (request.method == 'PUT')
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstancePackagePlatform.findByUuid(params.id)
@@ -174,29 +181,42 @@ class TippController {
     }
 
     if (obj?.pkg && reqBody) {
-      obj.lock()
-
       def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
       if (curator || user.isAdmin()) {
-        reqBody.title = obj.title.id
+        reqBody.title = obj.title?.id ?: reqBody.title
         reqBody.hostPlatform = obj.hostPlatform.id
         reqBody.pkg = obj.pkg.id
-
+        reqBody.id = reqBody.id?:params.id // storing the TIPP ID in the JSON data for later use in upsertDTO
         def tipp_validation = TitleInstancePackagePlatform.validateDTO(reqBody, RequestContextUtils.getLocale(request))
 
         if (tipp_validation.valid) {
+          if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
+            response.setStatus(409)
+            result.message = message(code: "default.update.errors.message")
+            render result as JSON
+          }
+
           def jsonMap = obj.jsonMapping
 
-          obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+          obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+
+          def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+          if (variant_result.errors.size() > 0) {
+            errors.variantNames = variant_result.errors
+          }
 
           errors << updateCombos(obj, reqBody)
-          obj = updateCoverage(obj, reqBody)
 
           if (obj?.validate()) {
             if (errors.size() == 0) {
+
+              obj = tippService.updateCoverage(obj, reqBody)
+
               log.debug("No errors.. saving")
               obj = obj.merge(flush: true)
+              FTUpdateService.updateSingleItem(obj)
               result = restMappingService.mapObjectToJson(obj, params, user)
             }
             else {
@@ -237,112 +257,42 @@ class TippController {
 
   @Transactional
   private def updateCombos(obj, reqBody, boolean remove = true) {
-    log.debug("Updating title combos ..")
+    log.debug("Updating TIPP combos ..")
     def errors = [:]
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
 
-      def id_errors = restMappingService.updateIdentifiers(obj, id_list, remove)
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
 
-      if (id_errors.size() > 0) {
-        errors.ids = id_errors
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
+      }
+
+      if (id_result.changed) {
+        obj.lastSeen = System.currentTimeMillis()
+      }
+    }
+
+    if (obj.title == null && reqBody.title) {
+      def ti = null
+
+      if (reqBody.title instanceof Integer) {
+        ti = TitleInstance.get(reqBody.title)
+      }
+      else if (reqBody.title instanceof Map && reqBody.title.id) {
+        ti = TitleInstance.get(reqBody.title.id)
+      }
+
+      if (ti) {
+        obj.title = ti
+      }
+      else {
+        errors.title = [[message: "Unable to reference provided reference title!", baddata: reqBody.title, code: 'notFound']]
       }
     }
 
     errors
-  }
-
-  private def updateCoverage(tipp, reqBody) {
-    def cov_list = reqBody.coverageStatements ?: reqBody.coverage
-    def missing = tipp.coverageStatements.collect { it.id }
-    def changed = false
-
-    cov_list?.each { c ->
-      def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-      def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
-
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startVolume', c.startVolume)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'startIssue', c.startIssue)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endVolume', c.endVolume)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'endIssue', c.endIssue)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'embargo', c.embargo)
-      changed |= com.k_int.ClassUtils.setStringIfDifferent(tipp, 'coverageNote', c.coverageNote)
-      changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tipp, 'startDate')
-      changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tipp, 'endDate')
-      changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TitleInstancePackagePlatform.CoverageDepth')
-
-      def cs_match = false
-      def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-      def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-
-      tipp.coverageStatements?.each { tcs ->
-
-        if (!cs_match && (
-          (c.id && tcs.id == c.id) ||
-            (tcs.startVolume && tcs.startVolume == c.startVolume) ||
-            (tcs.startDate && tcs.startDate == startAsDate) ||
-            (!cs_match && !tcs.startVolume && !tcs.startDate && !tcs.endVolume && !tcs.endDate))
-        ) {
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startIssue', c.startIssue)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'startVolume', c.startVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endVolume', c.endVolume)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'endIssue', c.endIssue)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'embargo', c.embargo)
-          changed |= com.k_int.ClassUtils.setStringIfDifferent(tcs, 'coverageNote', c.coverageNote)
-          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedStart, tcs, 'startDate')
-          changed |= com.k_int.ClassUtils.setDateIfPresent(parsedEnd, tcs, 'endDate')
-
-          cs_match = true
-          missing.remove(tcs.id)
-        }
-        else if (cs_match) {
-          log.debug("Matched new coverage ${c} on multiple existing coverages!")
-        }
-      }
-
-      if (!cs_match) {
-
-        def cov_depth = null
-
-        if (c.coverageDepth instanceof String) {
-          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
-        }
-        else if (c.coverageDepth instanceof Integer) {
-          cov_depth = RefdataValue.get(c.coverageDepth)
-        }
-        else if (c.coverageDepth instanceof Map) {
-          if (c.coverageDepth.id) {
-            cov_depth = RefdataValue.get(c.coverageDepth.id)
-          }
-          else {
-            cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
-          }
-        }
-
-        if (!cov_depth) {
-          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
-        }
-
-        tipp.addToCoverageStatements('startVolume': c.startVolume,  \
-           'startIssue': c.startIssue,  \
-           'endVolume': c.endVolume,  \
-           'endIssue': c.endIssue,  \
-           'embargo': c.embargo,  \
-           'coverageDepth': cov_depth,  \
-           'coverageNote': c.coverageNote,  \
-           'startDate': startAsDate,  \
-           'endDate': endAsDate
-        )
-      }
-    }
-    if (cov_list) {
-      missing.each {
-        tipp.removeFromCoverageStatements(TIPPCoverageStatement.get(it))
-      }
-    }
-
-    tipp
   }
 
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
@@ -389,6 +339,133 @@ class TippController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
+      }
+      else {
+        result.result = 'ERROR'
+        response.setStatus(403)
+        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+      }
+    }
+    else if (!obj) {
+      result.result = 'ERROR'
+      response.setStatus(404)
+      result.message = "TIPP or connected Package not found!"
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(403)
+      result.message = "User is not allowed to edit this component!"
+    }
+    render result as JSON
+  }
+
+  @Secured(value=["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def bulk() {
+    log.debug("Bulk update: ${params} - ${request.post}")
+    def result = ['result':'OK', 'params': params]
+    def user = User.get(springSecurityService.principal.id)
+    def reqBody = request.post ? request.JSON : null
+
+    if (reqBody?.status) {
+      def status_rdv = null
+
+      if (reqBody.status instanceof String) {
+        status_rdv = RefdataCategory.lookup('KBComponent.Status', reqBody.status)
+      }
+      else {
+        status_rdv = RefdataValue.findByOwnerAndId(RefdataCategory.findByLabel('KBcomponent.Status'), reqBody.status)
+      }
+
+      if (status_rdv) {
+        def accessible = []
+        def connected_pkg = []
+        def errors = []
+
+        for (def tippId: reqBody.items) {
+          def tipp = TitleInstancePackagePlatform.findById(tippId)
+
+          if (tipp && componentUpdateService.isUserCurator(tipp, user)) {
+            if (!connected_pkg.contains(tipp.pkg.id)) {
+              connected_pkg.add(tipp.pkg.id)
+            }
+            accessible.add(tipp.id)
+          }
+          else {
+            errors.add(tippId)
+          }
+        }
+
+        TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set status = :status, lastUpdated = :date where id IN (:ids)", [status: status_rdv, ids: accessible, date: new Date()])
+
+        connected_pkg.each {
+          def pkg = Package.get(it)
+
+          pkg?.lastSeen = System.currentTimeMillis()
+        }
+
+        if (errors.size() > 0) {
+          result.result = 'ERROR'
+          result.errors = errors
+          result.message = "Skipped ${errors.size()}/${reqBody.items.size()} items due to missing authorization!"
+        }
+      }
+      else {
+        result.result = 'ERROR'
+        response.setStatus(400)
+        result.message = "Unable to reference status type!"
+      }
+    }
+    else if (params['_field']?.trim() && params['_value']?.trim()) {
+      def report = componentUpdateService.bulkUpdateField(user, TitleInstancePackagePlatform, params)
+
+      if (report.errors > 0) {
+        result.result = 'ERROR'
+        result.report = report
+        response.setStatus(403)
+        result.message = "Unable to change ${params['_field']} for ${report.error} of ${report.total} items."
+      } else {
+        result.message = "Successfully changed ${params['_field']} for ${report.total} items."
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(400)
+      result.message = "Missing required params '_field' and '_value'"
+    }
+
+    render result as JSON
+  }
+
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
+  @Transactional
+  def setStatus() {
+    def result = ['result': 'OK', 'params': params]
+    def user = User.get(springSecurityService.principal.id)
+    def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.findById(genericOIDService.oidToId(params.id))
+
+    if (obj?.pkg && obj.isEditable()) {
+      def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
+
+      if (curator || user.isAdmin()) {
+        def status_rdv = null
+
+        if (params.int('status')) {
+          status_rdv = RefdataValue.get(params.int('status'))
+        }
+        else {
+          status_rdv = RefdataCategory.lookup('KBComponent.status', params.status)
+        }
+
+        if (status_rdv) {
+          obj.status = status_rdv
+          obj.save(flush: true)
+        }
+        else {
+          result.result = 'ERROR'
+          response.setStatus(400)
+          result.message = "Unable to reference status type!"
+        }
       }
       else {
         result.result = 'ERROR'

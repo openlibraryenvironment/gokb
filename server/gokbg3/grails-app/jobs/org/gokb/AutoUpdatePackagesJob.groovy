@@ -2,6 +2,7 @@ package org.gokb
 
 
 import org.gokb.cred.Package
+import org.gokb.cred.RefdataCategory
 
 class AutoUpdatePackagesJob {
 
@@ -18,12 +19,14 @@ class AutoUpdatePackagesJob {
   def execute() {
     if (grailsApplication.config.gokb.packageUpdate.enabled && grailsApplication.config.gokb.ygorUrl) {
       log.debug("Beginning scheduled auto update packages job.")
+      def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
       // find all updateable packages
       def updPacks = Package.executeQuery(
         "from Package p " +
           "where p.source is not null and " +
           "p.source.automaticUpdates = true " +
-          "and (p.source.lastRun is null or p.source.lastRun < current_date)")
+          "and p.status != ?" +
+          "and (p.source.lastRun is null or p.source.lastRun < current_date)",[status_deleted])
       updPacks.each { Package p ->
         if (p.source.needsUpdate()) {
           def result = packageService.updateFromSource(p)

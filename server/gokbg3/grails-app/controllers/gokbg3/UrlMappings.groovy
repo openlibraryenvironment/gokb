@@ -105,15 +105,22 @@ class UrlMappings {
       post "/sources"(controller: 'sources', namespace: 'rest', action: 'save')
 
       get "/reviews"(controller: 'reviews', namespace: 'rest', action: 'index')
+      get "/reviews/bulk"(controller: 'reviews', namespace: 'rest', action: 'bulk')
       get "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'show')
       post "/reviews"(controller: 'reviews', namespace: 'rest', action: 'save')
       put "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
       patch "/reviews/$id"(controller: 'reviews', namespace: 'rest', action: 'update')
+      get "/reviews/escalatable/$id/$activeGroupId"(controller: 'reviews', namespace: 'rest', action: 'isEscalatable')
+      put "/reviews/escalate/$id"(controller: 'reviews', namespace: 'rest', action: 'escalate')
+      get "/reviews/deescalatable/$id/$activeGroupId"(controller: 'reviews', namespace: 'rest', action: 'isDeescalatable')
+      put "/reviews/deescalate/$id"(controller: 'reviews', namespace: 'rest', action: 'deescalate')
 
       get "/curatoryGroups/$id/reviews"(controller: 'curatoryGroups', namespace: 'rest', action: 'getReviews')
       get "/curatoryGroups/$id/jobs"(controller: 'curatoryGroups', namespace: 'rest', action: 'getJobs')
       get "/curatoryGroups/$id"(controller: 'curatoryGroups', namespace: 'rest', action: 'show')
       get "/curatoryGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'index')
+      post "/curatoryGroups/createGroupType"(controller: 'curatoryGroups', namespace: 'rest', action: 'createGroupType')
+      post "/curatoryGroups/connectGroups"(controller: 'curatoryGroups', namespace: 'rest', action: 'connectGroups')
 
       get "/roles"(controller: 'roles', namespace: 'rest', action: 'index')
 
@@ -141,6 +148,9 @@ class UrlMappings {
       get "/databases"(controller: 'title', namespace: 'rest', action:'index') { type = 'database' }
 
       post "/tipps/$id/retire"(controller: 'tipp', namespace: 'rest', action:'retire')
+      post "/tipps/bulk"(controller: 'tipp', namespace: 'rest', action: 'bulk')
+      get "/tipps/bulk"(controller: 'tipp', namespace: 'rest', action: 'bulk')
+      get "/tipps/$id/set-status"(controller: 'tipp', namespace: 'rest', action: 'setStatus')
       get "/tipps/$id/coverage"(controller: 'tipp', namespace: 'rest', action: 'getCoverage')
       get "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'show')
       put "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'update')
@@ -148,6 +158,8 @@ class UrlMappings {
       post "/tipps"(controller: 'tipp', namespace: 'rest', action: 'save')
       get "/tipps"(controller: 'tipp', namespace: 'rest', action: 'index')
 
+      get "/package-titles/bulk"(controller: 'tipp', namespace: 'rest', action: 'bulk')
+      get "/package-titles/$id/set-status"(controller: 'tipp', namespace: 'rest', action: 'setStatus')
       get "/package-titles/$id/coverage"(controller: 'tipp', namespace: 'rest', action: 'getCoverage')
       get "/package-titles/$id"(controller: 'tipp', namespace: 'rest', action: 'show')
       put "/package-titles/$id"(controller: 'tipp', namespace: 'rest', action: 'update')

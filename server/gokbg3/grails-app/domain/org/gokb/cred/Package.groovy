@@ -40,6 +40,7 @@ class Package extends KBComponent {
   String listVerifier
   User userListVerifier
   Date listVerifiedDate
+  Date lastCachedDate
   String descriptionURL
 
   private static refdataDefaults = [
@@ -138,11 +139,12 @@ class Package extends KBComponent {
       'provider'           : "provider.id",
       'providerName'       : "provider.name",
       'providerUuid'       : "provider.uuid",
-      'titleCount'         : false,
       'paymentType'        : false,
       'listStatus'         : "refdata",
       'contentType'        : "refdata",
-      'scope'              : "refdata"
+      'scope'              : "refdata",
+      'global'             : "refdata",
+      'editStatus'         : "refdata"
     ],
     'defaultLinks' : [
       'provider',
@@ -250,7 +252,7 @@ class Package extends KBComponent {
   }
 
   @Transient
-  public getReviews(def onlyOpen = true, def onlyCurrent = false) {
+  public getReviews(def onlyOpen = true, def onlyCurrent = false, int max = 0, int offset = 0) {
     def all_rrs = null
     def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current');
 
@@ -274,7 +276,7 @@ class Package extends KBComponent {
             and titleCombo.fromComponent=title
             and rr.componentToReview = title
             and rr.status = ?'''
-          , [this, refdata_current, refdata_open]);
+          , [this, refdata_current, refdata_open], [max: max, offset: offset]);
       }
       else {
         all_rrs = ReviewRequest.executeQuery('''select distinct rr
@@ -289,7 +291,7 @@ class Package extends KBComponent {
             and titleCombo.fromComponent=title
             and rr.componentToReview = title
             and rr.status = ?'''
-          , [this, refdata_open]);
+          , [this, refdata_open], [max: max, offset: offset]);
       }
     }
     else {
@@ -306,7 +308,7 @@ class Package extends KBComponent {
             and titleCombo.toComponent=tipp
             and titleCombo.fromComponent=title
             and rr.componentToReview = title'''
-          , [this, refdata_current]);
+          , [this, refdata_current], [max: max, offset: offset]);
       }
       else {
         all_rrs = ReviewRequest.executeQuery('''select rr
@@ -320,7 +322,7 @@ class Package extends KBComponent {
             and titleCombo.toComponent=tipp
             and titleCombo.fromComponent=title
             and rr.componentToReview = title'''
-          , [this]);
+          , [this], [max: max, offset: offset]);
       }
     }
 
@@ -423,10 +425,11 @@ class Package extends KBComponent {
     def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps');
     def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps');
     def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted');
+    String tipp_hql = "from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)"
+    def tipp_hql_params = [pkg: this, ctype: refdata_package_tipps]
 
     // Get the tipps manually rather than iterating over the collection - For better management
-    def tipps = this.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)", [pkg: this, ctype: refdata_package_tipps], [readOnly: true]) : []
-
+    def tipps_count = this.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
     log.debug("Query complete...");
 
     builder.'gokb'(attr) {
@@ -467,62 +470,70 @@ class Package extends KBComponent {
         }
 
         'dateCreated'(dateFormatService.formatIsoTimestamp(dateCreated))
-        'TIPPs'(count: tipps?.size()) {
-          tipps.each { tipp ->
-            builder.'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
-              builder.'status'(tipp.status?.value)
-              builder.'name'(tipp.name)
-              builder.'lastUpdated'(tipp.lastUpdated ? dateFormatService.formatIsoTimestamp(tipp.lastUpdated) : null)
-              builder.'series'(tipp.series)
-              builder.'subjectArea'(tipp.subjectArea)
-              builder.'publisherName'(tipp.publisherName)
-              builder.'dateFirstInPrint'(tipp.dateFirstInPrint)
-              builder.'dateFirstOnline'(tipp.dateFirstOnline)
-              builder.'medium'(tipp.format?.value)
-              builder.'publicationType'(tipp.publicationType?.value)
-              if (tipp.title) {
-                builder.'title'(['id': tipp.title.id, 'uuid': tipp.title.uuid]) {
-                  builder.'name'(tipp.title.name?.trim())
-                  builder.'type'(getTitleClass(tipp.title.id))
-                  builder.'status'(tipp.title.status?.value)
-                  builder.'identifiers' {
-                    getTitleIds(tipp.title.id).each { tid ->
-                      builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+        'TIPPs'(count: tipps_count) {
+          int offset = 0
+          while (offset < tipps_count) {
+            log.debug("Fetching TIPPs batch ${offset}/${tipps_count}")
+            def tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
+            log.debug("fetch complete ..")
+            offset += 50
+            tipps.each { tipp ->
+              builder.'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
+                builder.'status'(tipp.status?.value)
+                builder.'name'(tipp.name)
+                builder.'lastUpdated'(tipp.lastUpdated ? dateFormatService.formatIsoTimestamp(tipp.lastUpdated) : null)
+                builder.'series'(tipp.series)
+                builder.'subjectArea'(tipp.subjectArea)
+                builder.'publisherName'(tipp.publisherName)
+                builder.'dateFirstInPrint'(tipp.dateFirstInPrint)
+                builder.'dateFirstOnline'(tipp.dateFirstOnline)
+                builder.'medium'(tipp.format?.value)
+                builder.'publicationType'(tipp.publicationType?.value)
+                if (tipp.title) {
+                  builder.'title'(['id': tipp.title.id, 'uuid': tipp.title.uuid]) {
+                    builder.'name'(tipp.title.name?.trim())
+                    builder.'type'(getTitleClass(tipp.title.id))
+                    builder.'status'(tipp.title.status?.value)
+                    builder.'identifiers' {
+                      getTitleIds(tipp.title.id).each { tid ->
+                        builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                      }
                     }
                   }
                 }
-              }
-              else {
-                builder.'title'()
-              }
-              builder.'identifiers' {
-                getTippIds(tipp.id).each { tid ->
-                  builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                else {
+                  builder.'title'()
                 }
-              }
-              'platform'([id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid]) {
-                'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
-                'name'(tipp.hostPlatform.name?.trim())
-              }
-              'access'(start: tipp.accessStartDate ? dateFormatService.formatIsoTimestamp(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatIsoTimestamp(tipp.accessEndDate) : null)
-              def cov_statements = getCoverageStatements(tipp.id)
-              if (cov_statements?.size() > 0) {
-                cov_statements.each { tcs ->
-                  'coverage'(
-                    startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
-                    startVolume: (tcs.startVolume),
-                    startIssue: (tcs.startIssue),
-                    endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
-                    endVolume: (tcs.endVolume),
-                    endIssue: (tcs.endIssue),
-                    coverageDepth: (tcs.coverageDepth?.value ?: null),
-                    coverageNote: (tcs.coverageNote),
-                    embargo: (tcs.embargo)
-                  )
+                builder.'identifiers' {
+                  getTippIds(tipp.id).each { tid ->
+                    builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                  }
                 }
+                'platform'([id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid]) {
+                  'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
+                  'name'(tipp.hostPlatform.name?.trim())
+                }
+                'access'(start: tipp.accessStartDate ? dateFormatService.formatIsoTimestamp(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatIsoTimestamp(tipp.accessEndDate) : null)
+                def cov_statements = getCoverageStatements(tipp.id)
+                if (cov_statements?.size() > 0) {
+                  cov_statements.each { tcs ->
+                    'coverage'(
+                      startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+                      startVolume: (tcs.startVolume),
+                      startIssue: (tcs.startIssue),
+                      endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+                      endVolume: (tcs.endVolume),
+                      endIssue: (tcs.endIssue),
+                      coverageDepth: (tcs.coverageDepth?.value ?: null),
+                      coverageNote: (tcs.coverageNote),
+                      embargo: (tcs.embargo)
+                    )
+                  }
+                }
+                'url'(tipp.url ?: "")
               }
-              'url'(tipp.url ?: "")
             }
+            log.debug("Batch complete ..")
           }
         }
       }
@@ -609,6 +620,27 @@ class Package extends KBComponent {
     return result;
   }
 
+  def beforeUpdate() {
+    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    if (this.isDirty('name')) {
+      this.shortcode = generateShortcode(this.name)
+      generateNormname()
+      generateComponentHash()
+    }
+
+    if (this.isDirty('status') && this.status == deleted_status) {
+      if (this.source && this.source.name == this.name) {
+        this.source.status = deleted_status
+      }
+    }
+
+    def user = springSecurityService?.currentUser
+    if (user != null) {
+      this.lastUpdatedBy = user
+    }
+  }
+
   public void addCuratoryGroupIfNotPresent(String cgname) {
     boolean add_needed = true;
     curatoryGroups.each { cgtest ->
@@ -673,20 +705,31 @@ class Package extends KBComponent {
       if (!result.match) {
         log.debug("Did not find a match via existing variantNames, trying supplied variantNames..")
         packageHeaderDTO.variantNames.each {
+          def vname = null
 
-          if (it.trim().size() > 0) {
-            def var_pkg = Package.findByName(it)
+          if (it instanceof String) {
+            if (it.trim()) {
+              vname = it.trim()
+            }
+          } else if (it instanceof Map) {
+            if (it.variantName.trim()) {
+              vname = it.variantName.trim()
+            }
+          }
+
+          if (vname) {
+            def var_pkg = Package.findByName(vname)
 
             if (var_pkg) {
-              log.debug("Found existing package name for variantName ${it}")
+              log.debug("Found existing package name for variantName ${vname}")
             }
             else {
 
-              def variant_normname = GOKbTextUtils.normaliseString(it)
+              def variant_normname = GOKbTextUtils.normaliseString(vname)
               def variant_candidates = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted]);
 
               if (variant_candidates.size() == 1) {
-                log.debug("Found existing package variant name for variantName ${it}")
+                log.debug("Found existing package variant name for variantName ${vname}")
                 result.match = true
               }
             }

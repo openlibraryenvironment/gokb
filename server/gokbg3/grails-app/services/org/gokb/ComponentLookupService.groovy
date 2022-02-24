@@ -10,6 +10,9 @@ import grails.util.Holders
 import groovy.transform.Synchronized
 import grails.validation.ValidationException
 import groovy.util.logging.*
+import org.grails.web.json.JSONObject
+
+import javax.annotation.Nonnull
 
 @Slf4j
 class ComponentLookupService {
@@ -201,7 +204,8 @@ class ComponentLookupService {
    * @param context : Possible override of the self link path
    */
 
-  public def restLookup (user, cls, params, def context = null) {
+  public def restLookup (user, cls, params, def context = null, boolean idOnly = false) {
+    log.debug("restLookup: ${params}")
     def result = [:]
     def hqlQry = "from ${cls.simpleName} as p".toString()
     def qryParams = new HashMap()
@@ -265,24 +269,35 @@ class ComponentLookupService {
                 catch (java.lang.NumberFormatException nfe) {
                 }
 
-                if (!addedLong && a instanceof String && a?.trim() ) {
-                  validStr.add(a.toLowerCase())
+                if (a instanceof String && a?.trim() ) {
+                  if (c == 'ids') {
+                    validStr.add(Identifier.normalizeIdentifier(a))
+                  }
+                  else {
+                    validStr.add(a.toLowerCase())
+                  }
                 }
               }
 
               if (validStr.size() > 0 || validLong.size() > 0) {
                 paramStr += " AND ("
 
-                if (validLong.size() > 0) {
+                if (c != 'ids' && validLong.size() > 0) {
                   paramStr += "${c}.id IN :${c}"
                   qryParams["${c}"] = validLong
                 }
                 if (validStr.size() > 0) {
-                  if (validLong.size() > 0) {
+                  if (c != 'ids' && validLong.size() > 0) {
                     paramStr += " OR "
                   }
                   paramStr += "${c}.uuid IN :${c}_str OR "
-                  paramStr += "lower(${c}.${c == 'ids' ? 'value' : 'name'}) IN :${c}_str"
+
+                  if (c == 'ids') {
+                    paramStr += "lower(${c}.normname) IN :${c}_str"
+                  }
+                  else {
+                    paramStr += "lower(${c}.name) IN :${c}_str"
+                  }
                   qryParams["${c}_str"] = validStr
                 }
                 paramStr += ")"
@@ -380,7 +395,27 @@ class ComponentLookupService {
             }
           }
 
-          if ( validLong.size() > 0 || validStr.size() > 0 ) {
+          boolean pkg_qry = false
+
+          if (validLong.size() == 1 && p.name == 'componentToReview') {
+            def ctr = KBComponent.get(validLong[0])
+
+            if (ctr?.class == Package) {
+              def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = ? and toComponent = tipp)",[ctr])
+              def ti_ids = []
+
+              if (params.titlereviews) {
+                ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN :tippids)", [tippids: tipp_ids])
+              }
+
+              paramStr += "p.componentToReview.id IN :ctrids"
+              qryParams['ctrids'] = [ctr.id] + tipp_ids + ti_ids
+              log.debug("${qryParams['ctrids'].size()}")
+              pkg_qry = true
+            }
+          }
+
+          if (!pkg_qry && (validLong.size() > 0 || validStr.size() > 0)) {
             paramStr += "("
             if (validLong.size() > 0) {
               paramStr += "p.${p.name}.id IN :${p.name}"
@@ -400,16 +435,38 @@ class ComponentLookupService {
             }
             paramStr += ")"
           }
-          else {
+          else if (!pkg_qry) {
             addParam = false
           }
         }
-        else if ( p.type == Long ) {
+        else if (p.type == Long) {
           qryParams[p.name] = alts.collect { Long.valueOf(it) }
           paramStr += "p.${p.name} IN :${p.name}"
         }
-        else if ( p.name == 'name' ){
+        else if (p.name == 'name'){
           paramStr += "lower(p.${p.name}) like lower(:${p.name})"
+          qryParams[p.name] = "%${params[p.name]}%"
+        }
+        else if (p.name == 'url' || p.name == 'primaryUrl') {
+          paramStr += "lower(p.${p.name}) like lower(:${p.name})"
+          def uri_param = null
+
+          try {
+            def url = new URL(params[p.name])
+
+            if (url.getProtocol()) {
+              uri_param = url_as_name.getHost()
+
+              if (uri_param .startsWith("www.")) {
+                uri_param = uri_param.substring(4)
+              }
+
+              log.debug("New platform name is ${platformDTO.name}.")
+            }
+          } catch (MalformedURLException) {
+            log.debug("Platform name is no valid URL")
+          }
+
           qryParams[p.name] = "%${params[p.name]}%"
         }
         else {
@@ -456,6 +513,7 @@ class ComponentLookupService {
 
     if (cls == ReviewRequest && params['allocatedGroups']) {
       def cgs = params.list('allocatedGroups')
+      def inactive = RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive')
       def validCgs = []
 
       cgs.each { cg ->
@@ -469,7 +527,6 @@ class ComponentLookupService {
 
       if (validCgs.size() > 0 ) {
         log.debug("Filtering for CGs: ${validCgs}")
-
         if (first) {
           hqlQry += " WHERE "
           first = false
@@ -477,9 +534,9 @@ class ComponentLookupService {
         else {
           hqlQry += " AND "
         }
-
-        hqlQry += "exists (select 1 from AllocatedReviewGroup as ag where ag.review = p and ag.group IN :alg)"
+        hqlQry += "exists (select 1 from AllocatedReviewGroup as ag where ag.review = p and ag.group IN :alg and ag.status != :inactive)"
         qryParams['alg'] = validCgs
+        qryParams['inactive'] = inactive
       }
     }
 
@@ -505,7 +562,7 @@ class ComponentLookupService {
       }
 
       log.debug("${obj}")
-      result.data << restMappingService.mapObjectToJson(obj, params, user)
+      result.data << (idOnly ? obj.id : restMappingService.mapObjectToJson(obj, params, user))
     }
 
     result['_pagination'] = [
@@ -627,5 +684,51 @@ class ComponentLookupService {
     }
 
     return result
+  }
+
+
+  CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null, JSONObject activeGroup = null){
+    // Find by activeGroup
+    CuratoryGroup activeCuratoryGroup = null
+    if (activeGroup?.uuid){
+      activeCuratoryGroup = CuratoryGroup.findByUuid(activeGroup.uuid)
+    }
+    else if (activeGroup?.id){
+      activeCuratoryGroup = CuratoryGroup.findById(activeGroup.id)
+    }
+    else if (activeGroup?.name){
+      activeCuratoryGroup = CuratoryGroup.findByName(activeGroup.name)
+    }
+    if (activeCuratoryGroup){
+      return activeCuratoryGroup
+    }
+
+    // Not found by activeGroup --> Get by other arguments
+    if (!KBComponent.has(component, 'curatoryGroups')){
+      return null
+    }
+    // TODO: to be extended for further comparision objects
+    if (component.curatoryGroups?.size() == 1){
+      CuratoryGroup cg = CuratoryGroup.get(component.curatoryGroups[0].id)
+
+      return cg
+    }
+    if (component.curatoryGroups?.size() == 0){
+      if (user?.curatoryGroups?.size() == 1){
+        CuratoryGroup cg = CuratoryGroup.get(user.curatoryGroups[0].id)
+        return cg
+      }
+      // else
+      return null
+    }
+    if (component.curatoryGroups.size() > 1){
+      def intersection = component.curatoryGroups.intersect(user?.curatoryGroups)
+      if (intersection.size() == 1){
+        CuratoryGroup cg = CuratoryGroup.get(intersection[0].id)
+        return cg
+      }
+      // else
+      return null
+    }
   }
 }

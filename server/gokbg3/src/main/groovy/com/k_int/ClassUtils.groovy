@@ -167,7 +167,7 @@ class ClassUtils {
     else if (value instanceof Map && cat) {
       if (value.id) {
         try {
-          def candidate = RefdataCategory.get(value)
+          def candidate = RefdataCategory.get(value.id)
 
           if (candidate && candidate.owner == cat) {
             v = candidate
@@ -182,7 +182,7 @@ class ClassUtils {
       }
     }
 
-    if (v) {
+    if (v && kbc.hasProperty(prop)) {
       result = kbc[prop] != v
       kbc[prop] = v
     }
@@ -190,7 +190,7 @@ class ClassUtils {
   }
 
   public static boolean setStringIfDifferent(obj, prop, value) {
-    if ((obj != null) && (prop != null) && (value) && (value.toString().length() > 0))
+    if ((obj != null) && (prop != null) && (value == null || (value instanceof String && value?.toString().length() > 0)))
       if (obj[prop] != value) {
         obj[prop] = value
         return true

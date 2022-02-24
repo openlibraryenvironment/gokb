@@ -41,7 +41,6 @@ class KBComponentVariantName {
     'ignore': [
       'status',
       'normVariantName',
-      'status',
       'owner'
     ]
   ]

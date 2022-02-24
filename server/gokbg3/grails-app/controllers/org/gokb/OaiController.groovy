@@ -89,8 +89,6 @@ class OaiController {
       dir.mkdirs()
     }
 
-    def location = "${dir}/${subject.uuid}_${subject.lastUpdated.toInstant()}.xml"
-    File cachedRecord = new File(location)
     def cachedXml = null
 
     config.metadataNamespaces.each {ns, url ->
@@ -101,14 +99,24 @@ class OaiController {
 
     log.debug("proceed...");
 
-    if (cachedRecord.exists() && Duration.between(Instant.ofEpochMilli(cachedRecord.lastModified()), Instant.now()).getSeconds() > 5) {
-      cachedXml = new XmlParser(false, false).parse(cachedRecord)
-    }
-
     // Add the metadata element and populate it depending on the config.
     builder.'metadata'() {
-      if (cachedXml) {
-        mkp.yieldUnescaped XmlUtil.serialize(cachedXml).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
+      if (subject.class == Package && grailsApplication.config.gokb.packageOaiCaching.enabled) {
+        def currentFile = null
+
+        while (!currentFile) {
+          for (File file : dir.listFiles()) {
+            if (file.name.contains(subject.uuid)) {
+              currentFile = file
+            }
+          }
+
+          if(!currentFile) {
+            sleep(1000)
+          }
+        }
+
+        mkp.yieldUnescaped XmlUtil.serialize(new XmlParser(false, false).parse(currentFile)).minus('<?xml version=\"1.0\" encoding=\"UTF-8\"?>')
       }
       else {
         subject."${config.methodName}" (builder, attr)
@@ -118,89 +126,100 @@ class OaiController {
   }
 
   def getRecord(result) {
-    // long session for possible huge requests
-    request.getSession(true).setMaxInactiveInterval(12000)
     log.debug("getRecord - ${result}");
 
-    def errors = []
-    def oid = params.identifier
-    def record = null
-    def returnAttrs = true
-    def request_map = params
-    request_map.keySet().removeAll(['controller','action','id'])
+    try {
 
-    if (oid) {
-      record = genericOIDService.resolveOID(oid);
-    }
-    else {
-      errors.add([code:'badArgument', name: 'identifier', expl: 'The request is missing a mandatory argument.'])
-      returnAttrs = false
-    }
+      def errors = []
+      def oid = params.identifier
+      def record = null
+      def returnAttrs = true
+      def cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled)
+      def request_map = params
+      def legalClassNames = (result.className == 'org.gokb.cred.TitleInstance' ? ['org.gokb.cred.TitleInstance', 'org.gokb.cred.BookInstance', 'org.gokb.cred.JournalInstance', 'org.gokb.cred.DatabaseInstance', 'org.gokb.cred.OtherInstance'] : [result.className])
+      request_map.keySet().removeAll(['controller','action','id'])
 
-    if (oid && !record) {
+      if (oid) {
+        record = KBComponent.findByUuid(oid)
 
-      record = KBComponent.findByUuid(oid)
+        if (record && !legalClassNames.contains(record.class.name)) {
+          record = null
+          errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown for this endpoint.'])
+        }
+        else if (!record) {
+          record = genericOIDService.resolveOID(oid)
+        }
 
-
-      if( !record ) {
-        errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown or illegal in this repository.'])
+        if (!record && errors.size() == 0) {
+          errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The value of the identifier argument is unknown or illegal in this repository.'])
+        }
+        else if (record && cachedPackageResponse && !record.lastCachedDate) {
+          errors.add([code:'idDoesNotExist', name: 'identifier', expl: 'The requested resource is not yet ready for exchange. Please try again later.'])
+        }
       }
-    }
+      else {
+        errors.add([code:'badArgument', name: 'identifier', expl: 'The request is missing a mandatory argument.'])
+        returnAttrs = false
+      }
 
-    def writer = new StringWriter()
-    def xml = new MarkupBuilder(writer)
-    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+      def writer = new StringWriter()
+      def xml = new MarkupBuilder(writer)
+      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
 
-    def prefixHandler = result.oaiConfig.schemas[params.metadataPrefix]
+      def prefixHandler = result.oaiConfig.schemas[params.metadataPrefix]
 
-    log.debug("Using prefixHandler ${prefixHandler}")
+      log.debug("Using prefixHandler ${prefixHandler}")
 
-    if( !params.metadataPrefix || !prefixHandler ) {
-      errors.add([code:'badArgument', name: 'metadataPrefix', expl: 'Metadata format missing or not supported'])
-      returnAttrs = false
-    }
+      if( !params.metadataPrefix || !prefixHandler ) {
+        errors.add([code:'badArgument', name: 'metadataPrefix', expl: 'Metadata format missing or not supported'])
+        returnAttrs = false
+      }
 
-    log.debug("prefix handler for ${params.metadataPrefix} is ${params.metadataPrefix}");
+      log.debug("prefix handler for ${params.metadataPrefix} is ${params.metadataPrefix}");
 
-    xml.'OAI-PMH'('xmlns' : 'http://www.openarchives.org/OAI/2.0/',
-    'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
-    'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-      'responseDate'(dateFormatService.formatIsoTimestamp(new Date()) )
-      if (errors) {
-        if (!returnAttrs) {
+      xml.'OAI-PMH'('xmlns' : 'http://www.openarchives.org/OAI/2.0/',
+      'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
+      'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
+        'responseDate'(dateFormatService.formatIsoTimestamp(new Date()) )
+        if (errors) {
+          if (!returnAttrs) {
+            'request'(request_map, request.requestURL)
+          }
+          else {
+            'request'(request.requestURL)
+          }
+
+          errors.each { er ->
+            'error' (code: er.code, parameter: er.name, er.expl)
+          }
+        }
+        else{
           'request'(request_map, request.requestURL)
-        }
-        else {
-          'request'(request.requestURL)
-        }
 
-        errors.each { er ->
-          'error' (code: er.code, parameter: er.name, er.expl)
-        }
-      }
-      else{
-        'request'(request_map, request.requestURL)
-
-        'GetRecord'() {
-          xml.'record'() {
-            xml.'header'() {
-              identifier("${record.class.name}:${record.id}")
-              uuid(record.uuid)
-              datestamp(dateFormatService.formatIsoTimestamp(record.lastUpdated))
-              if (record.status == status_deleted) {
-                status('deleted')
+          'GetRecord'() {
+            xml.'record'() {
+              xml.'header'() {
+                identifier("${record.class.name}:${record.id}")
+                uuid(record.uuid)
+                datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? record.lastCachedDate : record.lastUpdated))
+                if (record.status == status_deleted) {
+                  status('deleted')
+                }
               }
+              buildMetadata(record, xml, result, params.metadataPrefix, prefixHandler)
             }
-            buildMetadata(record, xml, result, params.metadataPrefix, prefixHandler)
           }
         }
       }
+
+      log.debug("Created XML, write");
+
+      render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
     }
-
-    log.debug("Created XML, write");
-
-    render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
+    catch (java.io.IOException e) {
+      log.debug("Request cancelled ..")
+    }
   }
 
   def identify(result) {
@@ -299,7 +318,7 @@ class OaiController {
 
     def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
 
-    if(!prefixHandler) {
+    if (!prefixHandler) {
       errors.add([code: 'cannotDisseminateFormat', name: 'metadataPrefix', expl: 'Metadata format missing or not supported'])
     }
 
@@ -310,8 +329,8 @@ class OaiController {
     def query = result.oaiConfig.query
     def wClause = false
 
-    if(from){
-      if(!wClause){
+    if (from) {
+      if (!wClause) {
         query += 'where '
         wClause = true
       }
@@ -321,17 +340,17 @@ class OaiController {
       query += 'o.lastUpdated > ?'
       query_params.add(from)
     }
-    else if ((params.from != null)&&(params.from.trim())) {
+    else if (params.from != null && params.from.trim()) {
       def fparam = params.from
 
-      if( params.from.length() == 10 ) {
+      if (params.from.length() == 10) {
         fparam += 'T00:00:00Z'
       }
 
       try {
         from = dateFormatService.parseIsoTimestamp(fparam)
 
-        if(!wClause){
+        if (!wClause) {
           query += 'where '
           wClause = true
         }
@@ -349,8 +368,8 @@ class OaiController {
       }
     }
 
-    if(until){
-      if(!wClause){
+    if (until) {
+      if (!wClause) {
         query += 'where '
         wClause = true
       }
@@ -360,21 +379,21 @@ class OaiController {
       query += 'o.lastUpdated < ?'
       query_params.add(until)
     }
-    else if ((params.until != null)&&(params.until.trim())) {
+    else if (params.until != null && params.until.trim()) {
       def uparam = params.until
 
-      if( params.until.length() == 10 ) {
+      if (params.until.length() == 10) {
         uparam += 'T00:00:00Z'
       }
 
       try {
         until = dateFormatService.parseIsoTimestamp(uparam)
 
-        if(!wClause){
+        if (!wClause) {
           query += 'where '
           wClause = true
         }
-        else{
+        else {
           query += ' and '
         }
 
@@ -388,7 +407,7 @@ class OaiController {
       }
     }
 
-    if(errors) {
+    if (errors) {
       log.debug("Request had errors .. not executing query!")
     }
     else {
@@ -397,7 +416,7 @@ class OaiController {
 
       log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
 
-      if ( offset + records.size() < rec_count ) {
+      if (offset + records.size() < rec_count) {
         // Query returns more records than sent, we will need a resumption token
         resumption = "${from?dateFormatService.formatIsoTimestamp(from):''}|${until?dateFormatService.formatIsoTimestamp(until):''}|${offset+records.size()}|${metadataPrefix}"
       }
@@ -479,296 +498,320 @@ class OaiController {
 
 
   def listRecords(result) {
-    // long session for possible huge requests
-    request.getSession(true).setMaxInactiveInterval(12000)
     response.contentType = "text/xml"
     response.setCharacterEncoding("UTF-8");
-    def out = response.outputStream
 
-    out.withWriter { writer ->
+    try {
+      def out = response.outputStream
 
-      // def writer = new StringWriter()
-      def xml = new StreamingMarkupBuilder()
-      def offset = 0;
-      def resumption = null
-      def metadataPrefix = null
-      def errors = []
-      def from = null
-      def until = null
-      def max = result.oaiConfig.pageSize ?: 10
-      def rec_count = null
-      def records = []
-      def order_by_clause = 'order by o.lastUpdated'
-      def returnAttrs = true
-      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-      def request_map = params
-      request_map.keySet().removeAll(['controller','action','id'])
+      out.withWriter { writer ->
 
-      if ( params.resumptionToken && ( params.resumptionToken.trim() ) ) {
-        def rtc = params.resumptionToken.split('\\|');
-        log.debug("Got resumption: ${rtc}")
-        if ( rtc.length == 4 ) {
-          if ( rtc[0].trim() ) {
-            try {
-              from = dateFormatService.parseIsoTimestamp(rtc[0])
+        // def writer = new StringWriter()
+        def xml = new StreamingMarkupBuilder()
+        def offset = 0;
+        def resumption = null
+        def metadataPrefix = null
+        def errors = []
+        def from = null
+        def until = null
+        def max = result.oaiConfig.pageSize ?: 10
+        def rec_count = null
+        def records = []
+        def returnAttrs = true
+        def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+        def request_map = params
+        def cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled)
+        def order_by_clause = cachedPackageResponse ? 'order by o.lastCachedDate' : 'order by o.lastUpdated'
+        request_map.keySet().removeAll(['controller','action','id'])
+
+        if ( params.resumptionToken && ( params.resumptionToken.trim() ) ) {
+          def rtc = params.resumptionToken.split('\\|');
+          log.debug("Got resumption: ${rtc}")
+          if ( rtc.length == 4 ) {
+            if ( rtc[0].trim() ) {
+              try {
+                from = dateFormatService.parseIsoTimestamp(rtc[0])
+              }
+              catch (Exception pe) {
+                errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
+              }
             }
-            catch (Exception pe) {
-              errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
+            if ( rtc[1].trim() ) {
+              try {
+                until = dateFormatService.parseIsoTimestamp(rtc[1])
+              }
+              catch (Exception pe) {
+                errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
+              }
             }
-          }
-          if ( rtc[1].trim() ) {
-            try {
-              until = dateFormatService.parseIsoTimestamp(rtc[1])
+            if ( rtc[2].trim() ) {
+              offset=Long.parseLong(rtc[2]);
             }
-            catch (Exception pe) {
-              errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Illegal form of resumption token'])
+            if ( rtc[3].trim() ) {
+              metadataPrefix=rtc[3];
             }
+            log.debug("Resume from cursor ${offset} using prefix ${metadataPrefix}");
           }
-          if ( rtc[2].trim() ) {
-            offset=Long.parseLong(rtc[2]);
+          else {
+            errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Unexpected number of components in resumption token'])
+            log.error("Unexpected number of components in resumption token: ${rtc}");
           }
-          if ( rtc[3].trim() ) {
-            metadataPrefix=rtc[3];
-          }
-          log.debug("Resume from cursor ${offset} using prefix ${metadataPrefix}");
         }
         else {
-          errors.add([code:'badResumptionToken', name: 'resumptionToken', expl: 'Unexpected number of components in resumption token'])
-          log.error("Unexpected number of components in resumption token: ${rtc}");
+          metadataPrefix = params.metadataPrefix
         }
-      }
-      else {
-        metadataPrefix = params.metadataPrefix
-      }
 
-      def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
+        def prefixHandler = result.oaiConfig.schemas[metadataPrefix]
 
-      if(!prefixHandler) {
-        errors.add([code: 'cannotDisseminateFormat', name: 'metadataPrefix', expl: 'Metadata format missing or not supported'])
-      }
+        if(!prefixHandler) {
+          errors.add([code: 'cannotDisseminateFormat', name: 'metadataPrefix', expl: 'Metadata format missing or not supported'])
+        }
 
-      def wClause = false
+        def wClause = false
 
-      // This bit of the query needs to come from the oai config in the domain class
-      def query_params = []
-      // def query = " from Package as p where p.status.value != 'Deleted'"
-      def query = result.oaiConfig.query
+        // This bit of the query needs to come from the oai config in the domain class
+        def query_params = [:]
+        // def query = " from Package as p where p.status.value != 'Deleted'"
+        def query = result.oaiConfig.query
 
-      def status_filter = result.oaiConfig.statusFilter
+        def status_filter = result.oaiConfig.statusFilter
 
-      if ( params.curator && result.oaiConfig.curators) {
-        def cg = CuratoryGroup.findByName(params.curator)
-        def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.curators)
+        if ( params.curator && result.oaiConfig.curators) {
+          def cg = CuratoryGroup.findByName(params.curator)
+          def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.curators)
 
-        if (cg) {
-          query += ', Combo as cgCombo, CuratoryGroup as cg where cgCombo.toComponent = ? and cgCombo.type = ? and cgCombo.fromComponent = o '
+          if (cg) {
+            query += ', Combo as cgCombo, CuratoryGroup as cg where cgCombo.toComponent = :cgo and cgCombo.type = :cgtype and cgCombo.fromComponent = o '
+            wClause = true
+            query_params.put('cgo', cg)
+            query_params.put('cgtype', comboType)
+          } else {
+            errors.add([code:'badArgument', name: 'curator', expl: 'Unable to lookup Curatory Group.'])
+            returnAttrs = false
+          }
+        }
+
+        if ( params.pkg && result.oaiConfig.pkg ) {
+          def linked_pkg = Package.findByUuid(params.pkg)
+
+          if (!linked_pkg) {
+            try {
+              linked_pkg = Package.get(genericOIDService.oidToId(params.pkg))
+            }
+            catch (Exception e) {
+
+            }
+          }
+
+          if (linked_pkg) {
+
+            def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.pkg)
+
+            query += ', Combo as pkgCombo, Package as pkg where pkgCombo.fromComponent = :lpkg and pkgCombo.type = :cpkgt and pkgCombo.toComponent = o '
+            wClause = true
+            query_params.put('lpkg', linked_pkg)
+            query_params.put('cpkgt', comboType)
+          }
+          else {
+            errors.add([code:'badArgument', name: 'pkg', expl: 'Unable to lookup Package.'])
+            returnAttrs = false
+          }
+        }
+
+        if (cachedPackageResponse) {
+          if(!wClause){
+            query += 'where '
+            wClause = true
+          }
+          else{
+            query += ' and '
+          }
+
+          query += 'o.lastCachedDate is not null'
+        }
+
+        if (result.oaiConfig.id == 'tipps') {
+          if(!wClause){
+            query += 'where '
+            wClause = true
+          }
+          else{
+            query += ' and '
+          }
+
+          query += 'exists (select 1 from Combo as cti where cti.toComponent = o and cti.type = :ctipp)'
+          def qry_cti = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, 'TitleInstance.Tipps')
+          query_params.put('ctipp', qry_cti)
           wClause = true
-          query_params.add(cg)
-          query_params.add(comboType)
-        } else {
-          errors.add([code:'badArgument', name: 'curator', expl: 'Unable to lookup Curatory Group.'])
-          returnAttrs = false
         }
-      }
 
-      if ( params.pkg && result.oaiConfig.pkg ) {
-        def linked_pkg = Package.findByUuid(params.pkg)
+        if (status_filter && status_filter.size() > 0) {
+          status_filter.eachWithIndex { val, index ->
+            if(!wClause){
+              query += 'where '
+              wClause = true
+            }
+            else{
+              query += ' and '
+            }
 
-        if (!linked_pkg) {
+            if (val instanceof String) {
+              query += 'o.status != :status'
+              def qry_rdc = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, val)
+              query_params.put('status', qry_rdc)
+              wClause = true
+            }
+            else if (val instanceof org.gokb.cred.RefdataValue) {
+              query += 'o.status != ?'
+              query_params.put('status', val)
+              wClause = true
+            }
+            else {
+              log.warn("Unknown parameter format!")
+            }
+          }
+        }
+
+        if (!from && params.from != null && params.from.trim()) {
+          def fparam = params.from
+
+          if( params.from.length() == 10 ) {
+            fparam += 'T00:00:00Z'
+          }
+
           try {
-            linked_pkg = Package.get(genericOIDService.oidToId(params.pkg))
+            from = dateFormatService.parseIsoTimestamp(fparam)
           }
-          catch (Exception e) {
-
+          catch (Exception pe) {
+            errors.add([code:'badArgument', name: 'from', expl: 'This date format is not supported.'])
+            returnAttrs = false
           }
         }
 
-        if (linked_pkg) {
+        if (!until && params.until != null && params.until.trim()) {
+          def uparam = params.until
 
-          def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.pkg)
+          if( params.until.length() == 10 ) {
+            uparam += 'T00:00:00Z'
+          }
 
-          query += ', Combo as pkgCombo, Package as pkg where pkgCombo.fromComponent = ? and pkgCombo.type = ? and pkgCombo.toComponent = o '
-          wClause = true
-          query_params.add(linked_pkg)
-          query_params.add(comboType)
+          try {
+            until = dateFormatService.parseIsoTimestamp(uparam)
+          }
+          catch (Exception pe) {
+            errors.add([code:'badArgument', name: 'until', expl: 'This date format is not supported.'])
+            returnAttrs = false
+          }
+        }
+
+        if (from) {
+          if (!wClause) {
+            query += 'where '
+            wClause = true
+          }
+          else {
+            query += ' and '
+          }
+
+          if (cachedPackageResponse) {
+            query += 'o.lastCachedDate > :lupdf'
+          }
+          else {
+            query += 'o.lastUpdated > :lupdf'
+          }
+
+          query_params.put('lupdf', from)
+        }
+        if (until) {
+          if (!wClause) {
+            query += 'where '
+            wClause = true
+          }
+          else {
+            query += ' and '
+          }
+
+          if (cachedPackageResponse) {
+            query += 'o.lastCachedDate < :lupd'
+          }
+          else {
+            query += 'o.lastUpdated < :lupd'
+          }
+          query_params.put('lupd', until)
+        }
+
+        log.debug("qry is: ${query}");
+        log.debug("qry params are: ${query_params}")
+        log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
+
+        if (errors) {
+          log.debug("Request had errors .. not executing query!")
         }
         else {
-          errors.add([code:'badArgument', name: 'pkg', expl: 'Unable to lookup Package.'])
-          returnAttrs = false
-        }
-      }
+          rec_count = Package.executeQuery("select count(o) ${query}".toString(),query_params)[0];
+          records = Package.executeQuery("select o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:max])
 
-      if(status_filter && status_filter.size() > 0){
-        status_filter.eachWithIndex { val, index ->
-          if(!wClause){
-            query += 'where '
-            wClause = true
-          }
-          else{
-            query += ' and '
-          }
+          log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
 
-          if (val instanceof String) {
-            query += 'o.status != ?'
-            def qry_rdc = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, val)
-            query_params.add(qry_rdc)
-            wClause = true
-          }
-          else if (val instanceof org.gokb.cred.RefdataValue) {
-            query += 'o.status != ?'
-            query_params.add(val)
-            wClause = true
-          }
-          else {
-            log.warn("Unknown parameter format!")
+          if ( offset + records.size() < rec_count ) {
+            // Query returns more records than sent, we will need a resumption token
+
+            resumption = "${from?dateFormatService.formatIsoTimestamp(from):''}|${until?dateFormatService.formatIsoTimestamp(until):''}|${offset+records.size()}|${metadataPrefix}"
           }
         }
-      }
 
-      if(from){
-        if(!wClause){
-          query += 'where '
-          wClause = true
-        }
-        else{
-          query += ' and '
-        }
-        query += 'o.lastUpdated > ?'
-        query_params.add(from)
-      }
-      else if ((params.from != null)&&(params.from.trim())) {
-        def fparam = params.from
+        def resp =  { mkp ->
+          'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
+          'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
+          'xsi:schemaLocation':'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
+            'responseDate'( dateFormatService.formatIsoTimestamp(new Date()) )
 
-        if( params.from.length() == 10 ) {
-          fparam += 'T00:00:00Z'
-        }
+            if(errors) {
+              if (returnAttrs) {
+                'request'(request_map, request.requestURL)
+              }else {
+                'request'(request.requestURL)
+              }
 
-        try {
-          from = dateFormatService.parseIsoTimestamp(fparam)
-
-          if(!wClause){
-            query += 'where '
-            wClause = true
-          }
-          else{
-            query += ' and '
-          }
-
-          query += 'o.lastUpdated > ? '
-                    query_params.add(from)
-        }
-        catch (Exception pe) {
-          errors.add([code:'badArgument', name: 'from', expl: 'This date format is not supported.'])
-          returnAttrs = false
-        }
-      }
-
-      if(until){
-        if(!wClause){
-          query += 'where '
-          wClause = true
-        }
-        else{
-          query += ' and '
-        }
-        query += 'o.lastUpdated < ?'
-        query_params.add(until)
-      }
-      else if ((params.until != null)&&(params.until.trim())) {
-        def uparam = params.until
-
-        if( params.until.length() == 10 ) {
-          uparam += 'T00:00:00Z'
-        }
-
-        try {
-          until = dateFormatService.parseIsoTimestamp(uparam)
-
-          if(!wClause){
-            query += 'where '
-            wClause = true
-          }
-          else{
-            query += ' and '
-          }
-
-          query += 'o.lastUpdated < ?'
-
-          query_params.add(until)
-        }
-        catch (Exception pe) {
-          errors.add([code:'badArgument', name: 'until', expl: 'This date format is not supported.'])
-          returnAttrs = false
-        }
-      }
-
-      log.debug("qry is: ${query}");
-      log.debug("prefix handler for ${metadataPrefix} is ${prefixHandler}");
-
-      if (errors) {
-        log.debug("Request had errors .. not executing query!")
-      }
-      else {
-        rec_count = Package.executeQuery("select count(o) ${query}".toString(),query_params)[0];
-        records = Package.executeQuery("select o ${query} ${order_by_clause}".toString(),query_params,[offset:offset,max:max])
-
-        log.debug("${query} rec_count is ${rec_count}, records_size=${records.size()}");
-
-        if ( offset + records.size() < rec_count ) {
-          // Query returns more records than sent, we will need a resumption token
-
-          resumption = "${from?dateFormatService.formatIsoTimestamp(from):''}|${until?dateFormatService.formatIsoTimestamp(until):''}|${offset+records.size()}|${metadataPrefix}"
-        }
-      }
-
-      def resp =  { mkp ->
-        'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
-        'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
-        'xsi:schemaLocation':'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-          'responseDate'( dateFormatService.formatIsoTimestamp(new Date()) )
-
-          if(errors) {
-            if (returnAttrs) {
+              errors.each { er ->
+                'error' (code: er.code, parameter: er.name, er.expl)
+              }
+            }
+            else {
               'request'(request_map, request.requestURL)
-            }else {
-              'request'(request.requestURL)
-            }
-
-            errors.each { er ->
-              'error' (code: er.code, parameter: er.name, er.expl)
-            }
-          }
-          else {
-            'request'(request_map, request.requestURL)
-            'ListRecords'() {
-              records.each { rec ->
-                mkp.'record'() {
-                  mkp.'header' () {
-                    identifier("${rec.class.name}:${rec.id}")
-                    uuid(rec.uuid)
-                    datestamp(dateFormatService.formatIsoTimestamp(rec.lastUpdated))
-                    if (rec.status == status_deleted) {
-                      status('deleted')
+              'ListRecords'() {
+                records.each { rec ->
+                  mkp.'record'() {
+                    mkp.'header' () {
+                      identifier("${rec.class.name}:${rec.id}")
+                      uuid(rec.uuid)
+                      datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? rec.lastCachedDate : rec.lastUpdated))
+                      if (rec.status == status_deleted) {
+                        status('deleted')
+                      }
                     }
+                    buildMetadata(rec, mkp, result, metadataPrefix, prefixHandler)
                   }
-                  buildMetadata(rec, mkp, result, metadataPrefix, prefixHandler)
+                }
+
+                if ( resumption != null ) {
+                  'resumptionToken'(completeListSize:rec_count, cursor:offset, resumption)
+                }
+                else if (params.resumptionToken) {
+                  'resumptionToken'(completeListSize:rec_count, cursor:offset)
                 }
               }
-
-              if ( resumption != null ) {
-                'resumptionToken'(completeListSize:rec_count, cursor:offset, resumption)
-              }
-              else if (params.resumptionToken) {
-                'resumptionToken'(completeListSize:rec_count, cursor:offset)
-              }
             }
           }
         }
+
+        writer << xml.bind(resp)
+
+        log.debug("Render");
       }
-
-      writer << xml.bind(resp)
-
-      log.debug("Render");
+    }
+    catch (java.io.IOException e) {
+      log.debug("Request cancelled ..")
     }
   }
 
@@ -809,5 +852,18 @@ class OaiController {
     writer << xml.bind(resp)
 
     render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
+  }
+
+  private Date getCacheDateForPkgUuid(uuid) {
+    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    def cached_uuids = []
+
+    for (File file : dir.listFiles()) {
+      if (file.name.contains(uuid)) {
+        return new Date(file.lastModified())
+      }
+    }
+
+    return null
   }
 }
