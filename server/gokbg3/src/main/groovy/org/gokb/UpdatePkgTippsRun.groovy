@@ -141,6 +141,9 @@ class UpdatePkgTippsRun {
         pkg = ClassUtils.deproxy(proxy)
         componentUpdateService.ensureCoreData(pkg, rjson.packageHeader, fullsync, user)
         jsonResult.pkgId = pkg.id
+        pkg.listStatus = listStatus_ip
+        pkg.save(flush: true)
+
         job?.linkedItem = [name: pkg.name,
                           type: "Package",
                           id  : pkg.id,
@@ -239,13 +242,7 @@ class UpdatePkgTippsRun {
             job?.message(msg)
           }
 
-          if (rjson.tipps?.size() > 0 && rjson.tipps.size() > invalidTipps.size()) {
-            if (pkg.status == status_current && pkg?.listStatus != listStatus_ip) {
-              pkg.listStatus = listStatus_ip
-              pkg.merge()
-            }
-          }
-          else {
+          if (!rjson.tipps || rjson.tipps.size() == invalidTipps.size()) {
             log.debug("imported Package $pkg.name contains no valid TIPPs")
           }
 

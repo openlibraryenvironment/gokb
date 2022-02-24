@@ -134,7 +134,7 @@ class PlatformService {
       }
     }
 
-    if (matches) {
+    if (matches?.size() > 0) {
       result.to_create = false
       result.matches = matches
     }
