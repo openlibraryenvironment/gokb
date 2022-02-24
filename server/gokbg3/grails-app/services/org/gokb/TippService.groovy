@@ -552,6 +552,22 @@ class TippService {
             }
           }
         }
+        else if (tipp.title == null) {
+          def additionalInfo = [otherComponents: []]
+          found.matches.each { comp ->
+            additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+          }
+
+          reviewRequestService.raise(
+              tipp,
+              "TIPP conflicts",
+              "TIPP ${tipp.name} conflicts with other titles.".toString(),
+              null,
+              null,
+              (additionalInfo as JSON).toString(),
+              RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict")
+          )
+        }
 
         if (found.conflicts.size > 0) {
           def additionalInfo = [otherComponents: []]
