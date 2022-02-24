@@ -520,8 +520,8 @@ class UpdatePkgTippsRun {
         else {
           log.debug("Found ${current_tipps.size()} matching TIPP(s)")
           def full_matches = []
-          def mismatches = []
-          def id_mismatches = [:]
+          def partial_matches = [:]
+          def failed_matches = []
 
           def jsonIdMap = [:]
           tippJson.identifiers.each { jsonId ->
@@ -535,15 +535,49 @@ class UpdatePkgTippsRun {
 
           current_tipps.each { ctipp ->
             def tipp_ids = ctipp.ids.collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
+            def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
+            def unmatched_namespaces = []
+            def tipp_id_match_results = [:]
+            int mismatch_prio
+            boolean priority_match = false
 
-            tipp_ids.each { tid ->
-              if (jsonIdMap[tid.type] && Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname && tid.type in ['zdb', 'eissn', 'issn', 'doi', 'isbn']) {
-                id_mismatches[tid.type] = jsonIdMap[tid.type]
+            priority_list.eachWithIndex { plns, idx ->
+              if (jsonIdMap[plns]) {
+                boolean unmatched = true
+
+                tipp_ids.each { tid ->
+                  if (tid.type == plns) {
+                    if (Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname) {
+                      tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'FAIL']
+
+                      if (!mismatch_prio) {
+                        mismatch_prio = idx // Set highest priority value of mismatches
+                      }
+                    }
+                    else {
+                      tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'OK']
+
+                      if (!mismatch_prio) {
+                        priority_match = true // Namespace with highest priority matched
+                      }
+                    }
+                  }
+                  unmatched = false
+                }
+
+                if (unmatched) {
+                  tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'NEW']
+                }
               }
             }
 
-            if (id_mismatches.size() > 0) {
-              mismatches << ctipp
+            if (mismatch_prio) {
+              if (priority_match) {
+                partial_matches[mismatch_prio] << [item: ctipp, matchResults: tipp_id_match_results]
+              }
+              else {
+                failed_matches << [item: ctipp, matchResults: tipp_id_match_results]
+              }
             }
             else {
               full_matches << ctipp
@@ -557,7 +591,7 @@ class UpdatePkgTippsRun {
             log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
 
             if (full_matches.size() > 1) {
-              log.debug("multimatch (${full_matches.size()}) for $tipp")
+              log.debug("multiple (${full_matches.size()}) full matches for $tipp")
               def additionalInfo = [otherComponents: []]
 
               full_matches.eachWithIndex { ct, idx ->
@@ -567,7 +601,7 @@ class UpdatePkgTippsRun {
               }
 
               // RR für Multimatch generieren
-              def myRR = reviewRequestService.raise(
+              reviewRequestService.raise(
                   tipp,
                   "Ambiguous KBART Record Matches",
                   "A KBART record has been matched on multiple package titles.",
@@ -575,6 +609,62 @@ class UpdatePkgTippsRun {
                   null,
                   (additionalInfo as JSON).toString(),
                   RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
+                  componentLookupService.findCuratoryGroupOfInterest(tipp, user)
+              )
+            }
+          }
+          else if (partial_matches.size() > 0) {
+            def best_matches = []
+
+            for (i = 0; i < priority_list.size(); i++) {
+              if (partial_matches[i].size() > 0) {
+                best_matches << partial_matches[i]
+                break
+              }
+            }
+
+            tipp = best_matches[0].item
+            // update Data
+            updateTippData(tipp, tippJson)
+            log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
+
+            if (best_matches.size() > 1) {
+              log.debug("multiple (${best_matches.size()}) partial matches for $tipp")
+              def additionalInfo = [otherComponents: [], matches: [:], mismatches: [:]]
+
+              best_matches[0].matchResults.each {
+                if (it.match == 'OK') {
+                  additionalInfo.matches[it.namespace] = it.value
+                }
+                else if (it.match == 'FAIL') {
+                  additionalInfo.mismatches[it.namespace] = it.value
+                }
+              }
+
+
+
+              if (tippJson.titleId) {
+                additionalInfo.matches['title_id'] = tippJson.titleId
+              }
+
+              additionalInfo.vars = [additionalInfo.matches, additionalInfo.mismatches]
+              additionalInfo.matchResults = best_matches[0].matchResults
+
+              best_matches.each { ct, idx ->
+                if (idx > 0) {
+                  additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id, uuid: ct.item.uuid, id: ct.item.id, name: ct.item.name, matchResults: ct.matchResults]
+                }
+              }
+
+              // RR für Multimatch generieren
+              reviewRequestService.raise(
+                  tipp,
+                  "A KBART record has been matched on an existing package title by some identifiers ({0}), but not by other important identifiers ({1}).",
+                  "Check the package titles and merge them if necessary.",
+                  user,
+                  null,
+                  (additionalInfo as JSON).toString(),
+                  RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
                   componentLookupService.findCuratoryGroupOfInterest(tipp, user)
               )
             }
@@ -613,30 +703,13 @@ class UpdatePkgTippsRun {
             log.debug("Created TIPP ${tipp} with URL ${tipp?.url}, needs review ..")
 
             def additionalInfo = [otherComponents: []]
-            def id_matching = [:]
 
-            jsonIdMap.each { ns, val ->
-              if (!id_mismatches[ns]) {
-                id_matching[ns] = val
-              }
-            }
-
-            if (tippJson.titleId) {
-              id_matching['title_id'] = tippJson.titleId
-            }
-
-            additionalInfo.matches = id_matching
-            additionalInfo.mismatches = id_mismatches
-            additionalInfo.vars = [id_matching, id_mismatches]
-
-            mismatches.eachWithIndex { ct, idx ->
-              if (idx > 0) {
-                additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
-              }
+            failed_matches.each { ct ->
+              additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id, uuid: ct.item.uuid, id: ct.item.id, name: ct.item.name, matchResults: ct.matchResults]
             }
 
             // RR für Multimatch generieren
-            def myRR = reviewRequestService.raise(
+            reviewRequestService.raise(
                 tipp,
                 "A KBART record has been matched on an existing package title by some identifiers ({0}), but not by other important identifiers ({1}).",
                 "Check the package titles and merge them if necessary.",
@@ -733,7 +806,7 @@ class UpdatePkgTippsRun {
     // overwrite String properties with JSON values
     ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
     'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'importId', 'subjectArea', 'series'].each { propName ->
-      tipp[propName] = tippJson[propName] ?: tipp[propName]
+      tipp[propName] = tippJson[propName] ? tippJson[propName].trim() : tipp[propName]
     }
 
     if (tippJson.medium) {
@@ -760,8 +833,7 @@ class UpdatePkgTippsRun {
   }
 
 /**
- * this method finds similar tipps based on their identifiers (ids). for performance reasons, the ElasticSearch index
- * is used first and if it fails, a database search is performed after for a definitive decision.
+ * this method finds similar tipps based on their identifiers (ids).
  * @param tippJson
  * @return
  */
@@ -779,63 +851,6 @@ class UpdatePkgTippsRun {
     }
     // search TIPPs for json.title_id == tipp.importId
     if (tippJson.titleId) {
-      /**
-      * Exclude ES-lookup for now because of missing matches of newly created TIPPs
-      * Reevaluate with v8.19.
-      */
-
-      // elastic search
-      // TypeConvertingMap map = [
-      //     componentType    : 'TitleInstancePackagePlatform',
-      //     importId         : tippJson.titleId,
-      //     pkg              : pkg.uuid,
-      //     platform         : tippJson.hostPlatform.uuid,
-      //     skipDomainMapping: true
-      // ]
-      // def something = esSearchService.find(map)
-      // if (something.records?.size() > 0) {
-      //   log.debug("found by titleId in ES")
-      //   def error_tipps = []
-      //   something.records.each {
-      //     def tipp = TitleInstancePackagePlatform.findByUuid(it.uuid)
-
-      //     if (tipp) {
-      //       def tipp_ids = tipp.ids.collect { ido -> { type: ido.namespace.value, value: ido.value }}
-      //       def id_mismatches = []
-      //       tipp_ids.each { tid ->
-      //         if (jsonIdMap[tid.type] && jsonIdMap[tid.type] != tid.value) {
-      //           ids_mismatches << tid
-      //         }
-      //       }
-      //       if (id_mismatches) {
-      //         error_tipps << tipp
-      //       }
-      //       else {
-      //         tipps << tipp
-      //       }
-      //     }
-      //     else  {
-      //       log.warn("ES record TIPP ${it.uuid} does not exist!")
-      //     }
-      //   }
-
-      //   if (error_tipps.size() > 0 && tipps.size() == 0) {
-      //     def additionalInfo = [:]
-      //     additionalInfo.vars = [tipp.hostPlatform.name, tipp.hostPlatform.status?.value]
-      //     reviewRequestService.raise(
-      //         tipp,
-      //         "The existing platform matched for this TIPP (${tipp.hostPlatform}) is marked as ${tipp.hostPlatform.status?.value}! Please review the URL/Platform for validity.",
-      //         "Platform not marked as current.",
-      //         user,
-      //         null,
-      //         (additionalInfo as JSON).toString(),
-      //         rr_nonCurrent
-      //     )
-      //   }
-
-      //   return tipps
-      // }
-      // database search
       def tippList = TitleInstancePackagePlatform.executeQuery(
           'select tipp from TitleInstancePackagePlatform as tipp, Combo as c1, Combo as c2 ' +
               'where c1.fromComponent = :pkg ' +
@@ -863,42 +878,14 @@ class UpdatePkgTippsRun {
     // search for package provider namespace identifier
     IdentifierNamespace providerNamespace = Package.get(pkg.id).provider?.titleNamespace
     if (providerNamespace && jsonIdMap[providerNamespace.value]) {
-      /**
-      * Exclude ES-lookup for now because of missing matches of newly created TIPPs
-      * Reevaluate with v8.19.
-      */
-
-      // elastic search
-      // TypeConvertingMap map = [
-      //     componentType     : 'TitleInstancePackagePlatform',
-      //     identfiers        : providerNamespace.value + ',' + jsonIdMap[providerNamespace.value],
-      //     pkg               : pkg.uuid,
-      //     platform          : tippJson.hostPlatform.uuid,
-      //     skipDomainMapping : true
-      // ]
-
-      // def something = esSearchService.find(map)
-
-      // if (something.records?.size() > 0) {
-      //   log.debug("found by provider namespace ID in ES")
-      //   something.records.each {
-      //     def tipp = TitleInstancePackagePlatform.findByUuid(it.uuid)
-
-      //     if (tipp) {
-      //       tipps << tipp
-      //     }
-      //     else  {
-      //       log.warn("ES record TIPP ${it.uuid} does not exist!")
-      //     }
-      //   }
-      //   return tipps
-      // }
-
       def found = TitleInstancePackagePlatform.lookupAllByIO(providerNamespace.value, jsonIdMap[providerNamespace.value])
 
       if (found.size() > 0) {
         found.each {
-          if (TitleInstancePackagePlatform.isInstance(it) && !tipps.contains(it) && it.pkg == pkg && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
+          if (TitleInstancePackagePlatform.isInstance(it)
+              && !tipps.contains(it)
+              && it.pkg == pkg
+              && it.hostPlatform.uuid == tippJson.hostPlatform.uuid) {
             tipps.add(it)
           }
         }
