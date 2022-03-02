@@ -154,7 +154,7 @@ class RestMappingService {
           switch (p.type) {
             case Float.class:
               if (p.name == 'price') {
-                String pstring = obj[p.name] ? "${obj[p.name].trunc(2)}" : null
+                String pstring = obj[p.name] ? "${obj[p.name].round(2)}" : null
 
                 if (pstring) {
                   if (!pstring.contains('.')) {
@@ -283,7 +283,7 @@ class RestMappingService {
           }
           else {
             // Add to collection
-            log.debug("Skip generic handling of collections}");
+            log.debug("Skip generic handling of collections}")
           }
         }
         else {
@@ -295,10 +295,12 @@ class RestMappingService {
             case Date.class:
               updateDateField(obj, p.name, newVal)
               break;
+            case String.class:
+              obj[p.name] = newVal ? newVal.trim() : null
+              break;
             default:
               log.debug("Default for type ${p.type}")
-              log.debug("Set simple prop ${p.name} = ${newVal}");
-              if (reqBody.containsKey(p.name))
+              log.debug("Set simple prop ${p.name} = ${newVal}")
               obj[p.name] = newVal
               break;
           }
