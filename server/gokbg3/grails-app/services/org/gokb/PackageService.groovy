@@ -436,7 +436,7 @@ class PackageService {
     def rdv_journal = RefdataCategory.lookup("TitleInstance.Medium", "Journal")
     def rdv_book = RefdataCategory.lookup("TitleInstance.Medium", "Book")
     def rdv_db = RefdataCategory.lookup("TitleInstance.Medium", "Database")
-    def ctr = 0
+    int ctr = 0
 
     for (pkg in pkg_list) {
 
@@ -1354,6 +1354,7 @@ class PackageService {
           query.setParameter('ct', combo_tipps)
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
+          int ctr = 0
 
           TitleInstancePackagePlatform.withNewSession { tsession ->
             while (tipps.next()) {
