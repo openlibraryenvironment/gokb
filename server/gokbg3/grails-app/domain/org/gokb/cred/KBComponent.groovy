@@ -1512,9 +1512,6 @@ where cp.owner = :c
       Date today = Date.from(LocalDate.now().atStartOfDay().atZone(ZoneId.systemDefault()).toInstant())
       Date start = startDate ?: today
       Date end = endDate
-
-      log.debug("handling new price ${price} ..")
-
       String[] price_components = price.trim().split(' ')
       f = Float.parseFloat(price_components[0])
       rdv_type = RefdataCategory.lookup('Price.type', type ?: 'list')
@@ -1523,27 +1520,30 @@ where cp.owner = :c
         rdv_currency = RefdataCategory.lookup('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
       }
 
-      ComponentPrice cp = new ComponentPrice(
+      def price_map = [
         owner: this,
         priceType: rdv_type,
         currency: rdv_currency,
         startDate: start,
         endDate: end,
-        price: f)
+        price: f
+      ]
 
-      log.debug("Handling final price object ${cp}")
+      ComponentPrice cp = new ComponentPrice(price_map)
 
       prices = prices ?: []
       // does this price exist already?
       if (!prices.contains(cp)) {
         // set the end date for the current price(s)
-        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:tipp and (endDate is null or endDate>:start) and priceType=:type and currency=:currency' , [start: cp.startDate, tipp: this, type: cp.priceType, currency:cp.currency])
+        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:owner and currency=:currency and endDate is null and startDate<=:start and priceType=:type and currency=:currency' , [owner: this, start: start, currency: rdv_currency, type: rdv_type])
         cp.save()
         // enter the new price
         prices << cp
         save()
-        result = cp
+      } else {
+        cp = ComponentPrice.findWhere(price_map)
       }
+      result = cp
     }
     result
   }
