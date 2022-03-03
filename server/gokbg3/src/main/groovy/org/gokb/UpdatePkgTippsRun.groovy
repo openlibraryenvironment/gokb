@@ -3,13 +3,19 @@ package org.gokb
 import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ESSearchService
+
 import gokbg3.DateFormatService
 import gokbg3.MessageService
+
 import grails.converters.JSON
 import grails.plugin.springsecurity.SpringSecurityService
 import grails.util.Holders
 import grails.util.TypeConvertingMap
+
 import groovy.util.logging.Slf4j
+
+import java.time.ZoneId
+
 import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
 import org.grails.web.json.JSONObject
@@ -42,6 +48,7 @@ class UpdatePkgTippsRun {
   def existing_tipp_ids = []
   int removedNum = 0
   def invalidTipps = []
+  def matched_tipps = [:]
   Package pkg
   CuratoryGroup activeGroup
   def pkg_validation
@@ -459,6 +466,7 @@ class UpdatePkgTippsRun {
   private Map handleTIPP(JSONObject tippJson) {
     Map tippError = [:]
     def stash = tippJson.title
+    boolean created = false
     log.debug("${stash}")
     tippJson.title = null
     def validation_result = TitleInstancePackagePlatform.validateDTO(tippJson, locale)
@@ -482,6 +490,7 @@ class UpdatePkgTippsRun {
         // Fallunterscheidung
         if (current_tipps.size() == 0) {
           // TIPP neu anlegen wenn kein aktueller RR mit vorhandenen TIPPs verknüpft ist
+          created = true
           def idents = []
           tippJson.identifiers.each { ident ->
             idents << componentLookupService.lookupOrCreateCanonicalIdentifier(ident.type, ident.value)
@@ -669,6 +678,7 @@ class UpdatePkgTippsRun {
           else {
             log.debug("All matches contain identifier conflicts. Creating new TIPP..")
             def idents = []
+            created = true
             tippJson.identifiers.each { ident ->
               idents << componentLookupService.lookupOrCreateCanonicalIdentifier(ident.type, ident.value)
             }
@@ -720,12 +730,70 @@ class UpdatePkgTippsRun {
         }
 
         if (tipp) {
-          tipp = tippService.updateCoverage(tipp, tippJson)
-          tipp.merge()
+          if (!matched_tipps[tipp.id]) {
+            matched_tipps[tipp.id] = 1
+
+            if (!created) {
+              TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = ?", [tipp])
+              tipp.refresh()
+            }
+          }
+          else {
+            matched_tipps[tipp.id]++
+          }
+
+          def cov_list = tippJson.coverageStatements ?: tippJson.coverage
+
+          cov_list.each { c ->
+            def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+            def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+            def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+            def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+            def cov_depth = null
+
+            log.debug("StartDate: ${parsedStart} -> ${startAsDate}, EndDate: ${parsedEnd} -> ${endAsDate}")
+
+            if (c.coverageDepth instanceof String) {
+              cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
+            }
+            else if (c.coverageDepth instanceof Integer) {
+              cov_depth = RefdataValue.get(c.coverageDepth)
+            }
+            else if (c.coverageDepth instanceof Map) {
+              if (c.coverageDepth.id) {
+                cov_depth = RefdataValue.get(c.coverageDepth.id)
+              }
+              else {
+                cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
+              }
+            }
+
+            if (!cov_depth) {
+              cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+            }
+
+            def coverage_item = [
+              'startVolume': c.startVolume,
+              'startIssue': c.startIssue,
+              'endVolume': c.endVolume,
+              'endIssue': c.endIssue,
+              'embargo': c.embargo,
+              'coverageDepth': cov_depth,
+              'coverageNote': c.coverageNote,
+              'startDate': startAsDate,
+              'endDate': endAsDate
+            ]
+
+            tipp.addToCoverageStatements(coverage_item)
+            tipp = tipp.merge(flush:true)
+          }
         }
       } catch (grails.validation.ValidationException ve) {
         log.error("ValidationException attempting to create/update TIPP", ve)
-        tipp?.expunge()
+
+        if (created) {
+          tipp?.expunge()
+        }
         tippError.putAll(messageService.processValidationErrors(ve.errors))
         return tippError
       }

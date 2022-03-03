@@ -158,7 +158,7 @@ class TippService {
           'startVolume': c.startVolume,
           'startIssue': c.startIssue,
           'endVolume': c.endVolume,
-          'endIssu e': c.endIssue,
+          'endIssue': c.endIssue,
           'embargo': c.embargo,
           'coverageDepth': cov_depth,
           'coverageNote': c.coverageNote,
@@ -307,9 +307,14 @@ class TippService {
       tipp = tipp.merge(flush: true)
       log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
+    else {
+      if (pkg.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
+        pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+      }
+    }
 
     if (found.matches?.size() > 0 || found.conflicts?.size() > 0)
-    handleFindConflicts(tipp, found, group)
+      handleFindConflicts(tipp, found, group)
   }
 
   def createTitleFromTippData(tipp, tipp_ids) {

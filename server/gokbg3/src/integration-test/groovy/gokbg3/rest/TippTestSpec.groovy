@@ -187,4 +187,256 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.json._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
   }
 
+  void "test add new TIPP price"() {
+    given:
+    def tipp = TitleInstancePackagePlatform.findByUrl("http://some.uri/")
+    def coverage_id = tipp.coverageStatements[0].id
+    def upd_body = [
+        pkg               : testPackage.id,
+        hostPlatform      : testPlatform.id,
+        title             : testTitle.id,
+        name              : "new TIPP name",
+        publisherName     : "some Publisher",
+        url               : "http://new-url.url",
+        coverageStatements: [
+            [
+                id           : coverage_id,
+                startDate    : "2005-01-01",
+                startVolume  : "1",
+                startIssue   : "1",
+                endVolume    : "5",
+                endDate      : "2008-01-01",
+                coverageDepth: "Fulltext"
+            ],
+            [
+                startDate    : "2010-01-01",
+                startVolume  : "7",
+                startIssue   : "1",
+                coverageDepth: "Fulltext"
+            ]
+        ],
+        ids: [
+          [
+            type: 'issn',
+            value: '3245-2341'
+          ],
+          [
+            type: 'eissn',
+            value: '3241-2541'
+          ]
+        ],
+        prices: [
+          [
+            price: "0.01",
+            currency: [ name: "EUR"],
+            startDate: "2020-01-01",
+            type: "list"
+          ]
+        ]
+    ]
+    def urlPath = getUrlPath()
+    when:
+    last = true
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.put("${urlPath}/rest/tipps/${tipp.id}") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(upd_body as JSON)
+    }
+    then:
+    resp.status == 200 // OK
+    resp.json.id == tipp.id
+    resp.json.url == upd_body.url
+    resp.json.name == "new TIPP name"
+    resp.json.publisherName == "some Publisher"
+    resp.json._embedded.ids?.size() == 2
+    resp.json._embedded.coverageStatements?.size() == 2
+    resp.json._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
+    resp.json._embedded.prices?.size() == 1
+    resp.json._embedded.prices[0].price == "0.01"
+  }
+
+  void "test remove TIPP price"() {
+    given:
+    def tipp = TitleInstancePackagePlatform.findByUrl("http://some.uri/")
+    def coverage_id = tipp.coverageStatements[0].id
+    def upd_body = [
+        pkg               : testPackage.id,
+        hostPlatform      : testPlatform.id,
+        title             : testTitle.id,
+        name              : "new TIPP name",
+        publisherName     : "some Publisher",
+        url               : "http://new-url.url",
+        coverageStatements: [
+            [
+                id           : coverage_id,
+                startDate    : "2005-01-01",
+                startVolume  : "1",
+                startIssue   : "1",
+                endVolume    : "5",
+                endDate      : "2008-01-01",
+                coverageDepth: "Fulltext"
+            ],
+            [
+                startDate    : "2010-01-01",
+                startVolume  : "7",
+                startIssue   : "1",
+                coverageDepth: "Fulltext"
+            ]
+        ],
+        ids: [
+          [
+            type: 'issn',
+            value: '3245-2341'
+          ],
+          [
+            type: 'eissn',
+            value: '3241-2541'
+          ]
+        ],
+        prices: []
+    ]
+    def urlPath = getUrlPath()
+    when:
+    last = true
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.put("${urlPath}/rest/tipps/${tipp.id}") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(upd_body as JSON)
+    }
+    then:
+    resp.status == 200 // OK
+    resp.json.id == tipp.id
+    resp.json.url == upd_body.url
+    resp.json.name == "new TIPP name"
+    resp.json.publisherName == "some Publisher"
+    resp.json._embedded.ids?.size() == 2
+    resp.json._embedded.coverageStatements?.size() == 2
+    resp.json._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
+    resp.json._embedded.prices?.size() == 0
+  }
+
+  void "test replace TIPP price"() {
+    given:
+    def tipp = TitleInstancePackagePlatform.findByUrl("http://some.uri/")
+    def coverage_id = tipp.coverageStatements[0].id
+    def init_body = [
+        pkg               : testPackage.id,
+        hostPlatform      : testPlatform.id,
+        title             : testTitle.id,
+        name              : "new TIPP name",
+        publisherName     : "some Publisher",
+        url               : "http://new-url.url",
+        coverageStatements: [
+            [
+                id           : coverage_id,
+                startDate    : "2005-01-01",
+                startVolume  : "1",
+                startIssue   : "1",
+                endVolume    : "5",
+                endDate      : "2008-01-01",
+                coverageDepth: "Fulltext"
+            ],
+            [
+                startDate    : "2010-01-01",
+                startVolume  : "7",
+                startIssue   : "1",
+                coverageDepth: "Fulltext"
+            ]
+        ],
+        ids: [
+          [
+            type: 'issn',
+            value: '3245-2341'
+          ],
+          [
+            type: 'eissn',
+            value: '3241-2541'
+          ]
+        ],
+        prices: [
+          [
+            price: "0.01",
+            currency: [ name: "EUR"],
+            startDate: "2020-01-01",
+            type: "list"
+          ]
+        ]
+    ]
+    def upd_body = [
+        pkg               : testPackage.id,
+        hostPlatform      : testPlatform.id,
+        title             : testTitle.id,
+        name              : "new TIPP name",
+        publisherName     : "some Publisher",
+        url               : "http://new-url.url",
+        coverageStatements: [
+            [
+                id           : coverage_id,
+                startDate    : "2005-01-01",
+                startVolume  : "1",
+                startIssue   : "1",
+                endVolume    : "5",
+                endDate      : "2008-01-01",
+                coverageDepth: "Fulltext"
+            ],
+            [
+                startDate    : "2010-01-01",
+                startVolume  : "7",
+                startIssue   : "1",
+                coverageDepth: "Fulltext"
+            ]
+        ],
+        ids: [
+          [
+            type: 'issn',
+            value: '3245-2341'
+          ],
+          [
+            type: 'eissn',
+            value: '3241-2541'
+          ]
+        ],
+        prices: [
+          [
+            price: "10.58",
+            currency: [ name: "EUR"],
+            startDate: "2020-01-01",
+            type: "list"
+          ]
+        ]
+    ]
+
+    def urlPath = getUrlPath()
+    when:
+    last = true
+    String accessToken = getAccessToken()
+
+    RestResponse resp_init = rest.put("${urlPath}/rest/tipps/${tipp.id}") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(init_body as JSON)
+    }
+    RestResponse resp = rest.put("${urlPath}/rest/tipps/${tipp.id}") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(upd_body as JSON)
+    }
+    then:
+    resp.status == 200 // OK
+    resp.json.id == tipp.id
+    resp.json.url == upd_body.url
+    resp.json.name == "new TIPP name"
+    resp.json.publisherName == "some Publisher"
+    resp.json._embedded.ids?.size() == 2
+    resp.json._embedded.coverageStatements?.size() == 2
+    resp.json._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
+    resp.json._embedded.prices?.size() == 1
+    resp.json._embedded.prices[0].price == "10.58"
+  }
 }
