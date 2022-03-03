@@ -12,6 +12,8 @@ class CleanupService {
   def sessionFactory
   def ESWrapperService
   def grailsApplication
+  def reviewRequestService
+  def componentLookupService
 
   def tidyMissnamedPublishers () {
 
@@ -433,6 +435,8 @@ class CleanupService {
       }
     }
 
+    markInvalidComponentNames(j)
+
     j?.endTime = new Date()
   }
 
@@ -736,5 +740,45 @@ class CleanupService {
       j?.setProgress(result.num_expunged, result.num_requested)
     }
     result
+  }
+
+  def markInvalidComponentNames(Job j = null) {
+    log.debug("Checking for corrupted component names")
+    TitleInstance.withNewSession { tsession ->
+      boolean more = true
+      int offset = 0
+      RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Name")
+      RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+      RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
+
+      while (more) {
+        def batch = KBComponent.executeQuery("from KBComponent as kbc where name like '%�%' and status != :del and not exists (select 1 from ReviewRequest where componentToReview = kbc and stdDesc = :type and status = :status)", [type: rr_type, status: status_open, del: deleted_status], [max: 50])
+
+        batch.each { kbc ->
+          reviewRequestService.raise(
+            kbc,
+            "Remove invalid characters from the title string.",
+            "Invalid characters in title string",
+            null,
+            null,
+            null,
+            rr_type,
+            componentLookupService.findCuratoryGroupOfInterest(kbc)
+          )
+        }
+
+        offset += batch.size()
+        tsession.flush()
+        tsession.clear()
+
+        if (batch.size() == 0) {
+          more = false
+        }
+      }
+
+      if (j && offset > 0) {
+        j.message("Created ${offset} reviews ('Invalid Name') for illegal characters in component names.".toString())
+      }
+    }
   }
 }
