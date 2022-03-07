@@ -15,6 +15,7 @@ import org.gokb.cred.Package
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
 import org.gokb.cred.ReviewRequest
+import org.gokb.cred.TitleInstancePackagePlatform
 import org.gokb.cred.User
 
 @Transactional(readOnly = true)
@@ -627,7 +628,7 @@ class ReviewsController {
 
 
     // check if the type of the linked component allows for escalation
-    if (!componentClass || !(componentClass in [BookInstance.class.getSimpleName(), DatabaseInstance.class.getSimpleName(), JournalInstance.class.getSimpleName(), OtherInstance.class.getSimpleName()])) {
+    if (!componentClass || !(componentClass in [BookInstance.class.simpleName, DatabaseInstance.class.simpleName, JournalInstance.class.simpleName, OtherInstance.class.simpleName, TitleInstancePackagePlatform.class.simpleName, Package.class.simpleName])) {
       result.message = "ReviewRequest belongs to the un-escalatable class ${componentClass}"
       return result
     }
