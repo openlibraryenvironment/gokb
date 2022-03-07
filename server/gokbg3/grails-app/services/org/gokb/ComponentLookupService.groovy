@@ -726,7 +726,7 @@ class ComponentLookupService {
     }
 
     if (curated_component.curatoryGroups?.size() == 1) {
-      CuratoryGroup cg = CuratoryGroup.get(component.curatoryGroups[0].id)
+      CuratoryGroup cg = CuratoryGroup.get(curated_component.curatoryGroups[0].id)
       return cg
     }
     else if (curated_component.curatoryGroups.size() > 1) {
