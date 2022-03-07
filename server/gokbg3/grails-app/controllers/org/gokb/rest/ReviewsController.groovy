@@ -456,7 +456,7 @@ class ReviewsController {
     ReviewRequest obj = ReviewRequest.findById(params.id)
 
     if (obj) {
-      result = getDeescalationTargetGroupId(obj, request.JSON?.activeGroup, params)
+      result = getDeescalationTargetGroupId(obj, params.activeGroupId, params)
     }
     else {
       response.status = 404
