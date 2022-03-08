@@ -570,7 +570,7 @@ class UpdatePkgTippsRun {
                   }
                   else{
                     // unmatched
-                    tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'NEW']
+                    tipp_id_match_results << [namespace: plns, value: jsonIdMap[plns], match: 'NEW']
                   }
                 }
               }
