@@ -529,10 +529,9 @@ class ESSearchService{
         QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
         scrollQuery.must(typeFilter)
       }
+
+      addDateQueries(scrollQuery, errors, params)
       addRefdataQuery(scrollQuery, errors, 'status', params.status)
-      // addDateQueries(scrollQuery, errors, params)
-      // TODO: add this after upgrade to Elasticsearch 7
-      // TODO: alternative query builders for scroll searches with q
 
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       searchSourceBuilder.query(scrollQuery)

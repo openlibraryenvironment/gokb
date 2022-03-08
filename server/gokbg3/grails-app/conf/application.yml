@@ -196,6 +196,7 @@ environments:
         gokb:
             ygorUrl: null
             languagesUrl : null
+            ftupdate_enabled: false
             packageUpdate:
                 enabled: false
             packageOaiCaching:

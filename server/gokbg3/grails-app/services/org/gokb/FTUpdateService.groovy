@@ -270,10 +270,10 @@ class FTUpdateService {
           ArrayList coverage_src = kbc.coverageStatements?.size() > 0 ? kbc.coverageStatements : [kbc]
           coverage_src.each { tcs ->
             def cst = [:]
-            if (tcs.startDate) cst.startDate = dateFormatService.formatIsoTimestamp(tcs.startDate)
+            if (tcs.startDate) cst.startDate = dateFormatService.formatDate(tcs.startDate)
             cst.startVolume = tcs.startVolume ?: ""
             cst.startIssue = tcs.startIssue ?: ""
-            if (tcs.endDate) cst.endDate = dateFormatService.formatIsoTimestamp(tcs.endDate)
+            if (tcs.endDate) cst.endDate = dateFormatService.formatDate(tcs.endDate)
             cst.endVolume = tcs.endVolume ?: ""
             cst.endIssue = tcs.endIssue ?: ""
             cst.embargo = tcs.embargo ?: ""
@@ -296,8 +296,8 @@ class FTUpdateService {
           }
           // simple eBook fields
           result.titleVolumeNumber = kbc.title?.volumeNumber ?: ""
-          if (kbc.title?.dateFirstInPrint) result.titleDateFirstInPrint = dateFormatService.formatIsoTimestamp(kbc.title.dateFirstInPrint)
-          if (kbc.title?.dateFirstOnline) result.titleDateFirstOnline = dateFormatService.formatIsoTimestamp(kbc.title.dateFirstOnline)
+          if (kbc.title?.dateFirstInPrint) result.titleDateFirstInPrint = dateFormatService.formatDate(kbc.title.dateFirstInPrint)
+          if (kbc.title?.dateFirstOnline) result.titleDateFirstOnline = dateFormatService.formatDate(kbc.title.dateFirstOnline)
           result.titleFirstEditor = kbc.title?.firstEditor ?: ""
           result.titleFirstAuthor = kbc.title?.firstAuthor ?: ""
           result.titleImprint = kbc.title?.imprint?.name ?: ""
@@ -329,7 +329,7 @@ class FTUpdateService {
           kbc.title.titleHistory?.each { he ->
             if (he.date) {
               def event = [:]
-              event.date = dateFormatService.formatIsoTimestamp(he.date)
+              event.date = dateFormatService.formatDate(he.date)
               event.from = []
               if (he.from) {
                 event.from.addAll(he.from.collect { fe -> [id: fe?.id, uuid: fe?.uuid, name: fe?.name] })
@@ -365,11 +365,11 @@ class FTUpdateService {
                                   namespaceName: idc.toComponent.namespace.name])
         }
 
-        if (kbc.dateFirstOnline) result.dateFirstOnline = dateFormatService.formatIsoTimestamp(kbc.dateFirstOnline)
-        if (kbc.dateFirstInPrint) result.dateFristInPrint = dateFormatService.formatIsoTimestamp(kbc.dateFirstInPrint)
-        if (kbc.accessStartDate) result.accessStartDate = dateFormatService.formatIsoTimestamp(kbc.accessStartDate)
-        if (kbc.accessEndDate) result.accessEndDate = dateFormatService.formatIsoTimestamp(kbc.accessEndDate)
-        if (kbc.lastChangedExternal) result.lastChangedExternal = dateFormatService.formatIsoTimestamp(kbc.lastChangedExternal)
+        if (kbc.dateFirstOnline) result.dateFirstOnline = dateFormatService.formatDate(kbc.dateFirstOnline)
+        if (kbc.dateFirstInPrint) result.dateFristInPrint = dateFormatService.formatDate(kbc.dateFirstInPrint)
+        if (kbc.accessStartDate) result.accessStartDate = dateFormatService.formatDate(kbc.accessStartDate)
+        if (kbc.accessEndDate) result.accessEndDate = dateFormatService.formatDate(kbc.accessEndDate)
+        if (kbc.lastChangedExternal) result.lastChangedExternal = dateFormatService.formatDate(kbc.lastChangedExternal)
 
         if (kbc.publisherName) result.publisherName = kbc.publisherName
         if (kbc.subjectArea) result.subjectArea = kbc.subjectArea
