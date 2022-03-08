@@ -568,10 +568,11 @@ class UpdatePkgTippsRun {
                       }
                     }
                   }
-                  else{
-                    // unmatched
-                    tipp_id_match_results << [namespace: plns, value: jsonIdMap[plns], match: 'NEW']
-                  }
+                  unmatched = false
+                }
+
+                if (unmatched) {
+                  tipp_id_match_results << [namespace: plns, value: jsonIdMap[plns], match: 'NEW']
                 }
               }
             }
