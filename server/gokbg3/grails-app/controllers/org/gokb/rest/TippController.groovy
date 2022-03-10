@@ -300,7 +300,7 @@ class TippController {
     errors
   }
 
-  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'DELETE')
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def delete() {
     def result = ['result': 'OK', 'params': params]
@@ -332,7 +332,7 @@ class TippController {
     render result as JSON
   }
 
-  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def retire() {
     def result = ['result': 'OK', 'params': params]
