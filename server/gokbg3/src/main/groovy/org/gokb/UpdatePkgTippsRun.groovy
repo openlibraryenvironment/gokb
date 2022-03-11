@@ -540,12 +540,17 @@ class UpdatePkgTippsRun {
           }
 
           current_tipps.each { ctipp ->
-            def tipp_ids = ctipp.ids.collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
+            def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = :tipp and toComponent = i)", [tipp: ctipp]).collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
+            log.debug("Checking against existing IDs: ${tipp_ids}")
             def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
             def unmatched_namespaces = []
             def tipp_id_match_results = [:]
-            int mismatch_prio
+            int mismatch_prio = -1
             boolean priority_match = false
+
+            if (tippJson.titleId == ctipp.importId) {
+              tipp_id_match_results << [namespace: 'title_id', value: tippJson.titleId, match: 'OK']
+            }
 
             priority_list.eachWithIndex { plns, idx ->
               if (jsonIdMap[plns]) {
@@ -556,13 +561,12 @@ class UpdatePkgTippsRun {
                     if (Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname) {
                       tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'FAIL']
 
-                      if (!mismatch_prio) {
+                      if (mismatch_prio < 0) {
                         mismatch_prio = idx // Set highest priority value of mismatches
                       }
                     }
                     else {
                       tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'OK']
-
                       if (!mismatch_prio) {
                         priority_match = true // Namespace with highest priority matched
                       }
@@ -577,15 +581,21 @@ class UpdatePkgTippsRun {
               }
             }
 
-            if (mismatch_prio) {
+            if (mismatch_prio >= 0) {
               if (priority_match) {
+                log.debug("Matched by priority ${mismatch_prio} with partial mismatches")
+                if (!partial_matches[mismatch_prio])
+                  partial_matches[mismatch_prio] = []
+
                 partial_matches[mismatch_prio] << [item: ctipp, matchResults: tipp_id_match_results]
               }
               else {
+                log.debug("Failed Match for current ${ctipp}!")
                 failed_matches << [item: ctipp, matchResults: tipp_id_match_results]
               }
             }
             else {
+              log.debug("Full match for ${ctipp}")
               full_matches << ctipp
             }
           }
@@ -622,7 +632,7 @@ class UpdatePkgTippsRun {
           else if (partial_matches.size() > 0) {
             def best_matches = []
 
-            for (i = 0; i < priority_list.size(); i++) {
+            for (int i = 0; i < priority_list.size(); i++) {
               if (partial_matches[i].size() > 0) {
                 best_matches << partial_matches[i]
                 break
