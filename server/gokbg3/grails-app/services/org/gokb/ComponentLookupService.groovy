@@ -687,48 +687,67 @@ class ComponentLookupService {
   }
 
 
-  CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null, JSONObject activeGroup = null){
-    // Find by activeGroup
+  CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null, def activeGroup = null){
     CuratoryGroup activeCuratoryGroup = null
-    if (activeGroup?.uuid){
-      activeCuratoryGroup = CuratoryGroup.findByUuid(activeGroup.uuid)
+
+    if (activeGroup instanceof String) {
+      activeCuratoryGroup = CuratoryGroup.findByName(activeGroup)
     }
-    else if (activeGroup?.id){
-      activeCuratoryGroup = CuratoryGroup.findById(activeGroup.id)
+    else if (activeGroup instanceof Integer || activeGroup instanceof Long) {
+      activeCuratoryGroup = CuratoryGroup.findById(activeGroup)
     }
-    else if (activeGroup?.name){
-      activeCuratoryGroup = CuratoryGroup.findByName(activeGroup.name)
-    }
-    if (activeCuratoryGroup){
-      return activeCuratoryGroup
+    else if (activeGroup instanceof Map) {
+      if (activeGroup?.uuid){
+        activeCuratoryGroup = CuratoryGroup.findByUuid(activeGroup.uuid)
+      }
+      else if (activeGroup?.id){
+        activeCuratoryGroup = CuratoryGroup.findById(activeGroup.id)
+      }
+      else if (activeGroup?.name){
+        activeCuratoryGroup = CuratoryGroup.findByName(activeGroup.name)
+      }
     }
 
-    // Not found by activeGroup --> Get by other arguments
-    if (!KBComponent.has(component, 'curatoryGroups')){
-      return null
-    }
-    // TODO: to be extended for further comparision objects
-    if (component.curatoryGroups?.size() == 1){
-      CuratoryGroup cg = CuratoryGroup.get(component.curatoryGroups[0].id)
+    def curated_component = KBComponent.has(component, 'curatoryGroups') ? component : (component.class == TitleInstancePackagePlatform ? component.pkg : null)
 
-      return cg
-    }
-    if (component.curatoryGroups?.size() == 0){
-      if (user?.curatoryGroups?.size() == 1){
-        CuratoryGroup cg = CuratoryGroup.get(user.curatoryGroups[0].id)
+    if (!curated_component) {
+      String component_classname = component.class.getSimpleName()
+
+      if (activeCuratoryGroup?.superordinatedGroup && component_classname in ['JournalInstance', 'BookInstance', 'DatabaseInstance', 'OtherInstance']) {
+        return activeCuratoryGroup.superordinatedGroup
+      }
+      if (grailsApplication.config.gokb.centralGroups[component_classname]) {
+        CuratoryGroup cg = CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.centralGroups[component_classname])
         return cg
       }
-      // else
-      return null
+      else {
+        return null
+      }
     }
-    if (component.curatoryGroups.size() > 1){
-      def intersection = component.curatoryGroups.intersect(user?.curatoryGroups)
-      if (intersection.size() == 1){
+
+    if (curated_component.curatoryGroups?.size() == 1) {
+      CuratoryGroup cg = CuratoryGroup.get(curated_component.curatoryGroups[0].id)
+      return cg
+    }
+    else if (curated_component.curatoryGroups.size() > 1) {
+      if (curated_component.curatoryGroups.contains(activeCuratoryGroup)) {
+        return activeCuratoryGroup
+      }
+      else if (component.curatoryGroups.intersect(user?.curatoryGroups)) {
         CuratoryGroup cg = CuratoryGroup.get(intersection[0].id)
         return cg
       }
-      // else
-      return null
     }
+    else if (curated_component.curatoryGroups?.size() == 0) {
+      if (activeCuratoryGroup) {
+        return activeCuratoryGroup
+      }
+      else if (user?.curatoryGroups?.size() == 1){
+        CuratoryGroup cg = CuratoryGroup.get(user.curatoryGroups[0].id)
+        return cg
+      }
+    }
+
+    return null
   }
 }

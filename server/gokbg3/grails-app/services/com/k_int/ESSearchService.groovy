@@ -529,10 +529,9 @@ class ESSearchService{
         QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
         scrollQuery.must(typeFilter)
       }
+
+      addDateQueries(scrollQuery, errors, params)
       addRefdataQuery(scrollQuery, errors, 'status', params.status)
-      // addDateQueries(scrollQuery, errors, params)
-      // TODO: add this after upgrade to Elasticsearch 7
-      // TODO: alternative query builders for scroll searches with q
 
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       searchSourceBuilder.query(scrollQuery)
@@ -944,8 +943,8 @@ class ESSearchService{
         }
 
         def href = (user?.hasRole('ROLE_EDITOR') && is_curator) || user?.isAdmin() ? base + obj_cls.restPath + "/${rec_id}" : null
-        domainMapping['_links']['update'] = ['href': href]
-        domainMapping['_links']['delete'] = ['href': href + "/delete"]
+        domainMapping['_links']['update'] = (href ? ['href': href] : null)
+        domainMapping['_links']['delete'] = (href ? ['href': href + "/delete"] : null)
       }
 
       domainMapping['_embedded'] = [:]
@@ -1158,6 +1157,7 @@ class ESSearchService{
         "Org",
         "JournalInstance",
         "Journal",
+        "Serial",
         "BookInstance",
         "Book",
         "DatabaseInstance",
@@ -1173,14 +1173,13 @@ class ESSearchService{
     def final_type = typeString.capitalize()
 
     if (final_type in defined_types) {
-
       if (final_type== 'TIPP') {
         final_type = 'TitleInstancePackagePlatform'
       }
       else if (final_type == 'Book') {
         final_type = 'BookInstance'
       }
-      else if (final_type == 'Journal') {
+      else if (final_type == 'Journal' || final_type == 'Serial') {
         final_type = 'JournalInstance'
       }
       else if (final_type == 'Database') {

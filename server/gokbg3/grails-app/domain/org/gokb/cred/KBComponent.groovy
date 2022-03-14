@@ -11,7 +11,9 @@ import grails.plugins.orm.auditable.Auditable
 import grails.plugins.orm.auditable.AuditEventType
 import org.gokb.GOKbTextUtils
 
-import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 /**
  * Abstract base class for GoKB Components.
@@ -1500,42 +1502,50 @@ where cp.owner = :c
   /**
    * Set a price formatted as "nnnn.nn" or "nnnn.nn CUR"
    */
-  public void setPrice(String type, String price, Date startDate = null, Date endDate = null) {
-    Float f = null;
-    RefdataValue rdv_type = null;
-    RefdataValue rdv_currency = null;
+  public ComponentPrice setPrice(String type, String price, Date startDate = null, Date endDate = null) {
+    def result = null
+    Float f = null
+    RefdataValue rdv_type = null
+    RefdataValue rdv_currency = null
 
     if (price) {
-      Date today = todayNoTime()
+      Date today = Date.from(LocalDate.now().atStartOfDay().atZone(ZoneId.systemDefault()).toInstant())
       Date start = startDate ?: today
       Date end = endDate
-
-      String[] price_components = price.trim().split(' ');
+      String[] price_components = price.trim().split(' ')
       f = Float.parseFloat(price_components[0])
-      rdv_type = RefdataCategory.lookupOrCreate('Price.type', type ?: 'list').save(flush: true, failOnError: true)
+      rdv_type = RefdataCategory.lookup('Price.type', type ?: 'list')
 
       if (price_components.length == 2) {
-        rdv_currency = RefdataCategory.lookupOrCreate('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
+        rdv_currency = RefdataCategory.lookup('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
       }
 
-      ComponentPrice cp = new ComponentPrice(
+      def price_map = [
         owner: this,
         priceType: rdv_type,
         currency: rdv_currency,
         startDate: start,
         endDate: end,
-        price: f)
+        price: f
+      ]
+
+      ComponentPrice cp = new ComponentPrice(price_map)
+
       prices = prices ?: []
       // does this price exist already?
       if (!prices.contains(cp)) {
         // set the end date for the current price(s)
-        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:tipp and (endDate is null or endDate>:start) and priceType=:type and currency=:currency' , [start: cp.startDate, tipp: this, type: cp.priceType, currency:cp.currency])
+        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:owner and currency=:currency and endDate is null and startDate<=:start and priceType=:type and currency=:currency' , [owner: this, start: start, currency: rdv_currency, type: rdv_type])
         cp.save()
         // enter the new price
         prices << cp
         save()
+      } else {
+        cp = ComponentPrice.findWhere(price_map)
       }
+      result = cp
     }
+    result
   }
 
   @Transient

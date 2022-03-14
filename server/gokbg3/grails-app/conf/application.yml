@@ -154,6 +154,7 @@ environments:
             ygorUrl: null
             languagesUrl : null
             packageUpdate:
+                cron: "0 0 6 * * ? *"
                 enabled: false
             packageOaiCaching:
                 enabled: false
@@ -202,7 +203,9 @@ environments:
         gokb:
             ygorUrl: null
             languagesUrl : null
+            ftupdate_enabled: false
             packageUpdate:
+                cron: "0 0 6 * * ? *"
                 enabled: false
             packageOaiCaching:
                 enabled: false
@@ -261,6 +264,7 @@ environments:
                     disabled: true
         gokb:
             packageUpdate:
+                cron: "0 0 6 * * ? *"
                 enabled: false
             packageOaiCaching:
                 enabled: true

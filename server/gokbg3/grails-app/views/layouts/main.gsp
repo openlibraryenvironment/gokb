@@ -14,14 +14,12 @@
   <link rel="shortcut icon"
     href="${resource(dir: 'images', file: 'favicon.ico')}"
     type="image/x-icon">
-  
+
   <g:layoutHead />
   <asset:javascript src="gokb/application.grass.js" />
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
-  <asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.12.4/extras/modernizr-custom.js"></asset:script>
-  <asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.12.4/polyfiller.js"></asset:script>
 </head>
 
 <body class="theme-${ grailsApplication.config.gokb.theme }">
@@ -152,18 +150,6 @@
       </ul>
     </div>
   </div>
-
-  <g:if test="${(grailsApplication.config.kuali?.analytics?.code instanceof String ) }">
-    <g:javascript>
-        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  
-        ga('create', '${grailsApplication.config.kuali.analytics.code}', 'kuali.org');
-        ga('send', 'pageview');
-      </g:javascript>
-  </g:if>
 </body>
 <r:layoutResources />
 </html>

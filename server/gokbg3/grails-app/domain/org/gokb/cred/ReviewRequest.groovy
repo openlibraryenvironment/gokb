@@ -168,6 +168,11 @@ class ReviewRequest implements Auditable {
     result
   }
 
+  def expunge() {
+    ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog where rr = ?",[this])
+    this.delete(failOnError: true)
+  }
+
   @Transient
   public userAvailableActions() {
     def user = springSecurityService.currentUser

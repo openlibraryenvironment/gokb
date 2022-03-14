@@ -236,7 +236,8 @@ class BootStrap {
         log.debug("Checking for missing component statistics")
         ComponentStatisticService.updateCompStats()
 
-        AugmentJob.schedule(grailsApplication.config.gokb.augment.cron)
+        AugmentJob.schedule(grailsApplication.config.gokb.augment.cron, [name: 'TitleAugmentJobTrigger', startDelay: 60000])
+        AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron, [name: 'AutoUpdatePackageTrigger', startDelay: 300000])
 
         log.info("GoKB Init complete")
     }
@@ -864,6 +865,8 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Record Matches').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Import Report').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Information').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Invalid Name").save(flush: true, failOnError: true)
+
 
         RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Activity.Status', 'Complete').save(flush: true, failOnError: true)

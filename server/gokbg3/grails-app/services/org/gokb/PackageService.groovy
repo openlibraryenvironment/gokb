@@ -436,7 +436,7 @@ class PackageService {
     def rdv_journal = RefdataCategory.lookup("TitleInstance.Medium", "Journal")
     def rdv_book = RefdataCategory.lookup("TitleInstance.Medium", "Book")
     def rdv_db = RefdataCategory.lookup("TitleInstance.Medium", "Database")
-    def ctr = 0
+    int ctr = 0
 
     for (pkg in pkg_list) {
 
@@ -1247,27 +1247,33 @@ class PackageService {
           query.setParameter('ct', combo_tipps)
 
           ScrollableResults tippIDs = query.scroll(ScrollMode.FORWARD_ONLY)
+          int ctr = 0
 
-          while (tippIDs.next()) {
-            def tipp_id = tippIDs.get(0);
-            TitleInstancePackagePlatform.withNewSession {
+          TitleInstancePackagePlatform.withNewSession { tsession ->
+            while (tippIDs.next()) {
+              def tipp_id = tippIDs.get(0)
               TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+
               kbartRecordsFor(tipp, exportType).each { record ->
                 KBART_FIELDS.eachWithIndex { fieldName, i ->
                   writer.write(sanitize(record[fieldName]))
                   writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
                 }
               }
+
+              if (ctr % 50 == 0) {
+                tsession.flush()
+                tsession.clear()
+              }
+              ctr++
             }
           }
           tippIDs.close()
-
-          writer.flush();
-          writer.close();
+          writer.close()
         }
       }
       catch (Exception e) {
-        log.error("Problem with creating KBART export data", e);
+        log.error("Problem with creating KBART export data", e)
       }
     }
   }
@@ -1348,11 +1354,11 @@ class PackageService {
           query.setParameter('ct', combo_tipps)
 
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
+          int ctr = 0
 
-          while (tipps.next()) {
-
-            def tipp_id = tipps.get(0);
-            TitleInstancePackagePlatform.withNewSession {
+          TitleInstancePackagePlatform.withNewSession { tsession ->
+            while (tipps.next()) {
+              def tipp_id = tipps.get(0);
               TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
 
               if (tipp.coverageStatements?.size() > 0) {
@@ -1360,16 +1366,16 @@ class PackageService {
                   writer.write(
                       sanitize(tipp.getId()) + '\t' +
                           sanitize(tipp.url) + '\t' +
-                          sanitize(tipp.title.getId()) + '\t' +
-                          sanitize(tipp.name ?: tipp.title.name) + '\t' +
+                          sanitize(tipp.title?.getId()) + '\t' +
+                          sanitize(tipp.name ?: tipp.title?.name) + '\t' +
                           sanitize(tipp.status.value) + '\t' +
-                          sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
-                          sanitize(tipp.title.imprint?.name) + '\t' +
-                          sanitize(tipp.title.publishedFrom) + '\t' +
-                          sanitize(tipp.title.publishedTo) + '\t' +
-                          sanitize(tipp.title.medium?.value) + '\t' +
-                          sanitize(tipp.title.OAStatus?.value) + '\t' +
-                          sanitize(tipp.title.continuingSeries?.value) + '\t' +
+                          sanitize(tipp.title?.getCurrentPublisher()?.name) + '\t' +
+                          sanitize(tipp.title?.imprint?.name) + '\t' +
+                          sanitize(tipp.title?.publishedFrom) + '\t' +
+                          sanitize(tipp.title?.publishedTo) + '\t' +
+                          sanitize(tipp.title?.medium?.value) + '\t' +
+                          sanitize(tipp.title?.OAStatus?.value) + '\t' +
+                          sanitize(tipp.title?.continuingSeries?.value) + '\t' +
                           sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')) + '\t' +
                           sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')) + '\t' +
                           sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
@@ -1394,9 +1400,9 @@ class PackageService {
                           sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
                           sanitize(tipp.format?.value) + '\t' +
                           sanitize(tipp.paymentType?.value) + '\t' +
-                          sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title.getIdentifierValue('DOI')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')) +
+                          sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title?.getIdentifierValue('DOI')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title?.getIdentifierValue('ISBN')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title?.getIdentifierValue('pISBN')) +
                           '\n');
                 }
               }
@@ -1404,16 +1410,16 @@ class PackageService {
                 writer.write(
                     sanitize(tipp.getId()) + '\t' +
                         sanitize(tipp.url) + '\t' +
-                        sanitize(tipp.title.getId()) + '\t' +
-                        sanitize(tipp.name ?: tipp.title.name) + '\t' +
+                        sanitize(tipp.title?.getId()) + '\t' +
+                        sanitize(tipp.name ?: tipp.title?.name) + '\t' +
                         sanitize(tipp.status.value) + '\t' +
-                        sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
-                        sanitize(tipp.title.imprint?.name) + '\t' +
-                        sanitize(tipp.title.publishedFrom) + '\t' +
-                        sanitize(tipp.title.publishedTo) + '\t' +
-                        sanitize(tipp.title.medium?.value) + '\t' +
-                        sanitize(tipp.title.OAStatus?.value) + '\t' +
-                        sanitize(tipp.title.continuingSeries?.value) + '\t' +
+                        sanitize(tipp.title?.getCurrentPublisher()?.name) + '\t' +
+                        sanitize(tipp.title?.imprint?.name) + '\t' +
+                        sanitize(tipp.title?.publishedFrom) + '\t' +
+                        sanitize(tipp.title?.publishedTo) + '\t' +
+                        sanitize(tipp.title?.medium?.value) + '\t' +
+                        sanitize(tipp.title?.OAStatus?.value) + '\t' +
+                        sanitize(tipp.title?.continuingSeries?.value) + '\t' +
                         sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')) + '\t' +
                         sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')) + '\t' +
                         sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
@@ -1438,18 +1444,21 @@ class PackageService {
                         sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
                         sanitize(tipp.format?.value) + '\t' +
                         sanitize(tipp.paymentType?.value) + '\t' +
-                        sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title.getIdentifierValue('DOI')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title.getIdentifierValue('ISBN')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title.getIdentifierValue('pISBN')) +
-                        '\n');
+                        sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title?.getIdentifierValue('DOI')) + '\t' +
+                        sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title?.getIdentifierValue('ISBN')) + '\t' +
+                        sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title?.getIdentifierValue('pISBN')) +
+                        '\n')
               }
-              tipp.discard();
+
+              if (ctr % 50 == 0) {
+                tsession.flush()
+                tsession.clear()
+              }
+              ctr++
             }
           }
           tipps.close()
-
-          writer.flush();
-          writer.close();
+          writer.close()
         }
       }
     }
@@ -1471,9 +1480,14 @@ class PackageService {
           createTsvExport(pkg)
         file = new File(exportFilePath() + fileName)
       }
+      else if (Duration.between(Instant.ofEpochMilli(file.lastModified()), Instant.now()).getSeconds() < 2) {
+        while (Duration.between(Instant.ofEpochMilli(file.lastModified()), Instant.now()).getSeconds() < 2) {
+          sleep(1000)
+        }
+      }
       InputStream inFile = new FileInputStream(file)
 
-      response.setContentType('text/tab-separated-values');
+      response.setContentType('text/tab-separated-values')
       response.setHeader("Content-Disposition", "attachment; filename=\"${fileName.substring(0, fileName.length() - 13)}.tsv\"")
       response.setHeader("Content-Encoding", "UTF-8")
       response.setContentLength(file.bytes.length)
@@ -1484,7 +1498,7 @@ class PackageService {
       out.close()
     }
     catch (Exception e) {
-      log.error("Problem with sending export", e);
+      log.error("Problem with sending export", e)
     }
   }
 
@@ -1542,14 +1556,14 @@ class PackageService {
     input.close()
   }
 
-  def synchronized updateFromSource(Package p, def user = null) {
+  def synchronized updateFromSource(Package p, def user = null, def activeGroup = null) {
     log.debug("updateFromSource")
     def result = null
     boolean started = false
     if (running == false) {
       running = true
       log.debug("UpdateFromSource started")
-      result = startSourceUpdate(p, user) ? 'OK' : 'ERROR'
+      result = startSourceUpdate(p, user, activeGroup) ? 'OK' : 'ERROR'
       running = false
     }
     else {
@@ -1564,7 +1578,7 @@ class PackageService {
    * Bad configurations will result in failure.
    * The autoUpdate frequency in the source is ignored: the update starts immediately.
    */
-  private boolean startSourceUpdate(Package p, def user = null) {
+  private boolean startSourceUpdate(Package p, def user = null, def activeGroup = null) {
     log.debug("Source update start..")
     boolean error = false
     def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
@@ -1576,6 +1590,7 @@ class PackageService {
     def updateTrigger
     def tokenValue = p.updateToken?.value ?: null
     def respData
+    Source src_obj = p.source
 
     if (user) {
       String charset = (('a'..'z') + ('0'..'9')).join()
@@ -1587,12 +1602,33 @@ class PackageService {
         currentToken.delete(flush: true)
       }
 
+      if (!activeGroup) {
+        if (user.curatoryGroups?.size() == 1) {
+          activeGroup = user.curatoryGroups[0]
+        }
+        else {
+          def intersect = user.curatoryGroups.intersect(p.curatoryGroups)
+
+          if (intersect?.size() == 1) {
+            activeGroup = intersect[0]
+          }
+        }
+      }
+
       def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush: true)
     }
+    else if (!activeGroup) {
+      if (p.source?.curatoryGroups) {
+        activeGroup = p.source.curatoryGroups[0]
+      }
+      else if (p.curatoryGroups) {
+        activeGroup = p.curatoryGroups[0]
+      }
+    }
 
-    if (tokenValue && ygorBaseUrl) {
-      def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
-      updateTrigger = new RESTClient(ygorBaseUrl + path)
+    if (tokenValue && ygorBaseUrl && activeGroup) {
+      def full_path = ygorBaseUrl + "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}&activeGroup=${activeGroup.id}"
+      updateTrigger = new RESTClient(full_path.toString())
 
       try {
         log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}")
@@ -1662,7 +1698,7 @@ class PackageService {
           }
           response.failure = { resp ->
             log.error("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => failure")
-            log.error("ygor response: ${resp.responseBase}")
+            log.error("ygor response: ${resp.responseBase} ${resp.statusLine}")
             error = true
           }
         }
@@ -1725,6 +1761,18 @@ class PackageService {
     return ''
   }
 
+  private String selectDateField(tippPropValue, titlePropValue, ExportType exportType) {
+    if (tippPropValue && titlePropValue){
+      return (exportType==ExportType.KBART_TIPP) ? dateFormatService.formatDate(tippPropValue) : dateFormatService.formatDate(titlePropValue)
+    }
+    else if (tippPropValue){
+      return dateFormatService.formatDate(tippPropValue)
+    } else if (titlePropValue){
+      return dateFormatService.formatDate(titlePropValue)
+    }
+    return ''
+  }
+
   private def kbartRecordsFor (TitleInstancePackagePlatform tipp, ExportType exportType) {
     def recordList = []
     def record = [:]
@@ -1739,14 +1787,14 @@ class PackageService {
       record.online_identifier = pick(tipp.getIdentifierValue('eISSN'), tipp.title?.getIdentifierValue('eISSN'), exportType)
     }
     record.title_url = tipp.url
-    record.first_author = pick(tipp.firstAuthor, tipp.title?.hasProperty('firstAuthor')?tipp.title.firstAuthor:null, exportType)
-    record.first_editor = pick(tipp.firstEditor, tipp.title?.hasProperty('firstEditor')?tipp.title.firstEditor:null, exportType)
-    record.date_monograph_published_print = pick(tipp.dateFirstInPrint, tipp.title?.hasProperty('dateFirstInPrint')?tipp.title.dateFirstInPrint:null, exportType)
-    record.date_monograph_published_online = pick(tipp.dateFirstOnline, tipp.title?.hasProperty('dateFirstOnline')?tipp.title.dateFirstOnline:null, exportType)
-    record.monograph_volume = pick(tipp.volumeNumber, tipp.title?.hasProperty('volumeNumber')?tipp.title.volumeNumber:null, exportType)
-    record.monograph_edition = pick(tipp.editionStatement, tipp.title?.hasProperty('editionStatement')?tipp.title.editionStatement:null, exportType)
+    record.first_author = pick(tipp.firstAuthor, tipp.title?.hasProperty('firstAuthor') ? tipp.title.firstAuthor : null, exportType)
+    record.first_editor = pick(tipp.firstEditor, tipp.title?.hasProperty('firstEditor') ? tipp.title.firstEditor : null, exportType)
+    record.date_monograph_published_print = selectDateField(tipp.dateFirstInPrint, tipp.title?.hasProperty('dateFirstInPrint') ? tipp.title.dateFirstInPrint : null, exportType)
+    record.date_monograph_published_online = selectDateField(tipp.dateFirstOnline, tipp.title?.hasProperty('dateFirstOnline') ? tipp.title.dateFirstOnline : null, exportType)
+    record.monograph_volume = pick(tipp.volumeNumber, tipp.title?.hasProperty('volumeNumber') ? tipp.title.volumeNumber : null, exportType)
+    record.monograph_edition = pick(tipp.editionStatement, tipp.title?.hasProperty('editionStatement') ? tipp.title.editionStatement : null, exportType)
     record.title_id = pick(tipp.importId, tipp.title?.id, exportType)
-    record.publisher_name = pick (tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
+    record.publisher_name = pick(tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
     record.preceding_publication_title_id = pick(tipp.precedingPublicationTitleId, tipp.title?.getPrecedingTitleId(), exportType)
     record.parent_publication_title_id = tipp.parentPublicationTitleId
     record.access_type = pick((tipp.paymentType && ['OA','Uncharged'].contains(tipp.paymentType) ? 'F' : 'P'), null, exportType)
@@ -1756,11 +1804,11 @@ class PackageService {
 
     if (tipp.coverageStatements.size() > 0 ){
       // several records
-      tipp.coverageStatements.each{cst ->
-        record.date_first_issue_online = cst.startDate
+      tipp.coverageStatements.each { cst ->
+        record.date_first_issue_online = cst.startDate ? dateFormatService.formatDate(cst.startDate) : null
         record.num_first_issue_online = cst.startIssue
         record.num_first_vol_online = cst.startVolume
-        record.date_last_issue_online = cst.endDate
+        record.date_last_issue_online = cst.endDate ? dateFormatService.formatDate(cst.endDate) : null
         record.num_last_issue_online = cst.endIssue
         record.num_last_vol_online = cst.endVolume
         record.embargo_info = cst.embargo
@@ -1772,10 +1820,10 @@ class PackageService {
     }
     else{
       // just one
-      record.date_first_issue_online = tipp.startDate
+      record.date_first_issue_online = tipp.startDate ? dateFormatService.formatDate(tipp.startDate) : null
       record.num_first_issue_online = tipp.startIssue
       record.num_first_vol_online = tipp.startVolume
-      record.date_last_issue_online = tipp.endDate
+      record.date_last_issue_online = tipp.endDate ? dateFormatService.formatDate(tipp.endDate) : null
       record.num_last_issue_online = tipp.endIssue
       record.num_last_vol_online = tipp.endVolume
       record.embargo_info = tipp.embargo
@@ -1932,8 +1980,8 @@ class PackageService {
                         'series'(tipp.series)
                         'subjectArea'(tipp.subjectArea)
                         'publisherName'(tipp.publisherName)
-                        'dateFirstInPrint'(tipp.dateFirstInPrint)
-                        'dateFirstOnline'(tipp.dateFirstOnline)
+                        'dateFirstInPrint'(tipp.dateFirstInPrint ? dateFormatService.formatDate(tipp.dateFirstInPrint) : null)
+                        'dateFirstOnline'(tipp.dateFirstOnline ? dateFormatService.formatDate(tipp.dateFirstOnline) : null)
                         'medium'(tipp.format?.value)
                         'format'(tipp.medium?.value)
                         'volumeNumber'(tipp.volumeNumber)
@@ -1942,13 +1990,17 @@ class PackageService {
                         'firstEditor'(tipp.firstEditor)
                         'parentPublicationTitleId'(tipp.parentPublicationTitleId)
                         'precedingPublicationTitleId'(tipp.precedingPublicationTitleId)
-                        'lastChangedExternal'(tipp.lastChangedExternal)
+                        'lastChangedExternal'(tipp.lastChangedExternal ? dateFormatService.formatDate(tipp.lastChangedExternal) : null)
                         'publicationType'(tipp.publicationType?.value)
                         if (tipp.title) {
                           'title'('id': tipp.title.id, 'uuid': tipp.title.uuid) {
                             'name'(tipp.title.name?.trim())
                             'type'(getTitleClass(tipp.title.id))
                             'status'(tipp.title.status?.value)
+                            if (getTitleClass(tipp.title.id) == 'BookInstance') {
+                              'dateFirstInPrint'(tipp.title.dateFirstInPrint ? dateFormatService.formatDate(tipp.title.dateFirstInPrint) : null)
+                              'dateFirstOnline'(tipp.title.dateFirstOnline ? dateFormatService.formatDate(tipp.title.dateFirstOnline) : null)
+                            }
                             'identifiers' {
                               getTitleIds(tipp.title.id).each { tid ->
                                 'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
@@ -1968,15 +2020,15 @@ class PackageService {
                           'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
                           'name'(tipp.hostPlatform.name?.trim())
                         }
-                        'access'(start: tipp.accessStartDate ? dateFormatService.formatIsoTimestamp(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatIsoTimestamp(tipp.accessEndDate) : null)
+                        'access'(start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null)
                         def cov_statements = getCoverageStatements(tipp.id)
                         if (cov_statements?.size() > 0) {
                           cov_statements.each { tcs ->
                             'coverage'(
-                              startDate: (tcs.startDate ? dateFormatService.formatIsoTimestamp(tcs.startDate) : null),
+                              startDate: (tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null),
                               startVolume: (tcs.startVolume),
                               startIssue: (tcs.startIssue),
-                              endDate: (tcs.endDate ? dateFormatService.formatIsoTimestamp(tcs.endDate) : null),
+                              endDate: (tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null),
                               endVolume: (tcs.endVolume),
                               endIssue: (tcs.endIssue),
                               coverageDepth: (tcs.coverageDepth?.value ?: null),
@@ -2006,6 +2058,9 @@ class PackageService {
 
           FileUtils.moveFile(tmpFile, cachedRecord)
           Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(cachedRecord.lastModified()), item.id])
+          createKbartExport(item, ExportType.KBART_TIPP)
+          createKbartExport(item, ExportType.KBART_TITLE)
+          createTsvExport(item)
         }
         else if (currentCacheFile && item.lastUpdated <= currentCacheDate) {
           result = 'SKIPPED_NO_CHANGE'

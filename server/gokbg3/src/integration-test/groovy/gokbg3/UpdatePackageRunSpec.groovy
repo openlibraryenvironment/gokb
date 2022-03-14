@@ -96,6 +96,8 @@ class UpdatePackageRunSpec extends Specification {
     ['TestJournalTIPP', 'TestBookTIPP', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
+    ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog")
+    ReviewRequest.executeUpdate("delete from ReviewRequest")
   }
 
   void "Test updatePackageTipps :: match book by one of two identifiers"() {
@@ -638,6 +640,113 @@ class UpdatePackageRunSpec extends Specification {
     matching_pkgs[0].tipps[0].importId == "wildeTitleId"
     matching_pkgs[0].provider?.name == "American Chemical Society"
     matching_pkgs[0].ids?.size() == 1
+  }
+
+  void "Test updatePackageTipps :: match by importId and issn conflict"() {
+
+    when: "Caller asks for this record to be cross referenced"
+    def json_record = [
+        "packageHeader": [
+            "breakable"      : "No",
+            "consistent"     : "Yes",
+            "editStatus"     : "In Progress",
+            "fixed"          : "No",
+            "global"         : "Consortium",
+            "identifiers"    : [
+                [
+                    "type" : "isil",
+                    "value": "ZDB-1-ACS"
+                ]
+            ],
+            "listStatus"     : "In Progress",
+            "name"           : "TestPackage",
+            "nominalPlatform": [
+                "name"      : "ACS Publications",
+                "primaryUrl": "https://pubs.acs.org"
+            ],
+            "nominalProvider": "American Chemical Society"
+        ],
+        "tipps"        : [
+            [
+                "accessEnd"  : "",
+                "accessStart": "",
+                "titleId"    : "titleID",
+                "identifiers": [
+                    [
+                        "type" : "eissn",
+                        "value": "1520-1766"
+                    ],
+                    [
+                        "type" : "issn",
+                        "value": "9783-442X"
+                    ]
+
+                ],
+                "coverage"   : [
+                    [
+                        "coverageDepth": "Fulltext",
+                        "coverageNote" : "NL-DE;  1.1953 - 43.1995",
+                        "embargo"      : "",
+                        "endDate"      : "1995-12-31 00:00:00.000",
+                        "endIssue"     : "",
+                        "endVolume"    : "43",
+                        "startDate"    : "1953-01-01 00:00:00.000",
+                        "startIssue"   : "",
+                        "startVolume"  : "1"
+                    ]
+                ],
+                "medium"     : "Journal",
+                "platform"   : [
+                    "name"      : "ACS Publications",
+                    "primaryUrl": "https://pubs.acs.org"
+                ],
+                "status"     : "Current",
+                "editStatus" : "In Progress",
+                "title"      : [
+                    "identifiers": [
+                        [
+                            "type" : "eissn",
+                            "value": "1520-1766"
+                        ],
+                        [
+                            "type" : "issn",
+                            "value": "9783-442X"
+                        ]
+                    ],
+                    "name"       : "Journal of agricultural and food chemistry",
+                    "publicationType"       : "Serial"
+                ],
+                "name"       : "Journal of agricultural and food chemistry",
+                "publicationType"       : "Serial",
+                "url"        : "http://pubs.acs.org/journal/jafcau"
+            ]
+        ]
+    ]
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
+        "/integration/updatePackageTipps") {
+      auth('admin', 'admin')
+      body(json_record as JSON)
+    }
+
+    then: "The item is created in the database because it does not exist"
+    resp.json.message != null
+    resp.json.message.startsWith('Created/Updated')
+    expect: "Find pkg by name, which is connected to the new TIPP"
+    def rr_mismatch = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch')
+    def matching_pkgs = Package.findAllByName("TestPackage")
+    matching_pkgs.size() == 1
+    matching_pkgs[0].id == resp.json.pkgId
+    matching_pkgs[0].tipps.size() == 3
+    int titleIdMatches = 0
+    matching_pkgs[0].tipps.each {
+        if (it.importId == 'titleID') {
+            titleIdMatches++
+        }
+    }
+    titleIdMatches == 2
+    def conflict_reviews = ReviewRequest.findAllByStdDesc(rr_mismatch)
+    conflict_reviews.size() == 1
   }
 
 }
