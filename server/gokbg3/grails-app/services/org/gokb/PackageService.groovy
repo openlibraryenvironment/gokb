@@ -1578,7 +1578,7 @@ class PackageService {
    * Bad configurations will result in failure.
    * The autoUpdate frequency in the source is ignored: the update starts immediately.
    */
-  private boolean startSourceUpdate(Package p, def user = null) {
+  private boolean startSourceUpdate(Package p, def user = null, def activeGroup = null) {
     log.debug("Source update start..")
     boolean error = false
     def ygorBaseUrl = grailsApplication.config.gokb.ygorUrl
@@ -1590,6 +1590,7 @@ class PackageService {
     def updateTrigger
     def tokenValue = p.updateToken?.value ?: null
     def respData
+    Source src_obj = p.source
 
     if (user) {
       String charset = (('a'..'z') + ('0'..'9')).join()
@@ -1601,12 +1602,33 @@ class PackageService {
         currentToken.delete(flush: true)
       }
 
+      if (!activeGroup) {
+        if (user.curatoryGroups?.size() == 1) {
+          activeGroup = user.curatoryGroups[0]
+        }
+        else {
+          def intersect = user.curatoryGroups.intersect(p.curatoryGroups)
+
+          if (intersect?.size() == 1) {
+            activeGroup = intersect[0]
+          }
+        }
+      }
+
       def newToken = new UpdateToken(pkg: p, updateUser: user, value: tokenValue).save(flush: true)
     }
+    else if (!activeGroup) {
+      if (p.source?.curatoryGroups) {
+        activeGroup = p.source.curatoryGroups[0]
+      }
+      else if (p.curatoryGroups) {
+        activeGroup = p.curatoryGroups[0]
+      }
+    }
 
-    if (tokenValue && ygorBaseUrl) {
-      def path = "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}"
-      updateTrigger = new RESTClient(ygorBaseUrl + path)
+    if (tokenValue && ygorBaseUrl && activeGroup) {
+      def full_path = ygorBaseUrl + "/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}&activeGroup=${activeGroup.id}"
+      updateTrigger = new RESTClient(full_path.toString())
 
       try {
         log.debug("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue}")
@@ -1676,7 +1698,7 @@ class PackageService {
           }
           response.failure = { resp ->
             log.error("GET ygor/enrichment/processGokbPackage?pkgId=${p.id}&updateToken=${tokenValue} => failure")
-            log.error("ygor response: ${resp.responseBase}")
+            log.error("ygor response: ${resp.responseBase} ${resp.statusLine}")
             error = true
           }
         }
