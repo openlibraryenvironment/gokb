@@ -1,4 +1,4 @@
-package gokbg3
+package org.gokb
 
 import grails.converters.JSON
 import grails.core.GrailsApplication
@@ -15,7 +15,7 @@ import spock.lang.Specification
 
 // For @Autowired
 
-@Integration(applicationClass = Application.class)
+@Integration
 @Rollback
 class UpdatePackageRunSpec extends Specification {
 

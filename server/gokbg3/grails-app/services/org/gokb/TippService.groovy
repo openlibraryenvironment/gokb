@@ -282,7 +282,7 @@ class TippService {
             null,
             [otherComponents: ti] as JSON,
             RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch"),
-            group
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, group)
         )
       }
     }
@@ -470,7 +470,6 @@ class TippService {
   private void handleFindConflicts(toi, def found, CuratoryGroup activeCg = null) {
     TitleInstancePackagePlatform.withNewSession {
       TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(toi.id)
-      CuratoryGroup cg = activeCg ? CuratoryGroup.get(activeCg.id) : null
       def status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
       def open_tipp_reviews = ReviewRequest.executeQuery("from ReviewRequest where componentToReview = ? and status = ?", [tipp, status_open])
 
@@ -488,7 +487,7 @@ class TippService {
               null,
               (additionalInfo as JSON).toString(),
               RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
-              cg
+              componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
           )
         }
         else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
@@ -508,7 +507,7 @@ class TippService {
                   null,
                   (additionalInfo as JSON).toString(),
                   RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
-                  cg
+                  componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
                 )
               }
               else if (conflict.field == "identifier.value") {
@@ -534,7 +533,7 @@ class TippService {
                 null,
                 (additionalInfo as JSON).toString(),
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict'),
-                cg
+                componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
               )
             }
             else if (mismatches.size() > 0 && !found.to_create) {
@@ -552,7 +551,7 @@ class TippService {
                 null,
                 (additionalInfo as JSON).toString(),
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
-                cg
+                componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
               )
             }
           }
@@ -570,7 +569,8 @@ class TippService {
               null,
               null,
               (additionalInfo as JSON).toString(),
-              RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict")
+              RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
+              componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
           )
         }
 
@@ -587,7 +587,7 @@ class TippService {
               null,
               (additionalInfo as JSON).toString(),
               RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
-              cg
+              componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
           )
         }
       }

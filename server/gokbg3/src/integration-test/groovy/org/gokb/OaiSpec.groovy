@@ -1,4 +1,4 @@
-package gokbg3
+package org.gokb
 
 import com.sun.corba.se.impl.orb.PrefixParserData
 import grails.testing.mixin.integration.Integration

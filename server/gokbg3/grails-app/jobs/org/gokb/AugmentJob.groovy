@@ -70,10 +70,10 @@ class AugmentJob {
       issnNs << IdentifierNamespace.findByValue('eissn')
       int offset = 0
       int batchSize = 50
-      def count_journals_without_ezb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(),[current: status_current, ctype: idComboType, ns: ezbNs, issns: issnNs])[0]
+      def count_journals_without_ezb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(),[current: status_current, ctype: idComboType, ns: ezbNs, issns: issnNs, lastRun: startDate])[0]
 
       while (offset < count_journals_without_ezb_id) {
-        def journals_without_ezb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(),[current: status_current, ctype: idComboType, ns: ezbNs, issns: issnNs],[offset: offset, max: batchSize])
+        def journals_without_ezb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(),[current: status_current, ctype: idComboType, ns: ezbNs, issns: issnNs, lastRun: startDate], [offset: offset, max: batchSize])
         log.debug("Processing ${count_journals_without_ezb_id} journals.")
 
         journals_without_ezb_id.each { ti_id ->

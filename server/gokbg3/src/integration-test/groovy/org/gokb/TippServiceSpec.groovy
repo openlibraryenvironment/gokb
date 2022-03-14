@@ -1,6 +1,7 @@
-package gokbg3
+package org.gokb
 
 import com.k_int.ConcurrencyManagerService
+import gokbg3.DateFormatService
 import grails.testing.mixin.integration.Integration
 import grails.testing.services.ServiceUnitTest
 import org.gokb.*

@@ -6,6 +6,7 @@ import grails.core.GrailsApplication
 import grails.converters.JSON
 import org.apache.commons.collections.CollectionUtils
 import org.gokb.AugmentJob
+import org.gokb.AutoUpdatePackagesJob
 import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
@@ -236,8 +237,10 @@ class BootStrap {
         log.debug("Checking for missing component statistics")
         ComponentStatisticService.updateCompStats()
 
-        AugmentJob.schedule(grailsApplication.config.gokb.augment.cron, [name: 'TitleAugmentJobTrigger', startDelay: 60000])
-        AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron, [name: 'AutoUpdatePackageTrigger', startDelay: 300000])
+        if (Environment.current != Environment.TEST) {
+            AugmentJob.schedule(grailsApplication.config.gokb.augment.cron)
+            AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron)
+        }
 
         log.info("GoKB Init complete")
     }
