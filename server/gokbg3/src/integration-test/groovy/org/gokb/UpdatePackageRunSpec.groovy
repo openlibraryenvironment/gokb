@@ -457,7 +457,7 @@ class UpdatePackageRunSpec extends Specification {
                     ],
                     [
                         "type" : "issn",
-                        "value": "9783-442X"
+                        "value": "9783-4428"
                     ]
 
                 ],
@@ -489,11 +489,11 @@ class UpdatePackageRunSpec extends Specification {
                         ],
                         [
                             "type" : "eissn",
-                            "value": "1520-5118"
+                            "value": "9783-4420"
                         ],
                         [
                             "type" : "issn",
-                            "value": "0021-8561"
+                            "value": "9783-4428"
                         ]
                     ],
                     "name"       : "Journal of agricultural and food chemistry",
@@ -526,7 +526,7 @@ class UpdatePackageRunSpec extends Specification {
             journal = it
         }
     }
-    journal.ids.size() == 4
+    journal.ids.size() == 5
   }
 
   void "Test updatePackageTipps :: new record"() {

@@ -518,8 +518,6 @@ class UpdatePkgTippsRun {
 
           def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
           new Combo(toComponent: tipp, fromComponent: Platform.get(tippJson.hostPlatform.internalId), type: plt_combo_type).save(flush: true, failOnError: true)
-
-//          idents.each { tipp.ids << it }
           updateTippData(tipp, tippJson)
 
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
@@ -567,7 +565,7 @@ class UpdatePkgTippsRun {
                     }
                     else {
                       tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'OK']
-                      if (!mismatch_prio) {
+                      if (mismatch_prio < 0) {
                         priority_match = true // Namespace with highest priority matched
                       }
                     }
@@ -634,7 +632,7 @@ class UpdatePkgTippsRun {
 
             for (int i = 0; i < priority_list.size(); i++) {
               if (partial_matches[i]?.size() > 0) {
-                best_matches << partial_matches[i]
+                best_matches = partial_matches[i]
                 break
               }
             }
@@ -798,7 +796,8 @@ class UpdatePkgTippsRun {
             tipp = tipp.merge(flush:true)
           }
         }
-      } catch (grails.validation.ValidationException ve) {
+      }
+      catch (grails.validation.ValidationException ve) {
         log.error("ValidationException attempting to create/update TIPP", ve)
 
         if (created) {
