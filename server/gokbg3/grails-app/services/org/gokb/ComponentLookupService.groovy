@@ -690,7 +690,10 @@ class ComponentLookupService {
   CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null, def activeGroup = null){
     CuratoryGroup activeCuratoryGroup = null
 
-    if (activeGroup instanceof String) {
+    if (activeGroup instanceof CuratoryGroup) {
+      activeCuratoryGroup = activeGroup
+    }
+    else if (activeGroup instanceof String) {
       activeCuratoryGroup = CuratoryGroup.findByName(activeGroup)
     }
     else if (activeGroup instanceof Integer || activeGroup instanceof Long) {

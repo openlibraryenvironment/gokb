@@ -1,4 +1,4 @@
-package gokbg3.rest
+package org.gokb.rest
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
