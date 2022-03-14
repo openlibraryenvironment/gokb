@@ -1556,14 +1556,14 @@ class PackageService {
     input.close()
   }
 
-  def synchronized updateFromSource(Package p, def user = null) {
+  def synchronized updateFromSource(Package p, def user = null, def activeGroup = null) {
     log.debug("updateFromSource")
     def result = null
     boolean started = false
     if (running == false) {
       running = true
       log.debug("UpdateFromSource started")
-      result = startSourceUpdate(p, user) ? 'OK' : 'ERROR'
+      result = startSourceUpdate(p, user, activeGroup) ? 'OK' : 'ERROR'
       running = false
     }
     else {
