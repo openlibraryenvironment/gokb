@@ -466,6 +466,7 @@ class UpdatePkgTippsRun {
   private Map handleTIPP(JSONObject tippJson) {
     Map tippError = [:]
     def stash = tippJson.title
+    def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
     boolean created = false
     log.debug("${stash}")
     tippJson.title = null
@@ -542,7 +543,6 @@ class UpdatePkgTippsRun {
           current_tipps.each { ctipp ->
             def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = :tipp and toComponent = i)", [tipp: ctipp]).collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
             log.debug("Checking against existing IDs: ${tipp_ids}")
-            def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
             def unmatched_namespaces = []
             def tipp_id_match_results = [:]
             int mismatch_prio = -1
@@ -633,7 +633,7 @@ class UpdatePkgTippsRun {
             def best_matches = []
 
             for (int i = 0; i < priority_list.size(); i++) {
-              if (partial_matches[i].size() > 0) {
+              if (partial_matches[i]?.size() > 0) {
                 best_matches << partial_matches[i]
                 break
               }
