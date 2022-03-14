@@ -943,8 +943,8 @@ class ESSearchService{
         }
 
         def href = (user?.hasRole('ROLE_EDITOR') && is_curator) || user?.isAdmin() ? base + obj_cls.restPath + "/${rec_id}" : null
-        domainMapping['_links']['update'] = ['href': href]
-        domainMapping['_links']['delete'] = ['href': href + "/delete"]
+        domainMapping['_links']['update'] = (href ? ['href': href] : null)
+        domainMapping['_links']['delete'] = (href ? ['href': href + "/delete"] : null)
       }
 
       domainMapping['_embedded'] = [:]
@@ -1157,6 +1157,7 @@ class ESSearchService{
         "Org",
         "JournalInstance",
         "Journal",
+        "Serial",
         "BookInstance",
         "Book",
         "DatabaseInstance",
@@ -1172,14 +1173,13 @@ class ESSearchService{
     def final_type = typeString.capitalize()
 
     if (final_type in defined_types) {
-
       if (final_type== 'TIPP') {
         final_type = 'TitleInstancePackagePlatform'
       }
       else if (final_type == 'Book') {
         final_type = 'BookInstance'
       }
-      else if (final_type == 'Journal') {
+      else if (final_type == 'Journal' || final_type == 'Serial') {
         final_type = 'JournalInstance'
       }
       else if (final_type == 'Database') {

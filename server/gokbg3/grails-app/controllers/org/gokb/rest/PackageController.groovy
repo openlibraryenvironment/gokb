@@ -130,7 +130,6 @@ class PackageController {
   def save() {
     def result = ['result': 'OK', 'params': params]
     def reqBody = request.JSON
-    def generateToken = params.generateToken ? params.boolean('generateToken') : (reqBody.generateToken ? true : false)
     def request_locale = RequestContextUtils.getLocale(request)
     UpdateToken update_token = null
     def errors = [:]
@@ -196,11 +195,9 @@ class PackageController {
                 errors.variantNames = variant_result.errors
               }
 
-              if (generateToken) {
-                String charset = (('a'..'z') + ('0'..'9')).join()
-                def updateToken = RandomStringUtils.random(255, charset.toCharArray())
-                update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
-              }
+              String charset = (('a'..'z') + ('0'..'9')).join()
+              def updateToken = RandomStringUtils.random(255, charset.toCharArray())
+              update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
 
               errors << updateCombos(obj, reqBody, false, user)
 
