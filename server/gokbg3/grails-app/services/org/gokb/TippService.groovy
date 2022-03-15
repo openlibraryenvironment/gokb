@@ -471,126 +471,122 @@ class TippService {
   private void handleFindConflicts(toi, def found, CuratoryGroup activeCg = null) {
     TitleInstancePackagePlatform.withNewSession {
       TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(toi.id)
-      def status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
-      def open_tipp_reviews = ReviewRequest.executeQuery("from ReviewRequest where componentToReview = ? and status = ?", [tipp, status_open])
 
-      if (open_tipp_reviews == 0) {
-        if (found.matches.size > 1) {
-          def additionalInfo = [otherComponents: []]
-          found.matches.each { comp ->
-            additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid, conflicts: comp.conflicts]
-          }
-          reviewRequestService.raise(
-              tipp,
-              "TIPP matched several titles",
-              "TIPP ${tipp.name} coudn't be linked.".toString(),
-              null,
-              null,
-              (additionalInfo as JSON).toString(),
-              RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
-              componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
-          )
+      if (found.matches.size > 1) {
+        def additionalInfo = [otherComponents: []]
+        found.matches.each { comp ->
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid, conflicts: comp.conflicts]
         }
-        else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
-          found.matches.each { comp ->
-            def otherComponent = [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
-            def mismatches = []
+        reviewRequestService.raise(
+            tipp,
+            "TIPP matched several titles",
+            "TIPP ${tipp.name} coudn't be linked.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
+        )
+      }
+      else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
+        found.matches.each { comp ->
+          def otherComponent = [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+          def mismatches = []
 
-            comp.conflicts.each { conflict ->
-              if (conflict.field == "identifier.namespace") {
-                def additionalInfo = [otherComponents: [otherComponent], conflict: conflict]
-
-                reviewRequestService.raise(
-                  tipp,
-                  conflict.message,
-                  "Check Title identifiers",
-                  null,
-                  null,
-                  (additionalInfo as JSON).toString(),
-                  RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
-                  componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
-                )
-              }
-              else if (conflict.field == "identifier.value") {
-                def id_map = [:]
-                id_map[conflict.namespace] = conflict.value
-
-                mismatches << id_map
-              }
-            }
-
-            if (mismatches.size() > 0 && found.to_create) {
-              def additionalInfo = [
-                otherComponents: [otherComponent],
-                mismatches: mismatches,
-                vars: [comp.object.name, mismatches]
-              ]
+          comp.conflicts.each { conflict ->
+            if (conflict.field == "identifier.namespace") {
+              def additionalInfo = [otherComponents: [otherComponent], conflict: conflict]
 
               reviewRequestService.raise(
-                tipp.title,
-                "Identifier mismatch",
-                "Title ${comp.object.name} matched, but ingest identifiers ${mismatches} differ from existing ones in the same namespaces.",
-                null,
-                null,
-                (additionalInfo as JSON).toString(),
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict'),
-                componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
-              )
-            }
-            else if (mismatches.size() > 0 && !found.to_create) {
-              def additionalInfo = [
-                otherComponents: [otherComponent],
-                mismatches: mismatches,
-                vars: [comp.object.name, mismatches]
-              ]
-
-              reviewRequestService.raise(
-                tipp.title,
-                comp.message,
+                tipp,
+                conflict.message,
                 "Check Title identifiers",
                 null,
                 null,
                 (additionalInfo as JSON).toString(),
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
-                componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
+                componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
               )
             }
-          }
-        }
-        else if (tipp.title == null) {
-          def additionalInfo = [otherComponents: []]
-          found.matches.each { comp ->
-            additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+            else if (conflict.field == "identifier.value") {
+              def id_map = [:]
+              id_map[conflict.namespace] = conflict.value
+
+              mismatches << id_map
+            }
           }
 
-          reviewRequestService.raise(
-              tipp,
-              "TIPP conflicts",
-              "TIPP ${tipp.name} conflicts with other titles.".toString(),
+          if (mismatches.size() > 0 && found.to_create) {
+            def additionalInfo = [
+              otherComponents: [otherComponent],
+              mismatches: mismatches,
+              vars: [comp.object.name, mismatches]
+            ]
+
+            reviewRequestService.raise(
+              tipp.title,
+              "Identifier mismatch",
+              "Title ${comp.object.name} matched, but ingest identifiers ${mismatches} differ from existing ones in the same namespaces.",
               null,
               null,
               (additionalInfo as JSON).toString(),
-              RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
-              componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
-          )
-        }
-
-        if (found.conflicts.size > 0) {
-          def additionalInfo = [otherComponents: []]
-          found.conflicts.each { comp ->
-            additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict'),
+              componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
+            )
           }
-          reviewRequestService.raise(
-              tipp,
-              "TIPP conflicts",
-              "TIPP ${tipp.name} conflicts with other titles.".toString(),
+          else if (mismatches.size() > 0 && !found.to_create) {
+            def additionalInfo = [
+              otherComponents: [otherComponent],
+              mismatches: mismatches,
+              vars: [comp.object.name, mismatches]
+            ]
+
+            reviewRequestService.raise(
+              tipp.title,
+              comp.message,
+              "Check Title identifiers",
               null,
               null,
               (additionalInfo as JSON).toString(),
-              RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
-              componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
-          )
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
+              componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
+            )
+          }
         }
+      }
+      else if (tipp.title == null) {
+        def additionalInfo = [otherComponents: []]
+        found.matches.each { comp ->
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+        }
+
+        reviewRequestService.raise(
+            tipp,
+            "TIPP conflicts",
+            "TIPP ${tipp.name} conflicts with other titles.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
+        )
+      }
+
+      if (found.conflicts.size > 0) {
+        def additionalInfo = [otherComponents: []]
+        found.conflicts.each { comp ->
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+        }
+        reviewRequestService.raise(
+            tipp,
+            "TIPP conflicts",
+            "TIPP ${tipp.name} conflicts with other titles.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
+        )
       }
     }
   }
