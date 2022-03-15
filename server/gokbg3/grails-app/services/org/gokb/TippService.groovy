@@ -25,6 +25,7 @@ import java.time.ZoneId
 
 class TippService {
   def componentUpdateService
+  def componentLookupService
   def titleLookupService
   def sessionFactory
   def reviewRequestService

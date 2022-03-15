@@ -642,7 +642,7 @@ class UpdatePackageRunSpec extends Specification {
     matching_pkgs[0].ids?.size() == 1
   }
 
-  void "Test updatePackageTipps :: match by importId and issn conflict"() {
+  void "Test updatePackageTipps :: New tipp due to match by importId and eissn conflict"() {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
@@ -748,5 +748,4 @@ class UpdatePackageRunSpec extends Specification {
     def conflict_reviews = ReviewRequest.findAllByStdDesc(rr_mismatch)
     conflict_reviews.size() == 1
   }
-
 }
