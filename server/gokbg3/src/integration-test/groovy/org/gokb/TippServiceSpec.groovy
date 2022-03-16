@@ -4,6 +4,7 @@ import com.k_int.ConcurrencyManagerService
 import gokbg3.DateFormatService
 import grails.testing.mixin.integration.Integration
 import grails.testing.services.ServiceUnitTest
+import java.time.LocalDateTime
 import org.gokb.*
 import org.gokb.cred.BookInstance
 import org.gokb.cred.Identifier
@@ -39,11 +40,12 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
   ConcurrencyManagerService concurrencyManagerService
 
   def setup() {
-    pkg = new Package(name: "Test Package").save()
-    plt = new Platform(name: "Test Platform").save()
-    isbn = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5').save()
-    book = new BookInstance(name: "Book 1", ids: [isbn]).save()
-    publisher = new Org(name: "Publizistenname").save()
+    pkg = new Package(name: "Test Package").save(flush: true)
+    plt = new Platform(name: "Test Platform").save(flush: true)
+    isbn = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5').save(flush: true)
+    book = new BookInstance(name: "Book 1").save(flush:true)
+    book.ids.add(isbn)
+    publisher = new Org(name: "Publizistenname").save(flush: true)
   }
 
   def cleanup() {
@@ -51,76 +53,69 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     plt.expunge()
     book.expunge()
     isbn.expunge()
-    publisher.expunge()
   }
 
   void "Test create new title from a minimal TIPP"() {
     given:
     def tmap = [
-      pkg            : pkg,
-      title          : null,
-      hostPlatform   : plt,
+      pkg            : pkg.id,
+      hostPlatform   : plt.id,
       url            : null,
-      uuid           : UUID.randomUUID(),
-      status         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
-      name           : "Test Title Name from TIPP",
-      editStatus     : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
-      language       : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "ger"),
-      publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")
+      status         : "Current",
+      name           : "Test Title from minimal TIPP",
+      editStatus     : "Approved",
+      language       : "ger",
+      publicationType: "Monograph"
     ]
 
     when:
-    TitleInstancePackagePlatform tipp = new TitleInstancePackagePlatform(tmap)
+    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
 
     tippService.matchTitle(tipp)
 
     then:
     tipp.title != null
-    tipp.expunge()
   }
 
   void "Test create new BookInstance from a full TIPP"() {
     given:
     def tmap = [
-      pkg                        : pkg,
-      title                      : null,
-      hostPlatform               : plt,
+      pkg                        : pkg.id,
+      hostPlatform               : plt.id,
       url                        : "http://some.random.thing/",
-      uuid                       : UUID.randomUUID(),
       importId                   : "völlig egal",
-      status                     : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
-      name                       : "Test Title Name from TIPP",
-      editStatus                 : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
-      language                   : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "ger"),
-      publicationType            : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph"),
+      status                     : "Current",
+      name                       : "Test Title from full TIPP",
+      editStatus                 : "Approved",
+      language                   : "ger",
+      publicationType            : "Monograph",
       coverageNote               : "coverage Note",
-      format                     : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_FORMAT, "Print"),
-      delayedOA                  : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_DELAYED_OA, "No"),
+      format                     : "Print",
+      delayedOA                  : "No",
       delayedOAEmbargo           : "Embargo?",
-      hybridOA                   : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_HYBRID_OA, "No"),
+      hybridOA                   : "No",
       hybridOAUrl                : "Hybris",
-      primary                    : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PRIMARY, "No"),
-      paymentType                : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PAYMENT_TYPE, "Unknown"),
-      accessStartDate            : dateFormatService.parseDate("2001-01-01"),
-      accessEndDate              : dateFormatService.parseDate("2030-12-31"),
+      primary                    : "No",
+      paymentType                : "Unknown",
+      accessStartDate            : "2001-01-01",
+      accessEndDate              : "2030-12-31",
       subjectArea                : "Fachbereich",
       series                     : "Serie: Marathon",
       publisherName              : "Publizistenname",
-      dateFirstInPrint           : dateFormatService.parseDate("2003-01-01"),
-      dateFirstOnline            : dateFormatService.parseDate("2004-01-01"),
+      dateFirstInPrint           : "2003-01-01",
+      dateFirstOnline            : "2004-01-01",
       firstAuthor                : "erster Autor",
       volumeNumber               : "erster Band",
       editionStatement           : "3. völlig überarbeitete Auflage",
       firstEditor                : "erster Verleger",
       parentPublicationTitleId   : "Eltern importId",
       precedingPublicationTitleId: "Vorgänger importId",
-      lastChangedExternal        : new Date(),
-      medium                     : RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, "Book")
+      lastChangedExternal        : "${LocalDateTime.now()}",
+      medium                     : "Book"
     ]
 
     when:
-    TitleInstancePackagePlatform tipp = new TitleInstancePackagePlatform(tmap)
-
+    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
     tippService.matchTitle(tipp)
 
     then:
@@ -134,27 +129,24 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     tipp.dateFirstOnline == tipp.title.dateFirstOnline
     tipp.medium.value == tipp.title.medium.value
     tipp.title.publisher*.name.contains(tipp.publisherName)
-    tipp.expunge()
   }
 
   void "Test attach existing title with a TIPP by its IDs"() {
     given:
     Identifier my_isbn = Identifier.findByNamespaceAndValue(IdentifierNamespace.findByValue('isbn'), '979-11-655-6390-5') ?: new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5')
     def tmap = [
-      'pkg'            : pkg,
-      'title'          : null,
-      'hostPlatform'   : plt,
+      'pkg'            : pkg.id,
+      'hostPlatform'   : plt.id,
       'url'            : null,
-      'uuid'           : UUID.randomUUID(),
-      'status'         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
+      'status'         : "Current",
       'name'           : book.name,
-      'editStatus'     : RefdataCategory.lookup(KBComponent.RD_EDIT_STATUS, KBComponent.EDIT_STATUS_APPROVED),
-      'language'       : RefdataCategory.lookup(KBComponent.RD_LANGUAGE, 'ger'),
-      'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph"),
+      'editStatus'     : "Approved",
+      'language'       : 'ger',
+      'publicationType': "Monograph",
     ]
 
     when:
-    TitleInstancePackagePlatform tipp = new TitleInstancePackagePlatform(tmap).save()
+    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
     tipp.ids.add(my_isbn)
     tipp.save(flush: true)
 
@@ -162,7 +154,6 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
 
     then:
     tipp.title == book
-    tipp.expunge()
   }
 
   @Rollback
@@ -171,20 +162,24 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     def pack = new Package(name: "Import Package")
     def platform = new Platform(name: "Import Platform")
     def aISBN = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '978-11-656-6370-8')
-    def book1 = new BookInstance(name: "Book 1", ids: [aISBN])
-    def tipp1 = new TitleInstancePackagePlatform([
+    def zdbId = new Identifier(namespace: IdentifierNamespace.findByValue('zdb'), value: '655639-0')
+    def book1 = new BookInstance(name: "Book 1")
+    book1.ids.add(aISBN)
+    def tipp1 = TitleInstancePackagePlatform.upsertDTO([
       name           : "Book 1",
-      hostPlatform   : platform,
-      ids            : [aISBN],
-      publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Monograph")])
-    def tipp2 = new TitleInstancePackagePlatform([
+      pkg            : pack.id,
+      hostPlatform   : platform.id,
+      publicationType: "Monograph"])
+    tipp1.ids << aISBN
+    tipp1.save(flush: true)
+
+    def tipp2 = TitleInstancePackagePlatform.upsertDTO([
       name           : "Journal 1",
-      hostPlatform   : platform,
-      ids            : [new Identifier(namespace: IdentifierNamespace.findByValue('zdb'), value: '655639-0')],
-      publicationType: RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, "Serial")])
-    pack.tipps << tipp1
-    pack.tipps << tipp2
-    pack.save(flush: true)
+      pkg            : pack.id,
+      hostPlatform   : platform.id,
+      publicationType: "Serial"])
+    tipp2.ids.add(zdbId)
+    tipp2.save(flush: true)
 
     when:
     tippService.matchPackage(pack)
