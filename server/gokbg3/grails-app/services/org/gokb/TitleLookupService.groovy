@@ -1009,11 +1009,11 @@ class TitleLookupService {
 
       if (!publisher || publisher.status == status_deleted) {
         def variant_normname = GOKbTextUtils.normaliseString(publisher_name)
-        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status != ?", [variant_normname, status_deleted]);
+        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status != ?", [variant_normname, status_deleted])
         if (candidate_orgs.size() == 1) {
           publisher = candidate_orgs[0]
         } else {
-          log.error("Unable to match unique pub");
+          log.debug("Unable to match unique pub ${publisher_name}")
         }
       }
 
@@ -1022,7 +1022,7 @@ class TitleLookupService {
       //   publisher.save()
       // }
       // publisher present
-      log.debug("Found publisher ${publisher}");
+      log.debug("Found publisher ${publisher}")
       def orgs = ti.getPublisher()
       log.debug("Check for dupes in ${orgs}")
 
@@ -1435,7 +1435,7 @@ class TitleLookupService {
           log.debug("Calling ${domain_object}.remapWork()");
           domain_object.remapWork();
         } else {
-          log.debug("Unable tyo locate domain object for ${oid}");
+          log.debug("Unable to locate domain object for ${oid}");
         }
       }
     }

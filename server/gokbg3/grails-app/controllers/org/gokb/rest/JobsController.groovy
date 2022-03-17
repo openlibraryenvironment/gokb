@@ -48,7 +48,7 @@ class JobsController {
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(403)
+          response.status = 403
           result.message = "Insuffictient permissions to retrieve the jobs for this user"
         }
       }
@@ -69,7 +69,7 @@ class JobsController {
         }
         else {
           result.result = 'ERROR'
-          response.setStatus(403)
+          response.status = 403
           result.message = "Insuffictient permissions to retrieve the jobs for this group"
         }
       }
@@ -151,7 +151,7 @@ class JobsController {
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "Insuffictient permissions to retrieve all jobs"
     }
 
@@ -197,12 +197,12 @@ class JobsController {
       }
       else {
         result.result = "ERROR"
-        response.setStatus(403)
+        response.status = 403
         result.message = "No permission to view job with ID ${params.id}."
       }
     }
     else if (onlyArchived && jobResult) {
-      if (user.superUserStatus || (job.ownerId && job.ownerId == user.id) || (job.groupId && user.curatoryGroups.find { it.id == job.groupId })) {
+      if (user.superUserStatus || (jobResult.ownerId && jobResult.ownerId == user.id) || (jobResult.groupId && user.curatoryGroups.find { it.id == jobResult.groupId })) {
         def linkedComponent = jobResult.linkedItemId ? KBComponent.get(jobResult.linkedItemId) : null
 
         result.uuid = jobResult.uuid
@@ -217,13 +217,13 @@ class JobsController {
       }
       else {
         result.result = "ERROR"
-        response.setStatus(403)
+        response.status = 403
         result.message = "No permission to view job with ID ${params.id}."
       }
     }
     else {
       result.result = "ERROR"
-      response.setStatus(404)
+      response.status = 404
       result.message = "Could not find job with ID ${params.id}."
     }
 

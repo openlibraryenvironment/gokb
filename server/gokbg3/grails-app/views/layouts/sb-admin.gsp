@@ -23,20 +23,6 @@
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
 
-	<asset:script type="text/javascript" src="//cdn.jsdelivr.net/webshim/1.16.0/polyfiller.js"></asset:script>
-	<asset:script>
-	  webshims.setOptions('waitReady', false);
-	  webshims.setOptions('forms-ext', {types: 'date'});
-	  webshims.polyfill('forms forms-ext');
-	</asset:script>
-
-  <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-  <!-- WARNING: Respond.js doesnt work if you view the page via file:// -->
-  <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-  <![endif]-->
-
 </head>
 
 <body class="theme-${ grailsApplication.config.gokb.theme }">

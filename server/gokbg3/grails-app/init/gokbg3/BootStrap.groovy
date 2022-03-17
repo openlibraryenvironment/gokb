@@ -5,6 +5,8 @@ import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
 import org.apache.commons.collections.CollectionUtils
+import org.gokb.AugmentJob
+import org.gokb.AutoUpdatePackagesJob
 import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
@@ -235,7 +237,12 @@ class BootStrap {
         log.debug("Checking for missing component statistics")
         ComponentStatisticService.updateCompStats()
 
-        log.info("GoKB Init complete");
+        if (Environment.current != Environment.TEST) {
+            AugmentJob.schedule(grailsApplication.config.gokb.augment.cron)
+            AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron)
+        }
+
+        log.info("GoKB Init complete")
     }
 
     private Object ensureCuratoryGroup(String groupName){
@@ -848,6 +855,9 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Coverage Mismatch").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'No ZDB Results').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'ZDB Title Overlap').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Multiple EZB Results').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'No EZB Results').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'EZB Title Overlap').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Title Matches').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict').save(flush: true, failOnError: true)
@@ -857,6 +867,8 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Import Identifier Mismatch').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Record Matches').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Import Report').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Information').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Invalid Name").save(flush: true, failOnError: true)
 
 
         RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save(flush: true, failOnError: true)
@@ -1026,16 +1038,41 @@ class BootStrap {
     }
 
     private void lookupOrCreateCuratoryGroupTypes(){
-        CuratoryGroupType.findByName("Journal Package Curators") ?:
-            new CuratoryGroupType(level: CuratoryGroupType.Level.PACKAGE, name: "Journal Package Curators").save(flush: true, failOnError: true)
-        CuratoryGroupType.findByName("E-Book Package Curators") ?:
-            new CuratoryGroupType(level: CuratoryGroupType.Level.PACKAGE, name: "E-Book Package Curators").save(flush: true, failOnError: true)
-        CuratoryGroupType.findByName("Journal Title Curators") ?:
-            new CuratoryGroupType(level: CuratoryGroupType.Level.TITLE, name: "Journal Title Curators").save(flush: true, failOnError: true)
-        CuratoryGroupType.findByName("E-Book Title Curators") ?:
-            new CuratoryGroupType(level: CuratoryGroupType.Level.TITLE, name: "E-Book Title Curators").save(flush: true, failOnError: true)
-        CuratoryGroupType.findByName("Journal Central Curators") ?:
-            new CuratoryGroupType(level: CuratoryGroupType.Level.CENTRAL, name: "Journal Central Curators").save(flush: true, failOnError: true)
+        CuratoryGroupType journalPackageCurators = CuratoryGroupType.findByName("Journal Package Curators")
+        if (journalPackageCurators){
+            journalPackageCurators.setName("Package Curators")
+        }
+        else{
+            CuratoryGroupType.findByName("Package Curators") ?:
+                new CuratoryGroupType(level: CuratoryGroupType.Level.PACKAGE, name: "Package Curators")
+                    .save(flush: true, failOnError: true)
+        }
+        CuratoryGroupType journalTitleCurators = CuratoryGroupType.findByName("Journal Title Curators")
+        if (journalTitleCurators){
+            journalTitleCurators.setName("Title Curators")
+        }
+        else{
+            CuratoryGroupType.findByName("Title Curators") ?:
+                new CuratoryGroupType(level: CuratoryGroupType.Level.TITLE, name: "Title Curators")
+                    .save(flush: true, failOnError: true)
+        }
+        CuratoryGroupType journalCentralCurators = CuratoryGroupType.findByName("Journal Central Curators")
+        if (journalCentralCurators){
+            journalCentralCurators.setName("Central Curators")
+        }
+        else{
+            CuratoryGroupType.findByName("Central Curators") ?:
+                new CuratoryGroupType(level: CuratoryGroupType.Level.TITLE, name: "Central Curators")
+                    .save(flush: true, failOnError: true)
+        }
+        CuratoryGroupType ebookPackageCurators = CuratoryGroupType.findByName("E-Book Package Curators")
+        if (ebookPackageCurators){
+            ebookPackageCurators.delete()
+        }
+        CuratoryGroupType ebookTitleCurators = CuratoryGroupType.findByName("E-Book Title Curators")
+        if (ebookTitleCurators){
+            ebookTitleCurators.delete()
+        }
     }
 
     def sourceObjects() {

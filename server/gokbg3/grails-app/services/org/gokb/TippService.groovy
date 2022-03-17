@@ -18,12 +18,14 @@ import org.gokb.cred.RefdataCategory
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
 import org.gokb.cred.Package
+import org.gokb.cred.ReviewRequest
 
 import java.time.LocalDate
 import java.time.ZoneId
 
 class TippService {
   def componentUpdateService
+  def componentLookupService
   def titleLookupService
   def sessionFactory
   def reviewRequestService
@@ -157,7 +159,7 @@ class TippService {
           'startVolume': c.startVolume,
           'startIssue': c.startIssue,
           'endVolume': c.endVolume,
-          'endIssu e': c.endIssue,
+          'endIssue': c.endIssue,
           'embargo': c.embargo,
           'coverageDepth': cov_depth,
           'coverageNote': c.coverageNote,
@@ -261,7 +263,7 @@ class TippService {
         title_class_name
     )
 
-    TitleInstance ti
+    TitleInstance ti = null
     if (found.to_create == true) {
       log.debug("No existing title matched, creating ${tipp.name}")
       ti = createTitleFromTippData(tipp, tipp_ids)
@@ -269,6 +271,7 @@ class TippService {
     else if (found.matches.size() == 1) {
       // exactly one match
       ti = found.matches[0].object
+      log.debug("Matched title ${ti} for ${tipp}!")
       TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
 
       if (currentCov && ((ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) || (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo))) {
@@ -280,7 +283,7 @@ class TippService {
             null,
             [otherComponents: ti] as JSON,
             RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch"),
-            group
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, group)
         )
       }
     }
@@ -302,10 +305,17 @@ class TippService {
       tipp.title = ti
       titleLookupService.addIdentifiers(tipp_ids, ti)
       titleLookupService.addPublisher(tipp.publisherName, ti)
-      tipp.save(flush: true)
+      tipp = tipp.merge(flush: true)
       log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
-    handleFindConflicts(tipp, found, group)
+    else {
+      if (pkg.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
+        pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+      }
+    }
+
+    if (found.matches?.size() > 0 || found.conflicts?.size() > 0)
+      handleFindConflicts(tipp, found, group)
   }
 
   def createTitleFromTippData(tipp, tipp_ids) {
@@ -420,13 +430,19 @@ class TippService {
       for (def comp : found.matches) {
         if (JournalInstance.isInstance(comp.object)) {
           if (// starts too early OR
-              comp.object.publishedFrom && latest.startDate && latest.startDate < comp.object.publishedFrom ||
+              (comp.object.publishedFrom && latest.startDate && latest.startDate < comp.object.publishedFrom) ||
               // ends too late
-              comp.object.publishedTo && latest.endDate && latest.endDate > comp.object.publishedTo)
+              (comp.object.publishedTo && latest.endDate && latest.endDate > comp.object.publishedTo)) {
+            log.debug("Excluded title match ${comp} based on coverage conflicts.")
             // no match
             break
-          else
+          }
+          else {
             covMatch << comp
+          }
+        }
+        else {
+          log.debug("Skipping title match with class ${comp?.object?.class}")
         }
       }
       if (covMatch.size() == 1)
@@ -452,10 +468,8 @@ class TippService {
     return latest
   }
 
-  private void handleFindConflicts(TitleInstancePackagePlatform tipp, def found, CuratoryGroup cg = null) {
-    // use this to create ReviewRequests as needed
-    // TODO: check if the ReviewRequest was raised already before issuing a new one
-    if (tipp.reviewRequests.size() < 1) {
+  private void handleFindConflicts(tipp, def found, CuratoryGroup activeCg = null) {
+    TitleInstancePackagePlatform.withNewSession {
       if (found.matches.size > 1) {
         def additionalInfo = [otherComponents: []]
         found.matches.each { comp ->
@@ -469,7 +483,7 @@ class TippService {
             null,
             (additionalInfo as JSON).toString(),
             RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
-            cg
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
         )
       }
       else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
@@ -489,7 +503,7 @@ class TippService {
                 null,
                 (additionalInfo as JSON).toString(),
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
-                cg
+                componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
               )
             }
             else if (conflict.field == "identifier.value") {
@@ -515,7 +529,7 @@ class TippService {
               null,
               (additionalInfo as JSON).toString(),
               RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict'),
-              cg
+              componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
             )
           }
           else if (mismatches.size() > 0 && !found.to_create) {
@@ -533,13 +547,30 @@ class TippService {
               null,
               (additionalInfo as JSON).toString(),
               RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
-              cg
+              componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
             )
           }
         }
       }
+      else if (tipp.title == null) {
+        def additionalInfo = [otherComponents: []]
+        found.matches.each { comp ->
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+        }
 
-      if (found.conflicts.size > 0) {
+        reviewRequestService.raise(
+            tipp,
+            "TIPP conflicts",
+            "TIPP ${tipp.name} conflicts with other titles.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
+        )
+      }
+
+      if (found.conflicts?.size > 0) {
         def additionalInfo = [otherComponents: []]
         found.conflicts.each { comp ->
           additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
@@ -552,7 +583,7 @@ class TippService {
             null,
             (additionalInfo as JSON).toString(),
             RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
-            cg
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
         )
       }
     }

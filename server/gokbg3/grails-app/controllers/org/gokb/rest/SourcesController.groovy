@@ -112,21 +112,21 @@ class SourcesController {
         errors << updateCombos(source, reqBody, false)
 
         if (!errors) {
-          response.setStatus(201)
+          response.status = 201
           result = restMappingService.mapObjectToJson(source, params, user)
         }
         else {
-          response.setStatus(400)
+          response.status = 400
           result.errors = errors
           result.result = 'ERROR'
         }
       } else {
         result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(source.errors)]
-        response.setStatus(409)
+        response.status = 409
         source?.discard()
       }
     } else {
-      response.setStatus(400)
+      response.status = 400
       result.errors = errors
       result.result = 'ERROR'
     }
@@ -154,7 +154,7 @@ class SourcesController {
 
     if (editable) {
       if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
-        response.setStatus(409)
+        response.status = 409
         result.message = message(code: "default.update.errors.message")
         render result as JSON
       }
@@ -169,18 +169,18 @@ class SourcesController {
           result = restMappingService.mapObjectToJson(obj, params, user)
         } else {
           result = [result: 'ERROR', message: "new source data is not valid", errors: messageService.processValidationErrors(obj.errors)]
-          response.setStatus(409)
+          response.status = 409
           obj?.discard()
         }
       } else {
-        response.setStatus(400)
+        response.status = 400
         result.errors = errors
         result.result = 'ERROR'
       }
     }
     else {
       result.result = 'ERROR'
-      response.setStatus(403)
+      response.status = 403
       result.message = "User must belong to at least one curatory group of an existing item to make changes!"
     }
     render result as JSON

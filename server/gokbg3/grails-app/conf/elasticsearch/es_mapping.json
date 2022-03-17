@@ -12,11 +12,11 @@
       },
       {
         "date": {
-          "match": "*date*",
+          "match": "*Date",
           "match_mapping_type": "date",
           "mapping": {
             "type": "date",
-            "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
+            "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
           }
         }
       },
@@ -152,6 +152,26 @@
           "match_mapping_type": "string",
           "mapping": {
             "type": "keyword"
+          }
+        }
+      },
+      {
+        "lastChangedExternal": {
+          "match": "lastChangedExternal",
+          "match_mapping_type": "date",
+          "mapping": {
+            "type": "date",
+            "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
+          }
+        }
+      },
+      {
+        "publishingDates": {
+          "match": "dateFirst*",
+          "match_mapping_type": "date",
+          "mapping": {
+            "type": "date",
+            "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
           }
         }
       }
