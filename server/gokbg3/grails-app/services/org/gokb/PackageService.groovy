@@ -1376,9 +1376,9 @@ class PackageService {
                           sanitize(tipp.title?.medium?.value) + '\t' +
                           sanitize(tipp.title?.OAStatus?.value) + '\t' +
                           sanitize(tipp.title?.continuingSeries?.value) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title?.getIdentifierValue('ISSN')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title?.getIdentifierValue('eISSN')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title?.getIdentifierValue('ZDB')) + '\t' +
                           sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
                           '\t' +
                           sanitize(tipp.hostPlatform.name) + '\t' +
@@ -1420,9 +1420,9 @@ class PackageService {
                         sanitize(tipp.title?.medium?.value) + '\t' +
                         sanitize(tipp.title?.OAStatus?.value) + '\t' +
                         sanitize(tipp.title?.continuingSeries?.value) + '\t' +
-                        sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title.getIdentifierValue('ISSN')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title.getIdentifierValue('eISSN')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title.getIdentifierValue('ZDB')) + '\t' +
+                        sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title?.getIdentifierValue('ISSN')) + '\t' +
+                        sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title?.getIdentifierValue('eISSN')) + '\t' +
+                        sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title?.getIdentifierValue('ZDB')) + '\t' +
                         sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
                         '\t' +
                         sanitize(tipp.hostPlatform?.name) + '\t' +

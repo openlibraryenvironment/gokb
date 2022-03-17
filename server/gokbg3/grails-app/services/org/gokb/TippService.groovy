@@ -468,10 +468,8 @@ class TippService {
     return latest
   }
 
-  private void handleFindConflicts(toi, def found, CuratoryGroup activeCg = null) {
+  private void handleFindConflicts(tipp, def found, CuratoryGroup activeCg = null) {
     TitleInstancePackagePlatform.withNewSession {
-      TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(toi.id)
-
       if (found.matches.size > 1) {
         def additionalInfo = [otherComponents: []]
         found.matches.each { comp ->
@@ -572,7 +570,7 @@ class TippService {
         )
       }
 
-      if (found.conflicts.size > 0) {
+      if (found.conflicts?.size > 0) {
         def additionalInfo = [otherComponents: []]
         found.conflicts.each { comp ->
           additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]

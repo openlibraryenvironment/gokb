@@ -51,13 +51,8 @@ class ComponentUpdateService {
     ], data, component)
 
     // Identifiers
-    def data_identifiers = []
-    if (data instanceof JSONObject) {
-      data_identifiers = data.identifiers ?: []
-    }
-    else {
-      data_identifiers = data.ids ?: []
-    }
+    def data_identifiers = data.identifiers ?: data.ids
+
     log.debug("Identifier processing ${data_identifiers}")
     Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
     RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
