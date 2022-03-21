@@ -69,6 +69,7 @@ class UrlMappings {
       post "/platforms/$id/retire"(controller: 'platform', namespace: 'rest', action:'retire')
       get "/platforms/$id/$action"(controller: 'platform', namespace: 'rest')
       post "/platforms"(controller: 'platform', namespace: 'rest', action: 'save')
+      get "/platforms/match"(controller: 'platform', namespace: 'rest', action: 'match')
       get "/platforms/$id"(controller: 'platform', namespace: 'rest', action: 'show')
       put "/platforms/$id"(controller: 'platform', namespace: 'rest', action: 'update')
       patch "/platforms/$id"(controller: 'platform', namespace: 'rest', action: 'update')

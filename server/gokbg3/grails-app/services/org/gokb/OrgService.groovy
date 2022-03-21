@@ -203,7 +203,7 @@ class OrgService {
     result
   }
 
-  public def updatePlatforms(obj, plts, boolean remove = true) {
+  def updatePlatforms(obj, plts, boolean remove = true) {
     def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
     def old_combos = obj.getCombosByPropertyName('providedPlatforms')
     def new_plts = []
@@ -303,7 +303,7 @@ class OrgService {
         }
       }
     }
-    log.debug("New plts: ${obj.providedPlatforms}")
+    log.debug("New platforms: ${obj.providedPlatforms}")
     result
   }
 
