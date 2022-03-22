@@ -1,4 +1,4 @@
-package gokbg3.rest
+package org.gokb.rest
 
 import grails.core.GrailsApplication
 import grails.plugins.rest.client.RestBuilder

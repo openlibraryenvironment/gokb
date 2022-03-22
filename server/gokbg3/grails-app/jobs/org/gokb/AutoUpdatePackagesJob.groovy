@@ -11,9 +11,7 @@ class AutoUpdatePackagesJob {
   static concurrent = false
 
   static triggers = {
-    // Cron timer.
-    cron name: 'AutoUpdatePackageTrigger', cronExpression: "0 0 6 * * ? *" // daily at 6:00 am
-// for testing: every 5 minutes   cron name: 'AutoUpdatePackageTrigger', cronExpression: "0 1/5 * * * ? *" // daily at 6:00 am
+    // Set from Bootstrap
   }
 
   def execute() {
@@ -29,7 +27,7 @@ class AutoUpdatePackagesJob {
           "and (p.source.lastRun is null or p.source.lastRun < current_date)",[status_deleted])
       updPacks.each { Package p ->
         if (p.source.needsUpdate()) {
-          def result = packageService.startSourceUpdate(p)
+          def result = packageService.updateFromSource(p)
           log.debug("Result of update: ${result}")
 
           sleep(10000)

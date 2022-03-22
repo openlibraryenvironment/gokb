@@ -524,6 +524,9 @@ class PackageController {
 
           if (upserted_tipp) {
             if (errors.size() == 0) {
+              log.debug("Ensuring TIPP core data ${tipp_dto}")
+              componentUpdateService.ensureCoreData(upserted_tipp, tipp_dto, true, user)
+
               def tipp_status = null
 
               if (tipp_dto.status instanceof String) {

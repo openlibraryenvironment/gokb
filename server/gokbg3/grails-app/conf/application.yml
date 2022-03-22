@@ -154,11 +154,18 @@ environments:
             ygorUrl: null
             languagesUrl : null
             packageUpdate:
+                cron: "0 0 6 * * ? *"
                 enabled: false
             packageOaiCaching:
                 enabled: false
+            augment:
+                cron: "0 30 * * * ? *"
             zdbAugment:
                 enabled: false
+                rrCurators: ZDB
+            ezbAugment:
+                enabled: false
+                rrCurators: EZB
             es:
                 cluster: gokbg3-dev
                 host: localhost
@@ -198,11 +205,18 @@ environments:
             languagesUrl : null
             ftupdate_enabled: false
             packageUpdate:
+                cron: "0 0 6 * * ? *"
                 enabled: false
             packageOaiCaching:
                 enabled: false
+            augment:
+                cron: "0 30 * * * ? *"
             zdbAugment:
                 enabled: false
+                rrCurators: ZDB
+            ezbAugment:
+                enabled: false
+                rrCurators: EZB
             es:
                 cluster: gokbg3-test
                 host: localhost
@@ -250,11 +264,18 @@ environments:
                     disabled: true
         gokb:
             packageUpdate:
+                cron: "0 0 6 * * ? *"
                 enabled: false
             packageOaiCaching:
                 enabled: true
+            augment:
+                cron: "0 30 * * * ? *"
             zdbAugment:
                 enabled: false
+                rrCurators: ZDB
+            ezbAugment:
+                enabled: false
+                rrCurators: EZB
             ygorUrl: null
             languagesUrl : null
             es:

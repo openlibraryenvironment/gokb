@@ -25,6 +25,7 @@ import java.time.ZoneId
 
 class TippService {
   def componentUpdateService
+  def componentLookupService
   def titleLookupService
   def sessionFactory
   def reviewRequestService
@@ -282,7 +283,7 @@ class TippService {
             null,
             [otherComponents: ti] as JSON,
             RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch"),
-            group
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, group)
         )
       }
     }
@@ -467,130 +468,328 @@ class TippService {
     return latest
   }
 
-  private void handleFindConflicts(toi, def found, CuratoryGroup activeCg = null) {
+  private void handleFindConflicts(tipp, def found, CuratoryGroup activeCg = null) {
     TitleInstancePackagePlatform.withNewSession {
-      TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(toi.id)
-      CuratoryGroup cg = activeCg ? CuratoryGroup.get(activeCg.id) : null
-      def status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
-      def open_tipp_reviews = ReviewRequest.executeQuery("from ReviewRequest where componentToReview = ? and status = ?", [tipp, status_open])
-
-      if (open_tipp_reviews == 0) {
-        if (found.matches.size > 1) {
-          def additionalInfo = [otherComponents: []]
-          found.matches.each { comp ->
-            additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid, conflicts: comp.conflicts]
-          }
-          reviewRequestService.raise(
-              tipp,
-              "TIPP matched several titles",
-              "TIPP ${tipp.name} coudn't be linked.".toString(),
-              null,
-              null,
-              (additionalInfo as JSON).toString(),
-              RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
-              cg
-          )
+      if (found.matches.size > 1) {
+        def additionalInfo = [otherComponents: []]
+        found.matches.each { comp ->
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid, conflicts: comp.conflicts]
         }
-        else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
-          found.matches.each { comp ->
-            def otherComponent = [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
-            def mismatches = []
+        reviewRequestService.raise(
+            tipp,
+            "TIPP matched several titles",
+            "TIPP ${tipp.name} coudn't be linked.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
+        )
+      }
+      else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
+        found.matches.each { comp ->
+          def otherComponent = [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+          def mismatches = []
 
-            comp.conflicts.each { conflict ->
-              if (conflict.field == "identifier.namespace") {
-                def additionalInfo = [otherComponents: [otherComponent], conflict: conflict]
-
-                reviewRequestService.raise(
-                  tipp,
-                  conflict.message,
-                  "Check Title identifiers",
-                  null,
-                  null,
-                  (additionalInfo as JSON).toString(),
-                  RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
-                  cg
-                )
-              }
-              else if (conflict.field == "identifier.value") {
-                def id_map = [:]
-                id_map[conflict.namespace] = conflict.value
-
-                mismatches << id_map
-              }
-            }
-
-            if (mismatches.size() > 0 && found.to_create) {
-              def additionalInfo = [
-                otherComponents: [otherComponent],
-                mismatches: mismatches,
-                vars: [comp.object.name, mismatches]
-              ]
+          comp.conflicts.each { conflict ->
+            if (conflict.field == "identifier.namespace") {
+              def additionalInfo = [otherComponents: [otherComponent], conflict: conflict]
 
               reviewRequestService.raise(
-                tipp.title,
-                "Identifier mismatch",
-                "Title ${comp.object.name} matched, but ingest identifiers ${mismatches} differ from existing ones in the same namespaces.",
-                null,
-                null,
-                (additionalInfo as JSON).toString(),
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict'),
-                cg
-              )
-            }
-            else if (mismatches.size() > 0 && !found.to_create) {
-              def additionalInfo = [
-                otherComponents: [otherComponent],
-                mismatches: mismatches,
-                vars: [comp.object.name, mismatches]
-              ]
-
-              reviewRequestService.raise(
-                tipp.title,
-                comp.message,
+                tipp,
+                conflict.message,
                 "Check Title identifiers",
                 null,
                 null,
                 (additionalInfo as JSON).toString(),
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
-                cg
+                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict'),
+                componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
               )
+            }
+            else if (conflict.field == "identifier.value") {
+              def id_map = [:]
+              id_map[conflict.namespace] = conflict.value
+
+              mismatches << id_map
+            }
+          }
+
+          if (mismatches.size() > 0 && found.to_create) {
+            def additionalInfo = [
+              otherComponents: [otherComponent],
+              mismatches: mismatches,
+              vars: [comp.object.name, mismatches]
+            ]
+
+            reviewRequestService.raise(
+              tipp.title,
+              "Identifier mismatch",
+              "Title ${comp.object.name} matched, but ingest identifiers ${mismatches} differ from existing ones in the same namespaces.",
+              null,
+              null,
+              (additionalInfo as JSON).toString(),
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict'),
+              componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
+            )
+          }
+          else if (mismatches.size() > 0 && !found.to_create) {
+            def additionalInfo = [
+              otherComponents: [otherComponent],
+              mismatches: mismatches,
+              vars: [comp.object.name, mismatches]
+            ]
+
+            reviewRequestService.raise(
+              tipp.title,
+              comp.message,
+              "Check Title identifiers",
+              null,
+              null,
+              (additionalInfo as JSON).toString(),
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
+              componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
+            )
+          }
+        }
+      }
+      else if (tipp.title == null) {
+        def additionalInfo = [otherComponents: []]
+        found.matches.each { comp ->
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+        }
+
+        reviewRequestService.raise(
+            tipp,
+            "TIPP conflicts",
+            "TIPP ${tipp.name} conflicts with other titles.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
+        )
+      }
+
+      if (found.conflicts?.size > 0) {
+        def additionalInfo = [otherComponents: []]
+        found.conflicts.each { comp ->
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
+        }
+        reviewRequestService.raise(
+            tipp,
+            "TIPP conflicts",
+            "TIPP ${tipp.name} conflicts with other titles.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
+        )
+      }
+    }
+  }
+
+  def priorityMatch(def current_tipps, tippJson) {
+    def result = [full_matches: [], partial_matches: [:], failed_matches: []]
+
+    def jsonIdMap = [:]
+    tippJson.identifiers.each { jsonId ->
+      jsonIdMap[jsonId.type] = jsonId.value
+    }
+    if (jsonIdMap.size() == 0) {
+      tippJson.title.identifiers.each { jsonId ->
+        jsonIdMap[jsonId.type] = jsonId.value
+      }
+    }
+
+    current_tipps.each { ctipp ->
+      def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = :tipp and toComponent = i)", [tipp: ctipp]).collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
+      log.debug("Checking against existing IDs: ${tipp_ids}")
+      def unmatched_namespaces = []
+      def tipp_id_match_results = [:]
+      int mismatch_prio = -1
+      boolean priority_match = false
+
+      if (tippJson.titleId == ctipp.importId) {
+        tipp_id_match_results << [namespace: 'title_id', value: tippJson.titleId, match: 'OK']
+      }
+
+      priority_list.eachWithIndex { plns, idx ->
+        if (jsonIdMap[plns]) {
+          boolean unmatched = true
+
+          tipp_ids.each { tid ->
+            if (tid.type == plns) {
+              if (Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname) {
+                tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'FAIL']
+
+                if (mismatch_prio < 0) {
+                  mismatch_prio = idx // Set highest priority value of mismatches
+                }
+              }
+              else {
+                tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'OK']
+                if (mismatch_prio < 0) {
+                  priority_match = true // Namespace with highest priority matched
+                }
+              }
+            }
+            unmatched = false
+          }
+
+          if (unmatched) {
+            tipp_id_match_results << [namespace: plns, value: jsonIdMap[plns], match: 'NEW']
+          }
+        }
+      }
+
+      if (mismatch_prio >= 0) {
+        if (priority_match) {
+          log.debug("Matched by priority ${mismatch_prio} with partial mismatches")
+          if (!result.partial_matches[mismatch_prio])
+            result.partial_matches[mismatch_prio] = []
+
+          result.partial_matches[mismatch_prio] << [item: ctipp, matchResults: tipp_id_match_results]
+        }
+        else {
+          log.debug("Failed Match for current ${ctipp}!")
+          result.failed_matches << [item: ctipp, matchResults: tipp_id_match_results]
+        }
+      }
+      else {
+        log.debug("Full match for ${ctipp}")
+        result.full_matches << ctipp
+      }
+    }
+
+    result
+  }
+
+  def restLookup(tippJson) {
+    def result = [:]
+    def tipps = []
+
+    if (tippJson.pkg?.id && tippJson.hostPlatform?.id)
+    RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+    // remap JSON Identifiers to [type: value]
+    def jsonIdMap = [:]
+    tippJson.identifiers.each { jsonId ->
+      jsonIdMap[jsonId.type] = jsonId.value
+    }
+    if (jsonIdMap.size() == 0) {
+      tippJson.title.identifiers.each { jsonId ->
+        jsonIdMap[jsonId.type] = jsonId.value
+      }
+    }
+    def titleId = tippJson.titleId ?: tippJson.importId
+    // search TIPPs for json.title_id == tipp.importId
+    if (titleId) {
+      def tippList = TitleInstancePackagePlatform.executeQuery(
+          'select tipp from TitleInstancePackagePlatform as tipp, Combo as c1, Combo as c2 ' +
+              'where c1.fromComponent.id = :pkg ' +
+              'and c1.toComponent = tipp ' +
+              'and c1.type = :typ1 ' +
+              'and c2.fromComponent.id = :plt ' +
+              'and c2.toComponent = tipp ' +
+              'and c2.type = :typ2 ' +
+              'and tipp.importId = :tid ' +
+              'and tipp.status = :tStatus  ' +
+              'order by tipp.id',
+          [pkg    : tippJson.pkg.id,
+           typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
+           plt    : tippJson.hostPlatform.id,
+           typ2   : RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps'),
+           tid    : titleId,
+           tStatus: status_current]
+      )
+      if (tippList.size() > 0) {
+        log.debug("found by titleId in DB")
+        return tippList
+      }
+    }
+
+    // search for other Identifiers, depending on publicationType
+    if ("SERIAL".equalsIgnoreCase(tippJson.type)) {
+      // Journal
+      ['zdb', 'eissn', 'issn', 'doi'].each { ns_value ->
+        if (jsonIdMap[ns_value]) {
+          def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
+          if (found.size() > 0) {
+            found.each {
+              if (TitleInstancePackagePlatform.isInstance(it)
+                  && !tipps.contains(it)
+                  && it.pkg.id == tippJson.pkg.id
+                  && it.status == status_current
+                  && it.hostPlatform.id == tippJson.hostPlatform.id
+                  && (!tippJson.titleId || !it.importId)) {
+                tipps.add(it)
+              }
             }
           }
         }
-        else if (tipp.title == null) {
-          def additionalInfo = [otherComponents: []]
-          found.matches.each { comp ->
-            additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
-          }
-
-          reviewRequestService.raise(
-              tipp,
-              "TIPP conflicts",
-              "TIPP ${tipp.name} conflicts with other titles.".toString(),
-              null,
-              null,
-              (additionalInfo as JSON).toString(),
-              RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict")
-          )
-        }
-
-        if (found.conflicts.size > 0) {
-          def additionalInfo = [otherComponents: []]
-          found.conflicts.each { comp ->
-            additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid]
-          }
-          reviewRequestService.raise(
-              tipp,
-              "TIPP conflicts",
-              "TIPP ${tipp.name} conflicts with other titles.".toString(),
-              null,
-              null,
-              (additionalInfo as JSON).toString(),
-              RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
-              cg
-          )
-        }
+      }
+      if (tipps.size() > 0) {
+        log.debug("found by journal identifier set")
       }
     }
+    else if ("MONOGRAPH".equalsIgnoreCase(tippJson.type)) {
+      // Book
+      ['isbn', 'doi'].each { ns_value ->
+        if (jsonIdMap[ns_value]) {
+          def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
+          if (found.size() > 0) {
+            found.each {
+              if (TitleInstancePackagePlatform.isInstance(it)
+                  && !tipps.contains(it)
+                  && it.pkg.id == tippJson.pkg.id
+                  && it.status == status_current
+                  && it.hostPlatform.id == tippJson.hostPlatform.id
+                  && (!tippJson.titleId || !it.importId)) {
+                tipps.add(it)
+              }
+            }
+          }
+        }
+      }
+      if (tipps.size() > 0) {
+        log.debug("found by monograph identifier set")
+      }
+    }
+
+    result = priorityMatch(tipps, tippJson)
+    result
+  }
+
+  public void updateSimpleFields(tipp, tippJson, boolean fullsync = false, User user = null) {
+    componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
+    // overwrite String properties with JSON values
+    ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
+    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'importId', 'subjectArea', 'series'].each { propName ->
+      tipp[propName] = tippJson[propName] ? tippJson[propName].trim() : tipp[propName]
+    }
+
+    if (tippJson.dateFirstInPrint) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippJson.dateFirstInPrint), tipp, 'dateFirstInPrint')
+    }
+    else {
+      log.debug("No dateFirstInPrint -> ${tippJson.dateFirstInPrint}")
+    }
+
+    if (tippJson.dateFirstOnline) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippJson.dateFirstOnline), tipp, 'dateFirstOnline')
+    }
+    if (newVals.accessStartDate) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(newVals.accessStartDate), tipp, 'accessStartDate')
+    }
+
+    if (newVals.accessEndDate) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(newVals.accessEndDate), tipp, 'accessEndDate')
+    }
+
+    ClassUtils.setRefdataIfPresent(newVals.medium, tipp, 'medium')
+    ClassUtils.setRefdataIfPresent(newVals.language, tipp, 'language')
+    ClassUtils.setRefdataIfPresent(newVals.publicationType, tipp, 'publicationType')
+    tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType ?: tippJson.type ?: tipp.publicationType.value)
+    tipp.save(flush:true)
   }
 }

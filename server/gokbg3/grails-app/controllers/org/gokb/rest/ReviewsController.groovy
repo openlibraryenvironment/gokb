@@ -609,8 +609,8 @@ class ReviewsController {
 
     String componentClass = rr.componentToReview?.class.getSimpleName()
 
-    CuratoryGroup editorialGroup = grailsApplication.config.gokb.centralGroups &&
-        grailsApplication.config.gokb.centralGroups[componentClass] ?
+    CuratoryGroup editorialGroup = (grailsApplication.config.gokb.centralGroups &&
+        grailsApplication.config.gokb.centralGroups[componentClass]) ?
         CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.centralGroups[componentClass]) : null
     CuratoryGroup escalatedToCG = escalatingGroup.superordinatedGroup
 

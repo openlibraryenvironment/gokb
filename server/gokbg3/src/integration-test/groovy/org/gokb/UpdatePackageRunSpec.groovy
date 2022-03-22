@@ -1,4 +1,4 @@
-package gokbg3
+package org.gokb
 
 import grails.converters.JSON
 import grails.core.GrailsApplication
@@ -15,7 +15,7 @@ import spock.lang.Specification
 
 // For @Autowired
 
-@Integration(applicationClass = Application.class)
+@Integration
 @Rollback
 class UpdatePackageRunSpec extends Specification {
 
@@ -457,7 +457,7 @@ class UpdatePackageRunSpec extends Specification {
                     ],
                     [
                         "type" : "issn",
-                        "value": "9783-442X"
+                        "value": "9783-4428"
                     ]
 
                 ],
@@ -489,11 +489,11 @@ class UpdatePackageRunSpec extends Specification {
                         ],
                         [
                             "type" : "eissn",
-                            "value": "1520-5118"
+                            "value": "9783-4420"
                         ],
                         [
                             "type" : "issn",
-                            "value": "0021-8561"
+                            "value": "9783-4428"
                         ]
                     ],
                     "name"       : "Journal of agricultural and food chemistry",
@@ -526,7 +526,7 @@ class UpdatePackageRunSpec extends Specification {
             journal = it
         }
     }
-    journal.ids.size() == 4
+    journal.ids.size() == 5
   }
 
   void "Test updatePackageTipps :: new record"() {
@@ -642,7 +642,7 @@ class UpdatePackageRunSpec extends Specification {
     matching_pkgs[0].ids?.size() == 1
   }
 
-  void "Test updatePackageTipps :: match by importId and issn conflict"() {
+  void "Test updatePackageTipps :: New tipp due to match by importId and eissn conflict"() {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
@@ -748,5 +748,4 @@ class UpdatePackageRunSpec extends Specification {
     def conflict_reviews = ReviewRequest.findAllByStdDesc(rr_mismatch)
     conflict_reviews.size() == 1
   }
-
 }

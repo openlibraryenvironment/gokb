@@ -1945,7 +1945,7 @@ class WorkflowController{
 
           if (pkgObj?.isEditable() && (is_curator || !curated_pkg || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))){
             Job background_job = concurrencyManagerService.createJob { Job job ->
-              result = packageService.startSourceUpdate(pkgObj, user, job)
+              result = packageService.updateFromSource(pkgObj, user, job)
             }
 
             background_job.groupId = is_curator?.size() > 0 ? is_curator[0] : null

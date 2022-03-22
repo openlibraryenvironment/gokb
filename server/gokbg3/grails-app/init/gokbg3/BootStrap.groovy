@@ -5,6 +5,8 @@ import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
 import org.apache.commons.collections.CollectionUtils
+import org.gokb.AugmentJob
+import org.gokb.AutoUpdatePackagesJob
 import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
@@ -235,7 +237,12 @@ class BootStrap {
         log.debug("Checking for missing component statistics")
         ComponentStatisticService.updateCompStats()
 
-        log.info("GoKB Init complete");
+        if (Environment.current != Environment.TEST) {
+            AugmentJob.schedule(grailsApplication.config.gokb.augment.cron)
+            AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron)
+        }
+
+        log.info("GoKB Init complete")
     }
 
     private Object ensureCuratoryGroup(String groupName){
@@ -848,6 +855,9 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Coverage Mismatch").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'No ZDB Results').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'ZDB Title Overlap').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Multiple EZB Results').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'No EZB Results').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'EZB Title Overlap').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Title Matches').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Conflict').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Critical Identifier Conflict').save(flush: true, failOnError: true)
@@ -857,6 +867,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Import Identifier Mismatch').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Record Matches').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Import Report').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Information').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Invalid Name").save(flush: true, failOnError: true)
 
 

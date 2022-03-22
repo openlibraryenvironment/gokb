@@ -381,6 +381,20 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def rebuildPackageCaches() {
+    log.debug("Call to recache all packages")
+
+    Job j = concurrencyManagerService.createJob {
+      packageService.cachePackageXml(true)
+    }.startOrQueue()
+
+    j.description = "Recache packages"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Package Re-Caching')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def cleanup() {
     Job j = concurrencyManagerService.createJob { Job j ->
       cleanupService.expungeDeletedComponents(j)

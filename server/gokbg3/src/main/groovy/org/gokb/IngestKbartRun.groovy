@@ -1,116 +1,82 @@
 package org.gokb
 
-import au.com.bytecode.opencsv.CSVReader
-
-import com.k_int.ConcurrencyManagerService
-import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ClassUtils
+import com.k_int.ConcurrencyManagerService.Job
+import com.k_int.ESSearchService
+
+import gokbg3.DateFormatService
+import gokbg3.MessageService
 
 import grails.converters.JSON
+import grails.plugin.springsecurity.SpringSecurityService
 import grails.gorm.transactions.Transactional
+import grails.util.Holders
 import grails.util.TypeConvertingMap
 
-import java.text.SimpleDateFormat
+import groovy.util.logging.Slf4j
+
 import java.time.LocalDateTime
 import java.time.ZoneId
 
 import org.apache.commons.io.ByteOrderMark
 import org.apache.commons.io.input.BOMInputStream
+import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
 import org.gokb.exceptions.*
 import org.gokb.GOKbTextUtils
+import org.grails.web.json.JSONObject
 
-@Transactional
-class TSVIngestionService {
+@Slf4j
+class IngestKbartRun {
 
-  def grailsApplication
-  def componentLookupService
-  def componentUpdateService
-  def reviewRequestService
-  def titleLookupService
-  def ESSearchService
-  def tippService
-  def refdataCategory
-  def sessionFactory
+  static MessageService messageService = Holders.grailsApplication.mainContext.getBean('messageService')
+  static PackageService packageService = Holders.grailsApplication.mainContext.getBean('packageService')
+  static SpringSecurityService springSecurityService = Holders.grailsApplication.mainContext.getBean('springSecurityService')
+  static ComponentUpdateService componentUpdateService = Holders.grailsApplication.mainContext.getBean('componentUpdateService')
+  static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
+  static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
+  static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
+  static TippService tippService = Holders.grailsApplication.mainContext.getBean('tippService')
+  static DateFormatService dateFormatService = Holders.grailsApplication.mainContext.getBean('dateFormatService')
 
-  def possible_date_formats = [
-    new SimpleDateFormat('yyyy-MM-dd'), // Default format Owen is pushing ATM.
-    new SimpleDateFormat('yyyy-MM'),
-    new SimpleDateFormat('yyyy')
-  ]
+  boolean addOnly
+  boolean fullsync
+  boolean autoUpdate
+  boolean dryRun
+  Locale locale
+  User user
+  Map jsonResult = [result: "SUCCESS"]
+  Map errors = [global: [], tipps: []]
+  def existing_tipp_ids = []
+  int removedNum = 0
+  def invalidTipps = []
+  def matched_tipps = [:]
+  Package pkg
+  CuratoryGroup activeGroup
+  def pkg_validation
+  def pltCache = [:] // DTO.name : validPlatformInstance
+  Job job = null
 
-  /**
-   * Define package level properties.
-   * Currently only defines one type of property - typeValueFunction where the package will provide
-   * a setX(Y,V), getX(Y,V) method. In the price example below, a column like pkg.price.list would result
-   * in a call to getPrice('list') and if the returned value was different to the input file, call
-   * setPrice('list','value'). This method may be arbitrarily complex. In the price example, multiple
-   * associated tracking events can happen.
-   *
-   * Structure of map a regex for matching, a type and a property.
-   */
-  static def packageProperties = [
-    [regex: ~/(pkg)\.(price)(\.(.*))?/, type: 'typeValueFunction', prop: 'Price'],  // Match pkg.price and pkg.price.anything
-    [regex: ~/(pkg)\.(descriptionURL)/, type: 'simpleProperty', prop: 'descriptionURL']
-  ]
+  def status_current
+  def status_deleted
+  def status_retired
+  def status_expected
+  def rr_deleted
+  def rr_nonCurrent
+  def rr_TIPPs_retired
+  def rr_TIPPs_invalid
+  def listStatus_ip
 
-  // Don't update the accessStartDate if we are seeing the tipp again in a file
-  // already loaded.
-  def tipp_properties_to_ignore_when_updating = ['accessStartDate']
-
-  //these are now ingestions of profiles.
-  def ingest(the_profile_id,
-             datafile_id,
-             job = null,
-             ip_id = null,
-             ingest_cfg = null,
-             user = null) {
-
-    if (the_profile_id == null) {
-      log.error("No datafile ID passed in to ingest")
-      return
-    }
-
-    def the_profile = IngestionProfile.get(the_profile_id)
-    def default_group = CuratoryGroup.findByName('Local')
-
-    if (the_profile == null)      {
-      log.error("Unable to datafile for ID ${datafile_id}")
-      return
-    }
-
-    return ingest2(the_profile.packageType,
-                   the_profile.packageName,
-                   the_profile.platformUrl,
-                   the_profile.source,
-                   datafile_id,
-                   job,
-                   null,
-                   the_profile.providerNamespace,
-                   ip_id,
-                   ingest_cfg,
-                   'N',
-                   null,
-                   user,
-                   group)
+  public IngestKbartRun(pack, datafile_id, providerIdentifierNamespace = null, incremental = null, user_id = null, group = null, boolean dry_run = false) {
+    pkg = p
+    addOnly = incremental
+    user = u
+    activeGroup = group
+    dryRun = dry_run
   }
 
-  def ingest2(packageType,
-             packageName,
-             platformUrl,
-             source,
-             datafile_id,
-             job = null,
-             providerName = null,
-             providerIdentifierNamespace = null,
-             ip_id = null,
-             ingest_cfg = null,
-             incremental = null,
-             other_params = null,
-             user_id = null,
-             group_id = null,
-             boolean dry_run = false) {
-
+  def start(Job nJob) {
+    job = nJob ?: job
     log.debug("ingest2...")
     def result = [result: 'OK', dryRun: dry_run]
     result.messages = []
@@ -385,8 +351,7 @@ class TSVIngestionService {
     result
   }
 
-  //this method does a lot of checking, and then tries to save the title to the DB.
-  def writeToDB(the_kbart,
+ def writeToDB(the_kbart,
                 platform_url,
                 source,
                 ingest_date,
@@ -1055,171 +1020,7 @@ class TSVIngestionService {
     results
   }
 
-  def convertToKbart(packageType, data_file) {
-    def results = []
-    log.debug("in convert to Kbart2")
-    log.debug("file package type is ${packageType}")
-
-    //need to know the file type, then we need to create a new data structure for it
-    //in the config, need to map the fields from the formats we support into kbart.
-
-    def kbart_cfg = grailsApplication.config.kbart2.mappings."${packageType}"
-
-    //can you read a tsv file?
-    def charset = 'ISO-8859-1' // 'UTF-8'
-    if (kbart_cfg == null) {
-      throw new Exception("couldn't find config for ${packageType}")
-    }
-    else {
-      log.debug("Got config ${kbart_cfg}")
-    }
-
-    BOMInputStream b = new BOMInputStream(
-        new ByteArrayInputStream(data_file.fileData),
-        ByteOrderMark.UTF_16LE,
-        ByteOrderMark.UTF_16BE,
-        ByteOrderMark.UTF_32LE,
-        ByteOrderMark.UTF_32BE,
-        ByteOrderMark.UTF_8
-    )
-
-    def ingest_charset = kbart_cfg.charset ?: 'ISO-8859-1'
-
-    if (b.hasBOM() == false) {
-      // No BOM found
-    } else if (b.hasBOM(ByteOrderMark.UTF_16LE)) {
-      // has a UTF-16LE BOM
-      ingest_charset = 'UTF-16LE'
-    } else if (b.hasBOM(ByteOrderMark.UTF_16BE)) {
-      // has a UTF-16BE BOM
-      ingest_charset = 'UTF-16BE'
-    }
-
-    log.debug("Convert to kbart2 using charset ${ingest_charset}")
-
-    CSVReader csv = new CSVReader(
-        new InputStreamReader(b, java.nio.charset.Charset.forName(ingest_charset)),
-        (kbart_cfg.separator?:'\t') as char,
-        (kbart_cfg.quoteChar?:'\0') as char
-    )
-
-    def fileRules = kbart_cfg.rules
-    Map col_positions = [:]
-    fileRules.each { fileRule ->
-      col_positions[fileRule.field] = -1
-    }
-    String [] header = csv.readNext()
-
-    int ctr = 0
-
-    if (header == null || header.size() ==  0) {
-      log.error("No header")
-      results.add([message: "No header"])
-      return results
-    }
-
-
-    log.debug("Processing column headers... count ${header?.length} items")
-    header.each {
-      log.debug("Column \"${ctr}\" == ${it} (${it.class.name})")
-      col_positions [it.toString().trim()] = ctr++
-    }
-
-    def mapped_cols = [] as ArrayList
-    def unmapped_cols = 0..(header.size()) as ArrayList
-
-    log.debug("Col positions : ${col_positions}")
-    log.debug("Before Mapped columns: ${mapped_cols}")
-    log.debug("Before UnMapped columns: ${unmapped_cols}")
-
-
-    fileRules.each { fileRule ->
-      if (col_positions[fileRule.field] >= 0) {
-        // Column is mapped
-        unmapped_cols.remove(col_positions[fileRule.field] as Object)
-        mapped_cols.add(col_positions[fileRule.field] as Object)
-      }
-      else {
-        log.debug("Mapping contains a definition for ${fileRule.field} but unable to find a column with that name in file headings : ${header}")
-      }
-    }
-
-    log.debug("After Mapped columns: ${mapped_cols}")
-    log.debug("After UnMapped columns: ${unmapped_cols}")
-
-    String [] nl = csv.readNext()
-
-    long row_counter = 0
-
-    while (nl != null) {
-
-      log.debug("** Process row:${row_counter++} ${nl}")
-
-      // KBartRecord result = new KBartRecord()
-      def result = [:]
-      result.unmapped = []
-
-      fileRules.each { fileRule ->
-
-        boolean done = false
-        if (nl.length > col_positions[fileRule.field]) {
-          String data = nl[col_positions[fileRule.field]]
-
-          if (col_positions[fileRule.field] >= 0) {
-            // log.debug("field : ${fileRule.field} ${col_positions[fileRule.field]} ${data}")
-            if (fileRule.separator != null && data.indexOf(fileRule.separator) > -1) {
-              def parts = data.split(fileRule.separator)
-              data = parts[0]
-
-              if (parts.size() > 1 && fileRule.additional != null) {
-                for (int x = 1; x < parts.size(); x++) {
-                  result[fileRule.additional] << parts[x]
-                }
-                done=true
-              }
-            }
-
-            if (fileRule.additional != null && !done) {
-              if ( data ) {
-                if ( result[fileRule.additional] == null )
-                  result[fileRule.additional] = []
-
-                result[fileRule.additional] << data
-              }
-            } else {
-              result[fileRule.kbart] = data
-            }
-          }
-        }
-        else {
-          log.warn("Missing column[${col_positions[fileRule.field]}]-${fileRule.field} in ingest file at line ${row_counter}")
-        }
-      }
-
-
-      log.debug("Processing ${unmapped_cols.size()} unmapped columns")
-      unmapped_cols.each { unmapped_col_idx ->
-        if (unmapped_col_idx < nl.size() && unmapped_col_idx < header.size()) {
-          log.debug("Setting unmapped column idx ${unmapped_col_idx} ${header[unmapped_col_idx]} to ${nl[unmapped_col_idx]}")
-          // result.unmapped.add([header[unmapped_col_idx], nl[unmapped_col_idx]])
-          result.unmapped.add([
-              name: header[unmapped_col_idx],
-              value: nl[unmapped_col_idx],
-              index: unmapped_col_idx
-          ]);
-        }
-      }
-
-      log.debug("${result}")
-      results << result
-      nl = csv.readNext()
-    }
-
-    log.debug("\n\n Convert to KBart completed cleanly")
-    results
-  }
-
-  def cleanUpGorm() {
+def cleanUpGorm() {
     // log.debug("Clean up GORM");
 
     // Get the current session.
@@ -1526,6 +1327,6 @@ class TSVIngestionService {
       obj.save(flush:true, failOnError:true)
     }
 
-    return;
+    return
   }
 }
