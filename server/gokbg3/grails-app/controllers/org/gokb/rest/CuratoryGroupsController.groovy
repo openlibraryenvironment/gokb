@@ -238,7 +238,7 @@ class CuratoryGroupsController {
           def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
           // No JsonObject for list view
 
-          result.datas << [
+          result.data << [
             uuid: j.uuid,
             description: j.description,
             type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
