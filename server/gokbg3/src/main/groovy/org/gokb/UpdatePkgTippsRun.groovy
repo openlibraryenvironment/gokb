@@ -509,7 +509,7 @@ class UpdatePkgTippsRun {
                   'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                   'publisherName'              : tippJson.publisherName,
                   'importId'                   : tippJson.titleId ?: null,
-                  'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : tippJson.package.updateDate,
+                  'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : tippJson.updateDate,
                   'accessEndDate'              : tippJson.accessEndDate ? dateFormatService.parseDate(tippJson.accessEndDate) : null]
           ).save(flush:true)
 
@@ -703,7 +703,7 @@ class UpdatePkgTippsRun {
                     'precedingPublicationTitleId': tippJson.preceding_publication_title_id,
                     'publisherName'              : tippJson.publisherName,
                     'importId'                   : tippJson.titleId ?: null,
-                    'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : tippJson.package.updateDate,
+                    'accessStartDate'            : tippJson.accessStartDate ? dateFormatService.parseDate(tippJson.accessStartDate) : tippJson.updateDate,
                     'accessEndDate'              : tippJson.accessEndDate ? dateFormatService.parseDate(tippJson.accessEndDate) : null]
             ).save(flush:true)
 
