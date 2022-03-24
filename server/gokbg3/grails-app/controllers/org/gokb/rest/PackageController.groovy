@@ -812,10 +812,10 @@ class PackageController {
       def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
       def deposit_token = java.util.UUID.randomUUID().toString()
       def temp_file = packageService.copyUploadedFile(request.getFile("submissionFile"), deposit_token)
-      def active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
-      def title_ns = params.int('titleIdNamespace') ? IdentifierNamespace.get(params.int('titleIdNamespace')) : null
-      def add_only = params.boolean('addOnly') ?: false
-      def dry_run = params.boolean('dryRun') ?: false
+      CuratoryGroup active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
+      IdentifierNamespace title_ns = params.int('titleIdNamespace') ? IdentifierNamespace.get(params.int('titleIdNamespace')) : null
+      Boolean add_only = params.boolean('addOnly') ?: false
+      Boolean dry_run = params.boolean('dryRun') ?: false
       def info = packageService.analyseFile(temp_file)
       def new_datafile_id = null
       def platform_url = pkg.nominalPlatform?.primaryUrl ?: null
@@ -847,22 +847,15 @@ class PackageController {
 
       if (new_datafile_id) {
         Job background_job = concurrencyManagerService.createJob { Job job ->
-          TSVIngestionService.ingest2(
-                                      'kbart2',
-                                      pkg.name,
-                                      platform_url,
-                                      pkg_source,
-                                      new_datafile_id,
-                                      job,
-                                      null,
-                                      title_ns,
-                                      null,
-                                      null,
-                                      (add_only ? 'Y' : 'N'),
-                                      null,
-                                      user.id,
-                                      active_group.id,
-                                      dry_run)
+          TSVIngestionService.updatePackage(pkg,
+                                            datafile_id,
+                                            title_id_ns,
+                                            false,
+                                            add_only,
+                                            user,
+                                            active_group,
+                                            dry_run,
+                                            job)
         }
 
         background_job.groupId = active_group.id ?: null

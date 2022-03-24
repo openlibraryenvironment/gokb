@@ -175,7 +175,7 @@ class UpdatePkgTippsRun {
           def currentTippError = [index: idx]
           log.debug("Handling #$idx TIPP ${json_tipp.name ?: json_tipp.title.name}")
           if ((json_tipp.package == null) && (pkg.id)) {
-            json_tipp.package = [internalId: pkg.id]
+            json_tipp.package = [id: pkg.id, internalId: pkg.id]
             if (rjson.packageHeader.fileNameDate) {
               json_tipp.updateDate = dateFormatService.parseDate(rjson.packageHeader.fileNameDate)
             }
@@ -472,7 +472,6 @@ class UpdatePkgTippsRun {
     tippJson.title = null
     def validation_result = TitleInstancePackagePlatform.validateDTO(tippJson, locale)
     tippJson.title = stash
-    log.debug("${tippJson.title}")
     log.debug("validate TIPP ${tippJson.name ?: tippJson.title.name}")
     if (!validation_result.valid) {
       invalidTipps << tippJson
@@ -487,7 +486,9 @@ class UpdatePkgTippsRun {
       TitleInstancePackagePlatform[] current_tipps = null
       TitleInstancePackagePlatform tipp
       try {
+        log.debug("Lookup ${tippJson}")
         def match_result = tippService.restLookup(tippJson)
+        log.debug("Lookup returned: ${match_result}")
         // Fallunterscheidung
 
         if (match_result.full_matches.size() > 0) {

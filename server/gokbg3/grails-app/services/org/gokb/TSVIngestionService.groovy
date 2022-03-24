@@ -58,6 +58,41 @@ class TSVIngestionService {
   // already loaded.
   def tipp_properties_to_ignore_when_updating = ['accessStartDate']
 
+  def updatePackage(Package pkg,
+                    Long datafile_id,
+                    IdentifierNamespace title_id_ns,
+                    boolean source_update,
+                    boolean incremental,
+                    def request_user,
+                    def active_group,
+                    boolean dry_run,
+                    Job job = null) {
+    if (!job) {
+      Package.withSession {
+        UpdatePkgTippsRun myRun = new UpdatePkgTippsRun(pkg,
+                                                        datafile_id,
+                                                        title_id_ns,
+                                                        source_update,
+                                                        incremental,
+                                                        request_user,
+                                                        active_group,
+                                                        dry_run)
+        return myRun.work(job)
+      }
+    }
+    Package.withNewSession {
+      UpdatePkgTippsRun myRun = new UpdatePkgTippsRun(pkg,
+                                                      datafile_id,
+                                                      title_id_ns,
+                                                      source_update,
+                                                      incremental,
+                                                      request_user,
+                                                      active_group,
+                                                      dry_run)
+      return myRun.work(job)
+    }
+  }
+
   //these are now ingestions of profiles.
   def ingest(the_profile_id,
              datafile_id,

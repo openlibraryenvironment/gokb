@@ -3,22 +3,12 @@ package org.gokb
 import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
-import org.gokb.cred.Combo
-import org.gokb.cred.CuratoryGroup
-import org.gokb.cred.IdentifierNamespace
-import org.gokb.cred.JournalInstance
-import org.gokb.cred.RefdataValue
-import org.gokb.cred.TIPPCoverageStatement
+
+import org.gokb.cred.*
 import org.gokb.rest.TippController
 import org.grails.web.json.JSONObject
-import org.gokb.cred.Identifier
-import org.gokb.cred.KBComponent
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.TitleInstance
-import org.gokb.cred.TitleInstancePackagePlatform
-import org.gokb.cred.Package
-import org.gokb.cred.ReviewRequest
 
 import java.time.LocalDate
 import java.time.ZoneId
@@ -242,6 +232,7 @@ class TippService {
 
   def matchTitle(tipp, CuratoryGroup group = null) {
     def found
+    boolean created = false
     def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
     final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
     def pkg = Package.executeQuery("from Package as pkg where exists (select 1 from Combo where fromComponent = pkg and toComponent = :tipp)", [tipp: tipp])[0]
@@ -267,6 +258,7 @@ class TippService {
     if (found.to_create == true) {
       log.debug("No existing title matched, creating ${tipp.name}")
       ti = createTitleFromTippData(tipp, tipp_ids)
+      created = true
     }
     else if (found.matches.size() == 1) {
       // exactly one match
@@ -295,6 +287,7 @@ class TippService {
       }
       else if (found.matches.size() == 0) {
         ti = createTitleFromTippData(tipp, tipp_ids)
+        created = true
       }
     }
     else {
@@ -302,10 +295,14 @@ class TippService {
     }
 
     if (ti) {
+      if (!created) {
+        titleLookupService.addIdentifiers(tipp_ids, ti)
+        titleLookupService.addPublisher(tipp.publisherName, ti)
+      }
+
       tipp.title = ti
-      titleLookupService.addIdentifiers(tipp_ids, ti)
-      titleLookupService.addPublisher(tipp.publisherName, ti)
-      tipp = tipp.merge(flush: true)
+      tipp.save()
+
       log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
     else {
@@ -327,7 +324,7 @@ class TippService {
     log.debug("Set name ${ti.name} ..")
     ti.save(flush: true)
     titleLookupService.addPublisher(tipp.publisherName, ti)
-    log.debug("Transfering new ti ids: ${tipp.ids}")
+    log.debug("Transfering new ti ids: ${tipp_ids}")
     titleLookupService.addIdentifiers(tipp_ids, ti)
 
     title_changed |= componentUpdateService.setAllRefdata([
@@ -589,15 +586,16 @@ class TippService {
     }
   }
 
-  def priorityMatch(def current_tipps, tippJson) {
+  def priorityMatch(def current_tipps, tippInfo) {
+    def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
     def result = [full_matches: [], partial_matches: [:], failed_matches: []]
 
     def jsonIdMap = [:]
-    tippJson.identifiers.each { jsonId ->
+    tippInfo.identifiers.each { jsonId ->
       jsonIdMap[jsonId.type] = jsonId.value
     }
     if (jsonIdMap.size() == 0) {
-      tippJson.title.identifiers.each { jsonId ->
+      tippInfo.title.identifiers.each { jsonId ->
         jsonIdMap[jsonId.type] = jsonId.value
       }
     }
@@ -610,8 +608,8 @@ class TippService {
       int mismatch_prio = -1
       boolean priority_match = false
 
-      if (tippJson.titleId == ctipp.importId) {
-        tipp_id_match_results << [namespace: 'title_id', value: tippJson.titleId, match: 'OK']
+      if (tippInfo.titleId == ctipp.importId) {
+        tipp_id_match_results << [namespace: 'title_id', value: tippInfo.titleId, match: 'OK']
       }
 
       priority_list.eachWithIndex { plns, idx ->
@@ -665,131 +663,151 @@ class TippService {
     result
   }
 
-  def restLookup(tippJson) {
+  def restLookup(tippInfo) {
     def result = [:]
     def tipps = []
+    def pkgInfo = tippInfo.pkg ?: tippInfo.package
+    def typeString = tippInfo.publicationType ?: tippInfo.type
 
-    if (tippJson.pkg?.id && tippJson.hostPlatform?.id)
-    RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-    // remap JSON Identifiers to [type: value]
-    def jsonIdMap = [:]
-    tippJson.identifiers.each { jsonId ->
-      jsonIdMap[jsonId.type] = jsonId.value
-    }
-    if (jsonIdMap.size() == 0) {
-      tippJson.title.identifiers.each { jsonId ->
+    if (pkgInfo?.id && tippInfo.hostPlatform?.id) {
+      RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+      // remap JSON Identifiers to [type: value]
+      def jsonIdMap = [:]
+      tippInfo.identifiers.each { jsonId ->
         jsonIdMap[jsonId.type] = jsonId.value
       }
-    }
-    def titleId = tippJson.titleId ?: tippJson.importId
-    // search TIPPs for json.title_id == tipp.importId
-    if (titleId) {
-      def tippList = TitleInstancePackagePlatform.executeQuery(
-          'select tipp from TitleInstancePackagePlatform as tipp, Combo as c1, Combo as c2 ' +
-              'where c1.fromComponent.id = :pkg ' +
-              'and c1.toComponent = tipp ' +
-              'and c1.type = :typ1 ' +
-              'and c2.fromComponent.id = :plt ' +
-              'and c2.toComponent = tipp ' +
-              'and c2.type = :typ2 ' +
-              'and tipp.importId = :tid ' +
-              'and tipp.status = :tStatus  ' +
-              'order by tipp.id',
-          [pkg    : tippJson.pkg.id,
-           typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
-           plt    : tippJson.hostPlatform.id,
-           typ2   : RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps'),
-           tid    : titleId,
-           tStatus: status_current]
-      )
-      if (tippList.size() > 0) {
-        log.debug("found by titleId in DB")
-        return tippList
+      if (jsonIdMap.size() == 0) {
+        tippInfo.title.identifiers.each { jsonId ->
+          jsonIdMap[jsonId.type] = jsonId.value
+        }
       }
-    }
+      def titleId = tippInfo.titleId ?: tippInfo.importId
 
-    // search for other Identifiers, depending on publicationType
-    if ("SERIAL".equalsIgnoreCase(tippJson.type)) {
-      // Journal
-      ['zdb', 'eissn', 'issn', 'doi'].each { ns_value ->
-        if (jsonIdMap[ns_value]) {
-          def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
-          if (found.size() > 0) {
-            found.each {
-              if (TitleInstancePackagePlatform.isInstance(it)
-                  && !tipps.contains(it)
-                  && it.pkg.id == tippJson.pkg.id
-                  && it.status == status_current
-                  && it.hostPlatform.id == tippJson.hostPlatform.id
-                  && (!tippJson.titleId || !it.importId)) {
-                tipps.add(it)
+      if (titleId) {
+        tipps = TitleInstancePackagePlatform.executeQuery(
+            'select tipp from TitleInstancePackagePlatform as tipp, Combo as c1, Combo as c2 ' +
+                'where c1.fromComponent.id = :pkg ' +
+                'and c1.toComponent = tipp ' +
+                'and c1.type = :typ1 ' +
+                'and c2.fromComponent.id = :plt ' +
+                'and c2.toComponent = tipp ' +
+                'and c2.type = :typ2 ' +
+                'and tipp.importId = :tid ' +
+                'and tipp.status = :tStatus  ' +
+                'order by tipp.id',
+            [pkg   : pkgInfo.id,
+            typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
+            plt    : tippInfo.hostPlatform.id,
+            typ2   : RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps'),
+            tid    : titleId,
+            tStatus: status_current]
+        )
+      }
+
+      if (tipps.size() == 0) {
+        // search for other Identifiers, depending on publicationType
+        log.debug("Going through ids: ${jsonIdMap}")
+
+        if ("SERIAL".equalsIgnoreCase(typeString)) {
+          // Journal
+          ['zdb', 'eissn', 'issn', 'doi'].each { ns_value ->
+            if (jsonIdMap[ns_value]) {
+              def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
+              if (found.size() > 0) {
+                found.each {
+                  if (TitleInstancePackagePlatform.isInstance(it)
+                      && !tipps.contains(it)
+                      && it.pkg.id == pkgInfo.id
+                      && it.status == status_current
+                      && it.hostPlatform.id == tippInfo.hostPlatform.id
+                      && (!titleId || !it.importId)) {
+                    tipps.add(it)
+                  }
+                }
               }
             }
           }
+          if (tipps.size() > 0) {
+            log.debug("found by journal identifier set")
+          }
+          else {
+            log.debug("No results for journal identifiers!")
+          }
         }
-      }
-      if (tipps.size() > 0) {
-        log.debug("found by journal identifier set")
-      }
-    }
-    else if ("MONOGRAPH".equalsIgnoreCase(tippJson.type)) {
-      // Book
-      ['isbn', 'doi'].each { ns_value ->
-        if (jsonIdMap[ns_value]) {
-          def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
-          if (found.size() > 0) {
-            found.each {
-              if (TitleInstancePackagePlatform.isInstance(it)
-                  && !tipps.contains(it)
-                  && it.pkg.id == tippJson.pkg.id
-                  && it.status == status_current
-                  && it.hostPlatform.id == tippJson.hostPlatform.id
-                  && (!tippJson.titleId || !it.importId)) {
-                tipps.add(it)
+        else if ("MONOGRAPH".equalsIgnoreCase(typeString)) {
+          // Book
+          ['isbn', 'doi'].each { ns_value ->
+            if (jsonIdMap[ns_value]) {
+              def found = TitleInstancePackagePlatform.lookupAllByIO(ns_value, jsonIdMap[ns_value])
+              if (found.size() > 0) {
+                found.each {
+                  if (TitleInstancePackagePlatform.isInstance(it)
+                      && !tipps.contains(it)
+                      && it.pkg.id == pkgInfo.id
+                      && it.status == status_current
+                      && it.hostPlatform.id == tippInfo.hostPlatform.id
+                      && (!titleId || !it.importId)) {
+                    tipps.add(it)
+                  }
+                }
               }
             }
           }
+          if (tipps.size() > 0) {
+            log.debug("found by monograph identifier set")
+          }
+          else {
+            log.debug("No results for journal identifiers!")
+          }
         }
       }
-      if (tipps.size() > 0) {
-        log.debug("found by monograph identifier set")
+      else {
+        log.debug("Got titleId matches: ${tipps}")
       }
-    }
 
-    result = priorityMatch(tipps, tippJson)
+      result = priorityMatch(tipps, tippInfo)
+    }
+    else {
+      log.error("restLookup :: Missing package/platform info!")
+      result.result = 'ERROR'
+    }
     result
   }
 
-  public void updateSimpleFields(tipp, tippJson, boolean fullsync = false, User user = null) {
-    componentUpdateService.ensureCoreData(tipp, tippJson, fullsync, user)
-    // overwrite String properties with JSON values
+  public void updateSimpleFields(tipp, tippInfo, boolean fullsync = false, User user = null) {
+    componentUpdateService.ensureCoreData(tipp, tippInfo, fullsync, user)
+
     ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
-    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'importId', 'subjectArea', 'series'].each { propName ->
-      tipp[propName] = tippJson[propName] ? tippJson[propName].trim() : tipp[propName]
+    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'subjectArea', 'series'].each { propName ->
+      tipp[propName] = tippInfo[propName] ? tippInfo[propName].trim() : tipp[propName]
     }
 
-    if (tippJson.dateFirstInPrint) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippJson.dateFirstInPrint), tipp, 'dateFirstInPrint')
+    if (!tipp.importId) {
+      tipp.importId = tippInfo.importId ?: tippInfo.titleId
+    }
+
+    if (tippInfo.dateFirstInPrint) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstInPrint), tipp, 'dateFirstInPrint')
     }
     else {
-      log.debug("No dateFirstInPrint -> ${tippJson.dateFirstInPrint}")
+      log.debug("No dateFirstInPrint -> ${tippInfo.dateFirstInPrint}")
     }
 
-    if (tippJson.dateFirstOnline) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippJson.dateFirstOnline), tipp, 'dateFirstOnline')
+    if (tippInfo.dateFirstOnline) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline), tipp, 'dateFirstOnline')
     }
-    if (newVals.accessStartDate) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(newVals.accessStartDate), tipp, 'accessStartDate')
-    }
-
-    if (newVals.accessEndDate) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(newVals.accessEndDate), tipp, 'accessEndDate')
+    if (tippInfo.accessStartDate) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessStartDate), tipp, 'accessStartDate')
     }
 
-    ClassUtils.setRefdataIfPresent(newVals.medium, tipp, 'medium')
-    ClassUtils.setRefdataIfPresent(newVals.language, tipp, 'language')
-    ClassUtils.setRefdataIfPresent(newVals.publicationType, tipp, 'publicationType')
-    tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippJson.publicationType ?: tippJson.type ?: tipp.publicationType.value)
+    if (tippInfo.accessEndDate) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
+    }
+
+    ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
+    ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
+    ClassUtils.setRefdataIfPresent(tippInfo.publicationType, tipp, 'publicationType')
+    tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippInfo.publicationType ?: tippInfo.type ?: tipp.publicationType.value)
     tipp.save(flush:true)
   }
 }

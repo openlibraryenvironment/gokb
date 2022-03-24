@@ -1578,7 +1578,7 @@ class PackageService {
     result
   }
 
-  private boolean startSourceUpdate(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
+  private boolean startSourceUpdate(Package pkg, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
     log.debug("Source update start..")
     def result = [result: 'OK']
 

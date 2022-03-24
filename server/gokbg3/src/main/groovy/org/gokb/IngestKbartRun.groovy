@@ -1,5 +1,7 @@
 package org.gokb
 
+import au.com.bytecode.opencsv.CSVReader
+
 import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ESSearchService
@@ -15,6 +17,7 @@ import grails.util.TypeConvertingMap
 
 import groovy.util.logging.Slf4j
 
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -40,45 +43,50 @@ class IngestKbartRun {
   static DateFormatService dateFormatService = Holders.grailsApplication.mainContext.getBean('dateFormatService')
 
   boolean addOnly
-  boolean fullsync
   boolean autoUpdate
   boolean dryRun
-  Locale locale
   User user
   Map jsonResult = [result: "SUCCESS"]
   Map errors = [global: [], tipps: []]
-  def existing_tipp_ids = []
   int removedNum = 0
   def invalidTipps = []
   def matched_tipps = [:]
   Package pkg
   CuratoryGroup activeGroup
   def pkg_validation
-  def pltCache = [:] // DTO.name : validPlatformInstance
+  def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
   Job job = null
+  IdentifierNamespace providerIdentifierNamespace
+  Long ingest_systime
 
   def status_current
   def status_deleted
   def status_retired
   def status_expected
-  def rr_deleted
-  def rr_nonCurrent
-  def rr_TIPPs_retired
-  def rr_TIPPs_invalid
-  def listStatus_ip
+  def datafile_id
 
-  public IngestKbartRun(pack, datafile_id, providerIdentifierNamespace = null, incremental = null, user_id = null, group = null, boolean dry_run = false) {
-    pkg = p
+  public IngestKbartRun(Package pack,
+                        Long datafile,
+                        IdentifierNamespace titleIdNamespace = null,
+                        Boolean sourceUpdate = false,
+                        Boolean incremental = false,
+                        User u = null,
+                        CuratoryGroup active_group = null,
+                        Boolean dry_run = false) {
+    pkg = pack
     addOnly = incremental
     user = u
-    activeGroup = group
+    autoUpdate = sourceUpdate
+    activeGroup = active_group
     dryRun = dry_run
+    datafile_id = datafile
+    providerIdentifierNamespace = titleIdNamespace
   }
 
   def start(Job nJob) {
     job = nJob ?: job
     log.debug("ingest2...")
-    def result = [result: 'OK', dryRun: dry_run]
+    def result = [result: 'OK', dryRun: dryRun]
     result.messages = []
 
     long start_time = System.currentTimeMillis()
@@ -87,51 +95,45 @@ class IngestKbartRun {
     log.debug("Get Datafile ${datafile_id}")
     def datafile = DataFile.read(datafile_id)
     log.debug("Got Datafile ${datafile.uploadName}")
-    def src_id = source.id
 
-    def kbart_cfg = grailsApplication.config.kbart2.mappings[packageType?.value.toString()]
-    log.debug("Looking up config for ${packageType} ${packageType?.class.name} : ${kbart_cfg ? 'Found' : 'Not Found'}")
+    status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+    status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+    status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
+    status_expected = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Expected')
 
-    if (packageType.value.equals('kbart2')) {
-      log.debug("Processing as kbart2")
-    }
-    else if (kbart_cfg == null) {
-      throw new RuntimeException("Unable to locate config information for package type ${packageType}. Registered types are ${grailsApplication.config.kbart2.mappings.keySet()}")
-    }
+    def kbart_cfg = grailsApplication.config.kbart2.mappings.kbart2
 
-    if (ingest_cfg == null) {
-      ingest_cfg = [
-        defaultTypeName: kbart_cfg?.defaultTypeName ?: 'org.gokb.cred.JournalInstance',
-        identifierMap: kbart_cfg?.identifierMap ?: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
-        defaultMedium: kbart_cfg?.defaultMedium ?: 'Journal',
-        providerIdentifierNamespace: providerIdentifierNamespace?.value,
-        inconsistent_title_id_behavior: 'reject',
-        quoteChar: '"',
-        discriminatorColumn: kbart_cfg?.discriminatorColumn ?: 'publication_type',
-        discriminatorFunction: kbart_cfg?.discriminatorFunction,
-        polymorphicRows: kbart_cfg?.polymorphicRows
-      ]
+    ingest_cfg = [
+      defaultTypeName: kbart_cfg?.defaultTypeName ?: 'org.gokb.cred.JournalInstance',
+      identifierMap: kbart_cfg?.identifierMap ?: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
+      defaultMedium: kbart_cfg?.defaultMedium ?: 'Journal',
+      providerIdentifierNamespace: providerIdentifierNamespace?.value,
+      inconsistent_title_id_behavior: 'reject',
+      quoteChar: '"',
+      discriminatorColumn: kbart_cfg?.discriminatorColumn ?: 'publication_type',
+      discriminatorFunction: kbart_cfg?.discriminatorFunction,
+      polymorphicRows: kbart_cfg?.polymorphicRows
+    ]
 
-      if (!ingest_cfg.polymorphicRows) {
-        ingest_cfg.polymorphicRows = [
-          'serial':[
-            identifierMap: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
-            defaultMedium: 'Serial',
-            defaultTypeName: 'org.gokb.cred.JournalInstance'
-          ],
-          'monograph':[
-            identifierMap: ['print_identifier': 'pisbn', 'online_identifier': 'isbn'],
-            defaultMedium: 'Book',
-            defaultTypeName: 'org.gokb.cred.BookInstance'
-          ]
+    if (!ingest_cfg.polymorphicRows) {
+      ingest_cfg.polymorphicRows = [
+        'serial':[
+          identifierMap: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
+          defaultMedium: 'Serial',
+          defaultTypeName: 'org.gokb.cred.JournalInstance'
+        ],
+        'monograph':[
+          identifierMap: ['print_identifier': 'pisbn', 'online_identifier': 'isbn'],
+          defaultMedium: 'Book',
+          defaultTypeName: 'org.gokb.cred.BookInstance'
         ]
-      }
+      ]
     }
 
     try {
       log.debug("Initialise start time")
 
-      def ingest_systime = start_time
+      ingest_systime = start_time
       def date_pattern_matches = (datafile.uploadName =~ /[\d]{4}-[\d]{2}-[\d]{2}/)
       def ingest_date = date_pattern_matches?.size() > 0 ? date_pattern_matches[0] : LocalDate.now().toString()
 
@@ -143,54 +145,21 @@ class IngestKbartRun {
 
       log.debug("Reading datafile")
       //we kind of assume that we need to convert to kbart
-      if ("${packageType}" != 'kbart2') {
-        kbart_beans = convertToKbart(packageType, datafile)
-      } else {
-        kbart_beans = getKbartBeansFromKBartFile(datafile)
-      }
-
-      def the_package = null
-      def the_package_id = null
-      def author_role_id = null
-      def editor_role_id = null
-
+      kbart_beans = getKbartBeansFromKBartFile(datafile)
       log.debug("Starting preflight")
 
-      result.preflight = preflight(kbart_beans, ingest_cfg, source, packageName, providerName)
+      result.preflight = preflight(kbart_beans, ingest_cfg)
 
       if (result.preflight.passed) {
         log.debug("Passed preflight -- ingest")
         result.report = [matched: 0, created: 0, retired: 0, invalid: 0]
-
-        Package.withTransaction() {
-          the_package = handlePackage(packageName, source, providerName, other_params)
-          assert the_package != null
-          the_package_id = the_package.id
-          def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
-          author_role_id = author_role.id
-          def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
-          editor_role_id = editor_role.id
-
-          if (group_id) {
-            def group = CuratoryGroup.get(group_id)
-            the_package.addCuratoryGroupIfNotPresent(group.name)
-            the_package.save(flush:true, failOnError:true)
-          }
-        }
-
-
         long startTime = System.currentTimeMillis()
 
-        log.debug("Ingesting ${ingest_cfg.defaultMedium} ${kbart_beans.size}(cfg:${packageType?.value.toString()}) rows. Package is ${the_package_id}")
+        log.debug("Ingesting ${ingest_cfg.defaultMedium} ${kbart_beans.size}(cfg:${packageType?.value.toString()}) rows. Package is ${pkg_id}")
         //now its converted, ingest it into the database.
 
         for (int x = 0; x < kbart_beans.size; x++) {
           Package.withTransaction {
-            def author_role = RefdataValue.get(author_role_id)
-            def editor_role = RefdataValue.get(editor_role_id)
-            def pkg_src = Source.get(src_id)
-            def pkg_obj = Package.get(the_package_id)
-
             log.debug("**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
             def row_specific_cfg = getRowSpecificCfg(ingest_cfg, kbart_beans[x])
@@ -200,18 +169,11 @@ class IngestKbartRun {
             if (validateRow(x, badrows, kbart_beans[x])) {
               def line_result = writeToDB(kbart_beans[x],
                         platformUrl,
-                        pkg_src,
                         ingest_date,
                         ingest_systime,
-                        author_role,
-                        editor_role,
-                        pkg_obj,
                         ingest_cfg,
                         badrows,
-                        row_specific_cfg,
-                        user_id,
-                        group_id,
-                        dry_run)
+                        row_specific_cfg)
 
               result.report[line_result]++
             }
@@ -233,20 +195,20 @@ class IngestKbartRun {
           log.debug("Incremental -- no expunge")
         }
         else {
-          log.debug("Expunging old tipps [Tipps belonging to ${the_package_id} last seen prior to ${ingest_date}] - ${packageName}")
+          log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${packageName}")
           TitleInstancePackagePlatform.withTransaction {
             try {
               // Find all tipps in this package which have a lastSeen before the ingest date
               def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
                                'from TitleInstancePackagePlatform as tipp, Combo as c '+
                                'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null and tipp.status = :sc',
-                              [pkg: the_package_id, dt: ingest_systime, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])
+                              [pkg: pkg_id, dt: ingest_systime, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])
 
               q.each { tipp ->
                 result.report.retired++
                 log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}")
 
-                if (!dry_run) {
+                if (!dryRun) {
                   ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(ingest_date), tipp, 'accessEndDate')
                   tipp.retire()
                   tipp.save(failOnError: true, flush: true)
@@ -284,12 +246,12 @@ class IngestKbartRun {
         result.messages.add("Processing Complete : numRows:${kbart_beans.size()}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
         job.message("Processing Complete : numRows:${kbart_beans.size()}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
 
-        if (!dry_run) {
+        if (!dryRun) {
           Package.withTransaction {
             try {
               def update_agent = User.findByUsername('IngestAgent')
               // insertBenchmark updateBenchmark
-              def p = Package.lock(the_package_id)
+              def p = Package.lock(pkg.id)
 
               if ( p.insertBenchmark == null )
                 p.insertBenchmark = processing_elapsed
@@ -352,24 +314,17 @@ class IngestKbartRun {
   }
 
  def writeToDB(the_kbart,
-                platform_url,
-                source,
-                ingest_date,
-                ingest_systime,
-                author_role,
-                editor_role,
-                the_package,
-                ingest_cfg,
-                badrows,
-                row_specific_config,
-                user_id,
-                group_id,
-                dry_run) {
+               platform_url,
+               ingest_date,
+               ingest_systime,
+               ingest_cfg,
+               badrows,
+               row_specific_config) {
 
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
-    log.debug("TSVINgestionService:writeToDB -- package id is ${the_package.id}")
+    log.debug("TSVINgestionService:writeToDB -- package id is ${pkg.id}")
 
     //first we need a platform:
     def platform = null // handlePlatform(platform_url.host, source)
@@ -394,7 +349,7 @@ class IngestKbartRun {
 
       if (title_url_host) {
         log.debug("Got platform from title host :: ${title_url_host}")
-        platform = handlePlatform(title_url_host, title_url_protocol, source)
+        platform = handlePlatform(title_url_host, title_url_protocol)
         log.debug("Platform result : ${platform}")
       }
       else {
@@ -407,10 +362,10 @@ class IngestKbartRun {
 
     if (platform == null) {
       log.debug("Platform is still null - use the default")
-      platform = handlePlatform(platform_url.host, source)
+      platform = pkg.platform
     }
 
-    assert the_package != null
+    assert pkg != null
 
     if (platform != null) {
 
@@ -459,17 +414,11 @@ class IngestKbartRun {
         def titleClass = TitleInstance.determineTitleClass(the_kbart.publication_type)
 
         if (titleClass && identifiers.size() > 0) {
-          result = manualUpsertTIPP(source,
-              the_kbart,
-              the_package,
+          result = manualUpsertTIPP(the_kbart,
               platform,
               ingest_date,
               ingest_systime,
-              identifiers,
-              user_id,
-              group_id,
-              dry_run
-          )
+              identifiers)
         }
         else {
           log.debug("Skipping row - no identifiers")
@@ -497,20 +446,15 @@ class IngestKbartRun {
     parsed_date
   }
 
-  def manualUpsertTIPP(the_source,
-                       the_kbart,
-                       the_package,
+  def manualUpsertTIPP(the_kbart,
                        the_platform,
                        ingest_date,
                        ingest_systime,
-                       identifiers,
-                       user_id,
-                       group_id,
-                       dry_run) {
+                       identifiers) {
 
-    log.debug("TSVIngestionService::manualUpsertTIPP with pkg:${the_package}, plat:${the_platform}, date:${ingest_date}")
+    log.debug("TSVIngestionService::manualUpsertTIPP with pkg:${pkg}, plat:${the_platform}, date:${ingest_date}")
 
-    assert the_package != null && the_platform != null
+    assert pkg != null && the_platform != null
 
     def result = null
     def user = User.get(user_id)
@@ -551,12 +495,11 @@ class IngestKbartRun {
       accessEndDate: the_kbart.access_end_date,
       lastSeen: ingest_systime,
       identifiers: identifiers,
-      pkg: [id: the_package.id, uuid: the_package.uuid, name: the_package.name],
+      pkg: [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
       hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name]
     ]
 
     def match_result = tippService.restLookup(tipp_map)
-
 
     if (match_results.full_matches.size() > 0) {
       result = 'matched'
@@ -598,9 +541,7 @@ class IngestKbartRun {
       }
       result = 'matched'
       tipp = best_matches[0].item
-      // update Data
-      tippService.restUpdate(tipp, tippJson)
-      log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
+      log.debug("Matched TIPP ${tipp} with URL ${tipp?.url}")
 
       if (best_matches.size() > 1) {
         log.debug("multiple (${best_matches.size()}) partial matches for $tipp")
@@ -644,9 +585,9 @@ class IngestKbartRun {
     else {
       result = 'created'
 
-      if (!dry_run) {
+      if (!dryRun) {
         def tipp_fields = [
-          pkg: the_package,
+          pkg: pkg,
           hostPlatform: the_platform,
           url: the_kbart.title_url,
           name: the_kbart.publication_title,
@@ -677,7 +618,7 @@ class IngestKbartRun {
       }
     }
 
-    if (!dry_run) {
+    if (!dryRun) {
       tippService.updateCoverage(tipp, tipp_values)
       tippService.updateSimpleFields(tipp, tipp_values, user)
 
@@ -764,7 +705,6 @@ class IngestKbartRun {
     def result
     def norm_pkg_name = KBComponent.generateNormname(packageName)
     log.debug("Attempt package match by normalised name: ${norm_pkg_name}")
-    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     def packages = Package.executeQuery("select p from Package as p where p.normname=? and p.status != ?", [norm_pkg_name, status_deleted], [readonly: false])
 
     switch (packages.size()) {
@@ -773,8 +713,6 @@ class IngestKbartRun {
         log.debug("Create new package(${packageName},${norm_pkg_name})")
 
         def newpkgid = null
-
-        def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
         def newpkg = new Package(
             name: packageName,
             normname: norm_pkg_name,
@@ -877,46 +815,19 @@ class IngestKbartRun {
     }
   }
 
-  def handlePlatform(host, protocol, the_source) {
-
-    def result;
-    // def platforms=Platform.findAllByPrimaryUrl(host);
-
+  def handlePlatform(host, protocol) {
+    def result
     def orig_host = host
 
     if (host.startsWith("www.")){
       host = host.substring(4)
     }
 
-    def platforms = Platform.executeQuery("select p from Platform as p where p.primaryUrl like :host", ['host': "%" + host + "%"], [readonly: false])
+    def platforms = Platform.executeQuery("select p from Platform as p where p.primaryUrl like :host or p.name = :host", ['host': "%" + host + "%"], [readonly: false])
 
     switch (platforms.size()) {
       case 0:
-        //no match. create a new platform!
-        log.debug("Create new platform ${host}, ${host}")
-        def newUrl = protocol + "://" + orig_host
-        result = new Platform(name: host, primaryUrl: newUrl)
-
-        // log.debug("Validate new platform");
-        // result.validate();
-
-        if (result) {
-          if (result.save(flush:true, failOnError:true)) {
-            // log.debug("saved new platform: ${result}")
-          } else {
-            // log.error("problem creating platform");
-            for (error in result.errors) {
-              log.error(error)
-            }
-          }
-        }
-        else {
-          result.errors.allErrors.each {
-            log.error("Problem creating platform : ${e}")
-          }
-          throw new RuntimeException('Error creating new platform')
-        }
-        break;
+        log.debug("Unable to reference TIPP URL against existing platforms!")
       case 1:
         //found a match
         result = platforms[0]
@@ -928,8 +839,6 @@ class IngestKbartRun {
     }
 
     assert result != null
-
-    // log.debug("handlePlatform returning ${result}");
     result
   }
 
@@ -1185,11 +1094,7 @@ def cleanUpGorm() {
 
   // Preflight works through a file adding and verifying titles and platforms, and posing questions which need to be resolved
   // before the ingest proper. We record parameters used so that after recording any corrections we can re-process the file.
-  def preflight(kbart_beans,
-                ingest_cfg,
-                source,
-                packageName,
-                providerName) {
+  def preflight(kbart_beans, ingest_cfg) {
     log.debug("preflight")
 
     def result = [:]
@@ -1197,10 +1102,6 @@ def cleanUpGorm() {
     result.stats = [matches: [partial: 0, full: 0], created: 0, conflicts: 0]
     result.passed = true
     result.probcount = 0
-    result.packageName = packageName
-    result.providerName = providerName
-    result.sourceName = source?.name
-    result.sourceId = source?.id
 
     def preflight_counter = 0
 
@@ -1236,7 +1137,7 @@ def cleanUpGorm() {
           }
         }
 
-        log.debug("Preflight [${packageName}:${preflight_counter++}] title:${the_kbart.publication_title} identifiers:${identifiers}")
+        log.debug("Preflight [${pkg.name}:${preflight_counter++}] title:${the_kbart.publication_title} identifiers:${identifiers}")
 
         if (identifiers.size() > 0) {
           def title_lookup_result = titleLookupService.find(
@@ -1269,7 +1170,7 @@ def cleanUpGorm() {
           }
         }
         else {
-          log.warn("${packageName}:${preflight_counter++}] No identifiers. Map:${ingest_cfg.identifierMap}, print_identifier:${the_kbart.print_identifier} online_identifier:${the_kbart.online_identifier}")
+          log.warn("${pkg.name}:${preflight_counter++}] No identifiers. Map:${ingest_cfg.identifierMap}, print_identifier:${the_kbart.print_identifier} online_identifier:${the_kbart.online_identifier}")
         }
       }
     }
