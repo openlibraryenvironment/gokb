@@ -109,8 +109,6 @@ class PlatformController {
     }
     result.result = 'OK'
     result.conflicts = conflicts
-    response.status = 200
-    result.code = 200
     render result as JSON
   }
 
