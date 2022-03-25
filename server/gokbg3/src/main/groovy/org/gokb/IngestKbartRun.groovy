@@ -36,6 +36,7 @@ class IngestKbartRun {
   static PackageService packageService = Holders.grailsApplication.mainContext.getBean('packageService')
   static SpringSecurityService springSecurityService = Holders.grailsApplication.mainContext.getBean('springSecurityService')
   static ComponentUpdateService componentUpdateService = Holders.grailsApplication.mainContext.getBean('componentUpdateService')
+  static CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
   static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
   static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
@@ -64,6 +65,12 @@ class IngestKbartRun {
   def status_retired
   def status_expected
   def datafile_id
+
+  def possible_date_formats = [
+    new SimpleDateFormat('yyyy-MM-dd'),
+    new SimpleDateFormat('yyyy-MM'),
+    new SimpleDateFormat('yyyy')
+  ]
 
   public IngestKbartRun(Package pack,
                         Long datafile,
@@ -101,22 +108,16 @@ class IngestKbartRun {
     status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
     status_expected = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Expected')
 
-    def kbart_cfg = grailsApplication.config.kbart2.mappings.kbart2
-
-    ingest_cfg = [
-      defaultTypeName: kbart_cfg?.defaultTypeName ?: 'org.gokb.cred.JournalInstance',
-      identifierMap: kbart_cfg?.identifierMap ?: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
-      defaultMedium: kbart_cfg?.defaultMedium ?: 'Journal',
-      providerIdentifierNamespace: providerIdentifierNamespace?.value,
+    def ingest_cfg = [
+      defaultTypeName: 'org.gokb.cred.JournalInstance',
+      identifierMap: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
+      defaultMedium: 'Journal',
+      providerIdentifierNamespace: (providerIdentifierNamespace?.value ?: null),
       inconsistent_title_id_behavior: 'reject',
       quoteChar: '"',
-      discriminatorColumn: kbart_cfg?.discriminatorColumn ?: 'publication_type',
-      discriminatorFunction: kbart_cfg?.discriminatorFunction,
-      polymorphicRows: kbart_cfg?.polymorphicRows
-    ]
-
-    if (!ingest_cfg.polymorphicRows) {
-      ingest_cfg.polymorphicRows = [
+      discriminatorColumn: 'publication_type',
+      discriminatorFunction: null,
+      polymorphicRows: [
         'serial':[
           identifierMap: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
           defaultMedium: 'Serial',
@@ -128,7 +129,7 @@ class IngestKbartRun {
           defaultTypeName: 'org.gokb.cred.BookInstance'
         ]
       ]
-    }
+    ]
 
     try {
       log.debug("Initialise start time")
@@ -155,7 +156,7 @@ class IngestKbartRun {
         result.report = [matched: 0, created: 0, retired: 0, invalid: 0]
         long startTime = System.currentTimeMillis()
 
-        log.debug("Ingesting ${ingest_cfg.defaultMedium} ${kbart_beans.size}(cfg:${packageType?.value.toString()}) rows. Package is ${pkg_id}")
+        log.debug("Ingesting ${ingest_cfg.defaultMedium} ${kbart_beans.size} rows. Package is ${pkg.id}")
         //now its converted, ingest it into the database.
 
         for (int x = 0; x < kbart_beans.size; x++) {
@@ -168,7 +169,6 @@ class IngestKbartRun {
 
             if (validateRow(x, badrows, kbart_beans[x])) {
               def line_result = writeToDB(kbart_beans[x],
-                        platformUrl,
                         ingest_date,
                         ingest_systime,
                         ingest_cfg,
@@ -187,11 +187,11 @@ class IngestKbartRun {
           job?.setProgress(x, kbart_beans.size())
 
           if (x % 25 == 0) {
-            cleanUpGorm()
+            cleanupService.cleanUpGorm()
           }
         }
 
-        if (incremental == 'Y') {
+        if (addOnly) {
           log.debug("Incremental -- no expunge")
         }
         else {
@@ -202,7 +202,7 @@ class IngestKbartRun {
               def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
                                'from TitleInstancePackagePlatform as tipp, Combo as c '+
                                'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null and tipp.status = :sc',
-                              [pkg: pkg_id, dt: ingest_systime, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])
+                              [pkg: pkg.id, dt: ingest_systime, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])
 
               q.each { tipp ->
                 result.report.retired++
@@ -314,7 +314,6 @@ class IngestKbartRun {
   }
 
  def writeToDB(the_kbart,
-               platform_url,
                ingest_date,
                ingest_systime,
                ingest_cfg,
@@ -327,10 +326,8 @@ class IngestKbartRun {
     log.debug("TSVINgestionService:writeToDB -- package id is ${pkg.id}")
 
     //first we need a platform:
-    def platform = null // handlePlatform(platform_url.host, source)
+    def platform = null
     def result = null
-
-    log.debug("default platform via default platform URL ${platform_url}, ${platform_url?.class?.name} ${platform_url} title_url:${the_kbart.title_url}")
 
     if (the_kbart.title_url != null) {
       log.debug("Extract host from ${the_kbart.title_url}")
@@ -457,8 +454,8 @@ class IngestKbartRun {
     assert pkg != null && the_platform != null
 
     def result = null
-    def user = User.get(user_id)
-    def group = group_id ? CuratoryGroup.get(group_id) : null
+    TitleInstancePackagePlatform tipp = null
+
     def tipp_map = [
       url: the_kbart.title_url ?: '',
       coverageStatements: [
@@ -501,17 +498,17 @@ class IngestKbartRun {
 
     def match_result = tippService.restLookup(tipp_map)
 
-    if (match_results.full_matches.size() > 0) {
+    if (match_result.full_matches.size() > 0) {
       result = 'matched'
-      tipp = full_matches[0]
+      tipp = match_result.full_matches[0]
       // update Data
       log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
 
-      if (full_matches.size() > 1) {
-        log.debug("multimatch (${full_matches.size()}) for $tipp")
+      if (match_result.full_matches.size() > 1) {
+        log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
         def additionalInfo = [otherComponents: []]
 
-        full_matches.eachWithIndex { ct, idx ->
+        match_result.full_matches.eachWithIndex { ct, idx ->
           if (idx > 0) {
             additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
           }
@@ -526,7 +523,7 @@ class IngestKbartRun {
             null,
             (additionalInfo as JSON).toString(),
             RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
-            group ?: componentLookupService.findCuratoryGroupOfInterest(tipp, user)
+            componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
         )
       }
     }
@@ -578,7 +575,7 @@ class IngestKbartRun {
             null,
             (additionalInfo as JSON).toString(),
             RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
-            componentLookupService.findCuratoryGroupOfInterest(tipp, user)
+            componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
         )
       }
     }
@@ -596,31 +593,33 @@ class IngestKbartRun {
 
         tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
 
-        log.debug("Created TIPP ${tipp} with URL ${tipp?.url}, needs review ..")
+        log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
 
-        def additionalInfo = [otherComponents: []]
+        if (match_result.failed_matches.size() > 0) {
+          def additionalInfo = [otherComponents: []]
 
-        match_result.failed_matches.each { ct ->
-          additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id, uuid: ct.item.uuid, id: ct.item.id, name: ct.item.name, matchResults: ct.matchResults]
+          match_result.failed_matches.each { ct ->
+            additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id, uuid: ct.item.uuid, id: ct.item.id, name: ct.item.name, matchResults: ct.matchResults]
+          }
+
+          // RR für Multimatch generieren
+          reviewRequestService.raise(
+              tipp,
+              "A KBART record has been matched on an existing package title by some identifiers, but not by other important identifiers.",
+              "Check the package titles and merge them if necessary.",
+              user,
+              null,
+              (additionalInfo as JSON).toString(),
+              RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
+              componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
+          )
         }
-
-        // RR für Multimatch generieren
-        reviewRequestService.raise(
-            tipp,
-            "A KBART record has been matched on an existing package title by some identifiers ({0}), but not by other important identifiers ({1}).",
-            "Check the package titles and merge them if necessary.",
-            user,
-            null,
-            (additionalInfo as JSON).toString(),
-            RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
-            componentLookupService.findCuratoryGroupOfInterest(tipp, user)
-        )
       }
     }
 
     if (!dryRun) {
-      tippService.updateCoverage(tipp, tipp_values)
-      tippService.updateSimpleFields(tipp, tipp_values, user)
+      checkCoverage(tipp, tipp_map, (result == 'created'))
+      tippService.updateSimpleFields(tipp, tipp_map, true, user)
 
       // log.debug("Values updated, set lastSeen");
 
@@ -639,13 +638,73 @@ class IngestKbartRun {
       addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.')
 
       // Match title
-      tippService.matchTitle(tipp, group)
+      tippService.matchTitle(tipp, activeGroup)
 
       log.debug("manualUpsertTIPP returning")
       tipp.save(flush: true)
     }
 
     result
+  }
+
+  def checkCoverage(tipp, tippInfo, created) {
+    if (!matched_tipps[tipp.id]) {
+      matched_tipps[tipp.id] = 1
+
+      if (!created) {
+        TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = ?", [tipp])
+        tipp.refresh()
+      }
+    }
+    else {
+      matched_tipps[tipp.id]++
+    }
+
+    def cov_list = tippInfo.coverageStatements ?: tippInfo.coverage
+
+    cov_list.each { c ->
+      def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+      def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+      def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      def cov_depth = null
+
+      log.debug("StartDate: ${parsedStart} -> ${startAsDate}, EndDate: ${parsedEnd} -> ${endAsDate}")
+
+      if (c.coverageDepth instanceof String) {
+        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
+      }
+      else if (c.coverageDepth instanceof Integer) {
+        cov_depth = RefdataValue.get(c.coverageDepth)
+      }
+      else if (c.coverageDepth instanceof Map) {
+        if (c.coverageDepth.id) {
+          cov_depth = RefdataValue.get(c.coverageDepth.id)
+        }
+        else {
+          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
+        }
+      }
+
+      if (!cov_depth) {
+        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+      }
+
+      def coverage_item = [
+        'startVolume': c.startVolume,
+        'startIssue': c.startIssue,
+        'endVolume': c.endVolume,
+        'endIssue': c.endIssue,
+        'embargo': c.embargo,
+        'coverageDepth': cov_depth,
+        'coverageNote': c.coverageNote,
+        'startDate': startAsDate,
+        'endDate': endAsDate
+      ]
+
+      tipp.addToCoverageStatements(coverage_item)
+      tipp.save(flush:true)
+    }
   }
 
   def setTypedProperties(tipp, props, field, regex, type) {
@@ -927,17 +986,6 @@ class IngestKbartRun {
       rownum++
     }
     results
-  }
-
-def cleanUpGorm() {
-    // log.debug("Clean up GORM");
-
-    // Get the current session.
-    def session = sessionFactory.currentSession
-
-    // flush and clear the session.
-    session.flush()
-    session.clear()
   }
 
   def makeBadFile() {

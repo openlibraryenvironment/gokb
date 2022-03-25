@@ -69,7 +69,7 @@ class TSVIngestionService {
                     Job job = null) {
     if (!job) {
       Package.withSession {
-        UpdatePkgTippsRun myRun = new UpdatePkgTippsRun(pkg,
+        IngestKbartRun myRun = new IngestKbartRun(pkg,
                                                         datafile_id,
                                                         title_id_ns,
                                                         source_update,
@@ -77,11 +77,11 @@ class TSVIngestionService {
                                                         request_user,
                                                         active_group,
                                                         dry_run)
-        return myRun.work(job)
+        return myRun.start(job)
       }
     }
     Package.withNewSession {
-      UpdatePkgTippsRun myRun = new UpdatePkgTippsRun(pkg,
+      IngestKbartRun myRun = new IngestKbartRun(pkg,
                                                       datafile_id,
                                                       title_id_ns,
                                                       source_update,
@@ -89,7 +89,7 @@ class TSVIngestionService {
                                                       request_user,
                                                       active_group,
                                                       dry_run)
-      return myRun.work(job)
+      return myRun.start(job)
     }
   }
 

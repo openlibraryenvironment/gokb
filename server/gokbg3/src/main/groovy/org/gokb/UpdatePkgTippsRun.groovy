@@ -608,7 +608,7 @@ class UpdatePkgTippsRun {
         }
 
         if (tipp) {
-          tippService.updateSimpleFields(tipp, tippJson, fullsync, user)
+          tippService.updateSimpleFields(tipp, tippJson, true, user)
 
           if (!matched_tipps[tipp.id]) {
             matched_tipps[tipp.id] = 1

@@ -848,8 +848,8 @@ class PackageController {
       if (new_datafile_id) {
         Job background_job = concurrencyManagerService.createJob { Job job ->
           TSVIngestionService.updatePackage(pkg,
-                                            datafile_id,
-                                            title_id_ns,
+                                            new_datafile_id,
+                                            title_ns,
                                             false,
                                             add_only,
                                             user,

@@ -143,23 +143,27 @@ class TitleAugmentService {
               )
             }
             else {
-              log.debug("Adding new ZDB-ID ${new_id}")
-              new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
+              if (num_existing_zdb_ids == 0) {
+                log.debug("Adding new ZDB-ID ${new_id}")
+                new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
 
-              titleInstance.tipps.each {
-                it.lastSeen = new Date().getTime()
-                it.save()
+                titleInstance.tipps.each {
+                  it.lastSeen = new Date().getTime()
+                  it.save()
+                }
+
+                existing_noresults.each {
+                  it.status = status_closed
+                  it.save()
+                }
+
+                existing_multiple.each {
+                  it.status = status_closed
+                  it.save()
+                }
               }
 
-              existing_noresults.each {
-                it.status = status_closed
-                it.save()
-              }
-
-              existing_multiple.each {
-                it.status = status_closed
-                it.save()
-              }
+              setNewTitleInfo(titleInstance, name_candidates[0])
             }
           }
           else {
