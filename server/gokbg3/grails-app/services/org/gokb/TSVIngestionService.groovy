@@ -67,19 +67,6 @@ class TSVIngestionService {
                     def active_group,
                     boolean dry_run,
                     Job job = null) {
-    if (!job) {
-      Package.withSession {
-        IngestKbartRun myRun = new IngestKbartRun(pkg,
-                                                        datafile_id,
-                                                        title_id_ns,
-                                                        source_update,
-                                                        incremental,
-                                                        request_user,
-                                                        active_group,
-                                                        dry_run)
-        return myRun.start(job)
-      }
-    }
     Package.withNewSession {
       IngestKbartRun myRun = new IngestKbartRun(pkg,
                                                       datafile_id,

@@ -195,7 +195,7 @@ class IngestKbartRun {
           log.debug("Incremental -- no expunge")
         }
         else {
-          log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${packageName}")
+          log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
           TitleInstancePackagePlatform.withTransaction {
             try {
               // Find all tipps in this package which have a lastSeen before the ingest date
@@ -247,22 +247,20 @@ class IngestKbartRun {
         job.message("Processing Complete : numRows:${kbart_beans.size()}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
 
         if (!dryRun) {
-          Package.withTransaction {
-            try {
-              def update_agent = User.findByUsername('IngestAgent')
-              // insertBenchmark updateBenchmark
-              def p = Package.lock(pkg.id)
+          try {
+            def update_agent = User.findByUsername('IngestAgent')
+            // insertBenchmark updateBenchmark
+            def p = Package.lock(pkg.id)
 
-              if ( p.insertBenchmark == null )
-                p.insertBenchmark = processing_elapsed
-              p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
-              p.lastUpdatedBy = update_agent
-              p.updateBenchmark = processing_elapsed
-              p.save(flush: true, failOnError: true)
-            }
-            catch (Exception e) {
-              log.warn("Problem updating package stats", e)
-            }
+            if ( p.insertBenchmark == null )
+              p.insertBenchmark = processing_elapsed
+            p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
+            p.lastUpdatedBy = update_agent
+            p.updateBenchmark = processing_elapsed
+            p.save(flush: true, failOnError: true)
+          }
+          catch (Exception e) {
+            log.warn("Problem updating package stats", e)
           }
         }
       }
@@ -287,23 +285,21 @@ class IngestKbartRun {
     job?.setProgress(100)
     job.endTime = new Date()
 
-    JobResult.withTransaction {
-      def result_object = JobResult.findByUuid(job?.uuid)
-      if (!result_object) {
-        def job_map = [
-            uuid        : (job?.uuid),
-            description : (job?.description),
-            resultObject: (result as JSON).toString(),
-            type        : (job?.type),
-            statusText  : (result.result),
-            ownerId     : (job?.ownerId),
-            groupId     : (job?.groupId),
-            startTime   : (job?.startTime),
-            endTime     : (job?.endTime),
-            linkedItemId: (job?.linkedItem?.id)
-        ]
-        new JobResult(job_map).save(flush: true, failOnError: true)
-      }
+    def result_object = JobResult.findByUuid(job?.uuid)
+    if (!result_object) {
+      def job_map = [
+          uuid        : (job?.uuid),
+          description : (job?.description),
+          resultObject: (result as JSON).toString(),
+          type        : (job?.type),
+          statusText  : (result.result),
+          ownerId     : (job?.ownerId),
+          groupId     : (job?.groupId),
+          startTime   : (job?.startTime),
+          endTime     : (job?.endTime),
+          linkedItemId: (job?.linkedItem?.id)
+      ]
+      new JobResult(job_map).save(flush: true, failOnError: true)
     }
 
     def elapsed = System.currentTimeMillis() - start_time
@@ -757,123 +753,6 @@ class IngestKbartRun {
     return result
   }
 
-  //this is a lot more complex than this for journals. (which uses refine)
-  //theres no notion in here of retiring packages for example.
-  //for this v1, I've made this very simple - probably too simple.
-  def handlePackage(packageName, source, providerName, other_params) {
-    def result
-    def norm_pkg_name = KBComponent.generateNormname(packageName)
-    log.debug("Attempt package match by normalised name: ${norm_pkg_name}")
-    def packages = Package.executeQuery("select p from Package as p where p.normname=? and p.status != ?", [norm_pkg_name, status_deleted], [readonly: false])
-
-    switch (packages.size()) {
-      case 0:
-        //no match. create a new package!
-        log.debug("Create new package(${packageName},${norm_pkg_name})")
-
-        def newpkgid = null
-        def newpkg = new Package(
-            name: packageName,
-            normname: norm_pkg_name,
-            source: source,
-            status: status_current,
-            description: other_params?.description
-        )
-
-        if (newpkg.save(flush: true, failOnError: true)) {
-          newpkgid = newpkg.id
-
-          if (providerName && providerName.length() > 0) {
-            def norm_provider_name = KBComponent.generateNormname(providerName)
-            def provider = null;
-            def providers = org.gokb.cred.Org.findAllByNormname(norm_provider_name)
-
-            if (providers.size() == 0)
-              provider = new Org(name: providerName, normname: norm_provider_name).save(flush: true, failOnError: true)
-            else if (providers.size() == 1)
-              provider = providers[0]
-            else
-              log.error("Multiple orgs with name ${providerName}/${norm_provider_name} -- unable to set package provider")
-
-            newpkg.provider = provider
-            newpkg.save()
-          }
-        } else {
-          for (error in result.errors) {
-            log.error(error)
-          }
-        }
-
-
-        log.debug("Created new package : ${newpkgid} in current session")
-        result = Package.get(newpkgid)
-        break;
-      case 1:
-        //found a match
-        result=packages[0]
-        log.debug("match package found: ${result}")
-        // See if any properties have changed.
-        if (other_params?.description && !result.description == other_params.description) {
-          result.description = other_params.description
-          result.save(flush: true, failOnError: true)
-        }
-        break
-      default:
-        log.error("found multiple packages when looking for ${packageName}")
-        break
-    }
-
-    // The request can now have additional package level properties that we need to process.
-    // other_params can contain 'pkg.' properties.
-    handlePackageProperties(result, other_params)
-
-    log.debug("handlePackage returns ${result}")
-    result
-  }
-
-  def handlePackageProperties(pkg, props) {
-    def package_changed = false
-
-    packageProperties.each { pp ->
-      // consider See if pp.regex matches any of the properties
-      props?.keySet().grep(pp.regex).each { prop ->
-        log.debug("Property ${prop} matched config ${pp}")
-
-        switch (pp.type) {
-          case 'typeValueFunction':
-            // The property has a subtype eg price.list which should be mapped in a special way
-            def propname_groups = prop =~ pp.regex
-            def propname = propname_groups[0][2]
-            def proptype = propname_groups[0][4]
-            log.debug("Call getter object.${propname}(${proptype}) - value is ${props[prop]}")
-            // If the value returned by the getter is not the same as the value we have, update
-            def current_value = pkg."get${pp.prop}"(proptype)
-            log.debug("current_value of ${prop} = ${current_value}")
-
-            // If we don't currently have a value OR we have a value which is not the same as the one supplied
-            if ((current_value == null && props[prop]?.trim()) || !current_value.equals(props[prop])) {
-              log.debug("${current_value} != ${props[prop]} so set ${pp.prop}")
-              pkg."set${pp.prop}"(proptype, props[prop].trim())
-              package_changed = true
-            }
-
-            break
-          case 'simpleProperty':
-            // A simple scalar property
-            pkg[pp.prop] = props[prop]
-            break
-          default:
-            log.warn("Unhandled package property type ${pp.type} : ${pp}")
-            break
-        }
-      }
-    }
-
-    if (package_changed) {
-      pkg.save(flush: true, failOnError: true)
-    }
-  }
-
   def handlePlatform(host, protocol) {
     def result
     def orig_host = host
@@ -1158,7 +1037,7 @@ class IngestKbartRun {
 
       def row_specific_cfg = getRowSpecificCfg(ingest_cfg, the_kbart)
 
-      TitleInstance.withNewTransaction {
+      TitleInstance.withNewSession {
 
         def identifiers = []
 
