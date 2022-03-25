@@ -283,9 +283,10 @@ class IngestKbartRun {
     }
 
     job?.setProgress(100)
-    job.endTime = new Date()
+    job?.endTime = new Date()
 
     def result_object = JobResult.findByUuid(job?.uuid)
+
     if (!result_object) {
       def job_map = [
           uuid        : (job?.uuid),
@@ -309,7 +310,7 @@ class IngestKbartRun {
     result
   }
 
- def writeToDB(the_kbart,
+  def writeToDB(the_kbart,
                ingest_date,
                ingest_systime,
                ingest_cfg,

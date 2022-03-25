@@ -1564,11 +1564,11 @@ class PackageService {
   def synchronized updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
     log.debug("updateFromSource")
     def result = null
-    boolean started = false
+
     if (running == false) {
       running = true
       log.debug("UpdateFromSource started")
-      result = startSourceUpdate(p, user, job, activeGroup) ? 'OK' : 'ERROR'
+      result = startSourceUpdate(p, user, job, activeGroup)
       running = false
     }
     else {
@@ -1578,7 +1578,7 @@ class PackageService {
     result
   }
 
-  private boolean startSourceUpdate(Package pkg, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
+  private def startSourceUpdate(Package pkg, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
     log.debug("Source update start..")
     def result = [result: 'OK']
 
@@ -1587,7 +1587,7 @@ class PackageService {
       def datafile_id = null
       def platform_url = p.nominalPlatform.primaryUrl
       def pkg_source = p.source
-      def preferred_group = activeGroup ?: (p.curatoryGroups?.size() > 0 ? p.curatoryGroups[0] : null)
+      def preferred_group = activeGroup ?: (p.curatoryGroups?.size() > 0 ? CuratoryGroup.deproxy(p.curatoryGroups[0]) : null)
       def title_ns = pkg_source.targetNamespace ?: (p.provider?.titleNamespace ?: null)
 
       if (pkg_source?.url) {
@@ -1729,21 +1729,32 @@ class PackageService {
             }
 
             if (datafile_id) {
-              result = TSVIngestionService.ingest2(
-                                            'kbart2',
-                                            p.name,
-                                            platform_url,
-                                            pkg_source,
-                                            datafile_id,
-                                            job,
-                                            null,
-                                            title_ns,
-                                            null,
-                                            null,
-                                            'N',
-                                            null,
-                                            null,
-                                            preferred_group?.id ?: null)
+              if (job) {
+                result = TSVIngestionService.updatePackage(pkg,
+                                                  datafile_id,
+                                                  title_ns,
+                                                  true,
+                                                  false,
+                                                  user,
+                                                  activeGroup,
+                                                  false,
+                                                  job)
+              }
+              else {
+                Job update_job = ConcurrencyManagerService.createJob { Job j ->
+                  TSVIngestionService.updatePackage(pkg,
+                                                    datafile_id,
+                                                    title_ns,
+                                                    true,
+                                                    false,
+                                                    user,
+                                                    activeGroup,
+                                                    false,
+                                                    j)
+                }
+                update_job.startOrQueue()
+                result = update_job.get()
+              }
             }
             else {
               log.debug("Unable to reference DataFile!")
@@ -1768,7 +1779,7 @@ class PackageService {
       }
     }
 
-    return result
+    result
   }
 
   private def fetchKbartFile(File tmp_file, URL src_url) {
@@ -2005,7 +2016,7 @@ class PackageService {
 
   def synchronized cachePackageXml(boolean force = false) {
     def result = null
-    boolean started = false
+
     if (activeCaching == false) {
       activeCaching = true
       log.debug("CachePackageXml started ..")

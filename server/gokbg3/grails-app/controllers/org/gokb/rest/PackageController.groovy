@@ -891,20 +891,20 @@ class PackageController {
   }
 
   @Transactional
-  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'GET')
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   def triggerSourceUpdate() {
     def result = ['result': 'OK']
-    def active_group = params.int('activeGroup')
+    def active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
     def async = params.boolean('async') ?: true
     Package pkg = Package.get(params.id)
     def user = User.get(springSecurityService.principal.id)
 
     if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
-        result = packageService.startSourceUpdate(pkg, user, job)
+        packageService.startSourceUpdate(pkg, user, job, active_group)
       }
 
-      background_job.groupId = active_group
+      background_job.groupId = active_group.id
       background_job.ownerId = user?.id ?: null
       background_job.description = "KBART Source ingest (${pkg.name})".toString()
       background_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')

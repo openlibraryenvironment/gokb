@@ -67,7 +67,9 @@ class TSVIngestionService {
                     def active_group,
                     boolean dry_run,
                     Job job = null) {
-    Package.withNewSession {
+    def session = sessionFactory.currentSession
+
+    if (session) {
       IngestKbartRun myRun = new IngestKbartRun(pkg,
                                                       datafile_id,
                                                       title_id_ns,
@@ -77,6 +79,19 @@ class TSVIngestionService {
                                                       active_group,
                                                       dry_run)
       return myRun.start(job)
+    }
+    else {
+      Package.withNewSession {
+        IngestKbartRun myRun = new IngestKbartRun(pkg,
+                                                        datafile_id,
+                                                        title_id_ns,
+                                                        source_update,
+                                                        incremental,
+                                                        request_user,
+                                                        active_group,
+                                                        dry_run)
+        return myRun.start(job)
+      }
     }
   }
 

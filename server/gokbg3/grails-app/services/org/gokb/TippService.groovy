@@ -238,7 +238,7 @@ class TippService {
     def pkg = Package.executeQuery("from Package as pkg where exists (select 1 from Combo where fromComponent = pkg and toComponent = :tipp)", [tipp: tipp])[0]
 
     if (!group) {
-      group = pkg.curatoryGroups[0]
+      group = CuratoryGroup.deproxy(pkg.curatoryGroups[0])
     }
 
     // remap Identifiers
