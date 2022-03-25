@@ -276,8 +276,8 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getComponentJobs(def kbc_id, int max = 10, int offset = 0) {
-    return getFilteredJobs("linkedItem", kbc_id, max, offset)
+  public Map getComponentJobs(def kbc_id, int max = 10, int offset = 0, boolean showFinished) {
+    return getFilteredJobs("linkedItem", kbc_id, max, offset, showFinished)
   }
 
   /**
@@ -287,8 +287,8 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getUserJobs(long user_id, int max = 10, int offset = 0) {
-    return getFilteredJobs("ownerId", user_id, max, offset)
+  public Map getUserJobs(long user_id, int max = 10, int offset = 0, boolean showFinished) {
+    return getFilteredJobs("ownerId", user_id, max, offset, showFinished)
   }
 
   /**
@@ -298,8 +298,8 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getGroupJobs(long group_id, int max = 10, int offset = 0) {
-    return getFilteredJobs("groupId", group_id, max, offset)
+  public Map getGroupJobs(long group_id, int max = 10, int offset = 0, boolean showFinished) {
+    return getFilteredJobs("groupId", group_id, max, offset, showFinished)
   }
 
 /**
@@ -310,7 +310,7 @@ class ConcurrencyManagerService {
  * @param offset
  * @return List of Jobs
  */
-  private Map getFilteredJobs(String propertyName, long id, int max = 10, int offset = 0) {
+  private Map getFilteredJobs(String propertyName, long id, int max = 10, int offset = 0, boolean showFinished = false) {
     def allJobs = getJobs()
     def selected = []
     def result = [:]
@@ -324,7 +324,7 @@ class ConcurrencyManagerService {
 
     // Filter the jobs.
     allJobs.each { k, v ->
-      if (v.hasProperty(propertyName))
+      if (v.hasProperty(propertyName) && (showFinished || !v.isDone()))
         if ((Integer.isInstance(v[propertyName]) && v[propertyName] == id) ||
             (Map.isInstance(v[propertyName]) && v[propertyName].id == id)) {
           CuratoryGroup cg = CuratoryGroup.get(v.groupId)

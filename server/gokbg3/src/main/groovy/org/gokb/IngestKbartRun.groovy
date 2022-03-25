@@ -153,7 +153,13 @@ class IngestKbartRun {
 
       if (result.preflight.passed) {
         log.debug("Passed preflight -- ingest")
-        result.report = [matched: 0, created: 0, retired: 0, invalid: 0]
+        int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
+                                'from TitleInstancePackagePlatform as tipp, Combo as c '+
+                                'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
+                              [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
+
+        result.report = [matched: 0, created: 0, retired: 0, invalid: 0, previous: old_tipp_count]
+
         long startTime = System.currentTimeMillis()
 
         log.debug("Ingesting ${ingest_cfg.defaultMedium} ${kbart_beans.size} rows. Package is ${pkg.id}")
@@ -196,22 +202,27 @@ class IngestKbartRun {
         }
         else {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
-          TitleInstancePackagePlatform.withTransaction {
+          if (!dryRun) {
             try {
               // Find all tipps in this package which have a lastSeen before the ingest date
-              def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
-                               'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                               'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null and tipp.status = :sc',
-                              [pkg: pkg.id, dt: ingest_systime, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])
+              boolean moreToRetire = true
 
-              q.each { tipp ->
-                result.report.retired++
-                log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}")
+              while (moreToRetire) {
+                def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
+                                  'from TitleInstancePackagePlatform as tipp, Combo as c '+
+                                  'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.status = :sc',
+                                [pkg: pkg.id, dt: ingest_systime, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])
 
-                if (!dryRun) {
+                q.each { tipp ->
+                  log.debug("Retire missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}")
+                  result.report.retired++
                   ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(ingest_date), tipp, 'accessEndDate')
                   tipp.retire()
                   tipp.save(failOnError: true, flush: true)
+                }
+
+                if (q.size() == 0) {
+                  moreToRetire = false
                 }
               }
               log.debug("Completed tipp cleanup")
@@ -243,7 +254,6 @@ class IngestKbartRun {
         result.report.averagePerRow = average_milliseconds_per_row
         result.report.averagePerHour = average_per_hour
         result.report.elapsed = processing_elapsed
-        result.messages.add("Processing Complete : numRows:${kbart_beans.size()}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
         job.message("Processing Complete : numRows:${kbart_beans.size()}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
 
         if (!dryRun) {

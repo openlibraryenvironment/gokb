@@ -111,6 +111,7 @@ class ProfileController {
     def base = grailsApplication.config.serverURL + "/rest"
     def sort = params._sort ?: null
     def order = params._order ?: null
+    def showFinished = params.boolean('showFinished') ?: false
     User user = User.get(springSecurityService.principal.id)
     def errors = [:]
 
@@ -141,7 +142,7 @@ class ProfileController {
       ]
     }
     else {
-      result = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+      result = concurrencyManagerService.getUserJobs(user.id as int, max, offset, showFinished)
     }
 
     render result as JSON
