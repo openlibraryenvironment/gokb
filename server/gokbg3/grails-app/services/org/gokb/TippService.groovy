@@ -179,27 +179,18 @@ class TippService {
     def more = true
     int offset = 0
     CuratoryGroup group = job?.groupId ? CuratoryGroup.get(job?.groupId) : null
-    def total = TitleInstancePackagePlatform.executeQuery(
-      'select count(tipp.id) from TitleInstancePackagePlatform as tipp , Combo as c1 ' +
-          'where c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 ' +
-          'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2)',
-      [
-        pkg : aPackage,
-        rdv1: RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
-        rdv2: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
-      ]
-    )[0]
 
     def tippIDs = TitleInstancePackagePlatform.executeQuery(
-      'select tipp.id from TitleInstancePackagePlatform as tipp , Combo as c1 ' +
-          'where c1.fromComponent=:pkg and c1.toComponent=tipp and c1.type=:rdv1 ' +
-          'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:rdv2)',
+      'select tipp.id from TitleInstancePackagePlatform as tipp where exists (' +
+          'from Combo as c1 where c1.fromComponent=:pkg and c1.toComponent=tipp) ' +
+          'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:ctt)',
       [
           pkg : aPackage,
-          rdv1: RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
-          rdv2: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
+          ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
       ]
     )
+
+    int total = tippIDs.size()
 
     while (tippIDs.size() > 0) {
       def batchSize = tippIDs.size() > 50 ? 50 : tippIDs.size()
@@ -217,17 +208,20 @@ class TippService {
       session.clear()
 
       if (job) {
-        job.setProgress((total + offset), total*2)
+        job.setProgress(offset, total)
       }
 
 
       if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
+        job?.message("Job cancelled!")
         log.debug("cancelling package title matching for job #${job?.uuid}")
         more = false
         break
       }
+
     }
-    log.debug("Finished title matching for ${offset} Titles")
+    job?.message("Finished package title matching.")
+    log.debug("Finished title matching for ${total} Titles")
   }
 
   def matchTitle(tipp, CuratoryGroup group = null) {

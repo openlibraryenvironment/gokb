@@ -3,7 +3,6 @@ package org.gokb
 import au.com.bytecode.opencsv.CSVReader
 
 import com.k_int.ClassUtils
-import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ESSearchService
 
 import gokbg3.DateFormatService
@@ -40,6 +39,7 @@ class IngestKbartRun {
   static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
   static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
+  static def concurrencyManagerService = Holders.grailsApplication.mainContext.getBean('concurrencyManagerService')
   static TippService tippService = Holders.grailsApplication.mainContext.getBean('tippService')
   static DateFormatService dateFormatService = Holders.grailsApplication.mainContext.getBean('dateFormatService')
 
@@ -56,7 +56,7 @@ class IngestKbartRun {
   CuratoryGroup activeGroup
   def pkg_validation
   def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
-  Job job = null
+  def job = null
   IdentifierNamespace providerIdentifierNamespace
   Long ingest_systime
 
@@ -90,7 +90,7 @@ class IngestKbartRun {
     providerIdentifierNamespace = titleIdNamespace
   }
 
-  def start(Job nJob) {
+  def start(nJob) {
     job = nJob ?: job
     log.debug("ingest2...")
     def result = [result: 'OK', dryRun: dryRun]
@@ -260,7 +260,7 @@ class IngestKbartRun {
           try {
             def update_agent = User.findByUsername('IngestAgent')
             // insertBenchmark updateBenchmark
-            def p = Package.lock(pkg.id)
+            def p = Package.get(pkg.id)
 
             if ( p.insertBenchmark == null )
               p.insertBenchmark = processing_elapsed
@@ -268,6 +268,21 @@ class IngestKbartRun {
             p.lastUpdatedBy = update_agent
             p.updateBenchmark = processing_elapsed
             p.save(flush: true, failOnError: true)
+
+            def matching_job = concurrencyManagerService.createJob { mjob ->
+              Package.withNewSession {
+                tippService.matchPackage(p, mjob)
+                mjob.endTime = new Date()
+              }
+            }
+
+            matching_job.description = "Package Title Matching".toString()
+            matching_job.type = RefdataCategory.lookup('Job.Type', '')
+            matching_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
+            matching_job.message("Starting title match for Package ${p.name}".toString())
+            matching_job.startOrQueue()
+            matching_job.startTime = new Date()
+            result.matchingJob = matching_job.uuid
           }
           catch (Exception e) {
             log.warn("Problem updating package stats", e)
@@ -643,9 +658,6 @@ class IngestKbartRun {
 
       addCustprops(tipp, the_kbart, 'tipp.custprops.')
       addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.')
-
-      // Match title
-      tippService.matchTitle(tipp, activeGroup)
 
       log.debug("manualUpsertTIPP returning")
       tipp.save(flush: true)
