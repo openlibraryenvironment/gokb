@@ -282,7 +282,13 @@ class IngestKbartRun {
             matching_job.message("Starting title match for Package ${p.name}".toString())
             matching_job.startOrQueue()
             matching_job.startTime = new Date()
-            result.matchingJob = matching_job.uuid
+
+            if (autoUpdate) {
+              matching_job.get()
+            }
+            else {
+              result.matchingJob = matching_job.uuid
+            }
           }
           catch (Exception e) {
             log.warn("Problem updating package stats", e)
