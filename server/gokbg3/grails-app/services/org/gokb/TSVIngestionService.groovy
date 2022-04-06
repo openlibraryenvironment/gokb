@@ -59,9 +59,9 @@ class TSVIngestionService {
   def tipp_properties_to_ignore_when_updating = ['accessStartDate']
 
   def updatePackage(Package pkg,
-                    Long datafile_id,
+                    DataFile datafile,
                     IdentifierNamespace title_id_ns,
-                    boolean source_update,
+                    boolean async,
                     boolean incremental,
                     def request_user,
                     def active_group,
@@ -71,25 +71,25 @@ class TSVIngestionService {
 
     if (session) {
       IngestKbartRun myRun = new IngestKbartRun(pkg,
-                                                      datafile_id,
-                                                      title_id_ns,
-                                                      source_update,
-                                                      incremental,
-                                                      request_user,
-                                                      active_group,
-                                                      dry_run)
+                                                datafile,
+                                                title_id_ns,
+                                                async,
+                                                incremental,
+                                                request_user,
+                                                active_group,
+                                                dry_run)
       return myRun.start(job)
     }
     else {
       Package.withNewSession {
         IngestKbartRun myRun = new IngestKbartRun(pkg,
-                                                        datafile_id,
-                                                        title_id_ns,
-                                                        source_update,
-                                                        incremental,
-                                                        request_user,
-                                                        active_group,
-                                                        dry_run)
+                                                  datafile,
+                                                  title_id_ns,
+                                                  async,
+                                                  incremental,
+                                                  request_user,
+                                                  active_group,
+                                                  dry_run)
         return myRun.start(job)
       }
     }

@@ -580,9 +580,14 @@ class TippService {
     }
   }
 
-  def priorityMatch(def current_tipps, tippInfo) {
-    def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
-    def result = [full_matches: [], partial_matches: [:], failed_matches: []]
+  def crossCheckIds(def current_tipps, tippInfo) {
+    def namespaces = [
+      serial: ['zdb', 'eissn', 'issn'],
+      monograph: ['isbn', 'doi', 'pisbn']
+    ]
+    def typeString = tippInfo.publicationType ?: tippInfo.type
+
+    def result = [full_matches: [], failed_matches: []]
 
     def jsonIdMap = [:]
     tippInfo.identifiers.each { jsonId ->
@@ -597,33 +602,26 @@ class TippService {
     current_tipps.each { ctipp ->
       def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = :tipp and toComponent = i)", [tipp: ctipp]).collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
       log.debug("Checking against existing IDs: ${tipp_ids}")
-      def unmatched_namespaces = []
-      def tipp_id_match_results = [:]
-      int mismatch_prio = -1
-      boolean priority_match = false
+      def tipp_id_match_results = []
+      boolean has_conflicts = false
 
       if (tippInfo.titleId == ctipp.importId) {
         tipp_id_match_results << [namespace: 'title_id', value: tippInfo.titleId, match: 'OK']
       }
 
-      priority_list.eachWithIndex { plns, idx ->
-        if (jsonIdMap[plns]) {
+      namespaces[typeString.toLowerCase()].eachWithIndex { plns, idx ->
+        if (jsonIdMap[plns] != null) {
+          log.debug("Check incoming id: ${jsonIdMap[plns]}")
           boolean unmatched = true
 
           tipp_ids.each { tid ->
             if (tid.type == plns) {
               if (Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname) {
                 tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'FAIL']
-
-                if (mismatch_prio < 0) {
-                  mismatch_prio = idx // Set highest priority value of mismatches
-                }
+                has_conflicts = true
               }
               else {
                 tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'OK']
-                if (mismatch_prio < 0) {
-                  priority_match = true // Namespace with highest priority matched
-                }
               }
             }
             unmatched = false
@@ -635,18 +633,9 @@ class TippService {
         }
       }
 
-      if (mismatch_prio >= 0) {
-        if (priority_match) {
-          log.debug("Matched by priority ${mismatch_prio} with partial mismatches")
-          if (!result.partial_matches[mismatch_prio])
-            result.partial_matches[mismatch_prio] = []
-
-          result.partial_matches[mismatch_prio] << [item: ctipp, matchResults: tipp_id_match_results]
-        }
-        else {
-          log.debug("Failed Match for current ${ctipp}!")
-          result.failed_matches << [item: ctipp, matchResults: tipp_id_match_results]
-        }
+      if (has_conflicts) {
+        log.debug("Failed Match for current ${ctipp}!")
+        result.failed_matches << [item: ctipp, matchResults: tipp_id_match_results]
       }
       else {
         log.debug("Full match for ${ctipp}")
@@ -751,7 +740,7 @@ class TippService {
             log.debug("found by monograph identifier set")
           }
           else {
-            log.debug("No results for journal identifiers!")
+            log.debug("No results for monograph identifiers!")
           }
         }
       }
@@ -759,7 +748,7 @@ class TippService {
         log.debug("Got titleId matches: ${tipps}")
       }
 
-      result = priorityMatch(tipps, tippInfo)
+      result = crossCheckIds(tipps, tippInfo)
     }
     else {
       log.error("restLookup :: Missing package/platform info!")
@@ -803,5 +792,53 @@ class TippService {
     ClassUtils.setRefdataIfPresent(tippInfo.publicationType, tipp, 'publicationType')
     tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippInfo.publicationType ?: tippInfo.type ?: tipp.publicationType.value)
     tipp.save(flush:true)
+  }
+
+  public void checkCoverage(tipp, tippInfo, created) {
+    def cov_list = tippInfo.coverageStatements ?: tippInfo.coverage
+
+    cov_list.each { c ->
+      def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+      def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+      def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      def cov_depth = null
+
+      log.debug("StartDate: ${parsedStart} -> ${startAsDate}, EndDate: ${parsedEnd} -> ${endAsDate}")
+
+      if (c.coverageDepth instanceof String) {
+        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
+      }
+      else if (c.coverageDepth instanceof Integer) {
+        cov_depth = RefdataValue.get(c.coverageDepth)
+      }
+      else if (c.coverageDepth instanceof Map) {
+        if (c.coverageDepth.id) {
+          cov_depth = RefdataValue.get(c.coverageDepth.id)
+        }
+        else {
+          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
+        }
+      }
+
+      if (!cov_depth) {
+        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+      }
+
+      def coverage_item = [
+        'startVolume': c.startVolume,
+        'startIssue': c.startIssue,
+        'endVolume': c.endVolume,
+        'endIssue': c.endIssue,
+        'embargo': c.embargo,
+        'coverageDepth': cov_depth,
+        'coverageNote': c.coverageNote,
+        'startDate': startAsDate,
+        'endDate': endAsDate
+      ]
+
+      tipp.addToCoverageStatements(coverage_item)
+      tipp.save(flush:true)
+    }
   }
 }

@@ -38,10 +38,10 @@ class UpdatePackageRunSpec extends Specification {
     def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush: true)
     def test_upd_pkg = Package.findByName('TestPackage') ?: new Package(name: 'TestPackage').save(flush: true)
     def test_journal = JournalInstance.findByName('TestJournal') ?: new JournalInstance(name: 'TestJournal').save(flush: true)
-    Identifier book_doi = new Identifier(value: '10.1021/978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('doi'))
-    Identifier book_isbn = new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn'))
-    Identifier serial_issn = new Identifier(value: '9783-442X', namespace: IdentifierNamespace.findByValue('issn'))
-    Identifier serial_eissn = new Identifier(value: '9783-4420', namespace: IdentifierNamespace.findByValue('eissn'))
+    Identifier book_doi = Identifier.findByValueAndNamespace('10.1021/978-3-16-148410-0', IdentifierNamespace.findByValue('doi')) ?: new Identifier(value: '10.1021/978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('doi'))
+    Identifier book_isbn = Identifier.findByValueAndNamespace('978-3-16-148410-0', IdentifierNamespace.findByValue('isbn')) ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn'))
+    Identifier serial_issn = Identifier.findByValueAndNamespace('9783-442X', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '9783-442X', namespace: IdentifierNamespace.findByValue('issn'))
+    Identifier serial_eissn = Identifier.findByValueAndNamespace('9783-4420', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '9783-4420', namespace: IdentifierNamespace.findByValue('eissn'))
 
     def test_book = BookInstance.findByName('TestBook') ?: new BookInstance(name: 'TestBook').save(flush: true)
     def test_tipp1 = TitleInstancePackagePlatform.findByName('TestJournalTIPP') ?: new TitleInstancePackagePlatform(
@@ -429,25 +429,7 @@ class UpdatePackageRunSpec extends Specification {
                 "accessEnd"  : "",
                 "accessStart": "",
                 "titleId"    : "titleID",
-                "identifiers": [
-                    [
-                        "type" : "doi",
-                        "value": "testTippId"
-                    ],
-                    [
-                        "type" : "zdb",
-                        "value": "1483109-0"
-                    ],
-                    [
-                        "type" : "eissn",
-                        "value": "9783-4420"
-                    ],
-                    [
-                        "type" : "issn",
-                        "value": "9783-4428"
-                    ]
-
-                ],
+                "identifiers": [],
                 "coverage"   : [
                     [
                         "coverageDepth": "Fulltext",
@@ -469,20 +451,7 @@ class UpdatePackageRunSpec extends Specification {
                 "status"     : "Current",
                 "editStatus" : "In Progress",
                 "title"      : [
-                    "identifiers": [
-                        [
-                            "type" : "zdb",
-                            "value": "1483109-0"
-                        ],
-                        [
-                            "type" : "eissn",
-                            "value": "9783-4420"
-                        ],
-                        [
-                            "type" : "issn",
-                            "value": "9783-4428"
-                        ]
-                    ],
+                    "identifiers": [],
                     "name"       : "Journal of agricultural and food chemistry",
                     "publicationType"       : "Serial"
                 ],
@@ -513,7 +482,6 @@ class UpdatePackageRunSpec extends Specification {
             journal = it
         }
     }
-    journal.ids.size() == 5
   }
 
   void "Test updatePackageTipps :: new record"() {

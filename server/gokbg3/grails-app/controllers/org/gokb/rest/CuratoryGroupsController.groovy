@@ -323,26 +323,37 @@ class CuratoryGroupsController {
   @Secured("hasAnyRole('ROLE_CONTRIBUTOR', 'ROLE_EDITOR', 'ROLE_ADMIN') and isAuthenticated()")
   def getJobs() {
     def result = [:]
-    def max = params.limit ? params.long('limit') : 10
-    def offset = params.offset ? params.long('offset') : 0
+    def max = params.limit ? params.int('limit') : 10
+    def offset = params.offset ? params.int('offset') : 0
     def base = grailsApplication.config.serverURL + "/rest"
     def sort = params._sort ?: null
     def order = params._order ?: null
     def group = CuratoryGroup.get(params.id)
     User user = User.get(springSecurityService.principal.id)
+    def showFinished = params.boolean('showFinished') ?: false
     def errors = [:]
 
     if (group && (group.users.contains(user) || user.isAdmin())) {
-      if (params.boolean('archived') == true) {
+      if (params.boolean('archived') == true || params.boolean('combined') == true) {
         result.data = []
         def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?", [group.id])[0]
         def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ? order by jr.startTime desc", [group.id], [max: max, offset: offset])
+
+        if (params.boolean('combined') == true) {
+          def active_jobs = concurrencyManagerService.getGroupJobs(group.id, max, offset, false)
+
+          hqlTotal += active_jobs._pagination.total
+
+          if (offset == 0) {
+            result.data = active_jobs.data
+          }
+        }
 
         jobs.each { j ->
           def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
           // No JsonObject for list view
 
-          result.datas << [
+          result.data << [
             uuid: j.uuid,
             description: j.description,
             type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
@@ -360,7 +371,7 @@ class CuratoryGroupsController {
         ]
       }
       else {
-        result = concurrencyManagerService.getGroupJobs(group.id as int, max, offset)
+        result = concurrencyManagerService.getGroupJobs(group.id, max, offset, showFinished)
       }
     }
     log.debug("Return ${result}")

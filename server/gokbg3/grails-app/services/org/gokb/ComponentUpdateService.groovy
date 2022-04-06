@@ -41,10 +41,6 @@ class ComponentUpdateService {
       hasChanged = true
     }
 
-    if (sync) {
-      component.lastSeen = new Date().getTime()
-    }
-
     // Core refdata.
     hasChanged |= setAllRefdata([
       'status', 'editStatus',

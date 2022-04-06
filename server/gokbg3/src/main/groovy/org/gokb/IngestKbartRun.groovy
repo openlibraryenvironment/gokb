@@ -17,6 +17,7 @@ import grails.util.TypeConvertingMap
 import groovy.util.logging.Slf4j
 
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -44,7 +45,7 @@ class IngestKbartRun {
   static DateFormatService dateFormatService = Holders.grailsApplication.mainContext.getBean('dateFormatService')
 
   boolean addOnly
-  boolean autoUpdate
+  boolean async
   boolean dryRun
   User user
   Map jsonResult = [result: "SUCCESS"]
@@ -64,7 +65,7 @@ class IngestKbartRun {
   def status_deleted
   def status_retired
   def status_expected
-  def datafile_id
+  DataFile datafile
 
   def possible_date_formats = [
     new SimpleDateFormat('yyyy-MM-dd'),
@@ -73,9 +74,9 @@ class IngestKbartRun {
   ]
 
   public IngestKbartRun(Package pack,
-                        Long datafile,
+                        DataFile data_file,
                         IdentifierNamespace titleIdNamespace = null,
-                        Boolean sourceUpdate = false,
+                        Boolean is_async = false,
                         Boolean incremental = false,
                         User u = null,
                         CuratoryGroup active_group = null,
@@ -83,25 +84,21 @@ class IngestKbartRun {
     pkg = pack
     addOnly = incremental
     user = u
-    autoUpdate = sourceUpdate
+    async = is_async
     activeGroup = active_group
     dryRun = dry_run
-    datafile_id = datafile
+    datafile = data_file
     providerIdentifierNamespace = titleIdNamespace
   }
 
   def start(nJob) {
     job = nJob ?: job
-    log.debug("ingest2...")
+    log.debug("ingest start")
     def result = [result: 'OK', dryRun: dryRun]
     result.messages = []
 
     long start_time = System.currentTimeMillis()
-
-    // Read does no dirty checking
-    log.debug("Get Datafile ${datafile_id}")
-    def datafile = DataFile.read(datafile_id)
-    log.debug("Got Datafile ${datafile.uploadName}")
+    log.debug("Got Datafile ${datafile?.uploadName}")
 
     status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
     status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
@@ -158,7 +155,7 @@ class IngestKbartRun {
                                 'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
                               [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
-        result.report = [matched: 0, created: 0, retired: 0, invalid: 0, previous: old_tipp_count]
+        result.report = [matched: 0, partial: 0, created: 0, retired: 0, invalid: 0, previous: old_tipp_count]
 
         long startTime = System.currentTimeMillis()
 
@@ -210,7 +207,7 @@ class IngestKbartRun {
               while (moreToRetire) {
                 def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
                                   'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                                  'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.status = :sc',
+                                  'where c.fromComponent.id=:pkg and c.toComponent=tipp and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc',
                                 [pkg: pkg.id, dt: ingest_systime, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])
 
                 q.each { tipp ->
@@ -277,13 +274,13 @@ class IngestKbartRun {
             }
 
             matching_job.description = "Package Title Matching".toString()
-            matching_job.type = RefdataCategory.lookup('Job.Type', '')
+            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
             matching_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
             matching_job.message("Starting title match for Package ${p.name}".toString())
             matching_job.startOrQueue()
             matching_job.startTime = new Date()
 
-            if (autoUpdate) {
+            if (!async) {
               matching_job.get()
             }
             else {
@@ -386,15 +383,13 @@ class IngestKbartRun {
     }
 
     if (platform == null) {
-      log.debug("Platform is still null - use the default")
-      platform = pkg.platform
+      log.debug("Platform is still null - use the default (${pkg.nominalPlatform})")
+      platform = pkg.nominalPlatform
     }
-
-    assert pkg != null
 
     if (platform != null) {
 
-        log.debug("${the_kbart.online_identifier}")
+        log.debug("online_identifier ${the_kbart.online_identifier}")
 
         def identifiers = []
 
@@ -453,6 +448,7 @@ class IngestKbartRun {
 
     } else {
       log.warn("couldn't resolve platform - title not added.")
+      result = 'invalid'
     }
     result
   }
@@ -555,58 +551,6 @@ class IngestKbartRun {
         )
       }
     }
-    else if (match_result.partial_matches.size() > 0) {
-      def best_matches = []
-
-      for (int i = 0; i < priority_list.size(); i++) {
-        if (match_result.partial_matches[i]?.size() > 0) {
-          best_matches = match_result.partial_matches[i]
-          break
-        }
-      }
-      result = 'matched'
-      tipp = best_matches[0].item
-      log.debug("Matched TIPP ${tipp} with URL ${tipp?.url}")
-
-      if (best_matches.size() > 1) {
-        log.debug("multiple (${best_matches.size()}) partial matches for $tipp")
-        def additionalInfo = [otherComponents: [], matches: [:], mismatches: [:]]
-
-        best_matches[0].matchResults.each {
-          if (it.match == 'OK') {
-            additionalInfo.matches[it.namespace] = it.value
-          }
-          else if (it.match == 'FAIL') {
-            additionalInfo.mismatches[it.namespace] = it.value
-          }
-        }
-
-        if (tipp_map.importId) {
-          additionalInfo.matches['title_id'] = tipp_map.importId
-        }
-
-        additionalInfo.vars = [additionalInfo.matches, additionalInfo.mismatches]
-        additionalInfo.matchResults = best_matches[0].matchResults
-
-        best_matches.each { ct, idx ->
-          if (idx > 0) {
-            additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id, uuid: ct.item.uuid, id: ct.item.id, name: ct.item.name, matchResults: ct.matchResults]
-          }
-        }
-
-        // RR für Multimatch generieren
-        reviewRequestService.raise(
-            tipp,
-            "A KBART record has been matched on an existing package title by some identifiers ({0}), but not by other important identifiers ({1}).",
-            "Check the package titles and merge them if necessary.",
-            user,
-            null,
-            (additionalInfo as JSON).toString(),
-            RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
-            componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
-        )
-      }
-    }
     else {
       result = 'created'
 
@@ -624,10 +568,18 @@ class IngestKbartRun {
         log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
 
         if (match_result.failed_matches.size() > 0) {
+          result = 'partial'
+
           def additionalInfo = [otherComponents: []]
 
           match_result.failed_matches.each { ct ->
-            additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id, uuid: ct.item.uuid, id: ct.item.id, name: ct.item.name, matchResults: ct.matchResults]
+            additionalInfo.otherComponents << [
+              oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id,
+              uuid: ct.item.uuid,
+              id: ct.item.id,
+              name: ct.item.name,
+              matchResults: ct.matchResults
+            ]
           }
 
           // RR für Multimatch generieren
@@ -646,7 +598,19 @@ class IngestKbartRun {
     }
 
     if (!dryRun) {
-      checkCoverage(tipp, tipp_map, (result == 'created'))
+      if (!matched_tipps[tipp.id]) {
+        matched_tipps[tipp.id] = 1
+
+        if (result != 'created' && result != 'partial') {
+          TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = ?", [tipp])
+          tipp.refresh()
+        }
+      }
+      else {
+        matched_tipps[tipp.id]++
+      }
+
+      tippService.checkCoverage(tipp, tipp_map, (result == 'created' || result == 'partial'))
       tippService.updateSimpleFields(tipp, tipp_map, true, user)
 
       // log.debug("Values updated, set lastSeen");
@@ -670,66 +634,6 @@ class IngestKbartRun {
     }
 
     result
-  }
-
-  def checkCoverage(tipp, tippInfo, created) {
-    if (!matched_tipps[tipp.id]) {
-      matched_tipps[tipp.id] = 1
-
-      if (!created) {
-        TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = ?", [tipp])
-        tipp.refresh()
-      }
-    }
-    else {
-      matched_tipps[tipp.id]++
-    }
-
-    def cov_list = tippInfo.coverageStatements ?: tippInfo.coverage
-
-    cov_list.each { c ->
-      def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-      def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
-      def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-      def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-      def cov_depth = null
-
-      log.debug("StartDate: ${parsedStart} -> ${startAsDate}, EndDate: ${parsedEnd} -> ${endAsDate}")
-
-      if (c.coverageDepth instanceof String) {
-        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
-      }
-      else if (c.coverageDepth instanceof Integer) {
-        cov_depth = RefdataValue.get(c.coverageDepth)
-      }
-      else if (c.coverageDepth instanceof Map) {
-        if (c.coverageDepth.id) {
-          cov_depth = RefdataValue.get(c.coverageDepth.id)
-        }
-        else {
-          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
-        }
-      }
-
-      if (!cov_depth) {
-        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
-      }
-
-      def coverage_item = [
-        'startVolume': c.startVolume,
-        'startIssue': c.startIssue,
-        'endVolume': c.endVolume,
-        'endIssue': c.endIssue,
-        'embargo': c.embargo,
-        'coverageDepth': cov_depth,
-        'coverageNote': c.coverageNote,
-        'startDate': startAsDate,
-        'endDate': endAsDate
-      ]
-
-      tipp.addToCoverageStatements(coverage_item)
-      tipp.save(flush:true)
-    }
   }
 
   def setTypedProperties(tipp, props, field, regex, type) {
@@ -790,7 +694,7 @@ class IngestKbartRun {
       host = host.substring(4)
     }
 
-    def platforms = Platform.executeQuery("select p from Platform as p where p.primaryUrl like :host or p.name = :host", ['host': "%" + host + "%"], [readonly: false])
+    def platforms = Platform.executeQuery("select p from Platform as p where p.primaryUrl like :host or p.name = :host and status != :sc", ['host': "%" + host + "%", sc: RefdataCategory.lookup('KBComponent.Status', 'Deleted')], [readonly: false])
 
     switch (platforms.size()) {
       case 0:
@@ -805,7 +709,6 @@ class IngestKbartRun {
       break
     }
 
-    assert result != null
     result
   }
 
@@ -1111,6 +1014,7 @@ class IngestKbartRun {
             result.stats.created++
 
             if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
+              log.debug("New title -- Conflicts: ${title_lookup_result.matches}")
               result.stats.matches.partial++
             }
 
@@ -1119,6 +1023,7 @@ class IngestKbartRun {
             }
           }
           else if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
+            log.debug("Partial Match -- Conflicts: ${title_lookup_result.matches}")
             result.stats.matches.partial++
           }
           else {

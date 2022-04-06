@@ -517,59 +517,6 @@ class UpdatePkgTippsRun {
             )
           }
         }
-        else if (match_result.partial_matches.size() > 0) {
-          def best_matches = []
-
-          for (int i = 0; i < priority_list.size(); i++) {
-            if (match_result.partial_matches[i]?.size() > 0) {
-              best_matches = match_result.partial_matches[i]
-              break
-            }
-          }
-
-          tipp = best_matches[0].item
-
-          if (best_matches.size() > 1) {
-            log.debug("multiple (${best_matches.size()}) partial matches for $tipp")
-            def additionalInfo = [otherComponents: [], matches: [:], mismatches: [:]]
-
-            best_matches[0].matchResults.each {
-              if (it.match == 'OK') {
-                additionalInfo.matches[it.namespace] = it.value
-              }
-              else if (it.match == 'FAIL') {
-                additionalInfo.mismatches[it.namespace] = it.value
-              }
-            }
-
-
-
-            if (tippJson.titleId) {
-              additionalInfo.matches['title_id'] = tippJson.titleId
-            }
-
-            additionalInfo.vars = [additionalInfo.matches, additionalInfo.mismatches]
-            additionalInfo.matchResults = best_matches[0].matchResults
-
-            best_matches.each { ct, idx ->
-              if (idx > 0) {
-                additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id, uuid: ct.item.uuid, id: ct.item.id, name: ct.item.name, matchResults: ct.matchResults]
-              }
-            }
-
-            // RR für Multimatch generieren
-            reviewRequestService.raise(
-                tipp,
-                "A KBART record has been matched on an existing package title by some identifiers, but not by other important identifiers.",
-                "Check the package titles and merge them if necessary.",
-                user,
-                null,
-                (additionalInfo as JSON).toString(),
-                RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
-                componentLookupService.findCuratoryGroupOfInterest(tipp, user)
-            )
-          }
-        }
         else {
           log.debug("Creating new TIPP..")
           created = true
@@ -608,8 +555,6 @@ class UpdatePkgTippsRun {
         }
 
         if (tipp) {
-          tippService.updateSimpleFields(tipp, tippJson, true, user)
-
           if (!matched_tipps[tipp.id]) {
             matched_tipps[tipp.id] = 1
 
@@ -622,51 +567,8 @@ class UpdatePkgTippsRun {
             matched_tipps[tipp.id]++
           }
 
-          def cov_list = tippJson.coverageStatements ?: tippJson.coverage
-
-          cov_list.each { c ->
-            def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-            def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
-            def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-            def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-            def cov_depth = null
-
-            log.debug("StartDate: ${parsedStart} -> ${startAsDate}, EndDate: ${parsedEnd} -> ${endAsDate}")
-
-            if (c.coverageDepth instanceof String) {
-              cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
-            }
-            else if (c.coverageDepth instanceof Integer) {
-              cov_depth = RefdataValue.get(c.coverageDepth)
-            }
-            else if (c.coverageDepth instanceof Map) {
-              if (c.coverageDepth.id) {
-                cov_depth = RefdataValue.get(c.coverageDepth.id)
-              }
-              else {
-                cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
-              }
-            }
-
-            if (!cov_depth) {
-              cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
-            }
-
-            def coverage_item = [
-              'startVolume': c.startVolume,
-              'startIssue': c.startIssue,
-              'endVolume': c.endVolume,
-              'endIssue': c.endIssue,
-              'embargo': c.embargo,
-              'coverageDepth': cov_depth,
-              'coverageNote': c.coverageNote,
-              'startDate': startAsDate,
-              'endDate': endAsDate
-            ]
-
-            tipp.addToCoverageStatements(coverage_item)
-            tipp = tipp.merge(flush:true)
-          }
+          tippService.checkCoverage(tipp, tippJson, created)
+          tippService.updateSimpleFields(tipp, tippJson, true, user)
         }
       }
       catch (grails.validation.ValidationException ve) {

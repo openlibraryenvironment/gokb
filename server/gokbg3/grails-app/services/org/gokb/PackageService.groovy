@@ -1584,7 +1584,7 @@ class PackageService {
 
     Package.withNewSession {
       Package p = Package.get(pkg.id)
-      def datafile_id = null
+      DataFile datafile = null
       def platform_url = p.nominalPlatform.primaryUrl
       def pkg_source = p.source
       def preferred_group = activeGroup ?: (p.curatoryGroups?.size() > 0 ? CuratoryGroup.deproxy(p.curatoryGroups[0]) : null)
@@ -1696,26 +1696,20 @@ class PackageService {
               String encoding = detector.getDetectedCharset()
 
               if (encoding in ['UTF-8', 'US-ASCII']) {
-                def existing_file = DataFile.findByMd5(file_info.md5sumHex)
+                datafile = DataFile.findByMd5(file_info.md5sumHex)
 
-                if (existing_file) {
-                  log.debug("Already fetched this file ..")
-                  datafile_id = existing_file.id
-                }
-                else {
+                if (!datafile) {
                   log.debug("Create new datafile")
-                  def new_datafile = new DataFile(
+                  datafile = new DataFile(
                                                   guid: deposit_token,
                                                   md5: file_info.md5sumHex,
                                                   uploadName: file_info.file_name,
                                                   name: file_info.file_name,
                                                   filesize: total_size,
-                                                  uploadMimeType: file_info.content_mime_type).save(failOnError:true, flush:true)
-
-                  log.debug("Saved new datafile : ${new_datafile.id}")
-                  datafile_id = new_datafile.id
-                  new_datafile.fileData = tmp_file.getBytes()
-                  new_datafile.save(failOnError:true,flush:true)
+                                                  uploadMimeType: file_info.content_mime_type).save()
+                  datafile.fileData = tmp_file.getBytes()
+                  datafile.save(failOnError:true,flush:true)
+                  log.debug("Saved new datafile : ${datafile.id}")
                 }
               }
               else {
@@ -1728,12 +1722,12 @@ class PackageService {
                 e.printStackTrace()
             }
 
-            if (datafile_id) {
+            if (datafile) {
               if (job) {
                 result = TSVIngestionService.updatePackage(pkg,
-                                                  datafile_id,
+                                                  datafile,
                                                   title_ns,
-                                                  (user ? false : true),
+                                                  (user ? true : false),
                                                   false,
                                                   user,
                                                   activeGroup,
@@ -1743,15 +1737,21 @@ class PackageService {
               else {
                 Job update_job = ConcurrencyManagerService.createJob { Job j ->
                   TSVIngestionService.updatePackage(pkg,
-                                                    datafile_id,
+                                                    datafile,
                                                     title_ns,
-                                                    (user ? false : true),
+                                                    (user ? true : false),
                                                     false,
                                                     user,
                                                     activeGroup,
                                                     false,
                                                     j)
                 }
+                update_job.groupId = activeGroup.id ?: null
+                update_job.ownerId = user?.id
+                update_job.description = "KBART REST ingest (${pkg.name})".toString()
+                update_job.type = RefdataCategory.lookup('Job.Type', 'KBARTIngest')
+                update_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+                update_job.message("Starting upsert for Package ${pkg.name}".toString())
                 update_job.startOrQueue()
                 result = update_job.get()
               }

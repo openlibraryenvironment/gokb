@@ -305,6 +305,46 @@ class TitleInstancePackagePlatform extends KBComponent {
     return name ?: "${pkg?.name} / ${title?.name} / ${hostPlatform?.name}"
   }
 
+  @Override
+  @Transient
+  static TitleInstancePackagePlatform lookupByIO(String idtype, String idvalue) {
+    def result = null
+    def normid = Identifier.normalizeIdentifier(idvalue)
+    def namespace = IdentifierNamespace.findByValueIlike(idtype)
+
+    if (normid && namespace) {
+      def id = Identifier.findByNamespaceAndNormname(namespace, normid)
+
+      id?.activeIdentifiedComponents.each { component ->
+        if (component.class == TitleInstancePackagePlatform && !result) {
+          result = component
+        }
+      }
+    }
+
+    result
+  }
+
+  @Override
+  @Transient
+  static TitleInstancePackagePlatform[] lookupAllByIO(String idtype, String idvalue) {
+    def result = []
+    def normid = Identifier.normalizeIdentifier(idvalue)
+    def namespace = IdentifierNamespace.findByValueIlike(idtype)
+
+    if (normid && namespace) {
+      def id = Identifier.findByNamespaceAndNormname(namespace, normid)
+
+      id?.activeIdentifiedComponents.each { component ->
+        if (component.class == TitleInstancePackagePlatform && !result.contains(component)) {
+          result.add(component)
+        }
+      }
+    }
+
+    result
+  }
+
   /**
    * Please see https://github.com/openlibraryenvironment/gokb/wiki/tipp_dto
    */

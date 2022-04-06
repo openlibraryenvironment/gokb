@@ -996,6 +996,8 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Job.Type', 'RecalculateStatistics').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'KBARTSourceIngest').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'KBARTIngest').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'KBARTIngestDryRun').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'PackageTitleMatch').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Technical Support').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Other').save(flush: true, failOnError: true)

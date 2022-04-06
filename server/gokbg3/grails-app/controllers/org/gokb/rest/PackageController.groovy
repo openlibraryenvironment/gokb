@@ -808,6 +808,7 @@ class PackageController {
     def user = User.get(springSecurityService.principal.id)
 
     if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
+      DataFile datafile = null
       def upload_mime_type = request.getFile("submissionFile")?.contentType
       def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
       def deposit_token = java.util.UUID.randomUUID().toString()
@@ -817,40 +818,34 @@ class PackageController {
       Boolean add_only = params.boolean('addOnly') ?: false
       Boolean dry_run = params.boolean('dryRun') ?: false
       def info = packageService.analyseFile(temp_file)
-      def new_datafile_id = null
       def platform_url = pkg.nominalPlatform?.primaryUrl ?: null
       def pkg_source = pkg.source
+      Boolean async = params.async ? params.boolean('async') : true
 
       log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
-      def existing_file = DataFile.findByMd5(info.md5sumHex)
+      datafile = DataFile.findByMd5(info.md5sumHex)
 
-      if ( existing_file != null ) {
-        log.debug("Found a match !")
-
-        new_datafile_id = existing_file.id
-      }
-      else {
+      if (!datafile) {
         log.debug("Create new datafile")
-        def new_datafile = new DataFile(
+        datafile = new DataFile(
                                         guid:deposit_token,
                                         md5:info.md5sumHex,
                                         uploadName:upload_filename,
                                         name:upload_filename,
                                         filesize:info.filesize,
-                                        uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
+                                        uploadMimeType:upload_mime_type).save()
 
-        log.debug("Saved new datafile : ${new_datafile.id}")
-        new_datafile_id = new_datafile.id
-        new_datafile.fileData = temp_file.getBytes()
-        new_datafile.save(failOnError:true,flush:true)
+        datafile.fileData = temp_file.getBytes()
+        datafile.save(failOnError:true,flush:true)
+        log.debug("Saved new datafile : ${datafile.id} -- ${datafile.uploadName}")
       }
 
-      if (new_datafile_id) {
+      if (datafile) {
         Job background_job = concurrencyManagerService.createJob { Job job ->
           TSVIngestionService.updatePackage(pkg,
-                                            new_datafile_id,
+                                            datafile,
                                             title_ns,
-                                            false,
+                                            async,
                                             add_only,
                                             user,
                                             active_group,
@@ -858,16 +853,23 @@ class PackageController {
                                             job)
         }
 
-        background_job.groupId = active_group.id ?: null
+        if (active_group) {
+          background_job.groupId = active_group.id
+        }
         background_job.ownerId = user.id
         background_job.description = "KBART REST ingest (${pkg.name})".toString()
-        background_job.type = RefdataCategory.lookup('Job.Type', 'KBARTIngest')
+        background_job.type = RefdataCategory.lookup('Job.Type', (dry_run ? 'KBARTIngestDryRun' : 'KBARTIngest'))
         background_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
         background_job.message("Starting upsert for Package ${pkg.name}".toString())
         background_job.startOrQueue()
         background_job.startTime = new Date()
 
-        result.jobId = background_job.uuid
+        if (async) {
+          result.jobId = background_job.uuid
+        }
+        else {
+          result.job_result = background_job.get()
+        }
       }
       else {
         log.debug("Unable to reference DataFile!")
@@ -895,7 +897,7 @@ class PackageController {
   def triggerSourceUpdate() {
     def result = ['result': 'OK']
     def active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
-    def async = params.boolean('async') ?: true
+    def async = params.async ? params.boolean('async') : true
     Package pkg = Package.get(params.id)
     def user = User.get(springSecurityService.principal.id)
 
