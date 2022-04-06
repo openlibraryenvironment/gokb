@@ -1,10 +1,14 @@
-package gokbg3;
+package gokbg3
 
 import grails.util.Environment
 import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
+import groovy.json.JsonOutput
 import org.apache.commons.collections.CollectionUtils
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest
+import org.elasticsearch.action.admin.indices.get.GetIndexRequest
+import org.elasticsearch.common.xcontent.XContentType
 import org.gokb.AugmentJob
 import org.gokb.AutoUpdatePackagesJob
 import org.gokb.LanguagesService
@@ -20,7 +24,6 @@ import org.gokb.cred.*
 import com.k_int.apis.A_Api;
 import com.k_int.ConcurrencyManagerService.Job
 import org.elasticsearch.client.IndicesAdminClient
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
 
 class BootStrap {
@@ -1209,30 +1212,31 @@ class BootStrap {
 
     def ensureEsIndex(String indexName) {
         log.debug("ensureESIndex for ${indexName}");
-        def esclient = ESWrapperService.getClient()
-        IndicesAdminClient adminClient = esclient.admin().indices()
+        def esClient = ESWrapperService.getClient()
+        IndicesAdminClient adminClient = esClient.admin().indices()
+        GetIndexRequest request = new GetIndexRequest(indexName)
 
-        if (!adminClient.prepareExists(indexName).execute().actionGet().isExists()) {
+        if (!esClient.indices().exists(request, RequestOptions.DEFAULT)) {
             log.debug("ES index ${indexName} did not exist, creating..")
-
-            CreateIndexRequestBuilder createIndexRequestBuilder = adminClient.prepareCreate(indexName)
-
+            CreateIndexRequest createRequest = new CreateIndexRequest(indexName)
             log.debug("Adding index settings..")
-            createIndexRequestBuilder.setSettings(ESWrapperService.getSettings().get("settings"))
+            createRequest.settings(JsonOutput.toJson(ESWrapperService.getSettings().get("settings")), XContentType.JSON)
             log.debug("Adding index mappings..")
-            createIndexRequestBuilder.addMapping("component", ESWrapperService.getMapping())
+            createRequest.mapping(JsonOutput.toJson(ESWrapperService.getMapping()), XContentType.JSON)
 
-            CreateIndexResponse indexResponse = createIndexRequestBuilder.execute().actionGet()
-
+            CreateIndexResponse indexResponse = esClient.indices().create(createRequest, RequestOptions.DEFAULT)
             if (indexResponse.isAcknowledged()) {
                 log.debug("Index ${indexName} successfully created!")
-            } else {
+            }
+            else {
                 log.debug("Index creation failed: ${indexResponse}")
             }
-        } else {
+        }
+        else {
             log.debug("ES index ${indexName} already exists..")
             // Validate settings & mappings
         }
+        ESWrapperService.close(esClient)
     }
 
     def registerPkgCache () {
