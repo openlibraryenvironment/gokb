@@ -406,6 +406,10 @@ class ComponentLookupService {
 
               if (params.titlereviews) {
                 ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN :tippids)", [tippids: tipp_ids])
+                qryParams['ctrids'] = ti_ids
+              }
+              else {
+                qryParams['ctrids'] = [ctr.id] + tipp_ids
               }
 
               paramStr += "p.componentToReview.id IN :ctrids"
