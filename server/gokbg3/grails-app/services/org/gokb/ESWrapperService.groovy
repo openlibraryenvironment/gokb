@@ -67,7 +67,7 @@ class ESWrapperService {
   }
 
 
-  static def close(def esClient) {
+  def close(def esClient) {
     try {
       esClient.close()
     }

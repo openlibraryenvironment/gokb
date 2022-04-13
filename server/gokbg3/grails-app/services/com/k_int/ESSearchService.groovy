@@ -5,7 +5,6 @@ import groovyx.net.http.Method
 import groovyx.net.http.URIBuilder
 
 import org.apache.lucene.search.join.ScoreMode
-import org.elasticsearch.action.ActionFuture
 import org.elasticsearch.action.search.*
 import org.elasticsearch.client.*
 import org.elasticsearch.index.query.*
