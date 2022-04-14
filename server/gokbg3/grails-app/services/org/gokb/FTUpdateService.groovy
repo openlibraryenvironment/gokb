@@ -26,7 +26,7 @@ class FTUpdateService {
    * is responsible for ensuring only 1 FT index task runs at a time. It's a simple mutex.
    * see https://async.grails.org/latest/guide/index.html
    */
-  def synchronized updateFTIndexes() {
+  def updateFTIndexes() {
     log.debug("updateFTIndexes")
     if (running == false) {
       running = true
@@ -410,7 +410,7 @@ class FTUpdateService {
   }
 
 
-  def doFTUpdate() {
+  synchronized def doFTUpdate() {
     log.debug("doFTUpdate")
     log.debug("Execute IndexUpdateJob starting at ${new Date()}")
     def esclient = ESWrapperService.getClient()
@@ -427,6 +427,9 @@ class FTUpdateService {
     catch (Exception e) {
       log.error("Problem", e)
     }
+    finally {
+      ESWrapperService.close(esclient)
+    }
     running = false
   }
 
@@ -437,7 +440,14 @@ class FTUpdateService {
     if (idx_record != null) {
       def recid = idx_record['_id'].toString()
       idx_record.remove('_id')
-      ESWrapperService.getClient().prepareIndex(es_index, 'component', recid).setSource(idx_record).get()
+      def esClient
+      try{
+        esClient = ESWrapperService.getClient()
+        esClient.prepareIndex(es_index, 'component', recid).setSource(idx_record).get()
+      }
+      finally{
+        ESWrapperService.close(esClient)
+      }
     }
   }
 
@@ -483,9 +493,8 @@ class FTUpdateService {
         Object r = domain.get(r_id)
         log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
         def idx_record = buildEsRecord(r)
-        def es_index = ESSearchService.indicesPerType.get(idx_record['componentType'])
         if (idx_record != null) {
-          IndexRequest singleRequest = new IndexRequest(es_index)
+          IndexRequest singleRequest = new IndexRequest(ESSearchService.indicesPerType.get(idx_record['componentType']))
           singleRequest.id(idx_record['_id'].toString())
           idx_record.remove('_id')
           singleRequest.source(idx_record as JSON, XContentType.JSON)
@@ -540,15 +549,6 @@ class FTUpdateService {
     catch (Exception e) {
       log.error("Problem with FT index", e)
     }
-    finally {
-      log.debug("... completed processing on ${domain.name} - saved ${count} records. Closing Elasticsearch client.")
-      try {
-        esClient.close()
-      }
-      catch (Exception e) {
-        log.error("Problem occurred closing Elasticsearch client", e)
-      }
-    }
   }
 
 
@@ -572,7 +572,7 @@ class FTUpdateService {
   }
 
 
-  def clearDownAndInitES() {
+  def clearDownAndInit() {
     if (running == false) {
       log.debug("Remove existing FTControl ..")
       FTControl.withTransaction {

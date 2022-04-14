@@ -115,8 +115,9 @@ class ESSearchService{
   def search(params, field_map){
     log.debug("ESSearchService.search() with params : ${params}")
     def result = [:]
-    def esClient = ESWrapperService.getClient()
+    def esClient
     try {
+      esClient = ESWrapperService.getClient()
       if ( (params.q && params.q.length() > 0) || params.rectype) {
 
         if ((!params.all) || (!params.all?.equals("yes"))) {
@@ -517,11 +518,12 @@ class ESSearchService{
     int scrollSize = 5000
     result.result = "OK"
     result.scrollSize = scrollSize
-    def esClient = ESWrapperService.getClient()
+    def esClient
     def errors = [:]                              // TODO: use errors
     SearchResponse searchResponse
 
     try{
+      esClient = ESWrapperService.getClient()
       if (!params.scrollId){
         QueryBuilder scrollQuery = QueryBuilders.boolQuery()
         if (params.component_type){

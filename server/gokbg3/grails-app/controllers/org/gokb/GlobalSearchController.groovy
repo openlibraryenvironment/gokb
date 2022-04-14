@@ -20,9 +20,10 @@ class GlobalSearchController {
     def result = [:]
     def apiresponse = null
 
-    def esclient = ESWrapperService.getClient()
+    def esclient
 
     try {
+      esclient = ESWrapperService.getClient()
       if ( params.q && params.q.length() > 0) {
         params.q = params.q.replace('[',"(")
         params.q = params.q.replace(']',")")
@@ -110,12 +111,7 @@ class GlobalSearchController {
       }
     }
     finally{
-      try {
-        esclient.close()
-      }
-      catch (Exception e) {
-        log.error("Problem occurred closing Elasticsearch client", e)
-      }
+      ESWrapperService.close(esclient)
     }
 
     withFormat {

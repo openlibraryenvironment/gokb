@@ -1203,12 +1203,17 @@ class BootStrap {
 
 
     def ensureEsIndices() {
-        def esClient = ESWrapperService.getClient()
-        def esIndices = grailsApplication.config.gokb.es.indices?.values()
-        for (String indexName in esIndices) {
-            ensureEsIndex(indexName, esClient)
+        def esClient
+        try{
+            esClient = ESWrapperService.getClient()
+            def esIndices = grailsApplication.config.gokb.es.indices?.values()
+            for (String indexName in esIndices) {
+                ensureEsIndex(indexName, esClient)
+            }
         }
-        ESWrapperService.close(esClient)
+        finally{
+            ESWrapperService.close(esClient)
+        }
     }
 
 
