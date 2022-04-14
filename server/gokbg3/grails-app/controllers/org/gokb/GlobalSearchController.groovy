@@ -2,6 +2,7 @@ package org.gokb
 
 import grails.converters.*
 import org.elasticsearch.action.search.*
+import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.search.aggregations.AggregationBuilders
 import org.elasticsearch.index.query.*
 import org.elasticsearch.search.builder.SearchSourceBuilder
@@ -39,7 +40,7 @@ class GlobalSearchController {
 
         def typing_field = grailsApplication.config.globalSearch.typingField ?: 'componentType'
         SearchResponse searchResponse
-        SearchRequest searchRequest = new SearchRequest(grailsApplication.config.globalSearch.indices.values() as String[])
+        SearchRequest searchRequest = new SearchRequest(grailsApplication.config.globalSearch.indices as String[])
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
 
         if (params.sort){
@@ -57,10 +58,6 @@ class GlobalSearchController {
         searchRequest.source(searchSourceBuilder)
         searchResponse = esclient.search(searchRequest, RequestOptions.DEFAULT)
         result.hits = searchResponse.getHits()
-
-        if (searchResponse.getHits().maxScore == Float.NaN){
-          searchResponse.hits.maxScore = 0
-        }
 
         result.resultsTotal = searchResponse.getHits().getTotalHits().value ?: 0
         // We pre-process the facet response to work around some translation issues in ES
