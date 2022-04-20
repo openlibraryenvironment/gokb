@@ -497,7 +497,7 @@ class FTUpdateService {
           IndexRequest singleRequest = new IndexRequest(ESSearchService.indicesPerType.get(idx_record['componentType']))
           singleRequest.id(idx_record['_id'].toString())
           idx_record.remove('_id')
-          singleRequest.source(idx_record as JSON, XContentType.JSON)
+          singleRequest.source((idx_record as JSON).toString(), XContentType.JSON)
           bulkRequest.add(singleRequest)
         }
         if (r.lastUpdated?.getTime() > highest_timestamp) {
