@@ -6,7 +6,7 @@ import grails.core.GrailsApplication
 import grails.converters.JSON
 import groovy.json.JsonOutput
 import org.apache.commons.collections.CollectionUtils
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest
+import org.elasticsearch.client.indices.CreateIndexRequest
 import org.elasticsearch.client.indices.GetIndexRequest
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.common.xcontent.XContentType
