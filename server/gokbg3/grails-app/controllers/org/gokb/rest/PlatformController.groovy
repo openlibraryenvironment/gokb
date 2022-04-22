@@ -96,6 +96,22 @@ class PlatformController {
     render result as JSON
   }
 
+  @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+  def match() {
+    def result = platformService.restLookup(params)
+    def conflicts = [:]
+    result.matches.each { id, errs ->
+      errs.each { e ->
+        if (!conflicts[e.field])
+          conflicts[e.field] = []
+        conflicts[e.field] << [message: e.message, baddata: e.value, matches: id]
+      }
+    }
+    result.result = 'OK'
+    result.conflicts = conflicts
+    render result as JSON
+  }
+
   @Transactional
   @Secured(value=["hasRole('ROLE_USER')", 'IS_AUTHENTICATED_FULLY'], httpMethod='POST')
   def save() {

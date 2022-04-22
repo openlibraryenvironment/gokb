@@ -402,14 +402,16 @@ class ComponentLookupService {
 
             if (ctr?.class == Package) {
               def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = ? and toComponent = tipp)",[ctr])
-              def ti_ids = []
 
               if (params.titlereviews) {
-                ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN :tippids)", [tippids: tipp_ids])
+                def ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN (:tippids))", [tippids: tipp_ids])
+                qryParams['ctrids'] = ti_ids
+              }
+              else {
+                qryParams['ctrids'] = [ctr.id] + tipp_ids
               }
 
-              paramStr += "p.componentToReview.id IN :ctrids"
-              qryParams['ctrids'] = [ctr.id] + tipp_ids + ti_ids
+              paramStr += "p.componentToReview.id IN (:ctrids)"
               log.debug("${qryParams['ctrids'].size()}")
               pkg_qry = true
             }
