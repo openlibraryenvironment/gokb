@@ -5,6 +5,7 @@ import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
+import grails.gorm.transactions.*
 
 import org.gokb.cred.*
 import org.gokb.rest.TippController
@@ -178,50 +179,55 @@ class TippService {
     log.debug("Matching titles for package ${aPackage}")
     def more = true
     int offset = 0
-    CuratoryGroup group = job?.groupId ? CuratoryGroup.get(job?.groupId) : null
 
-    def tippIDs = TitleInstancePackagePlatform.executeQuery(
-      'select tipp.id from TitleInstancePackagePlatform as tipp where exists (' +
-          'from Combo as c1 where c1.fromComponent=:pkg and c1.toComponent=tipp) ' +
-          'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:ctt)',
-      [
-          pkg : aPackage,
-          ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
-      ]
-    )
+    try {
+      CuratoryGroup group = job?.groupId ? CuratoryGroup.get(job?.groupId) : null
 
-    int total = tippIDs.size()
+      def tippIDs = TitleInstancePackagePlatform.executeQuery(
+        'select tipp.id from TitleInstancePackagePlatform as tipp where exists (' +
+            'from Combo as c1 where c1.fromComponent=:pkg and c1.toComponent=tipp) ' +
+            'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:ctt)',
+        [
+            pkg : aPackage,
+            ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
+        ]
+      )
 
-    while (tippIDs.size() > 0) {
-      def batchSize = tippIDs.size() > 50 ? 50 : tippIDs.size()
-      def batch = tippIDs.take(batchSize)
-      tippIDs = tippIDs.drop(batchSize)
+      int total = tippIDs.size()
 
-      batch.each { id ->
-        matchTitle(TitleInstancePackagePlatform.get(id), group)
-        offset++
+      while (tippIDs.size() > 0) {
+        def batchSize = tippIDs.size() > 50 ? 50 : tippIDs.size()
+        def batch = tippIDs.take(batchSize)
+        tippIDs = tippIDs.drop(batchSize)
+
+        batch.each { id ->
+          matchTitle(TitleInstancePackagePlatform.get(id), group)
+          offset++
+        }
+        // Get the current session.
+        def session = sessionFactory.currentSession
+        // flush and clear the session.
+        session.flush()
+        session.clear()
+
+        if (job) {
+          job.setProgress(offset, total)
+        }
+
+
+        if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
+          job?.message("Job cancelled!")
+          log.debug("cancelling package title matching for job #${job?.uuid}")
+          more = false
+          break
+        }
+
       }
-      // Get the current session.
-      def session = sessionFactory.currentSession
-      // flush and clear the session.
-      session.flush()
-      session.clear()
-
-      if (job) {
-        job.setProgress(offset, total)
-      }
-
-
-      if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
-        job?.message("Job cancelled!")
-        log.debug("cancelling package title matching for job #${job?.uuid}")
-        more = false
-        break
-      }
-
+      job?.message("Finished package title matching.")
+      log.debug("Finished title matching for ${total} Titles")
+    } catch (Exception e) {
+      log.error("Error matching package titles!", e)
     }
-    job?.message("Finished package title matching.")
-    log.debug("Finished title matching for ${total} Titles")
   }
 
   def matchTitle(tipp, CuratoryGroup group = null) {

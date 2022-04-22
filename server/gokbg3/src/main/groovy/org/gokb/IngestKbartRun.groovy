@@ -163,7 +163,7 @@ class IngestKbartRun {
         //now its converted, ingest it into the database.
 
         for (int x = 0; x < kbart_beans.size; x++) {
-          Package.withTransaction {
+          Package.withNewSession {
             log.debug("**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
 
             def row_specific_cfg = getRowSpecificCfg(ingest_cfg, kbart_beans[x])

@@ -799,7 +799,6 @@ class PackageController {
     render result as JSON
   }
 
-  @Transactional
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def ingestKbart() {
     log.debug("Form post")
