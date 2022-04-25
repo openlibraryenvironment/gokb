@@ -510,7 +510,8 @@ class ESSearchService{
    **/
   def scroll(params) throws Exception{
     def result = [:]
-    def usedComponentTypes = getUsedComponentTypes(params, result)
+    def esClient = ESWrapperService.getClient()
+    def usedComponentTypes = getUsedComponentTypes(params, result, esClient)
     if (result.error){
       return result
     }
@@ -518,56 +519,49 @@ class ESSearchService{
     int scrollSize = 5000
     result.result = "OK"
     result.scrollSize = scrollSize
-    def esClient
+
     def errors = [:]                              // TODO: use errors
     SearchResponse searchResponse
-
-    try{
-      esClient = ESWrapperService.getClient()
-      if (!params.scrollId){
-        QueryBuilder scrollQuery = QueryBuilders.boolQuery()
-        if (params.component_type){
-          QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
-          scrollQuery.must(typeFilter)
-        }
-        addDateQueries(scrollQuery, errors, params)
-        specifyQueryWithParams(params, scrollQuery, errors, unknown_fields)
-
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-        searchSourceBuilder.query(scrollQuery)
-        searchSourceBuilder.size(scrollSize)
-        SearchRequest searchRequest = new SearchRequest(usedComponentTypes.values() as String[])
-        searchRequest.scroll("15m")
-        searchRequest.source(searchSourceBuilder)
-        searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT)
-        result.lastPage = 0
+    if (!params.scrollId){
+      QueryBuilder scrollQuery = QueryBuilders.boolQuery()
+      if (params.component_type){
+        QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
+        scrollQuery.must(typeFilter)
       }
-      else{
-        SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
-        scrollRequest.scroll("15m")
-        searchResponse = esClient.search(scrollRequest, RequestOptions.DEFAULT)
-        try{
-          if (params.lastPage && Integer.valueOf(params.lastPage) > -1){
-            result.lastPage = Integer.valueOf(params.lastPage) + 1
-          }
-        }
-        catch (Exception e){
-          log.debug("Could not process page information on scroll request.")
+      addDateQueries(scrollQuery, errors, params)
+      specifyQueryWithParams(params, scrollQuery, errors, unknown_fields)
+
+      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      searchSourceBuilder.query(scrollQuery)
+      searchSourceBuilder.size(scrollSize)
+      SearchRequest searchRequest = new SearchRequest(usedComponentTypes.values() as String[])
+      searchRequest.scroll("15m")
+      searchRequest.source(searchSourceBuilder)
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT)
+      result.lastPage = 0
+    }
+    else{
+      SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
+      scrollRequest.scroll("15m")
+      searchResponse = esClient.search(scrollRequest, RequestOptions.DEFAULT)
+      try{
+        if (params.lastPage && Integer.valueOf(params.lastPage) > -1){
+          result.lastPage = Integer.valueOf(params.lastPage) + 1
         }
       }
-      result.scrollId = searchResponse.getScrollId()
-      SearchHit[] searchHits = searchResponse.getHits()
-      result.hasMoreRecords = searchHits.length == scrollSize
-      result.records = filterLastUpdatedDisplay(searchHits, params, errors, result)
-      result.size = result.records.size()
+      catch (Exception e){
+        log.debug("Could not process page information on scroll request.")
+      }
     }
-    finally{
-      ESWrapperService.close(esClient)
-    }
+    result.scrollId = searchResponse.getScrollId()
+    SearchHit[] searchHits = searchResponse.getHits()
+    result.hasMoreRecords = searchHits.length == scrollSize
+    result.records = filterLastUpdatedDisplay(searchHits, params, errors, result)
+    result.size = result.records.size()
     result
   }
 
-  private Map getUsedComponentTypes(params, LinkedHashMap<Object, Object> result){
+  private Map getUsedComponentTypes(params, LinkedHashMap<Object, Object> result, def esClient){
     Map usedComponentTypes = new HashMap()
     if (!params.component_type){
       result.result = "ERROR"
