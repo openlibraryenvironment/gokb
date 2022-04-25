@@ -660,7 +660,7 @@ class ESSearchService{
 
       if( !errors && exactQuery.hasClauses() ) {
 
-        SearchRequest searchRequest = new SearchRequest(grailsApplication.config.searchApi.indices.values() as String[])
+        SearchRequest searchRequest = new SearchRequest(grailsApplication.config?.gokb?.es?.indices?.values() as String[])
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         searchSourceBuilder.query(QueryBuilders.matchAllQuery())
         searchRequest.source(searchSourceBuilder)
