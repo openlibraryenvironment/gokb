@@ -115,84 +115,78 @@ class ESSearchService{
   def search(params, field_map){
     log.debug("ESSearchService.search() with params : ${params}")
     def result = [:]
-    def esClient
-    try {
-      esClient = ESWrapperService.getClient()
-      if ( (params.q && params.q.length() > 0) || params.rectype) {
+    def esClient = ESWrapperService.getClient()
+    if ( (params.q && params.q.length() > 0) || params.rectype) {
 
-        if ((!params.all) || (!params.all?.equals("yes"))) {
-          params.max = Math.min(params.max ? params.max : 15, 100)
-        }
+      if ((!params.all) || (!params.all?.equals("yes"))) {
+        params.max = Math.min(params.max ? params.max : 15, 100)
+      }
 
-        params.offset = params.offset ? params.offset : 0
-        def query_str = buildQuery(params,field_map)
+      params.offset = params.offset ? params.offset : 0
+      def query_str = buildQuery(params,field_map)
 
-        if (params.tempFQ) {
-          log.debug("found tempFQ, adding to query string")
-          query_str = query_str + " AND ( " + params.tempFQ + " ) "
-          params.remove("tempFQ") //remove from GSP access
-        }
+      if (params.tempFQ) {
+        log.debug("found tempFQ, adding to query string")
+        query_str = query_str + " AND ( " + params.tempFQ + " ) "
+        params.remove("tempFQ") //remove from GSP access
+      }
 
-        log.debug("Start to build search request. Query: ${query_str}")
-        SearchResponse searchResponse
-        try{
-          SearchRequest searchRequest = new SearchRequest()
-          SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-          log.debug("srb built: ${searchSourceBuilder} sort=${params.sort}")
-          if (params.sort) {
-            SortOrder order = SortOrder.ASC
-            if (params.order) {
-              order = SortOrder.valueOf(params.order?.toUpperCase())
-            }
-            searchSourceBuilder.sort(new FieldSortBuilder("${params.sort}").order(order))
+      log.debug("Start to build search request. Query: ${query_str}")
+      SearchResponse searchResponse
+      try{
+        SearchRequest searchRequest = new SearchRequest()
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+        log.debug("srb built: ${searchSourceBuilder} sort=${params.sort}")
+        if (params.sort) {
+          SortOrder order = SortOrder.ASC
+          if (params.order) {
+            order = SortOrder.valueOf(params.order?.toUpperCase())
           }
-          log.debug("build searchSourceBuilder and aggregration query string is ${query_str}")
-          searchSourceBuilder.query(QueryBuilders.queryStringQuery(query_str))
-          searchSourceBuilder.from(params.offset)
-          searchSourceBuilder.size(params.max)
-
-          searchRequest.source(searchSourceBuilder)
-          searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT)
+          searchSourceBuilder.sort(new FieldSortBuilder("${params.sort}").order(order))
         }
-        catch (Exception ex) {
-          log.error("Error occured during Elasticsearch request using query: ${query_str}", ex)
-        }
+        log.debug("build searchSourceBuilder and aggregration query string is ${query_str}")
+        searchSourceBuilder.query(QueryBuilders.queryStringQuery(query_str))
+        searchSourceBuilder.from(params.offset)
+        searchSourceBuilder.size(params.max)
 
-        if (searchResponse) {
-          result.hits = searchResponse.getHits()
-          result.firstrec = params.offset + 1
-          result.resultsTotal = searchResponse.getHits().getTotalHits().value ?: 0
-          result.lastrec = Math.min(params.offset + params.max, result.resultsTotal)
+        searchRequest.source(searchSourceBuilder)
+        searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT)
+      }
+      catch (Exception ex) {
+        log.error("Error occured during Elasticsearch request using query: ${query_str}", ex)
+      }
 
-          if (searchResponse.getAggregations()) {
-            result.facets = [:]
-            searchResponse.getAggregations().each { entry ->
-              log.debug("Aggregation entry ${entry} ${entry.getName()}")
-              def facet_values = []
-              if (entry.type == 'nested'){
-                entry.getAggregations().each { subEntry ->
-                  subEntry.buckets.each { bucket ->
-                    bucketsToFacetValues(bucket, facet_values)
-                  }
-                }
-              }
-              else{
-                entry.buckets.each { bucket ->
+      if (searchResponse) {
+        result.hits = searchResponse.getHits()
+        result.firstrec = params.offset + 1
+        result.resultsTotal = searchResponse.getHits().getTotalHits().value ?: 0
+        result.lastrec = Math.min(params.offset + params.max, result.resultsTotal)
+
+        if (searchResponse.getAggregations()) {
+          result.facets = [:]
+          searchResponse.getAggregations().each { entry ->
+            log.debug("Aggregation entry ${entry} ${entry.getName()}")
+            def facet_values = []
+            if (entry.type == 'nested'){
+              entry.getAggregations().each { subEntry ->
+                subEntry.buckets.each { bucket ->
                   bucketsToFacetValues(bucket, facet_values)
                 }
               }
-              result.facets[entry.getName()] = facet_values
             }
-            log.debug("Finished results facets.")
+            else{
+              entry.buckets.each { bucket ->
+                bucketsToFacetValues(bucket, facet_values)
+              }
+            }
+            result.facets[entry.getName()] = facet_values
           }
+          log.debug("Finished results facets.")
         }
       }
-      else {
-        log.debug("No sufficient query in params ... Show search page")
-      }
     }
-    finally {
-      ESWrapperService.close(esClient)
+    else {
+      log.debug("No sufficient query in params ... Show search page")
     }
     result
   }

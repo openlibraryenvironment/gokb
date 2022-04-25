@@ -427,9 +427,6 @@ class FTUpdateService {
     catch (Exception e) {
       log.error("Problem", e)
     }
-    finally {
-      ESWrapperService.close(esclient)
-    }
     running = false
   }
 
@@ -441,13 +438,8 @@ class FTUpdateService {
       def recid = idx_record['_id'].toString()
       idx_record.remove('_id')
       def esClient
-      try{
-        esClient = ESWrapperService.getClient()
-        esClient.prepareIndex(es_index, 'component', recid).setSource(idx_record).get()
-      }
-      finally{
-        ESWrapperService.close(esClient)
-      }
+      esClient = ESWrapperService.getClient()
+      esClient.prepareIndex(es_index, 'component', recid).setSource(idx_record).get()
     }
   }
 

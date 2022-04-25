@@ -1,5 +1,6 @@
 package org.gokb
 
+
 import groovy.json.JsonSlurper
 import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
@@ -11,6 +12,7 @@ class ESWrapperService {
 
   static transactional = false
   def grailsApplication
+  RestHighLevelClient esClient
 
 
   @javax.annotation.PostConstruct
@@ -36,9 +38,10 @@ class ESWrapperService {
   private def newClient() {
     def es_cluster_name = grailsApplication.config?.gokb?.es?.cluster
     def es_host_name = grailsApplication.config?.gokb?.es?.host
+    def es_port = grailsApplication.config?.gokb?.es?.port ?: 9200
     log.debug("Elasticsearch client is null, creating now... host: ${es_host_name}, cluster:${es_cluster_name}")
     log.debug("... looking for Elasticsearch on host ${es_host_name} with cluster name ${es_cluster_name}")
-    def esClient = new RestHighLevelClient(RestClient.builder(new HttpHost(es_host_name, 9200, "http")))
+    esClient = new RestHighLevelClient(RestClient.builder(new HttpHost(es_host_name, es_port, "http")))
     log.debug("... Elasticsearch wrapper service init completed")
     esClient
   }
@@ -65,19 +68,14 @@ class ESWrapperService {
   }
 
 
-  def close(def esClient) {
+  @javax.annotation.PreDestroy
+  def destroy() {
     try {
       esClient?.close()
     }
     catch (Exception e) {
       log.error("Problem occurred closing Elasticsearch client", e)
     }
-  }
-
-
-  @javax.annotation.PreDestroy
-  def destroy() {
-    // TODO: Can we make sure to close a remaining open Elasticsearch client?
   }
 
 }
