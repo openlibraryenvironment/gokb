@@ -1,10 +1,12 @@
 package org.gokb
 
-
+import co.elastic.clients.elasticsearch.ElasticsearchClient
+import co.elastic.clients.json.jackson.JacksonJsonpMapper
+import co.elastic.clients.transport.ElasticsearchTransport
+import co.elastic.clients.transport.rest_client.RestClientTransport
 import groovy.json.JsonSlurper
 import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
-import org.elasticsearch.client.RestHighLevelClient
 
 import static groovy.json.JsonOutput.*
 
@@ -12,7 +14,7 @@ class ESWrapperService {
 
   static transactional = false
   def grailsApplication
-  RestHighLevelClient esClient
+  ElasticsearchClient esClient
 
 
   @javax.annotation.PostConstruct
@@ -41,7 +43,9 @@ class ESWrapperService {
     def es_port = grailsApplication.config?.gokb?.es?.port ?: 9200
     log.debug("Elasticsearch client is null, creating now... host: ${es_host_name}, cluster:${es_cluster_name}")
     log.debug("... looking for Elasticsearch on host ${es_host_name} with cluster name ${es_cluster_name}")
-    esClient = new RestHighLevelClient(RestClient.builder(new HttpHost(es_host_name, es_port, "http")))
+    RestClient restClient = RestClient.builder(new HttpHost(es_host_name, es_port)).build()
+    ElasticsearchTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper())
+    esClient = new ElasticsearchClient(transport)
     log.debug("... Elasticsearch wrapper service init completed")
     esClient
   }
