@@ -333,39 +333,39 @@ class Package extends KBComponent {
     // Call the delete method on the superClass.
     super.deleteSoft(context)
 
+    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
-    def tipps = getTipps()
+    def hasTipps = TitleInstancePackagePlatform.executeQuery("select t.id from TitleInstancePackagePlatform as t where t.status != :del and exists (select 1 from Combo where fromComponent.id = :pkg and toComponent.id = t.id)", [del: deleted_status, pkg: this.id], [max: 10]).size() > 0
     Date now = new Date()
 
-    if (tipps?.size() > 0) {
-      def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-      def tipp_ids = tipps?.collect { it.id }
-
-      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdateComment = 'Deleted via Package delete', t.lastUpdated = :now where t.status != :del and t.id IN (:ttd)", [del: deleted_status, ttd: tipp_ids, now: now])
+    if (hasTipps) {
+      log.debug("Deleting tipps ..")
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdateComment = 'Deleted via Package delete', t.lastUpdated = :now where t.status != :del and exists (select 1 from Combo where fromComponent.id = :pkg and toComponent = t.id)", [del: deleted_status, pkg: this.id, now: now])
     }
   }
 
 
   public void retire(context) {
-    log.debug("package::retire");
+    log.debug("package::retire")
     // Call the delete method on the superClass.
-    log.debug("Updating package status to retired");
-    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired');
+    log.debug("Updating package status to retired")
+    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
+    def current_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+    def expected_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Expected')
+
     this.status = retired_status
-    this.save();
+    this.save()
 
-    // Delete the tipps too as a TIPP should not exist without the associated,
+    // Retire the tipps too as a TIPP should not exist without the associated,
     // package.
-    log.debug("Retiring tipps");
 
-    def tipps = getTipps()
+    def hasTipps = TitleInstancePackagePlatform.executeQuery("select t.id from TitleInstancePackagePlatform as t where t.status in :sce and exists (select 1 from Combo where fromComponent.id = :pkg and toComponent.id = t.id)", [sce: [expected_status, current_status], pkg: this.id], [max: 10]).size() > 0
     Date now = new Date()
 
-    if (tipps?.size() > 0) {
-      def tipp_ids = tipps?.collect { it.id }
-
-      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret, t.lastUpdateComment = 'Retired via Package retire', t.lastUpdated = :now where t.id IN (:ttd)", [ret: retired_status, ttd: tipp_ids, now: now])
+    if (hasTipps) {
+      log.debug("Retiring tipps ..")
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret, t.lastUpdateComment = 'Retired via Package retire', t.lastUpdated = :now where t.status in :sce and exists (select 1 from Combo where fromComponent.id = :pkg and toComponent.id = t.id)", [ret: retired_status, sce: [expected_status, current_status], pkg: this.id, now: now])
     }
   }
 
