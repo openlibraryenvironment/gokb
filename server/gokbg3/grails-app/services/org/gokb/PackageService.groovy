@@ -1455,6 +1455,10 @@ class PackageService {
                 tsession.clear()
               }
               ctr++
+
+              if (Thread.currentThread().isInterrupted()) {
+                break
+              }
             }
           }
           tipps.close()
@@ -1857,12 +1861,13 @@ class PackageService {
     def result = 'OK'
     def attr = [:]
     File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    boolean cancelled = false
     File tempDir = new File('/tmp/gokb/oai/')
 
       Package.withNewSession {
         def ids = Package.executeQuery("select id from Package")
 
-        ids.each { id ->
+        for (id in ids) {
           Package item = Package.get(id)
 
           if (item) {
@@ -2063,6 +2068,11 @@ class PackageService {
                           }
                           cleanUpGorm()
                           log.debug("Batch complete ..")
+
+                          if (Thread.currentThread().isInterrupted()) {
+                            cancelled = true
+                            break
+                          }
                         }
                       }
                     }
@@ -2071,23 +2081,28 @@ class PackageService {
                 log.info("Finished processing ${tipps_count} TIPPs ..")
                 fileWriter.close()
 
-                def removal = removeCacheEntriesForItem(item.uuid)
+                if (!cancelled) {
+                  def removal = removeCacheEntriesForItem(item.uuid)
 
-                if (removal) {
-                  log.debug("Removed stale cache files ..")
+                  if (removal) {
+                    log.debug("Removed stale cache files ..")
+                  }
+
+                  FileUtils.moveFile(tmpFile, cachedRecord)
+
+                  if (!force || !currentCacheFile || item.lastUpdated > currentCacheDate) {
+                    Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(cachedRecord.lastModified()), item.id])
+                  }
+
+                  log.info("Caching KBART ..")
+                  createKbartExport(item, ExportType.KBART_TIPP)
+                  createKbartExport(item, ExportType.KBART_TITLE)
+                  createTsvExport(item)
+                  log.info("Finished caching KBART file")
                 }
-
-                FileUtils.moveFile(tmpFile, cachedRecord)
-
-                if (!force || !currentCacheFile || item.lastUpdated > currentCacheDate) {
-                  Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(cachedRecord.lastModified()), item.id])
+                else {
+                  result = 'CANCELLED'
                 }
-
-                log.info("Caching KBART ..")
-                createKbartExport(item, ExportType.KBART_TIPP)
-                createKbartExport(item, ExportType.KBART_TITLE)
-                createTsvExport(item)
-                log.info("Finished caching KBART file")
               }
               else if (currentCacheFile && item.lastUpdated <= currentCacheDate) {
                 result = 'SKIPPED_NO_CHANGE'
@@ -2108,6 +2123,12 @@ class PackageService {
             log.debug("Unable to reference package by id!")
           }
           cleanUpGorm()
+
+          if (Thread.currentThread().isInterrupted()) {
+            cancelled = true
+            result = 'CANCELLED'
+            break
+          }
         }
       }
 

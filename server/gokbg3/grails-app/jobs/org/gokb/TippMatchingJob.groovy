@@ -59,6 +59,12 @@ class TippMatchingJob {
         session.flush()
         session.clear()
       }
+
+      if (Thread.currentThread().isInterrupted()) {
+        session.flush()
+        session.clear()
+        break
+      }
     }
     log.info("end matching Job after ${(LocalDateTime.now().minusNanos(startTime.getNano())).second} sec and ${tippIDs.size()} TIPPs")
   }}
