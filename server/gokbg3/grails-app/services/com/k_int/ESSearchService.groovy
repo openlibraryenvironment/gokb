@@ -505,7 +505,7 @@ class ESSearchService{
   def scroll(params) throws Exception{
     def result = [:]
     def esClient = ESWrapperService.getClient()
-    def usedComponentTypes = getUsedComponentTypes(params, result, esClient)
+    def usedComponentTypes = getUsedComponentTypes(params, result)
     if (result.error){
       return result
     }
@@ -555,7 +555,7 @@ class ESSearchService{
     result
   }
 
-  private Map getUsedComponentTypes(params, LinkedHashMap<Object, Object> result, def esClient){
+  private Map getUsedComponentTypes(params, LinkedHashMap<Object, Object> result){
     Map usedComponentTypes = new HashMap()
     if (!params.component_type){
       result.result = "ERROR"
@@ -687,7 +687,7 @@ class ESSearchService{
 
         if (!errors) {
           searchRequest.source(searchSourceBuilder)
-          searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT)
+          searchResponse = ESWrapperService.getClient().search(searchRequest, RequestOptions.DEFAULT)
         }
       }
       else if ( !exactQuery.hasClauses() ){
