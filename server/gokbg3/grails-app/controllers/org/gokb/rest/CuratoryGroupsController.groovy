@@ -259,7 +259,6 @@ class CuratoryGroupsController {
         result = concurrencyManagerService.getGroupJobs(group.id as int, max, offset)
       }
     }
-    log.debug("Return ${result}")
 
     render result as JSON
   }
