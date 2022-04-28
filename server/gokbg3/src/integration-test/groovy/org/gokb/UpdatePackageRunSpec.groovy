@@ -38,6 +38,11 @@ class UpdatePackageRunSpec extends Specification {
     def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush: true)
     def test_upd_pkg = Package.findByName('TestPackage') ?: new Package(name: 'TestPackage').save(flush: true)
     def test_journal = JournalInstance.findByName('TestJournal') ?: new JournalInstance(name: 'TestJournal').save(flush: true)
+    Identifier book_doi = Identifier.findByValueAndNamespace('10.1021/978-3-16-148410-0', IdentifierNamespace.findByValue('doi')) ?: new Identifier(value: '10.1021/978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('doi'))
+    Identifier book_isbn = Identifier.findByValueAndNamespace('978-3-16-148410-0', IdentifierNamespace.findByValue('isbn')) ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn'))
+    Identifier serial_issn = Identifier.findByValueAndNamespace('9783-442X', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '9783-442X', namespace: IdentifierNamespace.findByValue('issn'))
+    Identifier serial_eissn = Identifier.findByValueAndNamespace('9783-4420', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '9783-4420', namespace: IdentifierNamespace.findByValue('eissn'))
+
     def test_book = BookInstance.findByName('TestBook') ?: new BookInstance(name: 'TestBook').save(flush: true)
     def test_tipp1 = TitleInstancePackagePlatform.findByName('TestJournalTIPP') ?: new TitleInstancePackagePlatform(
         ['pkg'            : test_upd_pkg,
@@ -46,8 +51,7 @@ class UpdatePackageRunSpec extends Specification {
          'status'         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
          'name'           : 'TestJournalTIPP',
          'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Serial'),
-         'ids'            : [Identifier.findByValue('9783-442X') ?: new Identifier(value: '9783-442X', namespace: IdentifierNamespace.findByValue('issn')),
-                             Identifier.findByValue('9783-4420') ?: new Identifier(value: '9783-4420', namespace: IdentifierNamespace.findByValue('eissn'))],
+         'ids'            : [serial_issn, serial_eissn],
          'importId'       : 'titleID']).save(flush: true)
     def test_tipp2 = TitleInstancePackagePlatform.findByName('TestBookTIPP') ?: new TitleInstancePackagePlatform(
         ['pkg'            : test_upd_pkg,
@@ -56,8 +60,7 @@ class UpdatePackageRunSpec extends Specification {
          'status'         : RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT),
          'name'           : 'TestBookTIPP',
          'publicationType': RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, 'Monograph'),
-         'ids'            : [Identifier.findByValue('9784-442X') ?: new Identifier(value: '9784-442X', namespace: IdentifierNamespace.findByValue('issn')),
-                             Identifier.findByValue('978-3-16-148410-0') ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('pisbn'))],
+         'ids'            : [book_doi, book_isbn],
          'importId'       : 'bookID']).save(flush: true)
 
 
@@ -65,6 +68,14 @@ class UpdatePackageRunSpec extends Specification {
     if (!user.apiUserStatus) {
       UserRole.create(user, Role.findByAuthority('ROLE_API'), true)
     }
+
+    test_book.ids.add(book_doi)
+    test_book.ids.add(book_isbn)
+    test_book.save(flush: true)
+
+    test_journal.ids.add(serial_issn)
+    test_journal.ids.add(serial_eissn)
+    test_journal.save(flush: true)
   }
 
   def cleanup() {
@@ -87,7 +98,7 @@ class UpdatePackageRunSpec extends Specification {
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
       title.expunge()
     }
-    ['9783-442X', '9783-4420', '9784-442X', '978-3-16-148410-0'].each {
+    ['9783-442X', '9783-4420', '9784-442X', '978-3-16-148410-0', '10.1021/978-3-16-148410-0'].each {
       Identifier.findByValue(it)?.expunge()
     }
     ['Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
@@ -97,6 +108,7 @@ class UpdatePackageRunSpec extends Specification {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
     ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog")
+    AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup")
     ReviewRequest.executeUpdate("delete from ReviewRequest")
   }
 
@@ -131,27 +143,15 @@ class UpdatePackageRunSpec extends Specification {
                 "titleId"    : "bookTitleID", // different
                 "identifiers": [
                     [
-                        "type" : "issn",
-                        "value": "9784-4421"  // different
+                        "type" : "doi",
+                        "value": "10.1021/978-3-16-148410-3"  // different
                     ],
                     [
-                        "type" : "pisbn",
-                        "value": "978-3-16-148410-0"  // same
+                        "type" : "isbn",
+                        "value": "978-3-16-148410-0"  // same (priority)
                     ]
                 ],
-                "coverage"   : [
-                    [
-                        "coverageDepth": "Fulltext",
-                        "coverageNote" : "NL-DE;  1.1953 - 43.1995",
-                        "embargo"      : "",
-                        "endDate"      : "1995-12-31 00:00:00.000",
-                        "endIssue"     : "",
-                        "endVolume"    : "43",
-                        "startDate"    : "1953-01-01 00:00:00.000",
-                        "startIssue"   : "",
-                        "startVolume"  : "1"
-                    ]
-                ],
+                "coverage"   : [],
                 "medium"     : "Book",
                 "platform"   : [
                     "name"      : "ACS Publications",
@@ -162,16 +162,12 @@ class UpdatePackageRunSpec extends Specification {
                 "title"      : [
                     "identifiers": [
                         [
-                            "type" : "zdb",
-                            "value": "1483109-0"
+                            "type" : "doi",
+                            "value": "10.1021/978-3-16-148410-3"  // different
                         ],
                         [
-                            "type" : "eissn",
-                            "value": "1520-5118"
-                        ],
-                        [
-                            "type" : "issn",
-                            "value": "9783-442X"
+                            "type" : "isbn",
+                            "value": "978-3-16-148410-0"  // same (priority)
                         ]
                     ],
                     "name"       : "Book of agricultural and food chemistry",
@@ -272,12 +268,12 @@ class UpdatePackageRunSpec extends Specification {
                             "value": "1483109-0"
                         ],
                         [
-                            "type" : "eissn",
-                            "value": "1520-5118"
+                            "type" : "issn",
+                            "value": "9783-442X"  // same
                         ],
                         [
-                            "type" : "issn",
-                            "value": "9783-442X"
+                            "type" : "eissn",
+                            "value": "9783-4429"  // different
                         ]
                     ],
                     "name"       : "Journal of agricultural and food chemistry",
@@ -312,82 +308,78 @@ class UpdatePackageRunSpec extends Specification {
     journal.ids.size() == 2
   }
 
-  void "Test updatePackageTipps :: match journal by identifier"() {
+  void "Test updatePackageTipps :: match journal only by identifier"() {
 
     when: "Caller asks for this record to be cross referenced"
     def json_record = [
         "packageHeader": [
-            "breakable"      : "No",
-            "consistent"     : "Yes",
-            "editStatus"     : "In Progress",
-            "fixed"          : "No",
-            "global"         : "Consortium",
-            "identifiers"    : [
+            "breakable": "No",
+            "consistent": "Yes",
+            "editStatus": "In Progress",
+            "fixed": "No",
+            "global": "Consortium",
+            "identifiers" : [
                 [
-                    "type" : "isil",
+                    "type": "isil",
                     "value": "ZDB-1-ACS"
                 ]
             ],
-            "listStatus"     : "In Progress",
-            "name"           : "TestPackage",
+            "listStatus": "In Progress",
+            "name": "TestPackage",
             "nominalPlatform": [
-                "name"      : "ACS Publications",
+                "name": "ACS Publications",
                 "primaryUrl": "https://pubs.acs.org"
             ],
             "nominalProvider": "American Chemical Society"
         ],
         "tipps"        : [
             [
-                "accessEnd"  : "",
+                "accessEnd": "",
                 "accessStart": "",
-                "titleId"    : "otherTitleID",
+                "titleId": null,
                 "identifiers": [
                     [
-                        "type" : "issn",
+                        "type": "issn",
                         "value": "9783-442X"
                     ]
                 ],
-                "coverage"   : [
+                "coverage": [
                     [
                         "coverageDepth": "Fulltext",
-                        "coverageNote" : "NL-DE;  1.1953 - 43.1995",
-                        "embargo"      : "",
-                        "endDate"      : "1995-12-31 00:00:00.000",
-                        "endIssue"     : "",
-                        "endVolume"    : "43",
-                        "startDate"    : "1953-01-01 00:00:00.000",
-                        "startIssue"   : "",
-                        "startVolume"  : "1"
+                        "coverageNote": "NL-DE;  1.1953 - 43.1995",
+                        "embargo": "",
+                        "endDate": "1995-12-31 00:00:00.000",
+                        "endIssue": "",
+                        "endVolume": "43",
+                        "startDate": "1953-01-01 00:00:00.000",
+                        "startIssue": "",
+                        "startVolume": "1"
                     ]
                 ],
-                "medium"     : "Journal",
-                "platform"   : [
-                    "name"      : "ACS Publications",
+                "medium": "Journal",
+                "platform": [
+                    "name": "ACS Publications",
                     "primaryUrl": "https://pubs.acs.org"
                 ],
-                "status"     : "Current",
-                "editStatus" : "In Progress",
-                "title"      : [
+                "status": "Current",
+                "editStatus": "In Progress",
+                "title": [
                     "identifiers": [
                         [
-                            "type" : "zdb",
+                            "type": "zdb",
                             "value": "1483109-0"
                         ],
                         [
-                            "type" : "eissn",
-                            "value": "1520-5118"
-                        ],
-                        [
-                            "type" : "issn",
+                            "type": "issn",
                             "value": "9783-442X"
                         ]
                     ],
-                    "name"       : "Journal of agricultural and food chemistry",
-                    "publicationType"       : "Serial"
+                    "name": "Journal of agricultural and food chemistry",
+                    "publicationType": "Serial"
                 ],
-                "name"       : "Journal of agricultural and food chemistry",
-                "publicationType"       : "Serial",
-                "url"        : "http://pubs.acs.org/journal/jafcau"
+                "name": "Journal of agricultural and food chemistry",
+                "publicationType": "Serial",
+                "url": "http://pubs.acs.org/journal/jafcau"
             ]
         ]
     ]
@@ -405,12 +397,7 @@ class UpdatePackageRunSpec extends Specification {
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
     matching_pkgs[0].id == resp.json.pkgId
-    def journal
-    matching_pkgs[0].tipps.each { tipp ->
-      if (tipp.importId == "otherTitleID")
-        journal = tipp
-    }
-    journal.ids.size() == 1
+    matching_pkgs[0].tipps.size() == 2
   }
 
   void "Test updatePackageTipps :: match by importId"() {
@@ -442,25 +429,7 @@ class UpdatePackageRunSpec extends Specification {
                 "accessEnd"  : "",
                 "accessStart": "",
                 "titleId"    : "titleID",
-                "identifiers": [
-                    [
-                        "type" : "doi",
-                        "value": "testTippId"
-                    ],
-                    [
-                        "type" : "zdb",
-                        "value": "1483109-0"
-                    ],
-                    [
-                        "type" : "eissn",
-                        "value": "9783-4420"
-                    ],
-                    [
-                        "type" : "issn",
-                        "value": "9783-4428"
-                    ]
-
-                ],
+                "identifiers": [],
                 "coverage"   : [
                     [
                         "coverageDepth": "Fulltext",
@@ -482,20 +451,7 @@ class UpdatePackageRunSpec extends Specification {
                 "status"     : "Current",
                 "editStatus" : "In Progress",
                 "title"      : [
-                    "identifiers": [
-                        [
-                            "type" : "zdb",
-                            "value": "1483109-0"
-                        ],
-                        [
-                            "type" : "eissn",
-                            "value": "9783-4420"
-                        ],
-                        [
-                            "type" : "issn",
-                            "value": "9783-4428"
-                        ]
-                    ],
+                    "identifiers": [],
                     "name"       : "Journal of agricultural and food chemistry",
                     "publicationType"       : "Serial"
                 ],
@@ -526,7 +482,6 @@ class UpdatePackageRunSpec extends Specification {
             journal = it
         }
     }
-    journal.ids.size() == 5
   }
 
   void "Test updatePackageTipps :: new record"() {
@@ -562,7 +517,7 @@ class UpdatePackageRunSpec extends Specification {
                 "identifiers": [
                     [
                         "type" : "doi",
-                        "value": "testTippId"
+                        "value": "wildeTitleId"
                     ],
                     [
                         "type" : "zdb",
