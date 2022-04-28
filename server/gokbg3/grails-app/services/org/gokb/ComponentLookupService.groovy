@@ -398,7 +398,6 @@ class ComponentLookupService {
           boolean pkg_qry = false
 
           if (validLong.size() == 1 && p.name == 'componentToReview') {
-            paramStr += "("
             def ctr = KBComponent.get(validLong[0])
             def ctr_ids = [ctr.id]
 
@@ -417,11 +416,10 @@ class ComponentLookupService {
               }
 
               qryParams['ctrids'] = ctr_ids
-              paramStr += "p.componentToReview.id IN (:ctrids)"
+              paramStr += "(p.componentToReview.id IN :ctrids)"
               log.debug("${qryParams['ctrids'].size()}")
               pkg_qry = true
             }
-            paramStr += ")"
           }
 
           if (!pkg_qry && (validLong.size() > 0 || validStr.size() > 0)) {
