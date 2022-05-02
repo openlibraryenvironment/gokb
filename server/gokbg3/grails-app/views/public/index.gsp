@@ -59,7 +59,7 @@
 
             <label for="q">Search for packages...</label>
             <div class="input-group">
-              <input type="text" class="form-control" placeholder="Find package like..." value="${params.q}" name="q">
+              <input type="text" class="form-control" placeholder="Find package like..." value="${params.q}" name="q"/>
               <span class="input-group-btn">
                 <button class="btn btn-primary" type="submit" value="yes" name="search"><span class="fa fa-search" aria-hidden="true">Search</span></button>
               </span>
