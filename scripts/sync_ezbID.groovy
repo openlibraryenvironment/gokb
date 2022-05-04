@@ -14,6 +14,7 @@
     @GrabExclude('org.codehaus.groovy:groovy-all')
 ])
 
+import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovyx.net.http.*
 import org.apache.commons.io.*
@@ -36,17 +37,13 @@ config.uploadPass = System.console().readPassword ('Enter your password: ').toSt
 // config.uploadUser = "You can also set an automated username here."
 // config.uploadPass = "You can also set an automated password here."
 
-
-def httpbuilder = new HTTPBuilder( "http://localhost:${config.port}" )
-httpbuilder.auth.basic config.uploadUser, config.uploadPass
-
 println("Enriching EZB IDs by CSV file ... ")
-enrichEzb(config, httpbuilder, args[0])
+enrichEzb(config, args[0])
 println("Enriching EZB IDs by CSV file ... done.")
 
 
 
-def enrichEzb(config, httpbuilder, issnfile) {
+def enrichEzb(config, issnfile) {
   File f = new File(args[0])
   def charset = 'UTF-8'
   def csv = new CSVReader(new InputStreamReader(
@@ -60,12 +57,11 @@ def enrichEzb(config, httpbuilder, issnfile) {
   String[] nl=csv.readNext()
 
   int rownum = 1
-  int enrichedRecords = 0
 
   while (nl != null) {
     if (rownum % 5000 == 0) {
       synchronized(this) {
-        println("Sleeping 6 seconds") // seems to be good habit?!
+        // println("Sleeping 6 seconds") // seems to be good habit?!
         Thread.sleep(6000)
       }
     }
@@ -95,26 +91,23 @@ def enrichEzb(config, httpbuilder, issnfile) {
     }
 
     def records = getRecords(config, zdbId)
-
-    println("Row number: ${rownum}")
-    println("Got records: ${records}")
-    println("Enriched records: ${enrichedRecords}")
+    // println("Got records: ${records}")
 
     for (def rec in records){
       def ids = rec.identifiers
-      ids.add( [ type:'ezb', value:${ezbId} ] )
+      ids.add( [ namespace:"ezb", value:"${ezbId}", namespaceName:"EZB-ID" ] )
       rec.identifiers = ids
-      addToGoKB(httpbuilder, rec, config)
-      enrichedRecords++
+      addToGoKB(rec, config)
     }
 
-    if (enrichedRecords >= 1){
-      break
-    }
     rownum++
     nl=csv.readNext()
+    if (rownum > Integer.valueOf(config.maximumLines)){
+      break
+    }
   }
 }
+
 
 
 /**
@@ -140,42 +133,75 @@ String getZdbCheckDigit(def zdbId) {
 
 
 List getRecords(def config, def zdbId){
-  def url = "http://localhost:${config.port}"
-  def path = "${config.path}/api/find?componentType=Journal&identifier=${zdbId}"
-
-  println ("Getting record by URL: ${url.concat(path)}")
-
-  http = new HTTPBuilder(url.concat(path))
-  http.get(contentType : ContentType.TEXT) { resp, reader ->
-    def text = reader.getText()
-    def jsonSlurper = new JsonSlurper()
-    def map = jsonSlurper.parseText(text)
-    println ("... got: ${map}")
-    return map
-  }
-  return []
+  Map searchHits = getSearchResult(config, zdbId)
+  return searchHits.records
 }
 
 
 
-def addToGoKB(httpbuilder, rec, config){
+Map getSearchResult(def config, def zdbId){
+  def url = "http://localhost:${config.port}"
+  def path = "${config.path}/api/find?componentType=Journal&identifier=${zdbId}"
 
-  println("Requesting crossReferenceTitle for record: ${rec}")
+  // println ("Getting record by URL: ${url.concat(path)}")
+  http = new HTTPBuilder(url.concat(path))
+  http.get(contentType : ContentType.TEXT) { resp, reader ->
+    def text = reader.getText()
+    def jsonSlurper = new JsonSlurper()
+    def result = jsonSlurper.parseText(text)
+    return result
+  }
+}
 
-  httpbuilder.request(Method.POST) { req ->
-    uri.path='${config.path}/integration/crossReferenceTitle'
-    body = rec
-    requestContentType = ContentType.JSON
 
-    println("Adding record: ${rec}")
 
-    response.success = { resp ->
-      println "Added EZB ID for record: ${rec}"
+def addToGoKB(rec, config){
+  def shortRecord = [:]
+  shortRecord.put("publicationType", "Serial")
+  identifiers = []
+  for (def id in rec.identifiers){
+    if (id.namespace in ["ezb", "zdb"]){
+      identifiers.add(id)
+    }
+  }
+  shortRecord.put("identifiers", identifiers)
+  shortRecord.put("name", rec.name)
+
+  def url = "http://localhost:${config.port}"
+  def path = "${config.path}/integration/crossReferenceTitle"
+  // println("Setting HTTPBuilder with URL: ${url.concat(path)}")
+  def http = new HTTPBuilder(url.concat(path))
+  http.auth.basic config.uploadUser, config.uploadPass
+  def postID = http.request( Method.POST, ContentType.JSON ) { req ->
+    send ContentType.JSON, JsonOutput.toJson(shortRecord)
+    response.success = { resp, json ->
+      println "Added EZB ID for record: ${shortRecord}"
+      /*
+      println "... response status was: ${resp.status}"
+      println "... response status code was: ${resp.getStatusLine().getStatusCode()}"
+      println "... response reason was: ${resp.getStatusLine().getReasonPhrase()}"
+      println "... response entity was: ${resp.getEntity().getContent()}"
+      println "... response header was: ${resp.headers}"
+      println "... response data was: ${resp.responseData}"
+      println "... response was: ${resp.responseBase}"
+      println "... response status: ${resp.statusLine}"
+      println "... content Length: ${resp.headers['Content-Length']?.value}"
+      println "... JSON: ${json}"
+      */
+      return json
     }
 
+
     response.failure = { resp ->
-      println "Couldn't add EZB ID for record: ${rec}"
-      println "... status was: ${resp.status}"
+      println "Couldn't add EZB ID for record: ${shortRecord}"
+      /*
+      println "... response status was: ${resp.status}"
+      println "... response status code was: ${resp.getStatusLine().getStatusCode()}"
+      println "... response reason was: ${resp.getStatusLine().getReasonPhrase()}"
+      println "... response header was: ${resp.headers}"
+      println "... response data was: ${resp.responseData}"
+      println "... response was: ${resp.responseBase}"
+      */
     }
   }
 }
