@@ -68,7 +68,7 @@ class ComponentUpdateService {
       def namespace_val = ci.namespace?.value ?: ci.type
       String testKey = "${namespace_val}|${ci.value}".toString()
 
-      if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {
+      if (namespace_val && ci.value && "${namespace_val}".toLowerCase() != "originediturl") {
 
         if (!ids.contains(testKey)) {
           def canonical_identifier = null
