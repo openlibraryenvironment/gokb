@@ -1219,57 +1219,69 @@ class PackageService {
       def path = exportFilePath()
       try {
         def out = new File("${path}${exportFileName}")
-        if (out.isFile())
-          return
-        else {
-          new File(path).list().each { fileName ->
-            if (fileName.startsWith(exportFileName.substring(0, exportFileName.length() - 21))) {
-              if (!new File(path + fileName).delete())
-                log.warn("couldn't delete file ${path}${fileName}")
+
+        if (pkg.status != RefdataCategory.lookup('KBComponent.Status', 'Deleted')) {
+          if (out.isFile())
+            return
+          else {
+            new File(path).list().each { fileName ->
+              if (fileName.startsWith(exportFileName.substring(0, exportFileName.length() - 21))) {
+                if (!new File(path + fileName).delete())
+                  log.warn("couldn't delete file ${path}${fileName}")
+              }
             }
           }
-        }
-        out.withWriter { writer ->
-          // As per spec header at top of file / section
-          // II: Need to add in preceding_publication_title_id
-          KBART_FIELDS.eachWithIndex { field, i ->
-            writer.write(field)
-            writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
-          }
+          out.withWriter { writer ->
+            // As per spec header at top of file / section
+            // II: Need to add in preceding_publication_title_id
+            KBART_FIELDS.eachWithIndex { field, i ->
+              writer.write(field)
+              writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
+            }
 
-          def session = sessionFactory.getCurrentSession()
-          def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-          def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status = :sc and c.type = :ct order by tipp.id")
-          query.setReadOnly(true)
-          query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)
-          query.setParameter('sc', status_current)
-          query.setParameter('ct', combo_tipps)
+            def session = sessionFactory.getCurrentSession()
+            def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+            def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+            def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status = :sc and c.type = :ct order by tipp.id")
+            query.setReadOnly(true)
+            query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)
+            query.setParameter('sc', status_current)
+            query.setParameter('ct', combo_tipps)
 
-          ScrollableResults tippIDs = query.scroll(ScrollMode.FORWARD_ONLY)
-          int ctr = 0
+            ScrollableResults tippIDs = query.scroll(ScrollMode.FORWARD_ONLY)
+            int ctr = 0
 
-          TitleInstancePackagePlatform.withNewSession { tsession ->
-            while (tippIDs.next()) {
-              def tipp_id = tippIDs.get(0)
-              TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+            TitleInstancePackagePlatform.withNewSession { tsession ->
+              while (tippIDs.next()) {
+                def tipp_id = tippIDs.get(0)
+                TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
 
-              kbartRecordsFor(tipp, exportType).each { record ->
-                KBART_FIELDS.eachWithIndex { fieldName, i ->
-                  writer.write(sanitize(record[fieldName]))
-                  writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
+                kbartRecordsFor(tipp, exportType).each { record ->
+                  KBART_FIELDS.eachWithIndex { fieldName, i ->
+                    writer.write(sanitize(record[fieldName]))
+                    writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
+                  }
+                }
+
+                if (ctr % 50 == 0) {
+                  tsession.flush()
+                  tsession.clear()
+                }
+                ctr++
+
+                if (Thread.currentThread().isInterrupted()) {
+                  break
                 }
               }
-
-              if (ctr % 50 == 0) {
-                tsession.flush()
-                tsession.clear()
-              }
-              ctr++
             }
+            tippIDs.close()
+            writer.close()
           }
-          tippIDs.close()
-          writer.close()
+        }
+        else {
+          if (out.isFile()) {
+            out.delete()
+          }
         }
       }
       catch (Exception e) {
