@@ -1,6 +1,9 @@
 package org.gokb
 
-import au.com.bytecode.opencsv.CSVReader
+import com.opencsv.CSVReader
+import com.opencsv.CSVReaderBuilder
+import com.opencsv.CSVParser
+import com.opencsv.CSVParserBuilder
 
 import com.k_int.ClassUtils
 import com.k_int.ESSearchService
@@ -47,12 +50,14 @@ class IngestKbartRun {
   boolean addOnly
   boolean async
   boolean dryRun
+  boolean isUpdate
   User user
   Map jsonResult = [result: "SUCCESS"]
   Map errors = [global: [], tipps: []]
   int removedNum = 0
   def invalidTipps = []
   def matched_tipps = [:]
+  def titleIdMap = [:]
   Package pkg
   CuratoryGroup activeGroup
   def pkg_validation
@@ -156,6 +161,10 @@ class IngestKbartRun {
                               [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
         result.report = [matched: 0, partial: 0, created: 0, retired: 0, invalid: 0, previous: old_tipp_count]
+
+        if (old_tipp_count > 0) {
+          isUpdate = true
+        }
 
         long startTime = System.currentTimeMillis()
 
@@ -399,16 +408,10 @@ class IngestKbartRun {
         if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
           identifiers << [type: row_specific_config.identifierMap.print_identifier, value: the_kbart.print_identifier.trim()]
 
-        the_kbart.additional_isbns.each { identifier ->
-          if (identifier.trim()) {
-            identifiers << [type: 'isbn', value:identifier.trim()]
-          }
-        }
-
         if (the_kbart.title_id && the_kbart.title_id.trim()) {
           log.debug("title_id ${the_kbart.title_id}")
 
-          if ( ingest_cfg.providerIdentifierNamespace ) {
+          if (ingest_cfg.providerIdentifierNamespace) {
             identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
           }
         }
@@ -520,41 +523,123 @@ class IngestKbartRun {
       hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name]
     ]
 
-    def match_result = tippService.restLookup(tipp_map)
+    if (isUpdate || !tipp_map.importId) {
+      def match_result = tippService.restLookup(tipp_map)
 
-    if (match_result.full_matches.size() > 0) {
-      result = 'matched'
-      tipp = match_result.full_matches[0]
-      // update Data
-      log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
+      if (match_result.full_matches.size() > 0) {
+        result = 'matched'
+        tipp = match_result.full_matches[0]
+        // update Data
+        log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
 
-      if (match_result.full_matches.size() > 1) {
-        log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
-        def additionalInfo = [otherComponents: []]
+        if (match_result.full_matches.size() > 1) {
+          log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
+          def additionalInfo = [otherComponents: []]
 
-        match_result.full_matches.eachWithIndex { ct, idx ->
-          if (idx > 0) {
-            additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
+          match_result.full_matches.eachWithIndex { ct, idx ->
+            if (idx > 0) {
+              additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
+            }
+          }
+
+          // RR für Multimatch generieren
+          reviewRequestService.raise(
+              tipp,
+              "Ambiguous KBART Record Matches",
+              "A KBART record has been matched on multiple package titles.",
+              user,
+              null,
+              (additionalInfo as JSON).toString(),
+              RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
+              componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
+          )
+        }
+      }
+      else {
+        result = 'created'
+
+        if (!dryRun) {
+          def tipp_fields = [
+            pkg: pkg,
+            hostPlatform: the_platform,
+            url: the_kbart.title_url,
+            name: the_kbart.publication_title,
+            importId: the_kbart.title_id
+          ]
+
+          tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
+
+          log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
+
+          if (match_result.failed_matches.size() > 0) {
+            result = 'partial'
+
+            def additionalInfo = [otherComponents: []]
+
+            match_result.failed_matches.each { ct ->
+              additionalInfo.otherComponents << [
+                oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id,
+                uuid: ct.item.uuid,
+                id: ct.item.id,
+                name: ct.item.name,
+                matchResults: ct.matchResults
+              ]
+            }
+
+            // RR für Multimatch generieren
+            reviewRequestService.raise(
+                tipp,
+                "A KBART record has been matched on an existing package title by some identifiers, but not by other important identifiers.",
+                "Check the package titles and merge them if necessary.",
+                user,
+                null,
+                (additionalInfo as JSON).toString(),
+                RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
+                componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
+            )
           }
         }
+      }
 
-        // RR für Multimatch generieren
-        reviewRequestService.raise(
-            tipp,
-            "Ambiguous KBART Record Matches",
-            "A KBART record has been matched on multiple package titles.",
-            user,
-            null,
-            (additionalInfo as JSON).toString(),
-            RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
-            componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
-        )
+      if (!dryRun) {
+        if (!matched_tipps[tipp.id]) {
+          matched_tipps[tipp.id] = 1
+
+          if (result != 'created' && result != 'partial') {
+            TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = ?", [tipp])
+            tipp.refresh()
+          }
+        }
+        else {
+          matched_tipps[tipp.id]++
+        }
       }
     }
     else {
-      result = 'created'
+      def jsonIdMap = [:]
 
-      if (!dryRun) {
+      identifiers.each { jsonId ->
+        jsonIdMap[jsonId.type] = jsonId.value
+      }
+
+      if (titleIdMap[tipp_map.importId]) {
+        jsonIdMap.each { ns, val ->
+          if (titleIdMap[tipp_map.importId][ns] != jsonIdMap[ns]) {
+            result = 'partial'
+          }
+        }
+
+        if (result != 'partial') {
+          result = 'matched'
+        }
+      }
+      else {
+        result = 'created'
+      }
+
+      if (result != 'matched' && !dryRun) {
+        titleIdMap[tipp_map.importId] = jsonIdMap
+
         def tipp_fields = [
           pkg: pkg,
           hostPlatform: the_platform,
@@ -564,52 +649,10 @@ class IngestKbartRun {
         ]
 
         tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
-
-        log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
-
-        if (match_result.failed_matches.size() > 0) {
-          result = 'partial'
-
-          def additionalInfo = [otherComponents: []]
-
-          match_result.failed_matches.each { ct ->
-            additionalInfo.otherComponents << [
-              oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id,
-              uuid: ct.item.uuid,
-              id: ct.item.id,
-              name: ct.item.name,
-              matchResults: ct.matchResults
-            ]
-          }
-
-          // RR für Multimatch generieren
-          reviewRequestService.raise(
-              tipp,
-              "A KBART record has been matched on an existing package title by some identifiers, but not by other important identifiers.",
-              "Check the package titles and merge them if necessary.",
-              user,
-              null,
-              (additionalInfo as JSON).toString(),
-              RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
-              componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
-          )
-        }
       }
     }
 
     if (!dryRun) {
-      if (!matched_tipps[tipp.id]) {
-        matched_tipps[tipp.id] = 1
-
-        if (result != 'created' && result != 'partial') {
-          TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = ?", [tipp])
-          tipp.refresh()
-        }
-      }
-      else {
-        matched_tipps[tipp.id]++
-      }
-
       tippService.checkCoverage(tipp, tipp_map, (result == 'created' || result == 'partial'))
       tippService.updateSimpleFields(tipp, tipp_map, true, user)
 
@@ -620,14 +663,13 @@ class IngestKbartRun {
         tipp.lastSeen = ingest_systime
       }
 
-      // Allow columns like tipp.price, tipp.price.list, tipp.price.perpetual - Call the setPrice(type, value) for each
-      setTypedProperties(tipp, the_kbart.unmapped, 'Price',  ~/(tipp)\.(price)(\.(.*))?/, 'currency')
+      setPrices(tipp, the_kbart.unmapped)
 
       // Look through the field list for any tipp.custprop values
-      log.debug("Checking for tipp custprops")
+      // log.debug("Checking for tipp custprops")
 
-      addCustprops(tipp, the_kbart, 'tipp.custprops.')
-      addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.')
+      // addCustprops(tipp, the_kbart, 'tipp.custprops.')
+      // addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.')
 
       log.debug("manualUpsertTIPP returning")
       tipp.save(flush: true)
@@ -636,54 +678,23 @@ class IngestKbartRun {
     result
   }
 
-  def setTypedProperties(tipp, props, field, regex, type) {
-    log.debug("setTypedProperties(...${field},...)")
+  def setPrices(tipp, props) {
+    log.debug("setPrices ..")
 
     props.each { up ->
       def prop = up.name
 
-      if (prop ==~ regex && up.value.trim()) {
-        def propname_groups = prop =~ regex
-        def propname = propname_groups[0][2]
-        def proptype = propname_groups[0][4]
+      if (prop ==~ ~/^listprice_.+/ && up.value.trim()) {
+        def currency = prop =~ ~/^listprice_($1)$/
+        def combined_price = "${up.value.trim()} ${currency}"
 
-        def current_value = tipp."get${field}"(proptype)
-        def value_from_file = formatValueFromFile(up.value.trim(), type)
+        def priceObj = tipp.setPrice('list', combined_price)
 
-        log.debug("setTypedProperties - match regex on ${prop},type=${proptype},value_from_file=${value_from_file} current=${current_value}")
-
-        // If we don't currently have a value OR we have a value which is not the same as the one supplied
-        if (current_value == null || !current_value.equals(value_from_file)) {
-          log.debug("${current_value} !=  ${value_from_file} so set...")
-          tipp."set${field}"(proptype, value_from_file)
+        if (!priceObj) {
+          log.debug("Unable to create attached list price (${prop}: ${up.value.trim()})!")
         }
       }
-      else {
-        // log.debug("${prop} does not match regex");
-      }
     }
-  }
-
-  private String formatValueFromFile(String v, String t) {
-    String result = null
-
-    switch (t) {
-      case 'currency':
-        // "1.24", "1 GBP", "11234.43", "3334", "3334.2", "2.3 USD" -> "1.24", "1.00 GBP", "11234.43", "3334.00", "3334.20", "2.30 USD"
-        String[] currency_components = v.split(' ')
-
-        if (currency_components.length == 2) {
-          result = String.format('%.2f', Float.parseFloat(currency_components[0])) + ' ' + currency_components[1]
-        }
-        else {
-          result = String.format('%.2f', Float.parseFloat(currency_components[0]))
-        }
-        break
-      default:
-        result = v.trim()
-    }
-
-    return result
   }
 
   def handlePlatform(host, protocol) {
@@ -718,7 +729,12 @@ class IngestKbartRun {
     def results = []
     def charset = 'UTF-8'
 
-    def csv = new CSVReader(
+    final CSVParser parser = new CSVParserBuilder()
+    .withSeparator('\t' as char)
+    .withIgnoreQuotations(true)
+    .build()
+
+    CSVReader csv = new CSVReaderBuilder(
         new InputStreamReader(
             new org.apache.commons.io.input.BOMInputStream(
                 new ByteArrayInputStream(the_data.fileData),
@@ -729,9 +745,9 @@ class IngestKbartRun {
                 ByteOrderMark.UTF_8
             ),
             java.nio.charset.Charset.forName(charset)
-        ),
-        '\t' as char,'\0' as char
-    )
+        )
+    ).withCSVParser(parser)
+    .build()
     //results=ctb.parse(hcnms, csv)
     //quick check that results aren't null...
 
@@ -750,12 +766,12 @@ class IngestKbartRun {
 
     while (nl != null) {
       Map result = [:]
-      if (nl.length > 0) {
-
+      if (nl.length != header.size()) {
+        throw new RuntimeException("Inconsistent column count in ${rownum}! -- Correct and resubmit")
+      }
+      else if (nl.length > 0) {
         for (key in col_positions.keySet()) {
-
           // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
-
           if (key && key.length() > 0) {
             //so, springer files seem to start with a dodgy character (int) 65279
             if ((int)key.toCharArray()[0] == 65279) {
@@ -978,11 +994,6 @@ class IngestKbartRun {
 
         if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
           identifiers << [type: row_specific_cfg.identifierMap.print_identifier, value: the_kbart.print_identifier.trim()]
-
-        the_kbart.additional_isbns.each { identifier ->
-          if (identifier && identifier.trim())
-            identifiers << [type: 'isbn', value: identifier.trim()]
-        }
 
         if (the_kbart.zdb_id && the_kbart.zdb_id.trim()) {
           identifiers << [type: 'zdb', value: the_kbart.zdb_id.trim()]

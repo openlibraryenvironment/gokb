@@ -1,6 +1,6 @@
 package org.gokb
 
-import au.com.bytecode.opencsv.CSVReader
+import com.opencsv.*
 
 import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
@@ -1011,7 +1011,11 @@ class TSVIngestionService {
     def results = []
     def charset = 'UTF-8'
 
-    def csv = new CSVReader(
+    final CSVParser parser = new CSVParserBuilder()
+    .withSeparator('\t' as char)
+    .build()
+
+    CSVReader csv = new CSVReaderBuilder(
         new InputStreamReader(
             new org.apache.commons.io.input.BOMInputStream(
                 new ByteArrayInputStream(the_data.fileData),
@@ -1022,9 +1026,10 @@ class TSVIngestionService {
                 ByteOrderMark.UTF_8
             ),
             java.nio.charset.Charset.forName(charset)
-        ),
-        '\t' as char,'\0' as char
+        )
     )
+    .withCSVParser(parser)
+    .build()
     //results=ctb.parse(hcnms, csv)
     //quick check that results aren't null...
 

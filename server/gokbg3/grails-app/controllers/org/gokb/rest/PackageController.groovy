@@ -826,17 +826,19 @@ class PackageController {
 
       if (!datafile) {
         log.debug("Create new datafile")
-        datafile = new DataFile(
-                                        guid:deposit_token,
-                                        md5:info.md5sumHex,
-                                        uploadName:upload_filename,
-                                        name:upload_filename,
-                                        filesize:info.filesize,
-                                        uploadMimeType:upload_mime_type).save()
+        DataFile.withNewTransaction {
+          datafile = new DataFile(
+                                          guid:deposit_token,
+                                          md5:info.md5sumHex,
+                                          uploadName:upload_filename,
+                                          name:upload_filename,
+                                          filesize:info.filesize,
+                                          uploadMimeType:upload_mime_type).save()
 
-        datafile.fileData = temp_file.getBytes()
-        datafile.save(failOnError:true,flush:true)
-        log.debug("Saved new datafile : ${datafile.id} -- ${datafile.uploadName}")
+          datafile.fileData = temp_file.getBytes()
+          datafile.save(failOnError:true,flush:true)
+          log.debug("Saved new datafile : ${datafile.id} -- ${datafile.uploadName}")
+        }
       }
 
       if (datafile) {

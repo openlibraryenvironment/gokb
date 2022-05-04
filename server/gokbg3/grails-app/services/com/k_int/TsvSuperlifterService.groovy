@@ -2,7 +2,7 @@ package com.k_int
 
 import java.text.SimpleDateFormat
 import org.springframework.transaction.annotation.*
-import au.com.bytecode.opencsv.CSVReader
+import com.opencsv.*
 import org.gokb.cred.*
 
 
@@ -17,9 +17,9 @@ class TsvSuperlifterService {
    *  config - config
    *  testRun - if true, dry run and don't create any values
    */
-  def load(input_stream, 
-           config, 
-           testRun, 
+  def load(input_stream,
+           config,
+           testRun,
            defaultLocatedObjects = [:]) {
 
     def result = [:]
@@ -28,15 +28,22 @@ class TsvSuperlifterService {
     def ctr = 0;
     def start_time = System.currentTimeMillis()
 
-    CSVReader r = new CSVReader( new InputStreamReader(input_stream, java.nio.charset.Charset.forName('UTF-8') ), '\t' as char )
-    String[] nl;
-    String[] columns;
+    final CSVParser parser = new CSVParserBuilder()
+    .withSeparator('\t' as char)
+    .build()
+
+    CSVReader r = new CSVReaderBuilder( new InputStreamReader(input_stream, java.nio.charset.Charset.forName('UTF-8') ))
+    .withCSVParser(parser)
+    .build()
+
+    String[] nl
+    String[] columns
     def colmap = [:]
     def first = true
 
     while ((nl = r.readNext()) != null) {
 
-     log.debug("Process ${nl}");
+     log.debug("Process ${nl}")
 
      def row_information = [ messages:[], error:false]
 
@@ -45,8 +52,8 @@ class TsvSuperlifterService {
       if ( first ) {
         first = false; // header
         columns=nl
-        result.columns = columns;
-        log.debug('Header :'+columns);
+        result.columns = columns
+        log.debug('Header :'+columns)
 
         if ( columns?.length == 1 ) {
           throw new RuntimeException("Only one column in tsv file - Is it possible your tabs have been removed by an editor?");

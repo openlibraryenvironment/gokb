@@ -6,7 +6,7 @@ import grails.plugin.springsecurity.annotation.Secured
 import groovy.json.JsonSlurper
 import org.springframework.web.servlet.support.RequestContextUtils
 import org.gokb.cred.*
-import au.com.bytecode.opencsv.CSVReader
+import com.opencsv.*
 import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService.Job
 import java.time.LocalDateTime
@@ -1707,9 +1707,14 @@ class IntegrationController {
     }
 
     def title_file = request.getFile("macros")?.inputStream
-    char del = '\t'
-    char quote = '"'
-    def r = new CSVReader(new InputStreamReader(title_file, java.nio.charset.Charset.forName('UTF-8')), del, quote)
+
+    final CSVParser parser = new CSVParserBuilder()
+    .withSeparator('\t' as char)
+    .build()
+
+    CSVReader r = new CSVReaderBuilder( new InputStreamReader(input_stream, java.nio.charset.Charset.forName('UTF-8') ))
+    .withCSVParser(parser)
+    .build()
 
     def col_positions = ['id': 0, 'name': 1, 'desc': 2, 'transformations': 3]
     String[] nl = r.readNext()

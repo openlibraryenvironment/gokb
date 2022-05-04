@@ -209,7 +209,7 @@ class PackageTestSpec extends AbstractAuthSpec {
       body(upd_body as JSON)
     }
     then:
-    resp.status == 201 // OK
+    resp.status == 200 // OK
     resp.json._embedded.tipps.size() == 1
     resp.json._embedded.tipps[0].url == upd_body.tipps[0].url
     resp.json._embedded.tipps[0].name == upd_body.tipps[0].name
