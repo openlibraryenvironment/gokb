@@ -8,6 +8,8 @@ import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.action.search.*
 import org.elasticsearch.client.*
 import org.elasticsearch.index.query.*
+import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder
 import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.SearchHits
 import org.elasticsearch.search.builder.SearchSourceBuilder
@@ -136,6 +138,11 @@ class ESSearchService{
       try{
         SearchRequest searchRequest = new SearchRequest()
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+        TermsAggregationBuilder pragg = AggregationBuilders.terms("provider").field("provider")
+        TermsAggregationBuilder cgagg = AggregationBuilders.terms("curatoryGroups").field("curatoryGroups")
+        searchSourceBuilder.aggregation(pragg)
+        searchSourceBuilder.aggregation(cgagg)
+
         log.debug("srb built: ${searchSourceBuilder} sort=${params.sort}")
         if (params.sort) {
           SortOrder order = SortOrder.ASC
@@ -659,10 +666,10 @@ class ESSearchService{
       }
 
       if( !errors && exactQuery.hasClauses() ) {
-
         SearchRequest searchRequest = new SearchRequest(grailsApplication.config?.gokb?.es?.indices?.values() as String[])
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-        searchSourceBuilder.query(QueryBuilders.matchAllQuery())
+        searchSourceBuilder.trackTotalHits(true)
+        searchSourceBuilder.query(exactQuery)
         searchRequest.source(searchSourceBuilder)
 
         checkInt(result, errors, params.max, 'max')
@@ -687,6 +694,7 @@ class ESSearchService{
 
         if (!errors) {
           searchRequest.source(searchSourceBuilder)
+          // log.debug("ElasticSearch Query using Java Client API:\n${searchRequest.source().toString()}")
           searchResponse = ESWrapperService.getClient().search(searchRequest, RequestOptions.DEFAULT)
         }
       }
@@ -700,7 +708,7 @@ class ESSearchService{
           hits.maxScore = 0
         }
 
-        result.count = hits.totalHits
+        result.count = hits.totalHits.value
         result.records = []
 
         hits.each { r ->
@@ -908,7 +916,8 @@ class ESSearchService{
         'curatoryGroups': false
     ]
 
-    def obj_cls = Class.forName("org.gokb.cred.${record.source.componentType}").newInstance()
+    def recordSource = record.getSourceAsMap()
+    def obj_cls = Class.forName("org.gokb.cred.${recordSource.componentType}").newInstance()
 
     if (obj_cls) {
 
@@ -927,8 +936,8 @@ class ESSearchService{
 
         def is_curator = true
 
-        if (user && record.source.curatoryGroups?.size() > 0) {
-          is_curator = user?.curatoryGroups?.name.intersect(record.source.curatoryGroups)
+        if (user && recordSource.curatoryGroups?.size() > 0) {
+          is_curator = user?.curatoryGroups?.name.intersect(recordSource.curatoryGroups)
         }
 
         def href = (user?.hasRole('ROLE_EDITOR') && is_curator) || user?.isAdmin() ? base + obj_cls.restPath + "/${rec_id}" : null
@@ -940,7 +949,7 @@ class ESSearchService{
 
       domainMapping['id'] = rec_id
 
-      record.source.each { field, val ->
+      recordSource.each { field, val ->
         def toSkip = (include_list && !include_list.contains(field)) || (exclude_list?.contains(field))
 
         if (field == "curatoryGroups" && !toSkip) {
@@ -960,7 +969,7 @@ class ESSearchService{
         }
         else if (esMapping[field] == "refdata" && !toSkip) {
           if (val) {
-            def cat = classExaminationService.deriveCategoryForProperty("org.gokb.cred.${record.source.componentType}", field)
+            def cat = classExaminationService.deriveCategoryForProperty("org.gokb.cred.${recordSource.componentType}", field)
             def rdv = RefdataCategory.lookup(cat, val)
             domainMapping[field] = [id: rdv.id, name:rdv.value]
           }

@@ -100,7 +100,7 @@
                           ${kbc?.name ?: v.display} (${v.count})
                         </g:if>
                         <g:else>
-                          <g:link controller="${controller}" action="${action}" params="${addFacet(params,facet.key,v.term)}">${kbc?.name ?: v.display}</g:link> (${v.count})
+                          <g:link controller="${controller}" action="${action}" params="${addFacet(params,facet.key,v.term)}">${kbc?.name ?: v.term}</g:link> (${v.count})
                         </g:else>
                       </li>
                     </g:each>

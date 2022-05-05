@@ -17,7 +17,7 @@ class GlobalSearchController {
 
   def ESWrapperService
 
-  def index() { 
+  def index() {
     def result = [:]
     def apiresponse = null
 
@@ -157,7 +157,7 @@ class GlobalSearchController {
             // Write out the mapped field name, not the name from the source
             sw.write(mapping.value)
             sw.write(":")
-  
+
             if(non_analyzed_fields.contains(mapping.value)) {
               sw.write("${params[mapping.key]}")
             }
