@@ -319,7 +319,7 @@ class ESSearchService{
       if (qpars.changedBefore) {
         dateQuery.lt(qpars.changedBefore)
       }
-      dateQuery.format("yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
+      dateQuery.format("yyyy-MM-dd'T'HH:mm:ss'Z'||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
 
       query.must(dateQuery)
     }
