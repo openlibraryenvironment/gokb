@@ -169,6 +169,8 @@ environments:
             es:
                 cluster: gokbg3-dev
                 host: localhost
+                ports:
+                    - 9200
                 indices:
                     titles: gokbtitles
                     tipps: gokbtipps
@@ -220,6 +222,8 @@ environments:
             es:
                 cluster: gokbg3-test
                 host: localhost
+                ports:
+                    - 9200
                 indices:
                     titles: gokbtitles
                     tipps: gokbtipps
@@ -281,6 +285,8 @@ environments:
             es:
                 cluster: gokbg3-prod
                 host: localhost
+                ports:
+                    - 9200
                 indices:
                     titles: gokbtitles
                     tipps: gokbtipps

@@ -233,10 +233,10 @@ class AdminController {
   }
 
   def updateTextIndexes() {
-    log.debug("Call to update indexe");
+    log.debug("Call to update Elasticsearch indices");
 
     Job j = concurrencyManagerService.createJob {
-      FTUpdateService.updateFTIndexes();
+      FTUpdateService.updateFTIndexes()
     }.startOrQueue()
 
     j.description = "Update Free Text Indexes"
@@ -249,7 +249,7 @@ class AdminController {
   def resetTextIndexes() {
     log.debug("Call to update indexe")
     Job j = concurrencyManagerService.createJob {
-      FTUpdateService.clearDownAndInitES()
+      FTUpdateService.clearDownAndInit()
     }.startOrQueue()
 
     j.description = "Reset Free Text Indexes"

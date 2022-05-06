@@ -406,9 +406,10 @@ class PackageController {
         if (new_val && new_val != obj.listStatus) {
           if (new_val.value == 'Checked') {
             RefdataValue review_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
-            RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
-            def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where tipp.status != :sd and exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp)",[pkg: obj, sd: status_deleted])
-            def open_reviews = ReviewRequest.executeQuery("from ReviewRequest where componentToReview = :pkg or componentToReview.id IN (:tipps) and status = :so", [pkg: obj, so: review_open, tipps: tipp_ids])
+            RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
+            def open_reviews = ReviewRequest.executeQuery("from ReviewRequest where componentToReview in (select k from KBComponent as k where exists (select 1 from Combo where fromComponent.id = :pkg and type = :ct and toComponent = k) or k.id = :pkg) and status = :so", [pkg: obj.id, so: review_open, ct: combo_tipps],[max: 1])
+
+            log.debug("Open Reviews: ${open_reviews}")
 
             if (open_reviews.size() == 0) {
               obj.listStatus = new_val

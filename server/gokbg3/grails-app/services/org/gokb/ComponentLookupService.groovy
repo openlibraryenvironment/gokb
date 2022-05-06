@@ -399,19 +399,24 @@ class ComponentLookupService {
 
           if (validLong.size() == 1 && p.name == 'componentToReview') {
             def ctr = KBComponent.get(validLong[0])
+            def ctr_ids = [ctr.id]
 
             if (ctr?.class == Package) {
               def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = ? and toComponent = tipp)",[ctr])
 
               if (params.titlereviews) {
-                def ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN (:tippids))", [tippids: tipp_ids])
-                qryParams['ctrids'] = ti_ids
+                if (tipp_ids.size() > 0) {
+                  def ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN (:tippids))", [tippids: tipp_ids])
+
+                  ctr_ids.addAll(ti_ids)
+                }
               }
               else {
-                qryParams['ctrids'] = [ctr.id] + tipp_ids
+                ctr_ids.addAll(tipp_ids)
               }
 
-              paramStr += "p.componentToReview.id IN (:ctrids)"
+              qryParams['ctrids'] = ctr_ids
+              paramStr += "(p.componentToReview.id IN :ctrids)"
               log.debug("${qryParams['ctrids'].size()}")
               pkg_qry = true
             }
