@@ -127,8 +127,8 @@
                <g:each in="${hits}" var="hit">
                 <g:set var="hitInst" value="${org.gokb.cred.KBComponent.get(hit.id.split(':')[1].toLong())}" />
                  <tr>
-                   <td> <g:if test="${hitInst}"><g:link controller="resource" action="show" id="${hit.id}">${hit.source.name ?: "- Not Set -"}</g:link></g:if><g:else>${hit.source.name ?: "- Not Set -"}</g:else></td>
-                   <td> ${hit.source.componentType} </td>
+                   <td> <g:if test="${hitInst}"><g:link controller="resource" action="show" id="${hit.id}">${hit.getSourceAsMap().name ?: "- Not Set -"}</g:link></g:if><g:else>${hit.getSourceAsMap().name ?: "- Not Set -"}</g:else></td>
+                   <td> ${hit.getSourceAsMap().componentType} </td>
                    <td> ${hitInst?.status?.value ?: 'Unknown'}</td>
                  </tr>
                </g:each>
