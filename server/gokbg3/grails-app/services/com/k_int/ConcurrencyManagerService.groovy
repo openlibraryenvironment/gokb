@@ -3,6 +3,7 @@ package com.k_int
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.JobResult
 import org.gokb.cred.RefdataValue
+import org.gokb.cred.RefdataCategory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -210,6 +211,25 @@ class ConcurrencyManagerService {
   public Map<String, Job> getJobs() {
     return new ConcurrentHashMap<String, Job>(map)
   }
+
+  public def getActiveImportJobs() {
+    def result = []
+    def allJobs = getJobs()
+    def jobTypes = [
+      RefdataCategory.lookup('Job.Type', 'PackageTitleMatch'),
+      RefdataCategory.lookup('Job.Type', 'KBARTIngest'),
+      RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest'),
+      RefdataCategory.lookup('Job.Type', 'PackageUpdateTipps')
+    ]
+
+    allJobs.each { uuid, value ->
+      if (value.type in jobTypes && value.begun && !value.isDone() && !value.isCancelled()) {
+        result << value
+      }
+    }
+    return result
+  }
+
 
   GrailsApplication grailsApplication
 
