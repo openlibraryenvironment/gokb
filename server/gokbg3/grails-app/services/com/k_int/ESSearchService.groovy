@@ -704,10 +704,6 @@ class ESSearchService{
 
       if (searchResponse) {
         SearchHits hits = searchResponse.getHits()
-        if (hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
-          hits.maxScore = 0
-        }
-
         result.count = hits.totalHits.value
         result.records = []
 
