@@ -437,9 +437,9 @@ class FTUpdateService {
     if (idx_record != null) {
       def recid = idx_record['_id'].toString()
       idx_record.remove('_id')
-      def esClient
-      esClient = ESWrapperService.getClient()
-      esClient.prepareIndex(es_index, 'component', recid).setSource(idx_record).get()
+      def esClient = ESWrapperService.getClient()
+      IndexRequest request = new IndexRequest("single").id(recid).source(idx_record)
+      esClient.index(request, RequestOptions.DEFAULT)
     }
   }
 
