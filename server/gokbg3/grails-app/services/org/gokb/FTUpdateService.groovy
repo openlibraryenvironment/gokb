@@ -49,13 +49,13 @@ class FTUpdateService {
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
-        result.contentType = kbc.contentType?.value
+        result.contentType = kbc.contentType?.value ?: ""
         result.description = kbc.description
         result.descriptionURL = kbc.descriptionURL
         result.sortname = kbc.name
         result.altname = []
-        result.listStatus = kbc.listStatus?.value
-        result.editStatus = kbc.editStatus?.value
+        result.listStatus = kbc.listStatus?.value ?: ""
+        result.editStatus = kbc.editStatus?.value ?: ""
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -69,8 +69,8 @@ class FTUpdateService {
         result.nominalPlatform = kbc.nominalPlatform ? kbc.nominalPlatform.getLogEntityId() : ""
         result.nominalPlatformName = kbc.nominalPlatform?.name ?: ""
         result.nominalPlatformUuid = kbc.nominalPlatform?.uuid ?: ""
-        result.scope = kbc.scope ? kbc.scope.value : ""
-        result.global = kbc.global ? kbc.global.value : ""
+        result.scope = kbc.scope?.value ?: ""
+        result.global = kbc.global?.value ?: ""
         if (kbc.listVerifiedDate)
           result.listVerifiedDate = dateFormatService.formatIsoTimestamp(kbc.listVerifiedDate)
         if (kbc.source) {
@@ -79,7 +79,7 @@ class FTUpdateService {
             name            : kbc.source.name,
             automaticUpdates: kbc.source.automaticUpdates,
             url             : kbc.source.url,
-            frequency       : kbc.source.frequency,
+            frequency       : (kbc.source.frequency?.value ?: ""),
           ]
           if (kbc.source.lastRun)
             result.source.lastRun = dateFormatService.formatIsoTimestamp(kbc.source.lastRun)
@@ -88,7 +88,7 @@ class FTUpdateService {
         kbc.curatoryGroups?.each { cg ->
           result.curatoryGroups.add(cg.name)
         }
-        result.status = kbc.status?.value
+        result.status = kbc.status?.value ?: ""
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
