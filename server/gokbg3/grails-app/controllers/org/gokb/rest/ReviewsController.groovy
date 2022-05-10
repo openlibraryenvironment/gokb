@@ -541,6 +541,7 @@ class ReviewsController {
         response.status = 403
         result.message = "Unable to change ${params['_field']} for ${report.error} of ${report.total} items."
       } else {
+        result.report = report
         result.message = "Successfully changed ${params['_field']} for ${report.total} items."
       }
     }

@@ -28,41 +28,44 @@ class TippMatchingJob {
     synchronized (UpdatePkgTippsRun.LOCK){
 
     def startTime = LocalDateTime.now()
+    def count = 0
+    def tippIDs = TitleInstancePackagePlatform.executeQuery(
+        "select id from TitleInstancePackagePlatform tipp where status != :sdel and not exists (select c from Combo as c where c.type = :ctype and c.toComponent = tipp)",
+        [sdel : RefdataCategory.lookup('KBComponent.Status', 'Deleted'),
+        ctype: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')])
+    log.info("${tippIDs.size()} detached TIPPs to check")
 
-    TitleInstance.withNewSession {
-      def count = 0
-      def tippIDs = TitleInstancePackagePlatform.executeQuery(
-          "select id from TitleInstancePackagePlatform tipp where status != :sdel and not exists (select c from Combo as c where c.type = :ctype and c.toComponent = tipp)",
-          [sdel : RefdataCategory.lookup('KBComponent.Status', 'Deleted'),
-          ctype: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')])
-      log.info("${tippIDs.size()} detached TIPPs to check")
-
-      for (Long tippID : tippIDs) {
-        log.debug("begin tipp")
-        count++
-        TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippID)
-        // ignore Tipp if RR.Date > Tipp.Date
-        if (tipp) {
-          def rrList = ReviewRequest.findAllByComponentToReviewAndDateCreatedGreaterThan(tipp, tipp.dateCreated)
-          if (rrList.size() == 0) {
-            log.debug("match tipp $tipp")
-            def group = tipp.pkg.curatoryGroups?.size() > 0 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null
-            tippService.matchTitle(tipp, group)
-          }
-          else {
-            log.debug("tipp $tipp has ${rrList.size()} recent Review Requests and is ignored.")
-          }
-          log.debug("end tipp")
+    for (Long tippID : tippIDs) {
+      log.debug("begin tipp")
+      count++
+      TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippID)
+      // ignore Tipp if RR.Date > Tipp.Date
+      if (tipp) {
+        def rrList = ReviewRequest.findAllByComponentToReviewAndStatus(tipp, RefdataCategory.lookup("ReviewRequest.Status", "Open"))
+        if (rrList.size() == 0) {
+          log.debug("match tipp $tipp")
+          def group = tipp.pkg.curatoryGroups?.size() > 0 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null
+          tippService.matchTitle(tipp, group)
         }
-
-        if (count % 50 == 0) {
-          def session = sessionFactory.currentSession
-          // flush and clear the session.
-          session.flush()
-          session.clear()
+        else {
+          log.debug("tipp $tipp has ${rrList.size()} recent Review Requests and is ignored.")
         }
+        log.debug("end tipp")
       }
-      log.info("end matching Job after ${(LocalDateTime.now().minusNanos(startTime.getNano())).second} sec and ${tippIDs.size()} TIPPs")
-    }}
-  }
+
+      if (count % 50 == 0) {
+        def session = sessionFactory.currentSession
+
+        session.flush()
+        session.clear()
+      }
+
+      if (Thread.currentThread().isInterrupted()) {
+        session.flush()
+        session.clear()
+        break
+      }
+    }
+    log.info("end matching Job after ${(LocalDateTime.now().minusNanos(startTime.getNano())).second} sec and ${tippIDs.size()} TIPPs")
+  }}
 }

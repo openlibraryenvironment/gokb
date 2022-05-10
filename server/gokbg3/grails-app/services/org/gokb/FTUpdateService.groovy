@@ -1,9 +1,14 @@
 package org.gokb
 
 import com.k_int.ESSearchService
+import grails.converters.JSON
 import grails.gorm.transactions.Transactional
-import org.elasticsearch.action.bulk.BulkRequestBuilder
-import org.gokb.cred.TitleInstancePackagePlatform
+import org.elasticsearch.action.bulk.BulkItemResponse
+import org.elasticsearch.action.bulk.BulkRequest
+import org.elasticsearch.action.bulk.BulkResponse
+import org.elasticsearch.action.index.IndexRequest
+import org.elasticsearch.client.RequestOptions
+import org.elasticsearch.common.xcontent.XContentType
 
 @Transactional
 class FTUpdateService {
@@ -21,7 +26,7 @@ class FTUpdateService {
    * is responsible for ensuring only 1 FT index task runs at a time. It's a simple mutex.
    * see https://async.grails.org/latest/guide/index.html
    */
-  def synchronized updateFTIndexes() {
+  def updateFTIndexes() {
     log.debug("updateFTIndexes")
     if (running == false) {
       running = true
@@ -35,6 +40,7 @@ class FTUpdateService {
     }
   }
 
+
   def buildEsRecord (kbc) {
     def result = [:]
 
@@ -43,13 +49,13 @@ class FTUpdateService {
         result._id = "${kbc.class.name}:${kbc.id}"
         result.uuid = kbc.uuid
         result.name = kbc.name
-        result.contentType = kbc.contentType?.value
+        result.contentType = kbc.contentType?.value ?: ""
         result.description = kbc.description
         result.descriptionURL = kbc.descriptionURL
         result.sortname = kbc.name
         result.altname = []
-        result.listStatus = kbc.listStatus?.value
-        result.editStatus = kbc.editStatus?.value
+        result.listStatus = kbc.listStatus?.value ?: ""
+        result.editStatus = kbc.editStatus?.value ?: ""
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -63,8 +69,8 @@ class FTUpdateService {
         result.nominalPlatform = kbc.nominalPlatform ? kbc.nominalPlatform.getLogEntityId() : ""
         result.nominalPlatformName = kbc.nominalPlatform?.name ?: ""
         result.nominalPlatformUuid = kbc.nominalPlatform?.uuid ?: ""
-        result.scope = kbc.scope ? kbc.scope.value : ""
-        result.global = kbc.global ? kbc.global.value : ""
+        result.scope = kbc.scope?.value ?: ""
+        result.global = kbc.global?.value ?: ""
         if (kbc.listVerifiedDate)
           result.listVerifiedDate = dateFormatService.formatIsoTimestamp(kbc.listVerifiedDate)
         if (kbc.source) {
@@ -73,7 +79,7 @@ class FTUpdateService {
             name            : kbc.source.name,
             automaticUpdates: kbc.source.automaticUpdates,
             url             : kbc.source.url,
-            frequency       : kbc.source.frequency,
+            frequency       : (kbc.source.frequency?.value ?: ""),
           ]
           if (kbc.source.lastRun)
             result.source.lastRun = dateFormatService.formatIsoTimestamp(kbc.source.lastRun)
@@ -82,7 +88,7 @@ class FTUpdateService {
         kbc.curatoryGroups?.each { cg ->
           result.curatoryGroups.add(cg.name)
         }
-        result.status = kbc.status?.value
+        result.status = kbc.status?.value ?: ""
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
@@ -400,16 +406,14 @@ class FTUpdateService {
         result = null
         break
     }
-
     result
   }
 
-  def doFTUpdate() {
+
+  synchronized def doFTUpdate() {
     log.debug("doFTUpdate")
     log.debug("Execute IndexUpdateJob starting at ${new Date()}")
-    def start_time = System.currentTimeMillis()
     def esclient = ESWrapperService.getClient()
-
     try {
       updateES(esclient, org.gokb.cred.Package.class)
       updateES(esclient, org.gokb.cred.Org.class)
@@ -426,20 +430,21 @@ class FTUpdateService {
     running = false
   }
 
+
   def updateSingleItem(kbc) {
-    def esclient = ESWrapperService.getClient()
     def idx_record = buildEsRecord(kbc)
     def es_index = ESSearchService.indicesPerType.get(idx_record['componentType'])
-
     if (idx_record != null) {
       def recid = idx_record['_id'].toString()
       idx_record.remove('_id')
-      esclient.prepareIndex(es_index, 'component', recid).setSource(idx_record).get()
+      def esClient = ESWrapperService.getClient()
+      IndexRequest request = new IndexRequest("single").id(recid).source(idx_record)
+      esClient.index(request, RequestOptions.DEFAULT)
     }
   }
 
-  def updateES(esclient, domain) {
 
+  def updateES(esClient, domain) {
     log.debug("updateES(${domain}...)")
     cleanUpGorm()
     def count = 0
@@ -470,8 +475,7 @@ class FTUpdateService {
       def q = domain.executeQuery("select o.id from " + domain.name + " as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id", [ts: from], [readonly: true])
       log.debug("Query completed.. processing rows...")
 
-      BulkRequestBuilder bulkRequest = esclient.prepareBulk()
-      // while (results.next()) {
+      BulkRequest bulkRequest = new BulkRequest()
       for (r_id in q) {
         if (Thread.currentThread().isInterrupted()) {
           log.debug("Job cancelling ..")
@@ -481,11 +485,12 @@ class FTUpdateService {
         Object r = domain.get(r_id)
         log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
         def idx_record = buildEsRecord(r)
-        def es_index = ESSearchService.indicesPerType.get(idx_record['componentType'])
         if (idx_record != null) {
-          def recid = idx_record['_id'].toString()
+          IndexRequest singleRequest = new IndexRequest(ESSearchService.indicesPerType.get(idx_record['componentType']))
+          singleRequest.id(idx_record['_id'].toString())
           idx_record.remove('_id')
-          bulkRequest.add(esclient.prepareIndex(es_index, 'component', recid).setSource(idx_record))
+          singleRequest.source((idx_record as JSON).toString(), XContentType.JSON)
+          bulkRequest.add(singleRequest)
         }
         if (r.lastUpdated?.getTime() > highest_timestamp) {
           highest_timestamp = r.lastUpdated?.getTime()
@@ -495,9 +500,10 @@ class FTUpdateService {
         total++
         if (count > 250) {
           count = 0
-          log.debug("interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
-          def bulkResponse = bulkRequest.get()
-          log.debug("BulkResponse: ${bulkResponse}")
+          log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
+          BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
+          logBulkFailures(bulkResponse)
+          log.debug("... BulkResponse: ${bulkResponse}")
           FTControl.withNewTransaction {
             latest_ft_record = FTControl.get(latest_ft_record.id)
             if (latest_ft_record) {
@@ -515,10 +521,10 @@ class FTUpdateService {
           }
         }
       }
-
       if (count > 0) {
-        def bulkFinalResponse = bulkRequest.get()
-        log.debug("Final BulkResponse: ${bulkFinalResponse}")
+        BulkResponse bulkFinalResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
+        log.debug("... final BulkResponse: ${bulkFinalResponse}")
+        logBulkFailures(bulkFinalResponse)
       }
       // update timestamp
       if (total > 0) {
@@ -530,15 +536,25 @@ class FTUpdateService {
         }
       }
       cleanUpGorm()
-      log.debug("final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
+      log.debug("... final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
     }
     catch (Exception e) {
       log.error("Problem with FT index", e)
     }
-    finally {
-      log.debug("Completed processing on ${domain.name} - saved ${count} records")
+  }
+
+
+  private void logBulkFailures(BulkResponse bulkResponse){
+    if (bulkResponse.hasFailures()){
+      for (BulkItemResponse bulkItemResponse : bulkResponse){
+        if (bulkItemResponse.isFailed()){
+          BulkItemResponse.Failure failure = bulkItemResponse.getFailure()
+          log.debug("... Elasticsearch bulk operation failure: ${failure}")
+        }
+      }
     }
   }
+
 
   def cleanUpGorm() {
     log.debug("Clean up GORM")
@@ -547,7 +563,8 @@ class FTUpdateService {
     session.clear()
   }
 
-  def clearDownAndInitES() {
+
+  def clearDownAndInit() {
     if (running == false) {
       log.debug("Remove existing FTControl ..")
       FTControl.withTransaction {
@@ -561,6 +578,7 @@ class FTUpdateService {
       return "Job cancelled – FTUpdate was already running!"
     }
   }
+
 
   @javax.annotation.PreDestroy
   def destroy() {

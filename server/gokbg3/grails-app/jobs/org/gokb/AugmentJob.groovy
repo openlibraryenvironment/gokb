@@ -70,6 +70,10 @@ class AugmentJob {
       issnNs << IdentifierNamespace.findByValue('eissn')
       int offset = 0
       int batchSize = 50
+      Instant start = Instant.now()
+      ZonedDateTime zdt = ZonedDateTime.ofInstant(start, ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS)
+      Date startDate = Date.from(zdt.toInstant())
+
       def count_journals_without_ezb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(),[current: status_current, ctype: idComboType, ns: ezbNs, issns: issnNs, lastRun: startDate])[0]
 
       while (offset < count_journals_without_ezb_id) {
