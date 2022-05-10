@@ -102,7 +102,7 @@ def enrichEzb(config, issnfile) {
 
     rownum++
     nl=csv.readNext()
-    if (rownum > Integer.valueOf(config.maximumLines)){
+    if (config?.maximumLines && rownum > Integer.valueOf(config.maximumLines)){
       break
     }
   }
