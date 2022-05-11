@@ -110,12 +110,22 @@ class Identifier extends KBComponent {
     }
   }
 
-  public def getActiveIdentifiedComponents() {
+  public def getActiveIdentifiedComponents(def classFilter = null) {
     def result = []
+    Collection<String> classNames = []
     def combos = this.getCombosByPropertyNameAndStatus('identifiedComponents', 'Active')
 
+    if (classFilter == 'TitleInstance') {
+      classNames = ['JournalInstance', 'BookInstance', 'DatabaseInstance', 'OtherInstance']
+    }
+    else if (classFilter) {
+      classNames = [classFilter]
+    }
+
     combos.each {
-      result << it.fromComponent
+      if (!classFilter || classNames.contains(it.fromComponent.class.simpleName)) {
+        result << it.fromComponent
+      }
     }
 
     result
