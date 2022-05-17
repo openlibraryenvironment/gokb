@@ -242,8 +242,8 @@ class BootStrap {
         ComponentStatisticService.updateCompStats()
 
         if (Environment.current != Environment.TEST) {
-            AugmentZdbJob.schedule(grailsApplication.config.gokb.augment.cron)
-            AugmentEzbJob.schedule(grailsApplication.config.gokb.augment.cron)
+            AugmentZdbJob.schedule(grailsApplication.config.gokb.zdbAugment.cron)
+            AugmentEzbJob.schedule(grailsApplication.config.gokb.ezbAugment.cron)
             AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron)
         }
 

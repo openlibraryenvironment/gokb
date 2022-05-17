@@ -166,6 +166,7 @@ environments:
                 enabled: false
                 rrCurators: EZB
                 cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
+                breakInMs: 1000
             es:
                 cluster: gokbg3-dev
                 host: localhost
@@ -219,6 +220,7 @@ environments:
                 enabled: false
                 rrCurators: EZB
                 cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
+                breakInMs: 1000
             es:
                 cluster: gokbg3-test
                 host: localhost
@@ -280,6 +282,7 @@ environments:
                 enabled: false
                 rrCurators: EZB
                 cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
+                breakInMs: 1000
             ygorUrl: null
             languagesUrl : null
             es:

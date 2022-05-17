@@ -21,6 +21,7 @@ class AugmentEzbJob{
   }
 
   def execute() {
+    long breakInMs = Long.valueOf(grailsApplication.config.gokb.ezbAugment.breakInMs) ?: 0L
     if (grailsApplication.config.gokb.ezbAugment.enabled) {
       log.info("Starting EZB augment job.")
       def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
@@ -45,6 +46,7 @@ class AugmentEzbJob{
           def ti = TitleInstance.get(ti_id)
           log.debug("Attempting ezb augment on ${ti.id} ${ti.name}")
           titleAugmentService.augmentEzb(ti)
+          Thread.sleep(breakInMs)
         }
         cleanUpGorm()
         offset += batchSize
