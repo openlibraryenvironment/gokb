@@ -407,8 +407,9 @@ class ESSearchService{
       else{
         String queryString = ""
         for (String word in qpars.label?.split(" ")){
-          if (queryString != "") queryString += " AND "
-          queryString += word
+          if (queryString != "" && (!word in ["AND", "OR", "NOT"])) queryString += " AND"
+          if (word in ["AND", "OR", "NOT"] && queryString.endsWith(" AND")) queryString = queryString.substring(0, queryString.length()-4)
+          queryString += (" ".concat(word))
         }
         labelQuery.should(QueryBuilders.queryStringQuery(queryString).field("name", 2f))
         labelQuery.should(QueryBuilders.queryStringQuery(queryString).field("altname", 1.3f))
