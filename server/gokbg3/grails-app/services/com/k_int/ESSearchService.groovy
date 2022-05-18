@@ -404,13 +404,17 @@ class ESSearchService{
         labelQuery.should(QueryBuilders.matchPhraseQuery('name', phraseQry).boost(2))
         labelQuery.should(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
-      else {
-        labelQuery.should(QueryBuilders.matchQuery('name', qpars.label).boost(2))
-        labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label).boost(1.3))
-        labelQuery.should(QueryBuilders.matchQuery('suggest', qpars.label).boost(0.6))
+      else{
+        String queryString = ""
+        for (String word in qpars.label?.split(" ")){
+          if (queryString != "") queryString += " AND "
+          queryString += word
+        }
+        labelQuery.should(QueryBuilders.queryStringQuery(queryString).field("name", 2f))
+        labelQuery.should(QueryBuilders.queryStringQuery(queryString).field("altname", 1.3f))
+        labelQuery.should(QueryBuilders.queryStringQuery(queryString).field("suggest", 0.6f))
       }
       labelQuery.minimumShouldMatch(1)
-
       query.must(labelQuery)
     }
     else if (qpars.name) {
