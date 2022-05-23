@@ -405,9 +405,9 @@ class ESSearchService{
         labelQuery.should(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        labelQuery.should(QueryBuilders.matchQuery('name', qpars.label).boost(2))
-        labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label).boost(1.3))
-        labelQuery.should(QueryBuilders.matchQuery('suggest', qpars.label).boost(0.6))
+        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("name", 2f))
+        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("altname", 1.3f))
+        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("suggest", 0.6f))
       }
       labelQuery.minimumShouldMatch(1)
 
