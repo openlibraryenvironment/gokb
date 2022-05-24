@@ -834,6 +834,7 @@ class PackageController {
                                           uploadName:upload_filename,
                                           name:upload_filename,
                                           filesize:info.filesize,
+                                          encoding:info.encoding,
                                           uploadMimeType:upload_mime_type).save()
 
           datafile.fileData = temp_file.getBytes()

@@ -1710,6 +1710,7 @@ class PackageService {
                                                   uploadName: file_info.file_name,
                                                   name: file_info.file_name,
                                                   filesize: total_size,
+                                                  encoding: encoding,
                                                   uploadMimeType: file_info.content_mime_type).save()
                   datafile.fileData = tmp_file.getBytes()
                   datafile.save(failOnError:true,flush:true)
@@ -1823,26 +1824,32 @@ class PackageService {
   }
 
   def analyseFile(temp_file) {
+    def result = [:]
+    result.filesize = 0
 
-    def result=[:]
-    result.filesize = 0;
-
-    log.debug("analyze...");
+    log.debug("analyze...")
 
     // Create a checksum for the file..
     MessageDigest md5_digest = MessageDigest.getInstance("MD5")
-    InputStream md5_is = new FileInputStream(temp_file)
+    FileInputStream fis = new FileInputStream(temp_file)
+    BufferedInputStream md5_is = new BufferedInputStream(fis)
+    UniversalDetector detector = new UniversalDetector()
     byte[] md5_buffer = new byte[8192]
-    int md5_read = 0;
-    while( (md5_read = md5_is.read(md5_buffer)) >= 0) {
+    int md5_read = 0
+
+    while( (md5_read = md5_is.read(md5_buffer, 0, 8192)) >= 0) {
       md5_digest.update(md5_buffer, 0, md5_read)
+      detector.handleData(md5_buffer, 0, md5_read)
       result.filesize += md5_read
     }
-    md5_is.close();
-    byte[] md5sum = md5_digest.digest();
-    result.md5sumHex = new BigInteger(1, md5sum).toString(16)
 
-    log.debug("MD5 is ${result.md5sumHex}")
+    detector.dataEnd()
+    md5_is.close()
+    byte[] md5sum = md5_digest.digest()
+    result.md5sumHex = new BigInteger(1, md5sum).toString(16)
+    result.encoding = detector.getDetectedCharset()
+
+    log.debug("MD5 is ${result.md5sumHex}, encoding is ${result.encoding}")
     result
   }
 

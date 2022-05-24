@@ -143,18 +143,20 @@ class IngestKbartRun {
       log.debug("Set progress")
       job?.setProgress(0)
 
-      def kbart_beans = []
       def badrows = []
+      def titleMatchStats = [matches: [partial: 0, full: 0], created: 0, conflicts: 0, noid: 0]
+      def file_info = checkFile(datafile)
 
-      log.debug("Reading datafile")
-      //we kind of assume that we need to convert to kbart
-      kbart_beans = getKbartBeansFromKBartFile(datafile)
-      log.debug("Starting preflight")
+      if (file_info.errors) {
+        result.result = 'ERROR'
+        result.errors = file_info.errors
+      }
 
-      result.preflight = preflight(kbart_beans, ingest_cfg)
+      if (!file_info.errors) {
+        CSVReader csv = initReader(datafile)
 
-      if (result.preflight.passed) {
-        log.debug("Passed preflight -- ingest")
+        String[] header = csv.readNext()
+
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                                 'from TitleInstancePackagePlatform as tipp, Combo as c '+
                                 'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
@@ -168,39 +170,63 @@ class IngestKbartRun {
 
         long startTime = System.currentTimeMillis()
 
-        log.debug("Ingesting ${ingest_cfg.defaultMedium} ${kbart_beans.size} rows. Package is ${pkg.id}")
-        //now its converted, ingest it into the database.
+        log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rownum} rows. Package is ${pkg.id}")
 
-        for (int x = 0; x < kbart_beans.size; x++) {
-          Package.withNewSession {
-            log.debug("**Ingesting ${x} of ${kbart_beans.size} ${kbart_beans[x]}")
+        boolean more = true
+        int rownum = 0
 
-            def row_specific_cfg = getRowSpecificCfg(ingest_cfg, kbart_beans[x])
+        while (more) {
+          String[] row_data = csv.readNext()
 
-            long rowStartTime = System.currentTimeMillis()
+          if (row_data != null) {
+            rownum++
 
-            if (validateRow(x, badrows, kbart_beans[x])) {
-              def line_result = writeToDB(kbart_beans[x],
-                        ingest_date,
-                        ingest_systime,
-                        ingest_cfg,
-                        badrows,
-                        row_specific_cfg)
+            Package.withNewSession {
+              def row_kbart_beans = getKbartBeansForRow(header, row_data)
+              def row_specific_cfg = getRowSpecificCfg(ingest_cfg, row_kbart_beans)
+              log.debug("**Ingesting ${rownum} of ${file_info.rownum} ${row_kbart_beans}")
 
-              result.report[line_result]++
+              long rowStartTime = System.currentTimeMillis()
+
+              if (dryRun) {
+                checkTitleMatchRow(row_kbart_beans, ingest_cfg, titleMatchStats)
+              }
+
+              if (validateRow(rownum, badrows, row_kbart_beans)) {
+                def line_result = writeToDB(row_kbart_beans,
+                          ingest_date,
+                          ingest_systime,
+                          ingest_cfg,
+                          badrows,
+                          row_specific_cfg)
+
+                result.report[line_result]++
+              }
+              else {
+                result.report.invalid++
+              }
+
+              log.debug("ROW ELAPSED : ${System.currentTimeMillis() - rowStartTime}")
             }
-            else {
-              result.report.invalid++
+
+            job?.setProgress(rownum, file_info.rownum)
+
+            if (rownum % 25 == 0) {
+              cleanupService.cleanUpGorm()
             }
 
-            log.debug("ROW ELAPSED : ${System.currentTimeMillis() - rowStartTime}")
+            if (Thread.currentThread().isInterrupted()) {
+              result.result = 'CANCELLED'
+              break
+            }
           }
-
-          job?.setProgress(x, kbart_beans.size())
-
-          if (x % 25 == 0) {
-            cleanupService.cleanUpGorm()
+          else {
+            more = false
           }
+        }
+
+        if (result.reult != 'CANCELLED' && dryRun) {
+          result.titleMatch = titleMatchStats
         }
 
         if (addOnly) {
@@ -208,30 +234,27 @@ class IngestKbartRun {
         }
         else {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
-          if (!dryRun) {
+          if (!dryRun && result.reult != 'CANCELLED') {
             try {
               // Find all tipps in this package which have a lastSeen before the ingest date
-              boolean moreToRetire = true
+              def retire_pars = [
+                pkgid: pkg.id,
+                dt: ingest_systime,
+                sc: RefdataCategory.lookup('KBComponent.Status', 'Current'),
+                sr: RefdataCategory.lookup('KBComponent.Status', 'Retired'),
+                igdt: dateFormatService.parseDate(ingest_date),
+                now: new Date()
+              ]
 
-              while (moreToRetire) {
-                def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
-                                  'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                                  'where c.fromComponent.id=:pkg and c.toComponent=tipp and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc',
-                                [pkg: pkg.id, dt: ingest_systime, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])
+              log.debug("Retiring via pars ${retire_pars}")
 
-                q.each { tipp ->
-                  log.debug("Retire missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}")
-                  result.report.retired++
-                  ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(ingest_date), tipp, 'accessEndDate')
-                  tipp.retire()
-                  tipp.save(failOnError: true, flush: true)
-                }
+              def retired_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
+                  set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
+                  where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
+                  and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
 
-                if (q.size() == 0) {
-                  moreToRetire = false
-                }
-              }
-              log.debug("Completed tipp cleanup")
+              result.report.retired = retired_count
+              log.debug("Completed tipp cleanup (${retired_count} retired)")
             }
             catch (Exception e) {
               log.error("Problem", e)
@@ -250,17 +273,17 @@ class IngestKbartRun {
         }
 
         long processing_elapsed = System.currentTimeMillis() - startTime
-        def average_milliseconds_per_row = kbart_beans.size() > 0 ? processing_elapsed.intdiv(kbart_beans.size()) : 0
+        def average_milliseconds_per_row = file_info.rownum > 0 ? processing_elapsed.intdiv(file_info.rownum) : 0
         // 3600 seconds in an hour, * 1000ms in a second
         def average_per_hour = average_milliseconds_per_row > 0 ? 3600000.intdiv(average_milliseconds_per_row) : 0
 
         result.report.timestamp = System.currentTimeMillis()
-        result.report.event = 'ProcessingComplete'
-        result.report.numRows = kbart_beans.size()
+        result.report.event = (result.result == 'CANCELLED' ? 'ProcessingCancelled' : 'ProcessingComplete')
+        result.report.numRows = file_info.rownum
         result.report.averagePerRow = average_milliseconds_per_row
         result.report.averagePerHour = average_per_hour
         result.report.elapsed = processing_elapsed
-        job.message("Processing Complete : numRows:${kbart_beans.size()}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
+        job.message("Processing Complete : numRows:${file_info.rownum}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
 
         if (!dryRun) {
           try {
@@ -300,10 +323,6 @@ class IngestKbartRun {
             log.warn("Problem updating package stats", e)
           }
         }
-      }
-
-      if (!result.preflight.passed) {
-        result.result = 'ERROR'
       }
     }
     catch (IllegalCharactersException ice) {
@@ -623,32 +642,50 @@ class IngestKbartRun {
       }
 
       if (titleIdMap[tipp_map.importId]) {
-        jsonIdMap.each { ns, val ->
-          if (titleIdMap[tipp_map.importId][ns] != jsonIdMap[ns]) {
-            result = 'partial'
+        for (tidm in titleIdMap[tipp_map.importId]) {
+          jsonIdMap.each { ns, val ->
+            if (tidm.ids[tipp_map.importId][ns] != jsonIdMap[ns]) {
+              result = 'partial'
+            }
           }
-        }
 
-        if (result != 'partial') {
-          result = 'matched'
+          if (result != 'partial') {
+            result = 'matched'
+
+            if (!dryRun) {
+              tipp = TitleInstancePackagePlatform.get(tidm.oid)
+            }
+          }
         }
       }
       else {
         result = 'created'
       }
 
-      if (result != 'matched' && !dryRun) {
-        titleIdMap[tipp_map.importId] = jsonIdMap
+      if (!dryRun) {
+        if (result != 'matched') {
+          def tipp_fields = [
+            pkg: pkg,
+            hostPlatform: the_platform,
+            url: the_kbart.title_url,
+            name: the_kbart.publication_title,
+            importId: the_kbart.title_id
+          ]
 
-        def tipp_fields = [
-          pkg: pkg,
-          hostPlatform: the_platform,
-          url: the_kbart.title_url,
-          name: the_kbart.publication_title,
-          importId: the_kbart.title_id
-        ]
+          tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
 
-        tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
+          if (!titleIdMap[tipp_map.importId]) {
+            titleIdMap[tipp_map.importId] = []
+          }
+
+          titleIdMap[tipp_map.importId] << [
+            ids: jsonIdMap,
+            oid: tipp.id
+          ]
+        }
+        else {
+
+        }
       }
     }
 
@@ -723,10 +760,82 @@ class IngestKbartRun {
     result
   }
 
-  //note- don't do the additional fields just yet, these will need to be mapped in
-  def getKbartBeansFromKBartFile(the_data) {
-    log.debug("kbart2 file, so use CSV to Bean") //except that this doesn't always work :(
-    def results = []
+  def checkFile(the_data) {
+    def result = [errors: [:], rownum: 0]
+    log.debug("Checking for errors causing complete rejection ..")
+    CSVReader csv = initReader(the_data)
+
+    Map col_positions = [:]
+    String[] header = csv.readNext()
+    int ctr = 0
+
+    header.each {
+      col_positions[it] = ctr++
+    }
+
+    log.debug("${col_positions}")
+    def mandatoryColumns = [
+      'publication_title',
+      'print_identifier',
+      'online_identifier',
+      'title_url',
+      'title_id',
+      'publication_type',
+      'access_type'
+    ]
+
+    for (mc in mandatoryColumns) {
+      if (!header.contains(mc)) {
+        if (!result.errors.missingColumns) {
+          result.errors.missingColumns = []
+        }
+        result.errors.missingColumns.add(mc)
+      }
+    }
+
+    if (!['UTF-8', 'US-ASCII'].contains(the_data.encoding)) {
+      result.errors.encoding = [message: "The encoding of this file is not UTF-8. Please correct this before importing!", code: "kbart.errors.encoding"]
+    }
+
+    String[] nl = csv.readNext()
+
+    while (nl != null) {
+      result.rownum++
+
+      if (nl.length != header.size()) {
+        result.errors.columnsCount = [message: "Inconsistent column count in row ${rownum}!", code: "kbart.errors.tabsCountFile"]
+      }
+      else if (nl.length > 0) {
+        for (key in col_positions.keySet()) {
+          // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
+          if (key && key.length() > 0) {
+            if (col_positions[key] != null && col_positions[key] < nl.length) {
+              if (nl[col_positions[key]].length() > 4092) {
+                result.errors.longVals = [message: "Unexpectedly long value in row ${rownum} -- Probably miscoded quote in line. Correct and resubmit", code: "kbart.errors.longValsFile"]
+              }
+              else if (nl[col_positions[key]].contains('�')) {
+                result.errors.replacementChars = [message: "Found UTF-8 replacement char in row ${rownum} -- Probably opened and then saved non-UTF-8 file as UTF-8!", code: "kbart.errors.replacementChars"]
+              }
+            }
+            else {
+              log.error("Column references value not present in col ${col_positions[key]} row ${rownum}")
+            }
+          }
+        }
+      }
+
+      if (result.errors) {
+        break
+      }
+      nl = csv.readNext()
+    }
+
+    csv.close()
+
+    result
+  }
+
+  private CSVReader initReader (the_data) {
     def charset = 'UTF-8'
 
     final CSVParser parser = new CSVParserBuilder()
@@ -748,93 +857,39 @@ class IngestKbartRun {
         )
     ).withCSVParser(parser)
     .build()
-    //results=ctb.parse(hcnms, csv)
-    //quick check that results aren't null...
+
+    return csv
+  }
+
+  //note- don't do the additional fields just yet, these will need to be mapped in
+  def getKbartBeansForRow(header, row_data) {
+    def result = [:]
 
     Map col_positions = [:]
-    String[] header = csv.readNext()
     int ctr = 0
 
     header.each {
-      //col_positions[it]=-1
       col_positions[it] = ctr++
     }
 
-    log.debug("${col_positions}")
-    String[] nl = csv.readNext()
-    int rownum = 0
-
-    while (nl != null) {
-      Map result = [:]
-      if (nl.length != header.size()) {
-        throw new RuntimeException("Inconsistent column count in ${rownum}! -- Correct and resubmit")
-      }
-      else if (nl.length > 0) {
-        for (key in col_positions.keySet()) {
-          // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
-          if (key && key.length() > 0) {
-            //so, springer files seem to start with a dodgy character (int) 65279
-            if ((int)key.toCharArray()[0] == 65279) {
-              def corrected_key = key.getAt(1..key.length() - 1)
-              //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
-              result[corrected_key] = nl[col_positions[key]]
-              //}
-            } else {
-              //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
-
-                if (col_positions[key] != null && col_positions[key] < nl.length) {
-                  if (nl[col_positions[key]].length() > 4092) {
-                    throw new RuntimeException("Unexpectedly long value in row ${rownum} -- Probably miscoded quote in line. Correct and resubmit")
-                  }
-                  else if (nl[col_positions[key]].contains('�')) {
-                    throw new IllegalCharactersException("Found UTF-8 replacement char in row ${rownum} -- Probably saved non-UTF-8 file as UTF-8!")
-                  }
-                  else{
-                    result[key] = nl[col_positions[key]]
-                  }
-                }
-                else {
-                  log.error("Column references value not present in col ${col_positions[key]} row ${rownum}")
-                }
-              //}
-            }
+    for (key in col_positions.keySet()) {
+      // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
+      if (key && key.length() > 0) {
+        if ((int)key.toCharArray()[0] == 65279) {
+          def corrected_key = key.getAt(1..key.length() - 1)
+          result[corrected_key] = row_data[col_positions[key]]
+        } else {
+          if (col_positions[key] != null && col_positions[key] < row_data.length) {
+            result[key] = row_data[col_positions[key]]
+          }
+          else {
+            log.error("Column references value not present in col ${col_positions[key]} row ${rownum}")
           }
         }
       }
-      else {
-        log.warn("Possible malformed last row")
-      }
-
-      // log.debug(new KBartRecord(result))
-      //this is a cheat cos I don't get why springer files don't work!
-      // results<<new KBartRecord(result)
-      results.add(result)
-      nl = csv.readNext()
-      rownum++
     }
-    results
-  }
 
-  def makeBadFile() {
-    def depositToken = java.util.UUID.randomUUID().toString()
-    def baseUploadDir = grailsApplication.config.project_dir ?: '.'
-    def sub1 = deposit_token.substring(0,2)
-    def sub2 = deposit_token.substring(2,4)
-    validateUploadDir("${baseUploadDir}")
-    validateUploadDir("${baseUploadDir}/${sub1}")
-    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}")
-    def bad_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}"
-    log.debug("makeBadFile... ${bad_file_name}")
-    def bad_file = new File(bad_file_name)
-    bad_file
-  }
-
-  private def validateUploadDir(path) {
-    File f = new File(path)
-    if (!f.exists()) {
-      log.debug("Creating upload directory path")
-      f.mkdirs();
-    }
+    result
   }
 
   def validateRow(rownum, badrows, row_data) {
@@ -847,7 +902,7 @@ class IngestKbartRun {
       def parsed_start_date = parseDate(row_data.date_first_issue_online)
 
       if (parsed_start_date == null) {
-        reasons.add("Row ${rownum} contains an invalid or unrecognised date format for date_first_issue_online :: ${row_data.date_first_issue_online}")
+        errors.add("Row ${rownum} contains an invalid or unrecognised date format for date_first_issue_online :: ${row_data.date_first_issue_online}")
         result = false
       }
     }
@@ -856,7 +911,7 @@ class IngestKbartRun {
       def parsed_start_date = parseDate(row_data.date_first_issue_online)
 
       if (parsed_start_date == null) {
-        reasons.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_last_issue_online' :: ${row_data.date_last_issue_online}")
+        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_last_issue_online' :: ${row_data.date_last_issue_online}")
         result = false
       }
     }
@@ -865,7 +920,7 @@ class IngestKbartRun {
       def parsed_start_date = parseDate(row_data.date_monograph_published_online)
 
       if (parsed_start_date == null) {
-        reasons.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_online' :: ${row_data.date_monograph_published_online}")
+        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_online' :: ${row_data.date_monograph_published_online}")
         result = false
       }
     }
@@ -874,34 +929,34 @@ class IngestKbartRun {
       def parsed_start_date = parseDate(row_data.date_monograph_published_print)
 
       if (parsed_start_date == null) {
-        reasons.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_print' :: ${row_data.date_monograph_published_online}")
+        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_print' :: ${row_data.date_monograph_published_online}")
         result = false
       }
     }
 
     if (!row_data.title_id || !row_data.title_id.trim()) {
-      reasons.add("Row ${rownum} does not contain a value for 'title_id'")
+      errors.add("Row ${rownum} does not contain a value for 'title_id'")
       result = false
     }
 
     if (!row_data.publication_title || !row_data.publication_title.trim()) {
-      reasons.add("Row ${rownum} does not contain a value for 'publication_title'")
+      errors.add("Row ${rownum} does not contain a value for 'publication_title'")
       result = false
     }
 
     if (!row_data.publication_type || !row_data.publication_type.trim() || !TitleInstance.determineTitleClass(row_data.publication_type)) {
-      reasons.add("Row ${rownum} does not contain a valid 'publication_type' :: ${row_data.publication_type}")
+      errors.add("Row ${rownum} does not contain a valid 'publication_type' :: ${row_data.publication_type}")
       result = false
     }
 
     if (!row_data.title_url || !row_data.title_url.trim()) {
-      reasons.add("Row ${rownum} does not contain a value for 'title_url'")
+      errors.add("Row ${rownum} does not contain a value for 'title_url'")
       result = false
     }
 
     if (!result) {
       log.error("Recording bad row : ${reasons}")
-      badrows.add([rowdata: row_data, message: reasons, row: rownum])
+      badrows.add([rowdata: row_data, errors: errors, row: rownum])
     }
 
     result
@@ -966,89 +1021,68 @@ class IngestKbartRun {
     result
   }
 
+  def checkTitleMatchRow(the_kbart, ingest_cfg, match_result) {
+    def row_specific_cfg = getRowSpecificCfg(ingest_cfg, the_kbart)
 
-  // Preflight works through a file adding and verifying titles and platforms, and posing questions which need to be resolved
-  // before the ingest proper. We record parameters used so that after recording any corrections we can re-process the file.
-  def preflight(kbart_beans, ingest_cfg) {
-    log.debug("preflight")
+    TitleInstance.withNewSession {
+      def identifiers = []
 
-    def result = [:]
+      if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
+        identifiers << [type: row_specific_cfg.identifierMap.online_identifier, value: the_kbart.online_identifier.trim()]
 
-    result.stats = [matches: [partial: 0, full: 0], created: 0, conflicts: 0]
-    result.passed = true
-    result.probcount = 0
+      if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
+        identifiers << [type: row_specific_cfg.identifierMap.print_identifier, value: the_kbart.print_identifier.trim()]
 
-    def preflight_counter = 0
+      if (the_kbart.zdb_id && the_kbart.zdb_id.trim()) {
+        identifiers << [type: 'zdb', value: the_kbart.zdb_id.trim()]
+      }
 
-    // Iterate through -- create titles
-    kbart_beans.each { the_kbart ->
+      if (the_kbart.title_id && the_kbart.title_id.trim()) {
+        log.debug("title_id ${the_kbart.title_id}")
 
-      def row_specific_cfg = getRowSpecificCfg(ingest_cfg, the_kbart)
-
-      TitleInstance.withNewSession {
-
-        def identifiers = []
-
-        if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
-          identifiers << [type: row_specific_cfg.identifierMap.online_identifier, value: the_kbart.online_identifier.trim()]
-
-        if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
-          identifiers << [type: row_specific_cfg.identifierMap.print_identifier, value: the_kbart.print_identifier.trim()]
-
-        if (the_kbart.zdb_id && the_kbart.zdb_id.trim()) {
-          identifiers << [type: 'zdb', value: the_kbart.zdb_id.trim()]
-        }
-
-        if (the_kbart.title_id && the_kbart.title_id.trim()) {
-          log.debug("title_id ${the_kbart.title_id}")
-
-          if (ingest_cfg.providerIdentifierNamespace) {
-            identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
-          }
-        }
-
-        log.debug("Preflight [${pkg.name}:${preflight_counter++}] title:${the_kbart.publication_title} identifiers:${identifiers}")
-
-        if (identifiers.size() > 0) {
-          def title_lookup_result = titleLookupService.find(
-              the_kbart.publication_title,
-              the_kbart.publisher_name,
-              identifiers,
-              TitleInstance.determineTitleClass(the_kbart.publication_type)
-          )
-
-          if (title_lookup_result.conflicts) {
-            result.stats.conflicts++
-            result.probcount++
-          }
-          else if (title_lookup_result.to_create) {
-            result.stats.created++
-
-            if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
-              log.debug("New title -- Conflicts: ${title_lookup_result.matches}")
-              result.stats.matches.partial++
-            }
-
-            if (title_lookup_result.matches.size() > 1) {
-              result.stats.conflicts++
-            }
-          }
-          else if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
-            log.debug("Partial Match -- Conflicts: ${title_lookup_result.matches}")
-            result.stats.matches.partial++
-          }
-          else {
-            result.stats.matches.full++
-          }
-        }
-        else {
-          log.warn("${pkg.name}:${preflight_counter++}] No identifiers. Map:${ingest_cfg.identifierMap}, print_identifier:${the_kbart.print_identifier} online_identifier:${the_kbart.online_identifier}")
+        if (ingest_cfg.providerIdentifierNamespace) {
+          identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
         }
       }
-    }
 
-    log.debug("preflight returning ${result.passed}")
-    result
+      log.debug("TitleMatch title:${the_kbart.publication_title} identifiers:${identifiers}")
+
+      if (identifiers.size() > 0) {
+        def title_lookup_result = titleLookupService.find(
+            the_kbart.publication_title,
+            the_kbart.publisher_name,
+            identifiers,
+            TitleInstance.determineTitleClass(the_kbart.publication_type)
+        )
+
+        if (title_lookup_result.conflicts) {
+          match_result.conflicts++
+        }
+        else if (title_lookup_result.to_create) {
+          match_result.created++
+
+          if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
+            log.debug("New title -- Conflicts: ${title_lookup_result.matches}")
+            match_result.matches.partial++
+          }
+
+          if (title_lookup_result.matches.size() > 1) {
+            match_result.conflicts++
+          }
+        }
+        else if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
+          log.debug("Partial Match -- Conflicts: ${title_lookup_result.matches}")
+          match_result.matches.partial++
+        }
+        else {
+          match_result.matches.full++
+        }
+      }
+      else {
+        log.warn("[${the_kbart.publication_title}] No identifiers.")
+        match_result.noid++
+      }
+    }
   }
 
   /**
