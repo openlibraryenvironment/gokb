@@ -22,6 +22,18 @@
                 <option value="di" ${ctype == 'di' ? 'selected' : ''}>Identifers connected to multiple components</option>
               </select>
             </dd>
+            <dt class="dt-label">Component Type</dt>
+            <dd>
+              <select class="form-control" id="componentType" name="componentType">
+                <option value="title" ${componentType == 'title' ? 'selected' : ''}>Title (General)</option>
+                <option value="journal" ${componentType == 'journal' ? 'selected' : ''}>Journal</option>
+                <option value="book" ${componentType == 'book' ? 'selected' : ''}>eBook</option>
+                <option value="database" ${componentType == 'database' ? 'selected' : ''}>Database</option>
+                <option value="other" ${componentType == 'other' ? 'selected' : ''}>Other Titles</option>
+                <option value="package" ${componentType == 'package' ? 'selected' : ''}>Package</option>
+                <option value="org" ${componentType == 'org' ? 'selected' : ''}>Organisation</option>
+              </select>
+            </dd>
             <span class="input-group-btn">
               <button type="submit" class="btn btn-default" >Search</button>
             </span>
@@ -103,8 +115,8 @@
                   <tr>
                     <td><g:link controller="resource" action="show" id="${did.uuid}"><span style="white-space:nowrap">${did.value}</span></g:link></td>
                     <td>
-                      <g:each in="${did.identifiedComponents}" var="idc">
-                        <div><g:link controller="resource" action="show" id="${idc.uuid}">${idc.name} (${idc.status?.value ?: 'Unknown Status'})</g:link></div>
+                      <g:each in="${did.getActiveIdentifiedComponents('TitleInstance')}" var="idc">
+                        <div><g:link controller="resource" action="show" id="${idc.uuid}">${idc.name} (${idc.status?.value ?: 'Unknown Status'}) - ${idc.niceName}</g:link></div>
                       </g:each>
                     </td>
                   </tr>

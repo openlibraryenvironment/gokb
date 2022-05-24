@@ -27,9 +27,8 @@
            <li><span>Package Content :: </span></li>
          </ul>
        </div>
-
-      </div> <!-- /.container -->
-    </nav>
+     </div> <!-- /.container -->
+   </nav>
 
   <div class="container">
 
@@ -52,9 +51,9 @@
           <tbody>
             <g:each in="${tipps}" var="t">
               <tr>
-                <td>${t.title.name}</th>
-                <td></th>
-                <td></th>
+                <td>${t.title.name}</td>
+                <td></td>
+                <td></td>
               </tr>
             </g:each>
           </tbody>
@@ -64,7 +63,6 @@
       </div>
       </div>
     </div></div>
-
   </div> <!-- /.container -->
 </body>
 </html>

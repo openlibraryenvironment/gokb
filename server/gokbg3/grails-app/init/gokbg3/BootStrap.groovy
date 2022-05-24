@@ -10,7 +10,8 @@ import org.elasticsearch.client.indices.CreateIndexRequest
 import org.elasticsearch.client.indices.GetIndexRequest
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.common.xcontent.XContentType
-import org.gokb.AugmentJob
+import org.gokb.AugmentEzbJob
+import org.gokb.AugmentZdbJob
 import org.gokb.AutoUpdatePackagesJob
 import org.gokb.LanguagesService
 
@@ -241,7 +242,8 @@ class BootStrap {
         ComponentStatisticService.updateCompStats()
 
         if (Environment.current != Environment.TEST) {
-            AugmentJob.schedule(grailsApplication.config.gokb.augment.cron)
+            AugmentZdbJob.schedule(grailsApplication.config.gokb.zdbAugment.cron)
+            AugmentEzbJob.schedule(grailsApplication.config.gokb.ezbAugment.cron)
             AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron)
         }
 

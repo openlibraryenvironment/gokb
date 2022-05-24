@@ -23,6 +23,16 @@ class ComponentController {
     def max = params.int('max') ?: user.defaultPageSize
     def offset = params.int('offset') ?: 0
     def components = []
+    def knownIdentifiedTypes = [
+      title: 'title_instance',
+      journal: 'journal_instance',
+      book: 'book_instance',
+      database: 'database_instance',
+      other: 'other_instance',
+      tipp: 'title_instance_package_platform',
+      package: 'package',
+      org: 'org'
+    ]
     def dupe_ids = []
 
     result.max = max
@@ -39,26 +49,30 @@ class ComponentController {
           RefdataValue combo_status = RefdataCategory.lookup('Combo.Status', 'Active')
 
           if (params.ctype == 'st') {
-
-            final String query = '''SELECT ti.kbc_id FROM title_instance AS ti NATURAL JOIN kbcomponent as kbc WHERE kbc.kbc_status_rv_fk <> :deleted
+            String staticClause = '''kbcomponent as kbc WHERE kbc.kbc_status_rv_fk <> :deleted
               AND (SELECT count(c.combo_id) FROM combo AS c JOIN identifier AS id ON (c.combo_to_fk = id.kbc_id) WHERE
                 c.combo_from_fk = kbc.kbc_id AND c.combo_status_rv_fk = :comboStatus
                 AND c.combo_type_rv_fk = :comboType
-                AND id.id_namespace_fk = :namespace
-                AND EXISTS (select kt.kbc_id from title_instance as kt where kt.kbc_id = c.combo_from_fk)) > 1
-              order by ti.kbc_id limit :limit offset :offset ;
-            '''
+                AND id.id_namespace_fk = :namespace) > 1'''
 
-            final String cqry = '''SELECT count(ti.kbc_id) FROM title_instance AS ti NATURAL JOIN kbcomponent as kbc WHERE kbc.kbc_status_rv_fk <> :deleted
-              AND (SELECT count(c.combo_id) FROM combo AS c JOIN identifier AS id ON (c.combo_to_fk = id.kbc_id) WHERE
-                c.combo_from_fk = kbc.kbc_id
-                AND c.combo_status_rv_fk = :comboStatus
-                AND c.combo_type_rv_fk = :comboType
-                AND id.id_namespace_fk = :namespace
-                AND EXISTS (select kt.kbc_id from title_instance as kt where kt.kbc_id = c.combo_from_fk)) > 1;
-            '''
+            def query = new StringWriter()
+            def cqry = new StringWriter()
 
-            final singleTitlesCount = session.createSQLQuery(cqry)
+            query.write('SELECT ti.kbc_id FROM ')
+            cqry.write('SELECT count(ti.kbc_id) FROM ')
+
+            if (params.componentType && knownIdentifiedTypes[params.componentType]) {
+              query.write(knownIdentifiedTypes[params.componentType] + ' NATURAL JOIN ')
+              cqry.write(knownIdentifiedTypes[params.componentType] + ' NATURAL JOIN ')
+            }
+
+            query.write(staticClause)
+            cqry.write(staticClause)
+
+            query.write(' order by ti.kbc_id limit :limit offset :offset ;')
+            cqry.write(';')
+
+            final singleTitlesCount = session.createSQLQuery(cqry.toString())
               .setParameter('deleted', status_deleted)
               .setParameter('namespace', ns.id)
               .setParameter('comboType', combo_type.id)
@@ -67,7 +81,7 @@ class ComponentController {
 
             result.titleCount = singleTitlesCount[0]
 
-            final singleTitles = session.createSQLQuery(query)
+            final singleTitles = session.createSQLQuery(query.toString())
               .setParameter('deleted', status_deleted)
               .setParameter('namespace', ns.id)
               .setParameter('comboType', combo_type.id)
@@ -80,26 +94,36 @@ class ComponentController {
           }
 
           if (params.ctype == 'di') {
-            final String dquery = '''SELECT id.kbc_id FROM identifier AS id WHERE id.id_namespace_fk = :namespace
-              AND (SELECT COUNT(c.combo_id) FROM combo AS c JOIN kbcomponent as kbc ON (c.combo_from_fk = kbc.kbc_id) WHERE
+            String staticOuterClause = '''FROM identifier AS id WHERE id.id_namespace_fk = :namespace
+              AND (SELECT COUNT(c.combo_id) FROM combo AS c JOIN '''
+
+            String staticInnerClause = '''kbcomponent as kbc ON (c.combo_from_fk = kbc.kbc_id) WHERE
                 kbc.kbc_status_rv_fk <> :deleted
                 AND c.combo_to_fk = id.kbc_id
                 AND c.combo_type_rv_fk = :comboType
-                AND c.combo_status_rv_fk = :comboStatus
-                AND EXISTS (select kt.kbc_id from title_instance as kt where kt.kbc_id = c.combo_from_fk)) > 1
-              order by id.kbc_id limit :limit offset :offset ;
-            '''
+                AND c.combo_status_rv_fk = :comboStatus) > 1'''
 
-            final String dcqry = '''SELECT count(id.kbc_id) FROM identifier AS id WHERE id.id_namespace_fk = :namespace
-              AND (SELECT COUNT(c.combo_id) FROM combo AS c JOIN kbcomponent as kbc ON (c.combo_from_fk = kbc.kbc_id) WHERE
-                kbc.kbc_status_rv_fk <> :deleted
-                AND c.combo_to_fk = id.kbc_id
-                AND c.combo_type_rv_fk = :comboType
-                AND c.combo_status_rv_fk = :comboStatus
-                AND EXISTS (select kt.kbc_id from title_instance as kt where kt.kbc_id = c.combo_from_fk)) > 1;
-            '''
+            def query = new StringWriter()
+            def cqry = new StringWriter()
 
-            final dispersedIdsCount = session.createSQLQuery(dcqry)
+            query.write('''SELECT id.kbc_id ''')
+            cqry.write('''SELECT count(id.kbc_id) ''')
+
+            query.write(staticOuterClause)
+            cqry.write(staticOuterClause)
+
+            if (params.componentType && knownIdentifiedTypes[params.componentType]) {
+              query.write(knownIdentifiedTypes[params.componentType] + ' NATURAL JOIN ')
+              cqry.write(knownIdentifiedTypes[params.componentType] + ' NATURAL JOIN ')
+            }
+
+            query.write(staticInnerClause)
+            cqry.write(staticInnerClause)
+
+            query.write(' order by id.kbc_id limit :limit offset :offset ;')
+            cqry.write(';')
+
+            final dispersedIdsCount = session.createSQLQuery(cqry.toString())
               .setParameter('deleted', status_deleted)
               .setParameter('namespace', ns.id)
               .setParameter('comboType', combo_type.id)
@@ -108,7 +132,7 @@ class ComponentController {
 
             result.idsCount = dispersedIdsCount[0]
 
-            final dispersedIds = session.createSQLQuery(dquery)
+            final dispersedIds = session.createSQLQuery(query.toString())
               .setParameter('deleted', status_deleted)
               .setParameter('namespace', ns.id)
               .setParameter('comboType', combo_type.id)
@@ -123,6 +147,7 @@ class ComponentController {
 
         result.namespace = ns
         result.ctype = params.ctype
+        result.componentType = params.componentType
 
         components.each {
           result.singleTitles.add(KBComponent.get(it))

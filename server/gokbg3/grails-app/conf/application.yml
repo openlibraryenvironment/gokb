@@ -158,14 +158,15 @@ environments:
                 enabled: false
             packageOaiCaching:
                 enabled: false
-            augment:
-                cron: "0 30 * * * ? *"
             zdbAugment:
                 enabled: false
                 rrCurators: ZDB
+                cron: "0 30 * * * ? *"
             ezbAugment:
                 enabled: false
                 rrCurators: EZB
+                cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
+                breakInMs: 1000
             es:
                 cluster: gokbg3-dev
                 host: localhost
@@ -211,14 +212,15 @@ environments:
                 enabled: false
             packageOaiCaching:
                 enabled: false
-            augment:
-                cron: "0 30 * * * ? *"
             zdbAugment:
                 enabled: false
                 rrCurators: ZDB
+                cron: "0 30 * * * ? *"
             ezbAugment:
                 enabled: false
                 rrCurators: EZB
+                cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
+                breakInMs: 1000
             es:
                 cluster: gokbg3-test
                 host: localhost
@@ -272,14 +274,15 @@ environments:
                 enabled: false
             packageOaiCaching:
                 enabled: true
-            augment:
-                cron: "0 30 * * * ? *"
             zdbAugment:
                 enabled: false
                 rrCurators: ZDB
+                cron: "0 30 * * * ? *"
             ezbAugment:
                 enabled: false
                 rrCurators: EZB
+                cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
+                breakInMs: 1000
             ygorUrl: null
             languagesUrl : null
             es:
