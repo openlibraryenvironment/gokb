@@ -1195,7 +1195,12 @@ class ESSearchService{
     QueryBuilder idQuery = QueryBuilders.boolQuery()
 
     params.each { k,v ->
-      idQuery.must(QueryBuilders.termQuery(k, v))
+      if (v.contains("*")){
+        idQuery.must(QueryBuilders.wildcardQuery(k, v))
+      }
+      else{
+        idQuery.must(QueryBuilders.termQuery(k, v))
+      }
     }
 
     return idQuery
