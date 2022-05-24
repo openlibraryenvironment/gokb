@@ -187,9 +187,18 @@
       "identifiers" : {
         "type" : "nested",
         "properties": {
-          "namespace": { "type": "keyword"},
-          "namespaceName": { "type": "keyword"},
-          "value": { "type": "keyword"}
+          "namespace": {
+            "type":"keyword",
+            "normalizer": "lowercase"
+          },
+          "namespaceName": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          },
+          "value": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          }
         }
       },
       "source" : {
