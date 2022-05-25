@@ -65,7 +65,7 @@ class TitleAugmentService {
                 editorialGroup
               )
             }
-            else {
+            else if (new_id) {
               log.debug("Adding new ZDB-ID ${new_id}")
               new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
 
@@ -83,6 +83,9 @@ class TitleAugmentService {
                 it.status = status_closed
                 it.save()
               }
+            }
+            else {
+              log.error("Unable to get ZDB-ID to link!")
             }
           }
 
