@@ -230,7 +230,7 @@ class TitleAugmentService {
           ezbId = EzbAPIService.getJourId(ezbCandidates[0])
           def newOrExistingEzbId = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
           new Combo(fromComponent: titleInstance, toComponent: newOrExistingEzbId, type: comboTypeId).save(flush: true, failOnError: true)
-          log.debug("Added new EZB-ID ${newOrExistingEzbId} .")
+          log.info("Added new EZB-ID ${newOrExistingEzbId} .")
         }
         else if (ezbCandidates.size() == 0){
           // no EZB match ==> raise ReviewRequest with type Information
