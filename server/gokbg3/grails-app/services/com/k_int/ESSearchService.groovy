@@ -347,7 +347,7 @@ class ESSearchService{
     }
     catch (Exception e){
     }
-    refdataQuery.should(QueryBuilders.matchQuery(field, value))
+    refdataQuery.should(QueryBuilders.queryStringQuery(value).defaultOperator(Operator.AND).field(field))
   }
 
 
@@ -405,9 +405,9 @@ class ESSearchService{
         labelQuery.should(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        labelQuery.should(QueryBuilders.matchQuery('name', qpars.label).boost(2))
-        labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label).boost(1.3))
-        labelQuery.should(QueryBuilders.matchQuery('suggest', qpars.label).boost(0.6))
+        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("name", 2f))
+        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("altname", 1.3f))
+        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("suggest", 0.6f))
       }
       labelQuery.minimumShouldMatch(1)
 
@@ -421,7 +421,7 @@ class ESSearchService{
         query.must(QueryBuilders.matchPhraseQuery('name', phraseQry))
       }
       else {
-        query.must(QueryBuilders.matchQuery('name', qpars.name))
+        query.must(QueryBuilders.queryStringQuery(qpars.name).defaultOperator(Operator.AND).field("name"))
       }
     }
     else if (qpars.altname) {
@@ -432,11 +432,11 @@ class ESSearchService{
         query.must(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        query.must(QueryBuilders.matchQuery('altname', qpars.altname))
+        query.must(QueryBuilders.queryStringQuery(qpars.altname).defaultOperator(Operator.AND).field("altname"))
       }
     }
     else if (qpars.suggest) {
-      query.must(QueryBuilders.matchQuery('suggest', qpars.suggest).boost(0.6))
+      query.must(QueryBuilders.queryStringQuery(qpars.suggest).defaultOperator(Operator.AND).field("suggest", 0.6f))
     }
   }
 
@@ -456,9 +456,9 @@ class ESSearchService{
         genericQuery.should(QueryBuilders.termQuery('uuid', qpars.q).boost(10))
       }
 
-      genericQuery.should(QueryBuilders.matchQuery('name', qpars.q).boost(2))
-      genericQuery.should(QueryBuilders.matchQuery('altname', qpars.q).boost(1.3))
-      genericQuery.should(QueryBuilders.matchQuery('suggest', qpars.q).boost(0.6))
+      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("name", 2f))
+      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("altname", 1.3f))
+      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("suggest", 0.6f))
       genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
       genericQuery.minimumShouldMatch(1)
 
@@ -526,8 +526,7 @@ class ESSearchService{
     if (!params.scrollId){
       QueryBuilder scrollQuery = QueryBuilders.boolQuery()
       if (params.component_type){
-        QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
-        scrollQuery.must(typeFilter)
+        scrollQuery.must(QueryBuilders.queryStringQuery(params.component_type).defaultOperator(Operator.AND).field("componentType"))
       }
       addDateQueries(scrollQuery, errors, params)
       specifyQueryWithParams(params, scrollQuery, errors, unknown_fields)
@@ -804,11 +803,11 @@ class ESSearchService{
           if (k == 'id' && params.int('id')) {
             final_val = KBComponent.get(params.int('id'))?.getLogEntityId()
           }
-          exactQuery.must(QueryBuilders.matchQuery(k, final_val))
+          exactQuery.must(QueryBuilders.queryStringQuery(final_val).defaultOperator(Operator.AND).field(k))
         }
       }
       else if (requestMapping.simpleMap?.containsKey(k)){
-        exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v))
+        exactQuery.must(QueryBuilders.queryStringQuery(v).defaultOperator(Operator.AND).field(requestMapping.simpleMap[k]))
       }
       else if (requestMapping.linked?.containsKey(k)){
         processLinkedField(exactQuery, requestMapping.linked[k], v)
@@ -842,8 +841,7 @@ class ESSearchService{
             cg_name = cg_by_id.name
           }
         }
-
-        exactQuery.must(QueryBuilders.matchQuery(k, cg_name))
+        exactQuery.must(QueryBuilders.queryStringQuery(cg_name).defaultOperator(Operator.AND).field(k))
       }
       else if (requestMapping.dates && k in requestMapping.dates){
         log.debug("Processing date param ${k}")
@@ -1197,7 +1195,12 @@ class ESSearchService{
     QueryBuilder idQuery = QueryBuilders.boolQuery()
 
     params.each { k,v ->
-      idQuery.must(QueryBuilders.termQuery(k, v))
+      if (v.contains("*")){
+        idQuery.must(QueryBuilders.wildcardQuery(k, v))
+      }
+      else{
+        idQuery.must(QueryBuilders.termQuery(k, v))
+      }
     }
 
     return idQuery
