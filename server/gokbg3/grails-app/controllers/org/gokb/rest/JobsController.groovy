@@ -29,21 +29,52 @@ class JobsController {
     def sort = params._sort ?: null
     def order = params._order ?: null
     User user = User.get(springSecurityService.principal.id)
+    def showFinished = params.boolean('showFinished') ?: false
     def errors = [:]
     if (params.keySet().intersect(['user', 'curatoryGroup', 'linkedItem']).size() == 1) {
-// by user
+      // by user
       if (params.user) {
         if (user.superUserStatus || user.id == params.int('user')) {
           long userId = params.long('user')
 
-          if (params.archived == "true") {
+          if (params.boolean('archived') == true || params.boolean('combined') == true) {
             result.data = []
-            filterJobResults('ownerId', userId, max, offset, result)
+            def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?", [userId])[0]
+            def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ? order by jr.startTime desc", [userId], [max: max, offset: offset])
+
+            if (params.boolean('combined') == true) {
+              def active_jobs = concurrencyManagerService.getUserJobs(userId, max, offset, false)
+
+              hqlTotal += active_jobs._pagination.total
+
+              if (offset == 0) {
+                result.data = active_jobs.data
+              }
+            }
+
+            jobs.each { j ->
+              def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+              // No JsonObject for list view
+
+              result.data << [
+                uuid: j.uuid,
+                description: j.description,
+                type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+                linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+                startTime: j.startTime,
+                endTime: j.endTime,
+                status: j.statusText
+              ]
+            }
+
+            result['_pagination'] = [
+              offset: offset,
+              limit: max,
+              total: hqlTotal
+            ]
           }
           else {
-            concurrencyManagerService.getUserJobs(userId, max, offset).each { k, v ->
-              result[k] = v
-            }
+            result = concurrencyManagerService.getUserJobs(userId, max, offset, showFinished)
           }
         }
         else {
@@ -57,14 +88,44 @@ class JobsController {
         if (user.superUserStatus || user.curatoryGroups?.find { it.id == params.int('curatoryGroup') }) {
           long groupId = params.long('curatoryGroup')
 
-          if (params.boolean('archived') == true) {
+          if (params.boolean('archived') == true || params.boolean('combined') == true) {
             result.data = []
-            filterJobResults('groupId', groupId, max, offset, result)
+            def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?", [groupId])[0]
+            def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ? order by jr.startTime desc", [groupId], [max: max, offset: offset])
+
+            if (params.boolean('combined') == true) {
+              def active_jobs = concurrencyManagerService.getGroupJobs(groupId, max, offset, false)
+
+              hqlTotal += active_jobs._pagination.total
+
+              if (offset == 0) {
+                result.data = active_jobs.data
+              }
+            }
+
+            jobs.each { j ->
+              def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+              // No JsonObject for list view
+
+              result.data << [
+                uuid: j.uuid,
+                description: j.description,
+                type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+                linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+                startTime: j.startTime,
+                endTime: j.endTime,
+                status: j.statusText
+              ]
+            }
+
+            result['_pagination'] = [
+              offset: offset,
+              limit: max,
+              total: hqlTotal
+            ]
           }
           else {
-            concurrencyManagerService.getGroupJobs(groupId, max, offset).each { k, v ->
-              result[k] = v
-            }
+            result = concurrencyManagerService.getGroupJobs(groupId, max, offset, showFinished)
           }
         }
         else {
@@ -77,14 +138,44 @@ class JobsController {
       if (params.linkedItem) {
         long compId = params.long('linkedItem')
 
-        if (params.boolean('archived') == true) {
+        if (params.boolean('archived') == true || params.boolean('combined') == true) {
           result.data = []
-          filterJobResults('linkedItemId', compId, max, offset, result)
+          def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.linkedItemId = ?", [compId])[0]
+          def jobs = JobResult.executeQuery("from JobResult as jr where jr.linkedItemId = ? order by jr.startTime desc", [compId], [max: max, offset: offset])
+
+          if (params.boolean('combined') == true) {
+            def active_jobs = concurrencyManagerService.getComponentJobs(compId, max, offset, false)
+
+            hqlTotal += active_jobs._pagination.total
+
+            if (offset == 0) {
+              result.data = active_jobs.data
+            }
+          }
+
+          jobs.each { j ->
+            def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+            // No JsonObject for list view
+
+            result.data << [
+              uuid: j.uuid,
+              description: j.description,
+              type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+              linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+              startTime: j.startTime,
+              endTime: j.endTime,
+              status: j.statusText
+            ]
+          }
+
+          result['_pagination'] = [
+            offset: offset,
+            limit: max,
+            total: hqlTotal
+          ]
         }
         else {
-          concurrencyManagerService.getComponentJobs(compId, max, offset).each { k, v ->
-            result[k] = v
-          }
+          result = concurrencyManagerService.getComponentJobs(compId, max, offset, showFinished)
         }
       }
     }
@@ -169,7 +260,7 @@ class JobsController {
     if (job && !onlyArchived) {
       log.debug("${job}")
 
-      if (user.superUserStatus || (job.ownerId && job.ownerId == user.id)) {
+      if (user.superUserStatus || (job.ownerId && job.ownerId == user.id) || job.linkedItem) {
         result.description = job.description
         result.type = job.type ? [id: job.type.id, name: job.type.value, value: job.type.value] : null
         result.startTime = job.startTime

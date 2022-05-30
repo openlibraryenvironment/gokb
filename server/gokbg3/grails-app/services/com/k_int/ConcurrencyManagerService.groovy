@@ -296,7 +296,7 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getComponentJobs(def kbc_id, int max = 10, int offset = 0, boolean showFinished) {
+  public Map getComponentJobs(long kbc_id, int max = 10, int offset = 0, boolean showFinished = false) {
     return getFilteredJobs("linkedItem", kbc_id, max, offset, showFinished)
   }
 
@@ -307,7 +307,7 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getUserJobs(long user_id, int max = 10, int offset = 0, boolean showFinished) {
+  public Map getUserJobs(long user_id, int max = 10, int offset = 0, boolean showFinished = false) {
     return getFilteredJobs("ownerId", user_id, max, offset, showFinished)
   }
 
@@ -318,7 +318,7 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getGroupJobs(long group_id, int max = 10, int offset = 0, boolean showFinished) {
+  public Map getGroupJobs(long group_id, int max = 10, int offset = 0, boolean showFinished = false) {
     return getFilteredJobs("groupId", group_id, max, offset, showFinished)
   }
 
@@ -330,7 +330,7 @@ class ConcurrencyManagerService {
  * @param offset
  * @return List of Jobs
  */
-  private Map getFilteredJobs(String propertyName, long id, int max = 10, int offset = 0, boolean showFinished = false) {
+  private Map getFilteredJobs(String propertyName, id, max, offset, showFinished) {
     def allJobs = getJobs()
     def selected = []
     def result = [:]

@@ -146,13 +146,14 @@ class IngestKbartRun {
       def badrows = []
       def titleMatchStats = [matches: [partial: 0, full: 0], created: 0, conflicts: 0, noid: 0]
       def file_info = checkFile(datafile)
+      def running_jobs = concurrencyManagerService.getComponentJobs(pkg.id)
 
       if (file_info.errors) {
         result.result = 'ERROR'
         result.errors = file_info.errors
       }
 
-      if (!file_info.errors) {
+      if (!file_info.errors && running_jobs.data?.size() <= 1) {
         CSVReader csv = initReader(datafile)
 
         String[] header = csv.readNext()
@@ -301,7 +302,6 @@ class IngestKbartRun {
             def matching_job = concurrencyManagerService.createJob { mjob ->
               Package.withNewSession {
                 tippService.matchPackage(p, mjob)
-                mjob.endTime = new Date()
               }
             }
 
@@ -323,6 +323,11 @@ class IngestKbartRun {
             log.warn("Problem updating package stats", e)
           }
         }
+      }
+      else if (running_jobs.data?.size() > 1) {
+        result.result = 'ERROR'
+        reult.messageCode = 'kbart.errors.alreadyRunning'
+        result.messages.add('An import job for this package is already in progress!')
       }
     }
     catch (IllegalCharactersException ice) {

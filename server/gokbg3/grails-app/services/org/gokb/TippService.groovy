@@ -177,6 +177,7 @@ class TippService {
 
   def matchPackage(Package aPackage, def job = null) {
     log.debug("Matching titles for package ${aPackage}")
+    def result = [matched: 0, created: 0, result: 'OK']
     def more = true
     int offset = 0
 
@@ -201,7 +202,8 @@ class TippService {
         tippIDs = tippIDs.drop(batchSize)
 
         batch.each { id ->
-          matchTitle(TitleInstancePackagePlatform.get(id), group)
+          def matchResult = matchTitle(TitleInstancePackagePlatform.get(id), group)
+          result[matchResult]++
           offset++
         }
         // Get the current session.
@@ -218,21 +220,30 @@ class TippService {
         if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
           job?.message("Job cancelled!")
           log.debug("cancelling package title matching for job #${job?.uuid}")
+          result.result = 'CANCELLED'
           more = false
           break
         }
 
       }
-      job?.message("Finished package title matching.")
+
+      if (job) {
+        job.message("Finished package title matching.")
+        job.endTime = new Date()
+      }
+
       log.debug("Finished title matching for ${total} Titles")
     } catch (Exception e) {
       log.error("Error matching package titles!", e)
+      result.result = 'ERROR'
     }
+
+    result
   }
 
   def matchTitle(tipp, CuratoryGroup group = null) {
+    def result = 'matched'
     def found
-    boolean created = false
     def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
     final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
     def pkg = Package.executeQuery("from Package as pkg where exists (select 1 from Combo where fromComponent = pkg and toComponent = :tipp)", [tipp: tipp])[0]
@@ -258,7 +269,7 @@ class TippService {
     if (found.to_create == true) {
       log.debug("No existing title matched, creating ${tipp.name}")
       ti = createTitleFromTippData(tipp, tipp_ids)
-      created = true
+      result = 'created'
     }
     else if (found.matches.size() == 1) {
       // exactly one match
@@ -287,7 +298,7 @@ class TippService {
       }
       else if (found.matches.size() == 0) {
         ti = createTitleFromTippData(tipp, tipp_ids)
-        created = true
+        result = 'created'
       }
     }
     else {
@@ -295,7 +306,7 @@ class TippService {
     }
 
     if (ti) {
-      if (!created) {
+      if (result == 'matched') {
         titleLookupService.addIdentifiers(tipp_ids, ti)
         titleLookupService.addPublisher(tipp.publisherName, ti)
       }
@@ -313,6 +324,8 @@ class TippService {
 
     if (found.matches?.size() > 0 || found.conflicts?.size() > 0)
       handleFindConflicts(tipp, found, group)
+
+    result
   }
 
   def createTitleFromTippData(tipp, tipp_ids) {
