@@ -70,7 +70,6 @@ class ESSearchService{
       ],
       linked: [
           provider: "provider",
-          publisher: "publisher",
           currentPublisher: "publisher",
           linkedPackage: "tippPackage",
           tippPackage: "tippPackage",
@@ -907,7 +906,8 @@ class ESSearchService{
         'identifiers': false,
         'altname': false,
         'roles': false,
-        'curatoryGroups': false
+        'curatoryGroups': false,
+        'publisher': false
     ]
 
     def recordSource = record.getSourceAsMap()
@@ -954,6 +954,12 @@ class ESSearchService{
         }
         else if (field == "identifiers" && !toSkip) {
           domainMapping['_embedded']['ids'] = mapIdentifiers(val)
+        }
+        else if (field == "publisherUuid") {
+          domainMapping['_embedded']['publisher'] = []
+          if (val) {
+            domainMapping['_embedded']['publisher'] << [uuid: recordSource['publisherUuid'], name: recordSource['publisherName'], id: recordSource['publisher'].split(':')[1]]
+          }
         }
         else if (!toSkip && (field == "status" || field == "editStatus")) {
           domainMapping[field] = [id: RefdataCategory.lookup("KBComponent.${field}", val).id, name: val]

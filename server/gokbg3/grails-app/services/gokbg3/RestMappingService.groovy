@@ -522,7 +522,7 @@ class RestMappingService {
           id = Identifier.get(i)
         }
         else if (i instanceof Map) {
-          if (i.id) {
+          if (i.id instanceof Integer) {
             id = Identifier.get(i.id)
           }
           else {
@@ -541,6 +541,9 @@ class RestMappingService {
               try {
                 if (ns) {
                   id = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, i.value)
+                }
+                else {
+                  log.warn("Unable to determine namespace ${ns_val}!")
                 }
               }
               catch (grails.validation.ValidationException ve) {

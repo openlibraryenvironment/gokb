@@ -34,7 +34,6 @@ class PackageController {
   def messageService
   def restMappingService
   def packageService
-  def classExaminationService
   def componentLookupService
   def componentUpdateService
   def concurrencyManagerService
@@ -42,7 +41,6 @@ class PackageController {
   def FTUpdateService
   def reviewRequestService
   def titleLookupService
-  def titleHistoryService
   def TSVIngestionService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
