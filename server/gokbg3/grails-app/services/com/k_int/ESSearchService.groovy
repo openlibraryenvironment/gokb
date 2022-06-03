@@ -769,7 +769,7 @@ class ESSearchService{
         sortBy = "lastUpdatedDisplay"
       }
 
-      if (ESWrapperService.mapping.component.properties[sortBy]?.type == 'text'){
+      if (ESWrapperService.mapping.properties[sortBy]?.type == 'text'){
         errors['sort'] = "Unable to sort by text field ${sortBy}!"
       }
       else{
