@@ -205,17 +205,13 @@ class TippService {
           def matchResult = matchTitle(TitleInstancePackagePlatform.get(id), group)
           result[matchResult]++
           offset++
+          job.setProgress(offset, total)
         }
         // Get the current session.
         def session = sessionFactory.currentSession
         // flush and clear the session.
         session.flush()
         session.clear()
-
-        if (job) {
-          job.setProgress(offset, total)
-        }
-
 
         if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
           job?.message("Job cancelled!")
@@ -228,6 +224,7 @@ class TippService {
       }
 
       if (job) {
+        job.setProgress(100)
         job.message("Finished package title matching.")
         job.endTime = new Date()
       }
