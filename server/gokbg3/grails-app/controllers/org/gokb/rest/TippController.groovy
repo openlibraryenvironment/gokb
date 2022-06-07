@@ -181,9 +181,6 @@ class TippController {
       def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
       if (curator || user.isAdmin()) {
-        reqBody.title = obj.title?.id ?: reqBody.title
-        reqBody.hostPlatform = obj.hostPlatform.id
-        reqBody.pkg = obj.pkg.id
         reqBody.id = reqBody.id?:params.id // storing the TIPP ID in the JSON data for later use in upsertDTO
         def tipp_validation = TitleInstancePackagePlatform.validateDTO(reqBody, RequestContextUtils.getLocale(request))
 
@@ -264,6 +261,7 @@ class TippController {
   private def updateCombos(obj, reqBody, boolean remove = true) {
     log.debug("Updating TIPP combos ..")
     def errors = [:]
+    boolean changed = false
 
     if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
       def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
@@ -274,27 +272,41 @@ class TippController {
         errors.ids = id_result.errors
       }
 
-      if (id_result.changed) {
-        obj.lastSeen = System.currentTimeMillis()
-      }
+      changed = id_result.changed
     }
 
-    if (obj.title == null && reqBody.title) {
+    if (reqBody.title) {
       def ti = null
 
-      if (reqBody.title instanceof Integer) {
+      if (reqBody.title instanceof Integer || reqBody.title instanceof Long) {
         ti = TitleInstance.get(reqBody.title)
       }
       else if (reqBody.title instanceof Map && reqBody.title.id) {
         ti = TitleInstance.get(reqBody.title.id)
       }
-
-      if (ti) {
-        obj.title = ti
-      }
       else {
-        errors.title = [[message: "Unable to reference provided reference title!", baddata: reqBody.title, code: 'notFound']]
+        log.debug("Unknown title format ${reqBody.title?.class.name}")
       }
+
+      log.debug("TI: ${ti}")
+
+      if (ti != obj.title) {
+        if (ti) {
+          obj.title = ti
+          changed = true
+        }
+        else {
+          errors.title = [[message: "Unable to reference provided reference title!", baddata: reqBody.title, code: 'notFound']]
+        }
+      }
+    }
+    else {
+      log.debug("No title info given!")
+    }
+
+    if (changed) {
+      obj.lastSeen = System.currentTimeMillis()
+      obj.save()
     }
 
     errors
