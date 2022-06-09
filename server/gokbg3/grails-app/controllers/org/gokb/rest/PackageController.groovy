@@ -708,16 +708,43 @@ class PackageController {
     log.debug("Jobs for Package: ${obj}")
 
     if (obj) {
-        if (params.boolean('archived') == true) {
-          result.data = []
-          JobsController.filterJobResults('linkedItemId', obj.id, max, offset, result)
-        }
-        else {
-          concurrencyManagerService.getComponentJobs(obj.id, max, offset).each { k, v ->
-            result[k] = v
+      if (params.boolean('archived') == true || params.boolean('combined') == true) {
+        result.data = []
+        def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.linkedItemId = ?", [obj.id])[0]
+        def jobs = JobResult.executeQuery("from JobResult as jr where jr.linkedItemId = ? order by jr.startTime desc", [obj.id], [max: max, offset: offset])
+
+        if (params.boolean('combined') == true) {
+          def active_jobs = concurrencyManagerService.getComponentJobs(obj.id, max, offset, false)
+
+          hqlTotal += active_jobs._pagination.total
+
+          if (offset == 0) {
+            result.data = active_jobs.data
           }
         }
+
+        jobs.each { j ->
+          result.data << [
+            uuid: j.uuid,
+            description: j.description,
+            type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+            linkedItem: [id: obj.id, type: obj.niceName, uuid: obj.uuid, name: obj.name],
+            startTime: j.startTime,
+            endTime: j.endTime,
+            status: j.statusText
+          ]
+        }
+
+        result['_pagination'] = [
+          offset: offset,
+          limit: max,
+          total: hqlTotal
+        ]
       }
+      else {
+        result = concurrencyManagerService.getComponentJobs(obj.id, max, offset, showFinished)
+      }
+    }
     render result as JSON
   }
 

@@ -340,8 +340,6 @@ class ConcurrencyManagerService {
       return null
     }
 
-    log.debug("Getting jobs for $propertyName ${id}")
-
     // Filter the jobs.
     allJobs.each { k, v ->
       if (v.hasProperty(propertyName) && (showFinished || !v.isDone()))
