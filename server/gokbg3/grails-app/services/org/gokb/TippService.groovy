@@ -274,7 +274,10 @@ class TippService {
       log.debug("Matched title ${ti} for ${tipp}!")
       TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
 
-      if (currentCov && ((ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) || (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo))) {
+      if (currentCov && (
+          (ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) ||
+          (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo)
+      )) {
         reviewRequestService.raise(
             tipp,
             "TIPP coverage conflicts title publishing data",
@@ -375,20 +378,37 @@ class TippService {
   }
 
   def statusUpdate() {
-    log.debug("${TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform tipp set tipp.status=:retired, tipp.lastUpdated=:today where tipp.status=:current and accessEndDate<:today", [retired: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED), current: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT), today: new Date()])} TIPPs retired")
-    log.debug("${TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform tipp set tipp.status=:current, tipp.lastUpdated=:today where tipp.status=:expected and accessStartDate<=:today", [expected: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED), current: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT), today: new Date()])} TIPPs activated")
+    log.info("Updating TIPP status via access dates..")
+    RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+    RefdataValue status_retired = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+    RefdataValue status_expected = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED)
+
+    String update_retire_str = "update TitleInstancePackagePlatform tipp set tipp.status=:retired, tipp.lastUpdated=:today where tipp.status=:current and accessEndDate<:today"
+    String update_current_str = "update TitleInstancePackagePlatform tipp set tipp.status=:current, tipp.lastUpdated=:today where tipp.status=:expected and accessStartDate<=:today"
+
+    def num_retired = TitleInstancePackagePlatform.executeUpdate(update_retire_str, [retired: status_retired, current: status_current, today: new Date()])
+    log.info("Retired ${num_retired} TIPPs.")
+
+    def num_current = TitleInstancePackagePlatform.executeUpdate(update_current_str, [expected: status_expected, current: status_current, today: new Date()])
+    log.info("Activated ${num_current} TIPPs.")
   }
 
   def scanTIPPs(Job job = null) {
+    RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    RefdataValue combo_ids = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
+    String tipp_crit = 'select t.id from TitleInstancePackagePlatform as t where t.status != :status and (t.name is null or not exists (select 1 from Combo where fromComponent = t and type = :idc))'
+
     autoTimestampEventListener.withoutLastUpdated {
       int index = 0
       boolean cancelled = false
-      def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
+      def tippIDs = TitleInstancePackagePlatform.executeQuery(tipp_crit, [status: status_deleted, idc: combo_ids])
       log.debug("found ${tippIDs.size()} TIPPs")
       def tippIDit = tippIDs.iterator()
+
       while (tippIDit.hasNext() && !cancelled) {
         TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDit.next())
         index++
+
         if (tipp.title) {
           tipp.title.ids.each { data ->
             if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(data.namespace.value)) {
@@ -398,23 +418,29 @@ class TippService {
               }
             }
           }
+
           if (!tipp.name || tipp.name == '') {
             tipp.name = tipp.title.name
             log.debug("set TIPP name to $tipp.name")
           }
+
           if (tipp.isDirty()) {
             tipp.save(flush: true)
             log.debug("save $index")
           }
+
           log.debug("destroy #$index: $tipp")
           tipp.finalize()
         }
+
         job?.setProgress(index, tippIDs.size())
+
         if (job?.isCancelled()) {
           cancelled = true
         }
+
         if (index % 100 == 0) {
-          log.debug("Clean up GORM");
+          log.debug("Clean up GORM")
           // Get the current session.
           def session = sessionFactory.currentSession
           // flush and clear the session.

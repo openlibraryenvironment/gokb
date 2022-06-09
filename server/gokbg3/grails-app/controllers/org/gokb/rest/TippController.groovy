@@ -170,6 +170,7 @@ class TippController {
     def reqBody = request.JSON
     def remove = (request.method == 'PUT')
     def errors = [:]
+    boolean set_access_end = false
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstancePackagePlatform.findByUuid(params.id)
 
@@ -191,9 +192,18 @@ class TippController {
             render result as JSON
           }
 
+          if (reqBody.status?.name == 'Retired' && obj.status != RefdataValue.get(reqBody.status.id)) {
+            set_access_end = true
+          }
+
           def jsonMap = obj.jsonMapping
 
           obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+
+          if (set_access_end) {
+            log.debug("Setting accessEndDate for newly retired TIPP ..")
+            obj.accessEndDate = new Date()
+          }
 
           if (reqBody.variantNames != null) {
             log.debug("Updating variantNames ..")
