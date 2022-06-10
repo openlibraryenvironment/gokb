@@ -158,6 +158,8 @@ class IngestKbartRun {
 
         String[] header = csv.readNext()
 
+        header = header.collect { it.trim() }
+
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                                 'from TitleInstancePackagePlatform as tipp, Combo as c '+
                                 'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
@@ -536,7 +538,7 @@ class IngestKbartRun {
       firstEditor: the_kbart.first_editor,
       url: the_kbart.title_url,
       subjectArea: the_kbart.subject_area ?: (the_kbart.subject ?: the_kbart.primary_subject),
-      series: the_kbart.series,
+      series: (the_kbart.monograph_parent_collection_title ?: the_kbart.series),
       language: the_kbart.language,
       medium: the_kbart.medium,
       accessStartDate:the_kbart.access_start_date ?: ingest_date,
@@ -705,7 +707,7 @@ class IngestKbartRun {
         tipp.lastSeen = ingest_systime
       }
 
-      setPrices(tipp, the_kbart.unmapped)
+      setPrices(tipp, the_kbart)
 
       // Look through the field list for any tipp.custprop values
       // log.debug("Checking for tipp custprops")
@@ -720,20 +722,16 @@ class IngestKbartRun {
     result
   }
 
-  def setPrices(tipp, props) {
-    log.debug("setPrices ..")
-
-    props.each { up ->
-      def prop = up.name
-
-      if (prop ==~ ~/^listprice_.+/ && up.value.trim()) {
-        def currency = prop =~ ~/^listprice_($1)$/
-        def combined_price = "${up.value.trim()} ${currency}"
+  def setPrices(tipp, cols) {
+    cols.each { name, val ->
+      if (name ==~ ~/^listprice_.+/ && val.trim()) {
+        def currency = name.split('_')[1]
+        def combined_price = "${val.trim()} ${currency}"
 
         def priceObj = tipp.setPrice('list', combined_price)
 
         if (!priceObj) {
-          log.debug("Unable to create attached list price (${prop}: ${up.value.trim()})!")
+          log.debug("Unable to create attached list price (${name}: ${val.trim()})!")
         }
       }
     }
@@ -866,7 +864,6 @@ class IngestKbartRun {
     return csv
   }
 
-  //note- don't do the additional fields just yet, these will need to be mapped in
   def getKbartBeansForRow(header, row_data) {
     def result = [:]
 

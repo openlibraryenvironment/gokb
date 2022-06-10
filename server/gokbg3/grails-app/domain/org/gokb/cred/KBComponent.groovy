@@ -1517,7 +1517,7 @@ where cp.owner = :c
       rdv_type = RefdataCategory.lookup('Price.type', type ?: 'list')
 
       if (price_components.length == 2) {
-        rdv_currency = RefdataCategory.lookupOr('Currency', price_components[1].trim())
+        rdv_currency = RefdataCategory.lookup('Currency', price_components[1].trim())
       }
 
       if (rdv_currency) {
