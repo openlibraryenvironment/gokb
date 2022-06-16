@@ -243,8 +243,8 @@ class IngestKbartRun {
               def retire_pars = [
                 pkgid: pkg.id,
                 dt: ingest_systime,
-                sc: RefdataCategory.lookup('KBComponent.Status', 'Current'),
-                sr: RefdataCategory.lookup('KBComponent.Status', 'Retired'),
+                sc: status_current,
+                sr: status_retired,
                 igdt: dateFormatService.parseDate(ingest_date),
                 now: new Date()
               ]
@@ -260,7 +260,7 @@ class IngestKbartRun {
               log.debug("Completed tipp cleanup (${retired_count} retired)")
             }
             catch (Exception e) {
-              log.error("Problem", e)
+              log.error("Problem retiring TIPPs", e)
               result.result = 'ERROR'
             }
             finally {

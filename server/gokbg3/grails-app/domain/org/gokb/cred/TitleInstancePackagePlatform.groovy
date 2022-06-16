@@ -914,9 +914,10 @@ class TitleInstancePackagePlatform extends KBComponent {
       // prices
       if (tipp_dto.prices && tipp_dto.prices.size() > 0) {
         tipp_dto.prices.each { price ->
+          log.debug("Setting price ${price}")
           if (!price.id && (price.price || price.amount) )
-            tipp.setPrice(String.isInstance(price.type) ? price.type : price.type.name,
-                "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
+            tipp.setPrice(price.type instanceof String ? price.type : price.type?.name,
+                "${price.amount ?: price.price} ${price.currency instanceof String ? price.currency : price.currency?.name}",
                 price.startDate ? DateFormatService.parseDate(price.startDate) : null,
                 price.endDate ? DateFormatService.parseDate(price.endDate) : null)
         }

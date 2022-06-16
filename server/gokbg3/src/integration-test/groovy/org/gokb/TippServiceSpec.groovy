@@ -162,7 +162,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     def pack = new Package(name: "Import Package")
     def platform = new Platform(name: "Import Platform")
     def aISBN = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '978-11-656-6370-8')
-    def zdbId = new Identifier(namespace: IdentifierNamespace.findByValue('zdb'), value: '655639-0')
+    def zdbId = new Identifier(namespace: IdentifierNamespace.findByValue('zdb'), value: '1655639-0')
     def book1 = new BookInstance(name: "Book 1")
     book1.ids.add(aISBN)
     def tipp1 = TitleInstancePackagePlatform.upsertDTO([

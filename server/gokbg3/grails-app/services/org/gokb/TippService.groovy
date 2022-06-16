@@ -205,7 +205,7 @@ class TippService {
           def matchResult = matchTitle(TitleInstancePackagePlatform.get(id), group)
           result[matchResult]++
           offset++
-          job.setProgress(offset, total)
+          job?.setProgress(offset, total)
         }
         // Get the current session.
         def session = sessionFactory.currentSession
@@ -709,17 +709,19 @@ class TippService {
       def titleId = tippInfo.titleId ?: tippInfo.importId
 
       if (titleId) {
-        tipps = TitleInstancePackagePlatform.executeQuery(
-            'select tipp from TitleInstancePackagePlatform as tipp, Combo as c1, Combo as c2 ' +
-                'where c1.fromComponent.id = :pkg ' +
-                'and c1.toComponent = tipp ' +
-                'and c1.type = :typ1 ' +
-                'and c2.fromComponent.id = :plt ' +
-                'and c2.toComponent = tipp ' +
-                'and c2.type = :typ2 ' +
-                'and tipp.importId = :tid ' +
-                'and tipp.status = :tStatus  ' +
-                'order by tipp.id',
+        tipps = TitleInstancePackagePlatform.executeQuery('''select tipp from TitleInstancePackagePlatform as tipp
+            where exists (select 1 from Combo
+              where fromComponent.id = :pkg
+              and toComponent = tipp
+              and type = :typ1
+            )
+            and exists (select 1 from Combo
+              where fromComponent.id = :plt
+              and toComponent = tipp
+              and type = :typ2
+            )
+            and tipp.importId = :tid
+            and tipp.status = :tStatus''',
             [pkg   : pkgInfo.id,
             typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
             plt    : tippInfo.hostPlatform.id,
@@ -742,9 +744,9 @@ class TippService {
                 found.each {
                   if (TitleInstancePackagePlatform.isInstance(it)
                       && !tipps.contains(it)
-                      && it.pkg.id == pkgInfo.id
+                      && it.pkg?.id == pkgInfo.id
                       && it.status == status_current
-                      && it.hostPlatform.id == tippInfo.hostPlatform.id
+                      && it.hostPlatform?.id == tippInfo.hostPlatform.id
                       && (!titleId || !it.importId)) {
                     tipps.add(it)
                   }
@@ -768,9 +770,9 @@ class TippService {
                 found.each {
                   if (TitleInstancePackagePlatform.isInstance(it)
                       && !tipps.contains(it)
-                      && it.pkg.id == pkgInfo.id
+                      && it.pkg?.id == pkgInfo.id
                       && it.status == status_current
-                      && it.hostPlatform.id == tippInfo.hostPlatform.id
+                      && it.hostPlatform?.id == tippInfo.hostPlatform.id
                       && (!titleId || !it.importId)) {
                     tipps.add(it)
                   }
