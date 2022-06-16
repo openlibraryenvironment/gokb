@@ -380,7 +380,7 @@ class ESSearchService{
 
   private void processNameFields(query, errors, qpars) {
     if (qpars.label) {
-
+      def escaped_qry = qpars.label.replace("/", "\\/")
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
 
       if (qpars.int('label')) {
@@ -391,58 +391,62 @@ class ESSearchService{
         }
       }
       else {
-        labelQuery.should(QueryBuilders.termQuery('uuid', qpars.label).boost(10))
+        labelQuery.should(QueryBuilders.termQuery('uuid', escaped_qry).boost(10))
       }
 
-      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.label, '"') == 2
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(escaped_qry, '"') == 2
 
       if (doPhraseSearch) {
         log.debug("DO phrase search!")
-        def phraseQry = qpars.label.replace('"', "")
+        def phraseQry = escaped_qry.replace('"', "")
         log.debug("${phraseQry}")
         labelQuery.should(QueryBuilders.matchPhraseQuery('name', phraseQry).boost(2))
         labelQuery.should(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("name", 2f))
-        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("altname", 1.3f))
-        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("suggest", 0.6f))
+        labelQuery.should(QueryBuilders.queryStringQuery(escaped_qry).defaultOperator(Operator.AND).field("name", 2f))
+        labelQuery.should(QueryBuilders.queryStringQuery(escaped_qry).defaultOperator(Operator.AND).field("altname", 1.3f))
+        labelQuery.should(QueryBuilders.queryStringQuery(escaped_qry).defaultOperator(Operator.AND).field("suggest", 0.6f))
       }
       labelQuery.minimumShouldMatch(1)
 
       query.must(labelQuery)
     }
     else if (qpars.name) {
-      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.name, '"') == 2
+      def escaped_qry = qpars.name.replace("/", "\\/")
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(escaped_qry, '"') == 2
 
       if (doPhraseSearch) {
-        def phraseQry = qpars.name.replace('"', "")
+        def phraseQry = escaped_qry.replace('"', "")
         query.must(QueryBuilders.matchPhraseQuery('name', phraseQry))
       }
       else {
-        query.must(QueryBuilders.queryStringQuery(qpars.name).defaultOperator(Operator.AND).field("name"))
+        query.must(QueryBuilders.queryStringQuery(escaped_qry).defaultOperator(Operator.AND).field("name"))
       }
     }
     else if (qpars.altname) {
-      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.altname, '"') == 2
+      def escaped_qry = qpars.altname.replace("/", "\\/")
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(escaped_qry, '"') == 2
 
       if (doPhraseSearch) {
-        def phraseQry = qpars.altname.replace('"', "")
+        def phraseQry = escaped_qry.replace('"', "")
         query.must(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        query.must(QueryBuilders.queryStringQuery(qpars.altname).defaultOperator(Operator.AND).field("altname"))
+        query.must(QueryBuilders.queryStringQuery(escaped_qry).defaultOperator(Operator.AND).field("altname"))
       }
     }
     else if (qpars.suggest) {
-      query.must(QueryBuilders.queryStringQuery(qpars.suggest).defaultOperator(Operator.AND).field("suggest", 0.6f))
+      def escaped_qry = qpars.suggest.replace("/", "\\/")
+      query.must(QueryBuilders.queryStringQuery(escaped_qry).defaultOperator(Operator.AND).field("suggest", 0.6f))
     }
   }
 
   private void processGenericFields(query, errors, qpars) {
     if (qpars.q?.trim()) {
+      def escaped_qry = qpars.q.trim().replace("/", "\\/")
       QueryBuilder genericQuery = QueryBuilders.boolQuery()
-      def id_params = ['identifiers.value': qpars.q]
+      def id_params = ['identifiers.value': escaped_qry]
 
       if (qpars.int('q')) {
         def oid = KBComponent.get(qpars.int('q'))?.uuid ?: null
@@ -452,12 +456,12 @@ class ESSearchService{
         }
       }
       else {
-        genericQuery.should(QueryBuilders.termQuery('uuid', qpars.q).boost(10))
+        genericQuery.should(QueryBuilders.termQuery('uuid', escaped_qry).boost(10))
       }
 
-      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("name", 2f))
-      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("altname", 1.3f))
-      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("suggest", 0.6f))
+      genericQuery.should(QueryBuilders.queryStringQuery(escaped_qry).defaultOperator(Operator.AND).field("name", 2f))
+      genericQuery.should(QueryBuilders.queryStringQuery(escaped_qry).defaultOperator(Operator.AND).field("altname", 1.3f))
+      genericQuery.should(QueryBuilders.queryStringQuery(escaped_qry).defaultOperator(Operator.AND).field("suggest", 0.6f))
       genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
       genericQuery.minimumShouldMatch(1)
 
@@ -466,34 +470,38 @@ class ESSearchService{
   }
 
   private void processLinkedField(query, field, val) {
-    QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-    def finalVal = val
+    if (val?.trim()) {
+      QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+      def escaped_val = val.trim().replace("/", "\\/")
+      def finalVal = val
 
-    try {
-      finalVal = KBComponent.get(Long.valueOf(val)).getLogEntityId()
+      try {
+        finalVal = KBComponent.get(Long.valueOf(val)).getLogEntityId()
+      }
+      catch (java.lang.NumberFormatException nfe) {
+      }
+
+      log.debug("processLinkedField: ${field} -> ${finalVal}")
+
+      linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
+      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), escaped_val))
+      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), escaped_val))
+      linkedFieldQuery.minimumShouldMatch(1)
+
+      query.must(linkedFieldQuery)
     }
-    catch (java.lang.NumberFormatException nfe) {
-    }
-
-    log.debug("processLinkedField: ${field} -> ${finalVal}")
-
-    linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
-    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), val))
-    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), val))
-    linkedFieldQuery.minimumShouldMatch(1)
-
-    query.must(linkedFieldQuery)
   }
 
   private void addPlatformQuery(query, errors, val) {
     QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+    def escaped_val = val.trim().replace("/", "\\/")
 
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformUuid', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', escaped_val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', escaped_val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformUuid', escaped_val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', escaped_val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', escaped_val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', escaped_val))
     linkedFieldQuery.minimumShouldMatch(1)
 
     query.must(linkedFieldQuery)
