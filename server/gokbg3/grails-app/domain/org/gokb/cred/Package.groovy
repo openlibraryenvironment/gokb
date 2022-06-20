@@ -398,7 +398,8 @@ class Package extends KBComponent {
     textDescription: 'Package repository for GOKb',
     query          : " from Package as o ",
     curators       : 'Package.CuratoryGroups',
-    pageSize       : 3
+    pageSize       : 3,
+    uriPath        : '/package'
   ]
 
   /**
