@@ -18,6 +18,7 @@ class TippService {
   def componentUpdateService
   def componentLookupService
   def titleLookupService
+  def titleAugmentService
   def sessionFactory
   def reviewRequestService
   def autoTimestampEventListener
@@ -191,7 +192,8 @@ class TippService {
         [
             pkg : aPackage,
             ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
-        ]
+        ],
+        [readOnly: true]
       )
 
       int total = tippIDs.size()
@@ -297,6 +299,7 @@ class TippService {
         ti = found.matches[0].object
       }
       else if (found.matches.size() == 0) {
+        log.debug("No matches after coverage check.. creating new title ${tipp.name}")
         ti = createTitleFromTippData(tipp, tipp_ids)
         result = 'created'
       }
@@ -307,16 +310,16 @@ class TippService {
 
     if (ti) {
       if (result == 'matched') {
-        titleLookupService.addIdentifiers(tipp_ids, ti)
-        titleLookupService.addPublisher(tipp.publisherName, ti)
+        titleAugmentService.addIdentifiers(tipp_ids, ti)
+        titleAugmentService.addPublisher(tipp.publisherName, ti)
       }
 
-      tipp.title = ti
-      tipp.save()
+      def ti_combo = new Combo(fromComponent: ti, toComponent: tipp, type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')).save(flush: true)
 
       log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
     else {
+      log.debug("Changing")
       if (pkg.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
         pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
       }
@@ -328,17 +331,18 @@ class TippService {
     result
   }
 
-  def createTitleFromTippData(tipp, tipp_ids) {
+  private def createTitleFromTippData(tipp, tipp_ids) {
+
     def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
     def ti = Class.forName(title_class_name).newInstance()
     def title_changed = false
     ti.name = tipp.name
 
     log.debug("Set name ${ti.name} ..")
-    ti.save(flush: true)
-    titleLookupService.addPublisher(tipp.publisherName, ti)
+    ti.save()
+    titleAugmentService.addPublisher(tipp.publisherName, ti)
     log.debug("Transfering new ti ids: ${tipp_ids}")
-    titleLookupService.addIdentifiers(tipp_ids, ti)
+    titleAugmentService.addIdentifiers(tipp_ids, ti)
 
     title_changed |= componentUpdateService.setAllRefdata([
         'medium', 'language'

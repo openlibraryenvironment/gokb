@@ -258,8 +258,6 @@ class JobsController {
     JobResult jobResult = JobResult.findByUuid(params.id)
 
     if (job && !onlyArchived) {
-      log.debug("${job}")
-
       if (user.superUserStatus || (job.ownerId && job.ownerId == user.id) || job.linkedItem) {
         result.description = job.description
         result.type = job.type ? [id: job.type.id, name: job.type.value, value: job.type.value] : null

@@ -25,6 +25,7 @@ import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -100,7 +101,6 @@ class PackageService {
      'gokb_tipp_uid',
      'gokb_title_uid']
 
-  public static boolean running = false
   public static boolean activeCaching = false
   public static final enum ExportType {
     KBART_TIPP, KBART_TITLE, TSV
@@ -1566,14 +1566,13 @@ class PackageService {
   }
 
   def synchronized updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
-    log.debug("updateFromSource")
+    log.debug("updateFromSource ${p.name}")
     def result = null
+    def activeJobs = concurrencyManagerService.activeImportJobs
 
-    if (running == false) {
-      running = true
+    if (activeJobs.size() == 0) {
       log.debug("UpdateFromSource started")
       result = startSourceUpdate(p, user, job, activeGroup)
-      running = false
     }
     else {
       log.debug("update skipped - already running")
@@ -1600,9 +1599,6 @@ class PackageService {
         LocalDate extracted_date
         def file_info = [:]
 
-        pkg_source.lastRun = new Date()
-        pkg_source.save(flush: true)
-
         try {
           src_url = new URL(pkg_source.url)
         }
@@ -1619,15 +1615,17 @@ class PackageService {
           def existing_string = src_url.toString()
           String local_date_string = LocalDate.now().toString()
 
-          if (existing_string ==~ /\{YYYY-MM-DD\}\.[tsv|txt]$/) {
+          if (existing_string =~ /\{YYYY-MM-DD\}\.(tsv|txt)$/) {
+            log.debug("URL contains date placeholder ..")
             src_url = new URL(existing_string.replace('{YYYY-MM-DD}', local_date_string))
             dynamic_date = true
           }
           else {
-            def date_pattern_match = (existing_string =~ /([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))\.[tsv|txt]$/)
+            def date_pattern_match = (existing_string =~ /([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/)
 
-            if (date_pattern_match.size() > 0) {
-              String matched_date_string = date_pattern_match[0].split("\\.")[0]
+            if (date_pattern_match && date_pattern_match[0].size() > 0) {
+              String matched_date_string = date_pattern_match[0][1]
+              log.debug("${matched_date_string}")
               extracted_date = LocalDate.parse(matched_date_string)
             }
           }
@@ -1644,8 +1642,13 @@ class PackageService {
         if (src_url?.getProtocol() in ['http', 'https']) {
           def deposit_token = java.util.UUID.randomUUID().toString()
           File tmp_file = createTempFile(deposit_token)
+          def lastRunLocal = pkg_source.lastRun ? pkg_source.lastRun.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
 
-          if (!extracted_date || pkg_source.lastRun == null) {
+          pkg_source.lastRun = new Date()
+          pkg_source.save(flush: true)
+
+          if (!extracted_date || !lastRunLocal || extracted_date > lastRunLocal) {
+            log.debug("Request initial URL..")
             file_info = fetchKbartFile(tmp_file, src_url)
           }
 
@@ -1666,10 +1669,23 @@ class PackageService {
 
           if (!file_info.file_name && (dynamic_date || extracted_date)) {
             LocalDate active_date = LocalDate.now()
+            src_url = new URL(src_url.toString().replaceFirst(/[0-9]{4}-[0-9]{2}-[0-9]{2}/, active_date.toString()))
+            log.debug("Fetching dated URL for today..")
+            file_info = fetchKbartFile(tmp_file, src_url)
 
-            while (active_date.isAfter(LocalDate.now().minusDays(30))) {
+            // Look at first of this month
+            if (!file_info.file_name) {
+              sleep(500)
+              log.debug("Fetching first of the month..")
+              def som_date_url = new URL(src_url.toString().replaceFirst(/[0-9]{4}-[0-9]{2}-[0-9]{2}/, active_date.withDayOfMonth(1).toString()))
+              file_info = fetchKbartFile(tmp_file, som_date_url)
+            }
+
+            // Check all days of this month
+            while (active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
               active_date = active_date.minusDays(1)
-              src_url = new URL(src_url.toString().replace(/([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))/, active_date.toString()))
+              src_url = new URL(src_url.toString().replaceFirst(/[0-9]{4}-[0-9]{2}-[0-9]{2}/, active_date.toString()))
+              log.debug("Fetching dated URL for date ${active_date}")
               sleep(500)
               file_info = fetchKbartFile(tmp_file, src_url)
             }
@@ -1677,102 +1693,126 @@ class PackageService {
 
           log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
-          if ((file_info.file_name?.endsWith('.tsv') || file_info.file_name?.endsWith('.txt')) && (file_info.content_mime_type?.startsWith("text/plain") || file_info.content_mime_type?.startsWith("text/tab-separated-values") || file_info.content_mime_type == 'application/octet-stream')) {
-            try {
-              MessageDigest md5_digest = MessageDigest.getInstance("MD5")
-              UniversalDetector detector = new UniversalDetector()
-              FileInputStream fis = new FileInputStream(tmp_file)
-              BufferedInputStream inputStream = new BufferedInputStream(fis)
-              int total_size = 0
-              byte[] dataBuffer = new byte[4096]
-              int bytesRead
+          if (file_info.file_name) {
+            if ((file_info.file_name?.endsWith('.tsv') || file_info.file_name?.endsWith('.txt')) &&
+                (file_info.content_mime_type?.startsWith("text/plain") ||
+                file_info.content_mime_type?.startsWith("text/tab-separated-values") ||
+                file_info.content_mime_type == 'application/octet-stream')
+            ) {
+              try {
+                MessageDigest md5_digest = MessageDigest.getInstance("MD5")
+                UniversalDetector detector = new UniversalDetector()
+                FileInputStream fis = new FileInputStream(tmp_file)
+                BufferedInputStream inputStream = new BufferedInputStream(fis)
+                int total_size = 0
+                byte[] dataBuffer = new byte[4096]
+                int bytesRead
 
-              while ((bytesRead = inputStream.read(dataBuffer, 0, 4096)) != -1) {
-                md5_digest.update(dataBuffer, 0, bytesRead)
-                total_size += bytesRead
-                detector.handleData(dataBuffer, 0, bytesRead)
+                while ((bytesRead = inputStream.read(dataBuffer, 0, 4096)) != -1) {
+                  md5_digest.update(dataBuffer, 0, bytesRead)
+                  detector.handleData(dataBuffer, 0, bytesRead)
+                  total_size += bytesRead
+                }
+
+                log.debug("Read $total_size bytes..")
+
+                detector.dataEnd()
+                byte[] md5sum = md5_digest.digest()
+                file_info.md5sumHex = new BigInteger(1, md5sum).toString(16)
+
+                String encoding = detector.getDetectedCharset()
+
+                if (encoding in ['UTF-8', 'US-ASCII']) {
+                  datafile = DataFile.findByMd5(file_info.md5sumHex)
+
+                  if (!datafile) {
+                    log.debug("Create new datafile")
+                    datafile = new DataFile(
+                                            guid: deposit_token,
+                                            md5: file_info.md5sumHex,
+                                            uploadName: file_info.file_name,
+                                            name: file_info.file_name,
+                                            filesize: total_size,
+                                            encoding: encoding,
+                                            uploadMimeType: file_info.content_mime_type).save()
+                    datafile.fileData = tmp_file.getBytes()
+                    datafile.save(failOnError:true,flush:true)
+                    log.debug("Saved new datafile : ${datafile.id}")
+                  }
+                  else {
+                    log.debug("Found existing datafile ${datafile}")
+                  }
+                }
+                else {
+                  log.debug("Illegal charset ${encoding} found..")
+                  result.result = 'ERROR'
+                  result.messageCode = 'kbart.errors.url.charset'
+                  result.message = "KBART is not UTF-8!"
+                  return result
+                }
+              } catch (IOException e) {
+                  // handle exception
+                  e.printStackTrace()
               }
 
-              detector.dataEnd()
-              byte[] md5sum = md5_digest.digest()
-              file_info.md5sumHex = new BigInteger(1, md5sum).toString(16)
+              if (datafile) {
+                if (job) {
+                  result = TSVIngestionService.updatePackage(pkg,
+                                                             datafile,
+                                                             title_ns,
+                                                             (user ? true : false),
+                                                             false,
+                                                             user,
+                                                             activeGroup,
+                                                             false,
+                                                             job)
+                }
+                else {
+                  Job update_job = concurrencyManagerService.createJob { Job j ->
+                    TSVIngestionService.updatePackage(pkg,
+                                                      datafile,
+                                                      title_ns,
+                                                      (user ? true : false),
+                                                      false,
+                                                      user,
+                                                      activeGroup,
+                                                      false,
+                                                      j)
+                  }
 
-              String encoding = detector.getDetectedCharset()
+                  if (preferred_group) {
+                    update_job.groupId = preferred_group.id
+                  }
 
-              if (encoding in ['UTF-8', 'US-ASCII']) {
-                datafile = DataFile.findByMd5(file_info.md5sumHex)
+                  if (user) {
+                    update_job.ownerId = user.id
+                  }
 
-                if (!datafile) {
-                  log.debug("Create new datafile")
-                  datafile = new DataFile(
-                                                  guid: deposit_token,
-                                                  md5: file_info.md5sumHex,
-                                                  uploadName: file_info.file_name,
-                                                  name: file_info.file_name,
-                                                  filesize: total_size,
-                                                  encoding: encoding,
-                                                  uploadMimeType: file_info.content_mime_type).save()
-                  datafile.fileData = tmp_file.getBytes()
-                  datafile.save(failOnError:true,flush:true)
-                  log.debug("Saved new datafile : ${datafile.id}")
+                  update_job.description = "KBART REST ingest (${pkg.name})".toString()
+                  update_job.type = RefdataCategory.lookup('Job.Type', 'KBARTIngest')
+                  update_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+                  update_job.message("Starting upsert for Package ${pkg.name}".toString())
+                  update_job.startOrQueue()
+                  result.job_result = update_job.get()
                 }
               }
               else {
+                log.debug("Unable to reference DataFile")
                 result.result = 'ERROR'
-                result.messageCode = 'kbart.errors.url.charset'
-                result.message = "KBART is not UTF-8!"
-              }
-            } catch (IOException e) {
-                // handle exception
-                e.printStackTrace()
-            }
-
-            if (datafile) {
-              if (job) {
-                result = TSVIngestionService.updatePackage(pkg,
-                                                  datafile,
-                                                  title_ns,
-                                                  (user ? true : false),
-                                                  false,
-                                                  user,
-                                                  activeGroup,
-                                                  false,
-                                                  job)
-              }
-              else {
-                Job update_job = ConcurrencyManagerService.createJob { Job j ->
-                  TSVIngestionService.updatePackage(pkg,
-                                                    datafile,
-                                                    title_ns,
-                                                    (user ? true : false),
-                                                    false,
-                                                    user,
-                                                    activeGroup,
-                                                    false,
-                                                    j)
-                }
-                update_job.groupId = activeGroup.id ?: null
-                update_job.ownerId = user?.id
-                update_job.description = "KBART REST ingest (${pkg.name})".toString()
-                update_job.type = RefdataCategory.lookup('Job.Type', 'KBARTIngest')
-                update_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
-                update_job.message("Starting upsert for Package ${pkg.name}".toString())
-                update_job.startOrQueue()
-                result = update_job.get()
+                result.messageCode = 'kbart.errors.url.unknown'
+                result.message = "There were errors saving the KBART file!"
               }
             }
             else {
-              log.debug("Unable to reference DataFile!")
               result.result = 'ERROR'
-              result.messageCode = 'kbart.errors.url.unknown'
-              result.message = "There were errors saving the KBART file!"
+              result.messageCode = 'kbart.errors.url.mimeType'
+              result.message = "KBART URL returned a wrong content type!"
+              log.debug("KBART url ${src_url} returned MIME type ${file_info.content_mime_type}")
             }
           }
           else {
-            result.result = 'ERROR'
-            result.messageCode = 'kbart.errors.url.mime.type'
-            result.message = "KBART URL returned a wrong content type!"
-            log.debug("KBART url ${src_url} returned MIME type ${content_mime_type}")
+            result.message = "No KBART found for provided URL!"
+            log.debug("KBART url ${src_url} returned MIME type ${file_info.content_mime_type}")
           }
         }
         // else if (src_url.getProtocol() in ['ftp', 'sftp']) {
@@ -1801,23 +1841,41 @@ class PackageService {
     }
     connection.connect()
     result.status = connection.getResponseCode()
+    log.debug("Fetching ${src_url}")
+    log.debug("HEADERS: ${connection.getHeaderFields()}")
 
     if (result.status == HttpURLConnection.HTTP_OK) {
       result.content_mime_type = connection.getContentType()
-      if (result.content_mime_type.startsWith('text/html')) {
-        log.debug("Got HTML result!")
-        log.debug("${connection.getContent()}")
+
+      if (result.content_mime_type?.startsWith('text/html')) {
+        log.warn("Got HTML result at KBART URL ${src_url}!")
         result.accessError = true
       }
       else {
-        def file_name = connection.getHeaderField("Content-Disposition").split('filename=')[1]
-        result.file_name = file_name.replaceAll(/\"/, '')
-        FileUtils.copyInputStreamToFile(connection.getInputStream(), tmp_file)
+        log.debug("${result.content_mime_type} ${connection.getHeaderFields()}")
+        def file_name = connection.getHeaderField("Content-Disposition")
+
+        if (file_name) {
+          file_name = file_name.split('filename=')[1]
+        } else if (result.content_mime_type == 'text/plain') (
+          file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
+        )
+
+        if (file_name?.trim()) {
+          result.file_name = file_name.replaceAll(/\"/, '')
+          InputStream content = connection.getInputStream()
+          FileUtils.copyInputStreamToFile(content, tmp_file)
+          content.close()
+          log.debug("Wrote ${tmp_file.length()}")
+        }
       }
     }
     else if (result.status != HttpURLConnection.HTTP_NOT_FOUND) {
       log.debug("KBART fetch status: ${result.status}")
       log.debug("${connection.getContent()}")
+    }
+    else {
+      log.debug("KBART fetch status: ${result.status}")
     }
 
     result
@@ -2048,273 +2106,273 @@ class PackageService {
     boolean cancelled = false
     File tempDir = new File('/tmp/gokb/oai/')
 
-      Package.withNewSession {
-        def ids = Package.executeQuery("select id from Package")
+    Package.withNewSession {
+      def ids = Package.executeQuery("select id from Package")
 
-        for (id in ids) {
-          Package item = Package.get(id)
+      for (id in ids) {
+        Package item = Package.get(id)
 
-          if (item) {
-            try {
-              if (!dir.exists()) {
-                dir.mkdirs()
+        if (item) {
+          try {
+            if (!dir.exists()) {
+              dir.mkdirs()
+            }
+
+            if (!tempDir.exists()) {
+              tempDir.mkdirs()
+            }
+
+            attr["xmlns:gokb"] = 'http://gokb.org/oai_metadata/'
+            def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
+
+            def fileName = "${item.uuid}_${dateFormatService.formatIsoMsTimestamp(item.lastUpdated)}.xml"
+            File cachedRecord = new File("${dir}/${fileName}")
+            def currentCacheFile = null
+            Date currentCacheDate
+
+            for (File file : dir.listFiles()) {
+              if (file.name.contains(item.uuid)) {
+                def datepart = file.name.split('_')[1]
+                currentCacheFile = file
+                currentCacheDate = dateFormatService.parseIsoMsTimestamp(datepart.substring(0, datepart.length() - 4))
+              }
+            }
+
+            if (force || (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() > 30 && (!currentCacheFile || item.lastUpdated > currentCacheDate))) {
+              File tmpFile = new File("${tempDir}/${fileName}.tmp")
+
+              if (tmpFile.exists()) {
+                tmpFile.delete()
               }
 
-              if (!tempDir.exists()) {
-                tempDir.mkdirs()
-              }
+              def fileWriter = new BufferedWriter(new FileWriter(tmpFile, true))
 
-              attr["xmlns:gokb"] = 'http://gokb.org/oai_metadata/'
-              def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
+              def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps');
+              def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps');
+              def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps');
+              def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted');
+              String tipp_hql = "from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)"
+              def tipp_hql_params = [pkg: item, ctype: refdata_package_tipps]
+              def tipps_count = item.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
+              def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+              def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+              def pkg_ids = Identifier.executeQuery("select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [item, refdata_ids, status_active], [readOnly: true])
+              String cName = item.class.name
 
-              def fileName = "${item.uuid}_${dateFormatService.formatIsoMsTimestamp(item.lastUpdated)}.xml"
-              File cachedRecord = new File("${dir}/${fileName}")
-              def currentCacheFile = null
-              Date currentCacheDate
+              log.info("Starting package caching for ${item.name} with ${tipps_count} TIPPs..")
 
-              for (File file : dir.listFiles()) {
-                if (file.name.contains(item.uuid)) {
-                  def datepart = file.name.split('_')[1]
-                  currentCacheFile = file
-                  currentCacheDate = dateFormatService.parseIsoMsTimestamp(datepart.substring(0, datepart.length() - 4))
-                }
-              }
+              fileWriter << new StreamingMarkupBuilder().bind {
+                mkp.declareNamespace(xsd:'http://www.w3.org/2001/XMLSchema')
+                'gokb'(attr) {
+                  'package'('id': (item.id), 'uuid': (item.uuid)) {
 
-              if (force || (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() > 30 && (!currentCacheFile || item.lastUpdated > currentCacheDate))) {
-                File tmpFile = new File("${tempDir}/${fileName}.tmp")
+                    // Single props.
+                    'name'(item.name)
+                    'status'(item.status?.value)
+                    'editStatus'(item.editStatus?.value)
+                    'language'(item.language?.value)
+                    'lastUpdated'(item.lastUpdated ? dateFormatService.formatIsoTimestamp(item.lastUpdated) : null)
+                    'shortcode'(item.shortcode)
 
-                if (tmpFile.exists()) {
-                  tmpFile.delete()
-                }
+                    // Identifiers
+                    'identifiers' {
+                      pkg_ids?.each { tid ->
+                        'identifier'('namespace': tid[0], 'namespaceName': tid[1], 'value': tid[2], 'type': tid[3])
+                      }
+                    }
 
-                def fileWriter = new BufferedWriter(new FileWriter(tmpFile, true))
+                    // Variant Names
+                    'variantNames' {
+                      item.variantNames.each { vn ->
+                        'variantName'(vn.variantName)
+                      }
+                    }
 
-                def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps');
-                def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps');
-                def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps');
-                def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted');
-                String tipp_hql = "from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)"
-                def tipp_hql_params = [pkg: item, ctype: refdata_package_tipps]
-                def tipps_count = item.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
-                def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-                def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-                def pkg_ids = Identifier.executeQuery("select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [item, refdata_ids, status_active], [readOnly: true])
-                String cName = item.class.name
+                    'scope'(item.scope?.value)
+                    'listStatus'(item.listStatus?.value)
+                    'breakable'(item.breakable?.value)
+                    'consistent'(item.consistent?.value)
+                    'fixed'(item.fixed?.value)
+                    'paymentType'(item.paymentType?.value)
+                    'global'(item.global?.value)
+                    'globalNote'(item.globalNote)
+                    'contentType'(item.contentType?.value)
 
-                log.info("Starting package caching for ${item.name} with ${tipps_count} TIPPs..")
+                    if (item.nominalPlatform) {
+                      'nominalPlatform'(id: item.nominalPlatform.id, uuid: item.nominalPlatform.uuid) {
+                        'primaryUrl'(item.nominalPlatform.primaryUrl)
+                        'name'(item.nominalPlatform.name)
+                      }
+                    }
 
-                fileWriter << new StreamingMarkupBuilder().bind {
-                  mkp.declareNamespace(xsd:'http://www.w3.org/2001/XMLSchema')
-                  'gokb'(attr) {
-                    'package'('id': (item.id), 'uuid': (item.uuid)) {
+                    if (item.provider) {
+                      'nominalProvider'(id: item.provider.id, uuid: item.provider.uuid) {
+                        'name'(item.provider.name)
+                      }
+                    }
 
-                      // Single props.
-                      'name'(item.name)
-                      'status'(item.status?.value)
-                      'editStatus'(item.editStatus?.value)
-                      'language'(item.language?.value)
-                      'lastUpdated'(item.lastUpdated ? dateFormatService.formatIsoTimestamp(item.lastUpdated) : null)
-                      'shortcode'(item.shortcode)
+                    'listVerifiedDate'(item.listVerifiedDate ? dateFormatService.formatIsoTimestamp(item.listVerifiedDate) : null)
 
-                      // Identifiers
-                      'identifiers' {
-                        pkg_ids?.each { tid ->
-                          'identifier'('namespace': tid[0], 'namespaceName': tid[1], 'value': tid[2], 'type': tid[3])
+                    'curatoryGroups' {
+                      item.curatoryGroups.each { cg ->
+                        'group' {
+                          'name'(cg.name)
                         }
                       }
+                    }
 
-                      // Variant Names
-                      'variantNames' {
-                        item.variantNames.each { vn ->
-                          'variantName'(vn.variantName)
-                        }
+                    if (item.source) {
+                      'source' {
+                        'name'(item.source.name)
+                        'url'(item.source.url)
+                        'defaultAccessURL'(item.source.defaultAccessURL)
+                        'explanationAtSource'(item.source.explanationAtSource)
+                        'contextualNotes'(item.source.contextualNotes)
+                        'frequency'(item.source.frequency?.value)
                       }
+                    }
 
-                      'scope'(item.scope?.value)
-                      'listStatus'(item.listStatus?.value)
-                      'breakable'(item.breakable?.value)
-                      'consistent'(item.consistent?.value)
-                      'fixed'(item.fixed?.value)
-                      'paymentType'(item.paymentType?.value)
-                      'global'(item.global?.value)
-                      'globalNote'(item.globalNote)
-                      'contentType'(item.contentType?.value)
-
-                      if (item.nominalPlatform) {
-                        'nominalPlatform'(id: item.nominalPlatform.id, uuid: item.nominalPlatform.uuid) {
-                          'primaryUrl'(item.nominalPlatform.primaryUrl)
-                          'name'(item.nominalPlatform.name)
-                        }
-                      }
-
-                      if (item.provider) {
-                        'nominalProvider'(id: item.provider.id, uuid: item.provider.uuid) {
-                          'name'(item.provider.name)
-                        }
-                      }
-
-                      'listVerifiedDate'(item.listVerifiedDate ? dateFormatService.formatIsoTimestamp(item.listVerifiedDate) : null)
-
-                      'curatoryGroups' {
-                        item.curatoryGroups.each { cg ->
-                          'group' {
-                            'name'(cg.name)
-                          }
-                        }
-                      }
-
-                      if (item.source) {
-                        'source' {
-                          'name'(item.source.name)
-                          'url'(item.source.url)
-                          'defaultAccessURL'(item.source.defaultAccessURL)
-                          'explanationAtSource'(item.source.explanationAtSource)
-                          'contextualNotes'(item.source.contextualNotes)
-                          'frequency'(item.source.frequency?.value)
-                        }
-                      }
-
-                      'dateCreated'(dateFormatService.formatIsoTimestamp(item.dateCreated))
-                      'TIPPs'(count: tipps_count) {
-                        int offset = 0
-                        while (offset < tipps_count) {
-                          log.debug("Fetching TIPPs batch ${offset}/${tipps_count}")
-                          def tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
-                          log.debug("fetch complete ..")
-                          offset += 50
-                          tipps.each { tipp ->
-                            'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
-                              'status'(tipp.status?.value)
-                              'name'(tipp.name)
-                              'lastUpdated'(tipp.lastUpdated ? dateFormatService.formatIsoTimestamp(tipp.lastUpdated) : null)
-                              'series'(tipp.series)
-                              'subjectArea'(tipp.subjectArea)
-                              'publisherName'(tipp.publisherName)
-                              'dateFirstInPrint'(tipp.dateFirstInPrint ? dateFormatService.formatDate(tipp.dateFirstInPrint) : null)
-                              'dateFirstOnline'(tipp.dateFirstOnline ? dateFormatService.formatDate(tipp.dateFirstOnline) : null)
-                              'medium'(tipp.format?.value)
-                              'format'(tipp.medium?.value)
-                              'volumeNumber'(tipp.volumeNumber)
-                              'editionStatement'(tipp.editionStatement)
-                              'firstAuthor'(tipp.firstAuthor)
-                              'firstEditor'(tipp.firstEditor)
-                              'parentPublicationTitleId'(tipp.parentPublicationTitleId)
-                              'precedingPublicationTitleId'(tipp.precedingPublicationTitleId)
-                              'lastChangedExternal'(tipp.lastChangedExternal ? dateFormatService.formatDate(tipp.lastChangedExternal) : null)
-                              'publicationType'(tipp.publicationType?.value)
-                              if (tipp.title) {
-                                'title'('id': tipp.title.id, 'uuid': tipp.title.uuid) {
-                                  'name'(tipp.title.name?.trim())
-                                  'type'(getTitleClass(tipp.title.id))
-                                  'status'(tipp.title.status?.value)
-                                  if (getTitleClass(tipp.title.id) == 'BookInstance') {
-                                    'dateFirstInPrint'(tipp.title.dateFirstInPrint ? dateFormatService.formatDate(tipp.title.dateFirstInPrint) : null)
-                                    'dateFirstOnline'(tipp.title.dateFirstOnline ? dateFormatService.formatDate(tipp.title.dateFirstOnline) : null)
+                    'dateCreated'(dateFormatService.formatIsoTimestamp(item.dateCreated))
+                    'TIPPs'(count: tipps_count) {
+                      int offset = 0
+                      while (offset < tipps_count) {
+                        log.debug("Fetching TIPPs batch ${offset}/${tipps_count}")
+                        def tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
+                        log.debug("fetch complete ..")
+                        offset += 50
+                        tipps.each { tipp ->
+                          'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
+                            'status'(tipp.status?.value)
+                            'name'(tipp.name)
+                            'lastUpdated'(tipp.lastUpdated ? dateFormatService.formatIsoTimestamp(tipp.lastUpdated) : null)
+                            'series'(tipp.series)
+                            'subjectArea'(tipp.subjectArea)
+                            'publisherName'(tipp.publisherName)
+                            'dateFirstInPrint'(tipp.dateFirstInPrint ? dateFormatService.formatDate(tipp.dateFirstInPrint) : null)
+                            'dateFirstOnline'(tipp.dateFirstOnline ? dateFormatService.formatDate(tipp.dateFirstOnline) : null)
+                            'medium'(tipp.format?.value)
+                            'format'(tipp.medium?.value)
+                            'volumeNumber'(tipp.volumeNumber)
+                            'editionStatement'(tipp.editionStatement)
+                            'firstAuthor'(tipp.firstAuthor)
+                            'firstEditor'(tipp.firstEditor)
+                            'parentPublicationTitleId'(tipp.parentPublicationTitleId)
+                            'precedingPublicationTitleId'(tipp.precedingPublicationTitleId)
+                            'lastChangedExternal'(tipp.lastChangedExternal ? dateFormatService.formatDate(tipp.lastChangedExternal) : null)
+                            'publicationType'(tipp.publicationType?.value)
+                            if (tipp.title) {
+                              'title'('id': tipp.title.id, 'uuid': tipp.title.uuid) {
+                                'name'(tipp.title.name?.trim())
+                                'type'(getTitleClass(tipp.title.id))
+                                'status'(tipp.title.status?.value)
+                                if (getTitleClass(tipp.title.id) == 'BookInstance') {
+                                  'dateFirstInPrint'(tipp.title.dateFirstInPrint ? dateFormatService.formatDate(tipp.title.dateFirstInPrint) : null)
+                                  'dateFirstOnline'(tipp.title.dateFirstOnline ? dateFormatService.formatDate(tipp.title.dateFirstOnline) : null)
+                                }
+                                'identifiers' {
+                                  getTitleIds(tipp.title.id).each { tid ->
+                                    'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
                                   }
-                                  'identifiers' {
-                                    getTitleIds(tipp.title.id).each { tid ->
-                                      'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
-                                    }
-                                  }
                                 }
                               }
-                              else {
-                                'title'()
-                              }
-                              'identifiers' {
-                                getTippIds(tipp.id).each { tid ->
-                                  'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
-                                }
-                              }
-                              'platform'(id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid) {
-                                'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
-                                'name'(tipp.hostPlatform.name?.trim())
-                              }
-                              'access'(start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null)
-                              def cov_statements = getCoverageStatements(tipp.id)
-                              if (cov_statements?.size() > 0) {
-                                cov_statements.each { tcs ->
-                                  'coverage'(
-                                    startDate: (tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null),
-                                    startVolume: (tcs.startVolume),
-                                    startIssue: (tcs.startIssue),
-                                    endDate: (tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null),
-                                    endVolume: (tcs.endVolume),
-                                    endIssue: (tcs.endIssue),
-                                    coverageDepth: (tcs.coverageDepth?.value ?: null),
-                                    coverageNote: (tcs.coverageNote),
-                                    embargo: (tcs.embargo)
-                                  )
-                                }
-                              }
-                              'url'(tipp.url ?: "")
                             }
+                            else {
+                              'title'()
+                            }
+                            'identifiers' {
+                              getTippIds(tipp.id).each { tid ->
+                                'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                              }
+                            }
+                            'platform'(id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid) {
+                              'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
+                              'name'(tipp.hostPlatform.name?.trim())
+                            }
+                            'access'(start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null)
+                            def cov_statements = getCoverageStatements(tipp.id)
+                            if (cov_statements?.size() > 0) {
+                              cov_statements.each { tcs ->
+                                'coverage'(
+                                  startDate: (tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null),
+                                  startVolume: (tcs.startVolume),
+                                  startIssue: (tcs.startIssue),
+                                  endDate: (tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null),
+                                  endVolume: (tcs.endVolume),
+                                  endIssue: (tcs.endIssue),
+                                  coverageDepth: (tcs.coverageDepth?.value ?: null),
+                                  coverageNote: (tcs.coverageNote),
+                                  embargo: (tcs.embargo)
+                                )
+                              }
+                            }
+                            'url'(tipp.url ?: "")
                           }
-                          cleanUpGorm()
-                          log.debug("Batch complete ..")
+                        }
+                        cleanUpGorm()
+                        log.debug("Batch complete ..")
 
-                          if (Thread.currentThread().isInterrupted()) {
-                            cancelled = true
-                            break
-                          }
+                        if (Thread.currentThread().isInterrupted()) {
+                          cancelled = true
+                          break
                         }
                       }
                     }
                   }
                 }
-                log.info("Finished processing ${tipps_count} TIPPs ..")
-                fileWriter.close()
-
-                if (!cancelled) {
-                  def removal = removeCacheEntriesForItem(item.uuid)
-
-                  if (removal) {
-                    log.debug("Removed stale cache files ..")
-                  }
-
-                  FileUtils.moveFile(tmpFile, cachedRecord)
-
-                  if (!force || !currentCacheFile || item.lastUpdated > currentCacheDate) {
-                    Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(cachedRecord.lastModified()), item.id])
-                  }
-
-                  log.info("Caching KBART ..")
-                  createKbartExport(item, ExportType.KBART_TIPP)
-                  createKbartExport(item, ExportType.KBART_TITLE)
-                  createTsvExport(item)
-                  log.info("Finished caching KBART file")
-                }
-                else {
-                  result = 'CANCELLED'
-                }
               }
-              else if (currentCacheFile && item.lastUpdated <= currentCacheDate) {
-                result = 'SKIPPED_NO_CHANGE'
-              }
-              else if (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() <= 30) {
-                result = 'SKIPPED_CURRENTLY_CHANGING'
+              log.info("Finished processing ${tipps_count} TIPPs ..")
+              fileWriter.close()
+
+              if (!cancelled) {
+                def removal = removeCacheEntriesForItem(item.uuid)
+
+                if (removal) {
+                  log.debug("Removed stale cache files ..")
+                }
+
+                FileUtils.moveFile(tmpFile, cachedRecord)
+
+                if (!force || !currentCacheFile || item.lastUpdated > currentCacheDate) {
+                  Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(cachedRecord.lastModified()), item.id])
+                }
+
+                log.info("Caching KBART ..")
+                createKbartExport(item, ExportType.KBART_TIPP)
+                createKbartExport(item, ExportType.KBART_TITLE)
+                createTsvExport(item)
+                log.info("Finished caching KBART file")
               }
               else {
-                result = 'SKIPPED_DEFAULT'
+                result = 'CANCELLED'
               }
             }
-            catch (Exception e) {
-              log.error("Exception in Package Caching for ID ${id}!", e)
+            else if (currentCacheFile && item.lastUpdated <= currentCacheDate) {
+              result = 'SKIPPED_NO_CHANGE'
+            }
+            else if (Duration.between(item.lastUpdated.toInstant(), Instant.now()).getSeconds() <= 30) {
+              result = 'SKIPPED_CURRENTLY_CHANGING'
+            }
+            else {
+              result = 'SKIPPED_DEFAULT'
             }
           }
-          else {
-            result = 'ERROR'
-            log.debug("Unable to reference package by id!")
-          }
-          cleanUpGorm()
-
-          if (Thread.currentThread().isInterrupted()) {
-            cancelled = true
-            result = 'CANCELLED'
-            break
+          catch (Exception e) {
+            log.error("Exception in Package Caching for ID ${id}!", e)
           }
         }
+        else {
+          result = 'ERROR'
+          log.debug("Unable to reference package by id!")
+        }
+        cleanUpGorm()
+
+        if (Thread.currentThread().isInterrupted()) {
+          cancelled = true
+          result = 'CANCELLED'
+          break
+        }
       }
+    }
 
     result
   }

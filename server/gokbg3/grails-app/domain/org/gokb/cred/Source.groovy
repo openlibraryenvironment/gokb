@@ -131,18 +131,19 @@ class Source extends KBComponent {
 
 
   boolean needsUpdate() {
-    if (lastRun == null) {
-      return true
-    }
+    boolean result = false
 
-    if (frequency) {
+    if (lastRun == null) {
+      result = true
+    }
+    else if (frequency) {
       use(TimeCategory) {
         if (lastRun + intervals.get(frequency.value).days < new Date()) {
-          return true
+          result = true
         }
       }
     }
-    return false
+    result
   }
 
   def intervals = [

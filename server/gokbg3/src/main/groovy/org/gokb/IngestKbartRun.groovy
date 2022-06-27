@@ -315,7 +315,7 @@ class IngestKbartRun {
             matching_job.startTime = new Date()
 
             if (!async) {
-              matching_job.get()
+              result.matchingJob = matching_job.get()
             }
             else {
               result.matchingJob = matching_job.uuid

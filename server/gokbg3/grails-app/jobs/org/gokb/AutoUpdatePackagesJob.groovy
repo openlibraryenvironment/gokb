@@ -26,11 +26,14 @@ class AutoUpdatePackagesJob {
           "and p.status != ?" +
           "and (p.source.lastRun is null or p.source.lastRun < current_date)",[status_deleted])
       updPacks.each { Package p ->
-        if (p.source.needsUpdate()) {
+        if (p.source.needsUpdate() == true) {
           def result = packageService.updateFromSource(p)
           log.debug("Result of update: ${result}")
 
           sleep(10000)
+        }
+        else {
+          log.debug("Skip package ${p.name} -> ${p.source.lastRun} ${p.source.needsUpdate()}")
         }
       }
       log.info("auto update packages job completed.")
