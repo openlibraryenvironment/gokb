@@ -184,7 +184,8 @@ class Org extends KBComponent {
       textDescription: 'Organization repository for GOKb',
       query          : " from Org as o ",
       statusFilter   : ["Deleted"],
-      pageSize       : 10
+      pageSize       : 10,
+      uriPath        : '/provider'
   ]
 
   /**
