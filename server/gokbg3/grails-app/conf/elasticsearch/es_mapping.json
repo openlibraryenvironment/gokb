@@ -228,6 +228,10 @@
         "type" : "text",
         "analyzer" : "autocomplete",
         "search_analyzer" : "standard"
+      },
+      "primaryUrl" : {
+        "type" : "text",
+        "analyzer" : "url"
       }
     }
 }
