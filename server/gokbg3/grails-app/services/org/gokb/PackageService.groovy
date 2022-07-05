@@ -1930,6 +1930,8 @@ class PackageService {
                       'editStatus'(item.editStatus?.value)
                       'language'(item.language?.value)
                       'lastUpdated'(item.lastUpdated ? dateFormatService.formatIsoTimestamp(item.lastUpdated) : null)
+                      'descriptionURL'(item.descriptionURL)
+                      'description'(item.description)
                       'shortcode'(item.shortcode)
 
                       // Identifiers
@@ -2026,6 +2028,10 @@ class PackageService {
                                   if (getTitleClass(tipp.title.id) == 'BookInstance') {
                                     'dateFirstInPrint'(tipp.title.dateFirstInPrint ? dateFormatService.formatDate(tipp.title.dateFirstInPrint) : null)
                                     'dateFirstOnline'(tipp.title.dateFirstOnline ? dateFormatService.formatDate(tipp.title.dateFirstOnline) : null)
+                                    'editionStatement'(tipp.title.editionStatement)
+                                    'volumeNumber'(tipp.title.volumeNumber)
+                                    'firstAuthor'(tipp.title.firstAuthor)
+                                    'firstEditor'(tipp.title.firstEditor)
                                   }
                                   'identifiers' {
                                     getTitleIds(tipp.title.id).each { tid ->
