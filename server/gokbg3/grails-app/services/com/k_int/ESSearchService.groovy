@@ -31,7 +31,8 @@ class ESSearchService{
       'cpname':'cpname',
       'provider':'provider',
       'componentType':'componentType',
-      'lastUpdatedDisplay':'lastUpdatedDisplay']
+      'lastUpdatedDisplay':'lastUpdatedDisplay',
+      'primaryUrl':'primaryUrl']
 
   def ESWrapperService
   def grailsApplication
@@ -66,7 +67,8 @@ class ESSearchService{
           "label",
           "name",
           "altname",
-          "q"
+          "q",
+          "qfields"
       ],
       linked: [
           provider: "provider",
@@ -77,7 +79,8 @@ class ESSearchService{
           pkg: "tippPackage",
           tippTitle: "tippTitle",
           linkedTitle: "tippTitle",
-          title: "tippTitle"
+          title: "tippTitle",
+          primaryUrl: "primaryUrl"
       ],
       dates: [
           "changedSince",
@@ -456,10 +459,21 @@ class ESSearchService{
         genericQuery.should(QueryBuilders.termQuery('uuid', qpars.q).boost(10))
       }
 
-      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("name", 2f))
-      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("altname", 1.3f))
-      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("suggest", 0.6f))
-      genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
+      if (qpars.qfields){
+        List allQField= (requestMapping.generic + requestMapping.refdata + requestMapping.simpleMap.values() +
+                         requestMapping.complex + requestMapping.dates + requestMapping.linked.values())
+        for (String field in qpars.qfields.split("&")){
+          if (field in allQFields){
+            genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field(field))
+          }
+        }
+      }
+      else{
+        genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("name", 2f))
+        genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("altname", 1.3f))
+        genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("suggest", 0.6f))
+        genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
+      }
       genericQuery.minimumShouldMatch(1)
 
       query.must(genericQuery)
