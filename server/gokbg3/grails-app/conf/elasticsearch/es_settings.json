@@ -29,8 +29,13 @@
       },
       "tokenizer": {
         "url_tokenizer": {
-          "type": "simple_pattern",
-          "pattern": "[\\w]{6,}"
+          "type": "edge_ngram",
+          "min_gram": 3,
+          "max_gram": 12,
+          "token_chars": [
+            "letter",
+            "digit"
+          ]
         }
       }
     }
