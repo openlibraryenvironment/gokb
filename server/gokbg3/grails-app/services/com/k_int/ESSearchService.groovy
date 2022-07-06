@@ -43,7 +43,8 @@ class ESSearchService{
       generic: [
           "id",
           "uuid",
-          "importId"
+          "importId",
+          "primaryUrl"
       ],
       refdata: [
           "listStatus",
@@ -79,8 +80,7 @@ class ESSearchService{
           pkg: "tippPackage",
           tippTitle: "tippTitle",
           linkedTitle: "tippTitle",
-          title: "tippTitle",
-          primaryUrl: "primaryUrl"
+          title: "tippTitle"
       ],
       dates: [
           "changedSince",
@@ -460,8 +460,8 @@ class ESSearchService{
       }
 
       if (qpars.qfields){
-        List allQField= (requestMapping.generic + requestMapping.refdata + requestMapping.simpleMap.values() +
-                         requestMapping.complex + requestMapping.dates + requestMapping.linked.values())
+        List allQFields = (requestMapping.generic + requestMapping.refdata + requestMapping.simpleMap.values() +
+                           requestMapping.complex)
         for (String field in qpars.qfields.split("&")){
           if (field in allQFields){
             genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field(field))
@@ -608,7 +608,7 @@ class ESSearchService{
    * TODO: check if this can be removed when having migrated to a higher Elasticsearch version.
    */
   private List<SearchHit> filterLastUpdatedDisplay(SearchHit[] searchHitsArray, params,
-                                               Map<String, Object> errors, Serializable result){
+                                                   Map<String, Object> errors, Serializable result){
     List filteredHits = []
     SimpleDateFormat YYYY_MM_DD = new SimpleDateFormat("yyyy-MM-dd")
     SimpleDateFormat YYYY_MM_DD_HH_mm_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
