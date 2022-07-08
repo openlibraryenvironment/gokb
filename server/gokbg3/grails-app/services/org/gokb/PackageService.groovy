@@ -65,7 +65,7 @@ class PackageService {
   def sessionFactory
   def genericOIDService
   def restMappingService
-  ComponentLookupService componentLookupService
+  def componentLookupService
   def TSVIngestionService
   def grailsApplication
   def messageService
@@ -1827,7 +1827,7 @@ class PackageService {
     result
   }
 
-  private def fetchKbartFile(File tmp_file, URL src_url) {
+  def fetchKbartFile(File tmp_file, URL src_url) {
     def result = [content_mime_type: null, file_name: null]
     HttpURLConnection connection
 

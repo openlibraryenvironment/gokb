@@ -230,6 +230,24 @@ class ConcurrencyManagerService {
     return result
   }
 
+  public def getActiveJobsForType(def type) {
+    def result = []
+    def allJobs = getJobs()
+
+    if (type instanceof String) {
+      type = RefdataCategory.lookup("Job.Type", type)
+    }
+
+    if (type) {
+      allJobs.each { uuid, value ->
+        if (value.type == type && value.begun && !value.isDone() && !value.isCancelled()) {
+          result << value
+        }
+      }
+    }
+    return result
+  }
+
 
   GrailsApplication grailsApplication
 

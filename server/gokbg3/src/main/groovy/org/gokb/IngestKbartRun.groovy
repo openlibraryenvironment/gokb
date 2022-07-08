@@ -286,7 +286,7 @@ class IngestKbartRun {
         result.report.averagePerRow = average_milliseconds_per_row
         result.report.averagePerHour = average_per_hour
         result.report.elapsed = processing_elapsed
-        job.message("Processing Complete : numRows:${file_info.rownum}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
+        job?.message("Processing Complete : numRows:${file_info.rownum}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
 
         if (!dryRun) {
           try {
@@ -336,10 +336,10 @@ class IngestKbartRun {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.replacementChars'
       result.messages.add(ice.toString())
-      job.message(ice.toString())
+      job?.message(ice.toString())
     }
     catch (Exception e) {
-      job.message(e.toString())
+      job?.message(e.toString())
       result.result = 'ERROR'
       result.messages.add(e.toString())
       log.error("Problem", e)
@@ -651,7 +651,7 @@ class IngestKbartRun {
       if (titleIdMap[tipp_map.importId]) {
         for (tidm in titleIdMap[tipp_map.importId]) {
           jsonIdMap.each { ns, val ->
-            if (tidm.ids[tipp_map.importId][ns] != jsonIdMap[ns]) {
+            if (tidm.ids[ns] != jsonIdMap[ns]) {
               result = 'partial'
             }
           }
