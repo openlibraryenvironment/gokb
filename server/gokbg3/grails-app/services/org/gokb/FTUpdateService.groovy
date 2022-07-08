@@ -174,6 +174,8 @@ class FTUpdateService {
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
+        result.publishedFrom = kbc.publishedFrom ? dateFormatService.formatDate(kbc.publishedFrom) : ""
+        result.publishedTo = kbc.publishedTo ? dateFormatService.formatDate(kbc.publishedTo) : ""
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -197,6 +199,8 @@ class FTUpdateService {
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
+        result.publishedFrom = kbc.publishedFrom ? dateFormatService.formatDate(kbc.publishedFrom) : ""
+        result.publishedTo = kbc.publishedTo ? dateFormatService.formatDate(kbc.publishedTo) : ""
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -220,6 +224,8 @@ class FTUpdateService {
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
+        result.publishedFrom = kbc.publishedFrom ? dateFormatService.formatDate(kbc.publishedFrom) : ""
+        result.publishedTo = kbc.publishedTo ? dateFormatService.formatDate(kbc.publishedTo) : ""
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -243,6 +249,10 @@ class FTUpdateService {
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
+        result.publishedFrom = kbc.publishedFrom ? dateFormatService.formatDate(kbc.publishedFrom) : ""
+        result.publishedTo = kbc.publishedTo ? dateFormatService.formatDate(kbc.publishedTo) : ""
+        result.dateFirstInPrint = kbc.dateFirstInPrint ? dateFormatService.formatDate(kbc.dateFirstInPrint) : ""
+        result.dateFirstOnline = kbc.dateFirstOnline ? dateFormatService.formatDate(kbc.dateFirstOnline) : ""
         result.altname = []
         result.updater = 'book'
         kbc.variantNames.each { vn ->

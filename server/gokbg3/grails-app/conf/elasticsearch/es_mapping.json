@@ -232,6 +232,12 @@
       "primaryUrl" : {
         "type" : "text",
         "analyzer" : "url"
+      },
+      "publishedFrom": {
+        "type": "date"
+      },
+      "publishedTo": {
+        "type": "date"
       }
     }
 }

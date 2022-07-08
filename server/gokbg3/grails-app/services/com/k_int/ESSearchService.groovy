@@ -218,7 +218,7 @@ class ESSearchService{
     StringWriter sw = new StringWriter()
 
     if ( params?.q != null ){
-      sw.write("name:${params.q}")
+      sw.write("name:${params.q.replaceAll(':','\\\\:')}")
     }
 
     if(params?.rectype){
@@ -312,8 +312,12 @@ class ESSearchService{
     }
   }
 
+  private String sanitizeParam(String param) {
+    return param.replaceAll(":", "\\\\:")
+  }
+
   private void addDateQueries(query, errors, qpars) {
-    if ( qpars.changedSince || qpars.changedBefore ) {
+    if (qpars.changedSince || qpars.changedBefore) {
       QueryBuilder dateQuery = QueryBuilders.rangeQuery("lastUpdatedDisplay")
 
       if (qpars.changedSince) {
@@ -350,7 +354,12 @@ class ESSearchService{
     }
     catch (Exception e){
     }
-    refdataQuery.should(QueryBuilders.queryStringQuery(value).defaultOperator(Operator.AND).field(field))
+
+    if (value == 'null') {
+      value = ""
+    }
+
+    refdataQuery.should(QueryBuilders.termQuery(field, value))
   }
 
 
@@ -384,7 +393,7 @@ class ESSearchService{
 
   private void processNameFields(query, errors, qpars) {
     if (qpars.label) {
-
+      def sanitized_param = sanitizeParam(qpars.label)
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
 
       if (qpars.int('label')) {
@@ -395,51 +404,54 @@ class ESSearchService{
         }
       }
       else {
-        labelQuery.should(QueryBuilders.termQuery('uuid', qpars.label).boost(10))
+        labelQuery.should(QueryBuilders.termQuery('uuid', sanitized_param).boost(10))
       }
 
-      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.label, '"') == 2
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(sanitized_param, '"') == 2
 
       if (doPhraseSearch) {
         log.debug("DO phrase search!")
-        def phraseQry = qpars.label.replace('"', "")
+        def phraseQry = sanitized_param.replace('"', "")
         log.debug("${phraseQry}")
         labelQuery.should(QueryBuilders.matchPhraseQuery('name', phraseQry).boost(2))
         labelQuery.should(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("name", 2f))
-        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("altname", 1.3f))
-        labelQuery.should(QueryBuilders.queryStringQuery(qpars.label).defaultOperator(Operator.AND).field("suggest", 0.6f))
+        labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 2f))
+        labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 1.3f))
+        labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("suggest", 0.6f))
       }
       labelQuery.minimumShouldMatch(1)
 
       query.must(labelQuery)
     }
     else if (qpars.name) {
-      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.name, '"') == 2
+      def sanitized_param = sanitizeParam(qpars.name)
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(sanitized_param, '"') == 2
 
       if (doPhraseSearch) {
-        def phraseQry = qpars.name.replace('"', "")
+        def phraseQry = sanitized_param.replace('"', "")
         query.must(QueryBuilders.matchPhraseQuery('name', phraseQry))
       }
       else {
-        query.must(QueryBuilders.queryStringQuery(qpars.name).defaultOperator(Operator.AND).field("name"))
+        query.must(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name"))
       }
     }
     else if (qpars.altname) {
-      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.altname, '"') == 2
+      def sanitized_param = sanitizeParam(qpars.altname)
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(sanitized_param, '"') == 2
 
       if (doPhraseSearch) {
-        def phraseQry = qpars.altname.replace('"', "")
+        def phraseQry = sanitized_param.replace('"', "")
         query.must(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        query.must(QueryBuilders.queryStringQuery(qpars.altname).defaultOperator(Operator.AND).field("altname"))
+        query.must(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname"))
       }
     }
     else if (qpars.suggest) {
-      query.must(QueryBuilders.queryStringQuery(qpars.suggest).defaultOperator(Operator.AND).field("suggest", 0.6f))
+      def sanitized_param = sanitizeParam(qpars.altname)
+      query.must(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("suggest", 0.6f))
     }
   }
 
@@ -447,6 +459,7 @@ class ESSearchService{
     if (qpars.q?.trim()) {
       QueryBuilder genericQuery = QueryBuilders.boolQuery()
       def id_params = ['identifiers.value': qpars.q]
+      def sanitized_param = sanitizeParam(qpars.q)
 
       if (qpars.int('q')) {
         def oid = KBComponent.get(qpars.int('q'))?.uuid ?: null
@@ -456,7 +469,7 @@ class ESSearchService{
         }
       }
       else {
-        genericQuery.should(QueryBuilders.termQuery('uuid', qpars.q).boost(10))
+        genericQuery.should(QueryBuilders.termQuery('uuid', sanitized_param).boost(10))
       }
 
       if (qpars.qfields){
@@ -464,14 +477,14 @@ class ESSearchService{
                            requestMapping.complex)
         for (String field in qpars.qfields.split("&")){
           if (field in allQFields){
-            genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field(field))
+            genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field(field))
           }
         }
       }
       else{
-        genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("name", 2f))
-        genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("altname", 1.3f))
-        genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("suggest", 0.6f))
+        genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 2f))
+        genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 1.3f))
+        genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("suggest", 0.6f))
         genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
       }
       genericQuery.minimumShouldMatch(1)
@@ -490,6 +503,10 @@ class ESSearchService{
     catch (java.lang.NumberFormatException nfe) {
     }
 
+    if (finalVal == 'null') {
+      finalVal = ""
+    }
+
     log.debug("processLinkedField: ${field} -> ${finalVal}")
 
     linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
@@ -500,8 +517,12 @@ class ESSearchService{
     query.must(linkedFieldQuery)
   }
 
-  private void addPlatformQuery(query, errors, val) {
+  private void addPlatformQuery(query, errors, String val) {
     QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+
+    if (val == 'null') {
+      val = ""
+    }
 
     linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', val))
     linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', val))
@@ -539,8 +560,9 @@ class ESSearchService{
     SearchResponse searchResponse
     if (!params.scrollId){
       QueryBuilder scrollQuery = QueryBuilders.boolQuery()
-      if (params.component_type){
-        scrollQuery.must(QueryBuilders.queryStringQuery(params.component_type).defaultOperator(Operator.AND).field("componentType"))
+      if (params.component_type || params.componentType) {
+        def final_type = deriveComponentType(params.componentType ?: params.component_type)
+        scrollQuery.must(QueryBuilders.termQuery('componentType', params.component_type))
       }
       addDateQueries(scrollQuery, errors, params)
       specifyQueryWithParams(params, scrollQuery, errors, unknown_fields)
@@ -577,16 +599,18 @@ class ESSearchService{
 
   private Map getUsedComponentTypes(params, LinkedHashMap<Object, Object> result){
     Map usedComponentTypes = new HashMap()
-    if (!params.component_type){
+    def types = (params.component_type ?: params.componentType)
+
+    if (!types){
       result.result = "ERROR"
-      result.message = "Error. Needs 'component_type' specification."
+      result.message = "Error. Needs 'component_type'/ specification."
     }
 
-    if (params.component_type instanceof String){
-      usedComponentTypes."${params.component_type}" = null
+    if (types instanceof String){
+      usedComponentTypes."${type}" = null
     }
-    else if (params.component_type instanceof List){
-      for (def componentType in params.component_type){
+    else if (types instanceof List){
+      for (def componentType in types){
         usedComponentTypes."${componentType}" = null
       }
     }
@@ -817,7 +841,7 @@ class ESSearchService{
           if (k == 'id' && params.int('id')) {
             final_val = KBComponent.get(params.int('id'))?.getLogEntityId()
           }
-          exactQuery.must(QueryBuilders.queryStringQuery(final_val).defaultOperator(Operator.AND).field(k))
+          exactQuery.must(QueryBuilders.termQuery(k, final_val))
         }
       }
       else if (requestMapping.simpleMap?.containsKey(k)){
@@ -855,7 +879,7 @@ class ESSearchService{
             cg_name = cg_by_id.name
           }
         }
-        exactQuery.must(QueryBuilders.queryStringQuery(cg_name).defaultOperator(Operator.AND).field(k))
+        exactQuery.must(QueryBuilders.termQuery('curatoryGroups', cg_name))
       }
       else if (requestMapping.dates && k in requestMapping.dates){
         log.debug("Processing date param ${k}")
