@@ -31,7 +31,8 @@ class ESSearchService{
       'cpname':'cpname',
       'provider':'provider',
       'componentType':'componentType',
-      'lastUpdatedDisplay':'lastUpdatedDisplay']
+      'lastUpdatedDisplay':'lastUpdatedDisplay',
+      'primaryUrl':'primaryUrl']
 
   def ESWrapperService
   def grailsApplication
@@ -42,7 +43,8 @@ class ESSearchService{
       generic: [
           "id",
           "uuid",
-          "importId"
+          "importId",
+          "primaryUrl"
       ],
       refdata: [
           "listStatus",
@@ -66,7 +68,8 @@ class ESSearchService{
           "label",
           "name",
           "altname",
-          "q"
+          "q",
+          "qfields"
       ],
       linked: [
           provider: "provider",
@@ -456,10 +459,21 @@ class ESSearchService{
         genericQuery.should(QueryBuilders.termQuery('uuid', qpars.q).boost(10))
       }
 
-      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("name", 2f))
-      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("altname", 1.3f))
-      genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("suggest", 0.6f))
-      genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
+      if (qpars.qfields){
+        List allQFields = (requestMapping.generic + requestMapping.refdata + requestMapping.simpleMap.values() +
+                           requestMapping.complex)
+        for (String field in qpars.qfields.split("&")){
+          if (field in allQFields){
+            genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field(field))
+          }
+        }
+      }
+      else{
+        genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("name", 2f))
+        genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("altname", 1.3f))
+        genericQuery.should(QueryBuilders.queryStringQuery(qpars.q).defaultOperator(Operator.AND).field("suggest", 0.6f))
+        genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
+      }
       genericQuery.minimumShouldMatch(1)
 
       query.must(genericQuery)
@@ -594,7 +608,7 @@ class ESSearchService{
    * TODO: check if this can be removed when having migrated to a higher Elasticsearch version.
    */
   private List<SearchHit> filterLastUpdatedDisplay(SearchHit[] searchHitsArray, params,
-                                               Map<String, Object> errors, Serializable result){
+                                                   Map<String, Object> errors, Serializable result){
     List filteredHits = []
     SimpleDateFormat YYYY_MM_DD = new SimpleDateFormat("yyyy-MM-dd")
     SimpleDateFormat YYYY_MM_DD_HH_mm_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")

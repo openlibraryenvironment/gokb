@@ -17,6 +17,25 @@
             "lowercase",
             "autocomplete_filter"
           ]
+        },
+        "url": {
+          "type":      "custom",
+          "tokenizer": "url_tokenizer",
+          "filter": [
+            "lowercase",
+            "autocomplete_filter"
+          ]
+        }
+      },
+      "tokenizer": {
+        "url_tokenizer": {
+          "type": "edge_ngram",
+          "min_gram": 3,
+          "max_gram": 12,
+          "token_chars": [
+            "letter",
+            "digit"
+          ]
         }
       }
     }
