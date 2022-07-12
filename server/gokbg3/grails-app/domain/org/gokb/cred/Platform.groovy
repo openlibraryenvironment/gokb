@@ -82,7 +82,8 @@ class Platform extends KBComponent {
     'es'           : [
       'providerUuid': "provider.uuid",
       'providerName': "provider.name",
-      'provider'    : "provider.id"
+      'provider'    : "provider.id",
+      'cpname'      : "provider.name"
     ],
     'defaultLinks' : [
       'provider',

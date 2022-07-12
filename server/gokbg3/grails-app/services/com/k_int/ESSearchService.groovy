@@ -5,15 +5,15 @@ import groovyx.net.http.Method
 import groovyx.net.http.URIBuilder
 
 import org.apache.lucene.search.join.ScoreMode
-import org.elasticsearch.action.search.*
-import org.elasticsearch.client.*
-import org.elasticsearch.index.query.*
-import org.elasticsearch.search.aggregations.AggregationBuilders
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder
-import org.elasticsearch.search.SearchHit
-import org.elasticsearch.search.SearchHits
-import org.elasticsearch.search.builder.SearchSourceBuilder
-import org.elasticsearch.search.sort.*
+import org.opensearch.action.search.*
+import org.opensearch.client.*
+import org.opensearch.index.query.*
+import org.opensearch.search.aggregations.AggregationBuilders
+import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder
+import org.opensearch.search.SearchHit
+import org.opensearch.search.SearchHits
+import org.opensearch.search.builder.SearchSourceBuilder
+import org.opensearch.search.sort.*
 
 import org.gokb.cred.*
 
