@@ -312,7 +312,7 @@ class ESSearchService{
   }
 
   private String sanitizeParam(String param) {
-    return param.replaceAll(":", "\\\\:")
+    return param.replaceAll(":", "\\\\:").replaceAll("/", "\\\\/")
   }
 
   private void addDateQueries(query, errors, qpars) {
@@ -379,7 +379,7 @@ class ESSearchService{
     if ( val?.trim() ) {
       if (val.contains(',')) {
         id_params['identifiers.namespace'] = val.split(',')[0]
-        id_params['identifiers.value'] = val.split(',')[1]
+        id_params['identifiers.value'] = sanitizeParam(val.split(',')[1])
       }
       else{
         id_params['identifiers.value'] = val
@@ -455,9 +455,8 @@ class ESSearchService{
 
   private void processGenericFields(query, errors, qpars) {
     if (qpars.q?.trim()) {
-      def escaped_qry = qpars.q.trim().replace("/", "\\/")
       QueryBuilder genericQuery = QueryBuilders.boolQuery()
-      def id_params = ['identifiers.value': qpars.q]
+      def id_params = ['identifiers.value': sanitizeParam(qpars.q)]
       def sanitized_param = sanitizeParam(qpars.q)
 
       if (qpars.int('q')) {
@@ -495,7 +494,7 @@ class ESSearchService{
   private void processLinkedField(query, field, val) {
     if (val?.trim()) {
       QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-      def escaped_val = val.trim().replace("/", "\\/")
+      def sanitized_param = sanitizeParam(qpars.q)
       def finalVal = val
 
       try {
@@ -511,8 +510,8 @@ class ESSearchService{
       log.debug("processLinkedField: ${field} -> ${finalVal}")
 
       linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
-      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), escaped_val))
-      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), escaped_val))
+      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), sanitized_param))
+      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), sanitized_param))
       linkedFieldQuery.minimumShouldMatch(1)
 
       query.must(linkedFieldQuery)
@@ -526,12 +525,12 @@ class ESSearchService{
       val = ""
     }
 
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformUuid', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', val))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformUuid', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', sanitizeParam(val)))
     linkedFieldQuery.minimumShouldMatch(1)
 
     query.must(linkedFieldQuery)
