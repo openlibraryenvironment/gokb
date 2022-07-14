@@ -2,10 +2,10 @@ package org.gokb
 
 import org.gokb.cred.*
 import org.hibernate.Session
-import au.com.bytecode.opencsv.CSVReader
-import au.com.bytecode.opencsv.bean.CsvToBean
-import au.com.bytecode.opencsv.bean.HeaderColumnNameMappingStrategy
-import au.com.bytecode.opencsv.bean.HeaderColumnNameTranslateMappingStrategy
+import com.opencsv.*
+import com.opencsv.bean.CsvToBean
+import com.opencsv.bean.HeaderColumnNameMappingStrategy
+import com.opencsv.bean.HeaderColumnNameTranslateMappingStrategy
 import org.apache.commons.io.ByteOrderMark
 
 class FolderService {
@@ -55,15 +55,20 @@ class FolderService {
       // Open File
       if ( file ) {
         log.debug("Got file ${file}");
-  
+
         def charset='UTF-8'
 
-        def csv = new CSVReader(new InputStreamReader(
+        final CSVParser parser = new CSVParserBuilder()
+        .withSeparator('\t' as char)
+        .build()
+
+        CSVReader csv = new CSVReaderBuilder( new InputStreamReader(
                                    new org.apache.commons.io.input.BOMInputStream(
                                      file.newInputStream(),
                                      ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE,ByteOrderMark.UTF_8),
-                                 java.nio.charset.Charset.forName(charset)),'\t' as char,'"' as char)   // Use \0 for no quote char
-  
+                                 java.nio.charset.Charset.forName(charset)))
+        .withCSVParser(parser)
+        .build()
 
         log.debug("Process rows.. config is ${columns_config}");
 
@@ -83,8 +88,8 @@ class FolderService {
             def col_cfg = columns_config[colname]
             log.debug("using column config for \"${colname}\" \"${header[colctr].trim()}\" \"${header[colctr].trim()}\": ${col_cfg}");
 
-            if ( ( col_cfg ) && 
-                 ( it ) && 
+            if ( ( col_cfg ) &&
+                 ( it ) &&
                  ( it.trim().length() > 0 ) ) {
 
               if ( col_cfg.action=='process' ) {
@@ -204,7 +209,7 @@ class FolderService {
             break;
         }
       }
-      
+
     }
     else {
       log.warn("No org - cannot continue");

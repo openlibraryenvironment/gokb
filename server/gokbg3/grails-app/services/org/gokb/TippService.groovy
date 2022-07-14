@@ -5,6 +5,7 @@ import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
+import grails.gorm.transactions.*
 
 import org.gokb.cred.*
 import org.gokb.rest.TippController
@@ -17,6 +18,7 @@ class TippService {
   def componentUpdateService
   def componentLookupService
   def titleLookupService
+  def titleAugmentService
   def sessionFactory
   def reviewRequestService
   def autoTimestampEventListener
@@ -176,57 +178,71 @@ class TippService {
 
   def matchPackage(Package aPackage, def job = null) {
     log.debug("Matching titles for package ${aPackage}")
+    def result = [matched: 0, created: 0, result: 'OK']
     def more = true
     int offset = 0
-    CuratoryGroup group = job?.groupId ? CuratoryGroup.get(job?.groupId) : null
 
-    def tippIDs = TitleInstancePackagePlatform.executeQuery(
-      'select tipp.id from TitleInstancePackagePlatform as tipp where exists (' +
-          'from Combo as c1 where c1.fromComponent=:pkg and c1.toComponent=tipp) ' +
-          'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:ctt)',
-      [
-          pkg : aPackage,
-          ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
-      ]
-    )
+    try {
+      CuratoryGroup group = job?.groupId ? CuratoryGroup.get(job?.groupId) : null
 
-    int total = tippIDs.size()
+      def tippIDs = TitleInstancePackagePlatform.executeQuery(
+        'select tipp.id from TitleInstancePackagePlatform as tipp where exists (' +
+            'from Combo as c1 where c1.fromComponent=:pkg and c1.toComponent=tipp) ' +
+            'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:ctt)',
+        [
+            pkg : aPackage,
+            ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
+        ],
+        [readOnly: true]
+      )
 
-    while (tippIDs.size() > 0) {
-      def batchSize = tippIDs.size() > 50 ? 50 : tippIDs.size()
-      def batch = tippIDs.take(batchSize)
-      tippIDs = tippIDs.drop(batchSize)
+      int total = tippIDs.size()
 
-      batch.each { id ->
-        matchTitle(TitleInstancePackagePlatform.get(id), group)
-        offset++
+      while (tippIDs.size() > 0) {
+        def batchSize = tippIDs.size() > 50 ? 50 : tippIDs.size()
+        def batch = tippIDs.take(batchSize)
+        tippIDs = tippIDs.drop(batchSize)
+
+        batch.each { id ->
+          def matchResult = matchTitle(TitleInstancePackagePlatform.get(id), group)
+          result[matchResult]++
+          offset++
+          job?.setProgress(offset, total)
+        }
+        // Get the current session.
+        def session = sessionFactory.currentSession
+        // flush and clear the session.
+        session.flush()
+        session.clear()
+
+        if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
+          job?.message("Job cancelled!")
+          log.debug("cancelling package title matching for job #${job?.uuid}")
+          result.result = 'CANCELLED'
+          more = false
+          break
+        }
+
       }
-      // Get the current session.
-      def session = sessionFactory.currentSession
-      // flush and clear the session.
-      session.flush()
-      session.clear()
 
       if (job) {
-        job.setProgress(offset, total)
+        job.setProgress(100)
+        job.message("Finished package title matching.")
+        job.endTime = new Date()
       }
 
-
-      if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
-        job?.message("Job cancelled!")
-        log.debug("cancelling package title matching for job #${job?.uuid}")
-        more = false
-        break
-      }
-
+      log.debug("Finished title matching for ${total} Titles")
+    } catch (Exception e) {
+      log.error("Error matching package titles!", e)
+      result.result = 'ERROR'
     }
-    job?.message("Finished package title matching.")
-    log.debug("Finished title matching for ${total} Titles")
+
+    result
   }
 
   def matchTitle(tipp, CuratoryGroup group = null) {
+    def result = 'matched'
     def found
-    boolean created = false
     def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
     final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
     def pkg = Package.executeQuery("from Package as pkg where exists (select 1 from Combo where fromComponent = pkg and toComponent = :tipp)", [tipp: tipp])[0]
@@ -252,7 +268,7 @@ class TippService {
     if (found.to_create == true) {
       log.debug("No existing title matched, creating ${tipp.name}")
       ti = createTitleFromTippData(tipp, tipp_ids)
-      created = true
+      result = 'created'
     }
     else if (found.matches.size() == 1) {
       // exactly one match
@@ -260,7 +276,10 @@ class TippService {
       log.debug("Matched title ${ti} for ${tipp}!")
       TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
 
-      if (currentCov && ((ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) || (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo))) {
+      if (currentCov && (
+          (ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) ||
+          (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo)
+      )) {
         reviewRequestService.raise(
             tipp,
             "TIPP coverage conflicts title publishing data",
@@ -280,8 +299,9 @@ class TippService {
         ti = found.matches[0].object
       }
       else if (found.matches.size() == 0) {
+        log.debug("No matches after coverage check.. creating new title ${tipp.name}")
         ti = createTitleFromTippData(tipp, tipp_ids)
-        created = true
+        result = 'created'
       }
     }
     else {
@@ -289,17 +309,17 @@ class TippService {
     }
 
     if (ti) {
-      if (!created) {
-        titleLookupService.addIdentifiers(tipp_ids, ti)
-        titleLookupService.addPublisher(tipp.publisherName, ti)
+      if (result == 'matched') {
+        titleAugmentService.addIdentifiers(tipp_ids, ti)
+        titleAugmentService.addPublisher(tipp.publisherName, ti)
       }
 
-      tipp.title = ti
-      tipp.save()
+      def ti_combo = new Combo(fromComponent: ti, toComponent: tipp, type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')).save(flush: true)
 
       log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
     else {
+      log.debug("Changing")
       if (pkg.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
         pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
       }
@@ -307,19 +327,22 @@ class TippService {
 
     if (found.matches?.size() > 0 || found.conflicts?.size() > 0)
       handleFindConflicts(tipp, found, group)
+
+    result
   }
 
-  def createTitleFromTippData(tipp, tipp_ids) {
+  private def createTitleFromTippData(tipp, tipp_ids) {
+
     def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
     def ti = Class.forName(title_class_name).newInstance()
     def title_changed = false
     ti.name = tipp.name
 
     log.debug("Set name ${ti.name} ..")
-    ti.save(flush: true)
-    titleLookupService.addPublisher(tipp.publisherName, ti)
+    ti.save()
+    titleAugmentService.addPublisher(tipp.publisherName, ti)
     log.debug("Transfering new ti ids: ${tipp_ids}")
-    titleLookupService.addIdentifiers(tipp_ids, ti)
+    titleAugmentService.addIdentifiers(tipp_ids, ti)
 
     title_changed |= componentUpdateService.setAllRefdata([
         'medium', 'language'
@@ -359,20 +382,37 @@ class TippService {
   }
 
   def statusUpdate() {
-    log.debug("${TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform tipp set tipp.status=:retired, tipp.lastUpdated=:today where tipp.status=:current and accessEndDate<:today", [retired: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED), current: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT), today: new Date()])} TIPPs retired")
-    log.debug("${TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform tipp set tipp.status=:current, tipp.lastUpdated=:today where tipp.status=:expected and accessStartDate<=:today", [expected: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED), current: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT), today: new Date()])} TIPPs activated")
+    log.info("Updating TIPP status via access dates..")
+    RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+    RefdataValue status_retired = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
+    RefdataValue status_expected = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED)
+
+    String update_retire_str = "update TitleInstancePackagePlatform tipp set tipp.status=:retired, tipp.lastUpdated=:today where tipp.status=:current and accessEndDate<:today"
+    String update_current_str = "update TitleInstancePackagePlatform tipp set tipp.status=:current, tipp.lastUpdated=:today where tipp.status=:expected and accessStartDate<=:today"
+
+    def num_retired = TitleInstancePackagePlatform.executeUpdate(update_retire_str, [retired: status_retired, current: status_current, today: new Date()])
+    log.info("Retired ${num_retired} TIPPs.")
+
+    def num_current = TitleInstancePackagePlatform.executeUpdate(update_current_str, [expected: status_expected, current: status_current, today: new Date()])
+    log.info("Activated ${num_current} TIPPs.")
   }
 
   def scanTIPPs(Job job = null) {
+    RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    RefdataValue combo_ids = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
+    String tipp_crit = 'select t.id from TitleInstancePackagePlatform as t where t.status != :status and (t.name is null or not exists (select 1 from Combo where fromComponent = t and type = :idc))'
+
     autoTimestampEventListener.withoutLastUpdated {
       int index = 0
       boolean cancelled = false
-      def tippIDs = TitleInstancePackagePlatform.executeQuery('select id from TitleInstancePackagePlatform where status != :status', [status: RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)])
+      def tippIDs = TitleInstancePackagePlatform.executeQuery(tipp_crit, [status: status_deleted, idc: combo_ids])
       log.debug("found ${tippIDs.size()} TIPPs")
       def tippIDit = tippIDs.iterator()
+
       while (tippIDit.hasNext() && !cancelled) {
         TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDit.next())
         index++
+
         if (tipp.title) {
           tipp.title.ids.each { data ->
             if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(data.namespace.value)) {
@@ -382,23 +422,29 @@ class TippService {
               }
             }
           }
+
           if (!tipp.name || tipp.name == '') {
             tipp.name = tipp.title.name
             log.debug("set TIPP name to $tipp.name")
           }
+
           if (tipp.isDirty()) {
             tipp.save(flush: true)
             log.debug("save $index")
           }
+
           log.debug("destroy #$index: $tipp")
           tipp.finalize()
         }
+
         job?.setProgress(index, tippIDs.size())
+
         if (job?.isCancelled()) {
           cancelled = true
         }
+
         if (index % 100 == 0) {
-          log.debug("Clean up GORM");
+          log.debug("Clean up GORM")
           // Get the current session.
           def session = sessionFactory.currentSession
           // flush and clear the session.
@@ -667,17 +713,19 @@ class TippService {
       def titleId = tippInfo.titleId ?: tippInfo.importId
 
       if (titleId) {
-        tipps = TitleInstancePackagePlatform.executeQuery(
-            'select tipp from TitleInstancePackagePlatform as tipp, Combo as c1, Combo as c2 ' +
-                'where c1.fromComponent.id = :pkg ' +
-                'and c1.toComponent = tipp ' +
-                'and c1.type = :typ1 ' +
-                'and c2.fromComponent.id = :plt ' +
-                'and c2.toComponent = tipp ' +
-                'and c2.type = :typ2 ' +
-                'and tipp.importId = :tid ' +
-                'and tipp.status = :tStatus  ' +
-                'order by tipp.id',
+        tipps = TitleInstancePackagePlatform.executeQuery('''select tipp from TitleInstancePackagePlatform as tipp
+            where exists (select 1 from Combo
+              where fromComponent.id = :pkg
+              and toComponent = tipp
+              and type = :typ1
+            )
+            and exists (select 1 from Combo
+              where fromComponent.id = :plt
+              and toComponent = tipp
+              and type = :typ2
+            )
+            and tipp.importId = :tid
+            and tipp.status = :tStatus''',
             [pkg   : pkgInfo.id,
             typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
             plt    : tippInfo.hostPlatform.id,
@@ -700,9 +748,9 @@ class TippService {
                 found.each {
                   if (TitleInstancePackagePlatform.isInstance(it)
                       && !tipps.contains(it)
-                      && it.pkg.id == pkgInfo.id
+                      && it.pkg?.id == pkgInfo.id
                       && it.status == status_current
-                      && it.hostPlatform.id == tippInfo.hostPlatform.id
+                      && it.hostPlatform?.id == tippInfo.hostPlatform.id
                       && (!titleId || !it.importId)) {
                     tipps.add(it)
                   }
@@ -726,9 +774,9 @@ class TippService {
                 found.each {
                   if (TitleInstancePackagePlatform.isInstance(it)
                       && !tipps.contains(it)
-                      && it.pkg.id == pkgInfo.id
+                      && it.pkg?.id == pkgInfo.id
                       && it.status == status_current
-                      && it.hostPlatform.id == tippInfo.hostPlatform.id
+                      && it.hostPlatform?.id == tippInfo.hostPlatform.id
                       && (!titleId || !it.importId)) {
                     tipps.add(it)
                   }

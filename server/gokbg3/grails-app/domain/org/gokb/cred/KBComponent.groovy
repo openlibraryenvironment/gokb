@@ -112,7 +112,7 @@ where cp.owner = :c
 
       } catch (Throwable t) {
         // Suppress but log.
-        log.error("failed updating dependants ${t}")
+        log.error("failed updating dependants ${t} for ${this}")
       }
     }
 
@@ -1517,33 +1517,35 @@ where cp.owner = :c
       rdv_type = RefdataCategory.lookup('Price.type', type ?: 'list')
 
       if (price_components.length == 2) {
-        rdv_currency = RefdataCategory.lookup('Currency', price_components[1].trim()).save(flush: true, failOnError: true)
+        rdv_currency = RefdataCategory.lookup('Currency', price_components[1].trim())
       }
 
-      def price_map = [
-        owner: this,
-        priceType: rdv_type,
-        currency: rdv_currency,
-        startDate: start,
-        endDate: end,
-        price: f
-      ]
+      if (rdv_currency) {
+        def price_map = [
+          owner: this,
+          priceType: rdv_type,
+          currency: rdv_currency,
+          startDate: start,
+          endDate: end,
+          price: f
+        ]
 
-      ComponentPrice cp = new ComponentPrice(price_map)
+        ComponentPrice cp = new ComponentPrice(price_map)
 
-      prices = prices ?: []
-      // does this price exist already?
-      if (!prices.contains(cp)) {
-        // set the end date for the current price(s)
-        ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:owner and currency=:currency and endDate is null and startDate<=:start and priceType=:type and currency=:currency' , [owner: this, start: start, currency: rdv_currency, type: rdv_type])
-        cp.save()
-        // enter the new price
-        prices << cp
-        save()
-      } else {
-        cp = ComponentPrice.findWhere(price_map)
+        prices = prices ?: []
+        // does this price exist already?
+        if (!prices.contains(cp)) {
+          // set the end date for the current price(s)
+          ComponentPrice.executeUpdate('update ComponentPrice set endDate=:start where owner=:owner and currency=:currency and endDate is null and startDate<=:start and priceType=:type and currency=:currency' , [owner: this, start: start, currency: rdv_currency, type: rdv_type])
+          cp.save()
+          // enter the new price
+          prices << cp
+          save()
+        } else {
+          cp = ComponentPrice.findWhere(price_map)
+        }
+        result = cp
       }
-      result = cp
     }
     result
   }

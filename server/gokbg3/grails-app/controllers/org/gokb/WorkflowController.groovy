@@ -1,11 +1,16 @@
 package org.gokb
 
-import org.gokb.cred.*
-import org.springframework.security.access.annotation.Secured
-import groovy.json.JsonBuilder
-import groovy.json.JsonSlurper
+import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+
+import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
+
+import org.gokb.cred.*
+import org.springframework.security.access.annotation.Secured
 
 
 class WorkflowController{
@@ -16,6 +21,7 @@ class WorkflowController{
   def componentLookupService
   def packageService
   def dateFormatService
+  def concurrencyManagerService
 
   def actionConfig = [
       'method::deleteSoft'     : [actionType: 'simple'],
@@ -1918,7 +1924,7 @@ class WorkflowController{
       packages_to_update.each{ ptv ->
         def pkgObj = Package.get(ptv.id)
         Boolean curated_pkg = false
-        def is_curator = null
+        def is_curator = []
 
         if (pkgObj && pkgObj.source?.url){
           if (pkgObj.curatoryGroups && pkgObj.curatoryGroups?.size() > 0){
@@ -1927,13 +1933,21 @@ class WorkflowController{
           }
 
           if (pkgObj?.isEditable() && (is_curator || !curated_pkg || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))){
-            def result = packageService.updateFromSource(pkgObj, user)
-
-            if (result == 'OK'){
-              flash.success = "Update successfully started!"
+            Job background_job = concurrencyManagerService.createJob { Job job ->
+              result = packageService.updateFromSource(pkgObj, user, job)
             }
-            else if (result == 'ALREADY_RUNNING'){
-              flash.warning = "Another update is already running. Please try again later."
+
+            background_job.groupId = is_curator?.size() > 0 ? is_curator[0] : null
+            background_job.ownerId = user?.id ?: null
+            background_job.description = "KBART Source ingest (${pkgObj.name})".toString()
+            background_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+            background_job.linkedItem = [name: pkgObj.name, type: "Package", id: pkgObj.id, uuid: pkgObj.uuid]
+            background_job.message("Starting upsert for Package ${pkgObj.name}".toString())
+            background_job.startOrQueue()
+            background_job.startTime = new Date()
+
+            if (background_job.begun){
+              flash.success = "Update successfully started!"
             }
             else{
               flash.error = "There have been errors running the job. Please check Source & Package info."

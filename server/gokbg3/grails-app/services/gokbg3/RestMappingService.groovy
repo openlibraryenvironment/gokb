@@ -509,7 +509,7 @@ class RestMappingService {
     def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
     def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
-    def id_combos = obj.getCombosByPropertyName('ids')
+    def id_combos = obj.getCombosByPropertyNameAndStatus('ids', 'Active')
     def result = [changed: false, errors: []]
     Set new_ids = []
 
@@ -522,7 +522,7 @@ class RestMappingService {
           id = Identifier.get(i)
         }
         else if (i instanceof Map) {
-          if (i.id) {
+          if (i.id instanceof Integer) {
             id = Identifier.get(i.id)
           }
           else {
@@ -541,6 +541,9 @@ class RestMappingService {
               try {
                 if (ns) {
                   id = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, i.value)
+                }
+                else {
+                  log.warn("Unable to determine namespace ${ns_val}!")
                 }
               }
               catch (grails.validation.ValidationException ve) {
@@ -599,9 +602,9 @@ class RestMappingService {
         if (remove && result.errors.size() == 0) {
           Iterator items = id_combos.iterator()
           List removedIds = []
-          Object element;
+          Object element
           while (items.hasNext()) {
-            element = items.next();
+            element = items.next()
             if (!new_ids.contains(element.toComponent)) {
               // Remove.
               log.debug("Removing newly missing ID ${element.toComponent}")
@@ -609,16 +612,6 @@ class RestMappingService {
               removedIds.add(element.toComponent)
               result.changed = true
             }
-          }
-
-          if (removedIds) {
-            def idString = ""
-
-            removedIds.each {
-              idString += "${it.namespace.value}:${it.value} "
-            }
-
-            obj.lastUpdateComment = "Removed Ids: ${idString}"
           }
         }
       }

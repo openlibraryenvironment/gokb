@@ -73,7 +73,6 @@ class ESSearchService{
       ],
       linked: [
           provider: "provider",
-          publisher: "publisher",
           currentPublisher: "publisher",
           linkedPackage: "tippPackage",
           tippPackage: "tippPackage",
@@ -456,6 +455,7 @@ class ESSearchService{
 
   private void processGenericFields(query, errors, qpars) {
     if (qpars.q?.trim()) {
+      def escaped_qry = qpars.q.trim().replace("/", "\\/")
       QueryBuilder genericQuery = QueryBuilders.boolQuery()
       def id_params = ['identifiers.value': qpars.q]
       def sanitized_param = sanitizeParam(qpars.q)
@@ -493,27 +493,30 @@ class ESSearchService{
   }
 
   private void processLinkedField(query, field, val) {
-    QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-    def finalVal = val
+    if (val?.trim()) {
+      QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+      def escaped_val = val.trim().replace("/", "\\/")
+      def finalVal = val
 
-    try {
-      finalVal = KBComponent.get(Long.valueOf(val)).getLogEntityId()
+      try {
+        finalVal = KBComponent.get(Long.valueOf(val)).getLogEntityId()
+      }
+      catch (java.lang.NumberFormatException nfe) {
+      }
+
+      if (finalVal == 'null') {
+        finalVal = ""
+      }
+
+      log.debug("processLinkedField: ${field} -> ${finalVal}")
+
+      linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
+      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), escaped_val))
+      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), escaped_val))
+      linkedFieldQuery.minimumShouldMatch(1)
+
+      query.must(linkedFieldQuery)
     }
-    catch (java.lang.NumberFormatException nfe) {
-    }
-
-    if (finalVal == 'null') {
-      finalVal = ""
-    }
-
-    log.debug("processLinkedField: ${field} -> ${finalVal}")
-
-    linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
-    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), val))
-    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), val))
-    linkedFieldQuery.minimumShouldMatch(1)
-
-    query.must(linkedFieldQuery)
   }
 
   private void addPlatformQuery(query, errors, String val) {
@@ -944,7 +947,8 @@ class ESSearchService{
         'identifiers': false,
         'altname': false,
         'roles': false,
-        'curatoryGroups': false
+        'curatoryGroups': false,
+        'publisher': false
     ]
 
     def recordSource = record.getSourceAsMap()
@@ -993,6 +997,12 @@ class ESSearchService{
         }
         else if (field == "identifiers" && !toSkip) {
           domainMapping['_embedded']['ids'] = mapIdentifiers(val)
+        }
+        else if (field == "publisherUuid") {
+          domainMapping['_embedded']['publisher'] = []
+          if (val) {
+            domainMapping['_embedded']['publisher'] << [uuid: recordSource['publisherUuid'], name: recordSource['publisherName'], id: recordSource['publisher'].split(':')[1]]
+          }
         }
         else if (!toSkip && (field == "status" || field == "editStatus")) {
           domainMapping[field] = [id: RefdataCategory.lookup("KBComponent.${field}", val).id, name: val]

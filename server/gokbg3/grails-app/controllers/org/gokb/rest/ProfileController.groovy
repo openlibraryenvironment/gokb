@@ -111,13 +111,24 @@ class ProfileController {
     def base = grailsApplication.config.serverURL + "/rest"
     def sort = params._sort ?: null
     def order = params._order ?: null
+    def showFinished = params.boolean('showFinished') ?: false
     User user = User.get(springSecurityService.principal.id)
     def errors = [:]
 
-    if (params.boolean('archived') == true) {
+    if (params.boolean('archived') == true || params.boolean('combined') == true) {
       result.data = []
       def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?", [user.id])[0]
       def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ? order by jr.startTime desc", [user.id], [max: max, offset: offset])
+
+      if (params.boolean('combined') == true) {
+        def active_jobs = concurrencyManagerService.getUserJobs(user.id, max, offset, false)
+
+        hqlTotal += active_jobs._pagination.total
+
+        if (offset == 0) {
+          result.data = active_jobs.data
+        }
+      }
 
       jobs.each { j ->
         def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
@@ -141,7 +152,7 @@ class ProfileController {
       ]
     }
     else {
-      result = concurrencyManagerService.getUserJobs(user.id as int, max, offset)
+      result = concurrencyManagerService.getUserJobs(user.id, max, offset, showFinished)
     }
 
     render result as JSON
