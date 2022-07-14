@@ -4,8 +4,8 @@ import com.k_int.ConcurrencyManagerService.Job
 import com.k_int.ESSearchService
 import grails.gorm.DetachedCriteria
 import grails.gorm.transactions.Transactional
-import org.elasticsearch.action.delete.DeleteRequest
-import org.elasticsearch.client.Requests
+import org.opensearch.action.delete.DeleteRequest
+import org.opensearch.client.Requests
 import org.gokb.cred.*
 
 class CleanupService {

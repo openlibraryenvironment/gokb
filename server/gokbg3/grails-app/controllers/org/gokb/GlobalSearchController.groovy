@@ -1,13 +1,13 @@
 package org.gokb
 
 import grails.converters.*
-import org.elasticsearch.action.search.*
-import org.elasticsearch.client.RequestOptions
-import org.elasticsearch.search.aggregations.AggregationBuilders
-import org.elasticsearch.index.query.*
-import org.elasticsearch.search.builder.SearchSourceBuilder
-import org.elasticsearch.search.sort.FieldSortBuilder
-import org.elasticsearch.search.sort.SortOrder
+import org.opensearch.action.search.*
+import org.opensearch.client.RequestOptions
+import org.opensearch.search.aggregations.AggregationBuilders
+import org.opensearch.index.query.*
+import org.opensearch.search.builder.SearchSourceBuilder
+import org.opensearch.search.sort.FieldSortBuilder
+import org.opensearch.search.sort.SortOrder
 
 class GlobalSearchController {
 

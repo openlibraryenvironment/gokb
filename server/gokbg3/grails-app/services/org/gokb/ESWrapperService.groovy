@@ -3,8 +3,8 @@ package org.gokb
 
 import groovy.json.JsonSlurper
 import org.apache.http.HttpHost
-import org.elasticsearch.client.RestClient
-import org.elasticsearch.client.RestHighLevelClient
+import org.opensearch.client.RestClient
+import org.opensearch.client.RestHighLevelClient
 
 import static groovy.json.JsonOutput.*
 
