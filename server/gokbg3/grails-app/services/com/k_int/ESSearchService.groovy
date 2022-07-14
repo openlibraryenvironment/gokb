@@ -419,7 +419,6 @@ class ESSearchService{
       else {
         labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 2f))
         labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 1.3f))
-        labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("suggest", 0.6f))
       }
       labelQuery.minimumShouldMatch(1)
 
