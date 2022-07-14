@@ -2283,44 +2283,43 @@ class PackageService {
                               }
                             }
                           }
-                        }
-                        else {
-                          'title'()
-                        }
-                        'identifiers' {
-                          getTippIds(tipp.id).each { tid ->
-                            'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                          else {
+                            'title'()
                           }
-                        }
-                        'platform'(id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid) {
-                          'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
-                          'name'(tipp.hostPlatform.name?.trim())
-                        }
-                        'access'(start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null)
-                        def cov_statements = getCoverageStatements(tipp.id)
-                        if (cov_statements?.size() > 0) {
-                          cov_statements.each { tcs ->
-                            'coverage'(
-                              startDate: (tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null),
-                              startVolume: (tcs.startVolume),
-                              startIssue: (tcs.startIssue),
-                              endDate: (tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null),
-                              endVolume: (tcs.endVolume),
-                              endIssue: (tcs.endIssue),
-                              coverageDepth: (tcs.coverageDepth?.value ?: null),
-                              coverageNote: (tcs.coverageNote),
-                              embargo: (tcs.embargo)
-                            )
+                          'identifiers' {
+                            getTippIds(tipp.id).each { tid ->
+                              'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                            }
                           }
-                        }
-                        'url'(tipp.url ?: "")
-
-                        if (Thread.currentThread().isInterrupted()) {
-                          cancelled = true
-                          break
+                          'platform'(id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid) {
+                            'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
+                            'name'(tipp.hostPlatform.name?.trim())
+                          }
+                          'access'(start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null)
+                          def cov_statements = getCoverageStatements(tipp.id)
+                          if (cov_statements?.size() > 0) {
+                            cov_statements.each { tcs ->
+                              'coverage'(
+                                startDate: (tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null),
+                                startVolume: (tcs.startVolume),
+                                startIssue: (tcs.startIssue),
+                                endDate: (tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null),
+                                endVolume: (tcs.endVolume),
+                                endIssue: (tcs.endIssue),
+                                coverageDepth: (tcs.coverageDepth?.value ?: null),
+                                coverageNote: (tcs.coverageNote),
+                                embargo: (tcs.embargo)
+                              )
+                            }
+                          }
+                          'url'(tipp.url ?: "")
                         }
                       }
                       cleanUpGorm()
+                      if (Thread.currentThread().isInterrupted()) {
+                        cancelled = true
+                        break
+                      }
 
                       log.debug("Batch complete ..")
                     }

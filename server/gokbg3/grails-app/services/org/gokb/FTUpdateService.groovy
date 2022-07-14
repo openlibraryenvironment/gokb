@@ -445,12 +445,13 @@ class FTUpdateService {
   def updateSingleItem(kbc) {
     def idx_record = buildEsRecord(kbc)
     def es_index = ESSearchService.indicesPerType.get(idx_record['componentType'])
+
     if (idx_record != null) {
       def recid = idx_record['_id'].toString()
       idx_record.remove('_id')
       def esClient = ESWrapperService.getClient()
       IndexRequest request = new IndexRequest("single").id(recid).source(idx_record)
-      esClient.index(request, RequestOptions.DEFAULT)
+      def result = esClient.index(request, RequestOptions.DEFAULT)
     }
   }
 
