@@ -980,6 +980,8 @@ class ESSearchService{
 
       domainMapping['id'] = rec_id
 
+      domainMapping['type'] = obj_cls.niceName
+
       recordSource.each { field, val ->
         def toSkip = (include_list && !include_list.contains(field)) || (exclude_list?.contains(field))
 
