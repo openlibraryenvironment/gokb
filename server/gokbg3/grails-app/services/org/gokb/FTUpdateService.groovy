@@ -56,6 +56,7 @@ class FTUpdateService {
         result.altname = []
         result.listStatus = kbc.listStatus?.value ?: ""
         result.editStatus = kbc.editStatus?.value ?: ""
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -109,6 +110,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.roles = []
         kbc.roles.each { role ->
@@ -145,6 +147,7 @@ class FTUpdateService {
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
         result.providerUuid = kbc.provider ? kbc.provider.uuid : ""
         result.providerName = kbc.provider ? kbc.provider.name : ""
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -181,6 +184,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
@@ -206,6 +210,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
@@ -231,6 +236,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
@@ -259,6 +265,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
@@ -280,6 +287,7 @@ class FTUpdateService {
           result.curatoryGroups.add(cg.name)
         }
         result.titleType = kbc.title?.niceName ?: 'Unknown'
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.url = kbc.url
         if (kbc.title?.niceName == 'Journal') {
