@@ -39,15 +39,15 @@ class ESWrapperService {
     def es_host_name = grailsApplication.config?.gokb?.es?.host
     def es_port = grailsApplication.config?.gokb?.es?.ports?.get(0) ?: 9200
 
-    log.debug("Elasticsearch client is null, creating now... host: ${es_host_name}")
-    log.debug("... looking for Elasticsearch on host ${es_host_name}")
+    log.info("Elasticsearch client is null, creating now... host: ${es_host_name}")
+    log.info("... looking for Elasticsearch on host ${es_host_name}")
     esClient = new RestHighLevelClient(RestClient.builder(new HttpHost(es_host_name, es_port, "http")))
-    log.debug("... Elasticsearch wrapper service init completed")
+    log.info("... Elasticsearch wrapper service init completed")
   }
 
 
   def index(index,typename,record_id, record) {
-    log.debug("Indexing ... type: ${typename}, id: ${record_id}...")
+    log.info("Indexing ... type: ${typename}, id: ${record_id}...")
     def result=null
     try {
       def future = newClient().prepareIndex(index,typename,record_id).setSource(record)
