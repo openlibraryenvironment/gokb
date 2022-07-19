@@ -24,7 +24,6 @@
 	      <tr><th>JVM version</th><td> ${System.getProperty('java.version')}</td></tr>
 	      <tr><th>Reloading active</th><td> ${grails.util.Environment.reloadingAgentEnabled}</td></tr>
 	      <tr><th>Build Date</th><td> <g:meta name="build.time"/></td></tr>
-	      <tr><th>ES Cluster</th><td>${grailsApplication.config.gokb?.es?.cluster}</td></tr>
 	      <tr><th>ES Index</th><td>${grailsApplication.config.gokb?.es?.indices?.values().join(", ")}</td></tr>
 	    </table>
   	</div>
