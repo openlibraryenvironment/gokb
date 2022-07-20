@@ -54,7 +54,6 @@ services:
       - ES_JAVA_OPTS=-Xms512m -Xmx1g
       - discovery.zen.minimum_master_nodes=1
       - discovery.type=single-node
-      - cluster.name=elasticsearch
     ulimits:
       memlock:
         soft: -1
@@ -146,7 +145,6 @@ services:
       - "nginx-proxy"
       - "virtuoso"
     environment:
-      GOKB_ES_CLUSTER: "elasticsearch"
       GOKB_DB: "jdbc:postgresql://pghost:5432/gokbg3"
       GOKB_DB_USER: "knowint"
       GOKB_DB_PASS: "knowint"
