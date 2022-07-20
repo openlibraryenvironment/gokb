@@ -1,0 +1,314 @@
+---
+grails:
+    config:
+        locations:
+            - ~/.grails/gokb-config.groovy
+            - ~/.grails/gokb-config.yml
+            - ~/.grails/gokb-config.properties
+    cors:
+        enabled: true
+        mappings:
+            /rest/**: inherit
+
+    profile: web
+    codegen:
+        defaultPackage: org.gokb
+    spring:
+        transactionManagement:
+            proxies: false
+    gorm:
+        reactor:
+            # Whether to translate GORM events into Reactor events
+            # Disabled by default for performance reasons
+            events: false
+    mime:
+        file:
+            extensions: false
+        use:
+            accept:
+                header: true
+        disable:
+            accept:
+                header:
+                    userAgents:
+                        - Gecko
+                        - WebKit
+                        - Presto
+                        - Trident
+        types:
+            all: '*/*'
+            atom: application/atom+xml
+            css: text/css
+            csv: text/csv
+            form: application/x-www-form-urlencoded
+            html:
+                - text/html
+                - application/xhtml+xml
+            js: text/javascript
+            json:
+                - application/json
+                - text/json
+            multipartForm: multipart/form-data
+            pdf: application/pdf
+            rss: application/rss+xml
+            text: text/plain
+            hal:
+                - application/hal+json
+                - application/hal+xml
+            xml:
+                - text/xml
+                - application/xml
+    urlmapping:
+        cache:
+            maxsize: 1000
+    controllers:
+        defaultScope: singleton
+        upload:
+            maxFileSize: 50000000
+            maxRequestSize: 50000000
+    converters:
+        encoding: UTF-8
+    views:
+        default:
+            codec: html
+        gsp:
+            encoding: UTF-8
+            htmlcodec: xml
+            codecs:
+                expression: html
+                scriptlets: html
+                taglib: none
+                staticparts: none
+    exceptionresolver:
+        params:
+            exclude:
+                - password
+                - password2
+                - email
+    plugin:
+        springsecurity:
+            rest:
+                token:
+                    validation:
+                        endpointUrl: /rest/validate
+                login:
+                    endpointUrl: /rest/login
+                logout:
+                    endpointUrl: /rest/logout
+info:
+    app:
+        name: '@info.app.name@'
+        version: '@info.app.version@'
+        grailsVersion: '@info.grails.version@'
+
+spring:
+    main:
+        banner-mode: "off"
+    groovy:
+        template:
+            check-template-location: false
+    jmx:
+        unique-names: true
+    management:
+        endpoints:
+            enabled-by-default: false
+    devtools:
+        restart:
+            exclude:
+                - grails-app/views/**
+                - grails-app/i18n/**
+                - grails-app/conf/**
+
+hibernate:
+    cache:
+        queries: false
+        use_second_level_cache: false
+        use_query_cache: false
+
+environments:
+    development:
+        dataSource:
+            dbCreate: update
+            url: jdbc:postgresql://pghost:5432/gokbdev
+            username: knowint
+            password: knowint
+            driverClassName: org.postgresql.Driver
+            dialect: org.hibernate.dialect.PostgreSQLDialect
+            defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+            pooled: true
+            properties:
+                maxActive: 100
+                minEvictableIdleTimeMillis: 1800000
+                timeBetweenEvictionRunsMillis: 1800000
+                numTestsPerEvictionRun: 3
+                testOnBorrow: true
+                testWhileIdle: true
+                testOnReturn: true
+                validationQuery: select 1
+                defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+        grails:
+            logging:
+                plugin:
+                    springsecurity:
+                        debug:
+                            useFilter: true
+            mail:
+                port: 3025
+        gokb:
+            ygorUrl: null
+            languagesUrl : null
+            packageUpdate:
+                cron: "0 0 6 * * ? *"
+                enabled: false
+            packageOaiCaching:
+                enabled: false
+            zdbAugment:
+                enabled: false
+                rrCurators: ZDB
+                cron: "0 30 * * * ? *"
+            ezbAugment:
+                enabled: false
+                rrCurators: EZB
+                cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
+                breakInMs: 1000
+            es:
+                host: localhost
+                ports:
+                    - 9200
+                indices:
+                    titles: gokbtitles
+                    tipps: gokbtipps
+                    orgs: gokborgs
+                    packages: gokbpackages
+                    platforms: gokbplatforms
+            centralGroups:
+                JournalInstance: 'Journal Central Curators'
+        cache:
+            headers:
+                enabled: false
+    test:
+        dataSource:
+            dbCreate: create-drop
+            url: jdbc:postgresql://pghost:5432/gokbtest
+            username: knowint
+            password: knowint
+            driverClassName: org.postgresql.Driver
+            dialect: org.hibernate.dialect.PostgreSQLDialect
+            defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+            pooled: true
+            properties:
+                maxActive: 100
+                minEvictableIdleTimeMillis: 1800000
+                timeBetweenEvictionRunsMillis: 1800000
+                numTestsPerEvictionRun: 3
+                testOnBorrow: true
+                testWhileIdle: true
+                testOnReturn: true
+                validationQuery: select 1
+                defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+        gokb:
+            ygorUrl: null
+            languagesUrl : null
+            ftupdate_enabled: false
+            packageUpdate:
+                cron: "0 0 6 * * ? *"
+                enabled: false
+            packageOaiCaching:
+                enabled: false
+            zdbAugment:
+                enabled: false
+                rrCurators: ZDB
+                cron: "0 30 * * * ? *"
+            ezbAugment:
+                enabled: false
+                rrCurators: EZB
+                cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
+                breakInMs: 1000
+            es:
+                host: localhost
+                ports:
+                    - 9200
+                indices:
+                    titles: gokbtitlestest
+                    tipps: gokbtippstest
+                    orgs: gokborgstest
+                    packages: gokbpackagestest
+                    platforms: gokbplatformstest
+            centralGroups:
+                JournalInstance: 'Journal Central Curators'
+        grails:
+            mail:
+                port: 3025
+        quartz:
+            pluginEnabled: false
+        cache:
+            headers:
+                enabled: false
+        javamelody:
+            disabled: true
+    production:
+        dataSource:
+            dbCreate: update
+            url: jdbc:postgresql://localhost:5432/gokbprod
+            username: gokb
+            password: knowint
+            driverClassName: org.postgresql.Driver
+            dialect: org.hibernate.dialect.PostgreSQLDialect
+            defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+            pooled: true
+            properties:
+                maxActive: 100
+                minEvictableIdleTimeMillis: 1800000
+                timeBetweenEvictionRunsMillis: 1800000
+                numTestsPerEvictionRun: 3
+                testOnBorrow: true
+                testWhileIdle: true
+                testOnReturn: true
+                validationQuery: select 1
+                defaultTransactionIsolation: java.sql.Connection.TRANSACTION_READ_COMMITTED
+        grails:
+            plugin:
+                greenmail:
+                    disabled: true
+        gokb:
+            packageUpdate:
+                cron: "0 0 6 * * ? *"
+                enabled: false
+            packageOaiCaching:
+                enabled: true
+            zdbAugment:
+                enabled: false
+                rrCurators: ZDB
+                cron: "0 30 * * * ? *"
+            ezbAugment:
+                enabled: false
+                rrCurators: EZB
+                cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
+                breakInMs: 1000
+            ygorUrl: null
+            languagesUrl : null
+            es:
+                host: localhost
+                ports:
+                    - 9200
+                indices:
+                    titles: gokbtitles
+                    tipps: gokbtipps
+                    orgs: gokborgs
+                    packages: gokbpackages
+                    platforms: gokbplatforms
+            centralGroups:
+                JournalInstance: 'Journal Central Curators'
+gokb:
+    defaultCuratoryGroup: Local
+    ftupdate_enabled: true
+    decisionSupport:
+        active: false
+        otherVoters: false
+    costInfo: false
+    tsvExportTempDirectory: '/tmp/gokb/export'
+    packageXmlCacheDirectory: '/tmp/gokb/oai/'
+
+quartz:
+    autoStartup: true
+    waitForJobsToCompleteOnShutdown: false

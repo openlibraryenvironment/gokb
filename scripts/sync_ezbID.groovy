@@ -140,7 +140,7 @@ List getRecords(def config, def zdbId){
 
 
 Map getSearchResult(def config, def zdbId){
-  def url = "http://localhost:${config.port}"
+  def url = "${config.base}"
   def path = "${config.path}/api/find?componentType=Journal&identifier=${zdbId}"
 
   // println ("Getting record by URL: ${url.concat(path)}")
@@ -167,7 +167,7 @@ def addToGoKB(rec, config){
   shortRecord.put("identifiers", identifiers)
   shortRecord.put("name", rec.name)
 
-  def url = "http://localhost:${config.port}"
+  def url = "${config.base}"
   def path = "${config.path}/integration/crossReferenceTitle"
   // println("Setting HTTPBuilder with URL: ${url.concat(path)}")
   def http = new HTTPBuilder(url.concat(path))
