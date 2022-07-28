@@ -16,4 +16,7 @@
 
   <dt> <g:annotatedLabel owner="${d}" property="targetType">Target Type</g:annotatedLabel> </dt>
   <dd> <g:xEditableRefData owner="${d}" field="targetType" config='IdentifierNamespace.TargetType' /> </dd>
+
+  <dt> <g:annotatedLabel owner="${d}" property="baseUrl">Base URL</g:annotatedLabel> </dt>
+  <dd> <g:xEditable class="ipe" owner="${d}" field="baseUrl" /> </dd>
 </dl>
