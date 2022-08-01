@@ -79,7 +79,8 @@ class ESSearchService{
           pkg: "tippPackage",
           tippTitle: "tippTitle",
           linkedTitle: "tippTitle",
-          title: "tippTitle"
+          title: "tippTitle",
+          publisher: "publisher"
       ],
       dates: [
           "changedSince",
@@ -494,7 +495,7 @@ class ESSearchService{
   private void processLinkedField(query, field, val) {
     if (val?.trim()) {
       QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-      def sanitized_param = sanitizeParam(qpars.q)
+      def sanitized_param = sanitizeParam(val)
       def finalVal = val
 
       try {
