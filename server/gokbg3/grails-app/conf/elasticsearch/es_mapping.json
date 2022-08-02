@@ -178,6 +178,7 @@
   "properties" : {
     "name" : {
       "type" : "text",
+      "analyzer" : "custom_chars_analyzer",
       "copy_to" : "suggest",
       "fields" : {
         "name" : { "type" : "text" },
