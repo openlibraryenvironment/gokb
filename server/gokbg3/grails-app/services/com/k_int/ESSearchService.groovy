@@ -475,7 +475,16 @@ class ESSearchService{
         List allQFields = (requestMapping.generic + requestMapping.refdata + requestMapping.simpleMap.values() +
                            requestMapping.complex)
         for (String field in qpars.list('qfields')){
-          if (field in allQFields){
+          if (field == "name") {
+            genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 2f))
+          }
+          else if (field == "altname") {
+            genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 1.3f))
+          }
+          else if (field == "suggest") {
+            genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("suggest", 0.6f))
+          }
+          else if (field in allQFields){
             genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field(field))
           }
         }
