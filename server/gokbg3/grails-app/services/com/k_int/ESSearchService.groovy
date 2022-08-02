@@ -474,7 +474,7 @@ class ESSearchService{
       if (qpars.qfields){
         List allQFields = (requestMapping.generic + requestMapping.refdata + requestMapping.simpleMap.values() +
                            requestMapping.complex)
-        for (String field in qpars.qfields.split("&")){
+        for (String field in qpars.list('qfields')){
           if (field in allQFields){
             genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field(field))
           }
