@@ -30,6 +30,9 @@
           "tokenizer": "standard",
           "char_filter": [
             "colon_filter"
+          ],
+          "filter": [
+            "lowercase"
           ]
         },
         "url": {
