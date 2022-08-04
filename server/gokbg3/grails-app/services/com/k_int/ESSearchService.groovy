@@ -69,7 +69,8 @@ class ESSearchService{
           "name",
           "altname",
           "q",
-          "qfields"
+          "qfields",
+          "qsName"
       ],
       linked: [
           provider: "provider",
@@ -413,13 +414,14 @@ class ESSearchService{
         log.debug("DO phrase search!")
         def phraseQry = sanitized_param.replace('"', "")
         log.debug("${phraseQry}")
-        labelQuery.should(QueryBuilders.matchPhraseQuery('name', phraseQry).boost(2))
+        labelQuery.should(QueryBuilders.matchPhraseQuery('name', phraseQry).boost(2f))
         labelQuery.should(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 2f))
-        labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 1.3f))
+        labelQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
+        labelQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
       }
+
       labelQuery.minimumShouldMatch(1)
 
       query.must(labelQuery)
@@ -433,7 +435,7 @@ class ESSearchService{
         query.must(QueryBuilders.matchPhraseQuery('name', phraseQry))
       }
       else {
-        query.must(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name"))
+        query.must(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND))
       }
     }
     else if (qpars.altname) {
@@ -445,12 +447,26 @@ class ESSearchService{
         query.must(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        query.must(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname"))
+        query.must(QueryBuilders.matchQuery('altname', sanitized_param).operator(Operator.AND))
       }
     }
     else if (qpars.suggest) {
       def sanitized_param = sanitizeParam(qpars.altname)
-      query.must(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("suggest", 0.6f))
+      query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(Operator.AND).boost(0.6f))
+    }
+    else if (qpars.qsName) {
+      def sanitized_param = sanitizeParam(qpars.qsName)
+
+      sanitized_param = sanitized_param.replaceAll("[()]", " ")
+
+      QueryBuilder labelQuery = QueryBuilders.boolQuery()
+
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 2f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 1.3f))
+
+      labelQuery.minimumShouldMatch(1)
+
+      query.must(labelQuery)
     }
   }
 
@@ -476,23 +492,23 @@ class ESSearchService{
                            requestMapping.complex)
         for (String field in qpars.list('qfields')){
           if (field == "name") {
-            genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 2f))
+            genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
           }
           else if (field == "altname") {
-            genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 1.3f))
+            genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
           }
           else if (field == "suggest") {
-            genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("suggest", 0.6f))
+            genericQuery.should(QueryBuilders.matchQuery("suggest").operator(Operator.AND).boost(0.6f))
           }
           else if (field in allQFields){
-            genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field(field))
+            genericQuery.should(QueryBuilders.matchQuery(field, sanitized_param).operator(Operator.AND))
           }
         }
       }
       else{
-        genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 2f))
-        genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 1.3f))
-        genericQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("suggest", 0.6f))
+        genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
+        genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
+        genericQuery.should(QueryBuilders.matchQuery("suggest", sanitized_param).operator(Operator.AND).boost(0.6f))
         genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
       }
       genericQuery.minimumShouldMatch(1)
@@ -794,12 +810,16 @@ class ESSearchService{
       log.error("Error processing search request", se)
       result = [:]
       result.result = "ERROR"
+      result.status = 500
+      result.messageCode = 'error.search.unknown'
       result.errors = ['unknown': "There has been an unknown error processing the search request!"]
     }
     finally {
       if (errors) {
         result = [:]
+        result.status = 400
         result.result = "ERROR"
+        result.messageCode = 'error.search.input'
         result.errors = errors
       }
     }
@@ -856,7 +876,7 @@ class ESSearchService{
         }
       }
       else if (requestMapping.simpleMap?.containsKey(k)){
-        exactQuery.must(QueryBuilders.queryStringQuery(v).defaultOperator(Operator.AND).field(requestMapping.simpleMap[k]))
+        exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v).operator(Operator.AND))
       }
       else if (requestMapping.linked?.containsKey(k)){
         processLinkedField(exactQuery, requestMapping.linked[k], v)
