@@ -2,6 +2,13 @@
   "settings": {
     "number_of_shards": 1,
     "analysis": {
+      "char_filter": {
+        "colon_filter": {
+          "type": "pattern_replace",
+          "pattern": ":",
+          "replacement": " "
+        }
+      },
       "filter": {
         "autocomplete_filter": {
           "type":     "edge_ngram",
@@ -16,6 +23,16 @@
           "filter": [
             "lowercase",
             "autocomplete_filter"
+          ]
+        },
+        "custom_chars_analyzer": {
+          "type":      "custom",
+          "tokenizer": "standard",
+          "char_filter": [
+            "colon_filter"
+          ],
+          "filter": [
+            "lowercase"
           ]
         },
         "url": {
