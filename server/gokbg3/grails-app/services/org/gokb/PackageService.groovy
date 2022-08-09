@@ -2182,146 +2182,146 @@ class PackageService {
                         'identifier'('namespace': tid[0], 'namespaceName': tid[1], 'value': tid[2], 'type': tid[3])
                       }
                     }
-                  }
 
-                  // Variant Names
-                  'variantNames' {
-                    item.variantNames.each { vn ->
-                      'variantName'(vn.variantName)
-                    }
-                  }
-
-                  'scope'(item.scope?.value)
-                  'listStatus'(item.listStatus?.value)
-                  'breakable'(item.breakable?.value)
-                  'consistent'(item.consistent?.value)
-                  'fixed'(item.fixed?.value)
-                  'paymentType'(item.paymentType?.value)
-                  'global'(item.global?.value)
-                  'globalNote'(item.globalNote)
-                  'contentType'(item.contentType?.value)
-
-                  if (item.nominalPlatform) {
-                    'nominalPlatform'(id: item.nominalPlatform.id, uuid: item.nominalPlatform.uuid) {
-                      'primaryUrl'(item.nominalPlatform.primaryUrl)
-                      'name'(item.nominalPlatform.name)
-                    }
-                  }
-
-                  if (item.provider) {
-                    'nominalProvider'(id: item.provider.id, uuid: item.provider.uuid) {
-                      'name'(item.provider.name)
-                    }
-                  }
-
-                  'listVerifiedDate'(item.listVerifiedDate ? dateFormatService.formatIsoTimestamp(item.listVerifiedDate) : null)
-
-                  'curatoryGroups' {
-                    item.curatoryGroups.each { cg ->
-                      'group' {
-                        'name'(cg.name)
+                    // Variant Names
+                    'variantNames' {
+                      item.variantNames.each { vn ->
+                        'variantName'(vn.variantName)
                       }
                     }
-                  }
 
-                  if (item.source) {
-                    'source' {
-                      'name'(item.source.name)
-                      'url'(item.source.url)
-                      'defaultAccessURL'(item.source.defaultAccessURL)
-                      'explanationAtSource'(item.source.explanationAtSource)
-                      'contextualNotes'(item.source.contextualNotes)
-                      'frequency'(item.source.frequency?.value)
+                    'scope'(item.scope?.value)
+                    'listStatus'(item.listStatus?.value)
+                    'breakable'(item.breakable?.value)
+                    'consistent'(item.consistent?.value)
+                    'fixed'(item.fixed?.value)
+                    'paymentType'(item.paymentType?.value)
+                    'global'(item.global?.value)
+                    'globalNote'(item.globalNote)
+                    'contentType'(item.contentType?.value)
+
+                    if (item.nominalPlatform) {
+                      'nominalPlatform'(id: item.nominalPlatform.id, uuid: item.nominalPlatform.uuid) {
+                        'primaryUrl'(item.nominalPlatform.primaryUrl)
+                        'name'(item.nominalPlatform.name)
+                      }
                     }
-                  }
 
-                  'dateCreated'(dateFormatService.formatIsoTimestamp(item.dateCreated))
-                  'TIPPs'(count: tipps_count) {
-                    int offset = 0
-                    while (offset < tipps_count) {
-                      log.debug("Fetching TIPPs batch ${offset}/${tipps_count}")
-                      def tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
-                      log.debug("fetch complete ..")
-                      offset += 50
-                      tipps.each { tipp ->
-                        'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
-                          'status'(tipp.status?.value)
-                          'name'(tipp.name)
-                          'lastUpdated'(tipp.lastUpdated ? dateFormatService.formatIsoTimestamp(tipp.lastUpdated) : null)
-                          'series'(tipp.series)
-                          'subjectArea'(tipp.subjectArea)
-                          'publisherName'(tipp.publisherName)
-                          'dateFirstInPrint'(tipp.dateFirstInPrint ? dateFormatService.formatDate(tipp.dateFirstInPrint) : null)
-                          'dateFirstOnline'(tipp.dateFirstOnline ? dateFormatService.formatDate(tipp.dateFirstOnline) : null)
-                          'medium'(tipp.format?.value)
-                          'format'(tipp.medium?.value)
-                          'volumeNumber'(tipp.volumeNumber)
-                          'editionStatement'(tipp.editionStatement)
-                          'firstAuthor'(tipp.firstAuthor)
-                          'firstEditor'(tipp.firstEditor)
-                          'parentPublicationTitleId'(tipp.parentPublicationTitleId)
-                          'precedingPublicationTitleId'(tipp.precedingPublicationTitleId)
-                          'lastChangedExternal'(tipp.lastChangedExternal ? dateFormatService.formatDate(tipp.lastChangedExternal) : null)
-                          'publicationType'(tipp.publicationType?.value)
-                          if (tipp.title) {
-                            'title'('id': tipp.title.id, 'uuid': tipp.title.uuid) {
-                              'name'(tipp.title.name?.trim())
-                              'type'(getTitleClass(tipp.title.id))
-                              'status'(tipp.title.status?.value)
-                              if (getTitleClass(tipp.title.id) == 'BookInstance') {
-                                'dateFirstInPrint'(tipp.title.dateFirstInPrint ? dateFormatService.formatDate(tipp.title.dateFirstInPrint) : null)
-                                'dateFirstOnline'(tipp.title.dateFirstOnline ? dateFormatService.formatDate(tipp.title.dateFirstOnline) : null)
-                                'editionStatement'(tipp.title.editionStatement)
-                                'volumeNumber'(tipp.title.volumeNumber)
-                                'firstAuthor'(tipp.title.firstAuthor)
-                                'firstEditor'(tipp.title.firstEditor)
-                              }
-                              'identifiers' {
-                                getTitleIds(tipp.title.id).each { tid ->
-                                  'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                    if (item.provider) {
+                      'nominalProvider'(id: item.provider.id, uuid: item.provider.uuid) {
+                        'name'(item.provider.name)
+                      }
+                    }
+
+                    'listVerifiedDate'(item.listVerifiedDate ? dateFormatService.formatIsoTimestamp(item.listVerifiedDate) : null)
+
+                    'curatoryGroups' {
+                      item.curatoryGroups.each { cg ->
+                        'group' {
+                          'name'(cg.name)
+                        }
+                      }
+                    }
+
+                    if (item.source) {
+                      'source' {
+                        'name'(item.source.name)
+                        'url'(item.source.url)
+                        'defaultAccessURL'(item.source.defaultAccessURL)
+                        'explanationAtSource'(item.source.explanationAtSource)
+                        'contextualNotes'(item.source.contextualNotes)
+                        'frequency'(item.source.frequency?.value)
+                      }
+                    }
+
+                    'dateCreated'(dateFormatService.formatIsoTimestamp(item.dateCreated))
+                    'TIPPs'(count: tipps_count) {
+                      int offset = 0
+                      while (offset < tipps_count) {
+                        log.debug("Fetching TIPPs batch ${offset}/${tipps_count}")
+                        def tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
+                        log.debug("fetch complete ..")
+                        offset += 50
+                        tipps.each { tipp ->
+                          'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
+                            'status'(tipp.status?.value)
+                            'name'(tipp.name)
+                            'lastUpdated'(tipp.lastUpdated ? dateFormatService.formatIsoTimestamp(tipp.lastUpdated) : null)
+                            'series'(tipp.series)
+                            'subjectArea'(tipp.subjectArea)
+                            'publisherName'(tipp.publisherName)
+                            'dateFirstInPrint'(tipp.dateFirstInPrint ? dateFormatService.formatDate(tipp.dateFirstInPrint) : null)
+                            'dateFirstOnline'(tipp.dateFirstOnline ? dateFormatService.formatDate(tipp.dateFirstOnline) : null)
+                            'medium'(tipp.format?.value)
+                            'format'(tipp.medium?.value)
+                            'volumeNumber'(tipp.volumeNumber)
+                            'editionStatement'(tipp.editionStatement)
+                            'firstAuthor'(tipp.firstAuthor)
+                            'firstEditor'(tipp.firstEditor)
+                            'parentPublicationTitleId'(tipp.parentPublicationTitleId)
+                            'precedingPublicationTitleId'(tipp.precedingPublicationTitleId)
+                            'lastChangedExternal'(tipp.lastChangedExternal ? dateFormatService.formatDate(tipp.lastChangedExternal) : null)
+                            'publicationType'(tipp.publicationType?.value)
+                            if (tipp.title) {
+                              'title'('id': tipp.title.id, 'uuid': tipp.title.uuid) {
+                                'name'(tipp.title.name?.trim())
+                                'type'(getTitleClass(tipp.title.id))
+                                'status'(tipp.title.status?.value)
+                                if (getTitleClass(tipp.title.id) == 'BookInstance') {
+                                  'dateFirstInPrint'(tipp.title.dateFirstInPrint ? dateFormatService.formatDate(tipp.title.dateFirstInPrint) : null)
+                                  'dateFirstOnline'(tipp.title.dateFirstOnline ? dateFormatService.formatDate(tipp.title.dateFirstOnline) : null)
+                                  'editionStatement'(tipp.title.editionStatement)
+                                  'volumeNumber'(tipp.title.volumeNumber)
+                                  'firstAuthor'(tipp.title.firstAuthor)
+                                  'firstEditor'(tipp.title.firstEditor)
+                                }
+                                'identifiers' {
+                                  getTitleIds(tipp.title.id).each { tid ->
+                                    'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                                  }
                                 }
                               }
                             }
-                          }
-                          else {
-                            'title'()
-                          }
-                          'identifiers' {
-                            getTippIds(tipp.id).each { tid ->
-                              'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                            else {
+                              'title'()
                             }
-                          }
-                          'platform'(id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid) {
-                            'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
-                            'name'(tipp.hostPlatform.name?.trim())
-                          }
-                          'access'(start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null)
-                          def cov_statements = getCoverageStatements(tipp.id)
-                          if (cov_statements?.size() > 0) {
-                            cov_statements.each { tcs ->
-                              'coverage'(
-                                startDate: (tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null),
-                                startVolume: (tcs.startVolume),
-                                startIssue: (tcs.startIssue),
-                                endDate: (tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null),
-                                endVolume: (tcs.endVolume),
-                                endIssue: (tcs.endIssue),
-                                coverageDepth: (tcs.coverageDepth?.value ?: null),
-                                coverageNote: (tcs.coverageNote),
-                                embargo: (tcs.embargo)
-                              )
+                            'identifiers' {
+                              getTippIds(tipp.id).each { tid ->
+                                'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                              }
                             }
+                            'platform'(id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid) {
+                              'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
+                              'name'(tipp.hostPlatform.name?.trim())
+                            }
+                            'access'(start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null)
+                            def cov_statements = getCoverageStatements(tipp.id)
+                            if (cov_statements?.size() > 0) {
+                              cov_statements.each { tcs ->
+                                'coverage'(
+                                  startDate: (tcs.startDate ? dateFormatService.formatDate(tcs.startDate) : null),
+                                  startVolume: (tcs.startVolume),
+                                  startIssue: (tcs.startIssue),
+                                  endDate: (tcs.endDate ? dateFormatService.formatDate(tcs.endDate) : null),
+                                  endVolume: (tcs.endVolume),
+                                  endIssue: (tcs.endIssue),
+                                  coverageDepth: (tcs.coverageDepth?.value ?: null),
+                                  coverageNote: (tcs.coverageNote),
+                                  embargo: (tcs.embargo)
+                                )
+                              }
+                            }
+                            'url'(tipp.url ?: "")
                           }
-                          'url'(tipp.url ?: "")
                         }
-                      }
-                      cleanUpGorm()
-                      if (Thread.currentThread().isInterrupted()) {
-                        cancelled = true
-                        break
-                      }
+                        cleanUpGorm()
+                        if (Thread.currentThread().isInterrupted()) {
+                          cancelled = true
+                          break
+                        }
 
-                      log.debug("Batch complete ..")
+                        log.debug("Batch complete ..")
+                      }
                     }
                   }
                 }
