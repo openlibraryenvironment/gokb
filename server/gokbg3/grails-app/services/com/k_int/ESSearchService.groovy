@@ -498,7 +498,7 @@ class ESSearchService{
             genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
           }
           else if (field == "suggest") {
-            genericQuery.should(QueryBuilders.matchQuery("suggest").operator(Operator.AND).boost(0.6f))
+            genericQuery.should(QueryBuilders.matchQuery("suggest", sanitized_param).operator(Operator.AND).boost(0.6f))
           }
           else if (field in allQFields){
             genericQuery.should(QueryBuilders.matchQuery(field, sanitized_param).operator(Operator.AND))
@@ -551,10 +551,10 @@ class ESSearchService{
       val = ""
     }
 
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', val))
     linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', sanitizeParam(val)))
     linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformUuid', sanitizeParam(val)))
-    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', val))
     linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', sanitizeParam(val)))
     linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', sanitizeParam(val)))
     linkedFieldQuery.minimumShouldMatch(1)
