@@ -449,7 +449,7 @@ class OaiController {
               mkp.'header'() {
                 identifier("${rec.class.name}:${rec.id}")
                 if (result.oaiConfig.uriPath) {
-                  uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${result.oaiConfig.uriPath}/${record.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${result.oaiConfig.uriPath}/${record.uuid}"))
+                  uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${result.oaiConfig.uriPath}/${rec.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${result.oaiConfig.uriPath}/${rec.uuid}"))
                 }
                 uuid(rec.uuid)
                 datestamp(dateFormatService.formatIsoTimestamp(rec.lastUpdated))
@@ -791,7 +791,7 @@ class OaiController {
                     mkp.'header' () {
                       identifier("${rec.class.name}:${rec.id}")
                       if (result.oaiConfig.uriPath) {
-                        uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${result.oaiConfig.uriPath}/${record.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${result.oaiConfig.uriPath}/${record.uuid}"))
+                        uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${result.oaiConfig.uriPath}/${rec.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${result.oaiConfig.uriPath}/${rec.uuid}"))
                       }
                       uuid(rec.uuid)
                       datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? rec.lastCachedDate : rec.lastUpdated))
