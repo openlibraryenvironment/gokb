@@ -305,6 +305,46 @@ class TitleInstancePackagePlatform extends KBComponent {
     return name ?: "${pkg?.name} / ${title?.name} / ${hostPlatform?.name}"
   }
 
+  @Override
+  @Transient
+  static TitleInstancePackagePlatform lookupByIO(String idtype, String idvalue) {
+    def result = null
+    def normid = Identifier.normalizeIdentifier(idvalue)
+    def namespace = IdentifierNamespace.findByValueIlike(idtype)
+
+    if (normid && namespace) {
+      def id = Identifier.findByNamespaceAndNormname(namespace, normid)
+
+      id?.activeIdentifiedComponents.each { component ->
+        if (component.class == TitleInstancePackagePlatform && !result) {
+          result = component
+        }
+      }
+    }
+
+    result
+  }
+
+  @Override
+  @Transient
+  static TitleInstancePackagePlatform[] lookupAllByIO(String idtype, String idvalue) {
+    def result = []
+    def normid = Identifier.normalizeIdentifier(idvalue)
+    def namespace = IdentifierNamespace.findByValueIlike(idtype)
+
+    if (normid && namespace) {
+      def id = Identifier.findByNamespaceAndNormname(namespace, normid)
+
+      id?.activeIdentifiedComponents.each { component ->
+        if (component.class == TitleInstancePackagePlatform && !result.contains(component)) {
+          result.add(component)
+        }
+      }
+    }
+
+    result
+  }
+
   /**
    * Please see https://github.com/openlibraryenvironment/gokb/wiki/tipp_dto
    */
@@ -874,9 +914,10 @@ class TitleInstancePackagePlatform extends KBComponent {
       // prices
       if (tipp_dto.prices && tipp_dto.prices.size() > 0) {
         tipp_dto.prices.each { price ->
+          log.debug("Setting price ${price}")
           if (!price.id && (price.price || price.amount) )
-            tipp.setPrice(String.isInstance(price.type) ? price.type : price.type.name,
-                "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
+            tipp.setPrice(price.type instanceof String ? price.type : price.type?.name,
+                "${price.amount ?: price.price} ${price.currency instanceof String ? price.currency : price.currency?.name}",
                 price.startDate ? DateFormatService.parseDate(price.startDate) : null,
                 price.endDate ? DateFormatService.parseDate(price.endDate) : null)
         }
@@ -898,7 +939,8 @@ class TitleInstancePackagePlatform extends KBComponent {
       textDescription: 'TIPP repository for GOKb',
       pkg            : 'Package.Tipps',
       query          : " from TitleInstancePackagePlatform as o ",
-      pageSize       : 10
+      pageSize       : 10,
+      uriPath        : '/package-title'
   ]
 
   /**

@@ -233,10 +233,10 @@ class AdminController {
   }
 
   def updateTextIndexes() {
-    log.debug("Call to update indexe");
+    log.debug("Call to update Elasticsearch indices");
 
     Job j = concurrencyManagerService.createJob {
-      FTUpdateService.updateFTIndexes();
+      FTUpdateService.updateFTIndexes()
     }.startOrQueue()
 
     j.description = "Update Free Text Indexes"
@@ -249,7 +249,7 @@ class AdminController {
   def resetTextIndexes() {
     log.debug("Call to update indexe")
     Job j = concurrencyManagerService.createJob {
-      FTUpdateService.clearDownAndInitES()
+      FTUpdateService.clearDownAndInit()
     }.startOrQueue()
 
     j.description = "Reset Free Text Indexes"
@@ -328,7 +328,8 @@ class AdminController {
           log.debug("Cancelled")
         }
         catch (Exception e) {
-          log.debug("${e}")
+          log.debug("Exception in Job ${j.uuid}:")
+          e.printStackTrace()
 
           if (j.messages?.size() == 0) {
             j.message("There has been an exception processing this job! Please check the logs!")
@@ -350,7 +351,6 @@ class AdminController {
   def cleanJobList() {
     log.debug("clean job list..")
     def jobs = concurrencyManagerService.jobs
-    def maxId = jobs.max { it.key }.key
 
     jobs.each { k, j ->
       if (j.isDone()) {

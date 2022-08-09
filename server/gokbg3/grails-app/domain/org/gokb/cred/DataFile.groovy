@@ -8,20 +8,22 @@ class DataFile extends KBComponent {
   String uploadMimeType
   String filesize
   String doctype
+  String encoding
 
   // II: This NEEDS to be a java.sql.Blob and not a byte[] - See Doc in KBPlus for example
   byte[] fileData
   RefdataValue canEdit
-  
+
   static constraints = {
     guid (nullable:false, blank:false)
     md5 (nullable:false, blank:false)
     uploadName (nullable:true, blank:false)
     uploadMimeType (nullable:true, blank:false)
     filesize (nullable:true, blank:false)
+    encoding (nullable:true, blank:false)
     doctype (nullable:true, blank:false)
-    fileData(nullable:true,blank:false,maxSize: 1024 * 1024 * 1024)
-    canEdit(nullable:true, blank:false)
+    fileData (nullable:true,blank:false,maxSize: 1024 * 1024 * 1024)
+    canEdit (nullable:true, blank:false)
   }
 
   static mapping = {
@@ -31,6 +33,7 @@ class DataFile extends KBComponent {
     uploadName column:'df_upload_name'
     uploadMimeType column:'df_mime_type'
     filesize column:'df_filesize'
+    encoding column:'df_encoding'
     doctype column:'df_doctype'
     fileData column:'df_file_data'
     canEdit column:'df_canEdit'
@@ -45,7 +48,7 @@ class DataFile extends KBComponent {
   ]
 
   /**
-   * Override so that we only return DataFiles that are editable on the 
+   * Override so that we only return DataFiles that are editable on the
    * typedown searches
    */
   @Override
@@ -63,7 +66,7 @@ class DataFile extends KBComponent {
 
     result
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     Object o = KBComponent.deproxy(obj)
@@ -75,7 +78,7 @@ class DataFile extends KBComponent {
     // Return false if we get here.
     false
   }
-  
+
   @Override
   public int hashCode () {
     new HashCodeBuilder(1, 3).

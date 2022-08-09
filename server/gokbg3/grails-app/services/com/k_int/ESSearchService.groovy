@@ -5,14 +5,15 @@ import groovyx.net.http.Method
 import groovyx.net.http.URIBuilder
 
 import org.apache.lucene.search.join.ScoreMode
-import org.elasticsearch.action.ActionFuture
-import org.elasticsearch.action.search.*
-import org.elasticsearch.client.*
-import org.elasticsearch.index.query.*
-import org.elasticsearch.search.SearchHit
-import org.elasticsearch.search.aggregations.AggregationBuilders
-import org.elasticsearch.search.builder.SearchSourceBuilder
-import org.elasticsearch.search.sort.*
+import org.opensearch.action.search.*
+import org.opensearch.client.*
+import org.opensearch.index.query.*
+import org.opensearch.search.aggregations.AggregationBuilders
+import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder
+import org.opensearch.search.SearchHit
+import org.opensearch.search.SearchHits
+import org.opensearch.search.builder.SearchSourceBuilder
+import org.opensearch.search.sort.*
 
 import org.gokb.cred.*
 
@@ -30,7 +31,8 @@ class ESSearchService{
       'cpname':'cpname',
       'provider':'provider',
       'componentType':'componentType',
-      'lastUpdatedDisplay':'lastUpdatedDisplay']
+      'lastUpdatedDisplay':'lastUpdatedDisplay',
+      'primaryUrl':'primaryUrl']
 
   def ESWrapperService
   def grailsApplication
@@ -41,7 +43,8 @@ class ESSearchService{
       generic: [
           "id",
           "uuid",
-          "importId"
+          "importId",
+          "primaryUrl"
       ],
       refdata: [
           "listStatus",
@@ -65,18 +68,20 @@ class ESSearchService{
           "label",
           "name",
           "altname",
-          "q"
+          "q",
+          "qfields",
+          "qsName"
       ],
       linked: [
           provider: "provider",
-          publisher: "publisher",
           currentPublisher: "publisher",
           linkedPackage: "tippPackage",
           tippPackage: "tippPackage",
           pkg: "tippPackage",
           tippTitle: "tippTitle",
           linkedTitle: "tippTitle",
-          title: "tippTitle"
+          title: "tippTitle",
+          publisher: "publisher"
       ],
       dates: [
           "changedSince",
@@ -114,107 +119,107 @@ class ESSearchService{
   }
 
   def search(params, field_map){
-    log.debug("ESSearchService::search - ${params}")
-
+    log.debug("ESSearchService.search() with params : ${params}")
     def result = [:]
+    def esClient = ESWrapperService.getClient()
+    if ( (params.q && params.q.length() > 0) || params.rectype) {
 
-    Client esclient = ESWrapperService.getClient()
+      if ((!params.all) || (!params.all?.equals("yes"))) {
+        params.max = Math.min(params.max ? params.max : 15, 100)
+      }
 
-    try {
-      if ( (params.q && params.q.length() > 0) || params.rectype) {
+      params.offset = params.offset ? params.offset : 0
+      def query_str = buildQuery(params,field_map)
 
-        if ((!params.all) || (!params.all?.equals("yes"))) {
-          params.max = Math.min(params.max ? params.max : 15, 100)
-        }
+      if (params.tempFQ) {
+        log.debug("found tempFQ, adding to query string")
+        query_str = query_str + " AND ( " + params.tempFQ + " ) "
+        params.remove("tempFQ") //remove from GSP access
+      }
 
-        params.offset = params.offset ? params.offset : 0
+      log.debug("Start to build search request. Query: ${query_str}")
+      SearchResponse searchResponse
+      try{
+        SearchRequest searchRequest = new SearchRequest()
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+        TermsAggregationBuilder pragg = AggregationBuilders.terms("provider").field("provider")
+        TermsAggregationBuilder cgagg = AggregationBuilders.terms("curatoryGroups").field("curatoryGroups")
+        searchSourceBuilder.aggregation(pragg)
+        searchSourceBuilder.aggregation(cgagg)
 
-        def query_str = buildQuery(params,field_map)
-
-        if (params.tempFQ) {
-          log.debug("found tempFQ, adding to query string")
-          query_str = query_str + " AND ( " + params.tempFQ + " ) "
-          params.remove("tempFQ") //remove from GSP access
-        }
-
-        def es_indices = grailsApplication.config.gokb?.es?.indices?.values()
-        log.debug("start to build srb with indices: ${es_indices.join(", ")} query: ${query_str}");
-
-        def search_results = null
-
-        try {
-          SearchRequestBuilder srb = esclient.prepareSearch(es_indices as String[])
-          log.debug("srb built: ${srb} sort=${params.sort}")
-          if (params.sort) {
-            SortOrder order = SortOrder.ASC
-            if (params.order) {
-              order = SortOrder.valueOf(params.order?.toUpperCase())
-            }
-            srb = srb.addSort("${params.sort}".toString(), order)
+        log.debug("srb built: ${searchSourceBuilder} sort=${params.sort}")
+        if (params.sort) {
+          SortOrder order = SortOrder.ASC
+          if (params.order) {
+            order = SortOrder.valueOf(params.order?.toUpperCase())
           }
-          log.debug("srb start to add query and aggregration query string is ${query_str}")
-
-          srb.setQuery(QueryBuilders.queryStringQuery(query_str))//QueryBuilders.wrapperQuery(query_str)
-              .addAggregation(AggregationBuilders.terms('curatoryGroups').size(25).field('curatoryGroups'))
-              .addAggregation(AggregationBuilders.terms('provider').size(25).field('provider'))
-              .setFrom(params.offset)
-              .setSize(params.max)
-
-          // log.debug("finished srb and aggregrations: " + srb)
-          search_results = srb.get()
-          // log.debug("search results: " + search_results)
+          searchSourceBuilder.sort(new FieldSortBuilder("${params.sort}").order(order))
         }
-        catch (Exception ex) {
-          log.error("Error processing ${es_indices.join(", ")} ${query_str}",ex);
-        }
+        log.debug("build searchSourceBuilder and aggregration query string is ${query_str}")
+        searchSourceBuilder.query(QueryBuilders.queryStringQuery(query_str))
+        searchSourceBuilder.from(params.offset)
+        searchSourceBuilder.size(params.max)
 
-        //TODO: change this part to represent what we really need if this is not it, see the final part of this method where hits are done
-        if (search_results) {
-          def search_hits = search_results.getHits()
-          result.hits = search_hits.getHits()
-          result.firstrec = params.offset + 1
-          result.resultsTotal = search_hits.totalHits
-          result.lastrec = Math.min ( params.offset + params.max, result.resultsTotal)
+        searchRequest.source(searchSourceBuilder)
+        searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT)
+      }
+      catch (Exception ex) {
+        log.error("Error occured during Elasticsearch request using query: ${query_str}", ex)
+      }
 
-          if (search_results.getAggregations()) {
-            result.facets = [:]
-            search_results.getAggregations().each { entry ->
-              log.debug("Aggregation entry ${entry} ${entry.getName()}");
-              def facet_values = []
-              entry.buckets.each { bucket ->
-                bucket.each { bi ->
-                  facet_values.add([term:bi.getKey(),display:bi.getKey(),count:bi.getDocCount()])
+      if (searchResponse) {
+        result.hits = searchResponse.getHits()
+        result.firstrec = params.offset + 1
+        result.resultsTotal = searchResponse.getHits().getTotalHits().value ?: 0
+        result.lastrec = Math.min(params.offset + params.max, result.resultsTotal)
+
+        if (searchResponse.getAggregations()) {
+          result.facets = [:]
+          searchResponse.getAggregations().each { entry ->
+            log.debug("Aggregation entry ${entry} ${entry.getName()}")
+            def facet_values = []
+            if (entry.type == 'nested'){
+              entry.getAggregations().each { subEntry ->
+                subEntry.buckets.each { bucket ->
+                  bucketsToFacetValues(bucket, facet_values)
                 }
               }
-              result.facets[entry.getName()] = facet_values
             }
+            else{
+              entry.buckets.each { bucket ->
+                bucketsToFacetValues(bucket, facet_values)
+              }
+            }
+            result.facets[entry.getName()] = facet_values
           }
+          log.debug("Finished results facets.")
         }
-        log.debug("finished results facets")
-      }
-      else {
-        log.debug("No query.. Show search page")
       }
     }
-    finally {
-      try {
-        log.debug("in finally")
-      }
-      catch ( Exception e ) {
-        log.error("problem",e);
-      }
+    else {
+      log.debug("No sufficient query in params ... Show search page")
     }
     result
   }
 
+
+  private void bucketsToFacetValues(def bucket, def facet_values){
+    bucket.each { bi ->
+      String display = "Unknown"
+      if (bi.getKey().startsWith('org.gokb.cred') && KBComponent.get(bi.getKey().split(':')[1].toLong())){
+        display = KBComponent.get(bi.getKey().split(':')[1].toLong()).name
+      }
+      facet_values.add([term: bi.getKey(), display: display, count: bi.getDocCount()])
+    }
+  }
+
+
   def buildQuery(params,field_map) {
-
     log.debug("BuildQuery... with params ${params}. ReverseMap: ${field_map}");
-
     StringWriter sw = new StringWriter()
 
     if ( params?.q != null ){
-      sw.write("name:${params.q}")
+      sw.write("name:${params.q.replaceAll(':','\\\\:')}")
     }
 
     if(params?.rectype){
@@ -223,9 +228,7 @@ class ESSearchService{
     }
 
     field_map.each { mapping ->
-
       if ( params[mapping.key] != null ) {
-
         log.debug("Class is: ${params[mapping.key].class.name}")
 
         if ( params[mapping.key] instanceof String[] ) {
@@ -233,7 +236,6 @@ class ESSearchService{
           if(sw.toString()) sw.write(" AND ");
 
           def plist = params[mapping.key]
-
           plist.eachWithIndex { p, idx ->
             if (p) {
               if (idx == 0){
@@ -247,7 +249,8 @@ class ESSearchService{
               sw.write(p.toString())
               if(idx == plist.size()-1) {
                 sw.write(" ) ")
-              }else{
+              }
+              else{
                 sw.write(" OR ")
               }
             }
@@ -263,17 +266,16 @@ class ESSearchService{
             if ( params[mapping.key].length() > 0 && ! ( params[mapping.key].equalsIgnoreCase('*') ) ) {
 
               def pval = params[mapping.key].replaceAll(":","\\\\:");
-
               log.debug("pval = ${pval}")
 
               if(sw.toString()) sw.write(" AND ");
-
               sw.write(mapping.value)
               sw.write(":")
 
               if(params[mapping.key].startsWith("[") && params[mapping.key].endsWith("]")){
                 sw.write(pval)
-              }else{
+              }
+              else{
                 sw.write(pval)
               }
             }
@@ -292,7 +294,7 @@ class ESSearchService{
     def result = sw.toString();
     log.debug("Result of buildQuery is ${result}");
 
-    result;
+    result
   }
 
   private void checkInt(result, errors, str, String field) {
@@ -301,7 +303,8 @@ class ESSearchService{
       try {
         value = str as Integer
         result[field] = value
-      } catch (Exception e) {
+      }
+      catch (Exception e) {
         errors[field] = "Could not convert ${field} to Int."
       }
     }
@@ -310,8 +313,12 @@ class ESSearchService{
     }
   }
 
+  private String sanitizeParam(String param) {
+    return param.replaceAll(":", "\\\\:").replaceAll("/", "\\\\/")
+  }
+
   private void addDateQueries(query, errors, qpars) {
-    if ( qpars.changedSince || qpars.changedBefore ) {
+    if (qpars.changedSince || qpars.changedBefore) {
       QueryBuilder dateQuery = QueryBuilders.rangeQuery("lastUpdatedDisplay")
 
       if (qpars.changedSince) {
@@ -320,7 +327,7 @@ class ESSearchService{
       if (qpars.changedBefore) {
         dateQuery.lt(qpars.changedBefore)
       }
-      dateQuery.format("yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
+      dateQuery.format("yyyy-MM-dd'T'HH:mm:ss'Z'||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd")
 
       query.must(dateQuery)
     }
@@ -336,7 +343,7 @@ class ESSearchService{
     if (value instanceof String){
       addRefdataToQuery(value, refdataQuery, field)
     }
-    refdataQuery.minimumNumberShouldMatch(1)
+    refdataQuery.minimumShouldMatch(1)
     query.must(refdataQuery)
     return
   }
@@ -348,7 +355,12 @@ class ESSearchService{
     }
     catch (Exception e){
     }
-    refdataQuery.should(QueryBuilders.matchQuery(field, value))
+
+    if (value == 'null') {
+      value = ""
+    }
+
+    refdataQuery.should(QueryBuilders.termQuery(field, value))
   }
 
 
@@ -369,8 +381,9 @@ class ESSearchService{
     if ( val?.trim() ) {
       if (val.contains(',')) {
         id_params['identifiers.namespace'] = val.split(',')[0]
-        id_params['identifiers.value'] = val.split(',')[1]
-      }else{
+        id_params['identifiers.value'] = sanitizeParam(val.split(',')[1])
+      }
+      else{
         id_params['identifiers.value'] = val
       }
 
@@ -381,7 +394,7 @@ class ESSearchService{
 
   private void processNameFields(query, errors, qpars) {
     if (qpars.label) {
-
+      def sanitized_param = sanitizeParam(qpars.label)
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
 
       if (qpars.int('label')) {
@@ -392,58 +405,76 @@ class ESSearchService{
         }
       }
       else {
-        labelQuery.should(QueryBuilders.termQuery('uuid', qpars.label).boost(10))
+        labelQuery.should(QueryBuilders.termQuery('uuid', sanitized_param).boost(10))
       }
 
-      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.label, '"') == 2
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(sanitized_param, '"') == 2
 
       if (doPhraseSearch) {
         log.debug("DO phrase search!")
-        def phraseQry = qpars.label.replace('"', "")
+        def phraseQry = sanitized_param.replace('"', "")
         log.debug("${phraseQry}")
-        labelQuery.should(QueryBuilders.matchPhraseQuery('name', phraseQry).boost(2))
+        labelQuery.should(QueryBuilders.matchPhraseQuery('name', phraseQry).boost(2f))
         labelQuery.should(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        labelQuery.should(QueryBuilders.matchQuery('name', qpars.label).boost(2))
-        labelQuery.should(QueryBuilders.matchQuery('altname', qpars.label).boost(1.3))
-        labelQuery.should(QueryBuilders.matchQuery('suggest', qpars.label).boost(0.6))
+        labelQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
+        labelQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
       }
-      labelQuery.minimumNumberShouldMatch(1)
+
+      labelQuery.minimumShouldMatch(1)
 
       query.must(labelQuery)
     }
     else if (qpars.name) {
-      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.name, '"') == 2
+      def sanitized_param = sanitizeParam(qpars.name)
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(sanitized_param, '"') == 2
 
       if (doPhraseSearch) {
-        def phraseQry = qpars.name.replace('"', "")
+        def phraseQry = sanitized_param.replace('"', "")
         query.must(QueryBuilders.matchPhraseQuery('name', phraseQry))
       }
       else {
-        query.must(QueryBuilders.matchQuery('name', qpars.name))
+        query.must(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND))
       }
     }
     else if (qpars.altname) {
-      boolean doPhraseSearch = StringUtils.countOccurrencesOf(qpars.altname, '"') == 2
+      def sanitized_param = sanitizeParam(qpars.altname)
+      boolean doPhraseSearch = StringUtils.countOccurrencesOf(sanitized_param, '"') == 2
 
       if (doPhraseSearch) {
-        def phraseQry = qpars.altname.replace('"', "")
+        def phraseQry = sanitized_param.replace('"', "")
         query.must(QueryBuilders.matchPhraseQuery('altname', phraseQry))
       }
       else {
-        query.must(QueryBuilders.matchQuery('altname', qpars.altname))
+        query.must(QueryBuilders.matchQuery('altname', sanitized_param).operator(Operator.AND))
       }
     }
     else if (qpars.suggest) {
-      query.must(QueryBuilders.matchQuery('suggest', qpars.suggest).boost(0.6))
+      def sanitized_param = sanitizeParam(qpars.altname)
+      query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(Operator.AND).boost(0.6f))
+    }
+    else if (qpars.qsName) {
+      def sanitized_param = sanitizeParam(qpars.qsName)
+
+      sanitized_param = sanitized_param.replaceAll("[()]", " ")
+
+      QueryBuilder labelQuery = QueryBuilders.boolQuery()
+
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 2f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 1.3f))
+
+      labelQuery.minimumShouldMatch(1)
+
+      query.must(labelQuery)
     }
   }
 
   private void processGenericFields(query, errors, qpars) {
     if (qpars.q?.trim()) {
       QueryBuilder genericQuery = QueryBuilders.boolQuery()
-      def id_params = ['identifiers.value': qpars.q]
+      def id_params = ['identifiers.value': sanitizeParam(qpars.q)]
+      def sanitized_param = sanitizeParam(qpars.q)
 
       if (qpars.int('q')) {
         def oid = KBComponent.get(qpars.int('q'))?.uuid ?: null
@@ -453,49 +484,80 @@ class ESSearchService{
         }
       }
       else {
-        genericQuery.should(QueryBuilders.termQuery('uuid', qpars.q).boost(10))
+        genericQuery.should(QueryBuilders.termQuery('uuid', sanitized_param).boost(10))
       }
 
-      genericQuery.should(QueryBuilders.matchQuery('name', qpars.q).boost(2))
-      genericQuery.should(QueryBuilders.matchQuery('altname', qpars.q).boost(1.3))
-      genericQuery.should(QueryBuilders.matchQuery('suggest', qpars.q).boost(0.6))
-      genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
-      genericQuery.minimumNumberShouldMatch(1)
+      if (qpars.qfields){
+        List allQFields = (requestMapping.generic + requestMapping.refdata + requestMapping.simpleMap.values() +
+                           requestMapping.complex)
+        for (String field in qpars.list('qfields')){
+          if (field == "name") {
+            genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
+          }
+          else if (field == "altname") {
+            genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
+          }
+          else if (field == "suggest") {
+            genericQuery.should(QueryBuilders.matchQuery("suggest").operator(Operator.AND).boost(0.6f))
+          }
+          else if (field in allQFields){
+            genericQuery.should(QueryBuilders.matchQuery(field, sanitized_param).operator(Operator.AND))
+          }
+        }
+      }
+      else{
+        genericQuery.should(QueryBuilders.matchQuery("name", sanitized_param).operator(Operator.AND).boost(2f))
+        genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
+        genericQuery.should(QueryBuilders.matchQuery("suggest", sanitized_param).operator(Operator.AND).boost(0.6f))
+        genericQuery.should(QueryBuilders.nestedQuery('identifiers', addIdQueries(id_params), ScoreMode.Max).boost(10))
+      }
+      genericQuery.minimumShouldMatch(1)
 
       query.must(genericQuery)
     }
   }
 
   private void processLinkedField(query, field, val) {
-    QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-    def finalVal = val
+    if (val?.trim()) {
+      QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+      def sanitized_param = sanitizeParam(val)
+      def finalVal = val
 
-    try {
-      finalVal = KBComponent.get(Long.valueOf(val)).getLogEntityId()
+      try {
+        finalVal = KBComponent.get(Long.valueOf(val)).getLogEntityId()
+      }
+      catch (java.lang.NumberFormatException nfe) {
+      }
+
+      if (finalVal == 'null') {
+        finalVal = ""
+      }
+
+      log.debug("processLinkedField: ${field} -> ${finalVal}")
+
+      linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
+      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), sanitized_param))
+      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), sanitized_param))
+      linkedFieldQuery.minimumShouldMatch(1)
+
+      query.must(linkedFieldQuery)
     }
-    catch (java.lang.NumberFormatException nfe) {
-    }
-
-    log.debug("processLinkedField: ${field} -> ${finalVal}")
-
-    linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
-    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), val))
-    linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), val))
-    linkedFieldQuery.minimumNumberShouldMatch(1)
-
-    query.must(linkedFieldQuery)
   }
 
-  private void addPlatformQuery(query, errors, val) {
+  private void addPlatformQuery(query, errors, String val) {
     QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
 
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformUuid', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', val))
-    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', val))
-    linkedFieldQuery.minimumNumberShouldMatch(1)
+    if (val == 'null') {
+      val = ""
+    }
+
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformUuid', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', sanitizeParam(val)))
+    linkedFieldQuery.minimumShouldMatch(1)
 
     query.must(linkedFieldQuery)
 
@@ -511,6 +573,7 @@ class ESSearchService{
    **/
   def scroll(params) throws Exception{
     def result = [:]
+    def esClient = ESWrapperService.getClient()
     def usedComponentTypes = getUsedComponentTypes(params, result)
     if (result.error){
       return result
@@ -519,65 +582,62 @@ class ESSearchService{
     int scrollSize = 5000
     result.result = "OK"
     result.scrollSize = scrollSize
-    def esClient = ESWrapperService.getClient()
-    def errors = [:]                              // TODO: use errors
 
-    ActionFuture<SearchResponse> response
+    def errors = [:]                              // TODO: use errors
+    SearchResponse searchResponse
     if (!params.scrollId){
       QueryBuilder scrollQuery = QueryBuilders.boolQuery()
-      if (params.component_type){
-        QueryBuilder typeFilter = QueryBuilders.matchQuery("componentType", params.component_type)
-        scrollQuery.must(typeFilter)
+      if (params.component_type || params.componentType) {
+        def final_type = deriveComponentType(params.componentType ?: params.component_type)
+        scrollQuery.must(QueryBuilders.termQuery('componentType', params.component_type))
       }
-
       addDateQueries(scrollQuery, errors, params)
-      addRefdataQuery(scrollQuery, errors, 'status', params.status)
+      specifyQueryWithParams(params, scrollQuery, errors, unknown_fields)
 
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       searchSourceBuilder.query(scrollQuery)
       searchSourceBuilder.size(scrollSize)
       SearchRequest searchRequest = new SearchRequest(usedComponentTypes.values() as String[])
-      searchRequest.scroll("1m")
-      // ... set scroll interval to 1 minute
+      searchRequest.scroll("15m")
       searchRequest.source(searchSourceBuilder)
-      response = esClient.search(searchRequest)
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT)
       result.lastPage = 0
     }
     else{
       SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
-      scrollRequest.scroll("5m")
-      response = esClient.searchScroll(scrollRequest)
+      scrollRequest.scroll("15m")
+      searchResponse = esClient.search(scrollRequest, RequestOptions.DEFAULT)
       try{
         if (params.lastPage && Integer.valueOf(params.lastPage) > -1){
-          result.lastPage = Integer.valueOf(params.lastPage)+1
+          result.lastPage = Integer.valueOf(params.lastPage) + 1
         }
       }
       catch (Exception e){
         log.debug("Could not process page information on scroll request.")
       }
     }
-    result.scrollId = response.actionGet().getScrollId()
-    SearchHit[] searchHits = response.actionGet().getHits().getHits()
+    result.scrollId = searchResponse.getScrollId()
+    SearchHit[] searchHits = searchResponse.getHits()
     result.hasMoreRecords = searchHits.length == scrollSize
     result.records = filterLastUpdatedDisplay(searchHits, params, errors, result)
-    // TODO: remove this after upgrade to Elasticsearch 7
-
     result.size = result.records.size()
     result
   }
 
   private Map getUsedComponentTypes(params, LinkedHashMap<Object, Object> result){
     Map usedComponentTypes = new HashMap()
-    if (!params.component_type){
+    def types = (params.component_type ?: params.componentType)
+
+    if (!types){
       result.result = "ERROR"
-      result.message = "Error. Needs 'component_type' specification."
+      result.message = "Error. Needs 'component_type'/ specification."
     }
 
-    if (params.component_type instanceof String){
-      usedComponentTypes."${params.component_type}" = null
+    if (types instanceof String){
+      usedComponentTypes."${type}" = null
     }
-    else if (params.component_type instanceof List){
-      for (def componentType in params.component_type){
+    else if (types instanceof List){
+      for (def componentType in types){
         usedComponentTypes."${componentType}" = null
       }
     }
@@ -599,7 +659,7 @@ class ESSearchService{
    * TODO: check if this can be removed when having migrated to a higher Elasticsearch version.
    */
   private List<SearchHit> filterLastUpdatedDisplay(SearchHit[] searchHitsArray, params,
-                                               Map<String, Object> errors, Serializable result){
+                                                   Map<String, Object> errors, Serializable result){
     List filteredHits = []
     SimpleDateFormat YYYY_MM_DD = new SimpleDateFormat("yyyy-MM-dd")
     SimpleDateFormat YYYY_MM_DD_HH_mm_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
@@ -646,6 +706,7 @@ class ESSearchService{
     def result = [result: 'OK']
     def search_action = null
     def errors = [:]
+    SearchResponse searchResponse = null
     log.debug("find :: ${params}")
 
     try {
@@ -669,86 +730,48 @@ class ESSearchService{
       }
 
       if( !errors && exactQuery.hasClauses() ) {
-        Client esclient = ESWrapperService.getClient()
-        SearchRequestBuilder es_request =  esclient.prepareSearch("exact")
-
-        es_request.setIndices(grailsApplication.config.gokb.es.indices.values() as String[])
-        es_request.setTypes(grailsApplication.config.globalSearch.types)
-        es_request.setQuery(exactQuery)
+        SearchRequest searchRequest = new SearchRequest(grailsApplication.config?.gokb?.es?.indices?.values() as String[])
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+        searchSourceBuilder.trackTotalHits(true)
+        searchSourceBuilder.query(exactQuery)
+        searchRequest.source(searchSourceBuilder)
 
         checkInt(result, errors, params.max, 'max')
         checkInt(result, errors, params.from, 'offset')
         checkInt(result, errors, params.offset, 'offset')
 
         if (params.max != null) {
-          es_request.setSize(result.max)
+          searchSourceBuilder.size(result.max)
         }
         else {
           result.max = 10
         }
 
         if (params.offset || params.from) {
-          es_request.setFrom(result.offset)
+          searchSourceBuilder.from(result.offset)
         }
         else {
           result.offset = 0
         }
 
-        if (params.sort && params.sort instanceof String) {
-          def sortBy = params.sort
-
-          if (sortBy == "name") {
-            sortBy = "sortname"
-          }
-
-          if (sortBy == "lastUpdated") {
-            sortBy = "lastUpdatedDisplay"
-          }
-
-          if (ESWrapperService.mapping.component.properties[sortBy]?.type == 'text') {
-            errors['sort'] = "Unable to sort by text field ${sortBy}!"
-          }
-          else {
-            FieldSortBuilder sortQry = new FieldSortBuilder(sortBy)
-            SortOrder order = SortOrder.ASC
-
-            if (params.order) {
-              if (params.order.toUpperCase() in ['ASC','DESC']) {
-                order = SortOrder.valueOf(params.order?.toUpperCase())
-              }
-              else {
-                errors['order'] = "Unknown sort order value '${params.order}'!"
-              }
-            }
-
-            sortQry.order(order)
-
-            es_request.addSort(sortQry)
-          }
-        }
+        setSort(params, errors, searchSourceBuilder)
 
         if (!errors) {
-          search_action = es_request.execute()
+          searchRequest.source(searchSourceBuilder)
+          // log.debug("ElasticSearch Query using Java Client API:\n${searchRequest.source().toString()}")
+          searchResponse = ESWrapperService.getClient().search(searchRequest, RequestOptions.DEFAULT)
         }
       }
       else if ( !exactQuery.hasClauses() ){
         errors['params'] = "No valid parameters found"
       }
 
-      def search = null
-
-      if (search_action) {
-        search = search_action.actionGet()
-
-
-        if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
-          search.hits.maxScore = 0;
-        }
-
-        result.count = search.hits.totalHits
+      if (searchResponse) {
+        SearchHits hits = searchResponse.getHits()
+        result.count = hits.totalHits.value
         result.records = []
 
-        search.hits.each { r ->
+        hits.each { r ->
           def response_record = [:]
 
           if (!params.skipDomainMapping) {
@@ -761,12 +784,11 @@ class ESSearchService{
               response_record.score = r.score
             }
 
-            r.source.each { field, val ->
+            r.getSourceAsMap().each { field, val ->
               response_record."${field}" = val
             }
           }
-
-          result.records.add(response_record);
+          result.records.add(response_record)
         }
 
         if (!params.skipDomainMapping) {
@@ -783,21 +805,60 @@ class ESSearchService{
           convertEsLinks(result, params, contextPath)
         }
       }
-    } catch (Exception se) {
+    }
+    catch (Exception se) {
       log.error("Error processing search request", se)
       result = [:]
       result.result = "ERROR"
+      result.status = 500
+      result.messageCode = 'error.search.unknown'
       result.errors = ['unknown': "There has been an unknown error processing the search request!"]
-    } finally {
+    }
+    finally {
       if (errors) {
         result = [:]
+        result.status = 400
         result.result = "ERROR"
+        result.messageCode = 'error.search.input'
         result.errors = errors
       }
     }
-
     result
   }
+
+
+  private void setSort(params, LinkedHashMap<Object, Object> errors, SearchSourceBuilder searchSourceBuilder){
+    if (params.sort && params.sort instanceof String){
+      def sortBy = params.sort
+
+      if (sortBy == "name"){
+        sortBy = "sortname"
+      }
+      else if (sortBy == "lastUpdated"){
+        sortBy = "lastUpdatedDisplay"
+      }
+
+      if (ESWrapperService.mapping.properties[sortBy]?.type == 'text'){
+        errors['sort'] = "Unable to sort by text field ${sortBy}!"
+      }
+      else{
+        FieldSortBuilder sortQry = new FieldSortBuilder(sortBy)
+        SortOrder order = SortOrder.ASC
+
+        if (params.order){
+          if (params.order.toUpperCase() in ['ASC', 'DESC']){
+            order = SortOrder.valueOf(params.order?.toUpperCase())
+          }
+          else{
+            errors['order'] = "Unknown sort order value '${params.order}'!"
+          }
+        }
+        sortQry.order(order)
+        searchSourceBuilder.sort(sortQry)
+      }
+    }
+  }
+
 
   private void specifyQueryWithParams(params, QueryBuilder exactQuery, errors, unknown_fields){
     def platformParam = null
@@ -811,11 +872,11 @@ class ESSearchService{
           if (k == 'id' && params.int('id')) {
             final_val = KBComponent.get(params.int('id'))?.getLogEntityId()
           }
-          exactQuery.must(QueryBuilders.matchQuery(k, final_val))
+          exactQuery.must(QueryBuilders.termQuery(k, final_val))
         }
       }
       else if (requestMapping.simpleMap?.containsKey(k)){
-        exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v))
+        exactQuery.must(QueryBuilders.matchQuery(requestMapping.simpleMap[k], v).operator(Operator.AND))
       }
       else if (requestMapping.linked?.containsKey(k)){
         processLinkedField(exactQuery, requestMapping.linked[k], v)
@@ -849,8 +910,7 @@ class ESSearchService{
             cg_name = cg_by_id.name
           }
         }
-
-        exactQuery.must(QueryBuilders.matchQuery(k, cg_name))
+        exactQuery.must(QueryBuilders.termQuery('curatoryGroups', cg_name))
       }
       else if (requestMapping.dates && k in requestMapping.dates){
         log.debug("Processing date param ${k}")
@@ -881,7 +941,7 @@ class ESSearchService{
         typeQuery.should(QueryBuilders.termQuery('componentType', "DatabaseInstance"))
         typeQuery.should(QueryBuilders.termQuery('componentType', "BookInstance"))
         typeQuery.should(QueryBuilders.termQuery('componentType', "OtherInstance"))
-        typeQuery.minimumNumberShouldMatch(1)
+        typeQuery.minimumShouldMatch(1)
         exactQuery.must(typeQuery)
       }
       else if (component_type){
@@ -916,10 +976,12 @@ class ESSearchService{
         'identifiers': false,
         'altname': false,
         'roles': false,
-        'curatoryGroups': false
+        'curatoryGroups': false,
+        'publisher': false
     ]
 
-    def obj_cls = Class.forName("org.gokb.cred.${record.source.componentType}").newInstance()
+    def recordSource = record.getSourceAsMap()
+    def obj_cls = Class.forName("org.gokb.cred.${recordSource.componentType}").newInstance()
 
     if (obj_cls) {
 
@@ -938,8 +1000,8 @@ class ESSearchService{
 
         def is_curator = true
 
-        if (user && record.source.curatoryGroups?.size() > 0) {
-          is_curator = user?.curatoryGroups?.name.intersect(record.source.curatoryGroups)
+        if (user && recordSource.curatoryGroups?.size() > 0) {
+          is_curator = user?.curatoryGroups?.name.intersect(recordSource.curatoryGroups)
         }
 
         def href = (user?.hasRole('ROLE_EDITOR') && is_curator) || user?.isAdmin() ? base + obj_cls.restPath + "/${rec_id}" : null
@@ -951,7 +1013,9 @@ class ESSearchService{
 
       domainMapping['id'] = rec_id
 
-      record.source.each { field, val ->
+      domainMapping['type'] = obj_cls.niceName
+
+      recordSource.each { field, val ->
         def toSkip = (include_list && !include_list.contains(field)) || (exclude_list?.contains(field))
 
         if (field == "curatoryGroups" && !toSkip) {
@@ -963,6 +1027,12 @@ class ESSearchService{
         else if (field == "identifiers" && !toSkip) {
           domainMapping['_embedded']['ids'] = mapIdentifiers(val)
         }
+        else if (field == "publisherUuid") {
+          domainMapping['_embedded']['publisher'] = []
+          if (val) {
+            domainMapping['_embedded']['publisher'] << [uuid: recordSource['publisherUuid'], name: recordSource['publisherName'], id: recordSource['publisher'].split(':')[1]]
+          }
+        }
         else if (!toSkip && (field == "status" || field == "editStatus")) {
           domainMapping[field] = [id: RefdataCategory.lookup("KBComponent.${field}", val).id, name: val]
         }
@@ -971,7 +1041,7 @@ class ESSearchService{
         }
         else if (esMapping[field] == "refdata" && !toSkip) {
           if (val) {
-            def cat = classExaminationService.deriveCategoryForProperty("org.gokb.cred.${record.source.componentType}", field)
+            def cat = classExaminationService.deriveCategoryForProperty("org.gokb.cred.${recordSource.componentType}", field)
             def rdv = RefdataCategory.lookup(cat, val)
             domainMapping[field] = [id: rdv.id, name:rdv.value]
           }
@@ -1002,7 +1072,8 @@ class ESSearchService{
             else {
               linkedObjects[fieldPath[0]][fieldPath[1]] = val
             }
-          } else {
+          }
+          else {
             domainMapping[fieldPath[0]] = val
           }
         }
@@ -1202,7 +1273,12 @@ class ESSearchService{
     QueryBuilder idQuery = QueryBuilders.boolQuery()
 
     params.each { k,v ->
-      idQuery.must(QueryBuilders.termQuery(k, v))
+      if (v.contains("*")){
+        idQuery.must(QueryBuilders.wildcardQuery(k, v))
+      }
+      else{
+        idQuery.must(QueryBuilders.termQuery(k, v))
+      }
     }
 
     return idQuery
@@ -1212,7 +1288,6 @@ class ESSearchService{
   def destroy() {
     log.debug("Destroy");
   }
-
 
   /**
    * Tunnels the full query string to Elasticsearch and returns the full Elasticsearch result. Only GET operations
@@ -1249,5 +1324,4 @@ class ESSearchService{
       }
     }
   }
-
 }

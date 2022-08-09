@@ -108,6 +108,110 @@ class CuratoryGroupsController {
     render result as JSON
   }
 
+  @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def save() {
+    CuratoryGroup newGroup = null
+    def result = [:]
+    def errors = [:]
+    def reqBody = request.JSON
+    User user = User.get(springSecurityService.principal.id)
+
+    if (reqBody?.name) {
+      try {
+        newGroup = new CuratoryGroup(name: reqBody.name)
+
+        def jsonMap = [:]
+
+        newGroup = restMappingService.updateObject(newGroup, jsonMap, reqBody)
+      }
+      catch (grails.validation.ValidationException ve) {
+        errors = ve.errors
+      }
+    }
+    else {
+      errors = [result: 'ERROR', message:'Missing name for curatory group!', badData:[reqBody]]
+    }
+
+    if (!errors) {
+      if ( newGroup.validate() ) {
+        newGroup.save(flush: true)
+
+        if (!errors) {
+          response.setStatus(201)
+          result = restMappingService.mapObjectToJson(source, params, user)
+        }
+        else {
+          response.setStatus(400)
+          result.errors = errors
+          result.result = 'ERROR'
+        }
+      } else {
+        result = [result: 'ERROR', message: "new curatory group data is not valid", errors: messageService.processValidationErrors(newGroup.errors)]
+        response.setStatus(409)
+        newGroup?.discard()
+      }
+    } else {
+      response.setStatus(400)
+      result.errors = errors
+      result.result = 'ERROR'
+    }
+    render result as JSON
+  }
+
+  @Secured(['ROLE_EDITOR', 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def update() {
+    CuratoryGroup group = CuratoryGroup.get(genericOIDService.oidToId(params.id))
+    def result = [:]
+    def errors = [:]
+    def reqBody = request.JSON
+    def remove = (request.method == 'PUT')
+    User user = User.get(springSecurityService.principal.id)
+
+    if (group) {
+      boolean editable = user.hasRole('ROLE_ADMIN') || group.owner == user
+
+      if (editable) {
+        source = restMappingService.updateObject(group, null, reqBody)
+
+        errors << updateMembers(group, reqBody, remove)
+
+        if (!errors) {
+          if ( group.validate() ) {
+            source = group.merge(flush: true)
+            result = restMappingService.mapObjectToJson(group, params, user)
+          } else {
+            result = [result: 'ERROR', message: "new group data is not valid", errors: messageService.processValidationErrors(group.errors)]
+            response.setStatus(409)
+            group?.discard()
+          }
+        } else {
+          response.setStatus(400)
+          result.errors = errors
+          result.result = 'ERROR'
+        }
+      }
+      else {
+        result.result = 'ERROR'
+        response.setStatus(403)
+        result.message = "User must belong to at least one curatory group of an existing item to make changes!"
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      response.setStatus(404)
+      result.message = "Unable to lookup curatory group by id!"
+    }
+    render result as JSON
+  }
+
+  private updateMembers(group, reqBody, remove) {
+    if (reqBody.members) {
+
+    }
+  }
+
   @Secured("hasAnyRole('ROLE_CONTRIBUTOR', 'ROLE_EDITOR', 'ROLE_ADMIN') and isAuthenticated()")
   def getReviews() {
     def result = [:]
@@ -219,20 +323,31 @@ class CuratoryGroupsController {
   @Secured("hasAnyRole('ROLE_CONTRIBUTOR', 'ROLE_EDITOR', 'ROLE_ADMIN') and isAuthenticated()")
   def getJobs() {
     def result = [:]
-    def max = params.limit ? params.long('limit') : 10
-    def offset = params.offset ? params.long('offset') : 0
+    def max = params.limit ? params.int('limit') : 10
+    def offset = params.offset ? params.int('offset') : 0
     def base = grailsApplication.config.serverURL + "/rest"
     def sort = params._sort ?: null
     def order = params._order ?: null
     def group = CuratoryGroup.get(params.id)
     User user = User.get(springSecurityService.principal.id)
+    def showFinished = params.boolean('showFinished') ?: false
     def errors = [:]
 
     if (group && (group.users.contains(user) || user.isAdmin())) {
-      if (params.boolean('archived') == true) {
+      if (params.boolean('archived') == true || params.boolean('combined') == true) {
         result.data = []
         def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?", [group.id])[0]
         def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ? order by jr.startTime desc", [group.id], [max: max, offset: offset])
+
+        if (params.boolean('combined') == true) {
+          def active_jobs = concurrencyManagerService.getGroupJobs(group.id, max, offset, false)
+
+          hqlTotal += active_jobs._pagination.total
+
+          if (offset == 0) {
+            result.data = active_jobs.data
+          }
+        }
 
         jobs.each { j ->
           def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
@@ -256,7 +371,7 @@ class CuratoryGroupsController {
         ]
       }
       else {
-        result = concurrencyManagerService.getGroupJobs(group.id as int, max, offset)
+        result = concurrencyManagerService.getGroupJobs(group.id, max, offset, showFinished)
       }
     }
 

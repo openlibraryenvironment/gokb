@@ -45,7 +45,7 @@ class Package extends KBComponent {
 
   private static refdataDefaults = [
     "scope"      : "Front File",
-    "listStatus" : "Checked",
+    "listStatus" : "In Progress",
     "breakable"  : "Unknown",
     "consistent" : "Unknown",
     "fixed"      : "Unknown",
@@ -398,7 +398,8 @@ class Package extends KBComponent {
     textDescription: 'Package repository for GOKb',
     query          : " from Package as o ",
     curators       : 'Package.CuratoryGroups',
-    pageSize       : 3
+    pageSize       : 3,
+    uriPath        : '/package'
   ]
 
   /**

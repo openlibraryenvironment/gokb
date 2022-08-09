@@ -3,6 +3,7 @@ package com.k_int
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.JobResult
 import org.gokb.cred.RefdataValue
+import org.gokb.cred.RefdataCategory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -211,6 +212,25 @@ class ConcurrencyManagerService {
     return new ConcurrentHashMap<String, Job>(map)
   }
 
+  public def getActiveImportJobs() {
+    def result = []
+    def allJobs = getJobs()
+    def jobTypes = [
+      RefdataCategory.lookup('Job.Type', 'PackageTitleMatch'),
+      RefdataCategory.lookup('Job.Type', 'KBARTIngest'),
+      RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest'),
+      RefdataCategory.lookup('Job.Type', 'PackageUpdateTipps')
+    ]
+
+    allJobs.each { uuid, value ->
+      if (value.type in jobTypes && value.begun && !value.isDone() && !value.isCancelled()) {
+        result << value
+      }
+    }
+    return result
+  }
+
+
   GrailsApplication grailsApplication
 
   static scope = "singleton"
@@ -276,8 +296,8 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getComponentJobs(def kbc_id, int max = 10, int offset = 0) {
-    return getFilteredJobs("linkedItem", kbc_id, max, offset)
+  public Map getComponentJobs(long kbc_id, int max = 10, int offset = 0, boolean showFinished = false) {
+    return getFilteredJobs("linkedItem", kbc_id, max, offset, showFinished)
   }
 
   /**
@@ -287,8 +307,8 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getUserJobs(long user_id, int max = 10, int offset = 0) {
-    return getFilteredJobs("ownerId", user_id, max, offset)
+  public Map getUserJobs(long user_id, int max = 10, int offset = 0, boolean showFinished = false) {
+    return getFilteredJobs("ownerId", user_id, max, offset, showFinished)
   }
 
   /**
@@ -298,8 +318,8 @@ class ConcurrencyManagerService {
    * @param offset
    * @return List of Jobs
    */
-  public Map getGroupJobs(long group_id, int max = 10, int offset = 0) {
-    return getFilteredJobs("groupId", group_id, max, offset)
+  public Map getGroupJobs(long group_id, int max = 10, int offset = 0, boolean showFinished = false) {
+    return getFilteredJobs("groupId", group_id, max, offset, showFinished)
   }
 
 /**
@@ -310,7 +330,7 @@ class ConcurrencyManagerService {
  * @param offset
  * @return List of Jobs
  */
-  private Map getFilteredJobs(String propertyName, long id, int max = 10, int offset = 0) {
+  private Map getFilteredJobs(String propertyName, id, max, offset, showFinished) {
     def allJobs = getJobs()
     def selected = []
     def result = [:]
@@ -320,11 +340,9 @@ class ConcurrencyManagerService {
       return null
     }
 
-    log.debug("Getting jobs for $propertyName ${id}")
-
     // Filter the jobs.
     allJobs.each { k, v ->
-      if (v.hasProperty(propertyName))
+      if (v.hasProperty(propertyName) && (showFinished || !v.isDone()))
         if ((Integer.isInstance(v[propertyName]) && v[propertyName] == id) ||
             (Map.isInstance(v[propertyName]) && v[propertyName].id == id)) {
           CuratoryGroup cg = CuratoryGroup.get(v.groupId)

@@ -992,18 +992,18 @@ class TitleLookupService {
     the_title
   }
 
-  private TitleInstance addPublisher(publisher_name, TitleInstance ti, user = null, project = null) {
+  public TitleInstance addPublisher(publisher_name, TitleInstance ti, user = null, project = null) {
     if ((publisher_name != null) &&
       (publisher_name.trim().length() > 0)) {
 
-      log.debug("Add publisher \"${publisher_name}\"")
+      log.debug("Add publisher ${publisher_name}")
       Org publisher = Org.findByName(publisher_name)
       def norm_pub_name = Org.generateNormname(publisher_name);
       def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
 
       if (!publisher) {
         // Lookup using norm name.
-        log.debug("Using normname \"${norm_pub_name}\" for lookup")
+        log.debug("Using normname ${norm_pub_name} for lookup")
         publisher = Org.findByNormname(norm_pub_name)
       }
 
@@ -1036,6 +1036,7 @@ class TitleLookupService {
         ti.publisher.add(publisher)
       }
     }
+    ti.save(flush:true)
     ti
   }
 

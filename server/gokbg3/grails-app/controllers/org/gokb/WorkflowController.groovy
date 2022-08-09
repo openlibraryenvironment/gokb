@@ -1,11 +1,16 @@
 package org.gokb
 
-import org.gokb.cred.*
-import org.springframework.security.access.annotation.Secured
-import groovy.json.JsonBuilder
-import groovy.json.JsonSlurper
+import com.k_int.ConcurrencyManagerService
+import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
+
+import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
+
+import org.gokb.cred.*
+import org.springframework.security.access.annotation.Secured
 
 
 class WorkflowController{
@@ -16,6 +21,7 @@ class WorkflowController{
   def componentLookupService
   def packageService
   def dateFormatService
+  def concurrencyManagerService
 
   def actionConfig = [
       'method::deleteSoft'     : [actionType: 'simple'],
@@ -1793,37 +1799,26 @@ class WorkflowController{
 
         if (old_org && neworg && old_org.isEditable()){
           log.debug("Got org to deprecate and neworg...  Process now")
-          // Updating all combo.toComponent
-          // Updating all combo.fromComponent
-          def old_from_combos = Combo.executeQuery("from Combo where fromComponent = ?", [old_org])
-          def old_to_combos = Combo.executeQuery("from Combo where toComponent = ?", [old_org])
+          def timestamp = new Date()
 
-          old_from_combos.each{ oc ->
-            def existing_new = Combo.executeQuery("from Combo where type = ? and fromComponent = ? and toComponent = ?", [oc.type, neworg, oc.toComponent])
+          def updated_from_combos = Combo.executeUpdate('''update Combo as c
+            set c.fromComponent = :neworg
+            where c.fromComponent = :oldorg
+            and c.toComponent != :neworg
+            and not exists (select 1 from Combo as dc where dc.fromComponent = :neworg and dc.toComponent = c.toComponent and dc.type = c.type)''', [oldorg: old_org, neworg: neworg])
+          log.debug("Moved ${updated_from_combos} fromComponents!")
 
-            if (existing_new?.size() == 0 && oc.toComponent != neworg){
-              oc.fromComponent = neworg
-              oc.save(flush: true)
-            }
-            else{
-              log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
-              oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-              oc.save(flush: true)
-            }
-          }
-          old_to_combos.each{ oc ->
-            def existing_new = Combo.executeQuery("from Combo where type = ? and toComponent = ? and fromComponent = ?", [oc.type, neworg, oc.fromComponent])
+          def updated_to_combos = Combo.executeUpdate('''update Combo as c
+            set c.toComponent = :neworg
+            where c.toComponent = :oldorg
+            and c.fromComponent != :neworg
+            and not exists (select 1 from Combo as dc where dc.toComponent = :neworg and dc.fromComponent = c.fromComponent and dc.type = c.type)''', [oldorg: old_org, neworg: neworg])
+          log.debug("Moved ${updated_to_combos} toComponents!")
 
-            if (existing_new?.size() == 0 && oc.fromComponent != neworg){
-              oc.toComponent = neworg
-              oc.save(flush: true)
-            }
-            else{
-              log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
-              oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-              oc.save(flush: true)
-            }
-          }
+          def deleted_combos = Combo.executeUpdate("delete from Combo where fromComponent = :oldorg or toComponent = :oldorg", [oldorg: old_org])
+
+          log.debug("Deleted ${deleted_combos} Combos!")
+
           flash.success = "Org Deprecation Completed".toString()
         }
         else{
@@ -1929,7 +1924,7 @@ class WorkflowController{
       packages_to_update.each{ ptv ->
         def pkgObj = Package.get(ptv.id)
         Boolean curated_pkg = false
-        def is_curator = null
+        def is_curator = []
 
         if (pkgObj && pkgObj.source?.url){
           if (pkgObj.curatoryGroups && pkgObj.curatoryGroups?.size() > 0){
@@ -1938,13 +1933,21 @@ class WorkflowController{
           }
 
           if (pkgObj?.isEditable() && (is_curator || !curated_pkg || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))){
-            def result = packageService.updateFromSource(pkgObj, user)
-
-            if (result == 'OK'){
-              flash.success = "Update successfully started!"
+            Job background_job = concurrencyManagerService.createJob { Job job ->
+              result = packageService.updateFromSource(pkgObj, user, job)
             }
-            else if (result == 'ALREADY_RUNNING'){
-              flash.warning = "Another update is already running. Please try again later."
+
+            background_job.groupId = is_curator?.size() > 0 ? is_curator[0] : null
+            background_job.ownerId = user?.id ?: null
+            background_job.description = "KBART Source ingest (${pkgObj.name})".toString()
+            background_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+            background_job.linkedItem = [name: pkgObj.name, type: "Package", id: pkgObj.id, uuid: pkgObj.uuid]
+            background_job.message("Starting upsert for Package ${pkgObj.name}".toString())
+            background_job.startOrQueue()
+            background_job.startTime = new Date()
+
+            if (background_job.begun){
+              flash.success = "Update successfully started!"
             }
             else{
               flash.error = "There have been errors running the job. Please check Source & Package info."

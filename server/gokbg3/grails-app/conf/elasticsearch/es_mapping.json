@@ -1,226 +1,245 @@
 {
-  "component" : {
-    "dynamic_templates": [
-      {
-        "provider": {
-          "match": "provider*",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "date": {
-          "match": "*Date",
-          "match_mapping_type": "date",
-          "mapping": {
-            "type": "date",
-            "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
-          }
-        }
-      },
-      {
-        "cpname": {
-          "match": "cpname",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "publisher": {
-          "match": "publisher*",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "listStatus": {
-          "match": "listStatus",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "editStatus": {
-          "match": "editStatus",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "global": {
-          "match": "global",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "package": {
-          "match": "tippPackage*",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "title": {
-          "match": "tippTitle*",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "hostPlatform": {
-          "match": "hostPlatform*",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "roles": {
-          "match": "roles",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "curGroups": {
-          "match": "curatoryGroups",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "nominalPlatform": {
-          "match": "nominalPlatform*",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "otherUuids": {
-          "match": "*Uuid",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "scope": {
-          "match": "scope",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "contentType": {
-          "match": "contentType",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "titleType": {
-          "match": "titleType",
-          "match_mapping_type": "string",
-          "mapping": {
-            "type": "keyword"
-          }
-        }
-      },
-      {
-        "lastChangedExternal": {
-          "match": "lastChangedExternal",
-          "match_mapping_type": "date",
-          "mapping": {
-            "type": "date",
-            "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
-          }
-        }
-      },
-      {
-        "publishingDates": {
-          "match": "dateFirst*",
-          "match_mapping_type": "date",
-          "mapping": {
-            "type": "date",
-            "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
-          }
+  "dynamic_templates": [
+    {
+      "provider": {
+        "match": "provider*",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
         }
       }
-    ],
-    "properties" : {
-      "name" : {
-        "type" : "text",
-        "copy_to" : "suggest",
-        "fields" : {
-          "name" : { "type" : "text" },
-          "altname" : { "type" : "text" }
+    },
+    {
+      "date": {
+        "match": "*Date",
+        "match_mapping_type": "date",
+        "mapping": {
+          "type": "date",
+          "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
         }
-      },
-      "identifiers" : {
-        "type" : "nested",
-        "properties": {
-          "namespace": { "type": "keyword"},
-          "namespaceName": { "type": "keyword"},
-          "value": { "type": "keyword"}
-        }
-      },
-      "source" : {
-        "type" : "nested",
-        "properties": {
-          "frequency": { "type": "keyword"},
-          "url": { "type": "keyword"}
-        }
-      },
-      "sortname" : {
-        "type": "keyword"
-      },
-      "componentType" : {
-        "type": "keyword"
-      },
-      "lastUpdatedDisplay" : {
-        "type": "date",
-        "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
-      },
-      "uuid" : {
-        "type": "keyword"
-      },
-      "status" : {
-        "type": "keyword"
-      },
-      "suggest" : {
-        "type" : "text",
-        "analyzer" : "autocomplete",
-        "search_analyzer" : "standard"
       }
+    },
+    {
+      "cpname": {
+        "match": "cpname",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "publisher": {
+        "match": "publisher*",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "listStatus": {
+        "match": "listStatus",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "editStatus": {
+        "match": "editStatus",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "global": {
+        "match": "global",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "package": {
+        "match": "tippPackage*",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "title": {
+        "match": "tippTitle*",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "hostPlatform": {
+        "match": "hostPlatform*",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "roles": {
+        "match": "roles",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "curGroups": {
+        "match": "curatoryGroups",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "nominalPlatform": {
+        "match": "nominalPlatform*",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "otherUuids": {
+        "match": "*Uuid",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "scope": {
+        "match": "scope",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "contentType": {
+        "match": "contentType",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "titleType": {
+        "match": "titleType",
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "lastChangedExternal": {
+        "match": "lastChangedExternal",
+        "match_mapping_type": "date",
+        "mapping": {
+          "type": "date",
+          "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
+        }
+      }
+    },
+    {
+      "publishingDates": {
+        "match": "dateFirst*",
+        "match_mapping_type": "date",
+        "mapping": {
+          "type": "date",
+          "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
+        }
+      }
+    }
+  ],
+  "properties" : {
+    "name" : {
+      "type" : "text",
+      "analyzer" : "custom_chars_analyzer",
+      "search_analyzer" : "custom_chars_analyzer",
+      "copy_to" : "suggest",
+      "fields" : {
+        "name" : { "type" : "text" },
+        "altname" : { "type" : "text" }
+      }
+    },
+    "identifiers" : {
+      "type" : "nested",
+      "properties": {
+        "namespace": {
+          "type":"keyword",
+          "normalizer": "lowercase"
+        },
+        "namespaceName": {
+          "type": "keyword",
+          "normalizer": "lowercase"
+        },
+        "value": {
+          "type": "keyword",
+          "normalizer": "lowercase"
+        }
+      }
+    },
+    "source" : {
+      "type" : "nested",
+      "properties": {
+        "frequency": { "type": "keyword"},
+        "url": { "type": "keyword"}
+      }
+    },
+    "sortname" : {
+      "type": "keyword"
+    },
+    "componentType" : {
+      "type": "keyword"
+    },
+    "lastUpdatedDisplay" : {
+      "type": "date",
+      "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
+    },
+    "uuid" : {
+      "type": "keyword"
+    },
+    "status" : {
+      "type": "keyword"
+    },
+    "suggest" : {
+      "type" : "text",
+      "analyzer" : "autocomplete",
+      "search_analyzer" : "standard"
+    },
+    "primaryUrl" : {
+      "type" : "text",
+      "analyzer" : "url"
+    },
+    "publishedFrom": {
+      "type": "date"
+    },
+    "publishedTo": {
+      "type": "date"
     }
   }
 }

@@ -1,9 +1,13 @@
 package org.gokb
 
 import grails.converters.*
-import org.elasticsearch.action.search.*
-import org.elasticsearch.search.aggregations.AggregationBuilders
-import org.elasticsearch.index.query.*
+import org.opensearch.action.search.*
+import org.opensearch.client.RequestOptions
+import org.opensearch.search.aggregations.AggregationBuilders
+import org.opensearch.index.query.*
+import org.opensearch.search.builder.SearchSourceBuilder
+import org.opensearch.search.sort.FieldSortBuilder
+import org.opensearch.search.sort.SortOrder
 
 class GlobalSearchController {
 
@@ -13,111 +17,91 @@ class GlobalSearchController {
 
   def ESWrapperService
 
-  def index() { 
+  def index() {
     def result = [:]
     def apiresponse = null
 
     def esclient = ESWrapperService.getClient()
+    if ( params.q && params.q.length() > 0) {
+      params.q = params.q.replace('[',"(")
+      params.q = params.q.replace(']',")")
+      params.q = params.q.replace(':',"")
 
-    try {
+      result.max = params.max ? Integer.parseInt(params.max) : 10;
+      result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
 
-      if ( params.q && params.q.length() > 0) {
+      def query_str = buildQuery(params)
+      log.debug("Searching for ${query_str}")
+      log.debug("... using indices ${grailsApplication.config.gokb?.es?.indices?.values().join(", ")}")
+      QueryBuilder esQuery = QueryBuilders.queryStringQuery(query_str)
 
-        // Comment out replacement of ' by " so we can do exact string searching on identifiers - not sure what the use case
-        // was for this anyway. Pls document in comment and re-add if needed.
-        // params.q = params.q.replace('"',"'")
-        params.q = params.q.replace('[',"(")
-        params.q = params.q.replace(']',")")
-        params.q = params.q.replace(':',"")
+      def typing_field = grailsApplication.config.globalSearch.typingField ?: 'componentType'
+      SearchResponse searchResponse
+      SearchRequest searchRequest = new SearchRequest(grailsApplication.config.globalSearch.indices as String[])
+      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
 
-        result.max = params.max ? Integer.parseInt(params.max) : 10;
-        result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
-
-        def query_str = buildQuery(params);
-
-        log.debug("Searching for ${query_str}");
-
-        def typing_field = grailsApplication.config.globalSearch.typingField ?: 'componentType'
-
-        QueryBuilder esQuery = QueryBuilders.queryStringQuery(query_str)
-
-        log.debug("Using indices ${grailsApplication.config.gokb?.es?.indices?.values().join(", ")}")
-
-        SearchRequestBuilder es_request = esclient.prepareSearch("globalSearch")
-            .setIndices(grailsApplication.config.gokb?.es?.indices?.values() as String[])
-            .setTypes(grailsApplication.config.globalSearch.types ?: "component")
-            .setSize(result.max)
-            .setFrom(result.offset)
-            .setQuery(esQuery)
-            .addAggregation(
-              AggregationBuilders.terms('ComponentType').field(typing_field)
-            )
-
-//         def search_action = esclient.search {
-//                        indices grailsApplication.config.globalSearch.indices
-//                        types grailsApplication.config.globalSearch.types
-//                        source {
-//                          from = result.offset
-//                          size = result.max
-//                          query {
-//                            query_string (query: query_str)
-//                          }
-//                          aggregations {
-//                            'Component Type' {
-//                              terms {
-//                                field = typing_field
-//                              }
-//                            }
-//                          }
-//                        }
-//                      }
-
-        def search = es_request.execute().actionGet()
-
-        result.hits = search.hits
-
-        if(search.hits.maxScore == Float.NaN) { //we cannot parse NaN to json so set to zero...
-          search.hits.maxScore = 0;
+      if (params.sort){
+        SortOrder order = SortOrder.ASC
+        if (params.order){
+          order = SortOrder.valueOf(params.order?.toUpperCase())
         }
+        searchSourceBuilder.sort(new FieldSortBuilder("${params.sort}").order(order))
+      }
 
-        result.resultsTotal = search.hits.totalHits
-        // We pre-process the facet response to work around some translation issues in ES
+      searchSourceBuilder.query(QueryBuilders.queryStringQuery(query_str))
+      searchSourceBuilder.aggregation(AggregationBuilders.terms('ComponentType').size(25).field(typing_field))
+      searchSourceBuilder.from(result.offset)
+      searchSourceBuilder.size(result.max)
+      searchRequest.source(searchSourceBuilder)
+      searchResponse = esclient.search(searchRequest, RequestOptions.DEFAULT)
+      result.hits = searchResponse.getHits()
 
-        if ( search.getAggregations() != null ) {
-          result.facets = [:]
-          search.getAggregations().each { entry ->
-            def facet_values = []
-            entry.buckets.each { bucket ->
-                log.debug("Bucket: ${bucket}");
+      result.resultsTotal = searchResponse.getHits().getTotalHits().value ?: 0
+      // We pre-process the facet response to work around some translation issues in ES
+
+      if (searchResponse.getAggregations()) {
+        result.facets = [:]
+        searchResponse.getAggregations().each { entry ->
+          def facet_values = []
+          if(entry.type == 'nested'){
+            entry.getAggregations().each { subEntry ->
+              subEntry.buckets.each { bucket ->
                 bucket.each { bi ->
-                  def displayTerm = (bi.getKey() != 'TitleInstancePackagePlatform' ? bi.getKey() : 'TIPP')
-                  log.debug("Bucket item: ${bi} ${bi.getKey()} ${bi.getDocCount()}");
+                  def displayTerm = (bi.getKey() != 'TitleInstancePackagePlatform' ? bi.getKey() : 'Titles')
+                  log.debug("Bucket item: ${bi} ${bi.getKey()} ${bi.getDocCount()}")
                   facet_values.add([term:bi.getKey(),display:displayTerm,count:bi.getDocCount()])
-                  }
+                }
+              }
             }
-            result.facets[entry.getName()] = facet_values
           }
-        }
-        if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
-          apiresponse = [:]
-          apiresponse.count = result.resultsTotal
-          apiresponse.max = result.max
-          apiresponse.offset = result.offset
-          apiresponse.records = []
-          result.hits.each { r ->
-            def response_record = [:]
-            response_record.id = r.id
-            response_record.score = r.score
-            response_record.name = r.source.name
-            response_record.identifiers = r.source.identifiers
-            response_record.altNames = r.source.altname
-            
-            apiresponse.records.add(response_record);
+          else {
+            entry.buckets.each { bucket ->
+              bucket.each { bi ->
+                def displayTerm = (bi.getKey() != 'TitleInstancePackagePlatform' ? bi.getKey() : 'TIPP')
+                log.debug("Bucket item: ${bi} ${bi.getKey()} ${bi.getDocCount()}");
+                facet_values.add([term: bi.getKey(), display: displayTerm, count: bi.getDocCount()])
+              }
+            }
           }
+          result.facets[entry.getName()] = facet_values
         }
       }
-    }
-    finally {
+      if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
+        apiresponse = [:]
+        apiresponse.count = result.resultsTotal
+        apiresponse.max = result.max
+        apiresponse.offset = result.offset
+        apiresponse.records = []
+        result.hits.each { r ->
+          def response_record = [:]
+          response_record.id = r.id
+          response_record.score = r.score
+          response_record.name = r.getSourceAsMap().name
+          response_record.identifiers = r.getSourceAsMap().identifiers
+          response_record.altNames = r.getSourceAsMap().altname
+          apiresponse.records.add(response_record)
+        }
+      }
     }
 
     withFormat {
@@ -173,7 +157,7 @@ class GlobalSearchController {
             // Write out the mapped field name, not the name from the source
             sw.write(mapping.value)
             sw.write(":")
-  
+
             if(non_analyzed_fields.contains(mapping.value)) {
               sw.write("${params[mapping.key]}")
             }

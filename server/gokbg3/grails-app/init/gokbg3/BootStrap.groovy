@@ -1,11 +1,18 @@
-package gokbg3;
+package gokbg3
 
 import grails.util.Environment
 import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
+import groovy.json.JsonOutput
 import org.apache.commons.collections.CollectionUtils
-import org.gokb.AugmentJob
+import org.opensearch.action.admin.indices.create.CreateIndexRequest
+import org.opensearch.action.admin.indices.get.GetIndexRequest
+import org.opensearch.client.RequestOptions
+import org.opensearch.client.indices.PutMappingRequest
+import org.opensearch.common.xcontent.XContentType
+import org.gokb.AugmentEzbJob
+import org.gokb.AugmentZdbJob
 import org.gokb.AutoUpdatePackagesJob
 import org.gokb.LanguagesService
 
@@ -19,9 +26,6 @@ import org.gokb.cred.*
 
 import com.k_int.apis.A_Api;
 import com.k_int.ConcurrencyManagerService.Job
-import org.elasticsearch.client.IndicesAdminClient
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder
-import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
 
 class BootStrap {
 
@@ -238,7 +242,8 @@ class BootStrap {
         ComponentStatisticService.updateCompStats()
 
         if (Environment.current != Environment.TEST) {
-            AugmentJob.schedule(grailsApplication.config.gokb.augment.cron)
+            AugmentZdbJob.schedule(grailsApplication.config.gokb.zdbAugment.cron)
+            AugmentEzbJob.schedule(grailsApplication.config.gokb.ezbAugment.cron)
             AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron)
         }
 
@@ -994,6 +999,11 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Job.Type', 'RejectTIWithoutIdentifier').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'PlatformCleanup').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'RecalculateStatistics').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'KBARTSourceIngest').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'KBARTIngest').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'KBARTIngestDryRun').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'PackageTitleMatch').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'PackageUpdateTipps').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Technical Support').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Other').save(flush: true, failOnError: true)
@@ -1200,36 +1210,42 @@ class BootStrap {
 
 
     def ensureEsIndices() {
+        def esClient = ESWrapperService.getClient()
         def esIndices = grailsApplication.config.gokb.es.indices?.values()
         for (String indexName in esIndices) {
-            ensureEsIndex(indexName)
+            ensureEsIndex(indexName, esClient)
         }
     }
 
-
-    def ensureEsIndex(String indexName) {
+    def ensureEsIndex(String indexName, def esClient) {
         log.debug("ensureESIndex for ${indexName}");
-        def esclient = ESWrapperService.getClient()
-        IndicesAdminClient adminClient = esclient.admin().indices()
+        def request = new GetIndexRequest().indices(indexName)
 
-        if (!adminClient.prepareExists(indexName).execute().actionGet().isExists()) {
+        if (!esClient.indices().exists(request, RequestOptions.DEFAULT)) {
             log.debug("ES index ${indexName} did not exist, creating..")
-
-            CreateIndexRequestBuilder createIndexRequestBuilder = adminClient.prepareCreate(indexName)
-
+            CreateIndexRequest createRequest = new CreateIndexRequest(indexName)
             log.debug("Adding index settings..")
-            createIndexRequestBuilder.setSettings(ESWrapperService.getSettings().get("settings"))
-            log.debug("Adding index mappings..")
-            createIndexRequestBuilder.addMapping("component", ESWrapperService.getMapping())
+            createRequest.settings(JsonOutput.toJson(ESWrapperService.getSettings().get("settings")), XContentType.JSON)
 
-            CreateIndexResponse indexResponse = createIndexRequestBuilder.execute().actionGet()
+            def indexResponse = esClient.indices().create(createRequest, RequestOptions.DEFAULT)
 
             if (indexResponse.isAcknowledged()) {
                 log.debug("Index ${indexName} successfully created!")
-            } else {
-                log.debug("Index creation failed: ${indexResponse}")
+                PutMappingRequest mappingRequest = new PutMappingRequest(indexName).source(JsonOutput.toJson(ESWrapperService.getMapping()), XContentType.JSON)
+                def mappingResponse = esClient.indices().putMapping(mappingRequest, RequestOptions.DEFAULT)
+
+                if (mappingResponse.isAcknowledged()) {
+                    log.debug("Added mapping for index")
+                }
+                else {
+                    log.error("Unable to add mapping to new index!")
+                }
             }
-        } else {
+            else {
+                log.error("Index creation failed: ${indexResponse}")
+            }
+        }
+        else {
             log.debug("ES index ${indexName} already exists..")
             // Validate settings & mappings
         }

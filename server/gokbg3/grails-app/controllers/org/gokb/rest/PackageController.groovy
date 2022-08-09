@@ -34,7 +34,6 @@ class PackageController {
   def messageService
   def restMappingService
   def packageService
-  def classExaminationService
   def componentLookupService
   def componentUpdateService
   def concurrencyManagerService
@@ -42,7 +41,7 @@ class PackageController {
   def FTUpdateService
   def reviewRequestService
   def titleLookupService
-  def titleHistoryService
+  def TSVIngestionService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -69,14 +68,19 @@ class PackageController {
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }
 
-    result.data?.each { obj ->
-      obj['_links'] << ['tipps': ['href': (base + "/packages/${obj.uuid}/tipps")]]
-      def countTippsParams = [:]
-      countTippsParams.componentType = "TIPP"
-      countTippsParams.tippPackage = obj.uuid
-      countTippsParams.status = "Current"
-      countTippsParams.max = 0
-      obj['_tippCount'] = ESSearchService.find(countTippsParams)?._pagination?.total ?: 0
+    if (result.result == 'ERROR') {
+      response.status = (result.status ?: 500)
+    }
+    else {
+      result.data?.each { obj ->
+        obj['_links'] << ['tipps': ['href': (base + "/packages/${obj.uuid}/tipps")]]
+        def countTippsParams = [:]
+        countTippsParams.componentType = "TIPP"
+        countTippsParams.tippPackage = obj.uuid
+        countTippsParams.status = "Current"
+        countTippsParams.max = 0
+        obj['_tippCount'] = ESSearchService.find(countTippsParams)?._pagination?.total ?: 0
+      }
     }
 
     render result as JSON
@@ -709,16 +713,43 @@ class PackageController {
     log.debug("Jobs for Package: ${obj}")
 
     if (obj) {
-        if (params.boolean('archived') == true) {
-          result.data = []
-          JobsController.filterJobResults('linkedItemId', obj.id, max, offset, result)
-        }
-        else {
-          concurrencyManagerService.getComponentJobs(obj.id, max, offset).each { k, v ->
-            result[k] = v
+      if (params.boolean('archived') == true || params.boolean('combined') == true) {
+        result.data = []
+        def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.linkedItemId = ?", [obj.id])[0]
+        def jobs = JobResult.executeQuery("from JobResult as jr where jr.linkedItemId = ? order by jr.startTime desc", [obj.id], [max: max, offset: offset])
+
+        if (params.boolean('combined') == true) {
+          def active_jobs = concurrencyManagerService.getComponentJobs(obj.id, max, offset, false)
+
+          hqlTotal += active_jobs._pagination.total
+
+          if (offset == 0) {
+            result.data = active_jobs.data
           }
         }
+
+        jobs.each { j ->
+          result.data << [
+            uuid: j.uuid,
+            description: j.description,
+            type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+            linkedItem: [id: obj.id, type: obj.niceName, uuid: obj.uuid, name: obj.name],
+            startTime: j.startTime,
+            endTime: j.endTime,
+            status: j.statusText
+          ]
+        }
+
+        result['_pagination'] = [
+          offset: offset,
+          limit: max,
+          total: hqlTotal
+        ]
       }
+      else {
+        result = concurrencyManagerService.getComponentJobs(obj.id, max, offset, showFinished)
+      }
+    }
     render result as JSON
   }
 
@@ -799,606 +830,148 @@ class PackageController {
     render result as JSON
   }
 
-  @Transactional
-  @Secured(value = ["IS_AUTHENTICATED_ANONYMOUSLY"])
-  def updateTipps() {
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
+  def ingestKbart() {
+    log.debug("Form post")
     def result = ['result': 'OK']
-    def async = params.async ? params.boolean('async') : true
-    def update = request.method == 'PATCH' || (params.addOnly ? params.boolean('addOnly') : false)
-    def request_locale = RequestContextUtils.getLocale(request)
-    def force = params.force ? params.boolean('force') : false
-    def rjson = request.JSON
-    UpdateToken updateToken = null
-    User request_user = null
-    def obj = params.id ? (Package.findByUuid(params.id) ?: Package.get(params.id)) : null
-    def fullsync = false
+    Package pkg = Package.get(params.id)
+    def user = User.get(springSecurityService.principal.id)
 
-    log.debug("updateTipps (${request_locale})")
+    if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
+      DataFile datafile = null
+      def upload_mime_type = request.getFile("submissionFile")?.contentType
+      def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
+      def deposit_token = java.util.UUID.randomUUID().toString()
+      def temp_file = packageService.copyUploadedFile(request.getFile("submissionFile"), deposit_token)
+      CuratoryGroup active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
+      IdentifierNamespace title_ns = params.int('titleIdNamespace') ? IdentifierNamespace.get(params.int('titleIdNamespace')) : null
+      Boolean add_only = params.boolean('addOnly') ?: false
+      Boolean dry_run = params.boolean('dryRun') ?: false
+      def info = packageService.analyseFile(temp_file)
+      def platform_url = pkg.nominalPlatform?.primaryUrl ?: null
+      def pkg_source = pkg.source
+      Boolean async = params.async ? params.boolean('async') : true
 
-    if (obj) {
-      if (springSecurityService.isLoggedIn()) {
-        request_user = User.get(springSecurityService.principal.id)
-      }
-      else if (params.updateToken?.trim()) {
-        updateToken = UpdateToken.findByValue(params.updateToken)
+      log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
+      datafile = DataFile.findByMd5(info.md5sumHex)
 
-        if (updateToken) {
-          request_user = updateToken.updateUser
+      if (!datafile) {
+        log.debug("Create new datafile")
+        DataFile.withNewTransaction {
+          datafile = new DataFile(
+                                          guid:deposit_token,
+                                          md5:info.md5sumHex,
+                                          uploadName:upload_filename,
+                                          name:upload_filename,
+                                          filesize:info.filesize,
+                                          encoding:info.encoding,
+                                          uploadMimeType:upload_mime_type).save()
 
-          if (rjson.packageHeader) {
-            rjson.packageHeader.uuid = updateToken.pkg.uuid
-          }
+          datafile.fileData = temp_file.getBytes()
+          datafile.save(failOnError:true,flush:true)
+          log.debug("Saved new datafile : ${datafile.id} -- ${datafile.uploadName}")
         }
-        else {
-          log.error("Unable to reference update token!")
-          result.message = "Unable to reference update token!"
-          response.status = 400
-          result.result = "ERROR"
-        }
-      }
-      else {
-        response.status = 401
       }
 
-      if (params.fullsync == "true" && request_user?.adminStatus) {
-        fullsync = true
-      }
-
-      if (request_user) {
+      if (datafile) {
         Job background_job = concurrencyManagerService.createJob { Job job ->
-          def json = rjson
-          def job_result = [:]
-          def ctr = 0
-          def errors = []
-
-          Package.withNewSession { session ->
-            def user = User.get(request_user.id)
-            def the_pkg = Package.get(obj.id)
-            def locale = request_locale
-
-            job.ownerId = user.id
-
-            try {
-              def existing_tipps = []
-              def valid = true
-              Boolean curated_pkg = false;
-              def is_curator = null;
-
-              if (the_pkg) {
-                if (the_pkg.curatoryGroups && the_pkg.curatoryGroups?.size() > 0) {
-                  is_curator = user.curatoryGroups?.id.intersect(the_pkg.curatoryGroups?.id)
-
-                  if (is_curator?.size() == 1) {
-                    job.groupId = is_curator[0]
-                  }
-                  else if (is_curator?.size() > 1) {
-                    log.debug("Got more than one cg candidate!")
-                    job.groupId = is_curator[0]
-                  }
-
-                  curated_pkg = true;
-                }
-
-                if (is_curator || !curated_pkg || (user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER') && force))) {
-                  if (the_pkg.tipps?.size() > 0) {
-                    existing_tipps = the_pkg.tipps*.id
-                    log.debug("Matched package has ${the_pkg.tipps.size()} TIPPs")
-                  }
-
-                  Map platform_cache = [:]
-                  log.debug("\n\n\nPackage ID: ${the_pkg.id} / ${json.packageHeader}");
-
-                  // Validate and upsert titles and platforms
-                  json.eachWithIndex { tipp, idx ->
-                    def titleName = null
-                    def tipp_plt_dto = tipp.hostPlatform ?: tipp.platform
-
-                    if (tipp.title instanceof Map) {
-                      def title_validation = TitleInstance.validateDTO(tipp.title, RequestContextUtils.getLocale(request));
-                      titleName = tipp.title.name
-                      valid &= title_validation.valid
-
-                      if (title_validation && !title_validation.valid) {
-                        log.warn("Not valid after title validation ${tipp.title}");
-                        def preval_errors = [
-                            code   : 400,
-                            message: messageService.resolveCode('crossRef.package.tipps.error.title.preValidation', [tipp.title.name, title_validation.errors], locale),
-                            baddata: tipp.title,
-                            idx    : idx,
-                            errors : title_validation.errors
-                        ]
-                        errors.add(preval_errors)
-                      }
-                      else {
-                        def valid_ti = true
-
-                        TitleInstance.withNewSession {
-                          def ti = null
-                          def titleObj = tipp.title
-                          def title_changed = false
-                          def title_class_name = titleLookupService.determineTitleClass(titleObj)
-
-                          try {
-                            ti = titleLookupService.findOrCreate(
-                                titleObj.name,
-                                titleObj.publisher,
-                                titleObj.identifiers,
-                                user,
-                                null,
-                                title_class_name,
-                                titleObj.uuid
-                            )
-
-                            if (ti?.id && !ti.hasErrors()) {
-                              if (titleObj.imprint) {
-                                if (title.imprint?.name == titleObj.imprint) {
-                                  // Imprint already set
-                                }
-                                else {
-                                  def imprint = Imprint.findByName(titleObj.imprint) ?: new Imprint(name: titleObj.imprint).save(flush: true, failOnError: true);
-                                  title.imprint = imprint;
-                                  title_changed = true
-                                }
-                              }
-
-                              // Add the core data.
-                              componentUpdateService.ensureCoreData(ti, titleObj, fullsync, user)
-
-                              title_changed |= componentUpdateService.setAllRefdata([
-                                  'OAStatus', 'medium', 'language',
-                                  'pureOA', 'continuingSeries',
-                                  'reasonRetired'
-                              ], titleObj, ti)
-
-                              def pubFrom = GOKbTextUtils.completeDateString(titleObj.publishedFrom)
-                              def pubTo = GOKbTextUtils.completeDateString(titleObj.publishedTo, false)
-
-                              log.debug("Completed date publishedFrom ${titleObj.publishedFrom} -> ${pubFrom}")
-
-                              title_changed |= ClassUtils.setDateIfPresent(pubFrom, ti, 'publishedFrom')
-                              title_changed |= ClassUtils.setDateIfPresent(pubTo, ti, 'publishedTo')
-
-                              if (titleObj.historyEvents?.size() > 0) {
-                                def he_result = titleHistoryService.processHistoryEvents(ti, titleObj, title_class_name, user, fullsync, locale)
-
-                                if (he_result.errors) {
-                                  result.errors = he_result.errors
-                                }
-                              }
-
-                              if (title_class_name == 'org.gokb.cred.BookInstance') {
-
-                                log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
-                                def mg_change = addMonographFields(ti, titleObj)
-
-                                // TODO: Here we will have to add authors and editors, like addPerson() in TSVIngestionService
-                                if (mg_change) {
-                                  title_changed = true
-                                }
-                              }
-
-                              titleLookupService.addPublisherHistory(ti, titleObj.publisher_history)
-
-                              ti.save(flush: true)
-
-                              tipp.title.internalId = ti.id
-                            }
-                            else {
-                              def errorObj = ['code': 400, 'message': messageService.resolveCode('crossRef.package.tipps.error.title', tipp.title.name, locale), 'baddata': tipp.title]
-                              if (ti != null) {
-                                errorObj.errors = messageService.processValidationErrors(ti.errors)
-                                errors.add(errorObj)
-                                ti.discard()
-                              }
-                              valid_ti = false
-                              valid = false
-                            }
-                          }
-                          catch (grails.validation.ValidationException ve) {
-                            log.error("ValidationException attempting to cross reference title", ve);
-                            valid_ti = false
-                            valid = false
-                            def validation_errors = [
-                                code   : 400,
-                                message: messageService.resolveCode('crossRef.package.tipps.error.title.validation', [tipp?.title?.name], locale),
-                                baddata: tipp,
-                                idx    : idx,
-                                errors : messageService.processValidationErrors(ve.errors)
-                            ]
-                            errors.add(validation_errors)
-                          }
-                          catch (org.gokb.exceptions.MultipleComponentsMatchedException mcme) {
-                            log.debug("Handling MultipleComponentsMatchedException")
-                            valid = false
-                            errors.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.title.error.multipleMatches', [tipp?.title?.name, mcme.matched_ids], locale)])
-                          }
-                        }
-
-                        if (valid_ti && tipp.title.internalId == null) {
-                          log.error("Failed to locate a title for ${tipp?.title} when attempting to create TIPP");
-                          valid = false
-                          errors.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.title', [tipp?.title?.name], locale)])
-                        }
-                      }
-                    }
-                    else {
-                      TitleInstance.withNewSession {
-                        def ti = TitleInstance.get(tipp.title)
-                        tipp.title = [name: ti.name, id: ti.id]
-                        titleName = ti.name
-                      }
-                    }
-
-                    if (tipp_plt_dto instanceof Map) {
-                      def valid_plt = Platform.validateDTO(tipp_plt_dto);
-                      valid &= valid_plt?.valid
-
-                      if (!valid_plt.valid) {
-                        log.warn("Not valid after platform validation ${tipp_plt_dto}");
-
-                        def plt_errors = [
-                            code   : 400,
-                            idx    : idx,
-                            message: messageService.resolveCode('crossRef.package.tipps.error.platform.preValidation', [tipp_plt_dto?.name], locale),
-                            baddata: tipp_plt_dto,
-                            errors : valid_plt.errors
-                        ]
-                        errors.add([])
-                      }
-
-                      if (valid) {
-
-                        def pl = null
-                        def pl_id
-                        if (platform_cache.containsKey(tipp_plt_dto.name) && (pl_id = platform_cache[tipp_plt_dto.name]) != null) {
-                          pl = Platform.get(pl_id)
-                        }
-                        else {
-                          // Not in cache.
-                          try {
-                            pl = Platform.upsertDTO(tipp_plt_dto);
-
-                            if (pl) {
-                              platform_cache[tipp_plt_dto.name] = pl.id
-
-                              componentUpdateService.ensureCoreData(pl, tipp_plt_dto, fullsync)
-                            }
-                            else {
-                              log.error("Could not find/create ${tipp_plt_dto}")
-                              errors.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.platform', [tipp_plt_dto.name], locale)])
-                              valid = false
-                            }
-                          }
-                          catch (grails.validation.ValidationException ve) {
-                            log.error("ValidationException attempting to cross reference title", ve);
-                            valid_plt = false
-                            valid = false
-
-                            def plt_errors = [
-                                code   : 400,
-                                message: messageService.resolveCode('crossRef.package.tipps.error.platform.validation', [tipp_plt_dto], locale),
-                                baddata: tipp_plt_dto,
-                                idx    : idx,
-                                errors : messageService.processValidationErrors(ve.errors)
-                            ]
-                            errors.add(plt_errors)
-                          }
-                        }
-
-                        if (pl && (tipp_plt_dto.internalId == null)) {
-                          tipp_plt_dto.internalId = pl.id;
-                        }
-                        else {
-                          log.warn("No platform arising from ${tipp_plt_dto}");
-                        }
-                      }
-                    }
-
-                    if ((tipp.package == null) && (the_pkg.id)) {
-                      tipp.package = [internalId: the_pkg.id]
-                    }
-                    else {
-                      log.warn("No package");
-                      errors.add(['code': 400, idx: idx, 'message': messageService.resolveCode('crossRef.package.tipps.error.pkgId', [titleName], locale)])
-                      valid = false
-                    }
-
-                    if (idx % 50 == 0) {
-                      cleanUpGorm(session)
-                    }
-                    job.setProgress(idx, json.size() * 2)
-                  }
-                }
-                else {
-                  valid = false
-                  log.warn("Package update denied!")
-                  job_result.result = 'ERROR'
-                  job_result.message = messageService.resolveCode('crossRef.package.error.denied', [the_pkg.name], locale)
-                  return job_result
-                }
-
-
-                int tippctr = 0;
-                if (valid) {
-                  // If valid so far, validate tipps
-                  log.debug("Validating tipps [${tippctr++}]");
-                  json.eachWithIndex { tipp, idx ->
-                    def validation_result = TitleInstancePackagePlatform.validateDTO(tipp, request_locale)
-
-                    if (validation_result && !validation_result.valid) {
-                      log.debug("TIPP Validation failed on ${tipp}")
-                      valid = false
-                      def tipp_errors = [
-                          'code' : 400,
-                          idx    : idx,
-                          message: messageService.resolveCode('crossRef.package.tipps.error.preValidation', [tipp.title.name, validation_result.errors], locale),
-                          baddata: tipp,
-                          errors : validation_result.errors
-                      ]
-                      errors.add(tipp_errors)
-                    }
-
-                    if (idx % 50 == 0) {
-                      cleanUpGorm(session)
-                    }
-                  }
-                }
-                else {
-                  log.warn("Not validating tipps - failed pre validation")
-                }
-
-                if (valid) {
-                  log.debug("\n\nupsert tipp data\n\n")
-                  tippctr = 0
-
-                  def tipps_to_delete = existing_tipps.clone()
-                  def num_removed_tipps = 0;
-                  def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-                  def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-                  def status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-                  def status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-
-                  def tipp_upsert_start_time = System.currentTimeMillis()
-                  def tipp_fails = 0
-
-                  if (json?.size() > 0) {
-                    Package.withNewSession {
-                      def pkg_new = Package.get(the_pkg.id)
-                      def status_ip = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
-
-                      if (pkg_new.status == status_current && pkg_new?.listStatus != status_ip) {
-                        pkg_new.listStatus = status_ip
-                        pkg_new.save(flush: true)
-                      }
-                    }
-                  }
-
-                  // If valid, upsert tipps
-                  json.eachWithIndex { tipp, idx ->
-                    tippctr++
-
-                    log.debug("Upsert tipp [${tippctr}] ${tipp}")
-                    def upserted_tipp = null
-
-                    try {
-                      upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp, user)
-                      log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp?.url}")
-                      upserted_tipp = upserted_tipp?.merge(flush: true)
-
-                      componentUpdateService.ensureCoreData(upserted_tipp, tipp, fullsync)
-                    }
-                    catch (grails.validation.ValidationException ve) {
-                      log.error("ValidationException attempting to cross reference TIPP", ve);
-                      valid = false
-                      tipp_fails++
-                      def tipp_errors = [
-                          code   : 400,
-                          idx    : idx,
-                          message: messageService.resolveCode('crossRef.package.tipps.error.validation', [tipp.title.name], locale),
-                          baddata: tipp,
-                          errors : messageService.processValidationErrors(ve.errors)
-                      ]
-                      errors.add(tipp_errors)
-
-                      if (upserted_tipp)
-                        upserted_tipp.discard()
-                    }
-                    catch (Exception ge) {
-                      log.error("Exception attempting to cross reference TIPP:", ge)
-                      valid = false
-                      tipp_fails++
-                      def tipp_errors = [
-                          code   : 500,
-                          idx    : idx,
-                          message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
-                          baddata: tipp
-                      ]
-                      errors.add(tipp_errors)
-
-                      if (upserted_tipp)
-                        upserted_tipp.discard()
-                    }
-
-                    if (upserted_tipp) {
-                      if (existing_tipps.size() > 0 && upserted_tipp && existing_tipps.contains(upserted_tipp.id)) {
-                        log.debug("Existing TIPP matched!")
-                        tipps_to_delete.remove(upserted_tipp.id)
-                      }
-
-                      if (upserted_tipp && upserted_tipp?.status != status_deleted && tipp.status == "Deleted") {
-                        upserted_tipp.deleteSoft()
-                        num_removed_tipps++;
-                      }
-                      else if (upserted_tipp && upserted_tipp?.status != status_retired && tipp.status == "Retired") {
-                        upserted_tipp.retire()
-                        num_removed_tipps++;
-                      }
-                      else if (upserted_tipp && upserted_tipp.status != status_current && (!tipp.status || tipp.status == "Current")) {
-                        upserted_tipp.setActive()
-                      }
-                    }
-                    else {
-                      log.debug("Could not reference TIPP")
-                      valid = false
-                      tipp_fails++
-                      def tipp_errors = [
-                          code   : 500,
-                          idx    : idx,
-                          message: messageService.resolveCode('crossRef.package.tipps.error', [tipp.title.name], locale),
-                          baddata: tipp
-                      ]
-                      errors.add(tipp_errors)
-                    }
-
-                    if (idx % 50 == 0) {
-                      cleanUpGorm(session)
-                    }
-                    job.setProgress(idx + json.size(), json.size() * 2)
-                  }
-
-                  if (!valid) {
-                    job_result.result = 'ERROR'
-                    job_result.message = "Package was created, but ${tipp_fails} TIPPs could not be created!"
-                  }
-                  else {
-                    if (!update && existing_tipps.size() > 0) {
-
-
-                      tipps_to_delete.eachWithIndex { ttd, idx ->
-
-                        def to_retire = TitleInstancePackagePlatform.get(ttd)
-
-                        if (to_retire?.isCurrent()) {
-                          if (fullsync) {
-                            to_retire.deleteSoft()
-                          }
-                          else {
-                            to_retire.retire()
-                          }
-                          to_retire.save(failOnError: true)
-
-                          num_removed_tipps++;
-                        }
-                        else {
-                          log.debug("TIPP to retire has status ${to_retire?.status?.value ?: 'Unknown'}")
-                        }
-
-                        if (idx % 50 == 0) {
-                          cleanUpGorm(session)
-                        }
-                      }
-                      if (num_removed_tipps > 0) {
-                        reviewRequestService.raise(
-                            the_pkg,
-                            "TIPPs retired.",
-                            "An update to package ${the_pkg.id} did not contain ${num_removed_tipps} previously existing TIPPs.",
-                            user,
-                            null,
-                            null,
-                            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'TIPPs Retired'),
-                            componentLookupService.findCuratoryGroupOfInterest(the_pkg, user)
-                        )
-                      }
-                    }
-                    log.debug("Found ${num_removed_tipps} TIPPS to delete/retire from the matched package!")
-                    job_result.result = 'OK'
-                    the_pkg.refresh()
-                    job_result.message = messageService.resolveCode('crossRef.package.success', [the_pkg.name, tippctr, existing_tipps.size(), num_removed_tipps], locale)
-
-                    Package.withNewSession {
-                      def pkg_obj = Package.get(the_pkg.id)
-                      if (pkg_obj.status.value != 'Deleted') {
-                        pkg_obj.lastUpdateComment = job_result.message
-                        pkg_obj.save(flush: true)
-                      }
-                    }
-
-                    job_result.pkgId = the_pkg.id
-                    job_result.uuid = the_pkg.uuid
-                    log.debug("Elapsed tipp processing time: ${System.currentTimeMillis() - tipp_upsert_start_time} for ${tippctr} records")
-                  }
-                }
-                else {
-                  job_result.result = 'ERROR'
-                  the_pkg.refresh()
-                  job_result.message = messageService.resolveCode('crossRef.package.error.tipps', [the_pkg.name], locale)
-                  log.warn("Not loading tipps - failed validation")
-
-                  if (the_pkg) {
-                    def additionalInfo = [:]
-
-                    if (errors.global.size() > 0 || errors.size() > 0) {
-                      additionalInfo.errorObjects = errors
-                    }
-
-                    reviewRequestService.raise(
-                        the_pkg,
-                        "Invalid TIPPs.",
-                        "An update for this package failed because of invalid TIPP information (JOB ${job.uuid}).",
-                        user,
-                        null,
-                        (additionalInfo as JSON).toString(),
-                        RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Invalid TIPPs')
-                    )
-                  }
-                }
-              }
-              else {
-                job_result.result = 'ERROR'
-                errors.global.add(['code': 400, 'message': message.resolveCode('crossRef.package.error', null, locale)])
-              }
-            }
-            catch (Exception e) {
-              log.error("Package Crossref failed with Exception", e)
-              job_result.result = "ERROR"
-              job_result.message = "Package referencing failed with exception!"
-              job_result.code = 500
-              errors.global.add([code: 500, message: messageService.resolveCode('crossRef.package.error.unknown', [e], locale), data: json.packageHeader])
-            }
-            cleanUpGorm(session)
-          }
-
-          job.message(job_result.message.toString())
-          job.setProgress(100)
-          job.endTime = new Date()
-
-          if (errors.global.size() > 0 || errors.size() > 0) {
-            job_result.errors = errors
-          }
-
-          return job_result
+          TSVIngestionService.updatePackage(pkg,
+                                            datafile,
+                                            title_ns,
+                                            async,
+                                            add_only,
+                                            user,
+                                            active_group,
+                                            dry_run,
+                                            job)
         }
-        log.debug("Starting job ${background_job}..")
 
-        background_job.description = "Package CrossRef (${obj.name})"
-        background_job.type = RefdataCategory.lookupOrCreate('Job.Type', 'PackageCrossRef')
+        if (active_group) {
+          background_job.groupId = active_group.id
+        }
+        background_job.ownerId = user.id
+        background_job.description = "KBART REST ingest (${pkg.name})".toString()
+        background_job.type = RefdataCategory.lookup('Job.Type', (dry_run ? 'KBARTIngestDryRun' : 'KBARTIngest'))
+        background_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+        background_job.message("Starting upsert for Package ${pkg.name}".toString())
         background_job.startOrQueue()
         background_job.startTime = new Date()
 
-        if (async == false) {
-          result = background_job.get()
+        if (async) {
+          result.jobId = background_job.uuid
         }
         else {
-          result.job_id = background_job.uuid
+          result.job_result = background_job.get()
         }
       }
-      else if (request_user) {
-        log.debug("Not ingesting package without name!")
-        result.result = "ERROR"
-        result.message = messageService.resolveCode('crossRef.package.error.name', [], request_locale)
-        result.errors = [name: [[message: messageService.resolveCode('crossRef.package.error.name', null, request_locale), baddata: null]]]
-        response.status = 400
+      else {
+        log.debug("Unable to reference DataFile!")
+        result.result = 'ERROR'
+        response.status = 500
+        result.message = "There has been an error processing the KBART file!"
+      }
+    }
+    else if (!pkg) {
+      response.status = 404
+      result.result = 'ERROR'
+      result.message = "Unable to reference package!"
+    }
+    else {
+      result.result = 'ERROR'
+      response.status = 403
+      result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+    }
+
+    render result as JSON
+  }
+
+  @Transactional
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
+  def triggerSourceUpdate() {
+    def result = ['result': 'OK']
+    def active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
+    def async = params.async ? params.boolean('async') : true
+    Package pkg = Package.get(params.id)
+    def user = User.get(springSecurityService.principal.id)
+
+    if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
+      Job background_job = concurrencyManagerService.createJob { Job job ->
+        packageService.startSourceUpdate(pkg, user, job, active_group)
+      }
+
+      background_job.groupId = active_group.id
+      background_job.ownerId = user?.id ?: null
+      background_job.description = "KBART Source ingest (${pkg.name})".toString()
+      background_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+      background_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+      background_job.message("Starting upsert for Package ${pkg.name}".toString())
+      background_job.startOrQueue()
+      background_job.startTime = new Date()
+
+      if (async) {
+        result.jobId = background_job.uuid
       }
       else {
-        log.debug("Unable to reference user!")
+        def job_result = background_job.get()
+        result = job_result
       }
+    }
+    else if (!pkg) {
+      response.status = 404
+      result.result = 'ERROR'
+      result.message = "Unable to reference package!"
+    }
+    else {
+      result.result = 'ERROR'
+      response.status = 403
+      result.message = "User must belong to at least one curatory group of an existing package to make changes!"
     }
 
     render result as JSON
   }
 
   private def cleanUpGorm(session) {
-    log.debug("Clean up GORM");
+    log.debug("Clean up GORM")
 
     // flush and clear the session.
     session.flush()

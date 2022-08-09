@@ -65,7 +65,7 @@ class TitleAugmentService {
                 editorialGroup
               )
             }
-            else {
+            else if (new_id) {
               log.debug("Adding new ZDB-ID ${new_id}")
               new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
 
@@ -83,6 +83,9 @@ class TitleAugmentService {
                 it.status = status_closed
                 it.save()
               }
+            }
+            else {
+              log.error("Unable to get ZDB-ID to link!")
             }
           }
 
@@ -230,7 +233,7 @@ class TitleAugmentService {
           ezbId = EzbAPIService.getJourId(ezbCandidates[0])
           def newOrExistingEzbId = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
           new Combo(fromComponent: titleInstance, toComponent: newOrExistingEzbId, type: comboTypeId).save(flush: true, failOnError: true)
-          log.debug("Added new EZB-ID ${newOrExistingEzbId} .")
+          log.info("Added new EZB-ID ${newOrExistingEzbId} .")
         }
         else if (ezbCandidates.size() == 0){
           // no EZB match ==> raise ReviewRequest with type Information
@@ -477,54 +480,58 @@ class TitleAugmentService {
         }
       }
     }
+    the_title.save(flush: true)
     the_title
   }
 
-  def TitleInstance addPublisher (publisher_name, ti, user = null, project = null) {
+  public void addPublisher (publisher_name, ti, boolean create = false) {
     if (publisher_name != null && publisher_name.trim()) {
-      log.debug("Add publisher \"${publisher_name}\"")
+      log.debug("Add publisher ${publisher_name}")
       Org publisher = Org.findByName(publisher_name)
-      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-      def norm_pub_name = Org.generateNormname(publisher_name)
+      def norm_pub_name = Org.generateNormname(publisher_name);
+      def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
 
       if (!publisher) {
         // Lookup using norm name.
-        log.debug("Using normname \"${norm_pub_name}\" for lookup")
+        log.debug("Using normname ${norm_pub_name} for lookup")
         publisher = Org.findByNormname(norm_pub_name)
       }
 
       if (!publisher || publisher.status == status_deleted) {
         def variant_normname = GOKbTextUtils.normaliseString(publisher_name)
-        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status <> ?", [variant_normname, status_deleted])
-
+        def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = ? and o.status != ?", [variant_normname, status_deleted])
         if (candidate_orgs.size() == 1) {
           publisher = candidate_orgs[0]
-        }
-        else if (candidate_orgs.size() == 0) {
-          publisher = new Org(name: publisher_name, normname: norm_pub_name).save(flush: true, failOnError: true)
-        }
-        else {
-          log.error("Unable to match unique pub")
+        } else {
+          log.debug("Unable to match unique pub ${publisher_name}")
         }
       }
 
-      // Found a publisher.
-      if (publisher) {
-        log.debug("Found publisher ${publisher}")
-        def orgs = ti.getPublisher()
+      log.debug("Found publisher ${publisher}")
+      def orgs = ti.getPublisher()
+      log.debug("Check for dupes in ${orgs}")
 
-        // Has the publisher ever existed in the list against this title.
-        if (!orgs.contains(publisher)) {
-
-          // First publisher added?
-          boolean not_first = orgs.size() > 0
-
-          // Added a publisher?
-          ti.changePublisher(publisher)
-        }
+      if (publisher && !orgs.contains(publisher)) {
+        ti.publisher.add(publisher)
+        log.debug("Added new publisher ..")
+      } else {
+        log.debug("Not adding dupe")
       }
     }
+    else {
+      log.debug("Not adding empty string..")
+    }
+  }
 
-    ti
+  public void addIdentifiers(ids, ti) {
+    ids.each { new_id ->
+      def existing_combo = Combo.executeQuery("from Combo where fromComponent = ? and toComponent = ?", [ti, new_id])
+
+      if (existing_combo.size() == 0) {
+        ti.ids.add(new_id)
+      } else {
+        log.debug("Not adding duplicate ID ${new_id}..")
+      }
+    }
   }
 }

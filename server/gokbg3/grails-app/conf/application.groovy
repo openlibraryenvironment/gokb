@@ -568,7 +568,8 @@ globalSearchTemplates = [
         [heading:'Type', qpEquiv:'qp_title_id', property:'title?.medium?.value'],
         [heading:'Package', qpEquiv:'qp_pkg_id', property:'pkg?.name', link:[controller:'resource',action:'show',id:'x.r.pkg?.class?.name+\':\'+x.r.pkg?.id'] ],
         [heading:'Platform', qpEquiv:'qp_plat_id', property:'hostPlatform?.name', link:[controller:'resource',action:'show',id:'x.r.hostPlatform?.class?.name+\':\'+x.r.hostPlatform?.id'] ],
-        [heading:'Status', property:'status?.value', sort:'status']
+        [heading:'Status', property:'status?.value', sort:'status'],
+        [heading:'Last Updated', property:'lastUpdated',sort:'lastUpdated']
       ]
     ]
   ],
