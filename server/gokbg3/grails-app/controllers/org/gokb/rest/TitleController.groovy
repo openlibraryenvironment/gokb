@@ -61,18 +61,27 @@ class TitleController {
       def start_es = LocalDateTime.now()
       result = ESSearchService.find(params, null, user)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+
+      if (result.result == 'ERROR') {
+        response.status = (result.status ?: 500)
+      }
     }
     else {
-
       if (type) {
         def start_db = LocalDateTime.now()
         result = componentLookupService.restLookup(user, type, params)
         log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+
+        if (result.result == 'ERROR') {
+          response.status = (result.status ?: 500)
+        }
       }
       else {
         result.errors = [
           [message: "Unrecognized type ${params.type}", code: 400, result:"ERROR"]
         ]
+
+        response.status = 400
       }
     }
 

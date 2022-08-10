@@ -1138,9 +1138,10 @@ where cp.owner = :c
     def result = null
     if (name.trim().size() != 0) {
       def normname = generateNormname(name)
+      def status_deleted = RefdataCategory.lookup(RD_STATUS, STATUS_DELETED)
 
       // Check that name is not already a name or a variant, if so, add it.
-      def existing_component = this.class.findByNormname(normname)
+      def existing_component = this.class.findByNormnameAndStatusNotEqual(normname, status_deleted)
 
       if (existing_component == null) {
 
