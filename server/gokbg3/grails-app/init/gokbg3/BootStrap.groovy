@@ -6,10 +6,11 @@ import grails.core.GrailsApplication
 import grails.converters.JSON
 import groovy.json.JsonOutput
 import org.apache.commons.collections.CollectionUtils
-import org.elasticsearch.client.indices.CreateIndexRequest
-import org.elasticsearch.client.indices.GetIndexRequest
-import org.elasticsearch.client.RequestOptions
-import org.elasticsearch.common.xcontent.XContentType
+import org.opensearch.action.admin.indices.create.CreateIndexRequest
+import org.opensearch.action.admin.indices.get.GetIndexRequest
+import org.opensearch.client.RequestOptions
+import org.opensearch.client.indices.PutMappingRequest
+import org.opensearch.common.xcontent.XContentType
 import org.gokb.AugmentEzbJob
 import org.gokb.AugmentZdbJob
 import org.gokb.AutoUpdatePackagesJob
@@ -25,7 +26,6 @@ import org.gokb.cred.*
 
 import com.k_int.apis.A_Api;
 import com.k_int.ConcurrencyManagerService.Job
-import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
 
 class BootStrap {
 
@@ -1217,24 +1217,32 @@ class BootStrap {
         }
     }
 
-
     def ensureEsIndex(String indexName, def esClient) {
         log.debug("ensureESIndex for ${indexName}");
-        GetIndexRequest request = new GetIndexRequest(indexName)
+        def request = new GetIndexRequest().indices(indexName)
+
         if (!esClient.indices().exists(request, RequestOptions.DEFAULT)) {
             log.debug("ES index ${indexName} did not exist, creating..")
             CreateIndexRequest createRequest = new CreateIndexRequest(indexName)
             log.debug("Adding index settings..")
             createRequest.settings(JsonOutput.toJson(ESWrapperService.getSettings().get("settings")), XContentType.JSON)
-            log.debug("Adding index mappings..")
-            createRequest.mapping(JsonOutput.toJson(ESWrapperService.getMapping()), XContentType.JSON)
 
-            CreateIndexResponse indexResponse = esClient.indices().create(createRequest, RequestOptions.DEFAULT)
+            def indexResponse = esClient.indices().create(createRequest, RequestOptions.DEFAULT)
+
             if (indexResponse.isAcknowledged()) {
                 log.debug("Index ${indexName} successfully created!")
+                PutMappingRequest mappingRequest = new PutMappingRequest(indexName).source(JsonOutput.toJson(ESWrapperService.getMapping()), XContentType.JSON)
+                def mappingResponse = esClient.indices().putMapping(mappingRequest, RequestOptions.DEFAULT)
+
+                if (mappingResponse.isAcknowledged()) {
+                    log.debug("Added mapping for index")
+                }
+                else {
+                    log.error("Unable to add mapping to new index!")
+                }
             }
             else {
-                log.debug("Index creation failed: ${indexResponse}")
+                log.error("Index creation failed: ${indexResponse}")
             }
         }
         else {

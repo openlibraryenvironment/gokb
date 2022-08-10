@@ -139,7 +139,7 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
       'hostPlatform'   : plt.id,
       'url'            : null,
       'status'         : "Current",
-      'name'           : book.name,
+      'name'           : "Test TIPP idmatch",
       'editStatus'     : "Approved",
       'language'       : 'ger',
       'publicationType': "Monograph",

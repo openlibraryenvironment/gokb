@@ -939,7 +939,8 @@ class TitleInstancePackagePlatform extends KBComponent {
       textDescription: 'TIPP repository for GOKb',
       pkg            : 'Package.Tipps',
       query          : " from TitleInstancePackagePlatform as o ",
-      pageSize       : 10
+      pageSize       : 10,
+      uriPath        : '/package-title'
   ]
 
   /**

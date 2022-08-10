@@ -39,6 +39,10 @@ class ReviewsController {
     User user = User.get(springSecurityService.principal.id)
     result = componentLookupService.restLookup(user, ReviewRequest, params)
 
+    if (result.result == 'ERROR') {
+      response.status = (result.status ?: 500)
+    }
+
     render result as JSON
   }
 

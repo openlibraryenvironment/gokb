@@ -168,7 +168,6 @@ environments:
                 cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
                 breakInMs: 1000
             es:
-                cluster: gokbg3-dev
                 host: localhost
                 ports:
                     - 9200
@@ -222,7 +221,6 @@ environments:
                 cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
                 breakInMs: 1000
             es:
-                cluster: gokbg3-test
                 host: localhost
                 ports:
                     - 9200
@@ -286,7 +284,6 @@ environments:
             ygorUrl: null
             languagesUrl : null
             es:
-                cluster: gokbg3-prod
                 host: localhost
                 ports:
                     - 9200

@@ -252,7 +252,7 @@ class IdentifierController {
     }
 
     if (params.q?.trim()) {
-      nss = nss.collect { it.name.startsWith(params.q.trim()) }
+      nss = nss.findAll { it.name.startsWith(params.q.trim()) }
     }
 
     nss.each { ns ->

@@ -33,7 +33,7 @@ class GlobalController {
     def base = grailsApplication.config.serverURL + "/rest"
     def cobj = setType(params)
     User user = null
-    
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
@@ -49,6 +49,10 @@ class GlobalController {
       def start_db = LocalDateTime.now()
       result = componentLookupService.restLookup(user, cobj, params)
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+    }
+
+    if (result.result == 'ERROR') {
+      response.status = (result.status ?: 500)
     }
 
     render result as JSON
