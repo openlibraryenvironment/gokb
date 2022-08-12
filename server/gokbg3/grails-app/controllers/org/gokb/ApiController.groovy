@@ -404,7 +404,7 @@ class ApiController {
       result.result = "ERROR"
       result.message = e.message
       result.cause = e.cause
-      log.error("Could not process scroll request. Exception was: ${e.message}")
+      log.error("Could not process scroll request. Exception was: ${e.message}", e)
       response.setStatus(400)
     }
     render result as JSON
