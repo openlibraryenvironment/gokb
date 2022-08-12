@@ -49,6 +49,10 @@ class AugmentZdbJob{
         }
         cleanUpGorm()
         offset += batchSize
+
+        if (Thread.currentThread().isInterrupted()) {
+          break
+        }
       }
       log.info("Finished ZDB augment job, augmenting ${count_journals_without_zdb_id} Journals.")
     }

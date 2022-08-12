@@ -178,7 +178,7 @@ class TippService {
 
   def matchPackage(Package aPackage, def job = null) {
     log.debug("Matching titles for package ${aPackage}")
-    def result = [matched: 0, created: 0, result: 'OK']
+    def result = [matched: 0, created: 0, unmatched: 0, result: 'OK']
     def more = true
     int offset = 0
 
@@ -319,10 +319,11 @@ class TippService {
       log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
     else {
-      log.debug("Changing")
+      log.debug("Unable to match title!")
       if (pkg.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
         pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
       }
+      result = 'unmatched'
     }
 
     if (found.matches?.size() > 0 || found.conflicts?.size() > 0)

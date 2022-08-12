@@ -519,7 +519,6 @@ class ESSearchService{
     def vals = val instanceof String ? [val] : val
 
     vals.each {
-      log.info("${it}")
       if (it?.trim()) {
         QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
         def sanitized_param = sanitizeParam(it)
