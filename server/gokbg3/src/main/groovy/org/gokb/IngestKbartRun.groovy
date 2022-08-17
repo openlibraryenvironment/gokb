@@ -550,7 +550,8 @@ class IngestKbartRun {
       lastSeen: ingest_systime,
       identifiers: identifiers,
       pkg: [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
-      hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name]
+      hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name],
+      paymentType: the_kbart.access_type
     ]
 
     if (isUpdate || !tipp_map.importId) {

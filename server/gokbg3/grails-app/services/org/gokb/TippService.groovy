@@ -838,7 +838,14 @@ class TippService {
 
     ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
     ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
-    ClassUtils.setRefdataIfPresent(tippInfo.publicationType, tipp, 'publicationType')
+    ClassUtils.setRefdataIfPresent(tippInfo.paymentType, tipp, 'paymentType')
+
+    if (tippInfo.paymentType in ['F', 'OA', 'Free']) {
+      tipp.paymentType = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", "OA")
+    } else if (tippInfo.paymentType in ['P', 'Paid']) {
+      tipp.paymentType = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", "Paid")
+    }
+
     tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippInfo.publicationType ?: tippInfo.type ?: tipp.publicationType.value)
     tipp.save(flush:true)
   }
