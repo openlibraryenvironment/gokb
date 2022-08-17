@@ -787,8 +787,7 @@ class IngestKbartRun {
       'online_identifier',
       'title_url',
       'title_id',
-      'publication_type',
-      'access_type'
+      'publication_type'
     ]
 
     for (mc in mandatoryColumns) {
