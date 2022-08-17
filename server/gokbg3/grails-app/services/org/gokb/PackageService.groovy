@@ -1568,7 +1568,7 @@ class PackageService {
   def synchronized updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
     log.debug("updateFromSource ${p.name}")
     def result = null
-    def activeJobs = concurrencyManagerService.activeImportJobs
+    def activeJobs = concurrencyManagerService.getComponentJobs(p.id)
 
     if (activeJobs.size() == 0) {
       log.debug("UpdateFromSource started")

@@ -25,7 +25,7 @@ class AutoUpdatePackagesJob {
           "p.source.automaticUpdates = true " +
           "and p.status != ?" +
           "and (p.source.lastRun is null or p.source.lastRun < current_date)",[status_deleted])
-      updPacks.each { Package p ->
+      for (p in Package) { ->
         if (p.source.needsUpdate() == true) {
           def result = packageService.updateFromSource(p)
           log.debug("Result of update: ${result}")
@@ -34,6 +34,14 @@ class AutoUpdatePackagesJob {
         }
         else {
           log.debug("Skip package ${p.name} -> ${p.source.lastRun} ${p.source.needsUpdate()}")
+        }
+
+        def session = sessionFactory.currentSession
+        session.flush()
+        session.clear()
+
+        if (Thread.currentThread().isInterrupted()) {
+          break
         }
       }
       log.info("auto update packages job completed.")
