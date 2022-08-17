@@ -105,6 +105,7 @@ class ESSearchService{
       "DatabaseInstance" : "gokbtitles",
       "OtherInstance" : "gokbtitles",
       "BookInstance" : "gokbtitles",
+      "TitleInstance": "gokbtitles",
       "TitleInstancePackagePlatform" : "gokbtipps",
       "Org" : "gokborgs",
       "Package" : "gokbpackages",

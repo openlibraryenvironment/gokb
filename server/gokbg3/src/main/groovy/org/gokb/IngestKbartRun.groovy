@@ -105,6 +105,10 @@ class IngestKbartRun {
     long start_time = System.currentTimeMillis()
     log.debug("Got Datafile ${datafile?.uploadName}")
 
+    if (job && !job.startTime) {
+      job.startTime = new Date()
+    }
+
     status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
     status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
@@ -158,7 +162,7 @@ class IngestKbartRun {
 
         String[] header = csv.readNext()
 
-        header = header.collect { it.trim() }
+        header = header.collect { it.trim().toLowerCase() }
 
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                                 'from TitleInstancePackagePlatform as tipp, Combo as c '+
@@ -228,7 +232,7 @@ class IngestKbartRun {
           }
         }
 
-        if (result.reult != 'CANCELLED' && dryRun) {
+        if (result.result != 'CANCELLED' && dryRun) {
           result.titleMatch = titleMatchStats
         }
 
@@ -237,7 +241,7 @@ class IngestKbartRun {
         }
         else {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
-          if (!dryRun && result.reult != 'CANCELLED') {
+          if (!dryRun && result.result != 'CANCELLED') {
             try {
               // Find all tipps in this package which have a lastSeen before the ingest date
               def retire_pars = [
@@ -328,7 +332,7 @@ class IngestKbartRun {
       }
       else if (running_jobs.data?.size() > 1) {
         result.result = 'ERROR'
-        reult.messageCode = 'kbart.errors.alreadyRunning'
+        result.messageCode = 'kbart.errors.alreadyRunning'
         result.messages.add('An import job for this package is already in progress!')
       }
     }

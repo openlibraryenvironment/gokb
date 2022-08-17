@@ -532,11 +532,17 @@ class PackageService {
         currentPkgNum++
 
         if (pkg && !cancelled) {
-          int total = TitleInstancePackagePlatform.executeQuery("select count(*) from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])[0]
+          int total = TitleInstancePackagePlatform.executeQuery('''select count(*) from TitleInstancePackagePlatform as tipp
+                                                                  where tipp.status in (:tippStatus)
+                                                                  and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)''',
+                                                                  [tippStatus: tipp_status, pkg: pkg])[0]
           int currentOffset = 0
 
           while (currentOffset < total) {
-            def tipps = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as tipp where tipp.status in (:tippStatus) and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)", [tippStatus: tipp_status, pkg: pkg])
+            def tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
+                                                                    where tipp.status in (:tippStatus)
+                                                                    and exists (select c from Combo as c where c.fromComponent = :pkg and c.toComponent = tipp)''',
+                                                                    [tippStatus: tipp_status, pkg: pkg])
 
             tipps.each { tipp ->
               def inRange = true
@@ -1565,7 +1571,7 @@ class PackageService {
     input.close()
   }
 
-  def synchronized updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
+  def updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
     log.debug("updateFromSource ${p.name}")
     def result = null
     def activeJobs = concurrencyManagerService.getComponentJobs(p.id)
@@ -1581,7 +1587,7 @@ class PackageService {
     result
   }
 
-  private def startSourceUpdate(Package pkg, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
+  private def startSourceUpdate(pkg, user, job, activeGroup) {
     log.debug("Source update start..")
     def result = [result: 'OK']
 
@@ -1592,6 +1598,10 @@ class PackageService {
       def pkg_source = p.source
       def preferred_group = activeGroup ?: (p.curatoryGroups?.size() > 0 ? CuratoryGroup.deproxy(p.curatoryGroups[0]) : null)
       def title_ns = pkg_source.targetNamespace ?: (p.provider?.titleNamespace ?: null)
+
+      if (job && !job.startTime) {
+        job.startTime = new Date()
+      }
 
       if (pkg_source?.url) {
         def src_url = null
@@ -2083,13 +2093,15 @@ class PackageService {
   }
 
 
-  def synchronized cachePackageXml(boolean force = false) {
+  def synchronized cachePackageXml(boolean force = false, Job job = null) {
     def result = null
 
     if (activeCaching == false) {
-      activeCaching = true
       log.debug("CachePackageXml started ..")
-      result = updatePackageCaches(force)
+      activeCaching = true
+
+      result = updatePackageCaches(force, job)
+
       activeCaching = false
     }
     else {
@@ -2099,12 +2111,13 @@ class PackageService {
     result
   }
 
-  private def updatePackageCaches(boolean force = false) {
+  private def updatePackageCaches(force, job) {
     def result = 'OK'
     def attr = [:]
     File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
     boolean cancelled = false
     File tempDir = new File('/tmp/gokb/oai/')
+    job?.startTime = new Date()
 
     Package.withNewSession {
       def ids = Package.executeQuery("select id from Package")
@@ -2156,7 +2169,13 @@ class PackageService {
               def tipps_count = item.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
               def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
               def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-              def pkg_ids = Identifier.executeQuery("select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = ? and c.type = ? and c.toComponent = i and c.status = ?", [item, refdata_ids, status_active], [readOnly: true])
+              def pkg_ids = Identifier.executeQuery('''select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i,
+                                                        Combo as c where c.fromComponent = ?
+                                                        and c.type = ?
+                                                        and c.toComponent = i
+                                                        and c.status = ?''',
+                                                        [item, refdata_ids, status_active],
+                                                        [readOnly: true])
               String cName = item.class.name
 
               log.info("Starting package caching for ${item.name} with ${tipps_count} TIPPs..")
@@ -2379,6 +2398,7 @@ class PackageService {
         }
       }
     }
+    job?.endTime = new Date()
 
     result
   }
@@ -2386,19 +2406,33 @@ class PackageService {
   private def getTitleIds(Long title_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [title_id, refdata_ids, status_active], [readOnly: true]);
+    def result = Identifier.executeQuery('''select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i,
+                                            Combo as c
+                                            where c.fromComponent.id = ?
+                                            and c.type = ?
+                                            and c.toComponent = i
+                                            and c.status = ?''',
+                                            [title_id, refdata_ids, status_active],
+                                            [readOnly: true])
     result
   }
 
   private def getTippIds(Long tipp_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = ? and c.type = ? and c.toComponent = i and c.status = ?", [tipp_id, refdata_ids, status_active], [readOnly: true]);
+    def result = Identifier.executeQuery('''select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i,
+                                            Combo as c
+                                            where c.fromComponent.id = ?
+                                            and c.type = ?
+                                            and c.toComponent = i
+                                            and c.status = ?''',
+                                            [tipp_id, refdata_ids, status_active],
+                                            [readOnly: true])
     result
   }
 
   private def getTitleClass(Long title_id) {
-    def result = KBComponent.get(title_id)?.class.getSimpleName();
+    def result = KBComponent.get(title_id)?.class.getSimpleName()
 
     result
   }

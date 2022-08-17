@@ -13,16 +13,18 @@ import java.util.concurrent.CancellationException
 
 class AdminController {
 
-  def uploadAnalysisService
-  def FTUpdateService
-  def packageService
-  def gokbAclService
-  def componentStatisticService
   def aclUtilService
+  def componentStatisticService
+  def ezbCollectionService
+  def FTUpdateService
+  def gokbAclService
   def grailsCacheAdminService
+  def packageService
+  def springSecurityService
   def titleAugmentService
-  ConcurrencyManagerService concurrencyManagerService
+  def uploadAnalysisService
   CleanupService cleanupService
+  ConcurrencyManagerService concurrencyManagerService
   TippService tippService
 
   @Deprecated
@@ -384,13 +386,12 @@ class AdminController {
   def rebuildPackageCaches() {
     log.debug("Call to recache all packages")
 
-    Job j = concurrencyManagerService.createJob {
-      packageService.cachePackageXml(true)
+    Job j = concurrencyManagerService.createJob { Job job ->
+      packageService.cachePackageXml(true, job)
     }.startOrQueue()
 
-    j.description = "Recache packages"
+    j.description = "Recache packages (manual/forced)"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Package Re-Caching')
-    j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
   }
@@ -543,7 +544,19 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
-  @Secured(['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'])
+  def fetchEzbCollections() {
+    Job j = concurrencyManagerService.createJob { job ->
+      ezbCollectionService.startUpdate(job)
+    }.startOrQueue()
+
+    log.debug "Triggering manual EZB open collections sync, job #${j.uuid}"
+    j.ownerId = springSecurityService.currentUser.id
+    j.description = "Fetch updated open EZB collections (manual)"
+    j.type = RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest')
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def setupAcl() {
 
     def default_dcs = ["BookInstance", "JournalInstance", "TitleInstancePackagePlatform", "DatabaseInstance", "Office", "Imprint", "Package", "ReviewRequest", "Org", "Platform", "Source", "KBComponentVariantName", "TitleInstancePlatform", "TIPPCoverageStatement"]
