@@ -195,9 +195,13 @@ class BootStrap {
             [value: 'issnl', name: 'ISSN-L', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
             [value: 'doi', name: 'DOI'],
             [value: 'zdb', name: 'ZDB-ID', pattern: "^\\d+-[\\dxX]\$"],
-            [value: 'isil', name: 'ISIL', pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"],
-            [value: 'ezb', name: 'EZB-ID', pattern: "^\\d+\$"]
+            [value: 'isil', name: 'ISIL', pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
         ]
+
+        if (grailsApplication.config.gokb.ezbOpenCollections?.url) {
+            namespaces << [value: 'ezb', name: 'EZB-ID', pattern: "^\\d+\$"]
+            namespaces << [value: 'ezb-collection-id', name: 'EZB Collection ID', pattern: "^EZB-[A-Z0-9]{4,5}-\\d{5}\$"]
+        }
 
         namespaces.each { ns ->
             def ns_obj = IdentifierNamespace.findByValue(ns.value)

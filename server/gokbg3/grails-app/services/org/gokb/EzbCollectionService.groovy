@@ -14,7 +14,7 @@ class EzbCollectionService {
   def concurrencyManagerService
   def dateFormatService
   def grailsApplication
-  def packageService
+  def packageSourceUpdateService
   def TSVIngestionService
 
   static ArrayList activeTypes = [
@@ -31,6 +31,7 @@ class EzbCollectionService {
 
     if (!running) {
       running = true
+
       if (!job) {
         Job new_job = concurrencyManagerService.startOrQueue { ljob ->
           fetchUpdatedLists(ljob)
@@ -115,7 +116,7 @@ class EzbCollectionService {
                   pkgName += ": ${item.ezb_owner}"
                 }
 
-                Package obj = Package.findByNormname(KBKomponent.generateNormname(pkgName))
+                Package obj = Package.findByNormname(KBComponent.generateNormname(pkgName))
 
                 if (!obj) {
                   def candidates = Package.executeQuery('''from Package as p
@@ -137,11 +138,6 @@ class EzbCollectionService {
 
                   try {
                     obj = new Package(name: pkgName).save(flush: true, failOnError: true)
-
-                    obj.nominalPlatform = platform
-                    obj.provider = provider
-                    obj.ids << collection_id
-                    obj.curatoryGroups << curator
                   }
                   catch (Exception e) {
                     log.debug("Errors creating new package!", e)
@@ -152,22 +148,35 @@ class EzbCollectionService {
                   log.debug("Handling package ${obj.name}")
                 }
 
-                if (obj && !obj.source) {
-                  log.debug("Setting new package source..")
-                  Source source = new Source(name: pkgName, url: item.ezb_collection_titlelist, targetNamespace: IdentifierNamespace.findByValue('ezb')).save(flush:true, failOnError: true)
-                  source.curatoryGroups << curator
-                  source.save(flush: true, failOnError: true)
+                if (obj) {
+                  obj.nominalPlatform = platform
+                  obj.provider = provider
 
-                  obj.source = source
+                  if (!obj.ids.contains(collection_id)) {
+                    obj.ids << collection_id
+                  }
 
-                  obj.save(flush: true, failOnError: true)
+                  if (!obj.curatoryGroups.contains(curator)) {
+                    obj.curatoryGroups << curator
+                  }
+
+                  if (!obj.source) {
+                    log.debug("Setting new package source..")
+                    Source source = new Source(name: pkgName, url: item.ezb_collection_titlelist, targetNamespace: IdentifierNamespace.findByValue('ezb')).save(flush:true, failOnError: true)
+                    source.curatoryGroups << curator
+                    source.save(flush: true, failOnError: true)
+
+                    obj.source = source
+
+                    obj.save(flush: true, failOnError: true)
+                  }
                 }
 
                 log.debug("Existing package since: ${obj?.dateCreated} - EZB start ${dateFormatService.parseTimestamp(item.ezb_collection_released_date)}")
 
                 if (obj && obj.dateCreated > dateFormatService.parseTimestamp(item.ezb_collection_released_date)) {
                   Job pkg_job = concurrencyManagerService.createJob { pjob ->
-                    packageService.updateFromSource(obj, null, pjob, curator)
+                    packageSourceUpdateService.updateFromSource(obj, null, pjob, curator)
                   }
 
                   pkg_job.groupId = curator.id
@@ -183,7 +192,7 @@ class EzbCollectionService {
                     cancelled = true
                   }
 
-                  log.debug("Finished job with result: ${job_result.message}")
+                  log.debug("Finished job with result: ${job_result}")
                 }
                 else if (obj) {
                   log.warn("Matched package is older than the EZB release date.. Skipping!")

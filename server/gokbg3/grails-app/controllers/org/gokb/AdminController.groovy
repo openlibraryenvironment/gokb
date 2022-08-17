@@ -20,6 +20,8 @@ class AdminController {
   def gokbAclService
   def grailsCacheAdminService
   def packageService
+  def packageCachingService
+  def packageSourceUpdateService
   def springSecurityService
   def titleAugmentService
   def uploadAnalysisService
@@ -330,12 +332,14 @@ class AdminController {
           log.debug("Cancelled")
         }
         catch (Exception e) {
-          log.debug("Exception in Job ${j.uuid}:")
-          e.printStackTrace()
-
+          log.error("Exception in Job ${j.uuid}!", e)
+          if (!j.exception) {
+            j.exception = e.printStackTrace()
+          }
           if (j.messages?.size() == 0) {
             j.message("There has been an exception processing this job! Please check the logs!")
           }
+
         }
       }
     }
@@ -387,7 +391,7 @@ class AdminController {
     log.debug("Call to recache all packages")
 
     Job j = concurrencyManagerService.createJob { Job job ->
-      packageService.cachePackageXml(true, job)
+      packageCachingService.cachePackageXml(true, job)
     }.startOrQueue()
 
     j.description = "Recache packages (manual/forced)"

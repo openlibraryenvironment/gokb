@@ -49,8 +49,9 @@ class ConcurrencyManagerService {
     int progress
     Date startTime = new Date()
     Date endTime
-    boolean begun = false;
+    boolean begun = false
     String description
+    String exception
     List messages = []
     Map linkedItem
     RefdataValue type

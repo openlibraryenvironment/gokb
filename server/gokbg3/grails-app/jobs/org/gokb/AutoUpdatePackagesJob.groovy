@@ -7,7 +7,7 @@ import org.gokb.cred.RefdataCategory
 class AutoUpdatePackagesJob {
 
   def ezbCollectionService
-  def packageService
+  def packageSourceUpdateService
   def sessionFactory
   // Allow only one run at a time.
   static concurrent = false
@@ -32,7 +32,7 @@ class AutoUpdatePackagesJob {
         Package p = Package.findById(pid)
 
         if (p.source.needsUpdate() == true) {
-          def result = packageService.updateFromSource(p)
+          def result = packageSourceUpdateService.updateFromSource(p)
           log.debug("Result of update: ${result}")
 
           sleep(5000)
