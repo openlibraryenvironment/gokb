@@ -838,7 +838,6 @@ class TippService {
 
     ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
     ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
-    ClassUtils.setRefdataIfPresent(tippInfo.paymentType, tipp, 'paymentType')
 
     if (tippInfo.paymentType in ['F', 'OA', 'Free']) {
       tipp.paymentType = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", "OA")
