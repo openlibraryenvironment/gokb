@@ -25,7 +25,7 @@ class AutoUpdatePackagesJob {
           "p.source.automaticUpdates = true " +
           "and p.status != ?" +
           "and (p.source.lastRun is null or p.source.lastRun < current_date)",[status_deleted])
-      for (p in Package) { ->
+      for (p in Package) {
         if (p.source.needsUpdate() == true) {
           def result = packageService.updateFromSource(p)
           log.debug("Result of update: ${result}")
