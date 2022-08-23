@@ -72,6 +72,10 @@ class ConcurrencyManagerService {
       return messages
     }
 
+    public getException() {
+      return exception
+    }
+
     /**
      * Cancel the job.
      * @see java.util.concurrent.FutureTask#cancel(boolean)

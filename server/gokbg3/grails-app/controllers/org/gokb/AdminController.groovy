@@ -334,7 +334,7 @@ class AdminController {
         catch (Exception e) {
           log.error("Exception in Job ${j.uuid}!", e)
           if (!j.exception) {
-            j.exception = e.printStackTrace()
+            j.exception = e.toString()
           }
           if (j.messages?.size() == 0) {
             j.message("There has been an exception processing this job! Please check the logs!")
@@ -346,11 +346,11 @@ class AdminController {
 
     log.debug("Render");
     if (request.format == 'JSON') {
-      log.debug("JSON Render");
+      log.debug("JSON Render")
       render result as JSON
     }
 
-    log.debug("Return");
+    log.debug("Return")
     result
   }
 
@@ -359,9 +359,7 @@ class AdminController {
     def jobs = concurrencyManagerService.jobs
 
     jobs.each { k, j ->
-      if (j.isDone()) {
-        jobs.remove(k)
-      }
+      concurrencyManagerService.getJob(k, true)
     }
     redirect(url: request.getHeader('referer'))
   }
@@ -549,14 +547,9 @@ class AdminController {
   }
 
   def fetchEzbCollections() {
-    Job j = concurrencyManagerService.createJob { job ->
-      ezbCollectionService.startUpdate(job)
-    }.startOrQueue()
+    log.debug("Triggering EZB open collections sync")
 
-    log.debug "Triggering manual EZB open collections sync, job #${j.uuid}"
-    j.ownerId = springSecurityService.currentUser.id
-    j.description = "Fetch updated open EZB collections (manual)"
-    j.type = RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest')
+    ezbCollectionService.startUpdate(springSecurityService.currentUser)
 
     render(view: "logViewer", model: logViewer())
   }

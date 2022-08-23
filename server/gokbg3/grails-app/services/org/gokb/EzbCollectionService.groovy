@@ -1,9 +1,13 @@
 package org.gokb
 
-import groovy.util.logging.Slf4j
 import com.k_int.ConcurrencyManagerService.Job
+
+import groovy.json.JsonSlurper
+import groovy.util.logging.Slf4j
+
 import static groovyx.net.http.Method.*
 import groovyx.net.http.*
+
 import org.gokb.cred.*
 
 @Slf4j
@@ -24,30 +28,34 @@ class EzbCollectionService {
     'collections_from_national_consortia_packages'
   ]
 
-  static boolean running = false
-
-  synchronized def startUpdate(Job job) {
+  def startUpdate(User user = null) {
     def result = 'OK'
 
-    if (!running) {
-      running = true
+    RefdataCategory.withNewSession {
+      def running_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest'))
 
-      if (!job) {
-        Job new_job = concurrencyManagerService.startOrQueue { ljob ->
-          fetchUpdatedLists(ljob)
-        }
+      if (running_jobs.size() == 0) {
+          log.debug("Creating new job..")
+          Job new_job = concurrencyManagerService.createJob { ljob ->
+            fetchUpdatedLists(ljob)
+          }
 
-        new_job.description = "EZB open collections harvesting"
-        new_job.type = RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest')
-        new_job.startOrQueue()
-        result = new_job.get()
-      } else {
-        result = fetchUpdatedLists(job)
+          if (user) {
+            new_job.ownerId = user.id
+          }
+
+          new_job.description = "EZB open collections harvesting ${user ? '(manual)' : ''}"
+          new_job.type = RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest')
+          new_job.startOrQueue()
+
+          if (!user) {
+            result = new_job.get()
+          }
       }
-      running = false
-    }
-    else {
-      result = 'SKIPPED_ALREADY_RUNNING'
+      else {
+        log.debug("Job is already running!")
+        result = 'SKIPPED_ALREADY_RUNNING'
+      }
     }
 
     result
@@ -82,9 +90,37 @@ class EzbCollectionService {
         }
       }
 
+      // Local backup for testing
+
+      // File jsonFile = new File(getClass().getResource(
+      //     "${File.separator}ezb_collections.json").toURI())
+
+      // def data = new JsonSlurper().parse(jsonFile)
+
+      // data.collections?.each { type, items ->
+      //   log.debug("Mapping ${type} with ${items.size()} items")
+      //   if (type in activeTypes) {
+      //     log.debug("Added items for active type")
+      //     allCollections[type] = items
+      //   }
+      //   else {
+      //     log.debug("Skipped inactive type..")
+      //   }
+      // }
+
       allCollections.each { type, items ->
         log.debug("Starting with type ${type} ..")
-        def type_results = [total: 0, skipped: 0, noProvider: 0, noPlatform: 0, noCurator: 0, errors: 0]
+        def type_results = [
+          total: 0,
+          skipped: 0,
+          noProvider: 0,
+          noPlatform: 0,
+          noCurator: 0,
+          updated: 0,
+          created: 0,
+          errors: 0,
+          success: 0
+        ]
 
         if (!cancelled) {
           Package.withNewSession { session ->
@@ -138,6 +174,7 @@ class EzbCollectionService {
 
                   try {
                     obj = new Package(name: pkgName).save(flush: true, failOnError: true)
+                    type_results.created++
                   }
                   catch (Exception e) {
                     log.debug("Errors creating new package!", e)
@@ -146,6 +183,7 @@ class EzbCollectionService {
                 }
                 else {
                   log.debug("Handling package ${obj.name}")
+                  type_results.updated++
                 }
 
                 if (obj) {
@@ -193,6 +231,13 @@ class EzbCollectionService {
                   }
 
                   log.debug("Finished job with result: ${job_result}")
+
+                  if (job_result.result == 'ERROR') {
+                    type_results.errors++
+                  }
+                  else {
+                    type_results.success++
+                  }
                 }
                 else if (obj) {
                   log.warn("Matched package is older than the EZB release date.. Skipping!")
