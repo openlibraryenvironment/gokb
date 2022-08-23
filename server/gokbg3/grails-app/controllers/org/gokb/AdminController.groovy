@@ -13,16 +13,20 @@ import java.util.concurrent.CancellationException
 
 class AdminController {
 
-  def uploadAnalysisService
-  def FTUpdateService
-  def packageService
-  def gokbAclService
-  def componentStatisticService
   def aclUtilService
+  def componentStatisticService
+  def ezbCollectionService
+  def FTUpdateService
+  def gokbAclService
   def grailsCacheAdminService
+  def packageService
+  def packageCachingService
+  def packageSourceUpdateService
+  def springSecurityService
   def titleAugmentService
-  ConcurrencyManagerService concurrencyManagerService
+  def uploadAnalysisService
   CleanupService cleanupService
+  ConcurrencyManagerService concurrencyManagerService
   TippService tippService
 
   @Deprecated
@@ -328,23 +332,25 @@ class AdminController {
           log.debug("Cancelled")
         }
         catch (Exception e) {
-          log.debug("Exception in Job ${j.uuid}:")
-          e.printStackTrace()
-
+          log.error("Exception in Job ${j.uuid}!", e)
+          if (!j.exception) {
+            j.exception = e.toString()
+          }
           if (j.messages?.size() == 0) {
             j.message("There has been an exception processing this job! Please check the logs!")
           }
+
         }
       }
     }
 
     log.debug("Render");
     if (request.format == 'JSON') {
-      log.debug("JSON Render");
+      log.debug("JSON Render")
       render result as JSON
     }
 
-    log.debug("Return");
+    log.debug("Return")
     result
   }
 
@@ -353,9 +359,7 @@ class AdminController {
     def jobs = concurrencyManagerService.jobs
 
     jobs.each { k, j ->
-      if (j.isDone()) {
-        jobs.remove(k)
-      }
+      concurrencyManagerService.getJob(k, true)
     }
     redirect(url: request.getHeader('referer'))
   }
@@ -384,13 +388,12 @@ class AdminController {
   def rebuildPackageCaches() {
     log.debug("Call to recache all packages")
 
-    Job j = concurrencyManagerService.createJob {
-      packageService.cachePackageXml(true)
+    Job j = concurrencyManagerService.createJob { Job job ->
+      packageCachingService.cachePackageXml(true, job)
     }.startOrQueue()
 
-    j.description = "Recache packages"
+    j.description = "Recache packages (manual/forced)"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Package Re-Caching')
-    j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
   }
@@ -543,7 +546,14 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
-  @Secured(['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY'])
+  def fetchEzbCollections() {
+    log.debug("Triggering EZB open collections sync")
+
+    ezbCollectionService.startUpdate(springSecurityService.currentUser)
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def setupAcl() {
 
     def default_dcs = ["BookInstance", "JournalInstance", "TitleInstancePackagePlatform", "DatabaseInstance", "Office", "Imprint", "Package", "ReviewRequest", "Org", "Platform", "Source", "KBComponentVariantName", "TitleInstancePlatform", "TIPPCoverageStatement"]

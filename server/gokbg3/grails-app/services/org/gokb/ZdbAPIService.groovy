@@ -130,7 +130,7 @@ class ZdbAPIService {
           }
         }
         catch ( Exception e ) {
-          e.printStackTrace();
+          log.error('Error fetching ZDB record!', e)
         }
       }
     }
@@ -267,7 +267,7 @@ class ZdbAPIService {
         if (subfield.@id == 'I') {
           item.issn = subfield.text()
         }
-        if (subfield.@id == '0') {
+        if (subfield.@id == '0' && subfield.text().indexOf('-') == subfield.text().length() - 2) {
           item.zdbId = subfield.text()
         }
         if (subfield.@id == 'Y') {

@@ -53,7 +53,7 @@ class IngestController {
       }
       else {
         log.error("Problem creating new profile");
-        new_profile.errors.each { 
+        new_profile.errors.each {
           log.error("Problem: ${it}");
         }
       }
@@ -72,14 +72,14 @@ class IngestController {
     def result = [:]
     User user = springSecurityService.currentUser
 
-    result.ip = IngestionProfile.get(params.id);
+    result.ip = IngestionProfile.get(params.id)
     def ingestion_profile = result.ip
 
 
     if ( request.method=='POST' && result.ip ) {
 
       def ingestion_profile_id = params.id;
-      def new_datafile_id = null;
+      def new_datafile = null
 
       // Create a new transaction so we can commit it and have everything cleaned up by the time we
       // either submit the job to a background task or wait for it to complete synchronously.
@@ -88,54 +88,64 @@ class IngestController {
         log.debug("Form post")
         def upload_mime_type = request.getFile("submissionFile")?.contentType
         def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
-        def deposit_token = java.util.UUID.randomUUID().toString();
-        def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
+        def deposit_token = java.util.UUID.randomUUID().toString()
+        def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token)
         def info = analyse(temp_file);
-  
-        log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
-        def existing_file = DataFile.findByMd5(info.md5sumHex);
-  
+
+        log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
+        def existing_file = DataFile.findByMd5(info.md5sumHex)
+
         if ( existing_file != null ) {
           log.debug("Found a match !")
 
-          new_datafile_id = existing_file.id
+          new_datafile = existing_file
         }
         else {
           log.debug("Create new datafile");
-          def new_datafile = new DataFile(
+          new_datafile = new DataFile(
                                           guid:deposit_token,
                                           md5:info.md5sumHex,
                                           uploadName:upload_filename,
                                           name:upload_filename,
                                           filesize:info.filesize,
                                           uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
-  
+
           log.debug("Saved new datafile : ${new_datafile.id}");
           new_datafile_id = new_datafile.id
           new_datafile.fileData = temp_file.getBytes()
-  
+
           if (!ingestion_profile.ingestions) {
                    ingestion_profile.ingestions=[]
           }
           ingestion_profile.ingestions << new ComponentIngestionSource(profile:ingestion_profile, component:new_datafile)
-  
+
           new_datafile.save(failOnError:true,flush:true)
           ingestion_profile.save(flush:true)
           log.debug("Saved file on database ")
-  
+
           redirect(controller:'resource',action:'show',id:"org.gokb.cred.IngestionProfile:${ingestion_profile.id}")
         }
-  
+
       }
 
-      if (new_datafile_id) {
-        log.debug("First transaction completed - datafile read and saved, move on to processing");
+      if (new_datafile) {
+        log.debug("First transaction completed - datafile read and saved, move on to processing")
+
+        Package pkg = Package.findByNameIike(result.ip.packageName) ?: new Package(name: result.ip.packageName)
 
         // Transactional part done. now queue the job
         Job background_job = concurrencyManagerService.createJob { Job job ->
           // Create a new session to run the ingest.
           try {
-            TSVIngestionService.ingest(ingestion_profile_id, new_datafile_id, job, null, null, user)
+            TSVIngestionService.updatePackage(pkg,
+                    new_datafile,
+                    result.ip.providerNamespace,
+                    true,
+                    false,
+                    user,
+                    null,
+                    false,
+                    job)
           }
           catch ( Exception e ) {
             log.error("Problem",e)

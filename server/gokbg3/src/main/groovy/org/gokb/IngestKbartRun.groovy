@@ -105,6 +105,10 @@ class IngestKbartRun {
     long start_time = System.currentTimeMillis()
     log.debug("Got Datafile ${datafile?.uploadName}")
 
+    if (job && !job.startTime) {
+      job.startTime = new Date()
+    }
+
     status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
     status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
     status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
@@ -230,7 +234,7 @@ class IngestKbartRun {
           }
         }
 
-        if (result.reult != 'CANCELLED' && dryRun) {
+        if (result.result != 'CANCELLED' && dryRun) {
           result.titleMatch = titleMatchStats
         }
 
@@ -239,7 +243,7 @@ class IngestKbartRun {
         }
         else {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
-          if (!dryRun && result.reult != 'CANCELLED') {
+          if (!dryRun && result.result != 'CANCELLED') {
             try {
               // Find all tipps in this package which have a lastSeen before the ingest date
               def retire_pars = [
@@ -288,7 +292,7 @@ class IngestKbartRun {
         result.report.averagePerRow = average_milliseconds_per_row
         result.report.averagePerHour = average_per_hour
         result.report.elapsed = processing_elapsed
-        job.message("Processing Complete : numRows:${file_info.rownum}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
+        job?.message("Processing Complete : numRows:${file_info.rownum}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
 
         if (!dryRun) {
           try {
@@ -330,7 +334,7 @@ class IngestKbartRun {
       }
       else if (running_jobs.data?.size() > 1) {
         result.result = 'ERROR'
-        reult.messageCode = 'kbart.errors.alreadyRunning'
+        result.messageCode = 'kbart.errors.alreadyRunning'
         result.messages.add('An import job for this package is already in progress!')
       }
     }
@@ -338,10 +342,10 @@ class IngestKbartRun {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.replacementChars'
       result.messages.add(ice.toString())
-      job.message(ice.toString())
+      job?.message(ice.toString())
     }
     catch (Exception e) {
-      job.message(e.toString())
+      job?.message(e.toString())
       result.result = 'ERROR'
       result.messages.add(e.toString())
       log.error("Problem", e)
@@ -548,7 +552,8 @@ class IngestKbartRun {
       lastSeen: ingest_systime,
       identifiers: identifiers,
       pkg: [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
-      hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name]
+      hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name],
+      paymentType: the_kbart.access_type
     ]
 
     if (isUpdate || !tipp_map.importId) {
@@ -653,7 +658,7 @@ class IngestKbartRun {
       if (titleIdMap[tipp_map.importId]) {
         for (tidm in titleIdMap[tipp_map.importId]) {
           jsonIdMap.each { ns, val ->
-            if (tidm.ids[tipp_map.importId][ns] != jsonIdMap[ns]) {
+            if (tidm.ids[ns] != jsonIdMap[ns]) {
               result = 'partial'
             }
           }
@@ -788,8 +793,7 @@ class IngestKbartRun {
       'online_identifier',
       'title_url',
       'title_id',
-      'publication_type',
-      'access_type'
+      'publication_type'
     ]
 
     for (mc in mandatoryColumns) {
