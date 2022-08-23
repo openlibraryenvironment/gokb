@@ -95,7 +95,7 @@ class FTUpdateService {
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
                                   namespaceName: idc.toComponent.namespace.name,
-                                  baseurl      : idc.toComponent.namespace.baseurl])
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -127,7 +127,7 @@ class FTUpdateService {
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
                                   namespaceName: idc.toComponent.namespace.name,
-                                  baseurl      : idc.toComponent.namespace.baseurl])
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         result.platforms = []
@@ -167,7 +167,7 @@ class FTUpdateService {
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
                                   namespaceName: idc.toComponent.namespace.name,
-                                  baseurl      : idc.toComponent.namespace.baseurl])
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -195,7 +195,7 @@ class FTUpdateService {
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
                                   namespaceName: idc.toComponent.namespace.name,
-                                  baseurl      : idc.toComponent.namespace.baseurl])
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -222,7 +222,7 @@ class FTUpdateService {
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
                                   namespaceName: idc.toComponent.namespace.name,
-                                  baseurl      : idc.toComponent.namespace.baseurl])
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -249,7 +249,7 @@ class FTUpdateService {
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
                                   namespaceName: idc.toComponent.namespace.name,
-                                  baseurl      : idc.toComponent.namespace.baseurl])
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -279,7 +279,7 @@ class FTUpdateService {
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
                                   namespaceName: idc.toComponent.namespace.name,
-                                  baseurl      : idc.toComponent.namespace.baseurl])
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -395,7 +395,7 @@ class FTUpdateService {
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
                                   namespaceName: idc.toComponent.namespace.name,
-                                  baseurl      : idc.toComponent.namespace.baseurl])
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
 
         if (kbc.dateFirstOnline) result.dateFirstOnline = dateFormatService.formatDate(kbc.dateFirstOnline)
