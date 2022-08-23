@@ -94,7 +94,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseurl      : idc.toComponent.namespace.baseurl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -125,7 +126,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseurl      : idc.toComponent.namespace.baseurl])
         }
         result.componentType = kbc.class.simpleName
         result.platforms = []
@@ -164,7 +166,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseurl      : idc.toComponent.namespace.baseurl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -191,7 +194,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseurl      : idc.toComponent.namespace.baseurl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -217,7 +221,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseurl      : idc.toComponent.namespace.baseurl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -243,7 +248,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseurl      : idc.toComponent.namespace.baseurl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -272,7 +278,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseurl      : idc.toComponent.namespace.baseurl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -387,7 +394,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseurl      : idc.toComponent.namespace.baseurl])
         }
 
         if (kbc.dateFirstOnline) result.dateFirstOnline = dateFormatService.formatDate(kbc.dateFirstOnline)

@@ -261,7 +261,8 @@ class IdentifierController {
         value:ns.value,
         id: ns.id,
         pattern: ns.pattern,
-        family: ns.family
+        family: ns.family,
+        baseUrl: ns.baseUrl
       ]
     }
     result.data=data

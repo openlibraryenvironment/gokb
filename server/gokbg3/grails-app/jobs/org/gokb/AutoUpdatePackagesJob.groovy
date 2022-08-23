@@ -26,7 +26,8 @@ class AutoUpdatePackagesJob {
            where p.source is not null and
            p.source.automaticUpdates = true
            and p.status != ?
-           and (p.source.lastRun is null or p.source.lastRun < current_date)''',[status_deleted])
+           and (p.source.lastRun is null or p.source.lastRun < current_date)''',
+           [status_deleted])
 
       for (pid in updPacks) {
         Package p = Package.findById(pid)

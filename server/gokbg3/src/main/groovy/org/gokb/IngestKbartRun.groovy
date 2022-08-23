@@ -162,7 +162,7 @@ class IngestKbartRun {
 
         String[] header = csv.readNext()
 
-        header = header.collect { it.trim().toLowerCase() }
+        header = header.collect { it.toLowerCase().trim() }
 
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                                 'from TitleInstancePackagePlatform as tipp, Combo as c '+
@@ -188,32 +188,34 @@ class IngestKbartRun {
           if (row_data != null) {
             rownum++
 
-            Package.withNewSession {
-              def row_kbart_beans = getKbartBeansForRow(header, row_data)
-              def row_specific_cfg = getRowSpecificCfg(ingest_cfg, row_kbart_beans)
-              log.debug("**Ingesting ${rownum} of ${file_info.rownum} ${row_kbart_beans}")
+            if (row_data.size() == header.size()) {
+              Package.withNewSession {
+                def row_kbart_beans = getKbartBeansForRow(header, row_data)
+                def row_specific_cfg = getRowSpecificCfg(ingest_cfg, row_kbart_beans)
+                log.debug("**Ingesting ${rownum} of ${file_info.rownum} ${row_kbart_beans}")
 
-              long rowStartTime = System.currentTimeMillis()
+                long rowStartTime = System.currentTimeMillis()
 
-              if (dryRun) {
-                checkTitleMatchRow(row_kbart_beans, ingest_cfg, titleMatchStats)
+                if (dryRun) {
+                  checkTitleMatchRow(row_kbart_beans, ingest_cfg, titleMatchStats)
+                }
+
+                if (validateRow(rownum, badrows, row_kbart_beans)) {
+                  def line_result = writeToDB(row_kbart_beans,
+                            ingest_date,
+                            ingest_systime,
+                            ingest_cfg,
+                            badrows,
+                            row_specific_cfg)
+
+                  result.report[line_result]++
+                }
+                else {
+                  result.report.invalid++
+                }
+
+                log.debug("ROW ELAPSED : ${System.currentTimeMillis() - rowStartTime}")
               }
-
-              if (validateRow(rownum, badrows, row_kbart_beans)) {
-                def line_result = writeToDB(row_kbart_beans,
-                          ingest_date,
-                          ingest_systime,
-                          ingest_cfg,
-                          badrows,
-                          row_specific_cfg)
-
-                result.report[line_result]++
-              }
-              else {
-                result.report.invalid++
-              }
-
-              log.debug("ROW ELAPSED : ${System.currentTimeMillis() - rowStartTime}")
             }
 
             job?.setProgress(rownum, file_info.rownum)
@@ -775,6 +777,9 @@ class IngestKbartRun {
 
     Map col_positions = [:]
     String[] header = csv.readNext()
+
+    header = header.collect { it.toLowerCase().trim() }
+
     int ctr = 0
 
     header.each {
@@ -809,26 +814,29 @@ class IngestKbartRun {
     while (nl != null) {
       result.rownum++
 
-      if (nl.length != header.size()) {
-        result.errors.columnsCount = [message: "Inconsistent column count in row ${rownum}!", code: "kbart.errors.tabsCountFile"]
+      if (nl.size() > 1 && nl.size() != header.size()) {
+        result.errors.columnsCount = [message: "Inconsistent column count in row ${result.rownum} (${nl.size()} <> ${header.size()})!", code: "kbart.errors.tabsCountFile"]
       }
-      else if (nl.length > 0) {
+      else if (nl.size() >= mandatoryColumns.size()){
         for (key in col_positions.keySet()) {
           // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
           if (key && key.length() > 0) {
             if (col_positions[key] != null && col_positions[key] < nl.length) {
               if (nl[col_positions[key]].length() > 4092) {
-                result.errors.longVals = [message: "Unexpectedly long value in row ${rownum} -- Probably miscoded quote in line. Correct and resubmit", code: "kbart.errors.longValsFile"]
+                result.errors.longVals = [message: "Unexpectedly long value in row ${result.rownum} -- Probably miscoded quote in line. Correct and resubmit", code: "kbart.errors.longValsFile"]
               }
               else if (nl[col_positions[key]].contains('�')) {
-                result.errors.replacementChars = [message: "Found UTF-8 replacement char in row ${rownum} -- Probably opened and then saved non-UTF-8 file as UTF-8!", code: "kbart.errors.replacementChars"]
+                result.errors.replacementChars = [message: "Found UTF-8 replacement char in row ${result.rownum}} -- Probably opened and then saved non-UTF-8 file as UTF-8!", code: "kbart.errors.replacementChars"]
               }
             }
             else {
-              log.error("Column references value not present in col ${col_positions[key]} row ${rownum}")
+              log.error("Column references value not present in col ${col_positions[key]} row ${result.rownum}}")
             }
           }
         }
+      }
+      else {
+        log.debug("Found and skipped short row ${nl}")
       }
 
       if (result.errors) {

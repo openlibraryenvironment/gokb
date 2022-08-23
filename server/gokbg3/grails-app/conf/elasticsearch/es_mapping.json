@@ -200,6 +200,10 @@
         "value": {
           "type": "keyword",
           "normalizer": "lowercase"
+        },
+        "baseurl": {
+          "type": "keyword",
+          "normalizer": "lowercase"
         }
       }
     },
