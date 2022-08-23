@@ -508,7 +508,7 @@ class TippService {
 
   private void handleFindConflicts(tipp, def found, CuratoryGroup activeCg = null) {
     TitleInstancePackagePlatform.withNewSession {
-      if (found.matches.size > 1) {
+      if (found.matches.size > 1 && !tipp.title) {
         def additionalInfo = [otherComponents: []]
         found.matches.each { comp ->
           additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid, conflicts: comp.conflicts]
