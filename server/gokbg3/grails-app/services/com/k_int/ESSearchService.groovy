@@ -675,8 +675,8 @@ class ESSearchService{
     try {
       def unknown_fields = []
       def component_type = null
-      if (params.componentType){
-        component_type = deriveComponentType(params.componentType)
+      if (params.componentType || params.component_type){
+        component_type = deriveComponentType(params.componentType ?: params.component_type)
       }
 
       QueryBuilder exactQuery = QueryBuilders.boolQuery()
@@ -1208,7 +1208,7 @@ class ESSearchService{
     def final_type = typeString.capitalize()
 
     if (final_type in defined_types) {
-      if (final_type== 'TIPP') {
+      if (final_type == 'TIPP') {
         final_type = 'TitleInstancePackagePlatform'
       }
       else if (final_type == 'Book') {

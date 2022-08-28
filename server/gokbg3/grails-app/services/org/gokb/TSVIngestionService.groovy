@@ -9,7 +9,6 @@ import java.security.MessageDigest
 import org.gokb.cred.*
 import org.mozilla.universalchardet.UniversalDetector
 
-@Transactional
 class TSVIngestionService {
 
   def grailsApplication
@@ -24,7 +23,14 @@ class TSVIngestionService {
                     def active_group,
                     boolean dry_run,
                     Job job = null) {
-    def session = sessionFactory.currentSession
+    def session = null
+
+    try {
+      session = sessionFactory.currentSession
+    }
+    catch (org.hibernate.HibernateException he) {
+      log.debug("No Session foudn, creating a new one...")
+    }
 
     if (session) {
       IngestKbartRun myRun = new IngestKbartRun(pkg,

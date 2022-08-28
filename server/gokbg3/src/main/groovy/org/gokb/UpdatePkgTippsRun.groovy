@@ -567,8 +567,7 @@ class UpdatePkgTippsRun {
             matched_tipps[tipp.id]++
           }
 
-          tippService.checkCoverage(tipp, tippJson, created)
-          tippService.updateSimpleFields(tipp, tippJson, true, user)
+          tippService.updateTippFields(tipp, tippJson, true, user)
         }
       }
       catch (grails.validation.ValidationException ve) {

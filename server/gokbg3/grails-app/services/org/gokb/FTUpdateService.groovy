@@ -468,6 +468,7 @@ class FTUpdateService {
       def esClient = ESWrapperService.getClient()
       IndexRequest request = new IndexRequest(es_index).id(recid).source(idx_record)
       def result = esClient.index(request, RequestOptions.DEFAULT)
+      log.info("UpdateSingleItem :: ES returned ${result}")
     }
   }
 

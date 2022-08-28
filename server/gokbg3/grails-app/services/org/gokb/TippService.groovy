@@ -806,50 +806,7 @@ class TippService {
     result
   }
 
-  public void updateSimpleFields(tipp, tippInfo, boolean fullsync = false, User user = null) {
-    componentUpdateService.ensureCoreData(tipp, tippInfo, fullsync, user)
-
-    ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
-    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'subjectArea', 'series'].each { propName ->
-      tipp[propName] = tippInfo[propName] ? tippInfo[propName].trim() : tipp[propName]
-    }
-
-    if (!tipp.importId) {
-      tipp.importId = tippInfo.importId ?: tippInfo.titleId
-    }
-
-    if (tippInfo.dateFirstInPrint) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstInPrint), tipp, 'dateFirstInPrint')
-    }
-    else {
-      log.debug("No dateFirstInPrint -> ${tippInfo.dateFirstInPrint}")
-    }
-
-    if (tippInfo.dateFirstOnline) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline), tipp, 'dateFirstOnline')
-    }
-    if (tippInfo.accessStartDate) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessStartDate), tipp, 'accessStartDate')
-    }
-
-    if (tippInfo.accessEndDate) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
-    }
-
-    ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
-    ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
-
-    if (tippInfo.paymentType in ['F', 'OA', 'Free']) {
-      tipp.paymentType = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", "OA")
-    } else if (tippInfo.paymentType in ['P', 'Paid']) {
-      tipp.paymentType = RefdataCategory.lookup("TitleInstancePackagePlatform.PaymentType", "Paid")
-    }
-
-    tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippInfo.publicationType ?: tippInfo.type ?: tipp.publicationType.value)
-    tipp.save(flush:true)
-  }
-
-  public void checkCoverage(tipp, tippInfo, created) {
+  public TitleInstancePackagePlatform updateTippFields(tipp, tippInfo, User user = null) {
     def cov_list = tippInfo.coverageStatements ?: tippInfo.coverage
 
     cov_list.each { c ->
@@ -893,7 +850,55 @@ class TippService {
       ]
 
       tipp.addToCoverageStatements(coverage_item)
-      tipp.save(flush:true)
     }
+
+    log.debug("Update simple fields: ${tippInfo}")
+    componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
+
+    ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
+    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'subjectArea', 'series'].each { propName ->
+      if (tippInfo[propName] && tippInfo[propName].trim() != tipp[propName]) {
+        tipp[propName] = tippInfo[propName].trim()
+      }
+    }
+
+    if (!tipp.importId) {
+      tipp.importId = tippInfo.importId ?: tippInfo.titleId
+    }
+
+    log.debug("Updated info (${tipp.id}): ${tipp.url} ${tipp.name}")
+
+    if (tippInfo.dateFirstInPrint) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstInPrint), tipp, 'dateFirstInPrint')
+    }
+    else {
+      log.debug("No dateFirstInPrint -> ${tippInfo.dateFirstInPrint}")
+    }
+
+    if (tippInfo.dateFirstOnline) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline), tipp, 'dateFirstOnline')
+    }
+    if (tippInfo.accessStartDate) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessStartDate), tipp, 'accessStartDate')
+    }
+
+    if (tippInfo.accessEndDate) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
+    }
+
+    ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
+    ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
+
+    if (tippInfo.paymentType in ['F', 'OA', 'Free']) {
+      ClassUtils.setRefdataIfPresent('OA', tipp, 'paymentType')
+    } else if (tippInfo.paymentType in ['P', 'Paid']) {
+      ClassUtils.setRefdataIfPresent('Paid', tipp, 'paymentType')
+    }
+
+    ClassUtils.setRefdataIfPresent(tippInfo.publicationType, tipp, 'publicationType')
+
+    tipp.save(flush:true)
+
+    tipp
   }
 }
