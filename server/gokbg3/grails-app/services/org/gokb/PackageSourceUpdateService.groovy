@@ -19,12 +19,12 @@ class PackageSourceUpdateService {
     def result = null
     def activeJobs = concurrencyManagerService.getComponentJobs(p.id)
 
-    if (job || activeJobs.size() == 0) {
+    if (job || activeJobs?.data.size() == 0) {
       log.debug("UpdateFromSource started")
       result = startSourceUpdate(p, user, job, activeGroup)
     }
     else {
-      log.debug("update skipped - already running")
+      log.error("update skipped - already running")
       result = 'ALREADY_RUNNING'
     }
     result
@@ -191,9 +191,27 @@ class PackageSourceUpdateService {
                     datafile.fileData = tmp_file.getBytes()
                     datafile.save(failOnError:true,flush:true)
                     log.debug("Saved new datafile : ${datafile.id}")
+
+                    p.fileAttachments.add(datafile)
+                    p.save(flush: true)
                   }
                   else {
                     log.debug("Found existing datafile ${datafile}")
+                    RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+
+                    def current_linked = DataFile.executeQuery("select id from DataFile as df where exists (select 1 from Combo where fromComponent = :pkg and toComponent = df and type = :ct) order by df.dateCreated desc", [pkg: p, ct: type_fa])
+
+                    if (current_linked.size() > 0 && current_linked[0] == datafile.id) {
+                      log.debug("Datafile was already the last import for this package!")
+                      result.result = 'SKIPPED'
+                      result.message = 'Skipped repeated import of the same file for this package.'
+                      result.messageCode = 'kbart.transmission.skipped.sameFile'
+                      return result
+                    }
+                    else {
+                      p.fileAttachments.add(datafile)
+                      p.save(flush: true)
+                    }
                   }
                 }
                 else {
