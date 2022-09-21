@@ -867,7 +867,7 @@ class IngestKbartRun {
 
     CSVReader csv = new CSVReaderBuilder(
         new InputStreamReader(
-            new org.apache.commons.io.input.BOMInputStream(
+            new BOMInputStream(
                 new ByteArrayInputStream(the_data.fileData),
                 ByteOrderMark.UTF_16LE,
                 ByteOrderMark.UTF_16BE,
