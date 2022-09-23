@@ -331,7 +331,7 @@ class ValidatonService {
           ]
         }
         else if (key == 'title_id' && titleIdNamespace) {
-          def field_valid_result = checkTitleId(value, titleIdNamespace)
+          def field_valid_result = checkIdForNamespace(trimmed_val, titleIdNamespace)
 
           if (field_valid_result == 'error') {
             result.errors[key] = [
@@ -446,7 +446,9 @@ class ValidatonService {
 
     if (titleIdNamespace.value in ['isbn', 'pisbn']) {
       try {
-        result = ISBN.parseIsbn(value)
+        def valid_isbn = ISBN.parseIsbn(value)
+
+        result = value
       }
       catch(ISBNException ie) {
         result = 'error'
@@ -593,16 +595,22 @@ class ValidatonService {
 
     if (cleaned_val) {
       result.cleanedVal = cleaned_val
-      def test_obj = type_class.newInstance(name: cleaned_val)
+      def test_obj = null
 
-      if (test_obj.validate()) {
-        log.debug("No dupes found!")
+      try {
+        test_obj = type_class.newInstance(name: cleaned_val)
+        test_obj.validate()
+
+      } catch (grails.validation.ValidationException ve) {
+        ve.errors.fieldErrors?.each {
+          if (it.code == 'notUnique') {
+            result.result = 'ERROR'
+            result.errors = [[message: 'A component with this name already exists!', messageCode: 'validation.nameNotUnique', value: value]]
+          }
+        }
       }
-      else {
-        result.result = 'ERROR'
-        result.errors = [[message: 'A component with this name already exists!', messageCode: 'validation.nameNotUnique', value: value]]
-      }
-      test_obj.discard()
+
+      test_obj?.discard()
     }
     else {
       result.result = 'ERROR'

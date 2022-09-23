@@ -84,18 +84,21 @@ class ValidationController {
 
   def url() {
     def result = [result: 'OK']
+    def reqBody = request.JSON
 
-    if (!request.JSON || !request.JSON.value) {
-      def validation_result = validatonService.checkUrl(request.JSON.value)
+    if (reqBody && reqBody.value) {
+      def validation_result = validatonService.checkUrl(reqBody.value)
 
       if (validation_result == 'error') {
         result.result = 'ERROR'
-        result.errors = [value: [message: "Provided value ${request.json.value} is not a valid URL", messageCode: "validation.urlForm", pars: [request.JSON.value]]]
+        result.errors = [value: [message: "Provided value ${reqBody.value} is not a valid URL", messageCode: "validation.urlForm", pars: [reqBody.value]]]
       }
     }
     else {
       result.result = 'ERROR'
       result.result = [value: [message: "No value provided via JSON object!"]]
     }
+
+    render result as JSON
   }
 }
