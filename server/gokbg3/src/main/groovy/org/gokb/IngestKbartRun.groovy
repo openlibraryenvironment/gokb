@@ -179,6 +179,9 @@ class IngestKbartRun {
 
         long startTime = System.currentTimeMillis()
 
+        pkg.fileAttachments.add(datafile)
+        pkg.save(flush: true)
+
         log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rownum} rows. Package is ${pkg.id}")
 
         boolean more = true

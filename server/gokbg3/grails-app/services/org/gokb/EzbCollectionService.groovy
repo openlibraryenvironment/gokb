@@ -213,30 +213,47 @@ class EzbCollectionService {
                 log.debug("Existing package since: ${obj?.dateCreated} - EZB start ${dateFormatService.parseTimestamp(item.ezb_collection_released_date)}")
 
                 if (obj && obj.dateCreated > dateFormatService.parseTimestamp(item.ezb_collection_released_date)) {
-                  Job pkg_job = concurrencyManagerService.createJob { pjob ->
-                    packageSourceUpdateService.updateFromSource(obj, null, pjob, curator)
-                  }
+                  def deposit_token = java.util.UUID.randomUUID().toString()
+                  File tmp_file = TSVIngestionService.createTempFile(deposit_token)
+                  def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, src_url)
+                  RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
 
-                  pkg_job.groupId = curator.id
-                  pkg_job.description = "EZB KBART Source ingest (${obj.name})".toString()
-                  pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
-                  pkg_job.linkedItem = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
-                  pkg_job.message("Starting upsert for Package ${obj.name}".toString())
-                  pkg_job.startOrQueue()
-                  def job_result = pkg_job.get()
+                  def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
+                                                            where c.type = :ct
+                                                            and c.fromComponent = :pkg
+                                                            order by c.dateCreated desc''', [ct: type_fa, pkg: obj])
 
-                  if (Thread.currentThread().isInterrupted()) {
-                    break
-                    cancelled = true
-                  }
+                  def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
 
-                  log.debug("Finished job with result: ${job_result}")
+                  if (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex) {
+                    Job pkg_job = concurrencyManagerService.createJob { pjob ->
+                      packageSourceUpdateService.updateFromSource(obj, null, pjob, curator)
+                    }
 
-                  if (job_result.result == 'ERROR') {
-                    type_results.errors++
+                    pkg_job.groupId = curator.id
+                    pkg_job.description = "EZB KBART Source ingest (${obj.name})".toString()
+                    pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+                    pkg_job.linkedItem = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
+                    pkg_job.message("Starting upsert for Package ${obj.name}".toString())
+                    pkg_job.startOrQueue()
+                    def job_result = pkg_job.get()
+
+                    if (Thread.currentThread().isInterrupted()) {
+                      break
+                      cancelled = true
+                    }
+
+                    log.debug("Finished job with result: ${job_result}")
+
+                    if (job_result.result == 'ERROR') {
+                      type_results.errors++
+                    }
+                    else {
+                      type_results.success++
+                    }
                   }
                   else {
-                    type_results.success++
+                    log.debug("Skipping unchanged Package file ${obj.name}.")
                   }
                 }
                 else if (obj) {

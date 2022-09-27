@@ -191,17 +191,13 @@ class PackageSourceUpdateService {
                     datafile.fileData = tmp_file.getBytes()
                     datafile.save(failOnError:true,flush:true)
                     log.debug("Saved new datafile : ${datafile.id}")
-
-                    p.fileAttachments.add(datafile)
-                    p.save(flush: true)
                   }
                   else {
                     log.debug("Found existing datafile ${datafile}")
-                    RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
 
-                    def current_linked = DataFile.executeQuery("select id from DataFile as df where exists (select 1 from Combo where fromComponent = :pkg and toComponent = df and type = :ct) order by df.dateCreated desc", [pkg: p, ct: type_fa])
+                    Boolean noChange = hasFileChanged(p.id, datafile.id)
 
-                    if (current_linked.size() > 0 && current_linked[0] == datafile.id) {
+                    if (noChange) {
                       log.debug("Datafile was already the last import for this package!")
                       result.result = 'SKIPPED'
                       result.message = 'Skipped repeated import of the same file for this package.'
@@ -350,5 +346,15 @@ class PackageSourceUpdateService {
     }
 
     result
+  }
+
+  public Boolean hasFileChanged(pkgId, datafileId) {
+    RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+    def ordered_combos = Combo.executeQuery('''select c.toComponent.id from Combo as c
+                                              where c.type = :ct
+                                              and c.fromComponent.id = :pkg
+                                              order by c.dateCreated desc''', [ct: type_fa, pkg: pkgId])
+
+    return (ordered_combos.size() > 0 && ordered_combos[0] == datafileId)
   }
 }
