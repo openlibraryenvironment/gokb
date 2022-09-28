@@ -38,6 +38,13 @@ class BootStrap {
     def ESWrapperService
 
     def init = { servletContext ->
+        log.error("CATALINA HOME: ${System.properties['catalina.home']}")
+        def tomcatConfDir = new File("${System.properties['catalina.home']}/.grails")
+        if (tomcatConfDir?.isDirectory()) {
+            grailsApplication.config.locations << "file:${tomcatConfDir.canonicalPath}/${appName}-config.yml"
+            grailsApplication.config.locations << "file:${tomcatConfDir.canonicalPath}/${appName}-config.groovy"
+            grailsApplication.config.locations << "file:${tomcatConfDir.canonicalPath}/${appName}-config.properties"
+        }
 
         log.debug("\n\nInit\n\n")
 
@@ -131,7 +138,7 @@ class BootStrap {
             }
         }
 
-        if (grailsApplication.config.gokb.decisionSupport) {
+        if (grailsApplication.config.gokb.decisionSupport?.active) {
             log.debug("Configuring default decision support parameters");
             DSConfig();
         }
