@@ -350,13 +350,16 @@ class IngestKbartRun {
     catch (IllegalCharactersException ice) {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.replacementChars'
-      result.messages.add(ice.toString())
-      job?.exception(ice.toString())
+
+      if (job) {
+        job.exception = ice.toString()
+      }
     }
     catch (Exception e) {
-      job?.exception(e.toString())
+      if (job) {
+        job.exception = e.toString()
+      }
       result.result = 'ERROR'
-      result.messages.add(e.toString())
       log.error("Problem", e)
     }
 
