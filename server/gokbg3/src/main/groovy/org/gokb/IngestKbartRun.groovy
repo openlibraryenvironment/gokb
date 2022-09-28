@@ -179,8 +179,12 @@ class IngestKbartRun {
 
         long startTime = System.currentTimeMillis()
 
-        pkg.fileAttachments.add(datafile)
-        pkg.save(flush: true)
+        Package.withNewSession {
+          RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+          Package p = Package.get(pkg.id)
+
+          new Combo(fromComponent: p, toComponent: datafile, type: type_fa).save(flush: true)
+        }
 
         log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rownum} rows. Package is ${pkg.id}")
 
@@ -301,33 +305,37 @@ class IngestKbartRun {
           try {
             def update_agent = User.findByUsername('IngestAgent')
             // insertBenchmark updateBenchmark
-            def p = Package.get(pkg.id)
 
-            if ( p.insertBenchmark == null )
-              p.insertBenchmark = processing_elapsed
-            p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
-            p.lastUpdatedBy = update_agent
-            p.updateBenchmark = processing_elapsed
-            p.save(flush: true, failOnError: true)
+            Package.withNewSession {
+              Package p = Package.get(pkg.id)
 
-            def matching_job = concurrencyManagerService.createJob { mjob ->
-              Package.withNewSession {
-                tippService.matchPackage(p, mjob)
+              if ( p.insertBenchmark == null )
+                p.insertBenchmark = processing_elapsed
+
+              p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
+              p.lastUpdatedBy = update_agent
+              p.updateBenchmark = processing_elapsed
+              p.save(flush: true, failOnError: true)
+
+              def matching_job = concurrencyManagerService.createJob { mjob ->
+                Package.withNewSession {
+                  tippService.matchPackage(p, mjob)
+                }
               }
-            }
 
-            matching_job.description = "Package Title Matching".toString()
-            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
-            matching_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
-            matching_job.message("Starting title match for Package ${p.name}".toString())
-            matching_job.startOrQueue()
-            matching_job.startTime = new Date()
+              matching_job.description = "Package Title Matching".toString()
+              matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+              matching_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
+              matching_job.message("Starting title match for Package ${p.name}".toString())
+              matching_job.startOrQueue()
+              matching_job.startTime = new Date()
 
-            if (!async) {
-              result.matchingJob = matching_job.get()
-            }
-            else {
-              result.matchingJob = matching_job.uuid
+              if (!async) {
+                result.matchingJob = matching_job.get()
+              }
+              else {
+                result.matchingJob = matching_job.uuid
+              }
             }
           }
           catch (Exception e) {

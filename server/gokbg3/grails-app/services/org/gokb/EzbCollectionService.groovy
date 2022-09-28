@@ -194,6 +194,10 @@ class EzbCollectionService {
                     obj.ids << collection_id
                   }
 
+                  if(!obj.contentType) {
+                    obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Journal')
+                  }
+
                   if (!obj.curatoryGroups.contains(curator)) {
                     obj.curatoryGroups << curator
                   }
@@ -215,22 +219,23 @@ class EzbCollectionService {
                 if (obj && obj.dateCreated > dateFormatService.parseTimestamp(item.ezb_collection_released_date)) {
                   def deposit_token = java.util.UUID.randomUUID().toString()
                   File tmp_file = TSVIngestionService.createTempFile(deposit_token)
-                  def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, src_url)
+                  def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.ezb_collection_titlelist))
                   RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
 
                   def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
                                                             where c.type = :ct
-                                                            and c.fromComponent = :pkg
-                                                            order by c.dateCreated desc''', [ct: type_fa, pkg: obj])
+                                                            and c.fromComponent.id = :pkg
+                                                            order by c.dateCreated desc''', [ct: type_fa, pkg: obj.id])
 
                   def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
 
                   if (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex) {
+                    log.debug("Creating new import job ..")
                     Job pkg_job = concurrencyManagerService.createJob { pjob ->
                       packageSourceUpdateService.updateFromSource(obj, null, pjob, curator)
                     }
 
-                    pkg_job.groupId = curator.id
+                    pkg_job.groupId = curator?.id
                     pkg_job.description = "EZB KBART Source ingest (${obj.name})".toString()
                     pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
                     pkg_job.linkedItem = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]

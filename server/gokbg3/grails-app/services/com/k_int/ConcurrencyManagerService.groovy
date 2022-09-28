@@ -365,7 +365,7 @@ class ConcurrencyManagerService {
 
     // Filter the jobs.
     allJobs.each { k, v ->
-      if (v.hasProperty(propertyName) && (showFinished || !v.isDone()))
+      if (v && v.hasProperty(propertyName) && (showFinished || !v.isDone())) {
         if ((Integer.isInstance(v[propertyName]) && v[propertyName] == id) ||
             (Map.isInstance(v[propertyName]) && v[propertyName].id == id)) {
           CuratoryGroup cg = CuratoryGroup.get(v.groupId)
@@ -383,6 +383,10 @@ class ConcurrencyManagerService {
               cancelled  : v.isCancelled()
           ]
         }
+      }
+      else if (!v) {
+        log.error("Empty job $k in list!")
+      }
     }
 
     total = selected.size()
