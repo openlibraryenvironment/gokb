@@ -200,7 +200,7 @@ class BootStrap {
 
         if (grailsApplication.config.gokb.ezbOpenCollections?.url) {
             namespaces << [value: 'ezb', name: 'EZB-ID', pattern: "^\\d+\$"]
-            namespaces << [value: 'ezb-collection-id', name: 'EZB Collection ID', pattern: "^EZB-[A-Z0-9]{4,5}-\\d{5}\$"]
+            namespaces << [value: 'ezb-collection-id', name: 'EZB Collection ID', pattern: "^EZB-[A-Z0-9]{3,5}-\\d{5}\$"]
         }
 
         namespaces.each { ns ->

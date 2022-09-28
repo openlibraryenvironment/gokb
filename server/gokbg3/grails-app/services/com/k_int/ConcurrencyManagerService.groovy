@@ -98,7 +98,7 @@ class ConcurrencyManagerService {
      */
     @Override
     public synchronized boolean isDone() {
-      this.task.done
+      return (this.task ? this.task.done : true)
     }
 
     @Override
@@ -127,14 +127,14 @@ class ConcurrencyManagerService {
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
-      this.task.cancel(mayInterruptIfRunning)
+      this.task?.cancel(mayInterruptIfRunning)
       message("cancel Job ($uuid)")
       endTime = new Date()
     }
 
     @Override
     public boolean isCancelled() {
-      this.task.isCancelled();
+      return (this.task ? this.task.isCancelled() : true)
     }
 
     /**
@@ -186,7 +186,7 @@ class ConcurrencyManagerService {
      */
     @Override
     public def get() {
-      return task.get()
+      return task?.get() ?: null
     }
 
     /**

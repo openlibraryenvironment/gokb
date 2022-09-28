@@ -325,7 +325,7 @@ class AdminController {
           def job_res = j.get()
 
           if (job_res && job_res instanceof Date) {
-            j.endTime = j.get()
+            j.endTime = job_res
           }
         }
         catch (CancellationException e) {

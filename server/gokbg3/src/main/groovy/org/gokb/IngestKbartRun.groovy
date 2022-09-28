@@ -318,9 +318,7 @@ class IngestKbartRun {
               p.save(flush: true, failOnError: true)
 
               def matching_job = concurrencyManagerService.createJob { mjob ->
-                Package.withNewSession {
-                  tippService.matchPackage(p, mjob)
-                }
+                tippService.matchPackage(p, mjob)
               }
 
               matching_job.description = "Package Title Matching".toString()
@@ -353,10 +351,10 @@ class IngestKbartRun {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.replacementChars'
       result.messages.add(ice.toString())
-      job?.message(ice.toString())
+      job?.exception(ice.toString())
     }
     catch (Exception e) {
-      job?.message(e.toString())
+      job?.exception(e.toString())
       result.result = 'ERROR'
       result.messages.add(e.toString())
       log.error("Problem", e)
@@ -984,6 +982,44 @@ class IngestKbartRun {
     if (!row_data.title_url || !row_data.title_url.trim()) {
       errors.add("Row ${rownum} does not contain a value for 'title_url'")
       result = false
+    }
+
+    if (row_data.print_identifier?.trim() && row_data.publication_type?.trim()) {
+      if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.JournalInstance") {
+        def valid = (row_data.print_identifier.trim() ==~ ~"^\\d{4}\\-\\d{3}[\\dX]\$")
+
+        if (!valid) {
+          errors.add("Row ${rownum} contains an invalid print_identifier ${row_data.print_identifier}")
+          result = false
+        }
+      }
+      else if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.BookInstance") {
+        def valid = (row_data.print_identifier.trim() ==~ ~"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$")
+
+        if (!valid) {
+          errors.add("Row ${rownum} contains an invalid print_identifier ${row_data.print_identifier}")
+          result = false
+        }
+      }
+    }
+
+    if (row_data.online_identifier?.trim() && row_data.publication_type?.trim()) {
+      if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.JournalInstance") {
+        def valid = (row_data.print_identifier.trim() ==~ ~"^\\d{4}\\-\\d{3}[\\dX]\$")
+
+        if (!valid) {
+          errors.add("Row ${rownum} contains an invalid online_identifier ${row_data.online_identifier}")
+          result = false
+        }
+      }
+      else if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.BookInstance") {
+        def valid = (row_data.online_identifier.trim() ==~ ~"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$")
+
+        if (!valid) {
+          errors.add("Row ${rownum} contains an invalid online_identifier ${row_data.online_identifier}")
+          result = false
+        }
+      }
     }
 
     if (!result) {

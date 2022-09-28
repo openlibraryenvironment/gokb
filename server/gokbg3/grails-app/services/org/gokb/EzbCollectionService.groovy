@@ -116,10 +116,12 @@ class EzbCollectionService {
           noProvider: 0,
           noPlatform: 0,
           noCurator: 0,
+          unchanged: 0,
           updated: 0,
           created: 0,
           errors: 0,
-          success: 0
+          success: 0,
+          skippedList: []
         ]
 
         if (!cancelled) {
@@ -134,7 +136,7 @@ class EzbCollectionService {
               Org provider = item.ezb_collection_provider ? Org.findByUuid(item.ezb_collection_provider) : null
               boolean skipped = false
 
-              if (item.ezb_collection_curatory_group != 'ezb_curatory_group') {
+              if (item.ezb_collection_curatory_group) {
                 def local_cg = CuratoryGroup.findByUuid(item.ezb_collection_curatory_group)
 
                 if (local_cg) {
@@ -210,7 +212,7 @@ class EzbCollectionService {
 
                     obj.source = source
 
-                    obj.save(flush: true, failOnError: true)
+                    obj = obj.save(flush: true, failOnError: true)
                   }
                 }
 
@@ -220,6 +222,7 @@ class EzbCollectionService {
                   def deposit_token = java.util.UUID.randomUUID().toString()
                   File tmp_file = TSVIngestionService.createTempFile(deposit_token)
                   def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.ezb_collection_titlelist))
+                  def pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
                   RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
 
                   def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
@@ -230,35 +233,43 @@ class EzbCollectionService {
                   def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
 
                   if (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex) {
+                    obj.refresh()
                     log.debug("Creating new import job ..")
-                    Job pkg_job = concurrencyManagerService.createJob { pjob ->
-                      packageSourceUpdateService.updateFromSource(obj, null, pjob, curator)
+                    try {
+                      Job pkg_job = concurrencyManagerService.createJob { pjob ->
+                        packageSourceUpdateService.updateFromSource(obj, null, pjob, curator)
+                      }
+
+                      pkg_job.groupId = curator?.id
+                      pkg_job.description = "EZB KBART Source ingest (${obj.name})".toString()
+                      pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+                      pkg_job.linkedItem = pkgInfo
+                      pkg_job.message("Starting upsert for Package ${obj.name}".toString())
+                      pkg_job.startOrQueue()
+                      def job_result = pkg_job.get()
+
+                      if (Thread.currentThread().isInterrupted()) {
+                        break
+                        cancelled = true
+                      }
+
+                      log.debug("Finished job with result: ${job_result}")
+
+                      if (job_result.result == 'ERROR') {
+                        type_results.errors++
+                      }
+                      else {
+                        type_results.success++
+                      }
                     }
-
-                    pkg_job.groupId = curator?.id
-                    pkg_job.description = "EZB KBART Source ingest (${obj.name})".toString()
-                    pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
-                    pkg_job.linkedItem = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
-                    pkg_job.message("Starting upsert for Package ${obj.name}".toString())
-                    pkg_job.startOrQueue()
-                    def job_result = pkg_job.get()
-
-                    if (Thread.currentThread().isInterrupted()) {
-                      break
-                      cancelled = true
-                    }
-
-                    log.debug("Finished job with result: ${job_result}")
-
-                    if (job_result.result == 'ERROR') {
+                    catch (Exception e) {
+                      log.error("Exception creating source update job!", e)
                       type_results.errors++
-                    }
-                    else {
-                      type_results.success++
                     }
                   }
                   else {
                     log.debug("Skipping unchanged Package file ${obj.name}.")
+                    type_results.unchanged++
                   }
                 }
                 else if (obj) {
@@ -273,10 +284,12 @@ class EzbCollectionService {
                 log.debug("Unable to reference a local curatory group for ${item.ezb_collection_curatory_group}")
                 type_results.skipped++
                 type_results.noCurator++
+                type_results.skippedList << item.ezb_collection_id
               }
               else {
                 log.debug("Skipping package due to missing info! Provider: ${provider}, Platform: ${platform}")
                 type_results.skipped++
+                type_results.skippedList << item.ezb_collection_id
 
                 if (!provider) {
                   type_results.noProvider++

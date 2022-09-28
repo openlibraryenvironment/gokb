@@ -19,7 +19,7 @@ class PackageSourceUpdateService {
     def result = null
     def activeJobs = concurrencyManagerService.getComponentJobs(p.id)
 
-    if (job || activeJobs?.data.size() == 0) {
+    if (job || activeJobs?.data?.size() == 0) {
       log.debug("UpdateFromSource started")
       result = startSourceUpdate(p, user, job, activeGroup)
     }
@@ -224,7 +224,7 @@ class PackageSourceUpdateService {
 
               if (datafile) {
                 if (job) {
-                  result = TSVIngestionService.updatePackage(pkg,
+                  result = TSVIngestionService.updatePackage(p,
                                                              datafile,
                                                              title_ns,
                                                              (user ? true : false),
@@ -236,7 +236,7 @@ class PackageSourceUpdateService {
                 }
                 else {
                   Job update_job = concurrencyManagerService.createJob { Job j ->
-                    TSVIngestionService.updatePackage(pkg,
+                    TSVIngestionService.updatePackage(p,
                                                       datafile,
                                                       title_ns,
                                                       (user ? true : false),
@@ -255,10 +255,10 @@ class PackageSourceUpdateService {
                     update_job.ownerId = user.id
                   }
 
-                  update_job.description = "KBART REST ingest (${pkg.name})".toString()
+                  update_job.description = "KBART REST ingest (${p.name})".toString()
                   update_job.type = RefdataCategory.lookup('Job.Type', 'KBARTIngest')
-                  update_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
-                  update_job.message("Starting upsert for Package ${pkg.name}".toString())
+                  update_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
+                  update_job.message("Starting upsert for Package ${p.name}".toString())
                   update_job.startOrQueue()
                   result.job_result = update_job.get()
                 }
