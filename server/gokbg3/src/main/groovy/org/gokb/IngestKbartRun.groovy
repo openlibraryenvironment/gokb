@@ -179,6 +179,13 @@ class IngestKbartRun {
 
         long startTime = System.currentTimeMillis()
 
+        Package.withNewSession {
+          RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+          Package p = Package.get(pkg.id)
+
+          new Combo(fromComponent: p, toComponent: datafile, type: type_fa).save(flush: true)
+        }
+
         log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rownum} rows. Package is ${pkg.id}")
 
         boolean more = true
@@ -298,33 +305,35 @@ class IngestKbartRun {
           try {
             def update_agent = User.findByUsername('IngestAgent')
             // insertBenchmark updateBenchmark
-            def p = Package.get(pkg.id)
 
-            if ( p.insertBenchmark == null )
-              p.insertBenchmark = processing_elapsed
-            p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
-            p.lastUpdatedBy = update_agent
-            p.updateBenchmark = processing_elapsed
-            p.save(flush: true, failOnError: true)
+            Package.withNewSession {
+              Package p = Package.get(pkg.id)
 
-            def matching_job = concurrencyManagerService.createJob { mjob ->
-              Package.withNewSession {
+              if ( p.insertBenchmark == null )
+                p.insertBenchmark = processing_elapsed
+
+              p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
+              p.lastUpdatedBy = update_agent
+              p.updateBenchmark = processing_elapsed
+              p.save(flush: true, failOnError: true)
+
+              def matching_job = concurrencyManagerService.createJob { mjob ->
                 tippService.matchPackage(p, mjob)
               }
-            }
 
-            matching_job.description = "Package Title Matching".toString()
-            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
-            matching_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
-            matching_job.message("Starting title match for Package ${p.name}".toString())
-            matching_job.startOrQueue()
-            matching_job.startTime = new Date()
+              matching_job.description = "Package Title Matching".toString()
+              matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+              matching_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
+              matching_job.message("Starting title match for Package ${p.name}".toString())
+              matching_job.startOrQueue()
+              matching_job.startTime = new Date()
 
-            if (!async) {
-              result.matchingJob = matching_job.get()
-            }
-            else {
-              result.matchingJob = matching_job.uuid
+              if (!async) {
+                result.matchingJob = matching_job.get()
+              }
+              else {
+                result.matchingJob = matching_job.uuid
+              }
             }
           }
           catch (Exception e) {
@@ -341,13 +350,16 @@ class IngestKbartRun {
     catch (IllegalCharactersException ice) {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.replacementChars'
-      result.messages.add(ice.toString())
-      job?.message(ice.toString())
+
+      if (job) {
+        job.exception = ice.toString()
+      }
     }
     catch (Exception e) {
-      job?.message(e.toString())
+      if (job) {
+        job.exception = e.toString()
+      }
       result.result = 'ERROR'
-      result.messages.add(e.toString())
       log.error("Problem", e)
     }
 
@@ -973,6 +985,44 @@ class IngestKbartRun {
     if (!row_data.title_url || !row_data.title_url.trim()) {
       errors.add("Row ${rownum} does not contain a value for 'title_url'")
       result = false
+    }
+
+    if (row_data.print_identifier?.trim() && row_data.publication_type?.trim()) {
+      if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.JournalInstance") {
+        def valid = (row_data.print_identifier.trim() ==~ ~"^\\d{4}\\-\\d{3}[\\dX]\$")
+
+        if (!valid) {
+          errors.add("Row ${rownum} contains an invalid print_identifier ${row_data.print_identifier}")
+          result = false
+        }
+      }
+      else if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.BookInstance") {
+        def valid = (row_data.print_identifier.trim() ==~ ~"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$")
+
+        if (!valid) {
+          errors.add("Row ${rownum} contains an invalid print_identifier ${row_data.print_identifier}")
+          result = false
+        }
+      }
+    }
+
+    if (row_data.online_identifier?.trim() && row_data.publication_type?.trim()) {
+      if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.JournalInstance") {
+        def valid = (row_data.print_identifier.trim() ==~ ~"^\\d{4}\\-\\d{3}[\\dX]\$")
+
+        if (!valid) {
+          errors.add("Row ${rownum} contains an invalid online_identifier ${row_data.online_identifier}")
+          result = false
+        }
+      }
+      else if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.BookInstance") {
+        def valid = (row_data.online_identifier.trim() ==~ ~"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$")
+
+        if (!valid) {
+          errors.add("Row ${rownum} contains an invalid online_identifier ${row_data.online_identifier}")
+          result = false
+        }
+      }
     }
 
     if (!result) {

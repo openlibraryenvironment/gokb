@@ -176,65 +176,68 @@ class TippService {
     tipp
   }
 
-  def matchPackage(Package aPackage, def job = null) {
-    log.debug("Matching titles for package ${aPackage}")
+  def matchPackage(Package pkg, def job = null) {
+    log.debug("Matching titles for package ${pkg}")
     def result = [matched: 0, created: 0, unmatched: 0, result: 'OK']
-    def more = true
-    int offset = 0
 
-    try {
-      CuratoryGroup group = job?.groupId ? CuratoryGroup.get(job?.groupId) : null
+    Package.withNewSession { session ->
+      Package aPackage = Package.get(pkg.id)
+      def more = true
+      int offset = 0
 
-      def tippIDs = TitleInstancePackagePlatform.executeQuery(
-        'select tipp.id from TitleInstancePackagePlatform as tipp where exists (' +
-            'from Combo as c1 where c1.fromComponent=:pkg and c1.toComponent=tipp) ' +
-            'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:ctt)',
-        [
-            pkg : aPackage,
-            ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
-        ],
-        [readOnly: true]
-      )
+      try {
+        CuratoryGroup group = job?.groupId ? CuratoryGroup.get(job?.groupId) : null
 
-      int total = tippIDs.size()
+        def tippIDs = TitleInstancePackagePlatform.executeQuery(
+          'select tipp.id from TitleInstancePackagePlatform as tipp where exists (' +
+              'from Combo as c1 where c1.fromComponent=:pkg and c1.toComponent=tipp) ' +
+              'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:ctt)',
+          [
+              pkg : aPackage,
+              ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
+          ],
+          [readOnly: true]
+        )
 
-      while (tippIDs.size() > 0) {
-        def batchSize = tippIDs.size() > 50 ? 50 : tippIDs.size()
-        def batch = tippIDs.take(batchSize)
-        tippIDs = tippIDs.drop(batchSize)
+        int total = tippIDs.size()
 
-        batch.each { id ->
-          def matchResult = matchTitle(TitleInstancePackagePlatform.get(id), group)
-          result[matchResult]++
-          offset++
-          job?.setProgress(offset, total)
+        while (tippIDs.size() > 0) {
+          def batchSize = tippIDs.size() > 50 ? 50 : tippIDs.size()
+          def batch = tippIDs.take(batchSize)
+          tippIDs = tippIDs.drop(batchSize)
+
+          batch.each { id ->
+            def matchResult = matchTitle(TitleInstancePackagePlatform.get(id), group)
+            result[matchResult]++
+            offset++
+            job?.setProgress(offset, total)
+          }
+          // Get the current session.
+          // flush and clear the session.
+          session.flush()
+          session.clear()
+
+          if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
+            job?.message("Job cancelled!")
+            log.debug("cancelling package title matching for job #${job?.uuid}")
+            result.result = 'CANCELLED'
+            more = false
+            break
+          }
+
         }
-        // Get the current session.
-        def session = sessionFactory.currentSession
-        // flush and clear the session.
-        session.flush()
-        session.clear()
 
-        if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
-          job?.message("Job cancelled!")
-          log.debug("cancelling package title matching for job #${job?.uuid}")
-          result.result = 'CANCELLED'
-          more = false
-          break
+        if (job) {
+          job.setProgress(100)
+          job.message("Finished package title matching.")
+          job.endTime = new Date()
         }
-
-      }
-
-      if (job) {
-        job.setProgress(100)
-        job.message("Finished package title matching.")
-        job.endTime = new Date()
-      }
 
       log.debug("Finished title matching for ${total} Titles")
-    } catch (Exception e) {
-      log.error("Error matching package titles!", e)
-      result.result = 'ERROR'
+      } catch (Exception e) {
+        log.error("Error matching package titles!", e)
+        result.result = 'ERROR'
+      }
     }
 
     result
@@ -853,7 +856,6 @@ class TippService {
     }
 
     log.debug("Update simple fields: ${tippInfo}")
-    componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
 
     ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
     'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'subjectArea', 'series'].each { propName ->
