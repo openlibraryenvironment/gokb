@@ -121,7 +121,8 @@ class EzbCollectionService {
           created: 0,
           errors: 0,
           success: 0,
-          skippedList: []
+          skippedList: [],
+          validationErrors: [:]
         ]
 
         if (!cancelled) {
@@ -254,6 +255,10 @@ class EzbCollectionService {
                       }
 
                       log.debug("Finished job with result: ${job_result}")
+
+                      if (job_result.badrows) {
+                        type_results[item.ezb_collection_id] = job_result.badrows
+                      }
 
                       if (job_result.result == 'ERROR') {
                         type_results.errors++

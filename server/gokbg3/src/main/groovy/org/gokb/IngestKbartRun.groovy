@@ -178,13 +178,8 @@ class IngestKbartRun {
         }
 
         long startTime = System.currentTimeMillis()
-
-        Package.withNewSession {
-          RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
-          Package p = Package.get(pkg.id)
-
-          new Combo(fromComponent: p, toComponent: datafile, type: type_fa).save(flush: true)
-        }
+        RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+        new Combo(fromComponent: pkg, toComponent: datafile, type: type_fa).save(flush: true)
 
         log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rownum} rows. Package is ${pkg.id}")
 
@@ -303,12 +298,11 @@ class IngestKbartRun {
 
         if (!dryRun) {
           try {
-            def update_agent = User.findByUsername('IngestAgent')
-            // insertBenchmark updateBenchmark
-
             Package.withNewSession {
               Package p = Package.get(pkg.id)
 
+              def update_agent = User.findByUsername('IngestAgent')
+              // insertBenchmark updateBenchmark
               if ( p.insertBenchmark == null )
                 p.insertBenchmark = processing_elapsed
 
@@ -316,24 +310,26 @@ class IngestKbartRun {
               p.lastUpdatedBy = update_agent
               p.updateBenchmark = processing_elapsed
               p.save(flush: true, failOnError: true)
+            }
 
-              def matching_job = concurrencyManagerService.createJob { mjob ->
-                tippService.matchPackage(p, mjob)
+            def matching_job = concurrencyManagerService.createJob { mjob ->
+              Package.withNewSession {
+                tippService.matchPackage(pkg.id, mjob)
               }
+            }
 
-              matching_job.description = "Package Title Matching".toString()
-              matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
-              matching_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
-              matching_job.message("Starting title match for Package ${p.name}".toString())
-              matching_job.startOrQueue()
-              matching_job.startTime = new Date()
+            matching_job.description = "Package Title Matching".toString()
+            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+            matching_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+            matching_job.message("Starting title match for Package ${pkg.name}".toString())
+            matching_job.startOrQueue()
+            matching_job.startTime = new Date()
 
-              if (!async) {
-                result.matchingJob = matching_job.get()
-              }
-              else {
-                result.matchingJob = matching_job.uuid
-              }
+            if (!async) {
+              result.matchingJob = matching_job.get()
+            }
+            else {
+              result.matchingJob = matching_job.uuid
             }
           }
           catch (Exception e) {
@@ -363,25 +359,28 @@ class IngestKbartRun {
       log.error("Problem", e)
     }
 
-    job?.setProgress(100)
-    job?.endTime = new Date()
+    if (job) {
+      job.setProgress(100)
+      job.endTime = new Date()
 
-    def result_object = JobResult.findByUuid(job?.uuid)
+      def result_object = JobResult.findByUuid(job.uuid)
 
-    if (!result_object) {
-      def job_map = [
-          uuid        : (job?.uuid),
-          description : (job?.description),
-          resultObject: (result as JSON).toString(),
-          type        : (job?.type),
-          statusText  : (result.result),
-          ownerId     : (job?.ownerId),
-          groupId     : (job?.groupId),
-          startTime   : (job?.startTime),
-          endTime     : (job?.endTime),
-          linkedItemId: (job?.linkedItem?.id)
-      ]
-      new JobResult(job_map).save(flush: true, failOnError: true)
+      if (!result_object) {
+        def job_map = [
+            uuid        : (job.uuid),
+            description : (job.description),
+            resultObject: (result as JSON).toString(),
+            type        : (job.type),
+            statusText  : (result.result),
+            ownerId     : (job.ownerId),
+            groupId     : (job.groupId),
+            startTime   : (job.startTime),
+            endTime     : (job.endTime),
+            linkedItemId: (job.linkedItem?.id)
+        ]
+
+        new JobResult(job_map).save(flush: true, failOnError: true)
+      }
     }
 
     def elapsed = System.currentTimeMillis() - start_time
@@ -988,7 +987,7 @@ class IngestKbartRun {
     }
 
     if (row_data.print_identifier?.trim() && row_data.publication_type?.trim()) {
-      if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.JournalInstance") {
+      if (TitleInstance.determineTitleClass(row_data.publication_type) == "org.gokb.cred.JournalInstance") {
         def valid = (row_data.print_identifier.trim() ==~ ~"^\\d{4}\\-\\d{3}[\\dX]\$")
 
         if (!valid) {
@@ -996,7 +995,7 @@ class IngestKbartRun {
           result = false
         }
       }
-      else if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.BookInstance") {
+      else if (TitleInstance.determineTitleClass(row_data.publication_type) == "org.gokb.cred.BookInstance") {
         def valid = (row_data.print_identifier.trim() ==~ ~"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$")
 
         if (!valid) {
@@ -1007,15 +1006,15 @@ class IngestKbartRun {
     }
 
     if (row_data.online_identifier?.trim() && row_data.publication_type?.trim()) {
-      if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.JournalInstance") {
-        def valid = (row_data.print_identifier.trim() ==~ ~"^\\d{4}\\-\\d{3}[\\dX]\$")
+      if (TitleInstance.determineTitleClass(row_data.publication_type) == "org.gokb.cred.JournalInstance") {
+        def valid = (row_data.online_identifier.trim() ==~ ~"^\\d{4}\\-\\d{3}[\\dX]\$")
 
         if (!valid) {
           errors.add("Row ${rownum} contains an invalid online_identifier ${row_data.online_identifier}")
           result = false
         }
       }
-      else if (titleLookupService.determineTitleClass(row_data.publication_type) == "org.gokb.cred.BookInstance") {
+      else if (TitleInstance.determineTitleClass(row_data.publication_type) == "org.gokb.cred.BookInstance") {
         def valid = (row_data.online_identifier.trim() ==~ ~"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$")
 
         if (!valid) {
@@ -1026,7 +1025,7 @@ class IngestKbartRun {
     }
 
     if (!result) {
-      log.error("Recording bad row : ${reasons}")
+      log.error("Recording bad row ${rownum}: ${errors}")
       badrows.add([rowdata: row_data, errors: errors, row: rownum])
     }
 

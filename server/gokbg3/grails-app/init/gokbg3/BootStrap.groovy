@@ -14,6 +14,7 @@ import org.opensearch.common.xcontent.XContentType
 import org.gokb.AugmentEzbJob
 import org.gokb.AugmentZdbJob
 import org.gokb.AutoUpdatePackagesJob
+import org.gokb.TippMatchingJob
 import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
@@ -250,6 +251,7 @@ class BootStrap {
             AugmentZdbJob.schedule(grailsApplication.config.gokb.zdbAugment.cron)
             AugmentEzbJob.schedule(grailsApplication.config.gokb.ezbAugment.cron)
             AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron)
+            TippMatchingJob.schedule(grailsApplication.config.gokb.tippMatching.cron)
         }
 
         log.info("GoKB Init complete")
