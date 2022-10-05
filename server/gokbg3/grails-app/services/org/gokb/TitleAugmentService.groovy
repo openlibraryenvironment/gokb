@@ -552,7 +552,7 @@ class TitleAugmentService {
 
   public void addIdentifiers(ids, ti) {
     ids.each { new_id ->
-      def existing_combo = Combo.executeQuery("from Combo where fromComponent = ? and toComponent = ?", [ti, new_id])
+      def existing_combo = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :nid", [ti: ti, nid: new_id])
 
       if (existing_combo.size() == 0) {
         ti.ids.add(new_id)

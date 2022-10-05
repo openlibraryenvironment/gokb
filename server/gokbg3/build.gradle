@@ -67,7 +67,7 @@ dependencies {
     compile "org.hibernate:hibernate-core:5.1.5.Final"
     compile "org.grails.plugins:gsp"
     compile "org.grails.plugins:mail:2.0.0"
-    compile 'org.grails.plugins:greenmail:2.0.0.RC2'
+    // compile 'org.grails.plugins:greenmail:2.0.0.RC2'
     compile 'org.grails.plugins:cache-headers:2.0.2'
     compile 'org.grails.plugins:database-migration:3.0.3'
     compile 'org.grails.plugins:grails-melody-plugin:1.80.0'
