@@ -319,13 +319,13 @@ class AdminController {
     result.cms = concurrencyManagerService
 
     result.jobs.each { k, j ->
-      if (j.isDone() && !j.endTime) {
+      if (j && j.isDone() && !j.endTime) {
 
         try {
           def job_res = j.get()
 
           if (job_res && job_res instanceof Date) {
-            j.endTime = j.get()
+            j.endTime = job_res
           }
         }
         catch (CancellationException e) {
@@ -341,6 +341,9 @@ class AdminController {
           }
 
         }
+      }
+      else if (!j) {
+        log.error("No job for ID $k in list!")
       }
     }
 

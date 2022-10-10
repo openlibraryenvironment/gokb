@@ -15,8 +15,7 @@ class TippMatchingJob {
   static concurrent = false
 
   static triggers = {
-    // Cron timer.
-    cron name: 'TippMatchingTrigger', cronExpression: "0 0 4 * * ?"
+    // See Bootstrap.groovy
   }
 
   def tippService

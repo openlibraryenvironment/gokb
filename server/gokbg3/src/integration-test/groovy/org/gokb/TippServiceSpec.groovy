@@ -16,6 +16,7 @@ import org.gokb.cred.Platform
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
+import org.gokb.cred.Combo
 import org.hibernate.SessionFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.annotation.Rollback
@@ -29,9 +30,11 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
 
   private Package pkg
   private Platform plt
-  private TitleInstance book, journal
+  private TitleInstance book
   private Identifier isbn
+  private Identifier issn
   private Org publisher
+  private Package packMatch
 
   @Autowired
   TippService tippService
@@ -40,11 +43,13 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
   ConcurrencyManagerService concurrencyManagerService
 
   def setup() {
-    pkg = new Package(name: "Test Package").save(flush: true)
-    plt = new Platform(name: "Test Platform").save(flush: true)
-    isbn = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5').save(flush: true)
-    book = new BookInstance(name: "Book 1").save(flush:true)
+    pkg = new Package(name: "TS Test Package").save(flush: true)
+    plt = new Platform(name: "TS Test Platform").save(flush: true)
+    isbn = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5')
+    issn = new Identifier(namespace: IdentifierNamespace.findByValue('eissn'), value: '2209-7643')
+    book = new BookInstance(name: "TS Book 1").save(flush:true)
     book.ids.add(isbn)
+    book.save(flush: true)
     publisher = new Org(name: "Publizistenname").save(flush: true)
   }
 
@@ -52,7 +57,6 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     pkg.expunge()
     plt.expunge()
     book.expunge()
-    isbn.expunge()
   }
 
   void "Test create new title from a minimal TIPP"() {
@@ -156,36 +160,26 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     tipp.title == book
   }
 
-  @Rollback
   void "Test Package Update from TIPPs"() {
-    given: // a package with unmatched TIPPs
-    def pack = new Package(name: "Import Package")
-    def platform = new Platform(name: "Import Platform")
-    def aISBN = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '978-11-656-6370-8')
-    def zdbId = new Identifier(namespace: IdentifierNamespace.findByValue('zdb'), value: '1655639-0')
-    def book1 = new BookInstance(name: "Book 1")
-    book1.ids.add(aISBN)
-    def tipp1 = TitleInstancePackagePlatform.upsertDTO([
-      name           : "Book 1",
-      pkg            : pack.id,
-      hostPlatform   : platform.id,
-      publicationType: "Monograph"])
-    tipp1.ids << aISBN
-    tipp1.save(flush: true)
-
-    def tipp2 = TitleInstancePackagePlatform.upsertDTO([
-      name           : "Journal 1",
-      pkg            : pack.id,
-      hostPlatform   : platform.id,
-      publicationType: "Serial"])
-    tipp2.ids.add(zdbId)
-    tipp2.save(flush: true)
-
+    given:
+    def updPack = new Package(name: "TS Import Package").save(flush: true)
+    def updBook = new BookInstance(name: "TS Update Book").save(flush: true)
+    def updIsbn = new Identifier(value: '9783631725290', namespace: IdentifierNamespace.findByValue('isbn')).save(flush: true)
+    updBook.ids.add(updIsbn)
+    updBook.save(flush: true)
+    def tBook = TitleInstancePackagePlatform.tiplAwareCreate([name: "TS Book 1", pkg: updPack, hostPlatform: plt, url: 'http://tippservicebook.com/test'])
+    tBook.ids.add(updIsbn)
+    tBook.publicationType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Monograph')
+    tBook.save(flush: true)
+    def tJournal = TitleInstancePackagePlatform.tiplAwareCreate([name: "TS Update Journal", pkg: updPack, hostPlatform: plt, url: 'http://tippservicejournal.com/test'])
+    tJournal.ids.add(issn)
+    tJournal.publicationType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Serial')
+    tJournal.save(flush: true)
     when:
-    tippService.matchPackage(pack)
+    def result = tippService.matchPackage(updPack.id)
 
     then:
-    tipp1.title == book1
-    tipp2.title != null
+    result.matched == 1
+    result.created == 1
   }
 }

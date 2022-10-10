@@ -14,6 +14,7 @@ import org.opensearch.common.xcontent.XContentType
 import org.gokb.AugmentEzbJob
 import org.gokb.AugmentZdbJob
 import org.gokb.AutoUpdatePackagesJob
+import org.gokb.TippMatchingJob
 import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
@@ -200,7 +201,7 @@ class BootStrap {
 
         if (grailsApplication.config.gokb.ezbOpenCollections?.url) {
             namespaces << [value: 'ezb', name: 'EZB-ID', pattern: "^\\d+\$"]
-            namespaces << [value: 'ezb-collection-id', name: 'EZB Collection ID', pattern: "^EZB-[A-Z0-9]{4,5}-\\d{5}\$"]
+            namespaces << [value: 'ezb-collection-id', name: 'EZB Collection ID', pattern: "^EZB-[A-Z0-9]{3,5}-\\d{5}\$"]
         }
 
         namespaces.each { ns ->
@@ -250,6 +251,7 @@ class BootStrap {
             AugmentZdbJob.schedule(grailsApplication.config.gokb.zdbAugment.cron)
             AugmentEzbJob.schedule(grailsApplication.config.gokb.ezbAugment.cron)
             AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron)
+            TippMatchingJob.schedule(grailsApplication.config.gokb.tippMatching.cron)
         }
 
         log.info("GoKB Init complete")

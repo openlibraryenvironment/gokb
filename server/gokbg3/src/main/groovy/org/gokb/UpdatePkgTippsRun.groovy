@@ -313,7 +313,7 @@ class UpdatePkgTippsRun {
           }
         }
 
-        tippService.matchPackage(pkg, job)
+        tippService.matchPackage(pkg.id, job)
 
         log.debug("final flush")
         cleanupService.cleanUpGorm()
@@ -567,7 +567,7 @@ class UpdatePkgTippsRun {
             matched_tipps[tipp.id]++
           }
 
-          tippService.updateTippFields(tipp, tippJson, true, user)
+          tippService.updateTippFields(tipp, tippJson, user)
         }
       }
       catch (grails.validation.ValidationException ve) {

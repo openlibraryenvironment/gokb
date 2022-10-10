@@ -450,7 +450,7 @@ class ESSearchService{
       }
     }
     else if (qpars.suggest) {
-      def sanitized_param = sanitizeParam(qpars.altname)
+      def sanitized_param = sanitizeParam(qpars.suggest)
       query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(Operator.AND).boost(0.6f))
     }
     else if (qpars.qsName) {

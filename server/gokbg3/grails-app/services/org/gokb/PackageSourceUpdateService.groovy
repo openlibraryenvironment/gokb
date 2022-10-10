@@ -19,7 +19,7 @@ class PackageSourceUpdateService {
     def result = null
     def activeJobs = concurrencyManagerService.getComponentJobs(p.id)
 
-    if (job || activeJobs?.data.size() == 0) {
+    if (job || activeJobs?.data?.size() == 0) {
       log.debug("UpdateFromSource started")
       result = startSourceUpdate(p, user, job, activeGroup)
     }
@@ -191,17 +191,13 @@ class PackageSourceUpdateService {
                     datafile.fileData = tmp_file.getBytes()
                     datafile.save(failOnError:true,flush:true)
                     log.debug("Saved new datafile : ${datafile.id}")
-
-                    p.fileAttachments.add(datafile)
-                    p.save(flush: true)
                   }
                   else {
                     log.debug("Found existing datafile ${datafile}")
-                    RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
 
-                    def current_linked = DataFile.executeQuery("select id from DataFile as df where exists (select 1 from Combo where fromComponent = :pkg and toComponent = df and type = :ct) order by df.dateCreated desc", [pkg: p, ct: type_fa])
+                    Boolean noChange = hasFileChanged(p.id, datafile.id)
 
-                    if (current_linked.size() > 0 && current_linked[0] == datafile.id) {
+                    if (noChange) {
                       log.debug("Datafile was already the last import for this package!")
                       result.result = 'SKIPPED'
                       result.message = 'Skipped repeated import of the same file for this package.'
@@ -228,7 +224,7 @@ class PackageSourceUpdateService {
 
               if (datafile) {
                 if (job) {
-                  result = TSVIngestionService.updatePackage(pkg,
+                  result = TSVIngestionService.updatePackage(p,
                                                              datafile,
                                                              title_ns,
                                                              (user ? true : false),
@@ -240,7 +236,7 @@ class PackageSourceUpdateService {
                 }
                 else {
                   Job update_job = concurrencyManagerService.createJob { Job j ->
-                    TSVIngestionService.updatePackage(pkg,
+                    TSVIngestionService.updatePackage(p,
                                                       datafile,
                                                       title_ns,
                                                       (user ? true : false),
@@ -259,10 +255,10 @@ class PackageSourceUpdateService {
                     update_job.ownerId = user.id
                   }
 
-                  update_job.description = "KBART REST ingest (${pkg.name})".toString()
+                  update_job.description = "KBART REST ingest (${p.name})".toString()
                   update_job.type = RefdataCategory.lookup('Job.Type', 'KBARTIngest')
-                  update_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
-                  update_job.message("Starting upsert for Package ${pkg.name}".toString())
+                  update_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
+                  update_job.message("Starting upsert for Package ${p.name}".toString())
                   update_job.startOrQueue()
                   result.job_result = update_job.get()
                 }
@@ -350,5 +346,15 @@ class PackageSourceUpdateService {
     }
 
     result
+  }
+
+  public Boolean hasFileChanged(pkgId, datafileId) {
+    RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+    def ordered_combos = Combo.executeQuery('''select c.toComponent.id from Combo as c
+                                              where c.type = :ct
+                                              and c.fromComponent.id = :pkg
+                                              order by c.dateCreated desc''', [ct: type_fa, pkg: pkgId])
+
+    return (ordered_combos.size() > 0 && ordered_combos[0] == datafileId)
   }
 }

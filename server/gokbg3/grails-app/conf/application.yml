@@ -158,6 +158,9 @@ environments:
                 enabled: false
             packageOaiCaching:
                 enabled: false
+            tippMatching:
+                cron: "0 0 4 * * ? *"
+                enabled: true
             zdbAugment:
                 enabled: false
                 rrCurators: ZDB
@@ -210,6 +213,9 @@ environments:
                 cron: "0 0 6 * * ? *"
                 enabled: false
             packageOaiCaching:
+                enabled: false
+            tippMatching:
+                cron: "0 0 4 * * ? *"
                 enabled: false
             zdbAugment:
                 enabled: false
@@ -271,6 +277,9 @@ environments:
                 cron: "0 0 6 * * ? *"
                 enabled: false
             packageOaiCaching:
+                enabled: true
+            tippMatching:
+                cron: "0 0 4 * * ? *"
                 enabled: true
             zdbAugment:
                 enabled: false
