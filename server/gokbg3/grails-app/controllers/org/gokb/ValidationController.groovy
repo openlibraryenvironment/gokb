@@ -31,14 +31,14 @@ class ValidationController {
       def file_info = TSVIngestionService.analyseFile(multipart_file.getInputStream())
 
       if (!['UTF-8', 'US-ASCII'].contains(file_info.encoding)) {
-        result.errors.encoding = [message: "The encoding of this file was identified as ${file_info.encoding}, but must be UTF-8!", code: "kbart.errors.encoding", pars:[]]
+        result.errors.encoding = [message: "The encoding of this file was identified as ${file_info.encoding}, but must be UTF-8!", messageCode: "kbart.errors.encoding", args: []]
       }
 
       if (params.namespace) {
         title_id_namespace = params.int('namespace') ? IdentifierNamespace.get(params.int('namespace')) : IdentifierNamespace.findByValue(params.namespace)
 
         if (!title_id_namespace) {
-          result.errors.namespace = [message: "Unable to reference provided namespace for column title_id!", code: "kbart.errors.namespaceNotFound"]
+          result.errors.namespace = [message: "Unable to reference provided namespace for column title_id!", messageCode: "kbart.errors.namespaceNotFound", args: []]
         }
       }
 
@@ -50,7 +50,7 @@ class ValidationController {
     }
     else {
       result.result = 'ERROR'
-      result.errors.file = [message: "No/empty file was supplied as 'submissionFile'!", messageCode: "validation.noFile"]
+      result.errors.file = [message: "No/empty file was supplied as 'submissionFile'!", messageCode: "validation.noFile", args: []]
     }
 
     render result as JSON

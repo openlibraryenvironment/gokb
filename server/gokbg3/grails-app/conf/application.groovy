@@ -35,7 +35,7 @@ grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/fwk/**',              filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/api/**',              filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/integration/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
-        [pattern: '/validation/**',       filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
+        [pattern: '/validation/**',       filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
         [pattern: '/admin/bulkLoadUsers', filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/rest/login',          filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
         [pattern: '/rest/**/**',          filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],

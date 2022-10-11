@@ -217,11 +217,17 @@ class ValidatonService {
           result.rows.error++
           result.errors.rows["${rowCount}"] = [
             columnsCount: [
-              message: "Inconsistent column count in row ${rowCount} (${nl.size()} <> ${header.size()})!",
-              code: "kbart.errors.tabsCountFile",
-              params: [rewCount, nl.size(), header.size()]
+              message: "Inconsistent column count (${nl.size()} <> ${header.size()})!",
+              messageCode: "kbart.errors.tabsCountRow",
+              args: [nl.size(), header.size()]
             ]
           ]
+          if (!result.errors.type['columnCount']) {
+            result.errors.type['columnCount'] = 1
+          }
+          else {
+            result.errors.type['columnCount']++
+          }
           result.valid = false
         }
         else if (nl.size() >= 5) {
@@ -267,7 +273,7 @@ class ValidatonService {
 
           result.warnings.rows["${rowCount}"]["shortRow"] = [
             message: "Skipped short/empty row!",
-            code: "kbart.errors.shortRow"
+            messageCode: "kbart.errors.shortRow"
           ]
         }
 
@@ -311,14 +317,16 @@ class ValidatonService {
       if (trimmed_val.length() > 4092) {
         result.errors["longVals"] = [
           message: "Unexpectedly long value in row ${rowCount} -- Probably miscoded quote in line. Correct and resubmit",
-          code: "kbart.errors.longValsFile"
+          messageCode: "kbart.errors.longValsFile",
+          args: []
         ]
       }
 
       if (trimmed_val.contains('�') && !result.errors["replacementChars"]) {
         result.errors["replacementChars"] = [
           message: "Found UTF-8 replacement char in row ${rowCount} -- Probably opened and then saved non-UTF-8 file as UTF-8!",
-          code: "kbart.errors.replacementChars"
+          messageCode: "kbart.errors.replacementChars",
+          args: []
         ]
       }
 
@@ -326,8 +334,8 @@ class ValidatonService {
         if (knownColumns[key].mandatory && !trimmed_val) {
           result.errors[key] = [
             message: "Missing value in mandatory column ${key}",
-            code: "kbart.errors.missingVal",
-            params: [key]
+            messageCode: "kbart.errors.missingVal",
+            args: [key]
           ]
         }
         else if (key == 'title_id' && titleIdNamespace) {
@@ -336,8 +344,8 @@ class ValidatonService {
           if (field_valid_result == 'error') {
             result.errors[key] = [
               message: "Identifier value ${trimmed_value} in column 'title_id' is not valid!",
-              code: "kbart.errors.illegalVal",
-              params: [trimmed_val]
+              messageCode: "kbart.errors.illegalVal",
+              args: [trimmed_val]
             ]
           }
         }
@@ -348,15 +356,15 @@ class ValidatonService {
           if (field_valid_result == 'error') {
             result.errors[key] = [
               message: "Value ${trimmed_val} is not valid!",
-              code: "kbart.errors.illegalVal",
-              params: [trimmed_val]
+              messageCode: "kbart.errors.illegalVal",
+              args: [trimmed_val]
             ]
           }
           else if (field_valid_result != trimmed_val) {
             result.warnings[key] = [
               message: "Value ${trimmed_val} was not valid, but could automatically be replaced by valid value ${field_valid_result}!",
-              code: "kbart.errors.correctedVal",
-              params: [trimmed_val, field_valid_result]
+              messageCode: "kbart.errors.correctedVal",
+              args: [trimmed_val, field_valid_result]
             ]
           }
         }
@@ -369,8 +377,8 @@ class ValidatonService {
       if (date_order == 'error') {
         result.errors['date_last_issue_online'] = [
           message: "The end date must be after the start date.",
-          code: "validation.dateRange",
-          params: [trimmed_val]
+          messageCode: "validation.dateRange",
+          args: [trimmed_val]
         ]
       }
     }

@@ -9,6 +9,8 @@ grails:
         enabled: true
         mappings:
             /rest/**: inherit
+            /validation/**: inherit
+            /api/**: inherit
 
     profile: web
     codegen:
