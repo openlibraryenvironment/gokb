@@ -6,7 +6,7 @@ import org.gokb.cred.IdentifierNamespace
 
 class ValidationController {
 
-  def validatonService
+  def validationService
   def TSVIngestionService
 
   def index() {
@@ -42,7 +42,7 @@ class ValidationController {
         }
       }
 
-      result.report = validatonService.generateKbartReport(multipart_file.getInputStream(), title_id_namespace)
+      result.report = validationService.generateKbartReport(multipart_file.getInputStream(), title_id_namespace)
 
       if (result.report.valid == false) {
         result.result = 'ERROR'
@@ -57,7 +57,7 @@ class ValidationController {
   }
 
   def componentName() {
-    def result = validatonService.checkNewComponentName(params.value, params.componentType)
+    def result = validationService.checkNewComponentName(params.value, params.componentType)
 
     render result as JSON
   }
@@ -71,7 +71,7 @@ class ValidationController {
       result.errors = [namespace: [message: "Unable to reference namespace ${params.namespace}", messageCode: "validation.unknownNamespace", pars: [params.namespace]]]
     }
     else {
-      def validation_result = validatonService.checkIdForNamespace(params.value, namespace)
+      def validation_result = validationService.checkIdForNamespace(params.value, namespace)
 
       if (validation_result == 'error') {
         result.result = 'ERROR'
@@ -87,7 +87,7 @@ class ValidationController {
     def reqBody = request.JSON
 
     if (reqBody && reqBody.value) {
-      def validation_result = validatonService.checkUrl(reqBody.value)
+      def validation_result = validationService.checkUrl(reqBody.value)
 
       if (validation_result == 'error') {
         result.result = 'ERROR'

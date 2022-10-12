@@ -14,7 +14,7 @@ import org.apache.commons.validator.routines.UrlValidator
 import org.gokb.cred.*
 import org.gokb.GOKbTextUtils
 
-class ValidatonService {
+class ValidationService {
 
   def TSVIngestionService
 
@@ -333,7 +333,7 @@ class ValidatonService {
       if (knownColumns[key]) {
         if (knownColumns[key].mandatory && !trimmed_val) {
           result.errors[key] = [
-            message: "Missing value in mandatory column ${key}",
+            message: "Missing value in mandatory column '${key}'",
             messageCode: "kbart.errors.missingVal",
             args: [key]
           ]
@@ -343,7 +343,7 @@ class ValidatonService {
 
           if (field_valid_result == 'error') {
             result.errors[key] = [
-              message: "Identifier value ${trimmed_value} in column 'title_id' is not valid!",
+              message: "Identifier value '${trimmed_value}' in column 'title_id' is not valid!",
               messageCode: "kbart.errors.illegalVal",
               args: [trimmed_val]
             ]
@@ -355,14 +355,14 @@ class ValidatonService {
 
           if (field_valid_result == 'error') {
             result.errors[key] = [
-              message: "Value ${trimmed_val} is not valid!",
+              message: "Value '${trimmed_val}' is not valid!",
               messageCode: "kbart.errors.illegalVal",
               args: [trimmed_val]
             ]
           }
           else if (field_valid_result != trimmed_val) {
             result.warnings[key] = [
-              message: "Value ${trimmed_val} was not valid, but could automatically be replaced by valid value ${field_valid_result}!",
+              message: "Value '${trimmed_val}' will be automatically replaced by'${field_valid_result}'!",
               messageCode: "kbart.errors.correctedVal",
               args: [trimmed_val, field_valid_result]
             ]

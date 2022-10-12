@@ -43,6 +43,7 @@ class IngestKbartRun {
   static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
   static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
+  static ValidationService validationService = Holders.grailsApplication.mainContext.getBean('validationService')
   static def concurrencyManagerService = Holders.grailsApplication.mainContext.getBean('concurrencyManagerService')
   static TippService tippService = Holders.grailsApplication.mainContext.getBean('tippService')
   static DateFormatService dateFormatService = Holders.grailsApplication.mainContext.getBean('dateFormatService')
@@ -98,6 +99,7 @@ class IngestKbartRun {
 
   def start(nJob) {
     job = nJob ?: job
+    def pid = pkg.id
     log.debug("ingest start")
     def result = [result: 'OK', dryRun: dryRun]
     result.messages = []
@@ -164,6 +166,13 @@ class IngestKbartRun {
 
         header = header.collect { it.toLowerCase().trim() }
 
+        Map col_positions = [:]
+        int ctr = 0
+
+        header.each {
+          col_positions[it] = ctr++
+        }
+
         log.debug("Handling header ${header}")
 
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
@@ -193,7 +202,7 @@ class IngestKbartRun {
             rownum++
 
             if (row_data.size() == header.size()) {
-                def row_kbart_beans = getKbartBeansForRow(header, row_data)
+                def row_kbart_beans = getKbartBeansForRow(col_positions, row_data)
                 def row_specific_cfg = getRowSpecificCfg(ingest_cfg, row_kbart_beans)
                 log.debug("**Ingesting ${rownum} of ${file_info.rownum} ${row_kbart_beans}")
 
@@ -203,7 +212,7 @@ class IngestKbartRun {
                   checkTitleMatchRow(row_kbart_beans, ingest_cfg, titleMatchStats)
                 }
 
-                if (validateRow(rownum, badrows, row_kbart_beans)) {
+                if (validateRow(row_data, rownum, col_positions, badrows)) {
                   def line_result = writeToDB(row_kbart_beans,
                             ingest_date,
                             ingest_systime,
@@ -299,7 +308,7 @@ class IngestKbartRun {
         if (!dryRun) {
           try {
             Package.withNewSession {
-              Package p = Package.get(pkg.id)
+              Package p = Package.get(pid)
 
               def update_agent = User.findByUsername('IngestAgent')
               // insertBenchmark updateBenchmark
@@ -310,26 +319,26 @@ class IngestKbartRun {
               p.lastUpdatedBy = update_agent
               p.updateBenchmark = processing_elapsed
               p.save(flush: true, failOnError: true)
-            }
 
-            def matching_job = concurrencyManagerService.createJob { mjob ->
-              Package.withNewSession {
-                tippService.matchPackage(pkg.id, mjob)
+              def matching_job = concurrencyManagerService.createJob { mjob ->
+                TitleInstancePackagePlatform.withNewSession {
+                  tippService.matchPackage(pid, mjob)
+                }
               }
-            }
 
-            matching_job.description = "Package Title Matching".toString()
-            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
-            matching_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
-            matching_job.message("Starting title match for Package ${pkg.name}".toString())
-            matching_job.startOrQueue()
-            matching_job.startTime = new Date()
+              matching_job.description = "Package Title Matching".toString()
+              matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+              matching_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+              matching_job.message("Starting title match for Package ${pkg.name}".toString())
+              matching_job.startOrQueue()
+              matching_job.startTime = new Date()
 
-            if (!async) {
-              result.matchingJob = matching_job.get()
-            }
-            else {
-              result.matchingJob = matching_job.uuid
+              if (!async) {
+                result.matchingJob = matching_job.get()
+              }
+              else {
+                result.matchingJob = matching_job.uuid
+              }
             }
           }
           catch (Exception e) {
@@ -363,23 +372,24 @@ class IngestKbartRun {
       job.setProgress(100)
       job.endTime = new Date()
 
-      def result_object = JobResult.findByUuid(job.uuid)
+      JobResult.withNewSession {
+        def result_object = JobResult.findByUuid(job.uuid)
+        if (!result_object) {
+          def job_map = [
+              uuid        : (job.uuid),
+              description : (job.description),
+              resultObject: (result as JSON).toString(),
+              type        : (job.type),
+              statusText  : (result.result),
+              ownerId     : (job.ownerId),
+              groupId     : (job.groupId),
+              startTime   : (job.startTime),
+              endTime     : (job.endTime),
+              linkedItemId: (job.linkedItem?.id)
+          ]
 
-      if (!result_object) {
-        def job_map = [
-            uuid        : (job.uuid),
-            description : (job.description),
-            resultObject: (result as JSON).toString(),
-            type        : (job.type),
-            statusText  : (result.result),
-            ownerId     : (job.ownerId),
-            groupId     : (job.groupId),
-            startTime   : (job.startTime),
-            endTime     : (job.endTime),
-            linkedItemId: (job.linkedItem?.id)
-        ]
-
-        new JobResult(job_map).save(flush: true, failOnError: true)
+          def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+        }
       }
     }
 
@@ -894,15 +904,8 @@ class IngestKbartRun {
     return csv
   }
 
-  def getKbartBeansForRow(header, row_data) {
+  def getKbartBeansForRow(col_positions, row_data) {
     def result = [:]
-
-    Map col_positions = [:]
-    int ctr = 0
-
-    header.each {
-      col_positions[it] = ctr++
-    }
 
     for (key in col_positions.keySet()) {
       // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
@@ -915,7 +918,7 @@ class IngestKbartRun {
             result[key] = row_data[col_positions[key]]
           }
           else {
-            log.error("Column references value not present in col ${col_positions[key]} row ${rownum}")
+            log.error("Column references value not present in col ${col_positions[key]}!")
           }
         }
       }
@@ -924,112 +927,18 @@ class IngestKbartRun {
     result
   }
 
-  def validateRow(rownum, badrows, row_data) {
+  def validateRow(row_data, rownum, col_positions, badrows) {
     log.debug("Validate :: ${row_data}")
-    def result = true
-    def errors = []
+    def valid = true
+    def result = validationService.checkRow(row_data, rownum, col_positions, providerIdentifierNamespace)
 
-    // check the_kbart.date_first_issue_online is present and validates
-    if (row_data.date_first_issue_online != null && row_data.date_first_issue_online.trim()) {
-      def parsed_start_date = parseDate(row_data.date_first_issue_online)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for date_first_issue_online :: ${row_data.date_first_issue_online}")
-        result = false
-      }
+    if (result.errors) {
+      log.error("Recording bad row ${rownum}: ${result.errors}")
+      valid = false
+      badrows.add([rowdata: row_data, errors: result.errors, row: rownum])
     }
 
-    if (row_data.date_last_issue_online != null && row_data.date_last_issue_online.trim()) {
-      def parsed_start_date = parseDate(row_data.date_first_issue_online)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_last_issue_online' :: ${row_data.date_last_issue_online}")
-        result = false
-      }
-    }
-
-    if (row_data.date_monograph_published_online != null && row_data.date_monograph_published_online.trim()) {
-      def parsed_start_date = parseDate(row_data.date_monograph_published_online)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_online' :: ${row_data.date_monograph_published_online}")
-        result = false
-      }
-    }
-
-    if (row_data.date_monograph_published_print != null && row_data.date_monograph_published_print.trim()) {
-      def parsed_start_date = parseDate(row_data.date_monograph_published_print)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_print' :: ${row_data.date_monograph_published_online}")
-        result = false
-      }
-    }
-
-    if (!row_data.title_id || !row_data.title_id.trim()) {
-      errors.add("Row ${rownum} does not contain a value for 'title_id'")
-      result = false
-    }
-
-    if (!row_data.publication_title || !row_data.publication_title.trim()) {
-      errors.add("Row ${rownum} does not contain a value for 'publication_title'")
-      result = false
-    }
-
-    if (!row_data.publication_type || !row_data.publication_type.trim() || !TitleInstance.determineTitleClass(row_data.publication_type)) {
-      errors.add("Row ${rownum} does not contain a valid 'publication_type' :: ${row_data.publication_type}")
-      result = false
-    }
-
-    if (!row_data.title_url || !row_data.title_url.trim()) {
-      errors.add("Row ${rownum} does not contain a value for 'title_url'")
-      result = false
-    }
-
-    if (row_data.print_identifier?.trim() && row_data.publication_type?.trim()) {
-      if (TitleInstance.determineTitleClass(row_data.publication_type) == "org.gokb.cred.JournalInstance") {
-        def valid = (row_data.print_identifier.trim() ==~ ~"^\\d{4}\\-\\d{3}[\\dX]\$")
-
-        if (!valid) {
-          errors.add("Row ${rownum} contains an invalid print_identifier ${row_data.print_identifier}")
-          result = false
-        }
-      }
-      else if (TitleInstance.determineTitleClass(row_data.publication_type) == "org.gokb.cred.BookInstance") {
-        def valid = (row_data.print_identifier.trim() ==~ ~"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$")
-
-        if (!valid) {
-          errors.add("Row ${rownum} contains an invalid print_identifier ${row_data.print_identifier}")
-          result = false
-        }
-      }
-    }
-
-    if (row_data.online_identifier?.trim() && row_data.publication_type?.trim()) {
-      if (TitleInstance.determineTitleClass(row_data.publication_type) == "org.gokb.cred.JournalInstance") {
-        def valid = (row_data.online_identifier.trim() ==~ ~"^\\d{4}\\-\\d{3}[\\dX]\$")
-
-        if (!valid) {
-          errors.add("Row ${rownum} contains an invalid online_identifier ${row_data.online_identifier}")
-          result = false
-        }
-      }
-      else if (TitleInstance.determineTitleClass(row_data.publication_type) == "org.gokb.cred.BookInstance") {
-        def valid = (row_data.online_identifier.trim() ==~ ~"^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$")
-
-        if (!valid) {
-          errors.add("Row ${rownum} contains an invalid online_identifier ${row_data.online_identifier}")
-          result = false
-        }
-      }
-    }
-
-    if (!result) {
-      log.error("Recording bad row ${rownum}: ${errors}")
-      badrows.add([rowdata: row_data, errors: errors, row: rownum])
-    }
-
-    result
+    valid
   }
 
   /**
