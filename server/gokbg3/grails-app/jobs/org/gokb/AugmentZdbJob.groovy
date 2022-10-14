@@ -56,8 +56,10 @@ class AugmentZdbJob{
 
   def cleanUpGorm() {
     log.debug("Clean up GORM")
-    def session = sessionFactory.currentSession
-    session.flush()
-    session.clear()
+    TitleInstance.withTransaction {
+      def session = sessionFactory.currentSession
+      session.flush()
+      session.clear()
+    }
   }
 }

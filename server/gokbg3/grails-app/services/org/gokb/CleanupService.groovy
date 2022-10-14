@@ -747,6 +747,7 @@ class CleanupService {
     result
   }
 
+  @Transactional
   def markInvalidComponentNames(Job j = null) {
     log.debug("Checking for corrupted component names")
     TitleInstance.withNewSession {
