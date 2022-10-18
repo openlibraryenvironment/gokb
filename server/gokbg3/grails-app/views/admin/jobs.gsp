@@ -82,6 +82,25 @@
               </div>
             </div>
 
+            <g:if test="${v.isDone()}">
+              <div class="panel-heading" role="tab" id="${k}_result">
+                <h4 class="panel-title">
+                  <a role="button" class="collapsed" data-toggle="collapse" href="#collapse${k}_result" aria-expanded="false" aria-controls="collapse${k}_result">
+                    Result
+                  </a>
+                </h4>
+              </div>
+              <div id="collapse${k}_result" class="panel-collapse collapse" role="tabpanel" aria-labelledby="${k}_result">
+                <div class="panel-body">
+                  <div class="container-fluid">
+                    <div class="row well">
+                      ${v.get()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </g:if>
+
             <g:if test="${v.exception}">
               <div class="panel-heading" role="tab" id="${k}_exception">
                 <h4 class="panel-title">

@@ -498,7 +498,7 @@ class IngestKbartRun {
         }
         else {
           log.debug("Skipping row - no identifiers")
-          badrows.add([rowdata: the_kbart, message: 'No usable identifiers'])
+          badrows.add([rowdata: the_kbart as List, message: 'No usable identifiers'])
           result = 'invalid'
         }
 

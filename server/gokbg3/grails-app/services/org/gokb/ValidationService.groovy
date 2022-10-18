@@ -341,7 +341,7 @@ class ValidationService {
         else if (key == 'title_id' && titleIdNamespace) {
           def field_valid_result = checkIdForNamespace(trimmed_val, titleIdNamespace)
 
-          if (field_valid_result == 'error') {
+          if (!field_valid_result) {
             result.errors[key] = [
               message: "Identifier value '${trimmed_value}' in column 'title_id' is not valid!",
               messageCode: "kbart.errors.illegalVal",
@@ -353,7 +353,7 @@ class ValidationService {
           def final_args = [trimmed_val] + knownColumns[key].validator.args?.collect { it == "_colName" ? key : nl[col_positions[it]] }
           def field_valid_result = "${knownColumns[key].validator.name}"(*final_args)
 
-          if (field_valid_result == 'error') {
+          if (!field_valid_result) {
             result.errors[key] = [
               message: "Value '${trimmed_val}' is not valid!",
               messageCode: "kbart.errors.illegalVal",
@@ -386,55 +386,52 @@ class ValidationService {
     result
   }
 
-  public String checkPubType(String value) {
+  def checkPubType(String value) {
+    def result = null
     RefdataValue resolvedType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', value)
 
     if (resolvedType) {
-      return resolvedType.value
+      result = resolvedType.value
     }
-    else {
-      return 'error'
-    }
+
+    result
   }
 
-  public String checkAccessType(String value) {
+  def checkAccessType(String value) {
     def final_val = null
 
-    if (value.toLowerCase() in ['p', 'paid']) {
+    if (value?.toLowerCase() in ['p', 'paid']) {
       final_val = 'P'
     }
-    else if (value.toLowerCase() in ['f', 'free']) {
+    else if (value?.toLowerCase() in ['f', 'free']) {
       final_val = 'F'
-    }
-    else {
-      final_val = 'error'
     }
 
     final_val
   }
 
-  public String checkCoverageDepth(String value) {
+  def checkCoverageDepth(String value) {
+    def result = null
     def final_val = value
 
-    if (value.toLowerCase() in ['full text', 'volltext']) {
+    if (value?.toLowerCase() in ['full text', 'volltext']) {
       final_val = 'fulltext'
     }
 
     RefdataValue resolvedType = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', final_val)
 
     if (resolvedType) {
-      return value
+      result = value
     }
-    else {
-      return 'error'
-    }
+
+    result
   }
 
-  public String checkTitleString(String value) {
-    return GOKbTextUtils.cleanTitleString(value) ?: 'error'
+  def checkTitleString(String value) {
+    return GOKbTextUtils.cleanTitleString(value)
   }
 
-  public String checkKbartIdentifier(String value, String column, String pubType) {
+  def checkKbartIdentifier(String value, String column, String pubType) {
     def result = null
     def final_type = checkPubType(pubType)
 
@@ -442,14 +439,11 @@ class ValidationService {
       def namespace = IdentifierNamespace.findByValue(knownColumns[column]?.namespaces?."${final_type}")
       result = checkIdForNamespace(value, namespace)
     }
-    else {
-      result = 'error'
-    }
 
     result
   }
 
-  public String checkIdForNamespace(String value, IdentifierNamespace titleIdNamespace) {
+  def checkIdForNamespace(String value, IdentifierNamespace titleIdNamespace) {
     def result = null
 
     if (titleIdNamespace.value in ['isbn', 'pisbn']) {
@@ -458,17 +452,12 @@ class ValidationService {
 
         result = value
       }
-      catch(ISBNException ie) {
-        result = 'error'
-      }
+      catch(ISBNException ie) {}
     }
     else if (titleIdNamespace.value in ['issn', 'eissn']) {
-      def valid_issn = new ISSNValidator().isValid(value)
+      def valid_issn = new ISSNValidator().isValid(value.toUpperCase())
 
-      if (!valid_issn) {
-        result = 'error'
-      }
-      else {
+      if (valid_issn) {
         result = value
       }
     }
@@ -479,15 +468,12 @@ class ValidationService {
       if (value ==~ ~"${titleIdNamespace.pattern}") {
         result = value
       }
-      else {
-        result = 'error'
-      }
     }
 
     result
   }
 
-  public String checkZdbId(String zdbId) {
+  def checkZdbId(String zdbId) {
     def result = null
 
     if (zdbId ==~ ~"^\\d{7,10}-[\\dxX]\$") {
@@ -507,37 +493,28 @@ class ValidationService {
       if (checkDigit == 10 && parts[1] in ['x', 'X'] || checkDigit == Integer.valueOf(parts[1])) {
         result = zdbId
       }
-      else {
-        result = 'error'
-      }
-    }
-    else {
-      result = 'error'
     }
 
     result
   }
 
-  public String checkDate(String value) {
-    String result = null
+  def checkDate(String value) {
+    def result = null
 
     def full_date = GOKbTextUtils.completeDateString(value)
 
     if (full_date) {
       result = value
     }
-    else {
-      result = 'error'
-    }
 
     result
   }
 
-  public String checkUrl(String value) {
-    return new UrlValidator().isValid(value.trim()) ? value : 'error'
+  def checkUrl(String value) {
+    return new UrlValidator().isValid(value.trim()) ? value : null
   }
 
-  public String checkDatePair(String startDate, String endDate) {
+  def checkDatePair(String startDate, String endDate) {
     def final_start = GOKbTextUtils.completeDateString(startDate)
     def final_end = GOKbTextUtils.completeDateString(endDate)
 
@@ -549,7 +526,7 @@ class ValidationService {
     }
   }
 
-  public Map checkNewComponentName(String value, String componentType) {
+  def checkNewComponentName(String value, String componentType) {
     def result = [result: 'OK']
     def defined_types = [
         "Package",
