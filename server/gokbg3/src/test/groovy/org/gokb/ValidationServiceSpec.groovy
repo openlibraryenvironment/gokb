@@ -1,79 +1,138 @@
 package org.gokb
 
+import grails.testing.gorm.DataTest
 import grails.testing.services.ServiceUnitTest
+
+import org.gokb.cred.IdentifierNamespace
+
 import spock.lang.Specification
 import spock.lang.Shared
 
-class ValidationServiceSpec extends Specification implements ServiceUnitTest<ValidationService> {
+class ValidationServiceSpec extends Specification implements DataTest, ServiceUnitTest<ValidationService> {
 
-   @Shared IdentifierNamespace issn
-   @Shared IdentifierNamespace isbn
-   @Shared IdentifierNamespace zdb
-   @Shared IdentifierNamespace pattern
-
-  def setupSpec() {
-    mockDomain IdentifierNamespace
-  }
+  @Shared IdentifierNamespace issn
+  @Shared IdentifierNamespace isbn
+  @Shared IdentifierNamespace zdb
+  @Shared IdentifierNamespace isil
+  @Shared IdentifierNamespace doi
 
   def setup() {
+    mockDomain IdentifierNamespace
+
     issn = new IdentifierNamespace(value: "issn")
     isbn = new IdentifierNamespace(value: "isbn")
     zdb = new IdentifierNamespace(value: "zdb")
     isil = new IdentifierNamespace(value: "isil", pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$")
+    doi = new IdentifierNamespace(value: "doi")
   }
 
-  void "check access type"() {
+  void "test checkAccessType with exact match"() {
+    expect:
+      service.checkAccessType("P") == 'P'
+  }
+
+  void "test checkAccessType with interpreted match"() {
     expect:
       service.checkAccessType("Paid") == 'P'
-      service.checkAccessType("p") == 'P'
-      service.checkAccessType("Free") == 'F'
-      service.checkAccessType("Frei") == null
+  }
+
+  void "test checkAccessType with invalid value"() {
+    expect:
       service.checkAccessType("Test") == null
+  }
+
+  void "test checkAccessType with null value"() {
+    expect:
       service.checkAccessType(null) == null
   }
 
-  void "check title strings"() {
+  void "test checkTitleString with exact match"() {
     expect:
       service.checkTitleString("Test Title") == "Test Title"
-      service.checkTitleString("Sanitize : Title") == "Sanitize: Title"
-      service.checkTitleString(" Sanitize Title ") == "Sanitize Title"
-      service.checkTitleString(" ") == null
-      service.checkTitleString(null) === null
-      service.checkTitleString("The @title") === 'The title'
   }
 
-  void "check issn validation"() {
+  void "test checkTitleString with corrected match"() {
     expect:
-      service.checkIdForNamespace("123-2332", issn) == null
+      service.checkTitleString(" Test  @Sanitize : Title ") == "Test Sanitize: Title"
+  }
+
+  void "test checkTitleString with empty trim"() {
+    expect:
+      service.checkTitleString(" ") == null
+  }
+
+  void "test checkTitleString with null value"() {
+    expect:
+      service.checkTitleString(null) == null
+  }
+
+  void "test issn validation with valid value"() {
+    expect:
       service.checkIdForNamespace("0020-0255", issn) == "0020-0255"
   }
 
-  void "check isbn validation"() {
+  void "test issn validation with invalid value"() {
+    expect:
+      service.checkIdForNamespace("123-2332", issn) == null
+  }
+
+  void "test isbn validation with valid value"() {
     expect:
       service.checkIdForNamespace("978-3-16-148410-0", isbn) == "978-3-16-148410-0"
+  }
+
+  void "test isbn validation with invalid value"() {
+    expect:
       service.checkIdForNamespace("978-3-16-148410-2", isbn) == null
   }
 
-  void "check zdb validation"() {
+  void "test zdb validation with valid value"() {
     expect:
       service.checkIdForNamespace("1483109-0", zdb) == "1483109-0"
+  }
+
+  void "test zdb validation with invalid value"() {
+    expect:
       service.checkIdForNamespace("1483109-4", zdb) == null
   }
 
-  void "check id pattern validation"() {
+  void "test custom id pattern validation with valid value"() {
     expect:
-      service.checkIdForNamespace("TestIsil", isil) == null
       service.checkIdForNamespace("ZDB-1-ESWX", isil) == "ZDB-1-ESWX"
   }
 
-  void "check dates"() {
+  void "test custom id pattern validation with invalid value"() {
+    expect:
+      service.checkIdForNamespace("TestIsil", isil) == null
+  }
+
+  void "test id validation without check"() {
+    expect:
+      service.checkIdForNamespace("TestDoi", doi) == "TestDoi"
+  }
+
+  void "test checkDates with valid form yyyy"() {
     expect:
       service.checkDate("2000") == "2000"
+  }
+
+  void "test checkDates with valid form yyyy-mm"() {
+    expect:
       service.checkDate("2020-10") == "2020-10"
+  }
+
+  void "test checkDates with valid form yyyy-mm-dd"() {
+    expect:
       service.checkDate("2020-10-31") == "2020-10-31"
-      service.checkDate("2000 AD") == null
+  }
+
+  void "test checkDates with valid form yyyy-mm-dd but wrong day value"() {
+    expect:
       service.checkDate("2020-12-40") == null
-      service.checkDate("01.01.2020") == null
+  }
+
+  void "test checkDates with invalid form"() {
+    expect:
       service.checkDate("10 Aug 2020") == null
   }
 }

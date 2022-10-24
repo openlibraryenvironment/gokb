@@ -428,7 +428,7 @@ class ValidationService {
   }
 
   def checkTitleString(String value) {
-    return GOKbTextUtils.cleanTitleString(value)
+    return GOKbTextUtils.cleanTitleString(value) ?: null
   }
 
   def checkKbartIdentifier(String value, String column, String pubType) {
@@ -468,6 +468,9 @@ class ValidationService {
       if (value ==~ ~"${titleIdNamespace.pattern}") {
         result = value
       }
+    }
+    else {
+      result = value
     }
 
     result

@@ -14,6 +14,7 @@ class ValidationController {
       message: "Please select a specific endpoint!",
       endpoints: [
         kbart: [method: 'POST', description: 'Validates full KBART files and returns a report.', contentType: "multipart/form-data", content: 'submissionFile', pars: ['namespace']],
+        componentName: [method: 'GET', description: 'Validates new component names for form and uniqueness', pars: ['value', 'componentType']],
         identifier: [method: 'GET', description: 'Validates an identifier value for a specified namespace', pars: ['value', 'namespace']],
         url: [method: 'POST', description: 'Validates a URL', contentType: "application/json", content: [value: '<url>']]
       ]
@@ -73,7 +74,7 @@ class ValidationController {
     else {
       def validation_result = validationService.checkIdForNamespace(params.value, namespace)
 
-      if (validation_result == 'error') {
+      if (!validation_result) {
         result.result = 'ERROR'
         result.errors = [value: [message: "Value ${params.value} is not valid", messageCode: "validation.invalid", pars: [params.value]]]
       }
@@ -89,7 +90,7 @@ class ValidationController {
     if (reqBody && reqBody.value) {
       def validation_result = validationService.checkUrl(reqBody.value)
 
-      if (validation_result == 'error') {
+      if (!validation_result) {
         result.result = 'ERROR'
         result.errors = [value: [message: "Provided value ${reqBody.value} is not a valid URL", messageCode: "validation.urlForm", pars: [reqBody.value]]]
       }

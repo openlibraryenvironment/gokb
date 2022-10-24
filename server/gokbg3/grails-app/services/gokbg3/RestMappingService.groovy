@@ -541,9 +541,19 @@ class RestMappingService {
               try {
                 if (ns) {
                   id = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, i.value)
+
+                  if (!id) {
+                    result.errors << [message: 'This identifier value is invalid!', baddata: i.value, messageCode: 'identifier.validation.generic']
+                    valid = false
+                  }
                 }
                 else {
                   log.warn("Unable to determine namespace ${ns_val}!")
+
+                  if (!id) {
+                    result.errors << [message: "Unable to reference namespace ${ns_val}!", baddata: i.value, messageCode: 'identifier.validation.namespace']
+                    valid = false
+                  }
                 }
               }
               catch (grails.validation.ValidationException ve) {

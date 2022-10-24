@@ -7,7 +7,6 @@
       "editionStatement": null,
       "editStatus": "In Progress",
       "defaultAccessURL": "",
-      "dateFirstOnline": "",
       "medium": "Journal",
       "type": "Serial",
       "shortcode": "",
@@ -20,11 +19,10 @@
       }],
       "firstEditor": null,
       "firstAuthor": null,
-      "dateFirstInPrint": "",
       "identifiers": [
          {
             "type": "zdb",
-            "value": "2256676-5"
+            "value": "2256676-4"
          },
          {
             "type": "issn",
