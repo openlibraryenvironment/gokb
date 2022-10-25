@@ -169,7 +169,7 @@ class IntegrationControllerSpec extends Specification {
             ],
             [
                 "type" : "issn",
-                "value": "1021-8561"
+                "value": "1021-8564"
             ]
         ],
         "name"             : "Journal of agricultural and food chemistry",
@@ -194,7 +194,7 @@ class IntegrationControllerSpec extends Specification {
     resp.json.message != null
     resp.json.message.startsWith('Created')
     expect: "Find item by ID can now locate that item"
-    def ids = [['ns': 'issn', 'value': '1021-8561']]
+    def ids = [['ns': 'issn', 'value': '1021-8564']]
     def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
     matching_with_class_one_ids?.size() == 1
     matching_with_class_one_ids[0] == resp.json.titleId
@@ -207,7 +207,7 @@ class IntegrationControllerSpec extends Specification {
         "identifiers"      : [
             [
                 "type" : "zdb",
-                "value": "1423434-0"
+                "value": "2477443-1"
             ]
         ],
         "name"             : "TestJournal_Dates",
@@ -641,7 +641,7 @@ class IntegrationControllerSpec extends Specification {
             "identifiers"    : [
                 [
                     "type" : "isbn",
-                    "value": "978-13-12232-23-9"
+                    "value": "978-13-12232-24-2"
                 ]
             ],
             "type"           : "Monograph",
@@ -655,7 +655,7 @@ class IntegrationControllerSpec extends Specification {
             "identifiers"    : [
                 [
                     "type" : "isbn",
-                    "value": "978-13-12232-23-9"
+                    "value": "978-13-12232-24-2"
                 ]
             ],
             "name"           : "Test Book 1",
@@ -674,7 +674,7 @@ class IntegrationControllerSpec extends Specification {
     then: "Item is created in the database"
     resp.json.results?.size() == 2
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
-    def ids = [['ns': 'isbn', 'value': '978-13-12232-23-9']]
+    def ids = [['ns': 'isbn', 'value': '978-13-12232-24-2']]
     resp.json.results[0].titleId == resp.json.results[1].titleId
   }
 
@@ -684,11 +684,11 @@ class IntegrationControllerSpec extends Specification {
         "identifiers"    : [
             [
                 "type" : "isbn",
-                "value": "978-13-12232-23-8"
+                "value": "978-13-12232-25-9"
             ],
             [
                 "type" : "isbn",
-                "value": "978-13-12232-23-8"
+                "value": "978-13-12232-25-9"
             ]
         ],
         "type"           : "Monograph",
@@ -706,9 +706,9 @@ class IntegrationControllerSpec extends Specification {
     then: "Item is created in the database"
     resp.json.message.startsWith('Created')
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
-    def ids = [['ns': 'isbn', 'value': '978-13-12232-23-8']]
+    def ids = [['ns': 'isbn', 'value': '978-13-12232-25-9']]
     def ns = IdentifierNamespace.findByValueIlike('isbn')
-    def id_num = Identifier.findAllByValueAndNamespace('978-13-12232-23-8', ns)
+    def id_num = Identifier.findAllByValueAndNamespace('978-13-12232-25-9', ns)
     def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
     id_num.size() == 1
     matching_with_class_one_ids?.size() == 1
@@ -1024,7 +1024,7 @@ class IntegrationControllerSpec extends Specification {
         "identifiers"    : [
             [
                 "type" : "isbn",
-                "value": "978-13-12232-23-8"
+                "value": "978-13-12232-26-6"
             ]
         ],
         "variantNames"   : [
@@ -1042,7 +1042,7 @@ class IntegrationControllerSpec extends Specification {
         "identifiers"    : [
             [
                 "type" : "isbn",
-                "value": "978-13-12232-23-8"
+                "value": "978-13-12232-26-6"
             ]
         ],
         "type"           : "Monograph",
@@ -1079,7 +1079,7 @@ class IntegrationControllerSpec extends Specification {
         "identifiers"    : [
             [
                 "type" : "isbn",
-                "value": "978-13-12112-23-2"
+                "value": "978-13-12112-23-0"
             ]
         ],
         "type"           : "Monograph",

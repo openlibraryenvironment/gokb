@@ -195,7 +195,7 @@ class BootStrap {
             [value: 'eissn', name: 'e-ISSN', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
             [value: 'issnl', name: 'ISSN-L', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
             [value: 'doi', name: 'DOI'],
-            [value: 'zdb', name: 'ZDB-ID', pattern: "^\\d+-[\\dxX]\$"],
+            [value: 'zdb', name: 'ZDB-ID', pattern: "^\\d{7,10}-[\\dxX]\$"],
             [value: 'isil', name: 'ISIL', pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
         ]
 

@@ -158,7 +158,7 @@ class TippTestSpec extends AbstractAuthSpec {
         ids: [
           [
             type: 'issn',
-            value: '3245-2341'
+            value: '3245-2349'
           ],
           [
             type: 'eissn',
@@ -218,7 +218,7 @@ class TippTestSpec extends AbstractAuthSpec {
         ids: [
           [
             type: 'issn',
-            value: '3245-2341'
+            value: '3245-2349'
           ],
           [
             type: 'eissn',
@@ -288,7 +288,7 @@ class TippTestSpec extends AbstractAuthSpec {
         ids: [
           [
             type: 'issn',
-            value: '3245-2341'
+            value: '3245-2349'
           ],
           [
             type: 'eissn',
@@ -350,7 +350,7 @@ class TippTestSpec extends AbstractAuthSpec {
         ids: [
           [
             type: 'issn',
-            value: '3245-2341'
+            value: '3245-2349'
           ],
           [
             type: 'eissn',

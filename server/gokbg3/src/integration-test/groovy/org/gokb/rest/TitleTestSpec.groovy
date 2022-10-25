@@ -30,7 +30,7 @@ class TitleTestSpec extends AbstractAuthSpec {
 
   def setup() {
     def ns_eissn = IdentifierNamespace.findByValue('eissn')
-    def new_id = Identifier.findByValue('2345-2334') ?: new Identifier(value: '2345-2334', namespace: ns_eissn).save(flush:true)
+    def new_id = Identifier.findByValue('2345-2331') ?: new Identifier(value: '2345-2331', namespace: ns_eissn).save(flush:true)
     def new_org = Org.findByName('TestOrg') ?: new Org(name: 'TestOrg').save(flush:true)
     def old_id = Identifier.findByValue('2345-2323') ?: new Identifier(value: '2345-2323', namespace: ns_eissn).save(flush:true)
 
@@ -80,7 +80,7 @@ class TitleTestSpec extends AbstractAuthSpec {
   void "test insert new title"() {
     def urlPath = getUrlPath()
     def issn_ns = IdentifierNamespace.findByValue('issn')
-    def test_id = Identifier.findByValue('2345-2334')
+    def test_id = Identifier.findByValue('2345-2331')
     def publisher = Org.findByName("TestOrg")
 
     when:
@@ -88,8 +88,8 @@ class TitleTestSpec extends AbstractAuthSpec {
       name: "TestFullJournal",
       ids: [
         test_id.id,
-        [namespace: issn_ns.id, value: "3344-5544"],
-        [namespace: "zdb", value: "1234435-6"]
+        [namespace: issn_ns.id, value: "3344-5540"],
+        [namespace: "zdb", value: "1483109-0"]
       ],
       publisher: publisher.id
     ]

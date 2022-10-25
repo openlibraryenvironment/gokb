@@ -55,8 +55,6 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     Identifier.findByValue("6644-2231")?.expunge()
     Identifier.findByValue("6644-223")?.expunge()
     Identifier.findByValue("6644-2284")?.expunge()
-    Identifier.findByValue("2256676-4")?.expunge()
-    Identifier.findByValue("2256676-5")?.expunge()
     Identifier.findByValue("0001-5547")?.expunge()
     Identifier.findByValue("1938-2650")?.expunge()
     test_id?.expunge()
@@ -144,7 +142,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     given:
     def urlPath = getUrlPath()
     def obj_map = [
-      value    : "6644-2231",
+      value    : "6644-2230",
       namespace: ns_eissn.id
     ]
     when:
@@ -157,14 +155,14 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 201 // Created
-    resp.json.value == "6644-2231"
+    resp.json.value == "6644-2230"
   }
 
   void "test identifier namespace validation"() {
     given:
     def urlPath = getUrlPath()
     def obj_map = [
-      value    : "6644-223",
+      value    : "6644-2231",
       namespace: ns_eissn.id
     ]
     when:
@@ -177,7 +175,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 400 // ERROR
-    resp.json.message == "Identifier has failed validation!"
+    resp.json.result == 'ERROR'
   }
 
   void "test identifier create with connected component"() {
@@ -185,7 +183,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     test_journal = test_journal ?: new JournalInstance(name: "IdTestJournal")
     def obj_map = [
-      value    : "6644-2284",
+      value    : "6644-2281",
       namespace: ns_eissn.id,
       component: test_journal.id
     ]
@@ -199,7 +197,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 201 // OK
-    resp.json.value == "6644-2284"
+    resp.json.value == "6644-2281"
     resp.json._embedded?.identifiedComponents.size() == 1
     resp.json._embedded?.identifiedComponents[0].id == test_journal.id
   }
