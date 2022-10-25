@@ -8,6 +8,7 @@ import com.opencsv.CSVParser
 import com.opencsv.CSVParserBuilder
 
 import org.apache.commons.io.ByteOrderMark
+import org.apache.commons.io.input.BOMInputStream
 import org.apache.commons.validator.routines.ISSNValidator
 import org.apache.commons.validator.routines.UrlValidator
 
@@ -18,7 +19,7 @@ class ValidationService {
 
   def TSVIngestionService
 
-  static final Map knownColumns = [
+  static final Map KNOWN_COLUMNS = [
     publication_title: [
       mandatory: true,
       validator: [
@@ -167,9 +168,14 @@ class ValidationService {
     ]
   ]
 
+  static int NUM_MANDATORY_COLS = 5
+
+  static ISSNValidator ISSN_VAL = new ISSNValidator()
+
   def generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null) {
     def result = [
       valid: true,
+      message: "",
       rows: [total: 0, error: 0, warning: 0],
       errors: [
         missingColumns: [],
@@ -196,7 +202,7 @@ class ValidationService {
       col_positions[it] = ctr++
     }
 
-    knownColumns.each { colName, info ->
+    KNOWN_COLUMNS.each { colName, info ->
       if (info.mandatory && !header.contains(colName)) {
         result.errors.missingColumns.add(colName)
       }
@@ -222,15 +228,11 @@ class ValidationService {
               args: [nl.size(), header.size()]
             ]
           ]
-          if (!result.errors.type['columnCount']) {
-            result.errors.type['columnCount'] = 1
-          }
-          else {
-            result.errors.type['columnCount']++
-          }
+          addOrIncreaseTypedCount(result, 'columnCount', 'errors')
+
           result.valid = false
         }
-        else if (nl.size() >= 5) {
+        else if (nl.size() >= NUM_MANDATORY_COLS) {
           result.rows.total++
 
           def row_result = checkRow(nl, rowCount, col_positions, titleIdNamespace)
@@ -241,12 +243,7 @@ class ValidationService {
             result.errors.rows["${rowCount}"] = row_result.errors
 
             row_result.errors.each { error_key, error_list ->
-              if (!result.errors.type[error_key]) {
-                result.errors.type[error_key] = 1
-              }
-              else {
-                result.errors.type[error_key]++
-              }
+              addOrIncreaseTypedCount(result, error_key, 'errors')
             }
           }
           if (row_result.warnings) {
@@ -254,12 +251,7 @@ class ValidationService {
             result.warnings.rows["${rowCount}"] = row_result.warnings
 
             row_result.warnings.each { warn_key, warn_list ->
-              if (!result.warnings.type[warn_key]) {
-                result.warnings.type[warn_key] = 1
-              }
-              else {
-                result.warnings.type[warn_key]++
-              }
+              addOrIncreaseTypedCount(result, warn_key, 'warnings')
             }
           }
         }
@@ -279,14 +271,25 @@ class ValidationService {
 
         nl = csv.readNext()
       }
+      result.message = "File processing finished after ${result.rows.total} (${result.rows.error} errors)."
     }
     else {
       log.debug("Missing mandatory columns... skipping file processing!")
+      result.message = "File processing was skipped due to missing mandatory columns!"
     }
 
     csv.close()
 
     result
+  }
+
+  private void addOrIncreaseTypedCount(result, String column, String type) {
+    if (!result[type].type[column]) {
+      result[type].type[column] = 1
+    }
+    else {
+      result[type].type[column]++
+    }
   }
 
   private CSVReader initReader (the_data) {
@@ -296,10 +299,19 @@ class ValidationService {
     .build()
 
     CSVReader csv = new CSVReaderBuilder(
-        new BufferedReader(new InputStreamReader(
-          the_data,
-          'UTF-8'
-        ))
+        new BufferedReader(
+          new InputStreamReader(
+            new BOMInputStream(
+              the_data,
+              ByteOrderMark.UTF_16LE,
+              ByteOrderMark.UTF_16BE,
+              ByteOrderMark.UTF_32LE,
+              ByteOrderMark.UTF_32BE,
+              ByteOrderMark.UTF_8
+            ),
+            'UTF-8'
+          )
+        )
     ).withCSVParser(parser)
     .build()
 
@@ -330,8 +342,8 @@ class ValidationService {
         ]
       }
 
-      if (knownColumns[key]) {
-        if (knownColumns[key].mandatory && !trimmed_val) {
+      if (KNOWN_COLUMNS[key]) {
+        if (KNOWN_COLUMNS[key].mandatory && !trimmed_val) {
           result.errors[key] = [
             message: "Missing value in mandatory column '${key}'",
             messageCode: "kbart.errors.missingVal",
@@ -349,9 +361,9 @@ class ValidationService {
             ]
           }
         }
-        else if (knownColumns[key].validator && trimmed_val) {
-          def final_args = [trimmed_val] + knownColumns[key].validator.args?.collect { it == "_colName" ? key : nl[col_positions[it]] }
-          def field_valid_result = "${knownColumns[key].validator.name}"(*final_args)
+        else if (KNOWN_COLUMNS[key].validator && trimmed_val) {
+          def final_args = [trimmed_val] + KNOWN_COLUMNS[key].validator.args?.collect { it == "_colName" ? key : nl[col_positions[it]] }
+          def field_valid_result = "${KNOWN_COLUMNS[key].validator.name}"(*final_args)
 
           if (!field_valid_result) {
             result.errors[key] = [
@@ -435,8 +447,8 @@ class ValidationService {
     def result = null
     def final_type = checkPubType(pubType)
 
-    if (final_type && knownColumns[column]?.namespaces?."${final_type}") {
-      def namespace = IdentifierNamespace.findByValue(knownColumns[column]?.namespaces?."${final_type}")
+    if (final_type && KNOWN_COLUMNS[column]?.namespaces?."${final_type}") {
+      def namespace = IdentifierNamespace.findByValue(KNOWN_COLUMNS[column]?.namespaces?."${final_type}")
       result = checkIdForNamespace(value, namespace)
     }
 
@@ -455,7 +467,7 @@ class ValidationService {
       catch(ISBNException ie) {}
     }
     else if (titleIdNamespace.value in ['issn', 'eissn']) {
-      def valid_issn = new ISSNValidator().isValid(value.toUpperCase())
+      def valid_issn = ISSN_VAL.isValid(value.toUpperCase())
 
       if (valid_issn) {
         result = value
