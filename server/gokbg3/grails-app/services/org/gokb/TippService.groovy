@@ -667,7 +667,7 @@ class TippService {
       def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = :tipp and toComponent = i)", [tipp: ctipp]).collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
       log.debug("Checking against existing IDs: ${tipp_ids}")
       def tipp_id_match_results = []
-      boolean has_conflicts = false
+      boolean id_conflicts = false
 
       if (tippInfo.titleId == ctipp.importId) {
         tipp_id_match_results << [namespace: 'title_id', value: tippInfo.titleId, match: 'OK']
@@ -682,7 +682,7 @@ class TippService {
             if (tid.type == plns) {
               if (Identifier.normalizeIdentifier(jsonIdMap[tid.type]) != tid.normname) {
                 tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'FAIL']
-                has_conflicts = true
+                id_conflicts = true
               }
               else {
                 tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'OK']
@@ -697,7 +697,13 @@ class TippService {
         }
       }
 
-      if (has_conflicts) {
+      if (!urlMatch(ctipp.url, tippInfo.url)) {
+        log.debug("Ignore TIPP with different URL: ${ctipp.url} vs ${tippInfo.url}")
+      }
+      else if (ctipp.paymentType != determinePaymentType(tippInfo.paymentType)) {
+        log.debug("Ignore TIPP with different paymentType: ${ctipp.paymentType} vs ${tippInfo.paymentType}")
+      }
+      else if (id_conflicts) {
         log.debug("Failed Match for current ${ctipp}!")
         result.failed_matches << [item: ctipp, matchResults: tipp_id_match_results]
       }
@@ -708,6 +714,33 @@ class TippService {
     }
 
     result
+  }
+
+  public boolean urlMatch(String urlstring1, String urlstring2) {
+    String host1 = new URI(urlstring1).getHost().replace(/$www\./, '')
+    String host2 = new URI(urlstring2).getHost().replace(/$www\./, '')
+
+    if (host1 != host2) {
+      return false
+    }
+
+    if (urlstring1.endsWith('/') && !urlstring2.endsWith('/') && urlstring1.substr(0, urlstring1.length() - 1) != urlstring2) {
+      return false
+    }
+
+    if (urlstring2.endsWith('/') && !urlstring1.endsWith('/') && urlstring2.substr(0, urlstring2.length() - 1) != urlstring1) {
+      return false
+    }
+
+    return true
+  }
+
+  public RefdataValue determinePaymentType(String value) {
+    if (value?.toLowerCase() in ['f', 'oa', 'free']) {
+      return RefdataCategory.lookup('TitleInstancePackagePlatform.PaymentType', 'OA')
+    } else {
+      return RefdataCategory.lookup('TitleInstancePackagePlatform.PaymentType', 'Paid')
+    }
   }
 
   def restLookup(tippInfo) {

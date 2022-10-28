@@ -684,7 +684,13 @@ class IngestKbartRun {
             }
           }
 
-          if (result != 'partial') {
+          if (tidm.access != tipp_map.paymentType) {
+            log.debug("Ignore TIPP with different access type..")
+          }
+          else if (tidm.url != tipp_map.url) {
+            log.debug("Ignore TIPP with different url..")
+          }
+          else if (result != 'partial') {
             result = 'matched'
 
             if (!dryRun) {
@@ -716,7 +722,9 @@ class IngestKbartRun {
 
         titleIdMap[tipp_map.importId] << [
           ids: jsonIdMap,
-          oid: (dryRun ? null : tipp.id)
+          oid: (dryRun ? null : tipp.id),
+          url: tipp_map.url,
+          access: tipp_map.paymentType
         ]
       }
     }
