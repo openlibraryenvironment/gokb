@@ -1,18 +1,18 @@
 package org.gokb
 
-import org.gokb.cred.*
-import static groovyx.net.http.Method.*
-import groovyx.net.http.*
-import grails.converters.JSON
 import com.k_int.ConcurrencyManagerService.Job
+import grails.converters.JSON
+import java.time.ZoneId
+import org.gokb.cred.*
 import org.gokb.GOKbTextUtils
-
 
 class TitleAugmentService {
 
   def grailsApplication
   def componentLookupService
   def reviewRequestService
+  def titleHistoryService
+  def titleLookupService
   def zdbAPIService
   def ezbAPIService
 
@@ -333,6 +333,33 @@ class TitleAugmentService {
         def publisher_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
         new Combo(fromComponent: titleInstance, toComponent: pub_obj, type: publisher_combo).save(flush: true, failOnError: true)
       }
+    }
+
+    try {
+      info.history.each { he ->
+        def id_map = []
+
+        if (he.zdbId) {
+          id_map << [type: "zdb", value: he.zdbId]
+        }
+
+        def match_result = titleLookupService.find(he.name, null, id_map, 'org.gokb.cred.JournalInstance')
+
+        if (!match_result.to_create && match_result.matches?.size() == 1) {
+          def candidate = match_result.matches[0].object
+          def parsedLocal = he.prev ? GOKbTextUtils.completeDateString(info.publishedFrom) : GOKbTextUtils.completeDateString(he.publishedFrom ?: info.publishedTo)
+          Date event_date = null
+
+          if (parsedLocal) {
+            event_date = Date.from(parsedLocal.atZone(ZoneId.systemDefault()).toInstant())
+          }
+
+          titleHistoryService.addDirectEvent((he.prev ? candidate : titleInstance), (he.prev ? titleInstance : candidate), event_date)
+        }
+      }
+    }
+    catch (Exception e) {
+      log.error("Error while processing ZDB history event:", e)
     }
 
     if (titleInstance.name != info.title) {

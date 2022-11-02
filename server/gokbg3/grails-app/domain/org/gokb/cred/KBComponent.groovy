@@ -1433,23 +1433,6 @@ where cp.owner = :c
         }
       }
     }
-    if (fileAttachments) {
-      builder.'fileAttachments' {
-        fileAttachments.each { fa ->
-          builder.'fileAttachment' {
-            builder.'guid'(fa.guid)
-            builder.'md5'(fa.md5)
-            builder.'uploadName'(fa.uploadName)
-            builder.'uploadMimeType'(fa.uploadMimeType)
-            builder.'filesize'(fa.filesize)
-            builder.'doctype'(fa.doctype)
-            builder.'content' {
-              builder.'mkp'.yieldUnescaped "<![CDATA[${fa.fileData.encodeBase64().toString()}]]>"
-            }
-          }
-        }
-      }
-    }
 
     if (source) {
       builder.'source' {

@@ -49,8 +49,9 @@ class ConcurrencyManagerService {
     int progress
     Date startTime = new Date()
     Date endTime
-    boolean begun = false;
+    boolean begun = false
     String description
+    String exception
     List messages = []
     Map linkedItem
     RefdataValue type
@@ -69,6 +70,10 @@ class ConcurrencyManagerService {
 
     public getMessages() {
       return messages
+    }
+
+    public getException() {
+      return exception
     }
 
     /**
@@ -225,6 +230,24 @@ class ConcurrencyManagerService {
     allJobs.each { uuid, value ->
       if (value.type in jobTypes && value.begun && !value.isDone() && !value.isCancelled()) {
         result << value
+      }
+    }
+    return result
+  }
+
+  public def getActiveJobsForType(def type) {
+    def result = []
+    def allJobs = getJobs()
+
+    if (type instanceof String) {
+      type = RefdataCategory.lookup("Job.Type", type)
+    }
+
+    if (type) {
+      allJobs.each { uuid, value ->
+        if (value.type == type && value.begun && !value.isDone() && !value.isCancelled()) {
+          result << value
+        }
       }
     }
     return result

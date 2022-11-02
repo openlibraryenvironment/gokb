@@ -19,9 +19,6 @@ import org.gokb.cred.*
 
 import org.springframework.util.StringUtils
 
-import java.text.ParseException
-import java.text.SimpleDateFormat
-
 
 class ESSearchService{
 // Map the parameter names we use in the webapp with the ES fields
@@ -77,6 +74,7 @@ class ESSearchService{
           currentPublisher: "publisher",
           linkedPackage: "tippPackage",
           tippPackage: "tippPackage",
+          package: "tippPackage",
           pkg: "tippPackage",
           tippTitle: "tippTitle",
           linkedTitle: "tippTitle",
@@ -107,6 +105,7 @@ class ESSearchService{
       "DatabaseInstance" : "gokbtitles",
       "OtherInstance" : "gokbtitles",
       "BookInstance" : "gokbtitles",
+      "TitleInstance" : "gokbtitles",
       "TitleInstancePackagePlatform" : "gokbtipps",
       "Org" : "gokborgs",
       "Package" : "gokbpackages",
@@ -451,7 +450,7 @@ class ESSearchService{
       }
     }
     else if (qpars.suggest) {
-      def sanitized_param = sanitizeParam(qpars.altname)
+      def sanitized_param = sanitizeParam(qpars.suggest)
       query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(Operator.AND).boost(0.6f))
     }
     else if (qpars.qsName) {
@@ -498,7 +497,7 @@ class ESSearchService{
             genericQuery.should(QueryBuilders.matchQuery("altname", sanitized_param).operator(Operator.AND).boost(1.3f))
           }
           else if (field == "suggest") {
-            genericQuery.should(QueryBuilders.matchQuery("suggest").operator(Operator.AND).boost(0.6f))
+            genericQuery.should(QueryBuilders.matchQuery("suggest", sanitized_param).operator(Operator.AND).boost(0.6f))
           }
           else if (field in allQFields){
             genericQuery.should(QueryBuilders.matchQuery(field, sanitized_param).operator(Operator.AND))
@@ -518,29 +517,33 @@ class ESSearchService{
   }
 
   private void processLinkedField(query, field, val) {
-    if (val?.trim()) {
-      QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
-      def sanitized_param = sanitizeParam(val)
-      def finalVal = val
+    def vals = val instanceof String ? [val] : val
 
-      try {
-        finalVal = KBComponent.get(Long.valueOf(val)).getLogEntityId()
+    vals.each {
+      if (it?.trim()) {
+        QueryBuilder linkedFieldQuery = QueryBuilders.boolQuery()
+        def sanitized_param = sanitizeParam(it)
+        def finalVal = it
+
+        try {
+          finalVal = KBComponent.get(Long.valueOf(it)).getLogEntityId()
+        }
+        catch (java.lang.NumberFormatException nfe) {
+        }
+
+        if (finalVal == 'null') {
+          finalVal = ""
+        }
+
+        log.debug("processLinkedField: ${field} -> ${finalVal}")
+
+        linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
+        linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), sanitized_param))
+        linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), sanitized_param))
+        linkedFieldQuery.minimumShouldMatch(1)
+
+        query.must(linkedFieldQuery)
       }
-      catch (java.lang.NumberFormatException nfe) {
-      }
-
-      if (finalVal == 'null') {
-        finalVal = ""
-      }
-
-      log.debug("processLinkedField: ${field} -> ${finalVal}")
-
-      linkedFieldQuery.should(QueryBuilders.termQuery(field, finalVal))
-      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Uuid".toString(), sanitized_param))
-      linkedFieldQuery.should(QueryBuilders.termQuery("${field}Name".toString(), sanitized_param))
-      linkedFieldQuery.minimumShouldMatch(1)
-
-      query.must(linkedFieldQuery)
     }
   }
 
@@ -551,10 +554,10 @@ class ESSearchService{
       val = ""
     }
 
-    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatform', val))
     linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformName', sanitizeParam(val)))
     linkedFieldQuery.should(QueryBuilders.termQuery('nominalPlatformUuid', sanitizeParam(val)))
-    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', sanitizeParam(val)))
+    linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatform', val))
     linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformName', sanitizeParam(val)))
     linkedFieldQuery.should(QueryBuilders.termQuery('hostPlatformUuid', sanitizeParam(val)))
     linkedFieldQuery.minimumShouldMatch(1)
@@ -574,6 +577,7 @@ class ESSearchService{
   def scroll(params) throws Exception{
     def result = [:]
     def esClient = ESWrapperService.getClient()
+    def unknown_fields = []
     def usedComponentTypes = getUsedComponentTypes(params, result)
     if (result.error){
       return result
@@ -589,7 +593,7 @@ class ESSearchService{
       QueryBuilder scrollQuery = QueryBuilders.boolQuery()
       if (params.component_type || params.componentType) {
         def final_type = deriveComponentType(params.componentType ?: params.component_type)
-        scrollQuery.must(QueryBuilders.termQuery('componentType', params.component_type))
+        scrollQuery.must(QueryBuilders.termQuery('componentType', final_type))
       }
       addDateQueries(scrollQuery, errors, params)
       specifyQueryWithParams(params, scrollQuery, errors, unknown_fields)
@@ -617,9 +621,10 @@ class ESSearchService{
       }
     }
     result.scrollId = searchResponse.getScrollId()
-    SearchHit[] searchHits = searchResponse.getHits()
-    result.hasMoreRecords = searchHits.length == scrollSize
-    result.records = filterLastUpdatedDisplay(searchHits, params, errors, result)
+    SearchHits searchHits = searchResponse.getHits()
+    result.hasMoreRecords = searchHits.totalHits.value > scrollSize
+    result.total = searchHits.totalHits.value
+    result.records = searchHits.collect { it.getSourceAsMap() }
     result.size = result.records.size()
     result
   }
@@ -634,13 +639,14 @@ class ESSearchService{
     }
 
     if (types instanceof String){
-      usedComponentTypes."${type}" = null
+      usedComponentTypes."${deriveComponentType(types)}" = null
     }
     else if (types instanceof List){
       for (def componentType in types){
-        usedComponentTypes."${componentType}" = null
+        usedComponentTypes."${deriveComponentType(componentType)}" = null
       }
     }
+
     for (def ct in usedComponentTypes.keySet()){
       if (ct in indicesPerType.keySet()){
         usedComponentTypes."${ct}" = indicesPerType.get(ct)
@@ -650,52 +656,9 @@ class ESSearchService{
         result.message = "Error. Wrong 'component_type' specification: ${ct}"
       }
     }
+
     return usedComponentTypes
   }
-
-
-  /**
-   * This is a workaround for the not working scroll request with date range query in Elasticsearch 5.6.10.
-   * TODO: check if this can be removed when having migrated to a higher Elasticsearch version.
-   */
-  private List<SearchHit> filterLastUpdatedDisplay(SearchHit[] searchHitsArray, params,
-                                                   Map<String, Object> errors, Serializable result){
-    List filteredHits = []
-    SimpleDateFormat YYYY_MM_DD = new SimpleDateFormat("yyyy-MM-dd")
-    SimpleDateFormat YYYY_MM_DD_HH_mm_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-    SimpleDateFormat ISO = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
-    Date changedSince = parseDate(params.changedSince, YYYY_MM_DD_HH_mm_SS, YYYY_MM_DD, ISO)
-    for (SearchHit hit in searchHitsArray){
-      String dateString = hit.getSourceAsMap().get("lastUpdatedDisplay")
-      Date date
-      if(dateString) {
-        try {
-          date = ISO.parse(dateString)
-        }
-        catch (ParseException ignored) {
-          date = YYYY_MM_DD_HH_mm_SS.parse(dateString)
-        }
-        if (changedSince == null || date && !date.before(changedSince)){
-          filteredHits.add(hit.getSourceAsMap())
-        }
-      }
-    }
-    return filteredHits
-  }
-
-
-  private Date parseDate(String dateString, SimpleDateFormat... dateFormats){
-    for (SimpleDateFormat format in dateFormats){
-      try{
-        return format.parse(dateString)
-      }
-      catch (Exception e){
-        continue
-      }
-    }
-    return null
-  }
-
 
   /**
    * find : Query the Elasticsearch index --
@@ -712,8 +675,8 @@ class ESSearchService{
     try {
       def unknown_fields = []
       def component_type = null
-      if (params.componentType){
-        component_type = deriveComponentType(params.componentType)
+      if (params.componentType || params.component_type){
+        component_type = deriveComponentType(params.componentType ?: params.component_type)
       }
 
       QueryBuilder exactQuery = QueryBuilders.boolQuery()
@@ -730,7 +693,13 @@ class ESSearchService{
       }
 
       if( !errors && exactQuery.hasClauses() ) {
-        SearchRequest searchRequest = new SearchRequest(grailsApplication.config?.gokb?.es?.indices?.values() as String[])
+        if (!params.status) {
+          QueryBuilder statusQuery = QueryBuilders.boolQuery()
+          statusQuery.mustNot(QueryBuilders.termQuery('status', 'Deleted'))
+          exactQuery.must(statusQuery)
+        }
+
+        SearchRequest searchRequest = new SearchRequest(component_type ? [indicesPerType[component_type]] as String[] : grailsApplication.config?.gokb?.es?.indices?.values() as String[])
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         searchSourceBuilder.trackTotalHits(true)
         searchSourceBuilder.query(exactQuery)
@@ -924,11 +893,6 @@ class ESSearchService{
       else{
         unknown_fields.add(k)
       }
-    }
-    if (!params.status) {
-      QueryBuilder statusQuery = QueryBuilders.boolQuery()
-      statusQuery.mustNot(QueryBuilders.termQuery('status', 'Deleted'))
-      exactQuery.must(statusQuery)
     }
   }
 
@@ -1244,7 +1208,7 @@ class ESSearchService{
     def final_type = typeString.capitalize()
 
     if (final_type in defined_types) {
-      if (final_type== 'TIPP') {
+      if (final_type == 'TIPP') {
         final_type = 'TitleInstancePackagePlatform'
       }
       else if (final_type == 'Book') {

@@ -13,6 +13,7 @@ class AugmentZdbJob{
 
   def titleAugmentService
   def sessionFactory
+  def concurrencyManagerService
 
   static triggers = {
     // see Bootstrap.groovy
@@ -22,35 +23,46 @@ class AugmentZdbJob{
 
   def execute() {
     if (grailsApplication.config.gokb.zdbAugment.enabled) {
-      log.info("Starting ZDB augment job.")
-      def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-      def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
-      def zdbNs = IdentifierNamespace.findByValue('zdb')
-      def issnNs = []
-      issnNs << IdentifierNamespace.findByValue('issn')
-      issnNs << IdentifierNamespace.findByValue('eissn')
-      int offset = 0
-      int batchSize = 50
-      Instant start = Instant.now()
-      ZonedDateTime zdt = ZonedDateTime.ofInstant(start, ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS)
-      Date startDate = Date.from(zdt.toInstant())
+      def active_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup("Job.Type", "Sync ZDB data"))
 
-      def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(), [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs, lastRun: startDate])[0]
+      if (!active_jobs) {
+        log.info("Starting ZDB augment job.")
+        def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+        def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+        def zdbNs = IdentifierNamespace.findByValue('zdb')
+        def issnNs = []
+        issnNs << IdentifierNamespace.findByValue('issn')
+        issnNs << IdentifierNamespace.findByValue('eissn')
+        int offset = 0
+        int batchSize = 50
+        Instant start = Instant.now()
+        ZonedDateTime zdt = ZonedDateTime.ofInstant(start, ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS)
+        Date startDate = Date.from(zdt.toInstant())
 
-      while (offset < count_journals_without_zdb_id) {
-        def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(), [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs, lastRun: startDate], [offset: offset, max: batchSize])
+        def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(), [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs, lastRun: startDate])[0]
 
-        log.debug("Processing ${count_journals_without_zdb_id}")
+        while (offset < count_journals_without_zdb_id) {
+          def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(), [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs, lastRun: startDate], [offset: offset, max: batchSize])
 
-        journals_without_zdb_id.each { ti_id ->
-          def ti = TitleInstance.get(ti_id)
-          log.debug("Attempting augment on ${ti.id} ${ti.name}")
-          titleAugmentService.augmentZdb(ti)
+          log.debug("Processing ${count_journals_without_zdb_id}")
+
+          journals_without_zdb_id.each { ti_id ->
+            def ti = TitleInstance.get(ti_id)
+            log.debug("Attempting augment on ${ti.id} ${ti.name}")
+            titleAugmentService.augmentZdb(ti)
+          }
+          cleanUpGorm()
+          offset += batchSize
+
+          if (Thread.currentThread().isInterrupted()) {
+            break
+          }
         }
-        cleanUpGorm()
-        offset += batchSize
+        log.info("Finished ZDB augment job, augmenting ${count_journals_without_zdb_id} Journals.")
       }
-      log.info("Finished ZDB augment job, augmenting ${count_journals_without_zdb_id} Journals.")
+      else {
+        log.info("Not starting ZDB augment job because of an already running manually triggered job")
+      }
     }
   }
 

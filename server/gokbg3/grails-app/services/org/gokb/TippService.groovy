@@ -178,7 +178,7 @@ class TippService {
 
   def matchPackage(Package aPackage, def job = null) {
     log.debug("Matching titles for package ${aPackage}")
-    def result = [matched: 0, created: 0, result: 'OK']
+    def result = [matched: 0, created: 0, unmatched: 0, result: 'OK']
     def more = true
     int offset = 0
 
@@ -319,10 +319,11 @@ class TippService {
       log.debug("linked TIPP $tipp with TitleInstance $ti")
     }
     else {
-      log.debug("Changing")
+      log.debug("Unable to match title!")
       if (pkg.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
         pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
       }
+      result = 'unmatched'
     }
 
     if (found.matches?.size() > 0 || found.conflicts?.size() > 0)
@@ -507,7 +508,7 @@ class TippService {
 
   private void handleFindConflicts(tipp, def found, CuratoryGroup activeCg = null) {
     TitleInstancePackagePlatform.withNewSession {
-      if (found.matches.size > 1) {
+      if (found.matches.size > 1 && !tipp.title) {
         def additionalInfo = [otherComponents: []]
         found.matches.each { comp ->
           additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid, conflicts: comp.conflicts]
@@ -805,44 +806,7 @@ class TippService {
     result
   }
 
-  public void updateSimpleFields(tipp, tippInfo, boolean fullsync = false, User user = null) {
-    componentUpdateService.ensureCoreData(tipp, tippInfo, fullsync, user)
-
-    ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
-    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'subjectArea', 'series'].each { propName ->
-      tipp[propName] = tippInfo[propName] ? tippInfo[propName].trim() : tipp[propName]
-    }
-
-    if (!tipp.importId) {
-      tipp.importId = tippInfo.importId ?: tippInfo.titleId
-    }
-
-    if (tippInfo.dateFirstInPrint) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstInPrint), tipp, 'dateFirstInPrint')
-    }
-    else {
-      log.debug("No dateFirstInPrint -> ${tippInfo.dateFirstInPrint}")
-    }
-
-    if (tippInfo.dateFirstOnline) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline), tipp, 'dateFirstOnline')
-    }
-    if (tippInfo.accessStartDate) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessStartDate), tipp, 'accessStartDate')
-    }
-
-    if (tippInfo.accessEndDate) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
-    }
-
-    ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
-    ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
-    ClassUtils.setRefdataIfPresent(tippInfo.publicationType, tipp, 'publicationType')
-    tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, tippInfo.publicationType ?: tippInfo.type ?: tipp.publicationType.value)
-    tipp.save(flush:true)
-  }
-
-  public void checkCoverage(tipp, tippInfo, created) {
+  public TitleInstancePackagePlatform updateTippFields(tipp, tippInfo, User user = null) {
     def cov_list = tippInfo.coverageStatements ?: tippInfo.coverage
 
     cov_list.each { c ->
@@ -886,7 +850,55 @@ class TippService {
       ]
 
       tipp.addToCoverageStatements(coverage_item)
-      tipp.save(flush:true)
     }
+
+    log.debug("Update simple fields: ${tippInfo}")
+    componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
+
+    ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
+    'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'subjectArea', 'series'].each { propName ->
+      if (tippInfo[propName] && tippInfo[propName].trim() != tipp[propName]) {
+        tipp[propName] = tippInfo[propName].trim()
+      }
+    }
+
+    if (!tipp.importId) {
+      tipp.importId = tippInfo.importId ?: tippInfo.titleId
+    }
+
+    log.debug("Updated info (${tipp.id}): ${tipp.url} ${tipp.name}")
+
+    if (tippInfo.dateFirstInPrint) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstInPrint), tipp, 'dateFirstInPrint')
+    }
+    else {
+      log.debug("No dateFirstInPrint -> ${tippInfo.dateFirstInPrint}")
+    }
+
+    if (tippInfo.dateFirstOnline) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline), tipp, 'dateFirstOnline')
+    }
+    if (tippInfo.accessStartDate) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessStartDate), tipp, 'accessStartDate')
+    }
+
+    if (tippInfo.accessEndDate) {
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
+    }
+
+    ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
+    ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
+
+    if (tippInfo.paymentType in ['F', 'OA', 'Free']) {
+      ClassUtils.setRefdataIfPresent('OA', tipp, 'paymentType')
+    } else if (tippInfo.paymentType in ['P', 'Paid']) {
+      ClassUtils.setRefdataIfPresent('Paid', tipp, 'paymentType')
+    }
+
+    ClassUtils.setRefdataIfPresent(tippInfo.publicationType, tipp, 'publicationType')
+
+    tipp.save(flush:true)
+
+    tipp
   }
 }

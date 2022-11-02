@@ -53,7 +53,7 @@ class TitleController {
     def es_search = params.es ? true : false
     Class type = setType(params)
 
-    params.componentType = params.type ?: 'title' // Tells ESSearchService what to look for
+    params.componentType = params.type ?: 'TitleInstance' // Tells ESSearchService what to look for
 
     if (es_search) {
       params.remove('es')
