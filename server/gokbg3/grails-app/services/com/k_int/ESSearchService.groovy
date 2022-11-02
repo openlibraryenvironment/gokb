@@ -610,7 +610,7 @@ class ESSearchService{
     else{
       SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
       scrollRequest.scroll("15m")
-      searchResponse = esClient.search(scrollRequest, RequestOptions.DEFAULT)
+      searchResponse = esClient.scroll(scrollRequest, RequestOptions.DEFAULT)
       try{
         if (params.lastPage && Integer.valueOf(params.lastPage) > -1){
           result.lastPage = Integer.valueOf(params.lastPage) + 1
