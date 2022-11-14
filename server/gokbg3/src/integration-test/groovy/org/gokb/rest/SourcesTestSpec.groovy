@@ -2,20 +2,27 @@ package org.gokb.rest
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
+import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Source
+import org.springframework.web.client.RestTemplate
 import spock.lang.Ignore
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
 class SourcesTestSpec extends AbstractAuthSpec {
 
-  private RestBuilder rest = new RestBuilder()
+
+  HttpClient http
 
   def setup() {
     def src_upd = Source.findByName("Source PreUpdate") ?: new Source(name: "Source PreUpdate")
@@ -40,14 +47,15 @@ class SourcesTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("$urlPath/rest/sources?_sort=name&_order=asc&es") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/sources?_sort=name&_order=asc")
+      .queryParam('_sort', 'name')
+      .queryParam('_order', 'asc')
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.data.size() == 8
+    resp.status == HttpStatus.OK
+    resp.body().data.size() == 8
   }
 
   void "test GET /rest/sources/{id}"() {
@@ -56,15 +64,14 @@ class SourcesTestSpec extends AbstractAuthSpec {
     when:
     String accessToken = getAccessToken()
     Source quelle = Source.findByName("TestSource")
-    RestResponse resp = rest.get("$urlPath/rest/sources/$quelle.id") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/sources/$quelle.id")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.name == quelle.name
-    resp.json.targetNamespace != null
+    resp.status == HttpStatus.OK
+    resp.body().name == quelle.name
+    resp.body().targetNamespace != null
   }
 
   void "test POST /rest/sources"() {
@@ -72,17 +79,15 @@ class SourcesTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("$urlPath/rest/sources") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body([shortcode: 'q1', name: 'Quelle 1'] as JSON)
-    }
-    then:
-    resp.status == 201
+    Map restBody = [shortcode: 'q1', name: 'Quelle 1']
+    HttpRequest request = HttpRequest.POST("$urlPath/rest/sources", restBody as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
-    resp.json.name == "Quelle 1"
+    then:
+    resp.status == HttpStatus.CREATED
+
+    resp.body().name == "Quelle 1"
   }
 
   void "test PUT /rest/sources/{id}"() {
@@ -92,24 +97,22 @@ class SourcesTestSpec extends AbstractAuthSpec {
     def namespace = IdentifierNamespace.findByName("TestSourceTitleNS")
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("$urlPath/rest/sources/$srcId") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body([
+    Map restBody = [
         name           : 'Source AfterUpdate',
         frequency      : 'Monthly',
         url            : "http://kbart-source.com/test-pkg",
         targetNamespace: namespace.id
-      ] as JSON)
-    }
+    ]
+    HttpRequest request = HttpRequest.PUT("$urlPath/rest/sources/$srcId", restBody as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.name == "Source AfterUpdate"
-    resp.json.frequency.name == "Monthly"
-    resp.json.url == "http://kbart-source.com/test-pkg"
-    resp.json.targetNamespace.name == "TestSourceTitleNS"
-    resp.json.automaticUpdates == false
+    resp.status == HttpStatus.OK
+    resp.body().name == "Source AfterUpdate"
+    resp.body().frequency.name == "Monthly"
+    resp.body().url == "http://kbart-source.com/test-pkg"
+    resp.body().targetNamespace.name == "TestSourceTitleNS"
+    resp.body().automaticUpdates == false
   }
 }

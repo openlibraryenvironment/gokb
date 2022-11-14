@@ -15,7 +15,7 @@ class AutoCachePackagesJob {
   }
 
   def execute() {
-    if (grailsApplication.config.gokb.packageOaiCaching.enabled) {
+    if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false)) {
       log.debug("Beginning scheduled auto cache packages job.")
       packageService.cachePackageXml()
       log.debug("Finished scheduled package caching ..")

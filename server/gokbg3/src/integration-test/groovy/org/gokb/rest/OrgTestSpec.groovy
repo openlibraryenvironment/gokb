@@ -1,10 +1,13 @@
 package org.gokb.rest
 
 import grails.converters.JSON
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import grails.gorm.transactions.*
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.cred.KBComponent
 import org.gokb.cred.Office
 import org.gokb.cred.Org
@@ -12,12 +15,15 @@ import org.gokb.cred.Platform
 import org.gokb.TitleLookupService
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Source
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
 class OrgTestSpec extends AbstractAuthSpec {
 
-  private RestBuilder rest = new RestBuilder()
+
+  HttpClient http
 
   def setupSpec() {
   }
@@ -64,13 +70,12 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.get("${urlPath}/rest/orgs") {
-      accept('application/json')
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/orgs")
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
 
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
   }
 
   void "test /rest/orgs/<id> with valid token"() {
@@ -81,15 +86,14 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.get("${urlPath}/rest/orgs/${Org.findByName("TestOrgPatch").id}") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/orgs/${Org.findByName("TestOrgPatch").id}")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
 
-    resp.status == 200 // OK
-    resp.json.name == "TestOrgPatch"
+    resp.status == HttpStatus.OK
+    resp.body().name == "TestOrgPatch"
   }
 
   void "test insert new org"() {
@@ -117,23 +121,21 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.post("${urlPath}/rest/orgs") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/orgs", json_record as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
 
-    resp.status == 201 // Created
+    resp.status == HttpStatus.CREATED
 
     expect:
-    resp.json?.name == "TestOrgPost"
-    resp.json?._embedded?.ids?.size() == 1
-    resp.json?._embedded?.offices?.size()==3
-    resp.json?._embedded?.offices*.function.name.count("Technical Support")==2
-    resp.json?._embedded?.offices*.function.name.count("Other")
-    resp.json?._embedded?.offices*.language.name.containsAll(["hun", "ger", "epo"])
+    resp.body()?.name == "TestOrgPost"
+    resp.body()?._embedded?.ids?.size() == 1
+    resp.body()?._embedded?.offices?.size()==3
+    resp.body()?._embedded?.offices*.function.name.count("Technical Support")==2
+    resp.body()?._embedded?.offices*.function.name.count("Other")
+    resp.body()?._embedded?.offices*.language.name.containsAll(["hun", "ger", "epo"])
   }
 
   void "test org index"() {
@@ -144,18 +146,16 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.get("${urlPath}/rest/orgs") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/orgs")
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
 
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
 
     expect:
 
-    resp.json?.data?.size() > 0
+    resp.body()?.data?.size() > 0
   }
 
   void "test org update"() {
@@ -183,23 +183,20 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.put("${urlPath}/rest/orgs/$id?_embed=providedPlatforms,ids,offices") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(update_record as JSON)
-    }
-
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/orgs/$id", update_record as JSON)
+      .queryParam('_embed', 'providedPlatforms,ids,offices')
+      .bearerAuth(accessToken)
     then:
 
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
 
     expect:
 
-    resp.json.name == "TestOrgUpdateNew"
-    resp.json._embedded?.ids?.size() == 1
-    resp.json._embedded?.providedPlatforms?.size() == 1
-    resp.json._embedded?.offices.size() == 2
-    resp.json._embedded?.offices*.function.name.contains("Other")
+    resp.body().name == "TestOrgUpdateNew"
+    resp.body()._embedded?.ids?.size() == 1
+    resp.body()._embedded?.providedPlatforms?.size() == 1
+    resp.body()._embedded?.offices.size() == 2
+    resp.body()._embedded?.offices*.function.name.contains("Other")
   }
 
   void "test source delete"() {
@@ -219,21 +216,18 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.put("${urlPath}/rest/provider/$id") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(update_record as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/orgs/$id", update_record as JSON)
+      .bearerAuth(accessToken)
 
     then:
 
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
 
     expect:
 
-    resp.json.name == "TestOrgUpdateSource"
-    resp.json.source == null
-    resp.json._embedded?.ids?.size() == 1
-//    resp.json._embedded?.providedPlatforms?.size() == 1
+    resp.body().name == "TestOrgUpdateSource"
+    resp.body().source == null
+    resp.body()._embedded?.ids?.size() == 1
+//    resp.body()._embedded?.providedPlatforms?.size() == 1
   }
 }

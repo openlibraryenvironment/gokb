@@ -46,7 +46,7 @@ class PackageController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -85,7 +85,7 @@ class PackageController {
   def show() {
     def result = [:]
     def obj = null
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
     def is_curator = true
     User user = null
 
@@ -229,7 +229,7 @@ class PackageController {
             response.status = 400
             errors << messageService.processValidationErrors(obj.errors, request_locale)
           }
-          if (obj?.id != null && grailsApplication.config.gokb.ftupdate_enabled == true) {
+          if (obj?.id != null && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
             FTUpdateService.updateSingleItem(obj)
           }
         }
@@ -339,7 +339,7 @@ class PackageController {
           response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request_locale)
         }
-        if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+        if (grailsApplication.config.gokb.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
           FTUpdateService.updateSingleItem(obj)
         }
       }
@@ -582,7 +582,7 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
-        if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
           FTUpdateService.updateSingleItem(obj)
         }
       }
@@ -621,7 +621,9 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
-        FTUpdateService.updateSingleItem(obj)
+        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
+          FTUpdateService.updateSingleItem(obj)
+        }
       }
       else {
         result.result = 'ERROR'

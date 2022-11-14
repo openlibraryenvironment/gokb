@@ -15,13 +15,13 @@ class ESUpdateJob {
   }
 
   def execute() {
-    if ( grailsApplication.config.gokb.ftupdate_enabled ) {
+    if ( grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false) ) {
       log.debug ("Beginning scheduled es update job.")
-      FTUpdateService.updateFTIndexes();
+      FTUpdateService.updateFTIndexes()
       log.debug ("ESUpdateJob completed.")
     }
     else {
-      log.debug("FTUpdate is not enabled - set config.ftupdate_enabled = true in config to enable");
+      log.debug("FTUpdate is not enabled - set config.ftupdate_enabled = true in config to enable")
     }
   }
 }

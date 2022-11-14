@@ -1,19 +1,25 @@
 package org.gokb.rest
 
 import grails.converters.JSON
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
+import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.cred.Org
 import org.gokb.cred.Platform
 import org.gokb.TitleLookupService
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
 class PlatformTestSpec extends AbstractAuthSpec {
 
-  private RestBuilder rest = new RestBuilder()
+
+  HttpClient http
 
   def setupSpec(){
   }
@@ -43,31 +49,29 @@ class PlatformTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.get("${urlPath}/rest/platforms") {
-      accept('application/json')
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/platforms")
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
 
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
   }
 
   void "test /rest/platforms/<id> with valid token"() {
     given:
-  
+
     def urlPath = getUrlPath()
     String accessToken = getAccessToken()
 
     when:
 
-    RestResponse resp = rest.get("${urlPath}/rest/platforms") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/platforms")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
 
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
   }
 
   void "test insert new platform"() {
@@ -84,20 +88,18 @@ class PlatformTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.post("${urlPath}/rest/platforms") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/platforms", json_record as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
 
-    resp.status == 201 // Created
+    resp.status == HttpStatus.CREATED
 
     expect:
 
-    resp.json?.name == "TestPltPost"
-    resp.json?.provider?.name == "TestPltProvider"
+    resp.body()?.name == "TestPltPost"
+    resp.body()?.provider?.name == "TestPltProvider"
   }
 
   void "test platform index"() {
@@ -108,18 +110,17 @@ class PlatformTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.get("${urlPath}/rest/platforms") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/platforms")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
 
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
 
     expect:
 
-    resp.json?.data?.size() > 0
+    resp.body()?.data?.size() > 0
   }
 
   void "test platform update"() {
@@ -138,20 +139,18 @@ class PlatformTestSpec extends AbstractAuthSpec {
 
     when:
 
-    RestResponse resp = rest.put("${urlPath}/rest/platforms/$id") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/platforms/$id", json_record as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
 
-    resp.status == 200
+    resp.status == HttpStatus.OK
 
     expect:
 
-    resp.json.name == "TestPltUpdate"
-    resp.json.primaryUrl == "http://updatedplt.com"
-    resp.json.provider?.name == "TestPltProviderUpd"
+    resp.body().name == "TestPltUpdate"
+    resp.body().primaryUrl == "http://updatedplt.com"
+    resp.body().provider?.name == "TestPltProviderUpd"
   }
 }

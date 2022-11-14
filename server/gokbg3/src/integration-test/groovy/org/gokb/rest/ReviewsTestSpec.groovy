@@ -2,10 +2,12 @@ package org.gokb.rest
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
-
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.UserProfileService
 import org.gokb.cred.AllocatedReviewGroup
 import org.gokb.cred.CuratoryGroup
@@ -16,11 +18,15 @@ import org.gokb.cred.ReviewRequest
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import org.gokb.cred.UserRole
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 class ReviewsTestSpec extends AbstractAuthSpec {
 
-  private RestBuilder rest = new RestBuilder()
+
+  HttpClient http
+
   private ReviewRequest rr
   private ReviewRequest rrDeescalate
   private JournalInstance title
@@ -130,16 +136,13 @@ class ReviewsTestSpec extends AbstractAuthSpec {
 
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("$urlPath/rest/reviews") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/reviews")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
-    resp.status == 200
-    resp.json.data.size() >= 1
+    resp.status == HttpStatus.OK
+    resp.body().data.size() >= 1
   }
 
   void "test GET /rest/reviews/<id>"() {
@@ -148,16 +151,13 @@ class ReviewsTestSpec extends AbstractAuthSpec {
 
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("$urlPath/rest/reviews/${rr.id}") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/reviews/${rr.id}")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
-    resp.status == 200
-    resp.json.reviewRequest == rr.reviewRequest
+    resp.status == HttpStatus.OK
+    resp.body().reviewRequest == rr.reviewRequest
   }
 
   void "test POST /rest/reviews"() {
@@ -174,18 +174,14 @@ class ReviewsTestSpec extends AbstractAuthSpec {
 
     when:
     String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
-    RestResponse resp = rest.post("$urlPath/rest/reviews") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(restBody as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("$urlPath/rest/reviews", restBody)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
-    resp.status == 201
-    resp.json.reviewRequest == 'POST Test Review'
-    resp.json.additionalInfo?.otherComponents?.size() == 1
+    resp.status == HttpStatus.CREATED
+    resp.body().reviewRequest == 'POST Test Review'
+    resp.body().additionalInfo?.otherComponents?.size() == 1
   }
 
   void "test PUT /rest/reviews"() {
@@ -201,19 +197,15 @@ class ReviewsTestSpec extends AbstractAuthSpec {
 
     when:
     String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
-    RestResponse resp = rest.put("$urlPath/rest/reviews/${rr.id}") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(restBody as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("$urlPath/rest/reviews/${rr.id}", restBody)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
-    resp.status == 200
-    resp.json.reviewRequest == restBody.reviewRequest
-    resp.json.additionalInfo?.otherComponents?.size() == 1
-    resp.json.descriptionOfCause == restBody.descriptionOfCause
+    resp.status == HttpStatus.OK
+    resp.body().reviewRequest == restBody.reviewRequest
+    resp.body().additionalInfo?.otherComponents?.size() == 1
+    resp.body().descriptionOfCause == restBody.descriptionOfCause
   }
 
   void "test review escalation"() {
@@ -226,16 +218,12 @@ class ReviewsTestSpec extends AbstractAuthSpec {
 
     when:
     String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
-    RestResponse resp = rest.put("$urlPath/rest/reviews/escalate/${rr.id}") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(restBody as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("$urlPath/rest/reviews/escalate/${rr.id}", restBody)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
-    resp.status == 200
+    resp.status == HttpStatus.OK
   }
 
   void "test review deescalation"() {
@@ -248,15 +236,11 @@ class ReviewsTestSpec extends AbstractAuthSpec {
 
     when:
     String accessToken = getAccessToken('titleGroupUser', 'ttlGrp1')
-    RestResponse resp = rest.put("$urlPath/rest/reviews/deescalate/${rrDeescalate.id}") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(restBody as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("$urlPath/rest/reviews/deescalate/${rrDeescalate.id}", restBody)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
-    resp.status == 200
+    resp.status == HttpStatus.OK
   }
 }

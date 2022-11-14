@@ -1,10 +1,15 @@
 package org.gokb
 
 import grails.core.GrailsApplication
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
-import grails.transaction.*
+import grails.gorm.transactions.*
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.MediaType
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.multipart.MultipartBody
 import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
 import org.springframework.beans.factory.annotation.*
@@ -22,8 +27,7 @@ class PackageUploadSpec extends Specification {
 
     GrailsApplication grailsApplication
 
-    @Shared
-    RestBuilder rest = new RestBuilder()
+    HttpClient http
 
     @Autowired
     WebApplicationContext ctx
@@ -34,39 +38,46 @@ class PackageUploadSpec extends Specification {
     def cleanup() {
     }
 
-    
+
     void "testApiCall"() {
       // This is a place-holder for API call tests...
       true
     }
 
-    // This is a test REST call 
+    // This is a test REST call
     void "test search"() {
 
       Resource jac_upload_file_resource = new ClassPathResource("/test_archival_format.tsv")
 
       when:
         // RestResponse resp = authRest.get("http://localhost:${serverPort}/search/search")
-        RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/packages/deposit") {
-          auth 'admin', 'admin'
-          contentType "multipart/form-data"
-          // String properties
-          source='DAC_TEST'.getBytes()
-          fmt='DAC'.getBytes()
-          pkg='DAC Test Ingest'.getBytes()
-          platformUrl='http://dactest.com'.getBytes()
-          format='tsv'.getBytes()
-          providerName='DACTEST'.getBytes()
-          providerIdentifierNamespace='DACTEST'.getBytes()
-          reprocess='Y'.getBytes()
-          synchronous='Y'.getBytes()
-          flags='+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs'.getBytes()
-          // Upload file content
-          content= jac_upload_file_resource.getFile();
-        }
+        MultipartBody requestBody = MultipartBody.builder()
+        .addPart(
+          "content",
+          "test_archival_format.tsv",
+          MediaType.TEXT_PLAIN_TYPE,
+          jac_upload_file_resource.getFile()
+        )
+        .addPart('source', 'DAC_TEST')
+        .addPart('fmt', 'DAC')
+        .addPart('pkg','DAC Test Ingest')
+        .addPart('platformUrl','http://dactest.com')
+        .addPart('format','tsv')
+        .addPart('providerName','DACTEST')
+        .addPart('providerIdentifierNamespace','DACTEST')
+        .addPart('reprocess','Y')
+        .addPart('synchronous','Y')
+        .addPart('flags','+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs')
+        .build()
+
+        HttpRequest request = HttpRequest.POST("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/packages/deposit", requestBody)
+          .basicAuth('admin', 'admin')
+          .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+        HttpResponse resp = http.toBlocking().exchange(request)
+
 
       then:
         // println(resp.json)
-        resp.status == 200
+        resp.status == HttpStatus.OK
     }
 }

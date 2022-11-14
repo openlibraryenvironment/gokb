@@ -43,7 +43,7 @@ class TitleController {
   def index() {
     log.debug("Index with params: ${params}")
     def result = [:]
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -162,7 +162,7 @@ class TitleController {
     def obj = null
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
 
     def publisher_name = null
 
@@ -235,7 +235,7 @@ class TitleController {
             errors << messageService.processValidationErrors(obj.errors, request.locale)
           }
 
-          if (obj?.id != null && grailsApplication.config.gokb.ftupdate_enabled == true) {
+          if (obj?.id != null && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
             FTUpdateService.updateSingleItem(obj)
           }
         }
@@ -777,7 +777,7 @@ class TitleController {
           response.status = 400
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
-        if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
           FTUpdateService.updateSingleItem(obj)
         }
       }
@@ -936,7 +936,7 @@ class TitleController {
 
     if (obj) {
       def context = "/titles/" + params.id + "/tipps"
-      def base = grailsApplication.config.serverURL + "/rest"
+      def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
       def es_search = params.es ? true : false
 
       params.remove('id')

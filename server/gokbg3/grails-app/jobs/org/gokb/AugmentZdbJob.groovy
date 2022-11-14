@@ -21,7 +21,7 @@ class AugmentZdbJob{
   static final String query = "from JournalInstance as ti where ti.status = :current and (ti.dateCreated > :lastRun or (not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)))"
 
   def execute() {
-    if (grailsApplication.config.gokb.zdbAugment.enabled) {
+    if (grailsApplication.config.getProperty('gokb.zdbAugment.enabled', Boolean, false)) {
       log.info("Starting ZDB augment job.")
       def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
       def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")

@@ -1,48 +1,47 @@
 package org.gokb.rest
 
 import grails.converters.JSON
-import grails.gorm.transactions.Transactional
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
+import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.cred.Source
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
 class RefdataTestSpec extends AbstractAuthSpec {
 
-  private RestBuilder rest = new RestBuilder()
+
+  HttpClient http
 
   void "test GET /rest/package-scopes"() {
     given:
     def urlPath = getUrlPath()
     when:
-    String accessToken = getAccessToken()
-    RestResponse resp = rest.get("$urlPath/rest/package-scopes") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/package-scopes")
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.data.size() >= 4
-    resp.json._links.self.href.contains ("/rest/package-scopes")
+    resp.status == HttpStatus.OK
+    resp.body().data.size() >= 4
+    resp.body()._links.self.href.contains ("/rest/package-scopes")
   }
 
   void "test GET /rest/coverage-depth"() {
     given:
     def urlPath = getUrlPath()
     when:
-    String accessToken = getAccessToken()
-    RestResponse resp = rest.get("$urlPath/rest/coverage-depth") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/coverage-depth")
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.data.size() == 3
-    resp.json._links.self.href.contains ("/rest/coverage-depth")
+    resp.status == HttpStatus.OK
+    resp.body().data.size() == 3
+    resp.body()._links.self.href.contains ("/rest/coverage-depth")
   }
 }

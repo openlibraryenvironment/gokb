@@ -33,7 +33,7 @@ class UserDetailsInterceptor {
   def springSecurityService
   def displayTemplateService
 
-    boolean before() { 
+    boolean before() {
 
       log.debug("User details filter...");
 
@@ -45,46 +45,46 @@ class UserDetailsInterceptor {
         log.debug("User details filter... User present");
         request.user = user
         request.userOptions = user.getUserOptions(grailsApplication)
-        
+
         if (!session.menus) {
-        
+
           // Map to hold the menus.
           final Map <String, LinkedHashMap<String, Map>> menus = new HashMap <String, LinkedHashMap<String, Map>>().withDefault {
             new LinkedHashMap<String, Map>().withDefault {
               new ArrayList()
             }
           }
-          
+
           // Add to the session.
           session.menus = menus
-          
+
           // Step 1 : List all domains available to this user order by type, grouped into type
           def domains = KBDomainInfo.createCriteria().list {
-            
+
             ilike ('dcName', 'org.gokb%')
-            
+
             createAlias ("type", "menueType")
-            
+
             order ('menueType.sortKey','asc')
             order ('menueType.value','asc')
             order ('dcSortOrder','asc')
             order ('displayName','asc')
           }
-          
+
           domains.each { d ->
-    
+
             // Get the target class.
             Class tc = Class.forName(d.dcName)
-            
+
             if ( tc ) {
-            
+
               if ( tc.isTypeReadable() ) {
-      
+
                 // Find any searches for that domain that the user has access to and add them to the menu section
-                def searches_for_this_domain = grailsApplication.config.globalSearchTemplates.findAll{it.value.baseclass==d.dcName}
-                
+                def searches_for_this_domain = grailsApplication.config.getProperty('globalSearchTemplates', Map).findAll { it.value.baseclass == d.dcName }
+
                 searches_for_this_domain.each { key, val ->
-                  
+
                   // Add a menu item.
                   menus["search"]["${d.type.value}"] << [
                     text : val.title,
@@ -128,7 +128,7 @@ class UserDetailsInterceptor {
         log.debug("No user present..")
       }
       log.debug("Return true");
-      true 
+      true
     }
 
     boolean after() { true }

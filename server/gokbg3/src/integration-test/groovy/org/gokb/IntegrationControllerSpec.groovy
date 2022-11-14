@@ -1,6 +1,13 @@
 package org.gokb
 
 import org.gokb.TitleLookupService
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.BlockingHttpClient
+import io.micronaut.http.client.HttpClient
+import spock.lang.Shared
 import spock.lang.Specification
 import org.gokb.cred.*
 
@@ -9,15 +16,13 @@ import org.springframework.beans.factory.annotation.*
 
 import grails.testing.mixin.integration.Integration
 import spock.lang.*
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
 import grails.converters.JSON
 import groovy.json.JsonSlurper
 import grails.core.GrailsApplication
 import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
 import org.springframework.web.context.WebApplicationContext
-import grails.transaction.Rollback
+import grails.gorm.transactions.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -31,14 +36,23 @@ class IntegrationControllerSpec extends Specification {
   @Autowired
   WebApplicationContext ctx
 
-  @Shared
-  RestBuilder rest = new RestBuilder()
-
   // extending IntegrationSpec means this works
   @Autowired
   TitleLookupService titleLookupService
 
+
+  BlockingHttpClient client
+
+  private String getUrlPath() {
+    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.contextPath', String) ?: ''}".toString()
+  }
+
   def setup() {
+
+    if (!client) {
+      client = HttpClient.create(new URL(getUrlPath())).toBlocking()
+    }
+
     def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush: true)
     def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush: true)
     def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush: true)
@@ -75,39 +89,37 @@ class IntegrationControllerSpec extends Specification {
     }
     def combo_plt = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps')
 
-    TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as t where not exists (select 1 from Combo where toComponent = t and type = ?)", [combo_plt])?.each { title ->
+    TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as t where not exists (select 1 from Combo where toComponent = t and type = :ct)", [ct: combo_plt])?.each { title ->
       title.expunge()
     }
-    Identifier.findByValue('zdb:2256676-4')?.expunge()
+    Identifier.findByValue('2256676-4')?.expunge()
   }
 
   void "Test assertGroup"() {
 
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
-        "name" : "TestGroup2",
-        "owner": "admin"
+    Map json_record = [
+        name: "TestGroup2",
+        owner: "admin"
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertGroup") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/assertGroup", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The item is created up as it does not already exist"
-    resp.json.groupId != null
-    resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.body()?.groupId != null
+    resp.body()?.message != null
+    resp.body()?.result == 'OK'
     expect: "Find item by name only returns one item"
     def matching_groups = CuratoryGroup.executeQuery('select cg from CuratoryGroup as cg where cg.name = :n', [n: json_record.name]);
     matching_groups.size() == 1
-    matching_groups[0].id == resp.json.groupId
+    matching_groups[0].id == resp.body()?.groupId
   }
 
   void "Test assertOrg :: Import new Org"() {
 
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "identifiers": [
             [
                 "type" : "global",
@@ -116,48 +128,45 @@ class IntegrationControllerSpec extends Specification {
         ],
         "name"       : "TestOrgAcs"
     ]
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertOrg") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/assertOrg", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The item is created up as it does not already exist"
-    resp.json.message != null
-    resp.json.message.startsWith('Added')
+    resp.body()?.message != null
+    resp.body()?.result == 'OK'
     expect: "Find item by name only returns one item"
-    def matching_orgs = Org.executeQuery('select o from Org as o where o.name = :n', [n: json_record.name]);
+    def matching_orgs = Org.executeQuery('select o from Org as o where o.name = :n', [n: json_record.name])
     matching_orgs.size() == 1
-    matching_orgs[0].id == resp.json.orgId
+    matching_orgs[0].id == resp.body()?.orgId
     matching_orgs[0].ids?.size() == 1
   }
 
   void "Test crossReferencePlatform :: Import new Platform"() {
 
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "platformName": "TestPlt1",
         "name"        : "TestPlt1",
         "platformUrl" : "https://acstest.url"
     ]
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePlatform") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferencePlatform", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The item was created"
-    resp.json.message != null
-    resp.json.result == "OK"
+    resp.body()?.message != null
+    resp.body()?.result == "OK"
     expect: "Find item by name only returns one item"
     sleep(500)
     def matching_platforms = Platform.executeQuery('select p from Platform as p where p.name = :n', [n: json_record.platformName]);
     matching_platforms.size() == 1
-    matching_platforms[0].id == resp.json.platformId
+    matching_platforms[0].id == resp.body()?.platformId
   }
 
   void "Test crossReferenceTitle JOURNAL Case 1"() {
 
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "identifiers"      : [
             [
                 "type" : "zdb",
@@ -185,25 +194,23 @@ class IntegrationControllerSpec extends Specification {
         ],
         "type"             : "Serial"
     ]
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The item is created in the database because it does not exist"
-    resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.body()?.message != null
+    resp.body()?.result == 'OK'
     expect: "Find item by ID can now locate that item"
     def ids = [['ns': 'issn', 'value': '1021-8561']]
     def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
     matching_with_class_one_ids?.size() == 1
-    matching_with_class_one_ids[0] == resp.json.titleId
+    matching_with_class_one_ids[0] == resp.body()?.titleId
   }
 
   void "Test crossReferenceTitle with incomplete dates"() {
 
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "identifiers"      : [
             [
                 "type" : "zdb",
@@ -223,16 +230,14 @@ class IntegrationControllerSpec extends Specification {
         ],
         "type"             : "Serial"
     ]
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The item is created in the database because it does not exist"
-    resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.body()?.message != null
+    resp.body()?.result == 'OK'
     expect: "Find item by ID can now locate that item"
-    def title = TitleInstance.findById(resp.json.titleId)
+    def title = TitleInstance.findById(resp.body()?.titleId)
     title != null
     title.publishedFrom?.toString() == "1953-01-01 00:00:00.0"
     title.publishedTo?.toString() == "2001-12-31 00:00:00.0"
@@ -243,7 +248,7 @@ class IntegrationControllerSpec extends Specification {
   void "Test crossReferenceTitle :: Journal with history"() {
 
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "identifiers"      : [
             [
                 "type" : "eissn",
@@ -302,14 +307,12 @@ class IntegrationControllerSpec extends Specification {
         ],
         "type"             : "Serial"
     ]
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The item is created in the database because it does not exist"
-    resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.body()?.message != null
+    resp.body()?.result == 'OK'
     expect: "Find item by ID can now locate the history item"
     def ids = [['ns': 'eissn', 'value': '1541-5732']]
     def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
@@ -319,7 +322,7 @@ class IntegrationControllerSpec extends Specification {
   void "Test updatePackageTipps :: Import a package without title matching"() {
 
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "packageHeader": [
             "breakable"      : "No",
             "consistent"     : "Yes",
@@ -396,19 +399,17 @@ class IntegrationControllerSpec extends Specification {
         ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-        "/integration/updatePackageTipps") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "" +
+        "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The item is created in the database because it does not exist"
-    resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.body()?.message != null
+    resp.body()?.result == 'OK'
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("American Chemical Society")
     matching_pkgs.size() == 1
-    matching_pkgs[0].id == resp.json.pkgId
+    matching_pkgs[0].id == resp.body()?.pkgId
     matching_pkgs[0].tipps?.size() == 1
     matching_pkgs[0].tipps[0].importId == "wildeTitleId"
     matching_pkgs[0].tipps[0].coverageStatements.size() == 1
@@ -419,7 +420,7 @@ class IntegrationControllerSpec extends Specification {
   void "Test crossReferencePackage with incomplete coverage dates"() {
 
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "packageHeader": [
             "breakable"      : "No",
             "consistent"     : "Yes",
@@ -485,16 +486,14 @@ class IntegrationControllerSpec extends Specification {
         ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferencePackage", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The item is created in the database because it does not exist"
-    resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.body()?.message != null
+    resp.body()?.result == 'OK'
     expect: "The TIPP coverage dates are correctly set"
-    def pkg = Package.get(resp.json.pkgId)
+    def pkg = Package.get(resp.body()?.pkgId)
     pkg.tipps?.size() == 1
     def coverageStatement = pkg.tipps[0].coverageStatements[0]
     coverageStatement != null
@@ -505,7 +504,7 @@ class IntegrationControllerSpec extends Specification {
   void "Test crossReferencePackage with additional TIPP props"() {
 
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "packageHeader": [
             "breakable"      : "No",
             "consistent"     : "Yes",
@@ -583,16 +582,14 @@ class IntegrationControllerSpec extends Specification {
         ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferencePackage", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The item is created in the database because it does not exist"
-    resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.body()?.message != null
+    resp.body()?.result == 'OK'
     expect: "The TIPP properties are correctly set"
-    def pkg = Package.get(resp.json.pkgId)
+    def pkg = Package.get(resp.body()?.pkgId)
     pkg.tipps?.size() == 1
     pkg.tipps[0].dateFirstInPrint != null
     pkg.tipps[0].medium.value == "Other"
@@ -602,7 +599,7 @@ class IntegrationControllerSpec extends Specification {
   void "Test crossReferenceTitle BOOK Case 1"() {
 
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "identifiers"    : [
             [
                 "type" : "isbn",
@@ -620,23 +617,21 @@ class IntegrationControllerSpec extends Specification {
         "firstAuthor"    : "J. Smith",
         "dateFirstOnline": "2019-01-01 00:00:00.000"
     ]
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The item is created in the database because it does not exist"
-    resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.body()?.message != null
+    resp.body()?.result == 'OK'
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
     def ids = [['ns': 'isbn', 'value': '978-13-12232-23-5']]
-    def obj = TitleInstance.get(resp.json.titleId)
+    def obj = TitleInstance.get(resp.body()?.titleId)
     obj?.ids?.collect { it.value == ids[0].value }
   }
 
   void "Test crossReferenceTitle identifier lock"() {
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         [
             "identifiers"    : [
                 [
@@ -666,21 +661,19 @@ class IntegrationControllerSpec extends Specification {
             "dateFirstOnline": "2019-01-01 00:00:00.000"
         ]
     ]
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "Item is created in the database"
-    resp.json.results?.size() == 2
+    resp.body()?.results?.size() == 2
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
     def ids = [['ns': 'isbn', 'value': '978-13-12232-23-9']]
-    resp.json.results[0].titleId == resp.json.results[1].titleId
+    resp.body()?.results[0].titleId == resp.body()?.results[1].titleId
   }
 
   void "Test crossReferenceTitle with duplicate identifier"() {
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "identifiers"    : [
             [
                 "type" : "isbn",
@@ -698,13 +691,11 @@ class IntegrationControllerSpec extends Specification {
         "firstAuthor"    : "J. Smith",
         "dateFirstOnline": "2019-01-01 00:00:00.000"
     ]
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "Item is created in the database"
-    resp.json.message.startsWith('Created')
+    resp.body()?.result == 'OK'
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
     def ids = [['ns': 'isbn', 'value': '978-13-12232-23-8']]
     def ns = IdentifierNamespace.findByValueIlike('isbn')
@@ -726,36 +717,30 @@ class IntegrationControllerSpec extends Specification {
         "name"       : "Test Book Missing Type"
     ]
 
-    RestResponse respBook = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
-      auth('admin', 'admin')
-      body(book_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle", book_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "Item is rejected"
-    respBook.json.result == 'ERROR'
+    respBook.body()?.result == 'ERROR'
   }
 
   @Ignore
   void "Test crossReferenceTitle multithreading"() {
     given:
     Resource journals = new ClassPathResource("/karger_journals_test.json")
-    def jsonSlurper = new JsonSlurper()
+    Map jsonSlurper = new JsonSlurper()
     def journals_json = jsonSlurper.parse(journals.getFile())
     when: "Caller asks for this list of titles to be cross referenced"
 
-    RestResponse respOne = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle?async=true") {
-      auth('admin', 'admin')
-      body(journals_json as JSON)
-    }
+    HttpRequest request1 = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle?async=true", journal_json).basicAuth('admin', 'admin')
 
-    RestResponse respTwo = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle?") {
-      auth('admin', 'admin')
-      body(journals_json as JSON)
-    }
+    HttpRequest request2 = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle?", journal_json).basicAuth('admin', 'admin')
+    def respOne =  client.exchange(request1, Map)
+    def respTwo =  client.exchange(request2, Map)
 
     then: "Both calls are successful"
-    respOne.json.job_id != null
-    respTwo.json.results.size() > 0
+    respOne.body()?.job_id != null
+    respTwo.body()?.results.size() > 0
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
     journals_json.each {
       def ids = []
@@ -772,27 +757,25 @@ class IntegrationControllerSpec extends Specification {
   void "Test crossReferenceTitle with prices"() {
     given:
     Resource journal = new ClassPathResource("/journal_prices_test.json")
-    def jsonSlurper = new JsonSlurper()
+    Map jsonSlurper = new JsonSlurper()
     def journal_json = jsonSlurper.parse(journal.getFile())
     when: "Caller asks for this list of titles to be cross referenced"
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle?") {
-      auth('admin', 'admin')
-      body(journal_json as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle?", journal_json).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "call is successful"
     resp.status == 200
 
     expect: "prices are set correctly"
     sleep(400)
-    def title = TitleInstance.findById(resp.json.results[0].titleId)
+    def title = TitleInstance.findById(resp.body()?.results[0].titleId)
     title.prices?.size() == 2
   }
 
   void "crossref package"() {
     given:
-    def json_record = [
+    Map json_record = [
         "packageHeader": [
             "breakable"      : "No",
             "consistent"     : "Yes",
@@ -877,21 +860,17 @@ class IntegrationControllerSpec extends Specification {
     ]
     when: "Caller asks for this record to be cross referenced"
 
-    RestResponse resp1 = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request1 = HttpRequest.POST(getUrlPath() + "/integration/crossReferencePackage", json_record).basicAuth('admin', 'admin')
+    def resp1 =  client.exchange(request1, Map)
 
-    RestResponse resp2 = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request2 = HttpRequest.POST(getUrlPath() + "/integration/crossReferencePackage", json_record).basicAuth('admin', 'admin')
+    def resp2 =  client.exchange(request2, Map)
 
     then: "The item is created in the database because it does not exist"
-    resp1.json?.message?.startsWith('Created')
-    resp2.json?.message?.startsWith('Created')
+    resp1.body()?.result == 'OK'
+    resp2.body()?.result == 'OK'
     expect: "The TIPP coverage dates are correctly set"
-    def pkg = Package.get(resp1.json.pkgId)
+    def pkg = Package.get(resp1.body()?.pkgId)
     pkg.tipps?.size() == 1
     pkg.tipps[0].name == "TIPP Name"
     pkg.tipps[0].subjectArea == "Fringe"
@@ -901,7 +880,7 @@ class IntegrationControllerSpec extends Specification {
 
   void "crossref package with updateToken"() {
     given:
-    def json_record = [
+    Map json_record = [
         "updateToken"  : "TestUpdateToken",
         "packageHeader": [
             "breakable"      : "No",
@@ -996,18 +975,17 @@ class IntegrationControllerSpec extends Specification {
                 "url"            : "http://pubs.acs.org/journal/jafcau"
             ]
         ]
-    ] as JSON
+    ]
     when: "Caller asks for this record to be cross referenced"
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferencePackage") {
-      body(json_record)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferencePackage", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The request is sucessfully processed"
-    resp.json?.message?.startsWith('Created')
+    resp.body()?.result == 'OK'
     expect: "The Package updater is set correctly"
     sleep(200)
-    def pkg = Package.get(resp.json.pkgId)
+    def pkg = Package.get(resp.body()?.pkgId)
     pkg.tipps?.size() == 1
     pkg.tipps[0].name.startsWith("TippName")
     pkg.lastUpdatedBy == User.findByUsername('ingestAgent')
@@ -1020,7 +998,7 @@ class IntegrationControllerSpec extends Specification {
 
   void "Update Title remove VariantName via fullsync"() {
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "identifiers"    : [
             [
                 "type" : "isbn",
@@ -1038,7 +1016,7 @@ class IntegrationControllerSpec extends Specification {
         "dateFirstOnline": "2019-01-01 00:00:00.000"
     ]
 
-    def json_update_record = [
+    Map json_update_record = [
         "identifiers"    : [
             [
                 "type" : "isbn",
@@ -1054,28 +1032,24 @@ class IntegrationControllerSpec extends Specification {
     ]
 
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request1 = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle", json_record).basicAuth('admin', 'admin')
+    def resp1 =  client.exchange(request1, Map)
+    HttpRequest request2 = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle?fullsync=true", json_update_record).basicAuth('admin', 'admin')
 
-    RestResponse update_resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle?fullsync=true") {
-      auth('admin', 'admin')
-      body(json_update_record as JSON)
-    }
+    def resp2 =  client.exchange(request2, Map)
 
     then: "Item is created in the database"
-    resp.json.message.startsWith('Created')
-    update_resp.json.message.startsWith('Created')
+    resp1.body().result == 'OK'
+    resp2.body().result == 'OK'
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
-    resp.json.titleId == update_resp.json.titleId
-    def bookInstance = BookInstance.get(update_resp.json.titleId)
+    resp1.body()?.titleId == resp2.body()?.titleId
+    def bookInstance = BookInstance.get(resp2.body()?.titleId)
     bookInstance?.variantNames?.size() == 0
   }
 
   void "Create Title with problematic characters"() {
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "identifiers"    : [
             [
                 "type" : "isbn",
@@ -1090,22 +1064,20 @@ class IntegrationControllerSpec extends Specification {
         "dateFirstOnline": "2019-01-01 00:00:00.000"
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/crossReferenceTitle") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "Item is created in the database"
-    resp.json.message.startsWith('Created')
+    resp.body()?.result == 'OK'
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
-    def bookInstance = BookInstance.get(resp.json.titleId)
+    def bookInstance = BookInstance.get(resp.body()?.titleId)
     bookInstance?.name == 'TestVariantBookName "Quotes Test"'
   }
 
   void "Test crossReferencePackage :: check response errors"() {
 
     when: "Caller asks for this record to be cross referenced"
-    def json_record = [
+    Map json_record = [
         "packageHeader": [
             "breakable"      : "No",
             "consistent"     : "Yes",
@@ -1192,26 +1164,24 @@ class IntegrationControllerSpec extends Specification {
         ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-        "/integration/crossReferencePackage") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "" +
+        "/integration/crossReferencePackage", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The item is created in the database because it does not exist"
-    resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.body()?.message != null
+    resp.body()?.result == 'OK'
     expect: "Find errors in teh response JSON"
-    resp.json.errors.tipps[0].index == 1
-    resp.json.errors.tipps[0].title.identifiers.issn.baddata == "0021-8561-XXX"
-    resp.json.errors.tipps[0].title.firstAuthor.message == "too long"
-    resp.json.errors.tipps[0].title.firstEditor.message == "too long"
-    resp.json.errors.tipps[0].tipp.identifiers.zdb.baddata == "1483109-0X"
+    resp.body()?.errors.tipps[0].index == 1
+    resp.body()?.errors.tipps[0].title.identifiers.issn.baddata == "0021-8561-XXX"
+    resp.body()?.errors.tipps[0].title.firstAuthor.message == "too long"
+    resp.body()?.errors.tipps[0].title.firstEditor.message == "too long"
+    resp.body()?.errors.tipps[0].tipp.identifiers.zdb.baddata == "1483109-0X"
   }
 
   void "Test updatePkgTipps new package"() {
     given:
-    def json_record = [
+    Map json_record = [
       "updateToken": "TestUpdateToken",
       "packageHeader": [
         "breakable": "No",
@@ -1300,18 +1270,17 @@ class IntegrationControllerSpec extends Specification {
           "url": "http://pubs.acs.org/journal/jafcau"
         ]
       ]
-    ] as JSON
+    ]
     when: "Caller asks for this package to be imported"
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/updatePackageTipps") {
-      body(json_record)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
+    def resp =  client.exchange(request, Map)
 
     then: "The request is sucessfully processed"
-    resp.json?.message?.startsWith('Created')
+    resp.body()?.result == 'OK'
     expect: "The Package updater is set correctly"
     sleep(200)
-    def pkg = Package.get(resp.json.pkgId)
+    def pkg = Package.get(resp.body()?.pkgId)
     pkg.tipps?.size() == 1
     pkg.tipps[0].name.startsWith("TippName")
     pkg.tipps[0].dateFirstInPrint != null

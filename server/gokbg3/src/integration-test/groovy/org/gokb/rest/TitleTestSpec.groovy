@@ -1,10 +1,13 @@
 package org.gokb.rest
 
 import grails.converters.JSON
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
+import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.cred.BookInstance
 import org.gokb.cred.Combo
 import org.gokb.cred.DatabaseInstance
@@ -14,6 +17,9 @@ import org.gokb.cred.JournalInstance
 import org.gokb.cred.Org
 import org.gokb.cred.RefdataCategory
 import org.gokb.TitleLookupService
+import org.springframework.web.client.RestTemplate
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
@@ -22,7 +28,9 @@ class TitleTestSpec extends AbstractAuthSpec {
   @Autowired
   TitleLookupService titleLookupService
 
-  private RestBuilder rest = new RestBuilder()
+
+  HttpClient http
+
   def last = false
 
   def setupSpec(){
@@ -58,23 +66,23 @@ class TitleTestSpec extends AbstractAuthSpec {
   void "test /rest/titles without token"() {
     def urlPath = getUrlPath()
     when:
-    RestResponse resp = rest.get("${urlPath}/rest/titles") {
-      accept('application/json')
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/titles")
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
   }
 
   void "test /rest/titles/<id> with valid token"() {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/titles") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/titles")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
   }
 
   void "test insert new title"() {
@@ -95,13 +103,13 @@ class TitleTestSpec extends AbstractAuthSpec {
     ]
 
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("${urlPath}/rest/titles?type=journal") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/titles", json_record as JSON)
+      .queryParam('type', 'journal')
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 201 // Created
+    resp.status == HttpStatus.CREATED
     expect:
     resp.json._embedded?.ids?.size() == 3
     resp.json._embedded?.publisher?.size() == 1
@@ -111,12 +119,14 @@ class TitleTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/titles?type=journal&ids=2345-2323") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/titles")
+      .queryParam('type', 'journal')
+      .queryParam('ids', '2345-2323')
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
     expect:
     resp.json.data?.size() == 1
   }
@@ -133,13 +143,12 @@ class TitleTestSpec extends AbstractAuthSpec {
     ]
 
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("${urlPath}/rest/titles/$id/history") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/titles/$id/history", json_record as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
     expect:
     resp.json.size() == 1
   }
@@ -163,11 +172,10 @@ class TitleTestSpec extends AbstractAuthSpec {
     ]
 
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("${urlPath}/rest/titles/$id/history") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles", json_record as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
     // resp.status == 200 // OK
     resp.json?.data?.size() == 2
@@ -189,11 +197,10 @@ class TitleTestSpec extends AbstractAuthSpec {
     ]
 
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("${urlPath}/rest/titles/$id/history") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/$id/history", json_record as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
     // resp.status == 200 // OK
     resp.json?.data?.size() == 1
@@ -209,24 +216,20 @@ class TitleTestSpec extends AbstractAuthSpec {
     ]
 
     String accessToken = getAccessToken()
-    RestResponse resp1 = rest.put("${urlPath}/rest/titles/$id") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(json_record as JSON)
-    }
+    HttpRequest req1 = HttpRequest.PUT("${urlPath}/rest/titles/$id", json_record as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp1 = http.toBlocking().exchange(req2)
 
     def json_stale_record = [
       name: "TestJournalV2",
       version: "0"
     ]
+    HttpRequest req2 = HttpRequest.PUT("${urlPath}/rest/titles/$id", json_stale_record as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp2 = http.toBlocking().exchange(req2)
 
-    RestResponse resp2 = rest.put("${urlPath}/rest/titles/$id") {
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(json_stale_record as JSON)
-    }
     then:
-    resp1.status == 200 // OK
-    resp2.status == 409
+    resp1.status == HttpStatus.OK
+    resp2.status == HttpStatus.CONFLICT
   }
 }

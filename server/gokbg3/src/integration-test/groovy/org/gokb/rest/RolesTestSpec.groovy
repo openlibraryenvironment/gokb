@@ -1,18 +1,24 @@
 package org.gokb.rest
 
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
+import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import org.gokb.cred.UserRole
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
 class RolesTestSpec extends AbstractAuthSpec {
 
-  private RestBuilder rest = new RestBuilder()
+
+  HttpClient http
 
   def setup() {
     User rolesUser = User.findByUsername("rolesUser") ?: new User(username: "rolesUser", password: "rolesUser", enabled: true).save(flush: true)
@@ -24,13 +30,12 @@ class RolesTestSpec extends AbstractAuthSpec {
       def urlPath = getUrlPath()
     when:
     String token = getAccessToken("rolesUser", "rolesUser")
-    RestResponse resp = rest.get("$urlPath/rest/roles") {
-      // headers
-      accept('application/json')
-      auth("Bearer $token")
-    }
+    HttpRequest request = HttpRequest.GET("$urlPath/rest/roles")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.data.size() == 6
+    resp.status == HttpStatus.OK
+    resp.body().data.size() == 6
   }
 }

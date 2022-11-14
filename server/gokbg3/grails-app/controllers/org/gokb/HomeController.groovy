@@ -173,7 +173,7 @@ class HomeController {
 
   def showRules() {
     def result=[:]
-    result.rules = grailsApplication.config.validationRules
+    result.rules = grailsApplication.config.getProperty('validationRules', Map)
     result
   }
 

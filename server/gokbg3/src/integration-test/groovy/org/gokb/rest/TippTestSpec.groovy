@@ -1,9 +1,13 @@
 package org.gokb.rest
 
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
+import grails.converters.JSON
+import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.cred.Package
 import org.gokb.cred.Platform
 import org.gokb.cred.JournalInstance
@@ -11,9 +15,11 @@ import org.gokb.cred.RefdataCategory
 import org.gokb.cred.TitleInstancePackagePlatform
 import org.gokb.cred.TIPPCoverageStatement
 import org.gokb.cred.CuratoryGroup
-import grails.converters.JSON
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.WebApplicationContext
+import org.springframework.web.client.RestTemplate
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
@@ -22,7 +28,9 @@ class TippTestSpec extends AbstractAuthSpec {
   @Autowired
   WebApplicationContext ctx
 
-  private RestBuilder rest = new RestBuilder()
+
+  HttpClient http
+
   def testPackage
   def testTitle
   def testPlatform
@@ -58,13 +66,12 @@ class TippTestSpec extends AbstractAuthSpec {
     given:
     def urlPath = getUrlPath()
     when:
-    RestResponse resp = rest.get("${urlPath}/rest/tipps") {
-      // headers
-      accept('application/json')
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/tipps")
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json != null
+    resp.status == HttpStatus.OK
+    resp.body() != null
   }
 
   void "test /rest/tipps with valid token"() {
@@ -72,15 +79,14 @@ class TippTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/tipps?_embed=prices") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/tipps?_embed=prices")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json != null
-    resp.json.data['_embedded'].prices.size() > 0
+    resp.status == HttpStatus.OK
+    resp.body() != null
+    resp.body().data['_embedded'].prices.size() > 0
   }
 
   void "test /rest/tipps POST"() {
@@ -112,19 +118,16 @@ class TippTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("${urlPath}/rest/tipps") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(upd_body as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/tipps", upd_body as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
-    resp.status == 201 // CREATED
-    resp.json.url == upd_body.url
-    resp.json._embedded.coverageStatements?.size() == 1
-    resp.json._embedded.prices?.size() == 1
-    resp.json.publisherName == "other Publisher"
+    resp.status == HttpStatus.CREATED
+    resp.body().url == upd_body.url
+    resp.body()._embedded.coverageStatements?.size() == 1
+    resp.body()._embedded.prices?.size() == 1
+    resp.body().publisherName == "other Publisher"
   }
 
   void "test /rest/tipps/<id> PUT"() {
@@ -170,21 +173,19 @@ class TippTestSpec extends AbstractAuthSpec {
     when:
     last = true
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("${urlPath}/rest/tipps/${tipp.id}") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(upd_body as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/tipps/${tipp.id}", upd_body as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json.id == tipp.id
-    resp.json.url == upd_body.url
-    resp.json.name == "new TIPP name"
-    resp.json.publisherName == "some Publisher"
-    resp.json._embedded.ids?.size() == 2
-    resp.json._embedded.coverageStatements?.size() == 2
-    resp.json._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
+    resp.status == HttpStatus.OK
+    resp.body().id == tipp.id
+    resp.body().url == upd_body.url
+    resp.body().name == "new TIPP name"
+    resp.body().publisherName == "some Publisher"
+    resp.body()._embedded.ids?.size() == 2
+    resp.body()._embedded.coverageStatements?.size() == 2
+    resp.body()._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
   }
 
   void "test add new TIPP price"() {
@@ -236,25 +237,22 @@ class TippTestSpec extends AbstractAuthSpec {
     ]
     def urlPath = getUrlPath()
     when:
-    last = true
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("${urlPath}/rest/tipps/${tipp.id}") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(upd_body as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("$urlPath/rest/sources/$quelle.id", upd_body as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json.id == tipp.id
-    resp.json.url == upd_body.url
-    resp.json.name == "new TIPP name"
-    resp.json.publisherName == "some Publisher"
-    resp.json._embedded.ids?.size() == 2
-    resp.json._embedded.coverageStatements?.size() == 2
-    resp.json._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
-    resp.json._embedded.prices?.size() == 1
-    resp.json._embedded.prices[0].price == "0.01"
+    resp.status == HttpStatus.OK
+    resp.body().id == tipp.id
+    resp.body().url == upd_body.url
+    resp.body().name == "new TIPP name"
+    resp.body().publisherName == "some Publisher"
+    resp.body()._embedded.ids?.size() == 2
+    resp.body()._embedded.coverageStatements?.size() == 2
+    resp.body()._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
+    resp.body()._embedded.prices?.size() == 1
+    resp.body()._embedded.prices[0].price == "0.01"
   }
 
   void "test remove TIPP price"() {
@@ -301,22 +299,20 @@ class TippTestSpec extends AbstractAuthSpec {
     when:
     last = true
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("${urlPath}/rest/tipps/${tipp.id}") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(upd_body as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/tipps/${tipp.id}", upd_body as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json.id == tipp.id
-    resp.json.url == upd_body.url
-    resp.json.name == "new TIPP name"
-    resp.json.publisherName == "some Publisher"
-    resp.json._embedded.ids?.size() == 2
-    resp.json._embedded.coverageStatements?.size() == 2
-    resp.json._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
-    resp.json._embedded.prices?.size() == 0
+    resp.status == HttpStatus.OK
+    resp.body().id == tipp.id
+    resp.body().url == upd_body.url
+    resp.body().name == "new TIPP name"
+    resp.body().publisherName == "some Publisher"
+    resp.body()._embedded.ids?.size() == 2
+    resp.body()._embedded.coverageStatements?.size() == 2
+    resp.body()._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
+    resp.body()._embedded.prices?.size() == 0
   }
 
   void "test replace TIPP price"() {
@@ -414,29 +410,24 @@ class TippTestSpec extends AbstractAuthSpec {
     when:
     last = true
     String accessToken = getAccessToken()
+    HttpRequest req1 = HttpRequest.PUT("${urlPath}/rest/tipps/${tipp.id}", init_body as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp1 = http.toBlocking().exchange(req1)
 
-    RestResponse resp_init = rest.put("${urlPath}/rest/tipps/${tipp.id}") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(init_body as JSON)
-    }
-    RestResponse resp = rest.put("${urlPath}/rest/tipps/${tipp.id}") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(upd_body as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/tipps/${tipp.id}", upd_body as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json.id == tipp.id
-    resp.json.url == upd_body.url
-    resp.json.name == "new TIPP name"
-    resp.json.publisherName == "some Publisher"
-    resp.json._embedded.ids?.size() == 2
-    resp.json._embedded.coverageStatements?.size() == 2
-    resp.json._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
-    resp.json._embedded.prices?.size() == 1
-    resp.json._embedded.prices[0].price == "10.58"
+    resp.status == HttpStatus.OK
+    resp.body().id == tipp.id
+    resp.body().url == upd_body.url
+    resp.body().name == "new TIPP name"
+    resp.body().publisherName == "some Publisher"
+    resp.body()._embedded.ids?.size() == 2
+    resp.body()._embedded.coverageStatements?.size() == 2
+    resp.body()._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
+    resp.body()._embedded.prices?.size() == 1
+    resp.body()._embedded.prices[0].price == "10.58"
   }
 }

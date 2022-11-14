@@ -135,15 +135,17 @@ class ComponentLookupService {
     switch ( namespaces.size() ) {
       case 0:
         if (ns_create) {
-          namespace = new IdentifierNamespace(value:ns.toLowerCase()).save(failOnError:true);
+          IdentifierNamespace.withTransaction {
+            namespace = new IdentifierNamespace(value:ns.toLowerCase()).save(failOnError:true)
+          }
         }
-        break;
+        break
       case 1:
         namespace = namespaces[0]
-        break;
+        break
       default:
         throw new RuntimeException("Multiple Namespaces with value ${ns}");
-        break;
+        break
     }
 
     if (namespace) {
@@ -169,7 +171,9 @@ class ComponentLookupService {
           log.debug("Creating new Identifier ${namespace}:${value} ..")
 
           try {
-            identifier = new Identifier(namespace: namespace, value: final_val, normname: norm_id).save(flush:true, failOnError:true)
+            Identifier.withTransaction {
+              identifier = new Identifier(namespace: namespace, value: final_val, normname: norm_id).save(flush:true, failOnError:true)
+            }
           }
           catch (org.springframework.orm.hibernate5.HibernateOptimisticLockingFailureException lfe) {
             log.error("Locking failure", lfe)

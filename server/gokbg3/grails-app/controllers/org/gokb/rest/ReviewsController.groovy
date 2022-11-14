@@ -35,7 +35,7 @@ class ReviewsController {
   @Secured(['ROLE_CONTRIBUTOR', 'IS_AUTHENTICATED_FULLY'])
   def index() {
     def result = []
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
     User user = User.get(springSecurityService.principal.id)
     result = componentLookupService.restLookup(user, ReviewRequest, params)
 
@@ -46,7 +46,7 @@ class ReviewsController {
   def show() {
     def result = [:]
     def obj = ReviewRequest.get(genericOIDService.oidToId(params.id))
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
     def includes = params['_include'] ? params['_include'].split(',') : []
     def embeds = params['_embed'] ? params['_embed'].split(',') : []
     User user = User.get(springSecurityService.principal.id)
@@ -555,7 +555,7 @@ class ReviewsController {
 
 
   private def generateLinks(obj,user) {
-    def base = grailsApplication.config.serverURL + "/rest" + obj.restPath + "/${obj.id}"
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest" + obj.restPath + "/${obj.id}"
     def linksObj = [self:[href:base]]
     def curator = componentUpdateService.isUserCurator(obj, user)
 
@@ -609,10 +609,9 @@ class ReviewsController {
     }
 
     String componentClass = rr.componentToReview?.class.getSimpleName()
+    def centralGroup = grailsApplication.config.getProperty("gokb.centralGroups.$componentClass")
 
-    CuratoryGroup editorialGroup = (grailsApplication.config.gokb.centralGroups &&
-        grailsApplication.config.gokb.centralGroups[componentClass]) ?
-        CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.centralGroups[componentClass]) : null
+    CuratoryGroup editorialGroup = centralGroup ? CuratoryGroup.findByNameIlike(centralGroup) : null
     CuratoryGroup escalatedToCG = escalatingGroup.superordinatedGroup
 
     if (!escalatedToCG && editorialGroup && escalatingGroup != editorialGroup) {

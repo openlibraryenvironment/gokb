@@ -1,10 +1,13 @@
 package org.gokb.rest
 
 import grails.converters.JSON
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
+import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.Role
 import org.gokb.cred.User
@@ -12,16 +15,20 @@ import org.gokb.cred.UserRole
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.web.client.RestTemplate
 import spock.lang.Ignore
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
 class UsersTestSpec extends AbstractAuthSpec {
 
-  def rest
   def delUser
   def altUser
   CuratoryGroup cg
   Role role
+
+
+  HttpClient http
 
   def setup() {
     role = Role.findByAuthority("ROLE_USER")
@@ -30,11 +37,6 @@ class UsersTestSpec extends AbstractAuthSpec {
     UserRole.findOrCreateByRoleAndUser(role, delUser).save(flush: true)
     altUser = User.findByUsername("altUser") ?: new User(username: "altUser", curatoryGroups: [cg], enabled: true).save(flush: true)
     UserRole.findOrCreateByRoleAndUser(role, altUser).save(flush: true)
-    if (!rest) {
-      RestTemplate restTemp = new RestTemplate()
-      restTemp.setRequestFactory(new HttpComponentsClientHttpRequestFactory())
-      rest = new RestBuilder(restTemp)
-    }
   }
 
   def cleanup() {
@@ -70,53 +72,60 @@ class UsersTestSpec extends AbstractAuthSpec {
   void "test GET /rest/users/{id} without token"() {
     def urlPath = getUrlPath()
     when:
-    RestResponse resp = rest.get("${urlPath}/rest/users/$altUser.id") {
-      // headers
-      accept('application/json')
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/users/$altUser.id")
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status in [401, 403] // Unauthorized/Forbidden
+    resp.status == HttpStatus.FORBIDDEN
   }
 
   void "test GET /rest/users/{id} with valid token"() {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/users/$delUser.id?_embed=id,organisations,roles&_include=id,name") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/users/$delUser.id")
+      .queryParam('_embed', 'id,organisations,roles')
+      .queryParam('_include', 'id,name')
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json.data.username == "deleteUser"
+    resp.status == HttpStatus.OK
+    resp.body().data.username == "deleteUser"
   }
 
-  void "test GET /rest/users/?{params} with valid token and parameters"() {
+  void "test GET /rest/users?{params} with valid token and parameters"() {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/users/?name=Use&roleId=$role.id&curatoryGroupId=$cg.id&_embed=id,organisations,roles&_include=id,username&_sort=username&_order=desc&offset=0&limit=10") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/users")
+      .queryParam('name', 'Use')
+      .queryParam('roleId', role.id)
+      .queryParam('curatoryGroupId', cg.id)
+      .queryParam('_embed', 'id,organisations,roles')
+      .queryParam('_include', 'id,username')
+      .queryParam('_sort', 'username')
+      .queryParam('_order', 'desc')
+      .queryParam('offset', '0')
+      .queryParam('limit', '10')
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json.data[1].username == "altUser"
+    resp.status == HttpStatus.OK
+    resp.body().data[1].username == "altUser"
   }
 
   void "test DELETE /rest/users/{id} with valid token"() {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.delete("${urlPath}/rest/users/$delUser.id") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.DELETE("${urlPath}/rest/users/$delUser.id")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 204 // OK
+    resp.status == HttpStatus.NO_CONTENT
     sleep(500)
     def checkUser = User.findById(delUser.id)
     checkUser == null
@@ -144,16 +153,13 @@ class UsersTestSpec extends AbstractAuthSpec {
                     defaultPageSize : 15,
                     roleIds         : [contributorRole.id, userRole.id, editorRole.id, apiRole.id]
     ]
-    RestResponse resp = rest.put("${urlPath}/rest/users/$altUser.id") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(bodyData as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/users/$altUser.id", bodyData as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.data.defaultPageSize == 15
+    resp.status == HttpStatus.OK
+    resp.body().data.defaultPageSize == 15
     sleep(500)
     def checkUser = User.findById(altUser.id)
     !checkUser.authorities.contains(adminRole)
@@ -178,17 +184,13 @@ class UsersTestSpec extends AbstractAuthSpec {
       curatoryGroupIds: []
     ]
 
-    def bodyText = bodyData as JSON
-    RestResponse resp = rest.patch("${urlPath}/rest/users/$altUser.id") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(bodyData as JSON)
-    }
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/users/$altUser.id", bodyData as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.data.defaultPageSize == 18
+    resp.status == HttpStatus.OK
+    resp.body().data.defaultPageSize == 18
     sleep(500)
     def checkUser = User.findById(altUser.id).refresh()
     checkUser.enabled == false
@@ -212,17 +214,13 @@ class UsersTestSpec extends AbstractAuthSpec {
       organisation    : 666
     ]
 
-    def bodyText = bodyData as JSON
-    RestResponse resp = rest.patch("${urlPath}/rest/users/$altUser.id") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(bodyData as JSON)
-    }
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/users/$altUser.id", bodyData as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 400
-    resp.json.data == null
+    resp.status == HttpStatus.BAD_REQUEST
+    resp.body().data == null
     sleep(500)
     def checkUser = User.findById(altUser.id).refresh()
     checkUser.enabled == true
@@ -246,18 +244,15 @@ class UsersTestSpec extends AbstractAuthSpec {
       roleIds         : [contributorRole.id, editorRole.id],
       curatoryGroupIds: [cg.id]
     ]
-    RestResponse resp = rest.post("${urlPath}/rest/users") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(bodyData as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/users", bodyData as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 201
-    resp.json.data.username == "newerUser"
+    resp.status == HttpStatus.CREATED
+    resp.body().data.username == "newerUser"
     sleep(500)
-    User checkUser = User.findById(resp.json.data.id)
+    User checkUser = User.findById(resp.body().data.id)
     checkUser.hasRole("ROLE_USER")
     checkUser != null
   }
@@ -266,19 +261,22 @@ class UsersTestSpec extends AbstractAuthSpec {
   * /register is not implemented for security reasons.
   */
 
-  @Ignore
-  void "test POST /rest/register"() {
-    when:
-    RestResponse resp = rest.post("${urlPath}/rest/register") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      body([username: "newerUser", email: "nobody@localhost", password: "defaultPassword"] as JSON)
-    }
-    then:
-    resp.status == 200
-    sleep(500)
-    User checkUser = User.findByUsername("newerUser")
-    checkUser != null
-  }
+  // @Ignore
+  // void "test POST /rest/register"() {
+  //   when:
+  //   Map reqBody = [
+  //     username: "newerUser",
+  //     email: "nobody@localhost",
+  //     password: "defaultPassword"
+  //   ]
+  //   HttpRequest request = HttpRequest.POST("${urlPath}/rest/register", reqBody as JSON)
+  //     .bearerAuth(accessToken)
+  //   HttpResponse resp = http.toBlocking().exchange(request)
+
+  //   then:
+  //   resp.status == HttpStatus.OK
+  //   sleep(500)
+  //   User checkUser = User.findByUsername("newerUser")
+  //   checkUser != null
+  // }
 }

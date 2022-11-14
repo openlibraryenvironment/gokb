@@ -1,6 +1,7 @@
 package gokbg3
 
 import grails.util.Environment
+import grails.config.ConfigMap
 import grails.core.GrailsClass
 import grails.core.GrailsApplication
 import grails.converters.JSON
@@ -131,7 +132,7 @@ class BootStrap {
             }
         }
 
-        if (grailsApplication.config.gokb.decisionSupport) {
+        if (grailsApplication.config.getProperty('gokb.decisionSupport', Boolean, false)) {
             log.debug("Configuring default decision support parameters");
             DSConfig();
         }
@@ -142,8 +143,8 @@ class BootStrap {
 
         migrateDiskFilesToDatabase()
 
-        ensureCuratoryGroup(grailsApplication.config.gokb.defaultCuratoryGroup)
-        ensureCuratoryGroup(grailsApplication.config.gokb.centralGroups?.JournalInstance)
+        ensureCuratoryGroup(grailsApplication.config.getProperty('gokb.defaultCuratoryGroup'))
+        ensureCuratoryGroup(grailsApplication.config.getProperty('gokb.centralGroups.JournalInstance'))
 
         KBComponent.withTransaction {
             log.info("GoKB missing normalised component names");
@@ -222,7 +223,7 @@ class BootStrap {
             log.debug("Register users and override default admin password")
             registerUsers()
 
-            if (grailsApplication.config.gokb.packageOaiCaching.enabled) {
+            if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false)) {
                 log.debug("Ensuring Package cache dates")
                 registerPkgCache()
             }
@@ -243,9 +244,9 @@ class BootStrap {
             ComponentStatisticService.updateCompStats()
 
             if (Environment.current != Environment.TEST) {
-                AugmentZdbJob.schedule(grailsApplication.config.gokb.zdbAugment.cron)
-                AugmentEzbJob.schedule(grailsApplication.config.gokb.ezbAugment.cron)
-                AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron)
+                AugmentZdbJob.schedule(grailsApplication.config.getProperty('gokb.zdbAugment.cron'))
+                AugmentEzbJob.schedule(grailsApplication.config.getProperty('gokb.ezbAugment.cron'))
+                AutoUpdatePackagesJob.schedule(grailsApplication.config.getProperty('gokb.packageUpdate.cron'))
             }
         }
 
@@ -264,7 +265,7 @@ class BootStrap {
 
     def defaultBulkLoaderConfig() {
         // BulkLoaderConfig
-        grailsApplication.config.kbart2.mappings.each { k, v ->
+        grailsApplication.config.getProperty('kbart2.mappings', Map, [:]).each { k, v ->
             log.debug("Process ${k}");
             def existing_cfg = BulkLoaderConfig.findByCode(k)
             if (existing_cfg) {
@@ -278,7 +279,7 @@ class BootStrap {
 
     def migrateDiskFilesToDatabase() {
         log.info("Migrate Disk Files");
-        def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
+        def baseUploadDir = grailsApplication.config.getProperty('baseUploadDir') ?: '.'
 
         DataFile.findAll("from DataFile as df where df.fileData is null").each { df ->
             log.debug("Migrating files for ${df.uploadName}::${df.guid}")
@@ -330,7 +331,7 @@ class BootStrap {
             // II: has this caused projects under org.gokb.refine to no longer be visible? Not sure how to fix it.
 
             // log.debug("Considering ${c}")
-            grailsApplication.config.apiClasses.each { String className ->
+            grailsApplication.config.getProperty('apiClasses', List, []).each { String className ->
                 // log.debug("Adding methods to ${c.name} from ${className}");
                 // Add the api methods.
                 A_Api.addMethods(c, Class.forName(className))
@@ -1102,75 +1103,77 @@ class BootStrap {
 
 
     def DSConfig() {
-        [
-            'accessdl': 'Access - Download',
-            'accessol': 'Access - Read Online',
-            'accbildl': 'Accessibility - Download',
-            'accbilol': 'Accessibility - Read Online',
-            'device'  : 'Device Requirements for Download',
-            'drm'     : 'DRM',
-            'format'  : 'Format',
-            'lic'     : 'Licensing',
-            'other'   : 'Other',
-            'ref'     : 'Referencing',
-        ].each { k, v ->
-            def dscat = DSCategory.findByCode(k) ?: new DSCategory(code: k, description: v).save(flush: true, failOnError: true)
-        }
+        DSCategory.withTransaction {
+            [
+                'accessdl': 'Access - Download',
+                'accessol': 'Access - Read Online',
+                'accbildl': 'Accessibility - Download',
+                'accbilol': 'Accessibility - Read Online',
+                'device'  : 'Device Requirements for Download',
+                'drm'     : 'DRM',
+                'format'  : 'Format',
+                'lic'     : 'Licensing',
+                'other'   : 'Other',
+                'ref'     : 'Referencing',
+            ].each { k, v ->
+                def dscat = DSCategory.findByCode(k) ?: new DSCategory(code: k, description: v).save(flush: true, failOnError: true)
+            }
 
-        [
-            ['format', 'Downloadable PDF', '', ''],
-            ['format', 'Embedded PDF', '', ''],
-            ['format', 'ePub', '', ''],
-            ['format', 'OeB', '', ''],
-            ['accessol', 'Book Navigation', '', ''],
-            ['accessol', 'Table of contents navigation', '', ''],
-            ['accessol', 'Pagination', '', ''],
-            ['accessol', 'Page Search', '', ''],
-            ['accessol', 'Search Within Book', '', ''],
-            ['accessdl', 'Download Extent', '', ''],
-            ['accessdl', 'Download Time', '', ''],
-            ['accessdl', 'Download Reading View Navigation', '', ''],
-            ['accessdl', 'Table of Contents Navigation', '', ''],
-            ['accessdl', 'Pagination', '', ''],
-            ['accessdl', 'Page Search', '', ''],
-            ['accessdl', 'Search Within Book', '', ''],
-            ['accessdl', 'Read Aloud or Listen Option', '', ''],
-            ['device', 'General', '', ''],
-            ['device', 'Android', '', ''],
-            ['device', 'iOS', '', ''],
-            ['device', 'Kindle Fire', '', ''],
-            ['device', 'PC', '', ''],
-            ['drm', 'Copying', '', ''],
-            ['drm', 'Printing', '', ''],
-            ['accbilol', 'Dictionary', '', ''],
-            ['accbilol', 'Text Resize', '', ''],
-            ['accbilol', 'Change Reading Colour', '', ''],
-            ['accbilol', 'Read aloud or Listen Option', '', ''],
-            ['accbilol', 'Integrated Help', '', ''],
-            ['accbildl', 'Copying', '', ''],
-            ['accbildl', 'Printing', '', ''],
-            ['accbildl', 'Add Notes', '', ''],
-            ['accbildl', 'Dictionary', '', ''],
-            ['accbildl', 'Text Resize', '', ''],
-            ['accbildl', 'Change Reading Colour', '', ''],
-            ['accbildl', 'Integrated Help', '', ''],
-            ['accbildl', 'Other Accessibility features or Support', '', ''],
-            ['ref', 'Export to bibliographic software', '', ''],
-            ['ref', 'Sharing / Social Media', '', ''],
-            ['other', 'Changes / Redevelopment in the near future', '', ''],
-            ['lic', 'Number of users', '', ''],
-            ['lic', 'Credit Payment Model', '', ''],
-            ['lic', 'Publishers Included', '', '']
-        ].each { crit ->
-            def cat = DSCategory.findByCode(crit[0]);
-            if (cat) {
-                def c = DSCriterion.findByOwnerAndTitle(cat, crit[1]) ?: new DSCriterion(
-                    owner: cat,
-                    title: crit[1],
-                    description: crit[2],
-                    explanation: crit[3]).save(flush: true, failOnError: true)
-            } else {
-                log.error("Unable to locate category: ${crit[0]}")
+            [
+                ['format', 'Downloadable PDF', '', ''],
+                ['format', 'Embedded PDF', '', ''],
+                ['format', 'ePub', '', ''],
+                ['format', 'OeB', '', ''],
+                ['accessol', 'Book Navigation', '', ''],
+                ['accessol', 'Table of contents navigation', '', ''],
+                ['accessol', 'Pagination', '', ''],
+                ['accessol', 'Page Search', '', ''],
+                ['accessol', 'Search Within Book', '', ''],
+                ['accessdl', 'Download Extent', '', ''],
+                ['accessdl', 'Download Time', '', ''],
+                ['accessdl', 'Download Reading View Navigation', '', ''],
+                ['accessdl', 'Table of Contents Navigation', '', ''],
+                ['accessdl', 'Pagination', '', ''],
+                ['accessdl', 'Page Search', '', ''],
+                ['accessdl', 'Search Within Book', '', ''],
+                ['accessdl', 'Read Aloud or Listen Option', '', ''],
+                ['device', 'General', '', ''],
+                ['device', 'Android', '', ''],
+                ['device', 'iOS', '', ''],
+                ['device', 'Kindle Fire', '', ''],
+                ['device', 'PC', '', ''],
+                ['drm', 'Copying', '', ''],
+                ['drm', 'Printing', '', ''],
+                ['accbilol', 'Dictionary', '', ''],
+                ['accbilol', 'Text Resize', '', ''],
+                ['accbilol', 'Change Reading Colour', '', ''],
+                ['accbilol', 'Read aloud or Listen Option', '', ''],
+                ['accbilol', 'Integrated Help', '', ''],
+                ['accbildl', 'Copying', '', ''],
+                ['accbildl', 'Printing', '', ''],
+                ['accbildl', 'Add Notes', '', ''],
+                ['accbildl', 'Dictionary', '', ''],
+                ['accbildl', 'Text Resize', '', ''],
+                ['accbildl', 'Change Reading Colour', '', ''],
+                ['accbildl', 'Integrated Help', '', ''],
+                ['accbildl', 'Other Accessibility features or Support', '', ''],
+                ['ref', 'Export to bibliographic software', '', ''],
+                ['ref', 'Sharing / Social Media', '', ''],
+                ['other', 'Changes / Redevelopment in the near future', '', ''],
+                ['lic', 'Number of users', '', ''],
+                ['lic', 'Credit Payment Model', '', ''],
+                ['lic', 'Publishers Included', '', '']
+            ].each { crit ->
+                def cat = DSCategory.findByCode(crit[0]);
+                if (cat) {
+                    def c = DSCriterion.findByOwnerAndTitle(cat, crit[1]) ?: new DSCriterion(
+                        owner: cat,
+                        title: crit[1],
+                        description: crit[2],
+                        explanation: crit[3]).save(flush: true, failOnError: true)
+                } else {
+                    log.error("Unable to locate category: ${crit[0]}")
+                }
             }
         }
         //log.debug(titleLookupService.getTitleFieldForIdentifier([[ns:'isbn',value:'9780195090017']],'publishedFrom'));
@@ -1179,35 +1182,37 @@ class BootStrap {
 
 
     def registerUsers() {
-        grailsApplication.config.sysusers.each { su ->
-            log.debug("test ${su.name} ${su.pass} ${su.display} ${su.roles}")
-            def user = User.findByUsername(su.name)
-            if (user) {
-                if (user.password != su.pass) {
-                    log.debug("Hard change of user password from config ${user.password} -> ${su.pass}")
-                    user.password = su.pass
-                    user.save(failOnError: true)
+        grailsApplication.config.getProperty('sysusers', List, []).each { su ->
+            User.withTransaction {
+                log.debug("test ${su.name} ${su.pass} ${su.display} ${su.roles}")
+                def user = User.findByUsername(su.name)
+                if (user) {
+                    if (user.password != su.pass) {
+                        log.debug("Hard change of user password from config ${user.password} -> ${su.pass}")
+                        user.password = su.pass
+                        user.save(failOnError: true)
+                    } else {
+                        log.debug("${su.name} present and correct");
+                    }
                 } else {
-                    log.debug("${su.name} present and correct");
+                    log.debug("Create user...")
+                    user = new User(
+                        username: su.name,
+                        password: su.pass,
+                        display: su.display,
+                        email: su.email,
+                        enabled: true).save(failOnError: true)
                 }
-            } else {
-                log.debug("Create user...")
-                user = new User(
-                    username: su.name,
-                    password: su.pass,
-                    display: su.display,
-                    email: su.email,
-                    enabled: true).save(failOnError: true)
-            }
 
-            log.debug("Add roles for ${su.name}");
-            su.roles.each { r ->
-                def role = Role.findByAuthority(r)
-                if (!(user.authorities.contains(role))) {
-                    log.debug("  -> adding role ${role}")
-                    UserRole.create user, role
-                } else {
-                    log.debug("  -> ${role} already present")
+                log.debug("Add roles for ${su.name}");
+                su.roles.each { r ->
+                    def role = Role.findByAuthority(r)
+                    if (!(user.authorities.contains(role))) {
+                        log.debug("  -> adding role ${role}")
+                        UserRole.create user, role
+                    } else {
+                        log.debug("  -> ${role} already present")
+                    }
                 }
             }
         }
@@ -1216,7 +1221,7 @@ class BootStrap {
 
     def ensureEsIndices() {
         def esClient = ESWrapperService.getClient()
-        def esIndices = grailsApplication.config.gokb.es.indices?.values()
+        def esIndices = grailsApplication.config.getProperty('gokb.es.indices', Map, [:]).values()
         for (String indexName in esIndices) {
             ensureEsIndex(indexName, esClient)
         }
@@ -1258,7 +1263,7 @@ class BootStrap {
     }
 
     def registerPkgCache () {
-        File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+        File dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory', String.class))
         File[] files = dir.listFiles()
 
         for (def file : files) {

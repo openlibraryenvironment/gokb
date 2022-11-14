@@ -2,15 +2,19 @@ package org.gokb
 
 import grails.converters.JSON
 import grails.core.GrailsApplication
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import grails.gorm.transactions.*
 import org.gokb.cred.JournalInstance
 import org.gokb.cred.Package
 import org.gokb.cred.Platform
 import org.gokb.cred.TitleInstancePackagePlatform
 import spock.lang.Specification
+import spock.lang.Shared
 import groovyx.net.http.HTTPBuilder
 
 import java.text.SimpleDateFormat
@@ -20,7 +24,8 @@ import java.text.SimpleDateFormat
 class PackageExportSpec extends Specification {
 
   GrailsApplication grailsApplication
-  RestBuilder rest = new RestBuilder()
+
+  HttpClient http
 
   JournalInstance journal1, journal2, journal3
   Package pack1, pack2
@@ -63,12 +68,13 @@ class PackageExportSpec extends Specification {
     def urlPath = getUrlPath()
 
     when:
-    RestResponse resp = rest.get("${urlPath}/packages/kbart/${pack1.uuid}")
+    HttpRequest request = HttpRequest.GET("${urlPath}/packages/kbart/${pack1.uuid}")
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
-    resp.status == 200 // OK
-    resp.body.contains("journal1")
-    resp.body.contains("journal2")
+    resp.status == HttpStatus.OK
+    resp.body().contains("journal1")
+    resp.body().contains("journal2")
     resp.headers["Content-Disposition"] == ["attachment; filename=\"UnknownProvider_${pack1.global.value}_${pack1.name}_${new SimpleDateFormat("yyyy-MM-dd").format(new Date())}.tsv\""]
   }
 
@@ -77,12 +83,13 @@ class PackageExportSpec extends Specification {
     def urlPath = getUrlPath()
 
     when:
-    RestResponse resp = rest.get("${urlPath}/packages/packageTSVExport?pkg=${pack1.uuid}&pkg=${pack2.uuid}")
+    HttpRequest request = HttpRequest.GET("${urlPath}/packages/packageTSVExport?pkg=${pack1.uuid}&pkg=${pack2.uuid}")
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
-    resp.status == 200 // OK
-    resp.body.contains("GoKBPackage-" + pack1.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
-    resp.body.contains("GoKBPackage-" + pack2.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
+    resp.status == HttpStatus.OK
+    resp.body().contains("GoKBPackage-" + pack1.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
+    resp.body().contains("GoKBPackage-" + pack2.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
     resp.headers["Content-Disposition"] == ["attachment; filename=\"gokbExport.zip\""]
   }
 
@@ -93,15 +100,13 @@ class PackageExportSpec extends Specification {
     ]
 
     when:
-    RestResponse resp = rest.post("${urlPath}/packages/packageTSVExport/") {
-      body(ids as JSON)
-    }
-
+    HttpRequest request = HttpRequest.POST("${urlPath}/packages/packageTSVExport/", ids as JSON)
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then:
-    resp.status == 200 // OK
-    resp.body.contains("GoKBPackage-" + pack1.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
-    resp.body.contains("GoKBPackage-" + pack2.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
+    resp.status == HttpStatus.OK
+    resp.body().contains("GoKBPackage-" + pack1.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
+    resp.body().contains("GoKBPackage-" + pack2.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv")
     resp.headers["Content-Disposition"] == ["attachment; filename=\"gokbExport.zip\""]
   }
 }

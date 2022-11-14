@@ -32,12 +32,12 @@ class GlobalSearchController {
 
       def query_str = buildQuery(params)
       log.debug("Searching for ${query_str}")
-      log.debug("... using indices ${grailsApplication.config.gokb?.es?.indices?.values().join(", ")}")
+      log.debug("... using indices ${grailsApplication.config.getProperty('gokb.es.indices', Map, [:]).values().join(", ")}")
       QueryBuilder esQuery = QueryBuilders.queryStringQuery(query_str)
 
-      def typing_field = grailsApplication.config.globalSearch.typingField ?: 'componentType'
+      def typing_field = grailsApplication.config.getProperty('globalSearch.typingField', String, 'componentType')
       SearchResponse searchResponse
-      SearchRequest searchRequest = new SearchRequest(grailsApplication.config.globalSearch.indices as String[])
+      SearchRequest searchRequest = new SearchRequest(grailsApplication.config.getProperty('globalSearch.indices', String[]))
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
 
       if (params.sort){

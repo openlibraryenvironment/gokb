@@ -1,18 +1,25 @@
 package org.gokb.rest
 
-import grails.gorm.transactions.Transactional
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
-import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
-import org.gokb.cred.*
 import grails.converters.JSON
+import grails.gorm.transactions.Transactional
+import grails.gorm.transactions.*
+import grails.testing.mixin.integration.Integration
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.MediaType
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.multipart.MultipartBody
+import org.gokb.cred.*
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Source
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
 import org.springframework.web.context.WebApplicationContext
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
@@ -21,7 +28,8 @@ class PackageTestSpec extends AbstractAuthSpec {
   @Autowired
   WebApplicationContext ctx
 
-  private RestBuilder rest = new RestBuilder()
+
+  HttpClient http
 
   def setup() {
     CuratoryGroup testGroup = CuratoryGroup.findByName("cgtest1") ?: new CuratoryGroup(name: "cgtest1").save(flush: true)
@@ -113,12 +121,11 @@ class PackageTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     def testPackage = Package.findByName("TestPack")
     when:
-    RestResponse resp = rest.get("${urlPath}/rest/packages/${testPackage.id}") {
-      // headers
-      accept('application/json')
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/packages/${testPackage.id}")
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
   }
 
   void "test /rest/packages with valid token"() {
@@ -127,14 +134,13 @@ class PackageTestSpec extends AbstractAuthSpec {
     def testPackage = Package.findByName("TestPack")
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/packages/${testPackage.id}") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/packages/${testPackage.id}")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json.name == "TestPack"
+    resp.status == HttpStatus.OK
+    resp.body().name == "TestPack"
   }
 
   void "test /rest/packages update name"() {
@@ -144,15 +150,13 @@ class PackageTestSpec extends AbstractAuthSpec {
     def testPackage = Package.findByName("TestPack")
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("${urlPath}/rest/packages/${testPackage.id}") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(upd_body as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/packages/${testPackage.id}", upd_body as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json.name == "UpdPack"
+    resp.status == HttpStatus.OK
+    resp.body().name == "UpdPack"
   }
 
   void "test /rest/packages update comboList"() {
@@ -163,16 +167,14 @@ class PackageTestSpec extends AbstractAuthSpec {
     def testPackage = Package.findByName("TestPack")
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.put("${urlPath}/rest/packages/${testPackage.id}") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(upd_body as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/packages/${testPackage.id}", upd_body as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json._embedded?.curatoryGroups?.size() == 1
-    resp.json._embedded?.curatoryGroups[0].id == testGroup.id
+    resp.status == HttpStatus.OK
+    resp.body()._embedded?.curatoryGroups?.size() == 1
+    resp.body()._embedded?.curatoryGroups[0].id == testGroup.id
   }
 
   void "test /rest/packages post with provider, source and platform"() {
@@ -203,21 +205,19 @@ class PackageTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("${urlPath}/rest/packages") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(new_body as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", new_body as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.json.errors == null
-    resp.status == 201 // OK
-    resp.json.source != null
-    resp.json.provider != null
-    resp.json.nominalPlatform != null
-    resp.json.scope.name == "Front File"
-    resp.json.globalNote == "Testing Consortium"
-    resp.json._embedded?.ids?.size() == 1
+    resp.body().errors == null
+    resp.status == HttpStatus.CREATED
+    resp.body().source != null
+    resp.body().provider != null
+    resp.body().nominalPlatform != null
+    resp.body().scope.name == "Front File"
+    resp.body().globalNote == "Testing Consortium"
+    resp.body()._embedded?.ids?.size() == 1
   }
 
   void "test /rest/packages post with new tipps"() {
@@ -245,17 +245,14 @@ class PackageTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("${urlPath}/rest/packages?_embed=tipps") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(upd_body as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", upd_body as JSON)
+      .queryParam('_embed', 'tipps')
+      .bearerAuth(accessToken)
     then:
-    resp.status == 201 // OK
-    resp.json?._embedded?.tipps?.size() == 1
-    resp.json?._embedded?.tipps[0].url == upd_body.tipps[0].url
-    resp.json?._embedded?.tipps[0].name == upd_body.tipps[0].name
+    resp.status == HttpStatus.CREATED
+    resp.body()?._embedded?.tipps?.size() == 1
+    resp.body()?._embedded?.tipps[0].url == upd_body.tipps[0].url
+    resp.body()?._embedded?.tipps[0].name == upd_body.tipps[0].name
   }
 
   void "test /rest/packages/<id>/ingest with matching tipps"() {
@@ -266,15 +263,24 @@ class PackageTestSpec extends AbstractAuthSpec {
     Platform testPlt = Platform.findByName("PackTestPlt")
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("${urlPath}/rest/packages/${pkg.id}/ingest?async=false") {
-      accept('application/json')
-      contentType("multipart/form-data")
-      auth("Bearer $accessToken")
-      submissionFile=kbart_file.getFile()
-    }
+    MultipartBody requestBody = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_update.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file.getFile()
+      )
+      .addPart('async', 'false')
+      .build()
+
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.job_result.report?.matched == 2
+    resp.status == HttpStatus.OK
+    resp.body().job_result.report?.matched == 2
     pkg.tipps.size() == 2
   }
 
@@ -294,7 +300,7 @@ class PackageTestSpec extends AbstractAuthSpec {
   //   }
   //   then:
   //   resp.status == 200
-  //   resp.json?.job_result?.report?.partial == 2
-  //   resp.json?.job_result?.report?.retired == 2
+  //   resp.body()?.job_result?.report?.partial == 2
+  //   resp.body()?.job_result?.report?.retired == 2
   // }
 }

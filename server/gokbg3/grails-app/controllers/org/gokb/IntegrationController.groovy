@@ -54,6 +54,7 @@ class IntegrationController {
     render result as JSON
   }
 
+  @Transactional
   @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def assertGroup() {
     def result = [result: 'OK']
@@ -291,6 +292,7 @@ class IntegrationController {
    *      ]
    *
    */
+  @Transactional
   @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def assertOrg() {
     log.debug("assertOrg, request.json = ${request.JSON}");
@@ -300,159 +302,160 @@ class IntegrationController {
     def jsonOrg = request.JSON
 
     try {
-      def located_or_new_org = resolveOrgUsingPrivateIdentifiers(jsonOrg.identifiers)
+      Org.withTransaction {
+        def located_or_new_org = resolveOrgUsingPrivateIdentifiers(jsonOrg.identifiers)
 
-      if (located_or_new_org == null) {
-        if (jsonOrg.name) {
-          String orgName = jsonOrg.name
-          String orgNormName = Org.generateNormname(orgName)
+        if (located_or_new_org == null) {
+          if (jsonOrg.name) {
+            String orgName = jsonOrg.name
+            String orgNormName = Org.generateNormname(orgName)
 
-          // No match. One more attempt to match on norm_name only.
-          def org_by_name = Org.findAllByNormname(orgNormName)
-          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+            // No match. One more attempt to match on norm_name only.
+            def org_by_name = Org.findAllByNormname(orgNormName)
+            def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
-          if (org_by_name.size() == 1) {
-            located_or_new_org = org_by_name[0]
-          }
-
-          if (located_or_new_org == null && org_by_name.size() == 0) {
-
-            def variant_normname = GOKbTextUtils.normaliseString(orgName)
-            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = :nn and o.status <> :sd", [nn: variant_normname, sd: status_deleted])
-
-            if (candidate_orgs.size() == 1) {
-              located_or_new_org = candidate_orgs[0]
-
-              log.debug("Matched Org on variant name!");
+            if (org_by_name.size() == 1) {
+              located_or_new_org = org_by_name[0]
             }
-            else if (candidate_orgs.size() == 0) {
 
-              log.debug("Create new org name will be \"${jsonOrg.name}\" (${jsonOrg.name?.length()})");
+            if (located_or_new_org == null && org_by_name.size() == 0) {
 
-              located_or_new_org = new Org(name: jsonOrg.name, normname: orgNormName, uuid: jsonOrg.uuid?.trim()?.size() > 0 ? jsonOrg.uuid : null)
+              def variant_normname = GOKbTextUtils.normaliseString(orgName)
+              def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = :nn and o.status <> :sd", [nn: variant_normname, sd: status_deleted])
 
-              log.debug("Attempt to save - validate: ${located_or_new_org}");
+              if (candidate_orgs.size() == 1) {
+                located_or_new_org = candidate_orgs[0]
 
-              if (located_or_new_org.save(flush: true, failOnError: true)) {
-                log.debug("Saved ok");
+                log.debug("Matched Org on variant name!");
+              }
+              else if (candidate_orgs.size() == 0) {
+
+                log.debug("Create new org name will be \"${jsonOrg.name}\" (${jsonOrg.name?.length()})");
+
+                located_or_new_org = new Org(name: jsonOrg.name, normname: orgNormName, uuid: jsonOrg.uuid?.trim()?.size() > 0 ? jsonOrg.uuid : null)
+
+                log.debug("Attempt to save - validate: ${located_or_new_org}");
+
+                if (located_or_new_org.save(flush: true, failOnError: true)) {
+                  log.debug("Saved ok");
+                }
+                else {
+                  assert_errors = true;
+                }
               }
               else {
+                log.debug("Multiple matches via variant name, skipping Org!");
                 assert_errors = true;
               }
             }
+            else if (org_by_name.size == 1) {
+              log.debug("Matched Org by normname!")
+            }
             else {
-              log.debug("Multiple matches via variant name, skipping Org!");
+              log.debug("Multiple matches for org via normname!")
               assert_errors = true;
             }
           }
-          else if (org_by_name.size == 1) {
-            log.debug("Matched Org by normname!")
-          }
           else {
-            log.debug("Multiple matches for org via normname!")
+            log.warn("Provided Org has no name!");
             assert_errors = true;
           }
         }
         else {
-          log.warn("Provided Org has no name!");
-          assert_errors = true;
+          log.debug("Located existing record.. Still update...");
         }
-      }
-      else {
-        log.debug("Located existing record.. Still update...");
-      }
 
-      if (assert_errors) {
-        log.debug("Save failed ${located_or_new_org}");
-        result.errors = []
-        located_or_new_org.errors.each { e ->
-          log.error("Problem saving new org record", e);
-          result.errors.add("${e}".toString());
+        if (assert_errors) {
+          log.debug("Save failed ${located_or_new_org}");
+          result.errors = []
+          located_or_new_org.errors.each { e ->
+            log.error("Problem saving new org record", e);
+            result.errors.add("${e}".toString());
+          }
+          result.result = 'ERROR'
+          response.setStatus(400)
+          result.message = "There was a problem saving the new Org!"
+          result.baddata = jsonOrg
+          return
         }
-        result.result = 'ERROR'
-        response.setStatus(400)
-        result.message = "There was a problem saving the new Org!"
-        result.baddata = jsonOrg
-        return
-      }
 
-      componentUpdateService.setAllRefdata([
-          'software', 'service'
-      ], jsonOrg, located_or_new_org)
+        componentUpdateService.setAllRefdata([
+            'software', 'service'
+        ], jsonOrg, located_or_new_org)
 
-      if (jsonOrg.mission) {
-        log.debug("Mission ${jsonOrg.mission}");
-        located_or_new_org.mission = RefdataCategory.lookup('Org.Mission', jsonOrg.mission);
-      }
-
-      if (jsonOrg.homepage) {
-        located_or_new_org.homepage = jsonOrg.homepage
-      }
-
-      // Add parent.
-      if (jsonOrg.parent) {
-        def parentDef = jsonOrg.parent;
-        log.debug("Adding parent using ${parentDef.identifierType}:${parentDef.identifierValue}");
-        def located_component = KBComponent.lookupByIO(parentDef.identifierType, parentDef.identifierValue)
-        if (located_component) {
-          located_or_new_org.parent = located_component
+        if (jsonOrg.mission) {
+          log.debug("Mission ${jsonOrg.mission}");
+          located_or_new_org.mission = RefdataCategory.lookup('Org.Mission', jsonOrg.mission);
         }
-      }
 
-      log.debug("Combo processing: ${jsonOrg.combos}")
+        if (jsonOrg.homepage) {
+          located_or_new_org.homepage = jsonOrg.homepage
+        }
 
-      // combos
-      jsonOrg.combos.each { c ->
-        log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
-        def located_component = KBComponent.lookupByIO(c.linkTo.identifierType, c.linkTo.identifierValue)
+        // Add parent.
+        if (jsonOrg.parent) {
+          def parentDef = jsonOrg.parent;
+          log.debug("Adding parent using ${parentDef.identifierType}:${parentDef.identifierValue}");
+          def located_component = KBComponent.lookupByIO(parentDef.identifierType, parentDef.identifierValue)
+          if (located_component) {
+            located_or_new_org.parent = located_component
+          }
+        }
 
-        // Located a component.
-        if ((located_component != null)) {
-          def combo = new Combo(
-              type: RefdataCategory.lookup('Combo.Type', c.linkType),
-              fromComponent: located_or_new_org,
-              toComponent: located_component,
-              startDate: new Date()).save(flush: true, failOnError: true);
+        log.debug("Combo processing: ${jsonOrg.combos}")
+
+        // combos
+        jsonOrg.combos.each { c ->
+          log.debug("lookup to item using ${c.linkTo.identifierType}:${c.linkTo.identifierValue}");
+          def located_component = KBComponent.lookupByIO(c.linkTo.identifierType, c.linkTo.identifierValue)
+
+          // Located a component.
+          if ((located_component != null)) {
+            def combo = new Combo(
+                type: RefdataCategory.lookup('Combo.Type', c.linkType),
+                fromComponent: located_or_new_org,
+                toComponent: located_component,
+                startDate: new Date()).save(flush: true, failOnError: true);
+          }
+          else {
+            log.error("Problem resolving from(${located_or_new_org}) or to(${located_component}) org for combo");
+          }
+        }
+
+        // roles
+        log.debug("Role Processing: ${jsonOrg.roles}");
+        jsonOrg.roles.each { r ->
+          log.debug("Adding role ${r}");
+          def role = RefdataCategory.lookup("Org.Role", r)
+
+          if (role) {
+            located_or_new_org.addToRoles(role)
+          }
+        }
+
+        // Core data...
+        componentUpdateService.ensureCoreData(located_or_new_org, jsonOrg, false, user)
+
+        log.debug("Attempt to save - validate: ${located_or_new_org}");
+
+        if (located_or_new_org.save(flush: true, failOnError: true)) {
+          log.debug("Saved ok");
+          result.message = "Added/Updated org: ${located_or_new_org.id} ${located_or_new_org.name}";
+          result.orgId = located_or_new_org.id
         }
         else {
-          log.error("Problem resolving from(${located_or_new_org}) or to(${located_component}) org for combo");
+          log.debug("Save failed ${located_or_new_org}");
+          result.errors = []
+          located_or_new_org.errors.each { e ->
+            log.error("Problem saving new org record", e);
+            result.errors.add("${e}".toString());
+          }
+          response.setStatus(400)
+          result.baddata = jsonOrg
+          result.result = 'ERROR'
+          result.message = "There was a problem saving the Org!"
         }
       }
-
-      // roles
-      log.debug("Role Processing: ${jsonOrg.roles}");
-      jsonOrg.roles.each { r ->
-        log.debug("Adding role ${r}");
-        def role = RefdataCategory.lookup("Org.Role", r)
-
-        if (role) {
-          located_or_new_org.addToRoles(role)
-        }
-      }
-
-      // Core data...
-      componentUpdateService.ensureCoreData(located_or_new_org, jsonOrg, false, user)
-
-      log.debug("Attempt to save - validate: ${located_or_new_org}");
-
-      if (located_or_new_org.save(flush: true, failOnError: true)) {
-        log.debug("Saved ok");
-        result.message = "Added/Updated org: ${located_or_new_org.id} ${located_or_new_org.name}";
-        result.orgId = located_or_new_org.id
-      }
-      else {
-        log.debug("Save failed ${located_or_new_org}");
-        result.errors = []
-        located_or_new_org.errors.each { e ->
-          log.error("Problem saving new org record", e);
-          result.errors.add("${e}".toString());
-        }
-        response.setStatus(400)
-        result.baddata = jsonOrg
-        result.result = 'ERROR'
-        result.message = "There was a problem saving the Org!"
-      }
-
     }
     catch (Exception e) {
       log.error("Unexpected error importing org", e)
@@ -1825,11 +1828,13 @@ class IntegrationController {
     log.debug("Clean up GORM");
 
     // Get the current session.
-    def session = sessionFactory.currentSession
+    KBComponent.withTransaction {
+      def session = sessionFactory.currentSession
 
-    // flush and clear the session.
-    session.flush()
-    session.clear()
+      // flush and clear the session.
+      session.flush()
+      session.clear()
+    }
   }
 
 }

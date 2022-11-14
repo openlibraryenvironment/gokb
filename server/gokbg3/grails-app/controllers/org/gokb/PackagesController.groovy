@@ -329,7 +329,7 @@ class PackagesController {
   }
 
   def copyUploadedFile(inputfile, deposit_token) {
-    def baseUploadDir = grailsApplication.config.project_dir ?: '.'
+    def baseUploadDir = grailsApplication.config.getProperty('project_dir', String, '.')
     log.debug("copyUploadedFile...");
     def sub1 = deposit_token.substring(0, 2);
     def sub2 = deposit_token.substring(2, 4);

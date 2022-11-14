@@ -1,20 +1,27 @@
 package org.gokb.rest
 
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import grails.converters.JSON
+import grails.gorm.transactions.*
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.cred.Identifier
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.JournalInstance
-import grails.converters.JSON
 import org.gokb.cred.RefdataCategory
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
 class IdentifierTestSpec extends AbstractAuthSpec {
 
-  private RestBuilder rest = new RestBuilder()
+
+  HttpClient http
+
   IdentifierNamespace ns_eissn
   Identifier test_id
   JournalInstance test_journal
@@ -72,12 +79,11 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     def test_id = Identifier.findByValue("1234-4567")
 
     when:
-    RestResponse resp = rest.get("${urlPath}/rest/identifiers/${test_id.id}") {
-      // headers
-      accept('application/json')
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/identifiers/${test_id.id}")
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
+    resp.status == HttpStatus.OK
   }
 
   void "test /rest/identifiers/<id> with valid token"() {
@@ -87,14 +93,12 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/identifiers/${test_id.id}") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/identifiers/${test_id.id}")
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json.value == "1234-4567"
+    resp.status == HttpStatus.OK
+    resp.body().value == "1234-4567"
   }
 
   void "test /rest/identifier-namespaces"() {
@@ -102,42 +106,34 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.get("${urlPath}/rest/identifier-namespaces") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/identifier-namespaces")
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json.data != null
-    resp.json._links.size() == 1
-    resp.json.data.size() >= 8
-    resp.json.data[1].name != null
+    resp.status == HttpStatus.OK
+    resp.body().data != null
+    resp.body()._links.size() == 1
+    resp.body().data.size() >= 8
+    resp.body().data[1].name != null
   }
 
   void "test /rest/identifier-namespaces?targetType"() {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    RestResponse resp1 = rest.get("${urlPath}/rest/identifier-namespaces?targetType=Book") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
-    RestResponse resp2 = rest.get("${urlPath}/rest/identifier-namespaces?targetType=Title") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request1 = HttpRequest.GET("${urlPath}/rest/identifier-namespaces?targetType=Book")
+    HttpResponse resp1 = http.toBlocking().exchange(request)
+    HttpRequest request2 = HttpRequest.GET("${urlPath}/rest/identifier-namespaces?targetType=Title")
+    HttpResponse resp2 = http.toBlocking().exchange(request)
     then:
-    resp1.status == 200 // OK
-    resp1.json.data != null
-    resp1.json._links.size() == 1
-    resp1.json.data.size() == 2
-    resp2.status == 200 // OK
-    resp2.json.data != null
-    resp2.json._links.size() == 1
-    resp2.json.data.size() == 3
+    resp1.status == HttpStatus.OK
+    resp1.body().data != null
+    resp1.body()._links.size() == 1
+    resp1.body().data.size() == 2
+    resp2.status == HttpStatus.OK
+    resp2.body().data != null
+    resp2.body()._links.size() == 1
+    resp2.body().data.size() == 3
   }
 
   void "test identifier create"() {
@@ -149,15 +145,12 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     ]
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("${urlPath}/rest/identifiers") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(obj_map as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/identifiers", obj_map as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
     then:
-    resp.status == 201 // Created
-    resp.json.value == "6644-2231"
+    resp.status == HttpStatus.CREATED
+    resp.body().value == "6644-2231"
   }
 
   void "test identifier namespace validation"() {
@@ -169,15 +162,12 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     ]
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("${urlPath}/rest/identifiers") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(obj_map as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/identifiers", obj_map as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
     then:
-    resp.status == 400 // ERROR
-    resp.json.message == "Identifier has failed validation!"
+    resp.status == HttpStatus.BAD_REQUEST
+    resp.body().message == "Identifier has failed validation!"
   }
 
   void "test identifier create with connected component"() {
@@ -191,16 +181,13 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     ]
     when:
     String accessToken = getAccessToken()
-    RestResponse resp = rest.post("${urlPath}/rest/identifiers?_embed=identifiedComponents") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-      body(obj_map as JSON)
-    }
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/identifiers?_embed=identifiedComponents", obj_map as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
     then:
-    resp.status == 201 // OK
-    resp.json.value == "6644-2284"
-    resp.json._embedded?.identifiedComponents.size() == 1
-    resp.json._embedded?.identifiedComponents[0].id == test_journal.id
+    resp.status == HttpStatus.CREATED
+    resp.body().value == "6644-2284"
+    resp.body()._embedded?.identifiedComponents.size() == 1
+    resp.body()._embedded?.identifiedComponents[0].id == test_journal.id
   }
 }

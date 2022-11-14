@@ -102,7 +102,7 @@ class PublicController {
       mutableParams.tempFQ = ' -pkg_scope:\"Master File\" -\"open access\" ';
 
     result =  ESSearchService.search(mutableParams)
-    result.transforms = grailsApplication.config.packageTransforms
+    result.transforms = grailsApplication.config.getProperty('packageTransforms')
 
     result
   }

@@ -3,19 +3,19 @@ import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 
 buildscript {
     repositories {
-        mavenLocal()
+        mavenCentral()
+        maven { url "https://plugins.gradle.org/m2/" }
         maven { url "https://repo.grails.org/grails/core" }
     }
     dependencies {
         classpath "org.grails:grails-gradle-plugin:$grailsVersion"
-        classpath "gradle.plugin.com.energizedwork.webdriver-binaries:webdriver-binaries-gradle-plugin:1.4"
-        classpath "gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:1.5.1"
-        classpath "gradle.plugin.com.energizedwork:idea-gradle-plugins:1.4"
         classpath "org.grails.plugins:hibernate5:${gormVersion-".RELEASE"}"
-        classpath "com.bertramlabs.plugins:asset-pipeline-gradle:2.15.1"
+        classpath "com.bertramlabs.plugins:asset-pipeline-gradle:3.4.7"
         // Experiment with guide from http://guides.grails.org/grails-as-docker-container/guide/index.html
-        classpath "com.bmuschko:gradle-docker-plugin:3.2.5"
-        classpath 'org.grails.plugins:database-migration:3.0.3'
+        classpath "com.bmuschko:gradle-docker-plugin:6.7.0"
+        classpath "gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:2.2.4"
+        classpath "gradle.plugin.com.github.erdi.webdriver-binaries:webdriver-binaries-gradle-plugin:2.7"
+        classpath "org.grails.plugins:database-migration:4.1.0"
         // Fixing too long classpath in Windows development environment
         classpath "gradle.plugin.ua.eshepelyuk:ManifestClasspath:1.0.0"
         classpath "org.grails.plugins:quartz:2.0.13"
@@ -28,21 +28,21 @@ group "gokbg3"
 apply plugin:"eclipse"
 apply plugin:"idea"
 apply plugin:"war"
-apply plugin:"org.grails.grails-web"
-apply plugin:"com.gorylenko.gradle-git-properties"
-apply plugin:"com.energizedwork.webdriver-binaries"
-apply plugin:"com.energizedwork.idea-project-components"
 apply plugin:"asset-pipeline"
+apply plugin:"com.gorylenko.gradle-git-properties"
+apply plugin:"com.github.erdi.webdriver-binaries"
+apply plugin:"org.grails.grails-web"
 apply plugin:"org.grails.grails-gsp"
 apply plugin:"com.bmuschko.docker-remote-api"
 apply plugin:"org.grails.grails-doc"
 // Fixing too long classpath in Windows development environment
 apply plugin: "ua.eshepelyuk.ManifestClasspath"
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven { url "https://repo.grails.org/grails/core" }
+allprojects {
+    repositories {
+        mavenCentral()
+        maven { url "https://repo.grails.org/grails/core" }
+    }
 }
 
 configurations {
@@ -53,85 +53,83 @@ configurations {
 }
 
 dependencies {
-    // developmentOnly("org.springframework.boot:spring-boot-devtools")
-    compile "org.springframework.boot:spring-boot-starter-logging"
-    compile "org.springframework.boot:spring-boot-autoconfigure"
-    compile "org.grails:grails-core"
-    compile "org.springframework.boot:spring-boot-starter-actuator"
-    compile "org.springframework.boot:spring-boot-starter-undertow"
-    compile "org.grails:grails-web-boot"
-    compile "org.grails:grails-logging"
-    compile "org.grails:grails-plugin-rest"
-    compile "org.grails:grails-plugin-databinding"
-    compile "org.grails:grails-plugin-i18n"
-    compile "org.grails:grails-plugin-services"
-    compile "org.grails:grails-plugin-url-mappings"
-    compile "org.grails:grails-plugin-interceptors"
-    compile "org.grails.plugins:cache:5.0.1"
-    compile "org.grails.plugins:async"
-    compile "org.grails.plugins:scaffolding"
-    compile "org.grails.plugins:events"
-    compile("org.quartz-scheduler:quartz:2.2.3") {
+    developmentOnly "org.springframework.boot:spring-boot-devtools"
+    implementation "org.springframework.boot:spring-boot-starter-logging"
+    implementation "org.springframework.boot:spring-boot-autoconfigure"
+    implementation "org.grails:grails-core"
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+    implementation "org.springframework.boot:spring-boot-starter-undertow"
+    implementation "org.grails:grails-web-boot"
+    implementation "org.grails:grails-logging"
+    implementation "org.grails:grails-plugin-rest"
+    implementation "org.grails:grails-plugin-databinding"
+    implementation "org.grails:grails-plugin-i18n"
+    implementation "org.grails:grails-plugin-services"
+    implementation "org.grails:grails-plugin-url-mappings"
+    implementation "org.grails:grails-plugin-interceptors"
+    implementation "org.grails.plugins:cache:5.0.1"
+    implementation "org.grails.plugins:async"
+    implementation "org.grails.plugins:scaffolding"
+    implementation "org.grails.plugins:events"
+    implementation("org.quartz-scheduler:quartz:2.3.2") {
         exclude group: 'slf4j-api', module: 'c3p0'
     }
-    compile "org.grails.plugins:quartz:2.0.13"
-    compile "org.grails.plugins:hibernate5"
-    compile "org.hibernate:hibernate-core:5.4.0.Final"
-    compile "org.grails.plugins:gsp"
-    compile "org.grails.plugins:mail:3.0.0"
-    // compile 'org.grails.plugins:greenmail:2.0.0.RC2'
-    compile 'org.grails.plugins:database-migration:3.1.0'
-    // compile 'org.grails.plugins:grails-melody-plugin:1.80.0'
+    implementation "org.grails.plugins:quartz:2.0.13"
+    implementation "org.grails.plugins:hibernate5"
+    implementation "org.hibernate:hibernate-core:5.6.12.Final"
+    implementation "org.grails.plugins:gsp"
+    implementation "org.grails.plugins:mail:3.0.0"
+    // implementation 'org.grails.plugins:greenmail:2.0.0.RC2'
+    implementation 'org.grails.plugins:database-migration:4.1.0'
+    // implementation 'org.grails.plugins:grails-melody-plugin:1.80.0'
 
-    compile 'org.grails.plugins:spring-security-core:4.0.4'
-    compile 'org.grails.plugins:spring-security-acl:4.0.0.M2'
-    compile 'org.grails.plugins:spring-security-ui:4.0.0.M1'
-    compile 'org.grails.plugins:spring-security-rest:3.0.1'
-    compile 'org.grails.plugins:spring-security-rest-grailscache:3.0.1'
-    compile group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.14'
-    compile group: 'commons-io', name: 'commons-io', version: '2.11.0'
-    compile group: 'org.aspectj', name: 'aspectjweaver', version: '1.9.9.1'
-    compile group: 'joda-time', name: 'joda-time', version: '2.10.14'
-    compile group: 'org.apache.commons', name: 'commons-compress', version: '1.21'
-    compile group: 'com.opencsv', name: 'opencsv', version: '5.6'
-    compile group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.7.1'
-    compile 'org.opensearch:opensearch:2.3.0'
-    compile 'org.opensearch.client:opensearch-rest-high-level-client:2.3.0'
-    compile 'org.locationtech.spatial4j:spatial4j:0.8'
+    implementation 'org.grails.plugins:spring-security-core:5.1.0'
+    implementation 'org.grails.plugins:spring-security-acl:4.0.0.M2'
+    implementation 'org.grails.plugins:spring-security-ui:4.0.0.M1'
+    implementation 'org.grails.plugins:spring-security-rest:3.0.1'
+    implementation 'org.grails.plugins:spring-security-rest-grailscache:3.0.1'
+    implementation group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.14'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
+    implementation group: 'org.aspectj', name: 'aspectjweaver', version: '1.9.9.1'
+    implementation group: 'joda-time', name: 'joda-time', version: '2.10.14'
+    implementation group: 'org.apache.commons', name: 'commons-compress', version: '1.21'
+    implementation group: 'com.opencsv', name: 'opencsv', version: '5.6'
+    implementation group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.7.1'
+    implementation 'org.opensearch:opensearch:2.3.0'
+    implementation 'org.opensearch.client:opensearch-rest-high-level-client:2.3.0'
+    implementation 'org.locationtech.spatial4j:spatial4j:0.8'
     implementation 'org.slf4j:log4j-over-slf4j:2.0.3'
-    compile 'org.apache.tika:tika-core:2.4.1'
-    compile 'dk.glasius:external-config:2.0.1'
+    implementation 'org.apache.tika:tika-core:2.4.1'
+    implementation 'dk.glasius:external-config:2.0.1'
 
     // This  is for rest integration tests -  see more at
     //  http://guides.grails.org/grails-controller-testing/guide/index.html
     //  and https://github.com/grails-plugins/grails-rest-client-builder
-    compile 'org.grails:grails-datastore-rest-client:6.1.12.RELEASE'
-
-    console "org.grails:grails-console"
-    profile "org.grails.profiles:web"
-    compile 'com.github.albfernandez:juniversalchardet:2.4.0'
+    // implementation 'org.grails:grails-datastore-rest-client:6.1.9.RELEASE'
+    implementation "io.micronaut:micronaut-http-client"
+    implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    compile group: 'org.postgresql', name: 'postgresql', version: '42.5.0'
-    runtime "com.h2database:h2"
-    runtime "org.apache.tomcat:tomcat-jdbc"
-    runtime "com.bertramlabs.plugins:asset-pipeline-grails:3.3.1"
+    implementation group: 'org.postgresql', name: 'postgresql', version: '42.5.0'
+    runtimeOnly "com.h2database:h2"
+    runtimeOnly "org.apache.tomcat:tomcat-jdbc"
+    runtimeOnly "com.bertramlabs.plugins:asset-pipeline-grails:3.3.1"
     assets 'com.bertramlabs.plugins:less-asset-pipeline:3.3.1'
 
-    testCompile "org.grails:grails-gorm-testing-support"
-    testCompile "org.grails:grails-web-testing-support"
-    testCompile "org.grails.plugins:geb"
-    testRuntime "org.seleniumhq.selenium:selenium-chrome-driver:$seleniumVersion"
-    testRuntime "org.seleniumhq.selenium:selenium-firefox-driver:$seleniumVersion"
-    testRuntime "org.seleniumhq.selenium:selenium-safari-driver:$seleniumSafariDriverVersion"
+    testImplementation "org.grails:grails-gorm-testing-support"
+    testImplementation "org.grails:grails-web-testing-support"
+    testImplementation "org.grails.plugins:geb"
+    testRuntimeOnly "org.seleniumhq.selenium:selenium-chrome-driver:$seleniumVersion"
+    testRuntimeOnly "org.seleniumhq.selenium:selenium-firefox-driver:$seleniumVersion"
 
-    testCompile "org.seleniumhq.selenium:selenium-remote-driver:$seleniumVersion"
-    testCompile "org.seleniumhq.selenium:selenium-api:$seleniumVersion"
-    testCompile "org.seleniumhq.selenium:selenium-support:$seleniumVersion"
-    testRuntime 'com.bertramlabs.plugins:less-asset-pipeline:3.3.1'
-    testRuntime "org.apache.httpcomponents:httpclient"
+    testImplementation "org.seleniumhq.selenium:selenium-remote-driver:$seleniumVersion"
+    testImplementation "org.seleniumhq.selenium:selenium-api:$seleniumVersion"
+    testImplementation "org.seleniumhq.selenium:selenium-support:$seleniumVersion"
+    testRuntimeOnly 'com.bertramlabs.plugins:less-asset-pipeline:3.3.1'
+    testRuntimeOnly "org.apache.httpcomponents:httpclient"
 }
 
 bootRun {
+    systemProperties System.properties
     jvmArgs = ['-Dspring.output.ansi.enabled=always','-Xmx8g']
     sourceResources sourceSets.main
 }
@@ -181,7 +179,7 @@ buildProperties.doLast {
 
 webdriverBinaries {
     chromedriver "$chromeDriverVersion"
-    geckodriver "$geckodriverVersion"
+    geckodriver "$geckoDriverVersion"
 }
 
 sourceSets {
@@ -195,8 +193,12 @@ sourceSets {
 tasks.withType(Test) {
     systemProperty "geb.env", System.getProperty('geb.env')
     systemProperty "geb.build.reportsDir", reporting.file("geb/integrationTest")
-    systemProperty "webdriver.chrome.driver", System.getProperty('webdriver.chrome.driver')
-    systemProperty "webdriver.gecko.driver", System.getProperty('webdriver.gecko.driver')
+
+    useJUnitPlatform()
+
+    testLogging {     // This is for logging and can be removed.
+        events("passed", "skipped", "failed")
+    }
 }
 
 assets {
@@ -245,8 +247,7 @@ task createDockerfile(type: Dockerfile, dependsOn: prepareDocker) {
 
     destFile = project.file("${dockerBuildDir}/Dockerfile")
 
-    from 'openjdk:8u151-jdk-alpine'
-    maintainer 'Ian Ibbotson "ian.ibbotson@k-int.com"'
+    from 'openjdk:11-jdk-alpine'
 
     exposePort 8080
 
@@ -264,6 +265,4 @@ task buildImage(type: DockerBuildImage, dependsOn: createDockerfile) {
     group = 'knowint'
 
     inputDir = file(dockerBuildDir)
-    // tag = dockerTag
-    tags = [dockerTag, 'knowint/gokbg3:latest']
 }

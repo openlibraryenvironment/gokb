@@ -1122,7 +1122,7 @@ where cp.owner = :c
 
         // not already a name
         // Make sure not already a variant name
-        def existing_variants = KBComponentVariantName.executeQuery("from KBComponentVariantName where owner = :comp and normVariantName = :nvn)".toString(), [comp: this, nvn: normname])
+        def existing_variants = KBComponentVariantName.executeQuery("from KBComponentVariantName where owner = :comp and normVariantName = :nvn".toString(), [comp: this, nvn: normname])
         if (existing_variants.size() == 0) {
           result = new KBComponentVariantName(owner: this, variantName: name).save()
         } else {

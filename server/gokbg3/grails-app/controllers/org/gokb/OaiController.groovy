@@ -33,7 +33,7 @@ class OaiController {
           if ( o.id == params.id ) {
 
             // Combine the default props with the locally set ones.
-            result.oaiConfig = grailsApplication.config.defaultOaiConfig + o
+            result.oaiConfig = grailsApplication.config.getProperty('defaultOaiConfig') + o
 
             // Also add the class name.
             result.className = dc.clazz.name
@@ -83,7 +83,7 @@ class OaiController {
     // def attr = ["xsi:schemaLocation" : "${config.schema}"]
     def attr = [:]
     def newCache = false
-    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    File dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
 
     if (!dir.exists()) {
       dir.mkdirs()
@@ -101,7 +101,7 @@ class OaiController {
 
     // Add the metadata element and populate it depending on the config.
     builder.'metadata'() {
-      if (subject.class == Package && grailsApplication.config.gokb.packageOaiCaching.enabled) {
+      if (subject.class == Package && grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false)) {
         def currentFile = null
 
         while (!currentFile) {
@@ -134,7 +134,7 @@ class OaiController {
       def oid = params.identifier
       def record = null
       def returnAttrs = true
-      def cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled)
+      def cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false))
       def request_map = params
       def legalClassNames = (result.className == 'org.gokb.cred.TitleInstance' ? ['org.gokb.cred.TitleInstance', 'org.gokb.cred.BookInstance', 'org.gokb.cred.JournalInstance', 'org.gokb.cred.DatabaseInstance', 'org.gokb.cred.OtherInstance'] : [result.className])
       request_map.keySet().removeAll(['controller','action','id'])
@@ -520,7 +520,7 @@ class OaiController {
         def returnAttrs = true
         def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
         def request_map = params
-        def cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled)
+        def cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false))
         def order_by_clause = cachedPackageResponse ? 'order by o.lastCachedDate' : 'order by o.lastUpdated'
         request_map.keySet().removeAll(['controller','action','id'])
 
@@ -855,7 +855,7 @@ class OaiController {
   }
 
   private Date getCacheDateForPkgUuid(uuid) {
-    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    File dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
     def cached_uuids = []
 
     for (File file : dir.listFiles()) {

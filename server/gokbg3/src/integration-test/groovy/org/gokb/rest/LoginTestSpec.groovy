@@ -1,10 +1,14 @@
 package org.gokb.rest
 
 import grails.core.GrailsApplication
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import spock.lang.Ignore
+import spock.lang.Shared
 import spock.lang.Specification
 
 /**
@@ -14,19 +18,17 @@ import spock.lang.Specification
 class LoginTestSpec extends Specification {
 
   GrailsApplication grailsApplication
-  private RestBuilder rest = new RestBuilder()
+
+
+  HttpClient http
 
   void "test getting tokens with valid credentials"() {
     when:
-    RestResponse response = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login") {
-      accept('application/json')
-      // body
-      body('{"username": "admin","password": "admin"}')
-      contentType('application/json')
-    }
+    HttpRequest request = HttpRequest.POST("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login", '{"username": "admin","password": "admin"}')
+    HttpResponse response = http.toBlocking().exchange(request)
 
     then:
-    response.status == 200 // OK
+    response.status == HttpStatus.OK
     response.json.access_token != null
   }
 
@@ -36,43 +38,34 @@ class LoginTestSpec extends Specification {
   */
   void "test refresh tokens "() {
     when:
-    RestResponse response = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login") {
-      accept('application/json')
-      contentType('application/json')
-      // body
-      body('{"username": "admin","password": "admin"}')
-    }
-    String refreshToken = response.json.refresh_token
-    String accessToken = response.json.access_token
-    response = rest.post("http://localhost:$serverPort/gokb" +
+    HttpRequest req1 = HttpRequest.POST("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login", '{"username": "admin","password": "admin"}')
+    HttpResponse resp1 = http.toBlocking().exchange(req1)
+
+    String refreshToken = resp1.body().refresh_token
+    String accessToken = resp1.body().access_token
+    HttpRequest req2 = HttpRequest.POST("http://localhost:$serverPort/gokb" +
         "/oauth/access_token?" +
-        "grant_type=refresh_token&refresh_token=$refreshToken") {
-      accept('application/json')
-    }
+        "grant_type=refresh_token&refresh_token=$refreshToken")
+    HttpResponse response = http.toBlocking().exchange(req2)
 
     then:
-    response.status == 200 // OK
-    response.json.access_token != accessToken
+    response.status == HttpStatus.OK
+    response.body().access_token != accessToken
   }
 
   void "test logout"() {
     when:
-    RestResponse response = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login") {
-      accept('application/json')
-      contentType('application/json')
-      // body
-      body('{"username": "admin","password": "admin"}')
-    }
-    String accessToken = response.json.access_token
-    response = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-        "/rest/logout"){
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.POST("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login", '{"username": "admin","password": "admin"}')
+    HttpResponse resp1 = http.toBlocking().exchange(request)
+
+    String accessToken = resp1.body().access_token
+    HttpRequest req2 = HttpRequest.POST("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
+        "/rest/logout").bearerAuth(accessToken)
+    HttpResponse response = http.toBlocking().exchange(request)
 
     then:
-    response.status == 200 // OK
-    response.json == null
+    response.status == HttpStatus.OK
+    response.body() == null
   }
 }
 

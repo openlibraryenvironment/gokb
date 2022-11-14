@@ -10,7 +10,6 @@ import groovy.transform.Synchronized
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-@Transactional
 class TitleLookupService {
 
   def grailsApplication
@@ -501,110 +500,21 @@ class TitleLookupService {
     // The matches.
     List<KBComponent> matches = results['matches'] as List
 
-    switch (matches.size()) {
-      case 0:
-        // No match behaviour.
-        log.debug("Title class one identifier lookup yielded no matches.")
+    TitleInstance.withTransaction {
+      switch (matches.size()) {
+        case 0:
+          // No match behaviour.
+          log.debug("Title class one identifier lookup yielded no matches.")
 
 
-        // Check for presence of class one ID
-        if (results['class_one']) {
-          log.debug("One or more class 1 IDs supplied so must be a new TI.")
+          // Check for presence of class one ID
+          if (results['class_one']) {
+            log.debug("One or more class 1 IDs supplied so must be a new TI.")
 
-          // Create the new TI.
-          if (newTitleClassName == null) {
-            the_title = new TitleInstance(name: metadata.title, ids: [])
-            the_title.normname = KBComponent.generateNormname(metadata.title);
-          } else {
-            the_title = ti_class.newInstance()
-            the_title.name = metadata.title
-            the_title.normname = KBComponent.generateNormname(metadata.title);
-            // the_title.editStatus =
-            the_title.ids = []
-          }
-
-          if (metadata.uuid && metadata.uuid.trim().size() > 0) {
-            the_title.uuid = metadata.uuid
-          }
-          title_created = true
-
-        } else {
-
-          // No class 1s supplied we should try and find a match on the title string.
-          if (results['other_matches'].size() > 0) {
-            if (results['other_matches'].size() == 1) {
-              log.debug("Matched item by secondary ID ..")
-              the_title = results['other_matches'][0]
-            } else if (results['other_matches'].size() > 1) {
-              log.debug("Multiple matches by secondary ID!")
-            }
-          }
-
-          def string_match = null
-
-          if (!the_title) {
-            log.debug("No class 1 ids supplied. attempting string match")
-
-            // The hash we use is constructed differently based on the type of items.
-            // Serial hashes are based soley on the title, Monographs are based currently on title+primary author surname
-            def target_hash = null;
-
-            // Lookup using title string match only.
-            string_match = attemptComponentMatch(metadata, newTitleClassName)
-
-            if (results['other_identifiers']?.size() > 0) {
-              log.debug("Skipping name match")
-            } else {
-              the_title = string_match
-            }
-          }
-
-          if (the_title) {
-            log.debug("TI ${the_title} matched by secondary ID.")
-
-            if (metadata.title != the_title.name) {
-              log.debug("bucket match but \"${metadata.title}\" != \"${the_title.name}\" so add as a variant");
-
-              // Add the variant.
-              def added = the_title.addVariantTitle(metadata.title)
-
-              // Raise a review request
-
-              if (added) {
-                def additionalInfo = [:]
-                def combo_ids = [the_title.id]
-
-                additionalInfo.otherComponents = []
-
-                results['other_matches'].each { tlm ->
-                  additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
-                  combo_ids.add(tlm.id)
-                }
-
-                additionalInfo.cstring = combo_ids.sort().join('_')
-                additionalInfo.vars = [metadata.title, the_title.name]
-
-                rr_map = [
-                  review        : "'${metadata.title}' added as a variant of '${the_title.name}'.",
-                  cause         : "Title was matched via secondary id, but had a different name.",
-                  additionalInfo: additionalInfo,
-                  type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Mismatch')
-                ]
-              }
-
-              if (the_title.validate()) {
-                the_title = the_title.merge(flush: true, failOnError: true);
-              }
-            }
-
-          } else {
-            log.debug("No TI could be matched by name. New TI, flag for review.")
-
-            // Could not match on title either.
-            // Create a new TI but attach a Review request to it.
-
+            // Create the new TI.
             if (newTitleClassName == null) {
-              the_title = new TitleInstance(name: metadata.title, normname: KBComponent.generateNormname(metadata.title), ids: [])
+              the_title = new TitleInstance(name: metadata.title, ids: [])
+              the_title.normname = KBComponent.generateNormname(metadata.title)
             } else {
               the_title = ti_class.newInstance()
               the_title.name = metadata.title
@@ -615,12 +525,333 @@ class TitleLookupService {
             if (metadata.uuid && metadata.uuid.trim().size() > 0) {
               the_title.uuid = metadata.uuid
             }
-
             title_created = true
 
-            if (string_match) {
+          } else {
+
+            // No class 1s supplied we should try and find a match on the title string.
+            if (results['other_matches'].size() > 0) {
+              if (results['other_matches'].size() == 1) {
+                log.debug("Matched item by secondary ID ..")
+                the_title = results['other_matches'][0]
+              } else if (results['other_matches'].size() > 1) {
+                log.debug("Multiple matches by secondary ID!")
+              }
+            }
+
+            def string_match = null
+
+            if (!the_title) {
+              log.debug("No class 1 ids supplied. attempting string match")
+
+              // The hash we use is constructed differently based on the type of items.
+              // Serial hashes are based soley on the title, Monographs are based currently on title+primary author surname
+              def target_hash = null;
+
+              // Lookup using title string match only.
+              string_match = attemptComponentMatch(metadata, newTitleClassName)
+
+              if (results['other_identifiers']?.size() > 0) {
+                log.debug("Skipping name match")
+              } else {
+                the_title = string_match
+              }
+            }
+
+            if (the_title) {
+              log.debug("TI ${the_title} matched by secondary ID.")
+
+              if (metadata.title != the_title.name) {
+                log.debug("bucket match but \"${metadata.title}\" != \"${the_title.name}\" so add as a variant");
+
+                // Add the variant.
+                def added = the_title.addVariantTitle(metadata.title)
+
+                // Raise a review request
+
+                if (added) {
+                  def additionalInfo = [:]
+                  def combo_ids = [the_title.id]
+
+                  additionalInfo.otherComponents = []
+
+                  results['other_matches'].each { tlm ->
+                    additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
+                    combo_ids.add(tlm.id)
+                  }
+
+                  additionalInfo.cstring = combo_ids.sort().join('_')
+                  additionalInfo.vars = [metadata.title, the_title.name]
+
+                  rr_map = [
+                    review        : "'${metadata.title}' added as a variant of '${the_title.name}'.",
+                    cause         : "Title was matched via secondary id, but had a different name.",
+                    additionalInfo: additionalInfo,
+                    type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Mismatch')
+                  ]
+                }
+
+                if (the_title.validate()) {
+                  the_title = the_title.merge(flush: true, failOnError: true);
+                }
+              }
+
+            } else {
+              log.debug("No TI could be matched by name. New TI, flag for review.")
+
+              // Could not match on title either.
+              // Create a new TI but attach a Review request to it.
+
+              if (newTitleClassName == null) {
+                the_title = new TitleInstance(name: metadata.title, normname: KBComponent.generateNormname(metadata.title), ids: [])
+              } else {
+                the_title = ti_class.newInstance()
+                the_title.name = metadata.title
+                the_title.normname = KBComponent.generateNormname(metadata.title)
+                the_title.ids = []
+              }
+
+              if (metadata.uuid && metadata.uuid.trim().size() > 0) {
+                the_title.uuid = metadata.uuid
+              }
+
+              title_created = true
+
+              if (string_match) {
+                def additionalInfo = [:]
+                def combo_ids = [the_title.id]
+
+                additionalInfo.otherComponents = []
+
+                matches.each { tlm ->
+                  additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
+                  combo_ids.add(tlm.id)
+                }
+
+                additionalInfo.cstring = combo_ids.sort().join('_')
+
+                rr_map = [
+                  review        : "New TI created.",
+                  cause         : "No matched components via IDs, but a title with a similar name already exists.",
+                  additionalInfo: additionalInfo,
+                  type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Similarity')
+                ]
+              }
+            }
+          }
+          break;
+        case 1:
+          // Single component match.
+          log.debug("Title class one identifier lookup yielded a single match.")
+
+          // We should raise a review request here if the match was made by cross checking
+          // different identifier namespaces.
+          if (results['x_check_matches'].size() == 1 && results['x_check_matches'][0]['suppliedNS'] != 'issnl') {
+
+            def data = results['x_check_matches'][0]
+
+            def additionalInfo = [:]
+
+            additionalInfo.vars = [data.suppliedNS, data.foundNS]
+            additionalInfo.mismatches = ["${data.suppliedNS}": data.value]
+
+            rr_map = [
+              review        : "Identifier type mismatch.",
+              cause         : "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
+              additionalInfo: additionalInfo,
+              type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Mismatch')
+            ]
+          }
+
+          // If one identifier matches, but all other class ones are different, it is probably not a real match.
+
+          def id_mismatches = []
+          def id_matches = []
+
+          results['ids'].each { rid ->
+            log.error("Checking IDs: ${matches[0].ids}")
+            matches[0].ids.each { mid ->
+              log.error("${rid.namespace}${rid.value}")
+              log.error("${mid.namespace}:${mid.value}")
+              if (rid.namespace == mid.namespace && rid.value != mid.value) {
+                if (!matches[0].ids.contains(rid)) {
+                  id_mismatches.add(rid)
+                } else {
+                  id_matches.add(rid)
+                }
+              }
+            }
+          }
+
+
+          // Take whatever we can get if what we have is an unknown title
+          if (metadata.title.startsWith("Unknown Title") || metadata.status == "Expected") {
+            // Don't go through title matching if we don't have a real title
+            the_title = matches[0]
+          } else {
+            if (matches[0].name.startsWith("Unknown Title") || metadata.status == "Expected") {
+              // If we have an unknown title in the db, and a real title, then take that
+              // in preference
+              log.debug("Found new Title ${metadata.title} for previously unknown title ${matches[0]} (${matches[0].name})")
+              the_title = matches[0]
+              the_title.name = metadata.title
+              the_title.status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+            } else {
+              if (matches[0].name.equals(metadata.title) || matches[0].normname?.equals(KBComponent.generateNormname(metadata.title))) {
+                // Perfect match - do nothing
+                the_title = matches[0]
+
+                if (id_mismatches.size() > 0) {
+
+                  def id_mm = []
+
+                  id_mismatches.each { mId ->
+                    def id_map = [:]
+                    id_map[mId.namespace?.value ?: "ns"] = mId.value
+
+                    id_mm.add(id_map)
+                  }
+
+                  def id_pm = []
+
+                  id_matches.each { mId ->
+                    def id_map = [:]
+                    id_map[mId.namespace?.value ?: "ns"] = mId.value
+
+                    id_pm.add(id_map)
+                  }
+
+                  def additionalInfo = [:]
+
+                  additionalInfo.cstring = the_title.id.toString()
+                  additionalInfo.matches = id_pm
+                  additionalInfo.mismatches = id_mm
+                  additionalInfo.vars = [the_title.name, id_mm]
+
+                  rr_map = [
+                    review        : "Identifier mismatch",
+                    cause         : "Title ${the_title} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
+                    additionalInfo: additionalInfo,
+                    type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Minor Identifier Mismatch')
+                  ]
+                }
+              } else {
+                if (id_mismatches.size() > 0) {
+                  // Another class one identifier of the matched title is different. This looks like a new title.
+
+                  if (newTitleClassName == null) {
+                    the_title = new TitleInstance(name: metadata.title, normname: KBComponent.generateNormname(metadata.title), ids: [])
+                  } else {
+                    the_title = ti_class.newInstance()
+                    the_title.name = metadata.title
+                    the_title.normname = KBComponent.generateNormname(metadata.title)
+                    the_title.ids = []
+                  }
+
+                  if (metadata.uuid && metadata.uuid.trim().size() > 0) {
+                    the_title.uuid = metadata.uuid
+                  }
+
+                  title_created = true
+
+                  def additionalInfo = [:]
+                  def combo_ids = [the_title.id]
+                  def id_mm = []
+
+                  id_mismatches.each { mId ->
+                    def id_map = [:]
+                    id_map[mId.namespace?.value ?: "ns"] = mId.value
+
+                    id_mm.add(id_map)
+                  }
+
+                  def id_pm = []
+
+                  id_matches.each { mId ->
+                    def id_map = [:]
+                    id_map[mId.namespace?.value ?: "ns"] = mId.value
+
+                    id_pm.add(id_map)
+                  }
+
+                  additionalInfo.otherComponents = []
+
+                  matches.each { tlm ->
+                    additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
+                    combo_ids.add(tlm.id)
+                  }
+
+                  additionalInfo.cstring = combo_ids.sort().join('_')
+                  additionalInfo.matches = id_pm
+                  additionalInfo.mismatches = id_mm
+                  additionalInfo.vars = [matches[0].id, '(' + matches[0].name + ')']
+
+                  rr_map = [
+                    review        : "New TI created.",
+                    cause         : "TitleInstance ${matches[0].id} ${matches[0].name ? '(' + matches[0].name + ')' : ''} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
+                    additionalInfo: additionalInfo,
+                    type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Major Identifier Mismatch')
+                  ]
+                } else {
+                  // Now we can examine the text of the title.
+                  the_title = singleTIMatch(metadata.title, matches[0], user, project)
+                }
+              }
+            }
+          }
+          break;
+
+        default:
+          // Multiple matches.
+          log.debug("Title class one identifier lookup yielded ${matches.size()} matches - ${matches}.")
+          def all_matched = []
+          RefdataValue status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+
+          matches.each { mti ->
+
+            def full_match = true
+
+            results['ids'].each { rid ->
+              mti.ids.each { mid ->
+                if (rid.namespace == mid.namespace && rid.value != mid.value) {
+                  if (!mti.ids.contains(rid)) {
+                    full_match = false
+                  }
+                }
+              }
+            }
+
+            if (full_match) {
+              if (mti.status != status_deleted) {
+                all_matched.add(mti)
+              } else {
+                log.debug("Skipping matched TI with status 'Deleted'!")
+              }
+            }
+
+          }
+
+          switch (all_matched.size()) {
+            case 0:
+              log.debug("Multiple matches for a single identifier. No matches for all class ones. Creating new TI!")
+
+              if (newTitleClassName == null) {
+                the_title = new TitleInstance(name: metadata.title, normname: KBComponent.generateNormname(metadata.title), ids: [])
+              } else {
+                the_title = ti_class.newInstance()
+                the_title.name = metadata.title
+                the_title.normname = KBComponent.generateNormname(metadata.title)
+                the_title.ids = []
+              }
+
+              if (metadata.uuid && metadata.uuid.trim().size() > 0) {
+                the_title.uuid = metadata.uuid
+              }
+
+              title_created = true
+
               def additionalInfo = [:]
-              def combo_ids = [the_title.id]
+              def combo_ids = [the_title]
 
               additionalInfo.otherComponents = []
 
@@ -633,359 +864,132 @@ class TitleLookupService {
 
               rr_map = [
                 review        : "New TI created.",
-                cause         : "No matched components via IDs, but a title with a similar name already exists.",
+                cause         : "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
                 additionalInfo: additionalInfo,
-                type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Name Similarity')
+                type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Multiple Matches')
               ]
-            }
-          }
-        }
-        break;
-      case 1:
-        // Single component match.
-        log.debug("Title class one identifier lookup yielded a single match.")
 
-        // We should raise a review request here if the match was made by cross checking
-        // different identifier namespaces.
-        if (results['x_check_matches'].size() == 1 && results['x_check_matches'][0]['suppliedNS'] != 'issnl') {
+              break;
 
-          def data = results['x_check_matches'][0]
+            case 1:
+              log.debug("One match for all identifiers")
+              the_title = all_matched[0]
 
-          def additionalInfo = [:]
+              if (!the_title.name.equals(metadata.title)) {
+                the_title.ensureVariantName(metadata.title)
+              }
+              break;
 
-          additionalInfo.vars = [data.suppliedNS, data.foundNS]
-          additionalInfo.mismatches = ["${data.suppliedNS}": data.value]
+            default:
+              log.debug("Multiple matches for given ingest identifiers. Trying to match by name..")
 
-          rr_map = [
-            review        : "Identifier type mismatch.",
-            cause         : "Ingest file ${data['suppliedNS']} matched an existing ${data['foundNS']}.",
-            additionalInfo: additionalInfo,
-            type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Namespace Mismatch')
-          ]
-        }
+              def matched_with_name = []
 
-        // If one identifier matches, but all other class ones are different, it is probably not a real match.
+              all_matched.each { mti ->
+                if (mti.name.equals(metadata.title) || mti.normname?.equals(KBComponent.generateNormname(metadata.title))) {
+                  matched_with_name.add(mti)
+                }
+              }
 
-        def id_mismatches = []
-        def id_matches = []
-
-        results['ids'].each { rid ->
-          matches[0].ids?.each { mid ->
-            if (rid.namespace == mid.namespace && rid.value != mid.value) {
-              if (!matches[0].ids.contains(rid)) {
-                id_mismatches.add(rid)
+              if (matched_with_name.size() == 1) {
+                log.debug("Only one matched TI (${matched_with_name[0]}) has the same name!")
+                the_title = matched_with_name[0]
               } else {
-                id_matches.add(rid)
-              }
-            }
-          }
-        }
-
-
-        // Take whatever we can get if what we have is an unknown title
-        if (metadata.title.startsWith("Unknown Title") || metadata.status == "Expected") {
-          // Don't go through title matching if we don't have a real title
-          the_title = matches[0]
-        } else {
-          if (matches[0].name.startsWith("Unknown Title") || metadata.status == "Expected") {
-            // If we have an unknown title in the db, and a real title, then take that
-            // in preference
-            log.debug("Found new Title ${metadata.title} for previously unknown title ${matches[0]} (${matches[0].name})")
-            the_title = matches[0]
-            the_title.name = metadata.title
-            the_title.status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
-          } else {
-            if (matches[0].name.equals(metadata.title) || matches[0].normname?.equals(KBComponent.generateNormname(metadata.title))) {
-              // Perfect match - do nothing
-              the_title = matches[0]
-
-              if (id_mismatches.size() > 0) {
-
-                def id_mm = []
-
-                id_mismatches.each { mId ->
-                  def id_map = [:]
-                  id_map[mId.namespace?.value ?: "ns"] = mId.value
-
-                  id_mm.add(id_map)
-                }
-
-                def id_pm = []
-
-                id_matches.each { mId ->
-                  def id_map = [:]
-                  id_map[mId.namespace?.value ?: "ns"] = mId.value
-
-                  id_pm.add(id_map)
-                }
-
-                def additionalInfo = [:]
-
-                additionalInfo.cstring = the_title.id.toString()
-                additionalInfo.matches = id_pm
-                additionalInfo.mismatches = id_mm
-                additionalInfo.vars = [the_title.name, id_mm]
-
-                rr_map = [
-                  review        : "Identifier mismatch",
-                  cause         : "Title ${the_title} matched, but ingest identifiers ${id_mm} differ from existing ones in the same namespaces.",
-                  additionalInfo: additionalInfo,
-                  type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Minor Identifier Mismatch')
-                ]
-              }
-            } else {
-              if (id_mismatches.size() > 0) {
-                // Another class one identifier of the matched title is different. This looks like a new title.
-
-                if (newTitleClassName == null) {
-                  the_title = new TitleInstance(name: metadata.title, normname: KBComponent.generateNormname(metadata.title), ids: [])
-                } else {
-                  the_title = ti_class.newInstance()
-                  the_title.name = metadata.title
-                  the_title.normname = KBComponent.generateNormname(metadata.title)
-                  the_title.ids = []
-                }
-
-                if (metadata.uuid && metadata.uuid.trim().size() > 0) {
-                  the_title.uuid = metadata.uuid
-                }
-
-                title_created = true
+                log.debug("Could not match a specific title. Selection needs review")
+                def matched_sorted = matched_with_name?.size() > 0 ? matched_with_name.sort { it.id } : all_matched.sort { it.id }
+                the_title = matched_sorted[0]
+                matched_sorted.remove(0)
 
                 def additionalInfo = [:]
                 def combo_ids = [the_title.id]
-                def id_mm = []
-
-                id_mismatches.each { mId ->
-                  def id_map = [:]
-                  id_map[mId.namespace?.value ?: "ns"] = mId.value
-
-                  id_mm.add(id_map)
-                }
-
-                def id_pm = []
-
-                id_matches.each { mId ->
-                  def id_map = [:]
-                  id_map[mId.namespace?.value ?: "ns"] = mId.value
-
-                  id_pm.add(id_map)
-                }
 
                 additionalInfo.otherComponents = []
 
-                matches.each { tlm ->
+                matched_sorted.each { tlm ->
                   additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
                   combo_ids.add(tlm.id)
                 }
 
                 additionalInfo.cstring = combo_ids.sort().join('_')
-                additionalInfo.matches = id_pm
-                additionalInfo.mismatches = id_mm
-                additionalInfo.vars = [matches[0].id, '(' + matches[0].name + ')']
 
                 rr_map = [
-                  review        : "New TI created.",
-                  cause         : "TitleInstance ${matches[0].id} ${matches[0].name ? '(' + matches[0].name + ')' : ''} was matched on one identifier, but at least one other ingest identifier differs from existing ones in the same namespace.",
+                  review        : "Check titles for duplicates.",
+                  cause         : "Multiple titles were matched on all identifiers.",
                   additionalInfo: additionalInfo,
-                  type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Major Identifier Mismatch')
+                  type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Matches')
                 ]
-              } else {
-                // Now we can examine the text of the title.
-                the_title = singleTIMatch(metadata.title, matches[0], user, project)
+
               }
-            }
+              break;
           }
-        }
-        break;
+          break;
+      }
 
-      default:
-        // Multiple matches.
-        log.debug("Title class one identifier lookup yielded ${matches.size()} matches - ${matches}.")
-        def all_matched = []
-        RefdataValue status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+      // If we have a title then lets set the publisher and ids...
+      if (the_title) {
 
-        matches.each { mti ->
+        // Make sure we're all saved before looking up the publisher
+        if (the_title.validate()) {
 
-          def full_match = true
+          // addIdentifiers(results.ids, the_title)
 
-          results['ids'].each { rid ->
-            mti.ids.each { mid ->
-              if (rid.namespace == mid.namespace && rid.value != mid.value) {
-                if (!mti.ids.contains(rid)) {
-                  full_match = false
-                }
-              }
-            }
+          // addPublisher(metadata.publisher_name, the_title)
+
+          if (the_title.name.startsWith("Unknown Title")) {
+            the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
           }
 
-          if (full_match) {
-            if (mti.status != status_deleted) {
-              all_matched.add(mti)
-            } else {
-              log.debug("Skipping matched TI with status 'Deleted'!")
-            }
+          log.debug("${the_title.ids}")
+
+
+          if (title_created) {
+            the_title = the_title.save(flush: true)
+          } else {
+            the_title = the_title.merge(flush: true)
           }
 
-        }
+          if (rr_map) {
+            log.info("New RR for title ${the_title}")
 
-        switch (all_matched.size()) {
-          case 0:
-            log.debug("Multiple matches for a single identifier. No matches for all class ones. Creating new TI!")
+            reviewRequestService.raise(
+              the_title,
+              rr_map.review,
+              rr_map.cause,
+              user,
+              project,
+              (rr_map.additionalInfo as JSON).toString(),
+              rr_map.type,
+              componentLookupService.findCuratoryGroupOfInterest(the_title, user)
+            )
+          }
 
-            if (newTitleClassName == null) {
-              the_title = new TitleInstance(name: metadata.title, normname: KBComponent.generateNormname(metadata.title), ids: [])
-            } else {
-              the_title = ti_class.newInstance()
-              the_title.name = metadata.title
-              the_title.normname = KBComponent.generateNormname(metadata.title)
-              the_title.ids = []
-            }
-
-            if (metadata.uuid && metadata.uuid.trim().size() > 0) {
-              the_title.uuid = metadata.uuid
-            }
-
-            title_created = true
+          if (results.other_types.size() > 0) {
 
             def additionalInfo = [:]
-            def combo_ids = [the_title]
+            def combo_ids = [the_title.id]
 
             additionalInfo.otherComponents = []
 
-            matches.each { tlm ->
+            results.other_types.each { tlm ->
               additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
               combo_ids.add(tlm.id)
             }
 
             additionalInfo.cstring = combo_ids.sort().join('_')
 
-            rr_map = [
-              review        : "New TI created.",
-              cause         : "Multiple TitleInstances were matched on one identifier, but none matched for all given IDs.",
-              additionalInfo: additionalInfo,
-              type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Multiple Matches')
-            ]
-
-            break;
-
-          case 1:
-            log.debug("One match for all identifiers")
-            the_title = all_matched[0]
-
-            if (!the_title.name.equals(metadata.title)) {
-              the_title.ensureVariantName(metadata.title)
-            }
-            break;
-
-          default:
-            log.debug("Multiple matches for given ingest identifiers. Trying to match by name..")
-
-            def matched_with_name = []
-
-            all_matched.each { mti ->
-              if (mti.name.equals(metadata.title) || mti.normname?.equals(KBComponent.generateNormname(metadata.title))) {
-                matched_with_name.add(mti)
-              }
-            }
-
-            if (matched_with_name.size() == 1) {
-              log.debug("Only one matched TI (${matched_with_name[0]}) has the same name!")
-              the_title = matched_with_name[0]
-            } else {
-              log.debug("Could not match a specific title. Selection needs review")
-              def matched_sorted = matched_with_name?.size() > 0 ? matched_with_name.sort { it.id } : all_matched.sort { it.id }
-              the_title = matched_sorted[0]
-              matched_sorted.remove(0)
-
-              def additionalInfo = [:]
-              def combo_ids = [the_title.id]
-
-              additionalInfo.otherComponents = []
-
-              matched_sorted.each { tlm ->
-                additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
-                combo_ids.add(tlm.id)
-              }
-
-              additionalInfo.cstring = combo_ids.sort().join('_')
-
-              rr_map = [
-                review        : "Check titles for duplicates.",
-                cause         : "Multiple titles were matched on all identifiers.",
-                additionalInfo: additionalInfo,
-                type          : RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Ambiguous Matches')
-              ]
-
-            }
-            break;
-        }
-        break;
-    }
-
-    // If we have a title then lets set the publisher and ids...
-    if (the_title) {
-
-      // Make sure we're all saved before looking up the publisher
-      if (the_title.validate()) {
-
-        // addIdentifiers(results.ids, the_title)
-
-        // addPublisher(metadata.publisher_name, the_title)
-
-        if (the_title.name.startsWith("Unknown Title")) {
-          the_title.status = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, 'Expected')
-        }
-
-        log.debug("${the_title.ids}")
-
-        if (title_created) {
-          the_title = the_title.save(flush: true)
-        } else {
-          the_title = the_title.merge(flush: true)
-        }
-
-        if (rr_map) {
-          log.info("New RR for title ${the_title}")
-
-          reviewRequestService.raise(
-            the_title,
-            rr_map.review,
-            rr_map.cause,
-            user,
-            project,
-            (rr_map.additionalInfo as JSON).toString(),
-            rr_map.type,
-            componentLookupService.findCuratoryGroupOfInterest(the_title, user)
-          )
-        }
-
-        if (results.other_types.size() > 0) {
-
-          def additionalInfo = [:]
-          def combo_ids = [the_title.id]
-
-          additionalInfo.otherComponents = []
-
-          results.other_types.each { tlm ->
-            additionalInfo.otherComponents.add([oid: "${tlm.logEntityId}", name: "${tlm.name ?: tlm.displayName}", id: "${tlm.id}", uuid: "${tlm.uuid}"])
-            combo_ids.add(tlm.id)
+            reviewRequestService.raise(
+              the_title,
+              "Identifier match.",
+              "A provided identifier matched an existing component of another type!",
+              user,
+              project,
+              (additionalInfo as JSON).toString(),
+              RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Type Mismatch')
+            )
           }
-
-          additionalInfo.cstring = combo_ids.sort().join('_')
-
-          reviewRequestService.raise(
-            the_title,
-            "Identifier match.",
-            "A provided identifier matched an existing component of another type!",
-            user,
-            project,
-            (additionalInfo as JSON).toString(),
-            RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Type Mismatch')
-          )
+        } else {
+          log.error("title validation failed for ${the_title}!")
         }
-      } else {
-        log.error("title validation failed for ${the_title}!")
       }
     }
 
@@ -1033,10 +1037,12 @@ class TitleLookupService {
         boolean not_first = orgs.size() > 0
 
         // Added a publisher?
-        ti.publisher.add(publisher)
+        TitleInstance.withTransaction {
+          ti.publisher.add(publisher)
+          ti.save(flush:true)
+        }
       }
     }
-    ti.save(flush:true)
     ti
   }
 
@@ -1103,41 +1109,43 @@ class TitleLookupService {
 
               log.debug("Adding new combo for publisher ${publisher} (${propName}) to title ${ti} (${tiPropName})")
 
-              RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, ti.getComboTypeValue('publisher'))
+              Combo.withTransaction {
+                RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, ti.getComboTypeValue('publisher'))
 
-              def combo = null
+                def combo = null
 
-              if (propName == "toComponent") {
-                combo = new Combo(
-                  type: (type),
-                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-                  startDate: pub_add_sd,
-                  endDate: pub_add_ed,
-                  toComponent: publisher,
-                  fromComponent: ti
-                )
-              } else {
-                combo = new Combo(
-                  type: (type),
-                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-                  startDate: pub_add_sd,
-                  endDate: pub_add_ed,
-                  fromComponent: publisher,
-                  toComponent: ti
-                )
-              }
+                if (propName == "toComponent") {
+                  combo = new Combo(
+                    type: (type),
+                    status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                    startDate: pub_add_sd,
+                    endDate: pub_add_ed,
+                    toComponent: publisher,
+                    fromComponent: ti
+                  )
+                } else {
+                  combo = new Combo(
+                    type: (type),
+                    status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                    startDate: pub_add_sd,
+                    endDate: pub_add_ed,
+                    fromComponent: publisher,
+                    toComponent: ti
+                  )
+                }
 
-              if (combo) {
-                combo.save(flush: true, failOnError: true)
+                if (combo) {
+                  combo.save(flush: true, failOnError: true)
 
-                // Add the combo to our list to avoid adding duplicates.
-                publisher_combos.add(combo)
+                  // Add the combo to our list to avoid adding duplicates.
+                  publisher_combos.add(combo)
 
-                log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
-                  (combo.startDate ? ' from ' + combo.startDate : '') +
-                  (combo.endDate ? ' to ' + combo.endDate : '')
-              } else {
-                log.error("Could not create publisher Combo..")
+                  log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
+                    (combo.startDate ? ' from ' + combo.startDate : '') +
+                    (combo.endDate ? ' to ' + combo.endDate : '')
+                } else {
+                  log.error("Could not create publisher Combo..")
+                }
               }
 
             } else {
@@ -1154,16 +1162,18 @@ class TitleLookupService {
   }
 
   private TitleInstance addIdentifiers(ids, ti) {
-    ids.each { new_id ->
+    TitleInstance.withTransaction {
+      ids.each { new_id ->
 
-      def existing_combo = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :ido", [ti: ti, ido: new_id])
-      if (existing_combo.size() == 0) {
-        ti.ids.add(new_id)
-      } else {
-        log.debug("Not adding duplicate ID ${new_id}..")
+        def existing_combo = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :ido", [ti: ti, ido: new_id])
+        if (existing_combo.size() == 0) {
+          ti.ids.add(new_id)
+        } else {
+          log.debug("Not adding duplicate ID ${new_id}..")
+        }
       }
+      ti.save(flush: true)
     }
-    ti.save(flush: true)
     ti
   }
 

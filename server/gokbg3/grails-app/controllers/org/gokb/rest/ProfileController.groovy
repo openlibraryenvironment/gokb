@@ -25,7 +25,7 @@ class ProfileController {
     def user = User.get(springSecurityService.principal.id)
 
     def cur_groups = []
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
 
     user.curatoryGroups?.each { cg ->
       cur_groups.add([name: cg.name, id: cg.id, uuid: cg.uuid])
@@ -108,7 +108,7 @@ class ProfileController {
     def result = [:]
     def max = params.limit ? params.int('limit') : 10
     def offset = params.offset ? params.int('offset') : 0
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
     def sort = params._sort ?: null
     def order = params._order ?: null
     def showFinished = params.boolean('showFinished') ?: false
@@ -163,7 +163,7 @@ class ProfileController {
     def result = [:]
     def max = params.limit ? params.int('limit') : 10
     def offset = params.offset ? params.int('offset') : 0
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
     def sort = params._sort ?: null
     def order = params._order ?: null
     User user = User.get(springSecurityService.principal.id)

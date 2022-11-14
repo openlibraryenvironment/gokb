@@ -27,7 +27,7 @@ class TitleListController {
   def sessionFactory
 
   def update() {
-    ref result = [:]
+    def result = [:]
     result
   }
 

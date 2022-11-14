@@ -16,7 +16,7 @@ class RefdataController {
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
-    def base = grailsApplication.config.serverURL + namespace
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
     def result = [:]
 
     result['_links'] = ['self': ['href': base + "/refdata/"]]
@@ -49,7 +49,7 @@ class RefdataController {
   def showCategory() {
     def result = [:]
     def cat = null
-    def base = grailsApplication.config.serverURL + namespace
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
 
     if (params.int('id')) {
       cat = RefdataCategory.get(params.int('id'))
@@ -90,7 +90,7 @@ class RefdataController {
   def showValue() {
     def result = [:]
     def val = null
-    def base = grailsApplication.config.serverURL + namespace
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
 
     if (params.id.contains(':')) {
       val = genericOIDService.resolveOID(params.id)
@@ -136,7 +136,7 @@ class RefdataController {
     def result = [:]
     def resultData = []
     def cat = null
-    def base = grailsApplication.config.serverURL + '/'+namespace
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
 
     cat = RefdataCategory.findByLabel("Package.Scope")
 
@@ -166,7 +166,7 @@ class RefdataController {
     def result = [:]
     def resultData = []
     def cat = null
-    def base = grailsApplication.config.serverURL + '/'+namespace
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
 
     cat = RefdataCategory.findByLabel("TIPPCoverageStatement.CoverageDepth")
 
@@ -196,7 +196,7 @@ class RefdataController {
     def result = [:]
     def resultData = []
     def cat = null
-    def base = grailsApplication.config.serverURL + '/'+namespace
+    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
 
     cat = RefdataCategory.findByLabel("ReviewRequest.StdDesc")
 

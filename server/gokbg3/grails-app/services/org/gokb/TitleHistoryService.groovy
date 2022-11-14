@@ -102,7 +102,7 @@ class TitleHistoryService {
         // See if we can locate an existing ComponentHistoryEvent involving all the titles specified in this event
         def che_check_qry_sw  = new StringWriter();
         def qparams = []
-        int pn = 1
+        int pn = 0
 
         che_check_qry_sw.write('select che from ComponentHistoryEvent as che where ')
 

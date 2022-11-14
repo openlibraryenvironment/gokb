@@ -1,15 +1,23 @@
 package org.gokb.rest
 
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import grails.gorm.transactions.*
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.User
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
 class CuratoryGroupsTestSpec extends AbstractAuthSpec {
+
+
+  HttpClient http
 
   def group1, group2, group3, group4, user
 
@@ -29,49 +37,41 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
     User.findByUsername("groupUser")?.delete(flush:true)
   }
 
-  private RestBuilder rest = new RestBuilder()
-
   void "test GET /rest/curatoryGroups/{id}"() {
     def urlPath = getUrlPath()
     when:
-    String token = getAccessToken("groupUser", "groupUser")
-      RestResponse resp = rest.get("${urlPath}/rest/curatoryGroups/${group1.id}") {
-      // headers
-      accept('application/json')
-        auth("Bearer $token")
-      }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/curatoryGroups/${group1.id}")
+      .bearerAuth(getAccessToken("groupUser", "groupUser"))
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.data.name == group1.name
-    resp.json.data.email == group1.email
+    resp.status == HttpStatus.OK
+    resp.body().data.name == group1.name
+    resp.body().data.email == group1.email
   }
 
   void "test GET /rest/curatoryGroups"() {
     def urlPath = getUrlPath()
     when:
-    String token = getAccessToken("groupUser", "groupUser")
-    RestResponse resp = rest.get("${urlPath}/rest/curatoryGroups?name=curatory") {
-      // headers
-      accept('application/json')
-      auth("Bearer $token")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/curatoryGroups?name=curatory")
+      .bearerAuth(getAccessToken("groupUser", "groupUser"))
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.data.size() == 6
-    resp.json.data*.email.contains(group1.email)
+    resp.status == HttpStatus.OK
+    resp.body().data.size() == 6
+    resp.body().data*.email.contains(group1.email)
   }
 
   void "test GET /rest/curatoryGroups with inverse sorting by name"() {
     def urlPath = getUrlPath()
     when:
-    String token = getAccessToken("groupUser", "groupUser")
-    RestResponse resp = rest.get("${urlPath}/rest/curatoryGroups?_sort=name&_order=desc") {
-      // headers
-      accept('application/json')
-      auth("Bearer $token")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/curatoryGroups?_sort=name&_order=desc")
+      .bearerAuth(getAccessToken("groupUser", "groupUser"))
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.data[5].id == group1.id
+    resp.status == HttpStatus.OK
+    resp.body().data[5].id == group1.id
   }
 }

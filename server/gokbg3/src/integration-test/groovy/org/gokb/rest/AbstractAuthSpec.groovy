@@ -2,11 +2,15 @@ package org.gokb.rest
 
 import grails.converters.JSON
 import grails.core.GrailsApplication
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.WebApplicationContext
 import spock.lang.Specification
+import spock.lang.Shared
 
 class AbstractAuthSpec extends Specification {
 
@@ -15,7 +19,8 @@ class AbstractAuthSpec extends Specification {
   @Autowired
   WebApplicationContext ctx
 
-  private RestBuilder authRest = new RestBuilder()
+
+  HttpClient http
 
   private def accessToken = null
   private String refreshToken = null
@@ -36,21 +41,17 @@ class AbstractAuthSpec extends Specification {
   }
 
   private String getUrlPath() {
-    return "http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}".toString()
+    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.contextPath', String) ?: ''}".toString()
   }
 
   private void login(username, password) {
     // calling /authRest/login to obtain a valid bearerToken
 
-    RestResponse resp = authRest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/rest/login") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      // body
-      body([username: username, password: password] as JSON)
-    }
-    accessToken = resp.json?.access_token ?: accessToken
-    refreshToken = resp.json?.refresh_token ?: refreshToken
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/rest/login", [username: username, password: password] as JSON)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
+    accessToken = resp.body().access_token ?: accessToken
+    refreshToken = resp.body().refresh_token ?: refreshToken
     activeUser = username
     // log.debug(resp.toString())
   }

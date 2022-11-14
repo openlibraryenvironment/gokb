@@ -1,33 +1,31 @@
 package org.gokb.rest
 
 import grails.converters.JSON
-import grails.gorm.transactions.Transactional
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
+import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.Role
 import org.gokb.cred.User
 import org.gokb.cred.UserRole
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.web.client.RestTemplate
+import spock.lang.Specification
+import spock.lang.Shared
 
 @Integration
 @Rollback
 class ProfileTestSpec extends AbstractAuthSpec {
 
-  private RestBuilder rest
   private User normalUser
   private CuratoryGroup cg
 
   @Transactional
   def setup() {
-    if (!rest) {
-      RestTemplate restTemp = new RestTemplate()
-      restTemp.setRequestFactory(new HttpComponentsClientHttpRequestFactory())
-      rest = new RestBuilder(restTemp)
-    }
     normalUser = User.findByUsername("normalUser") ?: new User(username: "normalUser", password: "normalUser", enabled: true, email: 'someone@somewhere.org').save(flush: true)
     Role roleUser = Role.findByAuthority('ROLE_USER')
     if (!normalUser.hasRole('ROLE_USER')) {
@@ -50,12 +48,11 @@ class ProfileTestSpec extends AbstractAuthSpec {
   void "test GET /rest/profile without token"() {
     def urlPath = getUrlPath()
     when:
-    RestResponse resp = rest.get("${urlPath}/rest/profile") {
-      // headers
-      accept('application/json')
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/profile")
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 401 // Unauthorized
+    resp.status == HttpStatus.UNAUTHORIZED
   }
 
   void "test GET /rest/profile with valid token"() {
@@ -63,15 +60,14 @@ class ProfileTestSpec extends AbstractAuthSpec {
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken('normalUser', 'normalUser')
-    RestResponse resp = rest.get("${urlPath}/rest/profile") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest request = HttpRequest.GET("${urlPath}/rest/profile")
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200 // OK
-    resp.json.data.email == "someone@somewhere.org"
-    resp.json.data._links.self.href.endsWith("rest/profile")
+    resp.status == HttpStatus.OK
+    resp.body().data.email == "someone@somewhere.org"
+    resp.body().data._links.self.href.endsWith("rest/profile")
   }
 
   void "test GET /rest/profile with stale token"() {
@@ -80,29 +76,21 @@ class ProfileTestSpec extends AbstractAuthSpec {
     when:
     String accessToken = getAccessToken('normalUser', 'normalUser')
     // logout => invalidate token on the server
-    RestResponse resp = rest.post("${urlPath}/rest/logout") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body()
-    }
-    resp.status == 200
-    // reuse the stale token
-    resp = rest.get("${urlPath}/rest/profile") {
-      // headers
-      accept('application/json')
-      auth("Bearer $accessToken")
-    }
+    HttpRequest req1 = HttpRequest.POST("${urlPath}/rest/logout")
+      .bearerAuth(accessToken)
+    HttpResponse resp1 = http.toBlocking().exchange(req1)
+
     then:
-    resp.status == 401 // Unauthorized
+    resp1.status == HttpStatus.OK
+
     when:
-    resp = rest.get("${urlPath}/rest/profile") {
-      // headers
-      accept('application/json')
-    }
+    // reuse the stale token
+    HttpRequest req2 = HttpRequest.GET("${urlPath}/rest/profile")
+      .bearerAuth(accessToken)
+    HttpResponse resp2 = http.toBlocking().exchange(req2)
+
     then:
-    resp.status == 401 // Unauthorized
+    resp2.status == HttpStatus.UNAUTHORIZED // Unauthorized
   }
 
   void "test PUT /rest/profile"() {
@@ -114,16 +102,13 @@ class ProfileTestSpec extends AbstractAuthSpec {
        //             curatoryGroupIds: [cg.id],
                     defaultPageSize: 10
     ]
-    RestResponse resp = rest.put("${urlPath}/rest/profile") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(bodyData as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/profile", bodyData as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
-    resp.json.data.email == "MrX@localhost"
+    resp.status == HttpStatus.OK
+    resp.body().data.email == "MrX@localhost"
   }
 
   void "test PATCH /rest/profile"() {
@@ -138,15 +123,12 @@ class ProfileTestSpec extends AbstractAuthSpec {
       password    : "normalUser",
       new_password: "roles"
     ]
-    RestResponse resp = rest.patch("${urlPath}/rest/profile") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(bodyData as JSON)
-    }
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/profile", bodyData as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
+    resp.status == HttpStatus.OK
     sleep(500)
     def user = User.findByUsername("normalUser").refresh()
     user.password != before
@@ -161,17 +143,14 @@ class ProfileTestSpec extends AbstractAuthSpec {
     Map bodyData = [
       new_password: "secr3t"
     ]
-    RestResponse resp = rest.put("${urlPath}/rest/profile") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(bodyData as JSON)
-    }
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/profile", bodyData as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 200
+    resp.status == HttpStatus.OK
     def user = User.findByUsername("normalUser").refresh()
-    resp.json.data != null
+    resp.body().data != null
     user.password == before
   }
 
@@ -188,34 +167,29 @@ class ProfileTestSpec extends AbstractAuthSpec {
       curatoryGroupIds: [cg.id],
       new_password    : "roles"
     ]
-    RestResponse resp = rest.patch("${urlPath}/rest/profile") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body(bodyData as JSON)
-    }
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/profile", bodyData as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 400
+    resp.status == HttpStatus.BAD_REQUEST
   }
 
   void "test POST /rest/profile/"() {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken('normalUser', 'normalUser')
-    RestResponse resp = rest.post("${urlPath}/rest/profile/") {
-      // headers
-      accept('application/json')
-      contentType('application/json')
-      auth("Bearer $accessToken")
-      body([
-        username   : "sRsLy?",
-        displayName: "tempo",
-        email      : "frank@gmail.com",
-        password   : "otherthan"
-      ] as JSON)
-    }
+    Map bodyData = [
+      username   : "sRsLy?",
+      displayName: "tempo",
+      email      : "frank@gmail.com",
+      password   : "otherthan"
+    ]
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/profile", bodyData as JSON)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.toBlocking().exchange(request)
+
     then:
-    resp.status == 404
+    resp.status == HttpStatus.NOT_FOUND
   }
 }

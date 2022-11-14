@@ -21,8 +21,8 @@ class AugmentEzbJob{
   }
 
   def execute() {
-    long breakInMs = Long.valueOf(grailsApplication.config.gokb.ezbAugment.breakInMs) ?: 0L
-    if (grailsApplication.config.gokb.ezbAugment.enabled) {
+    long breakInMs = Long.valueOf(grailsApplication.config.getProperty('gokb.ezbAugment.breakInMs', Long, 0L))
+    if (grailsApplication.config.getProperty('gokb.ezbAugment.enabled', Boolean.class)) {
       log.info("Starting EZB augment job.")
       def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
       def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")

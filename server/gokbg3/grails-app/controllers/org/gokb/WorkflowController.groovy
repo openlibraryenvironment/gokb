@@ -69,7 +69,7 @@ class WorkflowController{
             // Global template, look in config
             def global_qbe_template_shortcode = params.qbe.substring(2, params.qbe.length())
             // log.debug("Looking up global template ${global_qbe_template_shortcode}")
-            qresult.qbetemplate = grailsApplication.config.globalSearchTemplates[global_qbe_template_shortcode]
+            qresult.qbetemplate = grailsApplication.config.getProperty("globalSearchTemplates.$global_qbe_template_shortcode")
             // log.debug("Using template: ${result.qbetemplate}")
           }
 

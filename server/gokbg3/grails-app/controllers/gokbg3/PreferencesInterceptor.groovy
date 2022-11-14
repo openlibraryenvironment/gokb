@@ -34,16 +34,16 @@ class PreferencesInterceptor {
 
     if ( session.sessionPreferences == null ) {
       log.debug("setting session preferences....${grailsApplication.config.appDefaultPrefs ? 'present' : 'Not present'}");
-      session.sessionPreferences = grailsApplication.config.appDefaultPrefs
+      session.sessionPreferences = grailsApplication.config.getProperty('appDefaultPrefs', Map)
     }
     else {
     }
 
-    true 
+    true
   }
 
   boolean after() {
-    true 
+    true
   }
 
   void afterView() {

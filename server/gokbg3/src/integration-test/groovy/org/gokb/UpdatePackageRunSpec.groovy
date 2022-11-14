@@ -2,10 +2,13 @@ package org.gokb
 
 import grails.converters.JSON
 import grails.core.GrailsApplication
-import grails.plugins.rest.client.RestBuilder
-import grails.plugins.rest.client.RestResponse
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 import grails.testing.mixin.integration.Integration
-import grails.transaction.Rollback
+import grails.gorm.transactions.*
 import org.gokb.TitleLookupService
 import org.gokb.cred.*
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,12 +27,15 @@ class UpdatePackageRunSpec extends Specification {
   @Autowired
   WebApplicationContext ctx
 
-  @Shared
-  RestBuilder rest = new RestBuilder()
+  HttpClient http
 
   // extending IntegrationSpec means this works
   @Autowired
   TitleLookupService titleLookupService
+
+  private String getUrlPath() {
+    return "http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}".toString()
+  }
 
   def setup() {
     def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush: true)
@@ -180,19 +186,16 @@ class UpdatePackageRunSpec extends Specification {
         ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-        "/integration/updatePackageTipps") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then: "The item is found in the database based on the issn"
-    resp.json.message != null
-    resp.json.message.startsWith('Created/Updated')
+    resp.body().message != null
+    resp.body().message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
-    matching_pkgs[0].id == resp.json.pkgId
+    matching_pkgs[0].id == resp.body().pkgId
     matching_pkgs[0].tipps?.size() == 3
     def book
     matching_pkgs[0].tipps.each { tipp ->
@@ -286,19 +289,16 @@ class UpdatePackageRunSpec extends Specification {
         ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-        "/integration/updatePackageTipps") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then: "The item is found in the database based on the issn"
-    resp.json.message != null
-    resp.json.message.startsWith('Created/Updated')
+    resp.body().message != null
+    resp.body().message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
-    matching_pkgs[0].id == resp.json.pkgId
+    matching_pkgs[0].id == resp.body().pkgId
     matching_pkgs[0].tipps?.size() == 3
     def journal
     matching_pkgs[0].tipps.each { tipp ->
@@ -384,19 +384,16 @@ class UpdatePackageRunSpec extends Specification {
         ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-        "/integration/updatePackageTipps") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then: "The item is found in the database based on the issn"
-    resp.json.message != null
-    resp.json.message.startsWith('Created/Updated')
+    resp.body().message != null
+    resp.body().message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
-    matching_pkgs[0].id == resp.json.pkgId
+    matching_pkgs[0].id == resp.body().pkgId
     matching_pkgs[0].tipps.size() == 2
   }
 
@@ -462,19 +459,16 @@ class UpdatePackageRunSpec extends Specification {
         ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-        "/integration/updatePackageTipps") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then: "The item is created in the database because it does not exist"
-    resp.json.message != null
-    resp.json.message.startsWith('Created/Updated')
+    resp.body().message != null
+    resp.body().message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
-    matching_pkgs[0].id == resp.json.pkgId
+    matching_pkgs[0].id == resp.body().pkgId
     matching_pkgs[0].tipps.size() == 2
     def journal = null
     matching_pkgs[0].tipps.each {
@@ -578,19 +572,16 @@ class UpdatePackageRunSpec extends Specification {
         ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-        "/integration/updatePackageTipps") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then: "The item is created in the database because it does not exist"
-    resp.json?.message != null
-    resp.json.message.startsWith('Created')
+    resp.body()?.message != null
+    resp.body().message.startsWith('Created')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("American Chemical Society: ACS Legacy Archives")
     matching_pkgs.size() == 1
-    matching_pkgs[0].id == resp.json.pkgId
+    matching_pkgs[0].id == resp.body().pkgId
     matching_pkgs[0].tipps?.size() == 1
     matching_pkgs[0].tipps[0].importId == "wildeTitleId"
     matching_pkgs[0].provider?.name == "American Chemical Society"
@@ -678,20 +669,17 @@ class UpdatePackageRunSpec extends Specification {
         ]
     ]
 
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}" +
-        "/integration/updatePackageTipps") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
+    HttpResponse resp = http.toBlocking().exchange(request)
 
     then: "The item is created in the database because it does not exist"
-    resp.json.message != null
-    resp.json.message.startsWith('Created/Updated')
+    resp.body().message != null
+    resp.body().message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def rr_mismatch = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch')
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
-    matching_pkgs[0].id == resp.json.pkgId
+    matching_pkgs[0].id == resp.body().pkgId
     matching_pkgs[0].tipps.size() == 3
     int titleIdMatches = 0
     matching_pkgs[0].tipps.each {
