@@ -26,6 +26,7 @@ class ValidationController {
   def kbart() {
     def result = [result: 'OK', errors: [:]]
     def multipart_file = request.getFile("submissionFile")
+    def strict = params.boolean('strict') ?: false
 
     if (multipart_file && !multipart_file.isEmpty()) {
       def title_id_namespace = null
@@ -43,10 +44,14 @@ class ValidationController {
         }
       }
 
-      result.report = validationService.generateKbartReport(multipart_file.getInputStream(), title_id_namespace)
+      result.report = validationService.generateKbartReport(multipart_file.getInputStream(), title_id_namespace, strict)
 
       if (result.report.valid == false) {
         result.result = 'ERROR'
+
+        if (result.report.errors.missingColumns) {
+          result.errors.missingColumns = result.report.errors.missingColumns
+        }
       }
     }
     else {

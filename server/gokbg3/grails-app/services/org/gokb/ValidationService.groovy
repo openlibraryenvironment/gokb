@@ -172,7 +172,7 @@ class ValidationService {
 
   static ISSNValidator ISSN_VAL = new ISSNValidator()
 
-  def generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null) {
+  def generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null, boolean strict = false) {
     def result = [
       valid: true,
       message: "",
@@ -205,6 +205,7 @@ class ValidationService {
     KNOWN_COLUMNS.each { colName, info ->
       if (info.mandatory && !header.contains(colName)) {
         result.errors.missingColumns.add(colName)
+        result.valid = false
       }
       else if (!header.contains(colName) && colName != 'zdb_id') {
         result.warnings.missingColumns.add(colName)
@@ -235,7 +236,7 @@ class ValidationService {
         else if (nl.size() >= NUM_MANDATORY_COLS) {
           result.rows.total++
 
-          def row_result = checkRow(nl, rowCount, col_positions, titleIdNamespace)
+          def row_result = checkRow(nl, rowCount, col_positions, titleIdNamespace, strict)
 
           if (row_result.errors) {
             result.rows.error++
@@ -318,7 +319,7 @@ class ValidationService {
     return csv
   }
 
-  def checkRow(String[] nl, int rowCount, Map col_positions, IdentifierNamespace titleIdNamespace = null) {
+  def checkRow(String[] nl, int rowCount, Map col_positions, IdentifierNamespace titleIdNamespace = null, boolean strict = false) {
     def result = [errors: [:], warnings: [:]]
     def valid_ids = []
     def pubType = checkPubType(nl[col_positions['publication_type']])
@@ -328,7 +329,7 @@ class ValidationService {
 
       if (trimmed_val.length() > 4092) {
         result.errors["longVals"] = [
-          message: "Unexpectedly long value in row ${rowCount} -- Probably miscoded quote in line. Correct and resubmit",
+          message: "Unexpectedly long value in row -- Probably miscoded quote in line.",
           messageCode: "kbart.errors.longValsFile",
           args: []
         ]
@@ -336,8 +337,8 @@ class ValidationService {
 
       if (trimmed_val.contains('�') && !result.errors["replacementChars"]) {
         result.errors["replacementChars"] = [
-          message: "Found UTF-8 replacement char in row ${rowCount} -- Probably opened and then saved non-UTF-8 file as UTF-8!",
-          messageCode: "kbart.errors.replacementChars",
+          message: "Value contains UTF-8 replacement characters!",
+          messageCode: "kbart.errors.replacementCharsRow",
           args: []
         ]
       }
@@ -365,14 +366,14 @@ class ValidationService {
           def final_args = [trimmed_val] + KNOWN_COLUMNS[key].validator.args?.collect { it == "_colName" ? key : nl[col_positions[it]] }
           def field_valid_result = "${KNOWN_COLUMNS[key].validator.name}"(*final_args)
 
-          if (!field_valid_result) {
+          if (!field_valid_result || (strict && field_valid_result != trimmed_val && key != 'publication_title')) {
             result.errors[key] = [
               message: "Value '${trimmed_val}' is not valid!",
               messageCode: "kbart.errors.illegalVal",
               args: [trimmed_val]
             ]
           }
-          else if (field_valid_result != trimmed_val) {
+          else if (field_valid_result != trimmed_val && key != 'publication_title') {
             result.warnings[key] = [
               message: "Value '${trimmed_val}' will be automatically replaced by'${field_valid_result}'!",
               messageCode: "kbart.errors.correctedVal",
@@ -381,6 +382,14 @@ class ValidationService {
           }
         }
       }
+    }
+
+    if (!col_positions['online_identifier'] && !col_positions['print_identifier'] && !col_positions['title_url']) {
+      result.errors["noIds"] = [
+        message: "This row contains no usable identifiers and will not be processed!",
+        messageCode: "kbart.errors.noIds",
+        args: []
+      ]
     }
 
     if (pubType == 'Serial' && col_positions['date_first_issue_online'] && col_positions['date_last_issue_online']) {
