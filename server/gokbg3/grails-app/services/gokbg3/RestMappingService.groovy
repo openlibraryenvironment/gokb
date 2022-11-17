@@ -967,7 +967,7 @@ class RestMappingService {
       boolean found = false
       for (int i = 0; !found && i < publisher_combos.size(); i++) {
         Combo pc = publisher_combos[i]
-        def idMatch = pc."${propName}".id == publisher.id
+        def idMatch = pc."${propName}"?.id == publisher?.id
 
         if (idMatch) {
           found = true
