@@ -9,6 +9,7 @@ class RefdataValue implements Auditable {
   String icon
   String description
   String sortKey
+  Boolean deprecated = false
   RefdataValue useInstead
   RefdataCategory owner
 
@@ -81,15 +82,15 @@ class RefdataValue implements Auditable {
 
     result
   }
-  
+
   static def refdataCreate(String... obj_def) {
     if (obj_def.length == 4) {
       String type = obj_def[2]
       String val = obj_def[3]
-      
+
       return RefdataCategory.lookupOrCreate(obj_def[2], obj_def[3])
     }
-    
+
     return null
   }
 
