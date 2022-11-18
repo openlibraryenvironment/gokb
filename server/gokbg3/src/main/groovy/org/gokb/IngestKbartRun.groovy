@@ -53,12 +53,22 @@ class IngestKbartRun {
   boolean dryRun
   boolean isUpdate
   User user
-  Map jsonResult = [result: "SUCCESS"]
   Map errors = [global: [], tipps: []]
   int removedNum = 0
   def invalidTipps = []
   def matched_tipps = [:]
   def titleIdMap = [:]
+  def titleMatchResult = [
+    matches: [
+      partial: 0,
+      full: 0
+    ],
+    created: 0,
+    conflicts: 0,
+    noid: 0
+  ]
+  def titleMatchConflicts = []
+  def badRows = []
   Package pkg
   CuratoryGroup activeGroup
   def pkg_validation
@@ -149,8 +159,6 @@ class IngestKbartRun {
       log.debug("Set progress")
       job?.setProgress(0)
 
-      def badrows = []
-      def titleMatchStats = [matches: [partial: 0, full: 0], created: 0, conflicts: 0, noid: 0]
       def file_info = checkFile(datafile)
       def running_jobs = concurrencyManagerService.getComponentJobs(pkg.id)
 
@@ -209,15 +217,14 @@ class IngestKbartRun {
                 long rowStartTime = System.currentTimeMillis()
 
                 if (dryRun) {
-                  checkTitleMatchRow(row_kbart_beans, ingest_cfg, titleMatchStats)
+                  checkTitleMatchRow(row_kbart_beans, rownum, ingest_cfg)
                 }
 
-                if (validateRow(row_data, rownum, col_positions, badrows)) {
+                if (validateRow(row_data, rownum, col_positions)) {
                   def line_result = writeToDB(row_kbart_beans,
                             ingest_date,
                             ingest_systime,
                             ingest_cfg,
-                            badrows,
                             row_specific_cfg)
 
                   result.report[line_result]++
@@ -246,7 +253,7 @@ class IngestKbartRun {
         }
 
         if (result.result != 'CANCELLED' && dryRun) {
-          result.titleMatch = titleMatchStats
+          result.titleMatch = titleMatchResult
         }
 
         if (addOnly) {
@@ -286,9 +293,8 @@ class IngestKbartRun {
           }
         }
 
-        if (badrows.size() > 0) {
-          def msg = "There are ${badrows.size()} bad rows -- write to badfile and report"
-          result.badrows = badrows
+        if (badRows.size() > 0) {
+          def msg = "There are ${badRows.size()} bad rows -- write to badfile and report"
           result.messages.add(msg)
         }
 
@@ -374,6 +380,14 @@ class IngestKbartRun {
 
       JobResult.withNewSession {
         def result_object = JobResult.findByUuid(job.uuid)
+        def full_result = result
+
+        full_result.badrows = badRows
+
+        if (full_result.titleMatch) {
+          full_result.titleMatch.rowConflicts = titleMatchConflicts
+        }
+
         if (!result_object) {
           def job_map = [
               uuid        : (job.uuid),
@@ -404,7 +418,6 @@ class IngestKbartRun {
                ingest_date,
                ingest_systime,
                ingest_cfg,
-               badrows,
                row_specific_config) {
 
     //simplest method is to assume that everything is new.
@@ -498,7 +511,7 @@ class IngestKbartRun {
         }
         else {
           log.debug("Skipping row - no identifiers")
-          badrows.add([rowdata: the_kbart as List, message: 'No usable identifiers'])
+          badRows.add([rowdata: the_kbart, message: 'No usable identifiers'])
           result = 'invalid'
         }
 
@@ -927,7 +940,7 @@ class IngestKbartRun {
     result
   }
 
-  def validateRow(row_data, rownum, col_positions, badrows) {
+  def validateRow(row_data, rownum, col_positions) {
     log.debug("Validate :: ${row_data}")
     def valid = true
     def result = validationService.checkRow(row_data, rownum, col_positions, providerIdentifierNamespace)
@@ -935,7 +948,7 @@ class IngestKbartRun {
     if (result.errors) {
       log.error("Recording bad row ${rownum}: ${result.errors}")
       valid = false
-      badrows.add([rowdata: row_data, errors: result.errors, row: rownum])
+      badRows.add([rowdata: row_data, errors: result.errors, row: rownum])
     }
 
     valid
@@ -1000,7 +1013,7 @@ class IngestKbartRun {
     result
   }
 
-  def checkTitleMatchRow(the_kbart, ingest_cfg, match_result) {
+  def checkTitleMatchRow(the_kbart, rownum, ingest_cfg) {
     def row_specific_cfg = getRowSpecificCfg(ingest_cfg, the_kbart)
 
     TitleInstance.withNewSession {
@@ -1034,32 +1047,52 @@ class IngestKbartRun {
             TitleInstance.determineTitleClass(the_kbart.publication_type)
         )
 
-        if (title_lookup_result.conflicts) {
-          match_result.conflicts++
-        }
-        else if (title_lookup_result.to_create) {
-          match_result.created++
+        boolean hasConflicts = false
+        boolean partial = false
+        def matchConflicts = []
 
-          if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
-            log.debug("New title -- Conflicts: ${title_lookup_result.matches}")
-            match_result.matches.partial++
-          }
+        title_lookup_result.matches.each { trm ->
+          if (trm.conflicts.size() > 0) {
+            partial = true
 
-          if (title_lookup_result.matches.size() > 1) {
-            match_result.conflicts++
+            def match = [
+              id: trm.object.id,
+              name: trm.object.name,
+              conflicts: trm.conflicts
+            ]
+            matchConflicts << match
+
+            if (trm.warnings.contains('duplicate')) {
+              hasConflicts = true
+            }
           }
         }
-        else if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
-          log.debug("Partial Match -- Conflicts: ${title_lookup_result.matches}")
-          match_result.matches.partial++
+
+        if (matchConflicts) {
+          titleMatchConflicts << [row: rownum, matches: matchConflicts]
+        }
+
+        if (hasConflicts) {
+          titleMatchResult.conflicts++
+        }
+
+        if (title_lookup_result.to_create) {
+          titleMatchResult.created++
+
+          if (partial) {
+            titleMatchResult.matches.partial++
+          }
+        }
+        else if (partial) {
+          titleMatchResult.matches.partial++
         }
         else {
-          match_result.matches.full++
+          titleMatchResult.matches.full++
         }
       }
       else {
         log.warn("[${the_kbart.publication_title}] No identifiers.")
-        match_result.noid++
+        titleMatchResult.noid++
       }
     }
   }
