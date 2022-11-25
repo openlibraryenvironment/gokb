@@ -562,6 +562,11 @@ class IngestKbartRun {
       if (match_result.full_matches.size() > 0) {
         result = 'matched'
         tipp = match_result.full_matches[0]
+
+        if (tipp.accessStartDate) {
+          tipp_map.accessStartDate = null
+        }
+
         // update Data
         log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
 
@@ -697,6 +702,9 @@ class IngestKbartRun {
           ids: jsonIdMap,
           oid: (dryRun ? null : tipp.id)
         ]
+      }
+      else if (tipp.accessStartDate) {
+        tipp_map.accessStartDate = null
       }
     }
 
