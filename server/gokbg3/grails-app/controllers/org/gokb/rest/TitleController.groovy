@@ -827,7 +827,7 @@ class TitleController {
       }
     }
 
-    def pub_result = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
+    def pub_result = restMappingService.updatePublisherList(obj, reqBody.publisher, remove)
 
     changed |= pub_result.changed
 
