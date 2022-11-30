@@ -498,12 +498,8 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Primary", "Yes").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Primary", "No").save(flush: true, failOnError: true)
 
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Complimentary").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Limited Promotion").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Paid").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "OA").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Opt Out Promotion").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Uncharged").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Unknown").save(flush: true, failOnError: true)
 
         ['Database', 'Monograph', 'Other', 'Serial'].each { pubType ->
