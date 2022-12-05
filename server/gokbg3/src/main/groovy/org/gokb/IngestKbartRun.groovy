@@ -295,6 +295,7 @@ class IngestKbartRun {
 
         if (badRows.size() > 0) {
           def msg = "There are ${badRows.size()} bad rows -- write to badfile and report"
+          result.badrows = badRows
           result.messages.add(msg)
         }
 
@@ -380,12 +381,9 @@ class IngestKbartRun {
 
       JobResult.withNewSession {
         def result_object = JobResult.findByUuid(job.uuid)
-        def full_result = result
 
-        full_result.badrows = badRows
-
-        if (full_result.titleMatch) {
-          full_result.titleMatch.rowConflicts = titleMatchConflicts
+        if (result.titleMatch) {
+          result.titleMatch.rowConflicts = titleMatchConflicts
         }
 
         if (!result_object) {

@@ -40,7 +40,7 @@ class PackageSourceUpdateService {
       def platform_url = p.nominalPlatform.primaryUrl
       def pkg_source = p.source
       def preferred_group = activeGroup ?: (p.curatoryGroups?.size() > 0 ? CuratoryGroup.deproxy(p.curatoryGroups[0]) : null)
-      def title_ns = pkg_source.targetNamespace ?: (p.provider?.titleNamespace ?: null)
+      def title_ns = pkg_source?.targetNamespace ?: (p.provider?.titleNamespace ?: null)
 
       if (job && !job.startTime) {
         job.startTime = new Date()

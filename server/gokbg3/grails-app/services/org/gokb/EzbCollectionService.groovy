@@ -2,6 +2,7 @@ package org.gokb
 
 import com.k_int.ConcurrencyManagerService.Job
 
+import grails.converters.JSON
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 
@@ -29,7 +30,7 @@ class EzbCollectionService {
   ]
 
   def startUpdate(User user = null) {
-    def result = 'OK'
+    def result = [result: 'OK']
 
     RefdataCategory.withNewSession {
       def running_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest'))
@@ -54,7 +55,7 @@ class EzbCollectionService {
       }
       else {
         log.debug("Job is already running!")
-        result = 'SKIPPED_ALREADY_RUNNING'
+        result.result = 'SKIPPED_ALREADY_RUNNING'
       }
     }
 
@@ -62,6 +63,8 @@ class EzbCollectionService {
   }
 
   private def fetchUpdatedLists (job) {
+    def result = [result: 'OK', report: [:]]
+
     if (grailsApplication.config.gokb.ezbOpenCollections?.url) {
       def baseUrl = grailsApplication.config.gokb.ezbOpenCollections.url
       def allCollections = [:]
@@ -126,16 +129,23 @@ class EzbCollectionService {
         ]
 
         if (!cancelled) {
-          Package.withNewSession { session ->
-            for (item in items) {
+          for (item in items) {
+            if (Thread.currentThread().isInterrupted()) {
+              break
+              cancelled = true
+            }
+
+            Package.withNewSession { session ->
               type_results.total++
               def pkgName = "${item.ezb_collection_id}: ${item.ezb_collection_name}"
               log.debug("Processing ${type} ${item.ezb_collection_name}")
 
               CuratoryGroup curator = CuratoryGroup.findByName(grailsApplication.config.gokb.ezbAugment.rrCurators)
               Platform platform = item.ezb_collection_platform ? Platform.findByUuid(item.ezb_collection_platform) : null
+              IdentifierNamespace ezb_ns = IdentifierNamespace.findByValue('ezb')
               Org provider = item.ezb_collection_provider ? Org.findByUuid(item.ezb_collection_provider) : null
               boolean skipped = false
+              Source source = null
 
               if (item.ezb_collection_curatory_group) {
                 def local_cg = CuratoryGroup.findByUuid(item.ezb_collection_curatory_group)
@@ -190,36 +200,67 @@ class EzbCollectionService {
                 }
 
                 if (obj) {
+                  if(!obj.contentType) {
+                    obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Journal')
+                  }
+
+                  if (!obj.global) {
+                    obj.global = RefdataCategory.lookup('Package.Global', 'Consortium')
+                  }
+
                   obj.nominalPlatform = platform
                   obj.provider = provider
+                  obj.save()
 
                   if (!obj.ids.contains(collection_id)) {
                     obj.ids << collection_id
-                  }
-
-                  if(!obj.contentType) {
-                    obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Journal')
                   }
 
                   if (!obj.curatoryGroups.contains(curator)) {
                     obj.curatoryGroups << curator
                   }
 
-                  if (!obj.source) {
+                  obj.save()
+
+                  source = obj.source
+
+                  if (!source) {
                     log.debug("Setting new package source..")
-                    Source source = new Source(name: pkgName, url: item.ezb_collection_titlelist, targetNamespace: IdentifierNamespace.findByValue('ezb')).save(flush:true, failOnError: true)
-                    source.curatoryGroups << curator
-                    source.save(flush: true, failOnError: true)
 
-                    obj.source = source
+                    try {
+                      def dupe = Source.findByName(pkgName)
 
-                    obj = obj.save(flush: true, failOnError: true)
+                      if (!dupe) {
+                        source = new Source(name: pkgName, url: item.ezb_collection_titlelist, targetNamespace: ezb_ns).save(flush:true, failOnError: true)
+                      }
+                      else {
+                        log.warn("Found existing source with package name ${pkgName}!")
+                        source = dupe
+                      }
+                    }
+                    catch (Exception e) {
+                      log.error("Exception creating source:", e)
+                      type_results.errors++
+                    }
+
+                    if (source) {
+                      source.curatoryGroups << curator
+                      source.save()
+
+                      obj.source = source
+                      obj.save(flush: true)
+                    }
+                  }
+
+                  if (source && source.url != item.ezb_collection_titlelist) {
+                    source.url = item.ezb_collection_titlelist
+                    source.save()
                   }
                 }
 
                 log.debug("Existing package since: ${obj?.dateCreated} - EZB start ${dateFormatService.parseTimestamp(item.ezb_collection_released_date)}")
 
-                if (obj && obj.dateCreated > dateFormatService.parseTimestamp(item.ezb_collection_released_date)) {
+                if (obj && source && obj.dateCreated > dateFormatService.parseTimestamp(item.ezb_collection_released_date)) {
                   def deposit_token = java.util.UUID.randomUUID().toString()
                   File tmp_file = TSVIngestionService.createTempFile(deposit_token)
                   def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.ezb_collection_titlelist))
@@ -249,18 +290,13 @@ class EzbCollectionService {
                       pkg_job.startOrQueue()
                       def job_result = pkg_job.get()
 
-                      if (Thread.currentThread().isInterrupted()) {
-                        break
-                        cancelled = true
-                      }
-
                       log.debug("Finished job with result: ${job_result}")
 
-                      if (job_result.badrows) {
+                      if (job_result?.badrows) {
                         type_results.validationErrors[item.ezb_collection_id] = job_result.badrows.collect { [errors: it.errors, rownum: it.row] }
                       }
 
-                      if (job_result.result == 'ERROR') {
+                      if (job_result?.result == 'ERROR') {
                         type_results.errors++
                       }
                       else {
@@ -276,6 +312,9 @@ class EzbCollectionService {
                     log.debug("Skipping unchanged Package file ${obj.name}.")
                     type_results.unchanged++
                   }
+                }
+                else if (!source) {
+                  log.debug("No source object created.. skip")
                 }
                 else if (obj) {
                   log.warn("Matched package is older than the EZB release date.. Skipping!")
@@ -305,23 +344,40 @@ class EzbCollectionService {
                 }
               }
             }
-            session.flush()
-            session.clear()
           }
-
-          job.message("Completed type ${type} with ${type_results}".toString())
         }
         else {
           log.debug("Job was cancelled.. skipping further processing")
         }
+
+        job.message("Completed type ${type} with ${type_results}".toString())
+        result.report[type] = type_results
       }
+
+      result.result = 'FINISHED'
       job.endTime = new Date()
     }
     else {
       log.debug("No API base for open EZB collections configured.")
-      return 'SKIPPED_NO_API_URL'
+      result.result = 'SKIPPED_NO_API_URL'
     }
 
-    return 'FINISHED'
+    JobResult.withNewSession {
+      def job_map = [
+          uuid        : (job.uuid),
+          description : (job.description),
+          resultObject: (result as JSON).toString(),
+          type        : (job.type),
+          statusText  : (result.result),
+          ownerId     : (job.ownerId),
+          groupId     : (job.groupId),
+          startTime   : (job.startTime),
+          endTime     : (job.endTime)
+      ]
+
+      def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+    }
+
+    result
   }
 }
