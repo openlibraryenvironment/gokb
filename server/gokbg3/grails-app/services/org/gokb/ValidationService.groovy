@@ -98,6 +98,10 @@ class ValidationService {
     ],
     embargo_info: [
       mandatory: false,
+      validator: [
+        name: "checkEmbargoCode",
+        args: []
+      ]
     ],
     coverage_depth: [
       mandatory: false,
@@ -384,7 +388,7 @@ class ValidationService {
       }
     }
 
-    if (!col_positions['online_identifier'] && !col_positions['print_identifier'] && !col_positions['title_url']) {
+    if (!col_positions['online_identifier'] && !col_positions['print_identifier'] && !col_positions['title_id']) {
       result.errors["noIds"] = [
         message: "This row contains no usable identifiers and will not be processed!",
         messageCode: "kbart.errors.noIds",
@@ -392,19 +396,23 @@ class ValidationService {
       ]
     }
 
-    if (pubType == 'Serial' && col_positions['date_first_issue_online'] && col_positions['date_last_issue_online']) {
+    if (col_positions['date_first_issue_online'] && col_positions['date_last_issue_online']) {
       def date_order = checkDatePair(nl[col_positions['date_first_issue_online']], nl[col_positions['date_last_issue_online']])
 
       if (date_order == 'error') {
         result.errors['date_last_issue_online'] = [
           message: "The end date must be after the start date.",
           messageCode: "validation.dateRange",
-          args: [trimmed_val]
+          args: []
         ]
       }
     }
 
     result
+  }
+
+  def checkEmbargoCode(String value) {
+    return (value ==~ /^(([RP][1-9][0-9]*[DMY])|(R[1-9][0-9]*[DMY];P[1-9][0-9]*[DMY]))$/)
   }
 
   def checkPubType(String value) {
