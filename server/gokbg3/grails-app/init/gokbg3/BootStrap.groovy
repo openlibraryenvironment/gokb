@@ -188,23 +188,28 @@ class BootStrap {
         sourceObjects()
 
         log.info("Ensure default Identifier namespaces")
+        def targetTypeTitle = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title')
+        def targetTypeOrg = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Org')
         def namespaces = [
             [
                 value: 'isbn',
                 name: 'ISBN',
                 family: 'isxn',
+                targetType: targetTypeTitle,
                 pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"
             ],
             [
                 value: 'pisbn',
                 name: 'Print-ISBN',
                 family: 'isxn',
+                targetType: targetTypeTitle,
                 pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"
             ],
             [
                 value: 'issn',
                 name: 'p-ISSN',
                 family: 'isxn',
+                targetType: targetTypeTitle,
                 pattern: "^\\d{4}\\-\\d{3}[\\dX]\$",
                 baseUrl: "https://portal.issn.org/resource/ISSN/"
             ],
@@ -212,6 +217,7 @@ class BootStrap {
                 value: 'eissn',
                 name: 'e-ISSN',
                 family: 'isxn',
+                targetType: targetTypeTitle,
                 pattern: "^\\d{4}\\-\\d{3}[\\dX]\$",
                 baseUrl: "https://portal.issn.org/resource/ISSN/"
             ],
@@ -219,29 +225,34 @@ class BootStrap {
                 value: 'issnl',
                 name: 'ISSN-L',
                 family: 'isxn',
+                targetType: targetTypeTitle,
                 pattern: "^\\d{4}\\-\\d{3}[\\dX]\$",
                 baseUrl: "https://portal.issn.org/resource/ISSN/"
             ],
             [
                 value: 'doi',
                 name: 'DOI',
+                targetType: targetTypeTitle,
                 baseUrl: "https://doi.org/"
             ],
             [
                 value: 'zdb',
                 name: 'ZDB-ID',
                 pattern: "^\\d{7,10}-[\\dxX]\$",
+                targetType: targetTypeTitle,
                 baseUrl: "https://ld.zdb-services.de/resource/"
             ],
             [
                 value: 'isil',
                 name: 'ISIL',
+                targetType: targetTypeOrg,
                 pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$",
                 baseUrl: "https://sigel.staatsbibliothek-berlin.de/suche?isil="
             ],
             [
-                value: 'gnd',
+                value: 'gnd-id',
                 name: 'GND',
+                targetType: targetTypeOrg,
                 pattern: "^\\d{1,10}-[0-9Xx]\$",
                 baseUrl: "https://d-nb.info/gnd/"
             ],
@@ -253,6 +264,7 @@ class BootStrap {
             [
                 value: 'loc',
                 name: 'LOC',
+                targetType: targetTypeOrg,
                 pattern: "^n[bors]?\\d{8,10}\$",
                 baseUrl: "http://id.loc.gov/authorities/names/"
             ],
@@ -271,6 +283,7 @@ class BootStrap {
             [
                 value: 'ncsu',
                 name: 'NCSU',
+                targetType: targetTypeOrg,
                 pattern: "^\\d{8}\$",
                 baseUrl: "https://www.lib.ncsu.edu/ld/onld/"
             ],
