@@ -238,6 +238,47 @@ class BootStrap {
                 name: 'ISIL',
                 pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$",
                 baseUrl: "https://sigel.staatsbibliothek-berlin.de/suche?isil="
+            ],
+            [
+                value: 'gnd',
+                name: 'GND',
+                pattern: "^\\d{1,10}-[0-9Xx]\$",
+                baseUrl: "https://d-nb.info/gnd/"
+            ],
+            [
+                value: 'dbpedia',
+                name: 'DBPedia',
+                baseUrl: "http://dbpedia.org/resource/"
+            ],
+            [
+                value: 'loc',
+                name: 'LOC',
+                pattern: "^n[bors]?\\d{8,10}\$",
+                baseUrl: "http://id.loc.gov/authorities/names/"
+            ],
+            [
+                value: 'isni',
+                name: 'ISNI',
+                pattern: "^\\d{15}[0-9Xx]\$",
+                baseUrl: "http://isni-url.oclc.nl/isni/"
+            ],
+            [
+                value: 'viaf',
+                name: 'VIAF',
+                pattern: "^\\d{1,22}\$",
+                baseUrl: "http://viaf.org/viaf/"
+            ],
+            [
+                value: 'ncsu',
+                name: 'NCSU',
+                pattern: "^\\d{8}\$",
+                baseUrl: "https://www.lib.ncsu.edu/ld/onld/"
+            ],
+            [
+                value: 'wikidata',
+                name: 'WikiData',
+                pattern: "^(Q|Property:P|Lexeme:L)\\d{1,10}\$",
+                baseUrl: "https://www.wikidata.org/wiki/"
             ]
         ]
 
