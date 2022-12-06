@@ -5,9 +5,12 @@
 # CHECK BEFORE
 SELECT * FROM identifier WHERE id_value LIKE '%gnd/gnd%';
 SELECT * FROM identifier WHERE id_value LIKE '%gnd/%';
-UPDATE identifier
-set id_value=REGEXP_REPLACE(id_value, '(.*)gnd/gnd(.*)','\1gnd\2')
-WHERE id_value LIKE '%gnd/gnd%';
+UPDATE identifier AS id
+SET id_value=REGEXP_REPLACE(id.id_value, '(.*)gnd/gnd(.*)','\1gnd\2')
+FROM identifier_namespace AS idns
+WHERE id.id_value LIKE '%gnd/gnd%'
+  AND id.id_namespace_fk = idns.id
+  AND idns.idns_value = 'global';
 # CHECK AFTER
 SELECT * FROM identifier WHERE id_value LIKE '%gnd/gnd%';
 SELECT * FROM identifier WHERE id_value LIKE '%gnd/%';
@@ -20,9 +23,12 @@ SELECT * FROM identifier WHERE id_value LIKE '%gnd/%';
 # CHECK BEFORE
 SELECT * FROM identifier WHERE id_value SIMILAR TO '%d-nb.info/[0-9]%';
 SELECT * FROM identifier WHERE id_value LIKE '%d-nb.info/gnd%';
-UPDATE identifier
-set id_value=REGEXP_REPLACE(id_value, '(.*)d-nb.info/(.*)','\1d-nb.info/gnd/\2')
-WHERE id_value SIMILAR TO '%d-nb.info/[0-9]%';
+UPDATE identifier AS id
+SET id_value=REGEXP_REPLACE(id.id_value, '(.*)d-nb.info/(.*)','\1d-nb.info/gnd/\2')
+FROM identifier_namespace AS idns
+WHERE id.id_value SIMILAR TO '%d-nb.info/[0-9]%'
+  AND id.id_namespace_fk = idns.id
+  AND idns.idns_value = 'global';
 # CHECK AFTER
 SELECT * FROM identifier WHERE id_value SIMILAR TO '%d-nb.info/[0-9]%';
 SELECT * FROM identifier WHERE id_value LIKE '%d-nb.info/gnd%';
@@ -35,9 +41,12 @@ SELECT * FROM identifier WHERE id_value LIKE '%d-nb.info/gnd%';
 # CHECK BEFORE
 SELECT * FROM identifier WHERE id_value LIKE 'http://d-nb.info/%';
 SELECT * FROM identifier WHERE id_value LIKE 'https://d-nb.info/%';
-UPDATE identifier
-set id_value=REGEXP_REPLACE(id_value, 'http://d-nb.info/(.*)','https://d-nb.info/\1')
-WHERE id_value LIKE 'http://d-nb.info/%';
+UPDATE identifier AS id
+SET id_value=REGEXP_REPLACE(id.id_value, 'http://d-nb.info/(.*)','https://d-nb.info/\1')
+FROM identifier_namespace AS idns
+WHERE id.id_value LIKE 'http://d-nb.info/%'
+  AND id.id_namespace_fk = idns.id
+  AND idns.idns_value = 'global';
 # CHECK AFTER
 SELECT * FROM identifier WHERE id_value LIKE 'http://d-nb.info/%';
 SELECT * FROM identifier WHERE id_value LIKE 'https://d-nb.info/%';
@@ -50,9 +59,12 @@ SELECT * FROM identifier WHERE id_value LIKE 'https://d-nb.info/%';
 # CHECK BEFORE
 SELECT * FROM identifier WHERE id_value LIKE 'http://dbpedia.org/page/%';
 SELECT * FROM identifier WHERE id_value LIKE 'http://dbpedia.org/resource/%';
-UPDATE identifier
-set id_value=REGEXP_REPLACE(id_value, 'http://dbpedia.org/page/(.*)','http://dbpedia.org/resource/\1')
-WHERE id_value LIKE 'http://dbpedia.org/page/%';
+UPDATE identifier AS id
+SET id_value=REGEXP_REPLACE(id.id_value, 'http://dbpedia.org/page/(.*)','http://dbpedia.org/resource/\1')
+FROM identifier_namespace AS idns
+WHERE id.id_value LIKE 'http://dbpedia.org/page/%'
+  AND id.id_namespace_fk = idns.id
+  AND idns.idns_value = 'global';
 # CHECK AFTER
 SELECT * FROM identifier WHERE id_value LIKE 'http://dbpedia.org/page/%';
 SELECT * FROM identifier WHERE id_value LIKE 'http://dbpedia.org/resource/%';
@@ -65,9 +77,12 @@ SELECT * FROM identifier WHERE id_value LIKE 'http://dbpedia.org/resource/%';
 # CHECK BEFORE
 SELECT * FROM identifier WHERE id_value LIKE 'http://id.loc.gov/authorities/names/%';
 SELECT * FROM identifier WHERE id_value LIKE 'http://id.loc.gov/authorities/names/%.html';
-UPDATE identifier
-set id_value=REGEXP_REPLACE(id_value, 'http://id.loc.gov/authorities/names/(.*).html','http://id.loc.gov/authorities/names/\1')
-WHERE id_value LIKE 'http://id.loc.gov/authorities/names/%.html';
+UPDATE identifier AS id
+SET id_value=REGEXP_REPLACE(id.id_value, 'http://id.loc.gov/authorities/names/(.*).html','http://id.loc.gov/authorities/names/\1')
+FROM identifier_namespace AS idns
+WHERE id.id_value LIKE 'http://id.loc.gov/authorities/names/%.html'
+  AND id.id_namespace_fk = idns.id
+  AND idns.idns_value = 'global';
 # CHECK AFTER
 SELECT * FROM identifier WHERE id_value LIKE 'http://id.loc.gov/authorities/names/%';
 SELECT * FROM identifier WHERE id_value LIKE 'http://id.loc.gov/authorities/names/%.html';
@@ -78,7 +93,11 @@ SELECT * FROM identifier WHERE id_value LIKE 'http://id.loc.gov/authorities/name
 #
 # CHECK BEFORE
 SELECT * FROM identifier WHERE id_value LIKE '%freebase%';
-DELETE FROM identifier WHERE id_value LIKE '%freebase%';
+DELETE FROM identifier AS id
+USING identifier_namespace AS idns
+WHERE id.id_value LIKE '%freebase%'
+  AND id.id_namespace_fk = idns.id
+  AND idns.idns_value = 'global';
 # CHECK AFTER
 SELECT * FROM identifier WHERE id_value LIKE '%freebase%';
 
@@ -90,9 +109,12 @@ SELECT * FROM identifier WHERE id_value LIKE '%freebase%';
 # CHECK BEFORE
 SELECT * FROM identifier WHERE id_value LIKE 'http://www.lib.ncsu.edu/ld/onld/%';
 SELECT * FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%';
-UPDATE identifier
-set id_value=REGEXP_REPLACE(id_value, 'http://www.lib.ncsu.edu/ld/onld/(.*)','https://www.lib.ncsu.edu/ld/onld/\1')
-WHERE id_value LIKE 'http://www.lib.ncsu.edu/ld/onld/%';
+UPDATE identifier AS id
+SET id_value=REGEXP_REPLACE(id.id_value, 'http://www.lib.ncsu.edu/ld/onld/(.*)','https://www.lib.ncsu.edu/ld/onld/\1')
+FROM identifier_namespace AS idns
+WHERE id.id_value LIKE 'http://www.lib.ncsu.edu/ld/onld/%'
+  AND id.id_namespace_fk = idns.id
+  AND idns.idns_value = 'global';
 # CHECK AFTER
 SELECT * FROM identifier WHERE id_value LIKE 'http://www.lib.ncsu.edu/ld/onld/%';
 SELECT * FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%';
@@ -105,9 +127,12 @@ SELECT * FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%
 # CHECK BEFORE
 SELECT * FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%';
 SELECT * FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%.html';
-UPDATE identifier
-set id_value=REGEXP_REPLACE(id_value, 'https://www.lib.ncsu.edu/ld/onld/(.*).html','https://www.lib.ncsu.edu/ld/onld/\1')
-WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%.html';
+UPDATE identifier AS id
+SET id_value=REGEXP_REPLACE(id.id_value, 'https://www.lib.ncsu.edu/ld/onld/(.*).html','https://www.lib.ncsu.edu/ld/onld/\1')
+FROM identifier_namespace AS idns
+WHERE id.id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%.html'
+  AND id.id_namespace_fk = idns.id
+  AND idns.idns_value = 'global';
 # CHECK AFTER
 SELECT * FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%';
 SELECT * FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%.html';
