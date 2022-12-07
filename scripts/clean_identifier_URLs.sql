@@ -88,18 +88,29 @@ SELECT * FROM identifier WHERE id_value LIKE 'http://id.loc.gov/authorities/name
 SELECT * FROM identifier WHERE id_value LIKE 'http://id.loc.gov/authorities/names/%.html';
 
 
-# http://id.loc.gov/authorities/names/<id>.html
-# entfernen
-#
+# delete '%freebase%' Identifiers
+# set status to "Rejected"
+# assuming EditStatus "In Progress == 19"
+# and EditStatus "Rejected == 20"
 # CHECK BEFORE
-SELECT * FROM identifier WHERE id_value LIKE '%freebase%';
-DELETE FROM identifier AS id
-USING identifier_namespace AS idns
-WHERE id.id_value LIKE '%freebase%'
+SELECT id.kbc_id FROM identifier AS id, kbcomponent AS kbc WHERE id.id_value LIKE '%freebase%' AND id.kbc_id = kbc.kbc_id;
+SELECT id.kbc_id FROM identifier AS id, kbcomponent AS kbc WHERE id.kbc_id = kbc.kbc_id AND kbc.edit_status_id = 19; # CHECK value
+SELECT id.kbc_id FROM identifier AS id, kbcomponent AS kbc WHERE id.kbc_id = kbc.kbc_id AND kbc.edit_status_id = 20; # CHECK value
+# UPDATE;
+UPDATE kbcomponent AS kbc
+SET edit_status_id = 20         # CHECK value
+FROM identifier AS id, identifier_namespace AS idns
+WHERE kbc.kbc_id = id.kbc_id
+  AND id.id_value LIKE '%freebase%'
   AND id.id_namespace_fk = idns.id
   AND idns.idns_value = 'global';
 # CHECK AFTER
-SELECT * FROM identifier WHERE id_value LIKE '%freebase%';
+SELECT id.kbc_id FROM identifier AS id, kbcomponent AS kbc WHERE id.kbc_id = kbc.kbc_id AND kbc.edit_status_id = 19; # CHECK value
+SELECT id.kbc_id FROM identifier AS id, kbcomponent AS kbc WHERE id.kbc_id = kbc.kbc_id AND kbc.edit_status_id = 20; # CHECK value
+SELECT id.kbc_id FROM identifier AS id, kbcomponent AS kbc WHERE id.id_value LIKE '%freebase%' AND id.kbc_id = kbc.kbc_id;
+#
+# and run admin function "Expunge Rejected Components"
+
 
 
 # http://www.lib.ncsu.edu/ld/onld/
