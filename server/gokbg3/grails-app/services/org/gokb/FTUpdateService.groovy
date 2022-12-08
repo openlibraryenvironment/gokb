@@ -16,6 +16,7 @@ class FTUpdateService {
   def ESWrapperService
   def sessionFactory
   def dateFormatService
+  def grailsApplication
 
   public static boolean running = false
 
@@ -515,7 +516,7 @@ class FTUpdateService {
         log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
         def idx_record = buildEsRecord(r)
         if (idx_record != null) {
-          IndexRequest singleRequest = new IndexRequest(ESSearchService.indicesPerType.get(idx_record['componentType']))
+          IndexRequest singleRequest = new IndexRequest(grailsApplication.config.gokb.es.indices[ESSearchService.indicesPerType.get(idx_record['componentType'])])
           singleRequest.id(idx_record['_id'].toString())
           idx_record.remove('_id')
           singleRequest.source((idx_record as JSON).toString(), XContentType.JSON)

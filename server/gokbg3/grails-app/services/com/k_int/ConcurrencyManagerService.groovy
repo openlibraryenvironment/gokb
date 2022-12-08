@@ -186,7 +186,13 @@ class ConcurrencyManagerService {
      */
     @Override
     public def get() {
-      return task?.get() ?: null
+      try {
+        return task?.get() ?: null
+      }
+      catch (Exception e) {
+        log.error("Uncaught Exception in Job ${description} (${uuid})", e)
+        return null
+      }
     }
 
     /**
