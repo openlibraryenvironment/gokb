@@ -412,7 +412,7 @@ class ValidationService {
   }
 
   def checkEmbargoCode(String value) {
-    return (value ==~ /^(([RP][1-9][0-9]*[DMY])|(R[1-9][0-9]*[DMY];P[1-9][0-9]*[DMY]))$/)
+    return (value ==~ ~"^(([RP][1-9][0-9]*[DMY])|(R[1-9][0-9]*[DMY];P[1-9][0-9]*[DMY]))\$" ? value : false)
   }
 
   def checkPubType(String value) {
