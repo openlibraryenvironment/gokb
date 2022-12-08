@@ -98,7 +98,16 @@ SELECT id.kbc_id FROM identifier AS id, kbcomponent AS kbc WHERE id.kbc_id = kbc
 SELECT id.kbc_id FROM identifier AS id, kbcomponent AS kbc WHERE id.kbc_id = kbc.kbc_id AND kbc.edit_status_id = 20; # CHECK value
 # UPDATE;
 UPDATE kbcomponent AS kbc
-SET edit_status_id = 20         # CHECK value
+SET edit_status_id = (
+  SELECT rdv_id
+  FROM refdata_value
+  WHERE rdv_value = 'Rejected'
+  AND rdv_owner = (
+    SELECT rdc_id
+    FROM refdata_category
+    WHERE rdc_label = 'KBComponent.EditStatus'
+  )
+)
 FROM identifier AS id, identifier_namespace AS idns
 WHERE kbc.kbc_id = id.kbc_id
   AND id.id_value LIKE '%freebase%'
