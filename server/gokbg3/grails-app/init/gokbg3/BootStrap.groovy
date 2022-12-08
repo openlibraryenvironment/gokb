@@ -188,23 +188,31 @@ class BootStrap {
         sourceObjects()
 
         log.info("Ensure default Identifier namespaces")
+        def targetTypeTitle = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title')
+        def targetTypeBook = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Book')
+        def targetTypeJournal = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Journal')
+        def targetTypeOrg = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Org')
+        def targetTypePackage = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Package')
         def namespaces = [
             [
                 value: 'isbn',
                 name: 'ISBN',
                 family: 'isxn',
+                targetType: targetTypeBook,
                 pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"
             ],
             [
                 value: 'pisbn',
                 name: 'Print-ISBN',
                 family: 'isxn',
+                targetType: targetTypeBook,
                 pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"
             ],
             [
                 value: 'issn',
                 name: 'p-ISSN',
                 family: 'isxn',
+                targetType: targetTypeJournal,
                 pattern: "^\\d{4}\\-\\d{3}[\\dX]\$",
                 baseUrl: "https://portal.issn.org/resource/ISSN/"
             ],
@@ -212,6 +220,7 @@ class BootStrap {
                 value: 'eissn',
                 name: 'e-ISSN',
                 family: 'isxn',
+                targetType: targetTypeJournal,
                 pattern: "^\\d{4}\\-\\d{3}[\\dX]\$",
                 baseUrl: "https://portal.issn.org/resource/ISSN/"
             ],
@@ -219,25 +228,77 @@ class BootStrap {
                 value: 'issnl',
                 name: 'ISSN-L',
                 family: 'isxn',
+                targetType: targetTypeJournal,
                 pattern: "^\\d{4}\\-\\d{3}[\\dX]\$",
                 baseUrl: "https://portal.issn.org/resource/ISSN/"
             ],
             [
                 value: 'doi',
                 name: 'DOI',
+                targetType: targetTypeTitle,
                 baseUrl: "https://doi.org/"
             ],
             [
                 value: 'zdb',
                 name: 'ZDB-ID',
                 pattern: "^\\d{7,10}-[\\dxX]\$",
+                targetType: targetTypeJournal,
                 baseUrl: "https://ld.zdb-services.de/resource/"
             ],
             [
                 value: 'isil',
                 name: 'ISIL',
+                targetType: targetTypePackage,
                 pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$",
                 baseUrl: "https://sigel.staatsbibliothek-berlin.de/suche?isil="
+            ],
+            [
+                value: 'gnd-id',
+                name: 'GND',
+                targetType: targetTypeOrg,
+                pattern: "^\\d{1,10}-[0-9Xx]\$",
+                baseUrl: "https://d-nb.info/gnd/"
+            ],
+            [
+                value: 'dbpedia',
+                name: 'DBPedia',
+                targetType: targetTypeOrg,
+                baseUrl: "http://dbpedia.org/resource/"
+            ],
+            [
+                value: 'loc',
+                name: 'LOC',
+                targetType: targetTypeOrg,
+                pattern: "^n[bors]?\\d{8,10}\$",
+                baseUrl: "http://id.loc.gov/authorities/names/"
+            ],
+            [
+                value: 'isni',
+                name: 'ISNI',
+                targetType: targetTypeOrg,
+                pattern: "^\\d{15}[0-9Xx]\$",
+                baseUrl: "http://isni-url.oclc.nl/isni/"
+            ],
+            [
+                value: 'viaf',
+                name: 'VIAF',
+                targetType: targetTypeOrg,
+                pattern: "^\\d{1,22}\$",
+                baseUrl: "http://viaf.org/viaf/"
+            ],
+            [
+                value: 'ncsu',
+                name: 'NCSU',
+                targetType: targetTypeOrg,
+                pattern: "^\\d{8}\$",
+                baseUrl: "https://www.lib.ncsu.edu/ld/onld/"
+            ],
+            [
+                value: 'wikidata',
+                name: 'WikiData',
+                targetType: targetTypeOrg,
+                pattern: "^(Q|Property:P|Lexeme:L)\\d{1,10}\$",
+                baseUrl: "https://www.wikidata.org/wiki/"
             ]
         ]
 
