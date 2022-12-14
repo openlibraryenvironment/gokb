@@ -251,6 +251,11 @@ class ComponentLookupService {
 
             if (first) {
               comboFilterStr += " WHERE "
+
+              if (params.pkg && params.int('pkg')) {
+                comboFilterStr += "p.id=${params.pkg} AND "
+              }
+
               first = false
             }
             else {
