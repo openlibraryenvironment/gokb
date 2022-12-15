@@ -13,8 +13,6 @@ import grails.validation.ValidationException
 import groovy.util.logging.*
 import org.grails.web.json.JSONObject
 
-import javax.annotation.Nonnull
-
 @Slf4j
 class ComponentLookupService {
   def grailsApplication
@@ -702,7 +700,7 @@ class ComponentLookupService {
   }
 
 
-  CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null, def activeGroup = null){
+  CuratoryGroup findCuratoryGroupOfInterest(KBComponent component, User user = null, def activeGroup = null){
     CuratoryGroup activeCuratoryGroup = null
 
     if (activeGroup instanceof CuratoryGroup) {
