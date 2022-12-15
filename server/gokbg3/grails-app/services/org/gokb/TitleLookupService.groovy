@@ -107,7 +107,7 @@ class TitleLookupService {
           // Ensure we're not looking at a Hibernate Proxy class representation of the class
           KBComponent dproxied = ClassUtils.deproxy(c);
 
-          if (!fullsync || dproxied.status != status_deleted) {
+          if (fullsync || dproxied.status != status_deleted) {
             // Only add if it's a title.
             if (ti_class.isInstance(dproxied)) {
               title_match = true
