@@ -650,6 +650,7 @@ class TippService {
       monograph: ['isbn', 'doi', 'pisbn']
     ]
     def typeString = tippInfo.publicationType ?: tippInfo.type
+    def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
 
     def result = [full_matches: [], failed_matches: []]
 
@@ -664,7 +665,7 @@ class TippService {
     }
 
     current_tipps.each { ctipp ->
-      def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = :tipp and toComponent = i)", [tipp: ctipp]).collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
+      def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = :tipp and toComponent = i and status = :ca)", [tipp: ctipp, ca: combo_active]).collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
       log.debug("Checking against existing IDs: ${tipp_ids}")
       def tipp_id_match_results = []
       boolean has_conflicts = false
