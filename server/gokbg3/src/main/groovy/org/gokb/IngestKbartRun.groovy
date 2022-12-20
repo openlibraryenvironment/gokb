@@ -259,17 +259,19 @@ class IngestKbartRun {
         if (addOnly) {
           log.debug("Incremental -- no expunge")
         }
-        else {
+        else if (isUpdate) {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
           if (!dryRun && result.result != 'CANCELLED') {
             try {
               // Find all tipps in this package which have a lastSeen before the ingest date
+              Long[] matched_ids = matched_tipps.keySet()
+
               def retire_pars = [
                 pkgid: pkg.id,
-                dt: ingest_systime,
                 sc: status_current,
                 sr: status_retired,
                 igdt: dateFormatService.parseDate(ingest_date),
+                mtid: matched_ids,
                 now: new Date()
               ]
 
@@ -278,7 +280,7 @@ class IngestKbartRun {
               def retired_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
                   set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
                   where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
-                  and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
+                  and tipp.id not in (:mtid) and tipp.status = :sc''', retire_pars)
 
               result.report.retired = retired_count
               log.debug("Completed tipp cleanup (${retired_count} retired)")
@@ -745,10 +747,10 @@ class IngestKbartRun {
 
       // log.debug("Values updated, set lastSeen");
 
-      if (ingest_systime) {
-        log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date} (${tipp.lastSeen} -> ${ingest_systime})")
-        tipp.lastSeen = ingest_systime
-      }
+      // if (ingest_systime) {
+      //   log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date} (${tipp.lastSeen} -> ${ingest_systime})")
+      //   tipp.lastSeen = ingest_systime
+      // }
 
       setPrices(tipp, the_kbart)
 

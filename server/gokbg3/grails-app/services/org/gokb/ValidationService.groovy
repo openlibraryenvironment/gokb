@@ -326,7 +326,8 @@ class ValidationService {
   def checkRow(String[] nl, int rowCount, Map col_positions, IdentifierNamespace titleIdNamespace = null, boolean strict = false) {
     def result = [errors: [:], warnings: [:]]
     def valid_ids = []
-    def pubType = checkPubType(nl[col_positions['publication_type']])
+    def pubTypeVal = nl[col_positions['publication_type']].trim()
+    def pubType = checkPubType(pubTypeVal)
 
     for (key in col_positions.keySet()) {
       def trimmed_val = nl[col_positions[key]].trim()
@@ -366,6 +367,9 @@ class ValidationService {
             ]
           }
         }
+        else if (!pubType && (key == 'online_identifier' || key == 'print_identifier')) {
+          log.debug("Skipping ID columns due to missing publication_type")
+        }
         else if (KNOWN_COLUMNS[key].validator && trimmed_val) {
           def final_args = [trimmed_val] + KNOWN_COLUMNS[key].validator.args?.collect { it == "_colName" ? key : nl[col_positions[it]] }
           def field_valid_result = "${KNOWN_COLUMNS[key].validator.name}"(*final_args)
@@ -386,6 +390,14 @@ class ValidationService {
           }
         }
       }
+    }
+
+    if (pubTypeVal && (!pubType || (strict && pubType != 'Serial' && pubType != 'Monograph'))) {
+      result.errors["publication_type"] = [
+        message: "Publication type '${pubTypeVal}' is not valid!",
+        messageCode: "kbart.errors.illegalType",
+        args: [pubTypeVal]
+      ]
     }
 
     if (!col_positions['online_identifier'] && !col_positions['print_identifier'] && !col_positions['title_id']) {

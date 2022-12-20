@@ -278,23 +278,23 @@ class PackageTestSpec extends AbstractAuthSpec {
     pkg.tipps.size() == 2
   }
 
-  // void "test /rest/packages/<id>/ingest with partial matching conflicts"() {
-  //   given:
-  //   def urlPath = getUrlPath()
-  //   Resource kbart_file = new ClassPathResource("/test_rest_update_conflicts.txt")
-  //   def pkg = Package.findByName("TestPack")
-  //   Platform testPlt = Platform.findByName("PackTestPlt")
-  //   when:
-  //   String accessToken = getAccessToken()
-  //   RestResponse resp = rest.post("${urlPath}/rest/packages/${pkg.id}/ingest?async=false") {
-  //     accept('application/json')
-  //     contentType("multipart/form-data")
-  //     auth("Bearer $accessToken")
-  //     submissionFile=kbart_file.getFile()
-  //   }
-  //   then:
-  //   resp.status == 200
-  //   resp.json?.job_result?.report?.partial == 2
-  //   resp.json?.job_result?.report?.retired == 2
-  // }
+  void "test /rest/packages/<id>/ingest with partial matching conflicts"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_update_conflicts.txt")
+    def pkg = Package.findByName("TestPack")
+    Platform testPlt = Platform.findByName("PackTestPlt")
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("${urlPath}/rest/packages/${pkg.id}/ingest?async=false") {
+      accept('application/json')
+      contentType("multipart/form-data")
+      auth("Bearer $accessToken")
+      submissionFile=kbart_file.getFile()
+    }
+    then:
+    resp.status == 200
+    resp.json?.job_result?.report?.partial == 2
+    resp.json?.job_result?.report?.retired == 2
+  }
 }

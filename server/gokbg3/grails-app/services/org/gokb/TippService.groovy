@@ -688,8 +688,8 @@ class TippService {
               else {
                 tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'OK']
               }
+              unmatched = false
             }
-            unmatched = false
           }
 
           if (unmatched) {
