@@ -40,7 +40,7 @@ class UpdatePackageRunSpec extends Specification {
     def test_journal = JournalInstance.findByName('TestJournal') ?: new JournalInstance(name: 'TestJournal').save(flush: true)
     Identifier book_doi = Identifier.findByValueAndNamespace('10.1021/978-3-16-148410-0', IdentifierNamespace.findByValue('doi')) ?: new Identifier(value: '10.1021/978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('doi'))
     Identifier book_isbn = Identifier.findByValueAndNamespace('978-3-16-148410-0', IdentifierNamespace.findByValue('isbn')) ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn'))
-    Identifier serial_issn = Identifier.findByValueAndNamespace('9783-442X', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '9783-442X', namespace: IdentifierNamespace.findByValue('issn'))
+    Identifier serial_issn = Identifier.findByValueAndNamespace('9783-4424', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '9783-4424', namespace: IdentifierNamespace.findByValue('issn'))
     Identifier serial_eissn = Identifier.findByValueAndNamespace('9783-4420', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '9783-4420', namespace: IdentifierNamespace.findByValue('eissn'))
 
     def test_book = BookInstance.findByName('TestBook') ?: new BookInstance(name: 'TestBook').save(flush: true)
@@ -98,7 +98,7 @@ class UpdatePackageRunSpec extends Specification {
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
       title.expunge()
     }
-    ['9783-442X', '9783-4420', '9784-442X', '978-3-16-148410-0', '10.1021/978-3-16-148410-0'].each {
+    ['9783-4424', '9783-4420', '9784-442X', '978-3-16-148410-0', '10.1021/978-3-16-148410-0'].each {
       Identifier.findByValue(it)?.expunge()
     }
     ['Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
@@ -234,11 +234,11 @@ class UpdatePackageRunSpec extends Specification {
                 "identifiers": [
                     [
                         "type" : "issn",
-                        "value": "9783-442X"  // same
+                        "value": "9783-4424"  // same
                     ],
                     [
                         "type" : "eissn",
-                        "value": "9783-4429"  // different
+                        "value": "9783-4327"  // different
                     ]
                 ],
                 "coverage"   : [
@@ -269,11 +269,11 @@ class UpdatePackageRunSpec extends Specification {
                         ],
                         [
                             "type" : "issn",
-                            "value": "9783-442X"  // same
+                            "value": "9783-4424"  // same
                         ],
                         [
                             "type" : "eissn",
-                            "value": "9783-4429"  // different
+                            "value": "9783-4327"  // different
                         ]
                     ],
                     "name"       : "Journal of agricultural and food chemistry",
@@ -340,7 +340,7 @@ class UpdatePackageRunSpec extends Specification {
                 "identifiers": [
                     [
                         "type": "issn",
-                        "value": "9783-442X"
+                        "value": "9783-4424"
                     ]
                 ],
                 "coverage": [
@@ -371,7 +371,7 @@ class UpdatePackageRunSpec extends Specification {
                         ],
                         [
                             "type": "issn",
-                            "value": "9783-442X"
+                            "value": "9783-4424"
                         ]
                     ],
                     "name": "Journal of agricultural and food chemistry",
@@ -633,7 +633,7 @@ class UpdatePackageRunSpec extends Specification {
                     ],
                     [
                         "type" : "issn",
-                        "value": "9783-442X"
+                        "value": "9783-4424"
                     ]
 
                 ],
@@ -665,7 +665,7 @@ class UpdatePackageRunSpec extends Specification {
                         ],
                         [
                             "type" : "issn",
-                            "value": "9783-442X"
+                            "value": "9783-4424"
                         ]
                     ],
                     "name"       : "Journal of agricultural and food chemistry",

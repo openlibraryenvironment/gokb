@@ -107,7 +107,7 @@ class TitleLookupService {
           // Ensure we're not looking at a Hibernate Proxy class representation of the class
           KBComponent dproxied = ClassUtils.deproxy(c);
 
-          if (!fullsync || dproxied.status != status_deleted) {
+          if (fullsync || dproxied.status != status_deleted) {
             // Only add if it's a title.
             if (ti_class.isInstance(dproxied)) {
               title_match = true
@@ -224,6 +224,7 @@ class TitleLookupService {
     def result = [to_create: false, matches: [], conflicts: []]
     TitleInstance the_title = null
     Class ti_class = Class.forName(newTitleClassName)
+    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
 
     // Lookup any class 1 identifier matches
     def results = class_one_match(identifiers, ti_class)
@@ -307,9 +308,11 @@ class TitleLookupService {
         def id_mismatches = []
 
         results['ids'].each { rid ->
-          matches[0].ids.each { mid ->
+          def active_ids = Identifier.executeQuery('from Identifier as i where exists (select 1 from Combo where toComponent = i and fromComponent = :title and status = :ca)', [title: matches[0], ca: status_active])
+
+          active_ids.each { mid ->
             if (rid.namespace == mid.namespace && rid.value != mid.value) {
-              if (!matches[0].ids.contains(rid)) {
+              if (!active_ids.contains(rid)) {
                 id_mismatches.add([incoming: rid, matched: mid])
               }
             }
@@ -370,11 +373,12 @@ class TitleLookupService {
 
           def full_match = true
           def id_conflicts = []
+          def active_ids = Identifier.executeQuery('from Identifier as i where exists (select 1 from Combo where toComponent = i and fromComponent = :title and status = :ca)', [title: mti, ca: status_active])
 
           results['ids'].each { rid ->
-            mti.ids.each { mid ->
+            active_ids.each { mid ->
               if (rid.namespace == mid.namespace && rid.value != mid.value) {
-                if (!mti.ids.contains(rid)) {
+                if (!active_ids.contains(rid)) {
                   full_match = false
                   id_conflicts.add([
                     message: "Value ${rid.value} for namespace ${rid.namespace.value} conflicts with existing value ${mid.value}",
@@ -477,6 +481,7 @@ class TitleLookupService {
     // The TitleInstance
     TitleInstance the_title = null
     Class ti_class = Class.forName(newTitleClassName)
+    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def rr_map = [:]
     def title_created = false
 
@@ -668,11 +673,12 @@ class TitleLookupService {
 
         def id_mismatches = []
         def id_matches = []
+        def active_ids = Identifier.executeQuery('from Identifier as i where exists (select 1 from Combo where toComponent = i and fromComponent = :title and status = :ca)', [title: matches[0], ca: status_active])
 
         results['ids'].each { rid ->
-          matches[0].ids?.each { mid ->
+          active_ids.each { mid ->
             if (rid.namespace == mid.namespace && rid.value != mid.value) {
-              if (!matches[0].ids.contains(rid)) {
+              if (!active_ids.contains(rid)) {
                 id_mismatches.add(rid)
               } else {
                 id_matches.add(rid)
@@ -808,11 +814,12 @@ class TitleLookupService {
         matches.each { mti ->
 
           def full_match = true
+          def active_ids = Identifier.executeQuery('from Identifier as i where exists (select 1 from Combo where toComponent = i and fromComponent = :title and status = :ca)', [title: mti, ca: status_active])
 
           results['ids'].each { rid ->
-            mti.ids.each { mid ->
+            active_ids.each { mid ->
               if (rid.namespace == mid.namespace && rid.value != mid.value) {
-                if (!mti.ids.contains(rid)) {
+                if (!active_ids.contains(rid)) {
                   full_match = false
                 }
               }

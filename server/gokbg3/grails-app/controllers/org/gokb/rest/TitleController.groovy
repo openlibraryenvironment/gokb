@@ -827,7 +827,7 @@ class TitleController {
       }
     }
 
-    def pub_result = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
+    def pub_result = restMappingService.updatePublisherList(obj, reqBody.publisher, remove)
 
     changed |= pub_result.changed
 
@@ -1008,8 +1008,11 @@ class TitleController {
               def tippObj = TitleInstancePackagePlatform.get(tipp.id)
 
               tippObj.title = target
+              target.save(flush: true)
             }
           }
+
+          obj.refresh()
 
           if (params.list('ids')?.size() > 0) {
             params.list('ids').each { tid ->
@@ -1017,6 +1020,7 @@ class TitleController {
 
               if (idObj && !target.ids.contains(idObj)) {
                 target.ids.add(idObj)
+                target.save(flush: true)
               }
             }
           }
@@ -1037,6 +1041,8 @@ class TitleController {
               }
             }
           }
+
+          target.save(flush: true)
 
           obj.deleteSoft()
         }

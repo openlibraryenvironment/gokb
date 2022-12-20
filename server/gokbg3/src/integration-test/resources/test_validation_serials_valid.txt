@@ -1,3 +1,2 @@
 publication_title	print_identifier	online_identifier	date_first_issue_online	num_first_vol_online	num_first_issue_online	date_last_issue_online	num_last_vol_online	num_last_issue_online	title_url	first_author	title_id	embargo_info	coverage_depth	coverage_notes	publisher_name	publication_type	zdb_id	access_type
-TestJournalTIPPUpdate	0020-0255	1872-6291							https://test.org/journal		packTitleID		fulltext		PackTestOrg	Serial	1480678-2	P
-TestBookTIPPUpdate		978-3-16-148410-0							https://test.org/book		packBookID		fulltext		PackTestOrg	Monograph		P
+ValidationTestJournal	1673-3436	1673-355X	2000	1	1	2013-10	15	80	https://test.org/journal		validId	R8D	fulltext		ValidationSerialOrg	Serial	2230599-3	

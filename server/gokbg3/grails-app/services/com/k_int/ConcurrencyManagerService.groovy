@@ -98,7 +98,7 @@ class ConcurrencyManagerService {
      */
     @Override
     public synchronized boolean isDone() {
-      this.task.done
+      return (this.task ? this.task.done : true)
     }
 
     @Override
@@ -127,14 +127,14 @@ class ConcurrencyManagerService {
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
-      this.task.cancel(mayInterruptIfRunning)
+      this.task?.cancel(mayInterruptIfRunning)
       message("cancel Job ($uuid)")
       endTime = new Date()
     }
 
     @Override
     public boolean isCancelled() {
-      this.task.isCancelled();
+      return (this.task ? this.task.isCancelled() : true)
     }
 
     /**
@@ -186,7 +186,7 @@ class ConcurrencyManagerService {
      */
     @Override
     public def get() {
-      return task.get()
+      return task?.get() ?: null
     }
 
     /**
@@ -365,7 +365,7 @@ class ConcurrencyManagerService {
 
     // Filter the jobs.
     allJobs.each { k, v ->
-      if (v.hasProperty(propertyName) && (showFinished || !v.isDone()))
+      if (v && v.hasProperty(propertyName) && (showFinished || !v.isDone())) {
         if ((Integer.isInstance(v[propertyName]) && v[propertyName] == id) ||
             (Map.isInstance(v[propertyName]) && v[propertyName].id == id)) {
           CuratoryGroup cg = CuratoryGroup.get(v.groupId)
@@ -383,6 +383,10 @@ class ConcurrencyManagerService {
               cancelled  : v.isCancelled()
           ]
         }
+      }
+      else if (!v) {
+        log.error("Empty job $k in list!")
+      }
     }
 
     total = selected.size()

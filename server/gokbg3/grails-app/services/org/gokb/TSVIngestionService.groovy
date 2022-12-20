@@ -66,8 +66,16 @@ class TSVIngestionService {
 
     // Create a checksum for the file..
     MessageDigest md5_digest = MessageDigest.getInstance("MD5")
-    FileInputStream fis = new FileInputStream(temp_file)
-    BufferedInputStream md5_is = new BufferedInputStream(fis)
+    InputStream is
+
+    if (temp_file instanceof File) {
+      is = new FileInputStream(temp_file)
+    }
+    else {
+      is = temp_file
+    }
+
+    BufferedInputStream md5_is = new BufferedInputStream(is)
     UniversalDetector detector = new UniversalDetector()
     byte[] md5_buffer = new byte[8192]
     int md5_read = 0

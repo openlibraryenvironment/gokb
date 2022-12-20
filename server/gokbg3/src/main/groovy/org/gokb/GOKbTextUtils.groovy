@@ -252,7 +252,7 @@ class GOKbTextUtils {
     if (title) {
       title = removeSpaces(escapeBackslashes(title.trim()))
 
-      if (title.indexOf('@') > 0 && title.indexOf(' @') < 8) {
+      if (title?.indexOf('@') > 0 && title?.indexOf(' @') < 8) {
         title = title.replaceFirst(/\s@/, ' ')
       }
     }

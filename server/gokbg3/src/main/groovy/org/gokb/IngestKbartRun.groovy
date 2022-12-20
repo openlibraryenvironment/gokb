@@ -43,6 +43,7 @@ class IngestKbartRun {
   static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
   static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
+  static ValidationService validationService = Holders.grailsApplication.mainContext.getBean('validationService')
   static def concurrencyManagerService = Holders.grailsApplication.mainContext.getBean('concurrencyManagerService')
   static TippService tippService = Holders.grailsApplication.mainContext.getBean('tippService')
   static DateFormatService dateFormatService = Holders.grailsApplication.mainContext.getBean('dateFormatService')
@@ -52,12 +53,22 @@ class IngestKbartRun {
   boolean dryRun
   boolean isUpdate
   User user
-  Map jsonResult = [result: "SUCCESS"]
   Map errors = [global: [], tipps: []]
   int removedNum = 0
   def invalidTipps = []
   def matched_tipps = [:]
   def titleIdMap = [:]
+  def titleMatchResult = [
+    matches: [
+      partial: 0,
+      full: 0
+    ],
+    created: 0,
+    conflicts: 0,
+    noid: 0
+  ]
+  def titleMatchConflicts = []
+  def badRows = []
   Package pkg
   CuratoryGroup activeGroup
   def pkg_validation
@@ -98,6 +109,7 @@ class IngestKbartRun {
 
   def start(nJob) {
     job = nJob ?: job
+    def pid = pkg.id
     log.debug("ingest start")
     def result = [result: 'OK', dryRun: dryRun]
     result.messages = []
@@ -147,8 +159,6 @@ class IngestKbartRun {
       log.debug("Set progress")
       job?.setProgress(0)
 
-      def badrows = []
-      def titleMatchStats = [matches: [partial: 0, full: 0], created: 0, conflicts: 0, noid: 0]
       def file_info = checkFile(datafile)
       def running_jobs = concurrencyManagerService.getComponentJobs(pkg.id)
 
@@ -164,6 +174,13 @@ class IngestKbartRun {
 
         header = header.collect { it.toLowerCase().trim() }
 
+        Map col_positions = [:]
+        int ctr = 0
+
+        header.each {
+          col_positions[it] = ctr++
+        }
+
         log.debug("Handling header ${header}")
 
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
@@ -178,6 +195,8 @@ class IngestKbartRun {
         }
 
         long startTime = System.currentTimeMillis()
+        RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+        new Combo(fromComponent: pkg, toComponent: datafile, type: type_fa).save(flush: true)
 
         log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rownum} rows. Package is ${pkg.id}")
 
@@ -191,22 +210,21 @@ class IngestKbartRun {
             rownum++
 
             if (row_data.size() == header.size()) {
-                def row_kbart_beans = getKbartBeansForRow(header, row_data)
+                def row_kbart_beans = getKbartBeansForRow(col_positions, row_data)
                 def row_specific_cfg = getRowSpecificCfg(ingest_cfg, row_kbart_beans)
                 log.debug("**Ingesting ${rownum} of ${file_info.rownum} ${row_kbart_beans}")
 
                 long rowStartTime = System.currentTimeMillis()
 
                 if (dryRun) {
-                  checkTitleMatchRow(row_kbart_beans, ingest_cfg, titleMatchStats)
+                  checkTitleMatchRow(row_kbart_beans, rownum, ingest_cfg)
                 }
 
-                if (validateRow(rownum, badrows, row_kbart_beans)) {
+                if (validateRow(row_data, rownum, col_positions)) {
                   def line_result = writeToDB(row_kbart_beans,
                             ingest_date,
                             ingest_systime,
                             ingest_cfg,
-                            badrows,
                             row_specific_cfg)
 
                   result.report[line_result]++
@@ -235,13 +253,13 @@ class IngestKbartRun {
         }
 
         if (result.result != 'CANCELLED' && dryRun) {
-          result.titleMatch = titleMatchStats
+          result.titleMatch = titleMatchResult
         }
 
         if (addOnly) {
           log.debug("Incremental -- no expunge")
         }
-        else {
+        else if (isUpdate) {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
           if (!dryRun && result.result != 'CANCELLED') {
             try {
@@ -275,9 +293,9 @@ class IngestKbartRun {
           }
         }
 
-        if (badrows.size() > 0) {
-          def msg = "There are ${badrows.size()} bad rows -- write to badfile and report"
-          result.badrows = badrows
+        if (badRows.size() > 0) {
+          def msg = "There are ${badRows.size()} bad rows -- write to badfile and report"
+          result.badrows = badRows
           result.messages.add(msg)
         }
 
@@ -296,35 +314,38 @@ class IngestKbartRun {
 
         if (!dryRun) {
           try {
-            def update_agent = User.findByUsername('IngestAgent')
-            // insertBenchmark updateBenchmark
-            def p = Package.get(pkg.id)
+            Package.withNewSession {
+              Package p = Package.get(pid)
 
-            if ( p.insertBenchmark == null )
-              p.insertBenchmark = processing_elapsed
-            p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
-            p.lastUpdatedBy = update_agent
-            p.updateBenchmark = processing_elapsed
-            p.save(flush: true, failOnError: true)
+              def update_agent = User.findByUsername('IngestAgent')
+              // insertBenchmark updateBenchmark
+              if ( p.insertBenchmark == null )
+                p.insertBenchmark = processing_elapsed
 
-            def matching_job = concurrencyManagerService.createJob { mjob ->
-              Package.withNewSession {
-                tippService.matchPackage(p, mjob)
+              p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
+              p.lastUpdatedBy = update_agent
+              p.updateBenchmark = processing_elapsed
+              p.save(flush: true, failOnError: true)
+
+              def matching_job = concurrencyManagerService.createJob { mjob ->
+                TitleInstancePackagePlatform.withNewSession {
+                  tippService.matchPackage(pid, mjob)
+                }
               }
-            }
 
-            matching_job.description = "Package Title Matching".toString()
-            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
-            matching_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
-            matching_job.message("Starting title match for Package ${p.name}".toString())
-            matching_job.startOrQueue()
-            matching_job.startTime = new Date()
+              matching_job.description = "Package Title Matching".toString()
+              matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+              matching_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+              matching_job.message("Starting title match for Package ${pkg.name}".toString())
+              matching_job.startOrQueue()
+              matching_job.startTime = new Date()
 
-            if (!async) {
-              result.matchingJob = matching_job.get()
-            }
-            else {
-              result.matchingJob = matching_job.uuid
+              if (!async) {
+                result.matchingJob = matching_job.get()
+              }
+              else {
+                result.matchingJob = matching_job.uuid
+              }
             }
           }
           catch (Exception e) {
@@ -341,35 +362,47 @@ class IngestKbartRun {
     catch (IllegalCharactersException ice) {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.replacementChars'
-      result.messages.add(ice.toString())
-      job?.message(ice.toString())
+
+      if (job) {
+        job.exception = ice.toString()
+      }
     }
     catch (Exception e) {
-      job?.message(e.toString())
+      if (job) {
+        job.exception = e.toString()
+      }
       result.result = 'ERROR'
-      result.messages.add(e.toString())
       log.error("Problem", e)
     }
 
-    job?.setProgress(100)
-    job?.endTime = new Date()
+    if (job) {
+      job.setProgress(100)
+      job.endTime = new Date()
 
-    def result_object = JobResult.findByUuid(job?.uuid)
+      JobResult.withNewSession {
+        def result_object = JobResult.findByUuid(job.uuid)
 
-    if (!result_object) {
-      def job_map = [
-          uuid        : (job?.uuid),
-          description : (job?.description),
-          resultObject: (result as JSON).toString(),
-          type        : (job?.type),
-          statusText  : (result.result),
-          ownerId     : (job?.ownerId),
-          groupId     : (job?.groupId),
-          startTime   : (job?.startTime),
-          endTime     : (job?.endTime),
-          linkedItemId: (job?.linkedItem?.id)
-      ]
-      new JobResult(job_map).save(flush: true, failOnError: true)
+        if (result.titleMatch) {
+          result.titleMatch.rowConflicts = titleMatchConflicts
+        }
+
+        if (!result_object) {
+          def job_map = [
+              uuid        : (job.uuid),
+              description : (job.description),
+              resultObject: (result as JSON).toString(),
+              type        : (job.type),
+              statusText  : (result.result),
+              ownerId     : (job.ownerId),
+              groupId     : (job.groupId),
+              startTime   : (job.startTime),
+              endTime     : (job.endTime),
+              linkedItemId: (job.linkedItem?.id)
+          ]
+
+          def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+        }
+      }
     }
 
     def elapsed = System.currentTimeMillis() - start_time
@@ -383,7 +416,6 @@ class IngestKbartRun {
                ingest_date,
                ingest_systime,
                ingest_cfg,
-               badrows,
                row_specific_config) {
 
     //simplest method is to assume that everything is new.
@@ -477,7 +509,7 @@ class IngestKbartRun {
         }
         else {
           log.debug("Skipping row - no identifiers")
-          badrows.add([rowdata: the_kbart, message: 'No usable identifiers'])
+          badRows.add([rowdata: the_kbart, message: 'No usable identifiers'])
           result = 'invalid'
         }
 
@@ -875,7 +907,7 @@ class IngestKbartRun {
 
     CSVReader csv = new CSVReaderBuilder(
         new InputStreamReader(
-            new org.apache.commons.io.input.BOMInputStream(
+            new BOMInputStream(
                 new ByteArrayInputStream(the_data.fileData),
                 ByteOrderMark.UTF_16LE,
                 ByteOrderMark.UTF_16BE,
@@ -891,15 +923,8 @@ class IngestKbartRun {
     return csv
   }
 
-  def getKbartBeansForRow(header, row_data) {
+  def getKbartBeansForRow(col_positions, row_data) {
     def result = [:]
-
-    Map col_positions = [:]
-    int ctr = 0
-
-    header.each {
-      col_positions[it] = ctr++
-    }
 
     for (key in col_positions.keySet()) {
       // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
@@ -912,7 +937,7 @@ class IngestKbartRun {
             result[key] = row_data[col_positions[key]]
           }
           else {
-            log.error("Column references value not present in col ${col_positions[key]} row ${rownum}")
+            log.error("Column references value not present in col ${col_positions[key]}!")
           }
         }
       }
@@ -921,74 +946,18 @@ class IngestKbartRun {
     result
   }
 
-  def validateRow(rownum, badrows, row_data) {
+  def validateRow(row_data, rownum, col_positions) {
     log.debug("Validate :: ${row_data}")
-    def result = true
-    def errors = []
+    def valid = true
+    def result = validationService.checkRow(row_data, rownum, col_positions, providerIdentifierNamespace)
 
-    // check the_kbart.date_first_issue_online is present and validates
-    if (row_data.date_first_issue_online != null && row_data.date_first_issue_online.trim()) {
-      def parsed_start_date = parseDate(row_data.date_first_issue_online)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for date_first_issue_online :: ${row_data.date_first_issue_online}")
-        result = false
-      }
+    if (result.errors) {
+      log.error("Recording bad row ${rownum}: ${result.errors}")
+      valid = false
+      badRows.add([rowdata: row_data, errors: result.errors, row: rownum])
     }
 
-    if (row_data.date_last_issue_online != null && row_data.date_last_issue_online.trim()) {
-      def parsed_start_date = parseDate(row_data.date_first_issue_online)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_last_issue_online' :: ${row_data.date_last_issue_online}")
-        result = false
-      }
-    }
-
-    if (row_data.date_monograph_published_online != null && row_data.date_monograph_published_online.trim()) {
-      def parsed_start_date = parseDate(row_data.date_monograph_published_online)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_online' :: ${row_data.date_monograph_published_online}")
-        result = false
-      }
-    }
-
-    if (row_data.date_monograph_published_print != null && row_data.date_monograph_published_print.trim()) {
-      def parsed_start_date = parseDate(row_data.date_monograph_published_print)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_print' :: ${row_data.date_monograph_published_online}")
-        result = false
-      }
-    }
-
-    if (!row_data.title_id || !row_data.title_id.trim()) {
-      errors.add("Row ${rownum} does not contain a value for 'title_id'")
-      result = false
-    }
-
-    if (!row_data.publication_title || !row_data.publication_title.trim()) {
-      errors.add("Row ${rownum} does not contain a value for 'publication_title'")
-      result = false
-    }
-
-    if (!row_data.publication_type || !row_data.publication_type.trim() || !TitleInstance.determineTitleClass(row_data.publication_type)) {
-      errors.add("Row ${rownum} does not contain a valid 'publication_type' :: ${row_data.publication_type}")
-      result = false
-    }
-
-    if (!row_data.title_url || !row_data.title_url.trim()) {
-      errors.add("Row ${rownum} does not contain a value for 'title_url'")
-      result = false
-    }
-
-    if (!result) {
-      log.error("Recording bad row : ${reasons}")
-      badrows.add([rowdata: row_data, errors: errors, row: rownum])
-    }
-
-    result
+    valid
   }
 
   /**
@@ -1050,7 +1019,7 @@ class IngestKbartRun {
     result
   }
 
-  def checkTitleMatchRow(the_kbart, ingest_cfg, match_result) {
+  def checkTitleMatchRow(the_kbart, rownum, ingest_cfg) {
     def row_specific_cfg = getRowSpecificCfg(ingest_cfg, the_kbart)
 
     TitleInstance.withNewSession {
@@ -1084,32 +1053,52 @@ class IngestKbartRun {
             TitleInstance.determineTitleClass(the_kbart.publication_type)
         )
 
-        if (title_lookup_result.conflicts) {
-          match_result.conflicts++
-        }
-        else if (title_lookup_result.to_create) {
-          match_result.created++
+        boolean hasConflicts = false
+        boolean partial = false
+        def matchConflicts = []
 
-          if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
-            log.debug("New title -- Conflicts: ${title_lookup_result.matches}")
-            match_result.matches.partial++
-          }
+        title_lookup_result.matches.each { trm ->
+          if (trm.conflicts.size() > 0) {
+            partial = true
 
-          if (title_lookup_result.matches.size() > 1) {
-            match_result.conflicts++
+            def match = [
+              id: trm.object.id,
+              name: trm.object.name,
+              conflicts: trm.conflicts
+            ]
+            matchConflicts << match
+
+            if (trm.warnings.contains('duplicate')) {
+              hasConflicts = true
+            }
           }
         }
-        else if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
-          log.debug("Partial Match -- Conflicts: ${title_lookup_result.matches}")
-          match_result.matches.partial++
+
+        if (matchConflicts) {
+          titleMatchConflicts << [row: rownum, matches: matchConflicts]
+        }
+
+        if (hasConflicts) {
+          titleMatchResult.conflicts++
+        }
+
+        if (title_lookup_result.to_create) {
+          titleMatchResult.created++
+
+          if (partial) {
+            titleMatchResult.matches.partial++
+          }
+        }
+        else if (partial) {
+          titleMatchResult.matches.partial++
         }
         else {
-          match_result.matches.full++
+          titleMatchResult.matches.full++
         }
       }
       else {
         log.warn("[${the_kbart.publication_title}] No identifiers.")
-        match_result.noid++
+        titleMatchResult.noid++
       }
     }
   }

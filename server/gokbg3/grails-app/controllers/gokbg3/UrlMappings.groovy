@@ -12,6 +12,7 @@ class UrlMappings {
     "/oai/$id?"(controller: 'oai', action: 'index')
     "/resource/show/$type/$id"(controller: 'resource', action: 'show')
     "/package"(controller: 'packages')
+    "/validate"(controller: 'validation')
 
     group "/rest", {
       post "/packages/$id/retire"(controller: 'package', namespace: 'rest', action:'retire')

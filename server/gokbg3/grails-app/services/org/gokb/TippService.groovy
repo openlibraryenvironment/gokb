@@ -176,9 +176,10 @@ class TippService {
     tipp
   }
 
-  def matchPackage(Package aPackage, def job = null) {
-    log.debug("Matching titles for package ${aPackage}")
-    def result = [matched: 0, created: 0, unmatched: 0, result: 'OK']
+  def matchPackage(pkgId, def job = null) {
+    log.debug("Matching titles for package ${pkgId}")
+    def result = [matched: 0, created: 0, unmatched: 0, error: 0, result: 'OK']
+    def session = sessionFactory.currentSession
     def more = true
     int offset = 0
 
@@ -187,10 +188,10 @@ class TippService {
 
       def tippIDs = TitleInstancePackagePlatform.executeQuery(
         'select tipp.id from TitleInstancePackagePlatform as tipp where exists (' +
-            'from Combo as c1 where c1.fromComponent=:pkg and c1.toComponent=tipp) ' +
+            'from Combo as c1 where c1.fromComponent.id=:pkg and c1.toComponent=tipp) ' +
             'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:ctt)',
         [
-            pkg : aPackage,
+            pkg : pkgId,
             ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
         ],
         [readOnly: true]
@@ -210,7 +211,6 @@ class TippService {
           job?.setProgress(offset, total)
         }
         // Get the current session.
-        def session = sessionFactory.currentSession
         // flush and clear the session.
         session.flush()
         session.clear()
@@ -243,7 +243,7 @@ class TippService {
   def matchTitle(tipp, CuratoryGroup group = null) {
     def result = 'matched'
     def found
-    def title_class_name = TitleInstance.determineTitleClass(tipp.publicationType?.value ?: 'Serial')
+    def session = sessionFactory.currentSession
     final IdentifierNamespace ZDB_NS = IdentifierNamespace.findByValue('zdb')
     def pkg = Package.executeQuery("from Package as pkg where exists (select 1 from Combo where fromComponent = pkg and toComponent = :tipp)", [tipp: tipp])[0]
 
@@ -252,84 +252,100 @@ class TippService {
     }
 
     // remap Identifiers
-    def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = ? and toComponent = i)", [tipp])
+    def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = :tipp and toComponent = i)", [tipp: tipp])
     def my_ids = tipp_ids.collect { [value: it.value, type: it.namespace.value] }
+    def pubType = tipp.publicationType?.value ?: null
 
     log.debug("TIPP Ids: ${my_ids} (by query: tipp_ids.size())")
 
-    found = titleLookupService.find(
-        tipp.name,
-        tipp.getPublisherName(),
-        my_ids,
-        title_class_name
-    )
-
-    TitleInstance ti = null
-    if (found.to_create == true) {
-      log.debug("No existing title matched, creating ${tipp.name}")
-      ti = createTitleFromTippData(tipp, tipp_ids)
-      result = 'created'
+    if (!pubType && my_ids.find { it.type == 'issn' || it.type == 'eissn' }) {
+      pubType = 'Serial'
     }
-    else if (found.matches.size() == 1) {
-      // exactly one match
-      ti = found.matches[0].object
-      log.debug("Matched title ${ti} for ${tipp}!")
-      TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
-
-      if (currentCov && (
-          (ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) ||
-          (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo)
-      )) {
-        reviewRequestService.raise(
-            tipp,
-            "TIPP coverage conflicts title publishing data",
-            "TIPP ${tipp.name} was linked, check coverage",
-            null,
-            null,
-            [otherComponents: ti] as JSON,
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch"),
-            componentLookupService.findCuratoryGroupOfInterest(tipp, null, group)
-        )
-      }
+    else if (!pubType && my_ids.find { it.type == 'isbn' || it.type == 'isbn' }) {
+      pubType = 'Monograph'
     }
-    else if (found.matches.size() > 1 && tipp.coverageStatements?.size() > 0) {
-      coverageCheck(tipp, found)
 
-      if (found.matches.size() == 1) {
-        ti = found.matches[0].object
-      }
-      else if (found.matches.size() == 0) {
-        log.debug("No matches after coverage check.. creating new title ${tipp.name}")
+    def title_class_name = TitleInstance.determineTitleClass(pubType)
+
+    if (title_class_name) {
+      found = titleLookupService.find(
+          tipp.name,
+          tipp.getPublisherName(),
+          my_ids,
+          title_class_name
+      )
+
+      TitleInstance ti = null
+      if (found.to_create == true) {
+        log.debug("No existing title matched, creating ${tipp.name}")
         ti = createTitleFromTippData(tipp, tipp_ids)
         result = 'created'
       }
-    }
-    else {
-      log.debug("No new title and no match, ensuring correct review is attached to the TIPP..")
-    }
+      else if (found.matches.size() == 1) {
+        // exactly one match
+        ti = found.matches[0].object
+        log.debug("Matched title ${ti} for ${tipp}!")
+        TIPPCoverageStatement currentCov = latest(tipp.coverageStatements)
 
-    if (ti) {
-      if (result == 'matched') {
-        titleAugmentService.addIdentifiers(tipp_ids, ti)
-        titleAugmentService.addPublisher(tipp.publisherName, ti)
+        if (currentCov && (
+            (ti.publishedFrom && currentCov.startDate && currentCov.startDate < ti.publishedFrom) ||
+            (ti.publishedTo && currentCov.endDate && currentCov.endDate > ti.publishedTo)
+        )) {
+          reviewRequestService.raise(
+              tipp,
+              "TIPP coverage conflicts title publishing data",
+              "TIPP ${tipp.name} was linked, check coverage",
+              null,
+              null,
+              [otherComponents: ti] as JSON,
+              RefdataCategory.lookup("ReviewRequest.StdDesc", "Coverage Mismatch"),
+              componentLookupService.findCuratoryGroupOfInterest(tipp, null, group)
+          )
+        }
+      }
+      else if (found.matches.size() > 1 && tipp.coverageStatements?.size() > 0) {
+        coverageCheck(tipp, found)
+
+        if (found.matches.size() == 1) {
+          ti = found.matches[0].object
+        }
+        else if (found.matches.size() == 0) {
+          log.debug("No matches after coverage check.. creating new title ${tipp.name}")
+          ti = createTitleFromTippData(tipp, tipp_ids)
+          result = 'created'
+        }
+      }
+      else {
+        log.debug("No new title and no match, ensuring correct review is attached to the TIPP..")
       }
 
-      def ti_combo = new Combo(fromComponent: ti, toComponent: tipp, type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')).save(flush: true)
+      if (ti) {
+        if (result == 'matched') {
+          titleAugmentService.addIdentifiers(tipp_ids, ti)
+          titleAugmentService.addPublisher(tipp.publisherName, ti)
+        }
 
-      log.debug("linked TIPP $tipp with TitleInstance $ti")
+        def ti_combo = new Combo(fromComponent: ti, toComponent: tipp, type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')).save(flush: true)
+
+        log.debug("linked TIPP $tipp with TitleInstance $ti")
+      }
+      else {
+        log.debug("Unable to match title!")
+        if (pkg.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
+          pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+        }
+        result = 'unmatched'
+      }
+
+      if (found.matches?.size() > 0 || found.conflicts?.size() > 0)
+        handleFindConflicts(tipp, found, group)
+
+      result
     }
     else {
-      log.debug("Unable to match title!")
-      if (pkg.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
-        pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
-      }
+      log.warn("Unable to determine Title class to match!")
       result = 'unmatched'
     }
-
-    if (found.matches?.size() > 0 || found.conflicts?.size() > 0)
-      handleFindConflicts(tipp, found, group)
-
-    result
   }
 
   private def createTitleFromTippData(tipp, tipp_ids) {
@@ -340,7 +356,7 @@ class TippService {
     ti.name = tipp.name
 
     log.debug("Set name ${ti.name} ..")
-    ti.save()
+    ti.save(flush: true)
     titleAugmentService.addPublisher(tipp.publisherName, ti)
     log.debug("Transfering new ti ids: ${tipp_ids}")
     titleAugmentService.addIdentifiers(tipp_ids, ti)
@@ -365,7 +381,7 @@ class TippService {
                                                               firstAuthor     : tipp.firstAuthor,
                                                               firstEditor     : tipp.firstEditor]))
     }
-    ti.save()
+    ti.save(flush: true)
     ti
   }
 
@@ -409,6 +425,7 @@ class TippService {
       def tippIDs = TitleInstancePackagePlatform.executeQuery(tipp_crit, [status: status_deleted, idc: combo_ids])
       log.debug("found ${tippIDs.size()} TIPPs")
       def tippIDit = tippIDs.iterator()
+      def session = sessionFactory.currentSession
 
       while (tippIDit.hasNext() && !cancelled) {
         TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDit.next())
@@ -447,14 +464,14 @@ class TippService {
         if (index % 100 == 0) {
           log.debug("Clean up GORM")
           // Get the current session.
-          def session = sessionFactory.currentSession
           // flush and clear the session.
           session.flush()
           session.clear()
         }
       }
       // one last flush
-      sessionFactory.currentSession.flush()
+      session.flush()
+      session.clear()
       job?.endTime = new Date()
     }
   }
@@ -633,6 +650,7 @@ class TippService {
       monograph: ['isbn', 'doi', 'pisbn']
     ]
     def typeString = tippInfo.publicationType ?: tippInfo.type
+    def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
 
     def result = [full_matches: [], failed_matches: []]
 
@@ -647,7 +665,7 @@ class TippService {
     }
 
     current_tipps.each { ctipp ->
-      def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = :tipp and toComponent = i)", [tipp: ctipp]).collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
+      def tipp_ids = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where fromComponent = :tipp and toComponent = i and status = :ca)", [tipp: ctipp, ca: combo_active]).collect { ido -> [type: ido.namespace.value, value: ido.value, normname: ido.normname]}
       log.debug("Checking against existing IDs: ${tipp_ids}")
       def tipp_id_match_results = []
       boolean has_conflicts = false
@@ -670,8 +688,8 @@ class TippService {
               else {
                 tipp_id_match_results << [namespace: plns, value: jsonIdMap[tid.type], match: 'OK']
               }
+              unmatched = false
             }
-            unmatched = false
           }
 
           if (unmatched) {
@@ -807,6 +825,7 @@ class TippService {
   }
 
   public TitleInstancePackagePlatform updateTippFields(tipp, tippInfo, User user = null) {
+    componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
     def cov_list = tippInfo.coverageStatements ?: tippInfo.coverage
 
     cov_list.each { c ->
@@ -853,7 +872,6 @@ class TippService {
     }
 
     log.debug("Update simple fields: ${tippInfo}")
-    componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
 
     ['name', 'parentPublicationTitleId', 'precedingPublicationTitleId', 'firstAuthor', 'publisherName',
     'volumeNumber', 'editionStatement', 'firstEditor', 'url', 'subjectArea', 'series'].each { propName ->

@@ -101,15 +101,15 @@ class ESSearchService{
   ]
 
   static Map indicesPerType = [
-      "JournalInstance" : "gokbtitles",
-      "DatabaseInstance" : "gokbtitles",
-      "OtherInstance" : "gokbtitles",
-      "BookInstance" : "gokbtitles",
-      "TitleInstance" : "gokbtitles",
-      "TitleInstancePackagePlatform" : "gokbtipps",
-      "Org" : "gokborgs",
-      "Package" : "gokbpackages",
-      "Platform" : "gokbplatforms"
+      "JournalInstance" : "titles",
+      "DatabaseInstance" : "titles",
+      "OtherInstance" : "titles",
+      "BookInstance" : "titles",
+      "TitleInstance" : "titles",
+      "TitleInstancePackagePlatform" : "tipps",
+      "Org" : "orgs",
+      "Package" : "packages",
+      "Platform" : "platforms"
   ]
 
 
@@ -139,7 +139,7 @@ class ESSearchService{
       log.debug("Start to build search request. Query: ${query_str}")
       SearchResponse searchResponse
       try{
-        SearchRequest searchRequest = new SearchRequest()
+        SearchRequest searchRequest = new SearchRequest(params.componentType ? [grailsApplication.config?.gokb?.es?.indices[indicesPerType[params.componentType]]] as String[] : grailsApplication.config?.gokb?.es?.indices?.values() as String[])
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         TermsAggregationBuilder pragg = AggregationBuilders.terms("provider").field("provider")
         TermsAggregationBuilder cgagg = AggregationBuilders.terms("curatoryGroups").field("curatoryGroups")
@@ -649,7 +649,7 @@ class ESSearchService{
 
     for (def ct in usedComponentTypes.keySet()){
       if (ct in indicesPerType.keySet()){
-        usedComponentTypes."${ct}" = indicesPerType.get(ct)
+        usedComponentTypes."${ct}" = grailsApplication.config.gokb.es.indices[indicesPerType.get(ct)]
       }
       else{
         result.result = "ERROR"
@@ -699,7 +699,9 @@ class ESSearchService{
           exactQuery.must(statusQuery)
         }
 
-        SearchRequest searchRequest = new SearchRequest(component_type ? [indicesPerType[component_type]] as String[] : grailsApplication.config?.gokb?.es?.indices?.values() as String[])
+        SearchRequest searchRequest = new SearchRequest(component_type ? [
+          grailsApplication.config.gokb.es.indices[indicesPerType[component_type]]] as String[] :
+          grailsApplication.config.gokb.es.indices.values() as String[])
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         searchSourceBuilder.trackTotalHits(true)
         searchSourceBuilder.query(exactQuery)

@@ -14,6 +14,7 @@ import org.opensearch.common.xcontent.XContentType
 import org.gokb.AugmentEzbJob
 import org.gokb.AugmentZdbJob
 import org.gokb.AutoUpdatePackagesJob
+import org.gokb.TippMatchingJob
 import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
@@ -187,20 +188,132 @@ class BootStrap {
         sourceObjects()
 
         log.info("Ensure default Identifier namespaces")
+        def targetTypeTitle = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title')
+        def targetTypeBook = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Book')
+        def targetTypeJournal = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Journal')
+        def targetTypeOrg = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Org')
+        def targetTypePackage = RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Package')
         def namespaces = [
-            [value: 'isbn', name: 'ISBN', family: 'isxn', pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
-            [value: 'pisbn', name: 'Print-ISBN', family: 'isxn', pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"],
-            [value: 'issn', name: 'p-ISSN', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
-            [value: 'eissn', name: 'e-ISSN', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
-            [value: 'issnl', name: 'ISSN-L', family: 'isxn', pattern: "^\\d{4}\\-\\d{3}[\\dX]\$"],
-            [value: 'doi', name: 'DOI'],
-            [value: 'zdb', name: 'ZDB-ID', pattern: "^\\d+-[\\dxX]\$"],
-            [value: 'isil', name: 'ISIL', pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$"]
+            [
+                value: 'isbn',
+                name: 'ISBN',
+                family: 'isxn',
+                targetType: targetTypeBook,
+                pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"
+            ],
+            [
+                value: 'pisbn',
+                name: 'Print-ISBN',
+                family: 'isxn',
+                targetType: targetTypeBook,
+                pattern: "^(?=[0-9]{13}\$|(?=(?:[0-9]+-){4})[0-9-]{17}\$)97[89]-?[0-9]{1,5}-?[0-9]+-?[0-9]+-?[0-9]\$"
+            ],
+            [
+                value: 'issn',
+                name: 'p-ISSN',
+                family: 'isxn',
+                targetType: targetTypeJournal,
+                pattern: "^\\d{4}\\-\\d{3}[\\dX]\$",
+                baseUrl: "https://portal.issn.org/resource/ISSN/"
+            ],
+            [
+                value: 'eissn',
+                name: 'e-ISSN',
+                family: 'isxn',
+                targetType: targetTypeJournal,
+                pattern: "^\\d{4}\\-\\d{3}[\\dX]\$",
+                baseUrl: "https://portal.issn.org/resource/ISSN/"
+            ],
+            [
+                value: 'issnl',
+                name: 'ISSN-L',
+                family: 'isxn',
+                targetType: targetTypeJournal,
+                pattern: "^\\d{4}\\-\\d{3}[\\dX]\$",
+                baseUrl: "https://portal.issn.org/resource/ISSN/"
+            ],
+            [
+                value: 'doi',
+                name: 'DOI',
+                targetType: targetTypeTitle,
+                baseUrl: "https://doi.org/"
+            ],
+            [
+                value: 'zdb',
+                name: 'ZDB-ID',
+                pattern: "^\\d{7,10}-[\\dxX]\$",
+                targetType: targetTypeJournal,
+                baseUrl: "https://ld.zdb-services.de/resource/"
+            ],
+            [
+                value: 'isil',
+                name: 'ISIL',
+                targetType: targetTypePackage,
+                pattern: "^(?=[0-9A-Z-]{4,16}\$)[A-Z]{1,4}-[A-Z0-9]{1,11}(-[A-Z0-9]+)?\$",
+                baseUrl: "https://sigel.staatsbibliothek-berlin.de/suche?isil="
+            ],
+            [
+                value: 'gnd-id',
+                name: 'GND',
+                targetType: targetTypeOrg,
+                pattern: "^\\d{1,10}-[0-9Xx]\$",
+                baseUrl: "https://d-nb.info/gnd/"
+            ],
+            [
+                value: 'dbpedia',
+                name: 'DBPedia',
+                targetType: targetTypeOrg,
+                baseUrl: "http://dbpedia.org/resource/"
+            ],
+            [
+                value: 'loc',
+                name: 'LOC',
+                targetType: targetTypeOrg,
+                pattern: "^n[bors]?\\d{8,10}\$",
+                baseUrl: "http://id.loc.gov/authorities/names/"
+            ],
+            [
+                value: 'isni',
+                name: 'ISNI',
+                targetType: targetTypeOrg,
+                pattern: "^\\d{15}[0-9Xx]\$",
+                baseUrl: "http://isni-url.oclc.nl/isni/"
+            ],
+            [
+                value: 'viaf',
+                name: 'VIAF',
+                targetType: targetTypeOrg,
+                pattern: "^\\d{1,22}\$",
+                baseUrl: "http://viaf.org/viaf/"
+            ],
+            [
+                value: 'ncsu',
+                name: 'NCSU',
+                targetType: targetTypeOrg,
+                pattern: "^\\d{8}\$",
+                baseUrl: "https://www.lib.ncsu.edu/ld/onld/"
+            ],
+            [
+                value: 'wikidata',
+                name: 'WikiData',
+                targetType: targetTypeOrg,
+                pattern: "^(Q|Property:P|Lexeme:L)\\d{1,10}\$",
+                baseUrl: "https://www.wikidata.org/wiki/"
+            ]
         ]
 
         if (grailsApplication.config.gokb.ezbOpenCollections?.url) {
-            namespaces << [value: 'ezb', name: 'EZB-ID', pattern: "^\\d+\$"]
-            namespaces << [value: 'ezb-collection-id', name: 'EZB Collection ID', pattern: "^EZB-[A-Z0-9]{4,5}-\\d{5}\$"]
+            namespaces << [
+                value: 'ezb',
+                name: 'EZB-ID',
+                pattern: "^\\d+\$",
+                baseUrl: "https://ezb.uni-regensburg.de/detail.phtml?jour_id="
+            ]
+            namespaces << [
+                value: 'ezb-collection-id',
+                name: 'EZB Collection ID',
+                pattern: "^EZB-[A-Z0-9]{3,5}-\\d{5}\$"
+            ]
         }
 
         namespaces.each { ns ->
@@ -209,13 +322,17 @@ class BootStrap {
             if (ns_obj) {
                 if (ns.pattern && !ns_obj.pattern) {
                     ns_obj.pattern = ns.pattern
-                    ns_obj.save(flush: true)
                 }
 
                 if (ns.name && !ns_obj.name) {
                     ns_obj.name = ns.name
-                    ns_obj.save(flush: true)
                 }
+
+                if (ns.baseUrl && !ns_obj.baseUrl) {
+                    ns_obj.baseUrl = ns.baseUrl
+                }
+
+                ns_obj.save(flush: true)
             } else {
                 ns_obj = new IdentifierNamespace(ns).save(flush: true, failOnError: true)
             }
@@ -250,6 +367,7 @@ class BootStrap {
             AugmentZdbJob.schedule(grailsApplication.config.gokb.zdbAugment.cron)
             AugmentEzbJob.schedule(grailsApplication.config.gokb.ezbAugment.cron)
             AutoUpdatePackagesJob.schedule(grailsApplication.config.gokb.packageUpdate.cron)
+            TippMatchingJob.schedule(grailsApplication.config.gokb.tippMatching.cron)
         }
 
         log.info("GoKB Init complete")
@@ -441,12 +559,8 @@ class BootStrap {
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Primary", "Yes").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.Primary", "No").save(flush: true, failOnError: true)
 
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Complimentary").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Limited Promotion").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Paid").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "OA").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Opt Out Promotion").save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Uncharged").save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("TitleInstancePackagePlatform.PaymentType", "Unknown").save(flush: true, failOnError: true)
 
         ['Database', 'Monograph', 'Other', 'Serial'].each { pubType ->
@@ -879,6 +993,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Import Report').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Information').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Invalid Name").save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate("ReviewRequest.StdDesc", "Manual Request").save(flush: true, failOnError: true)
 
 
         RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save(flush: true, failOnError: true)

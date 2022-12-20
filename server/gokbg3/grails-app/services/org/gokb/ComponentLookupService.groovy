@@ -4,6 +4,7 @@ import grails.util.GrailsNameUtils
 import groovyx.net.http.URIBuilder
 
 import org.gokb.cred.*
+import org.gokb.ValidationService
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 import grails.util.Holders
@@ -11,8 +12,6 @@ import groovy.transform.Synchronized
 import grails.validation.ValidationException
 import groovy.util.logging.*
 import org.grails.web.json.JSONObject
-
-import javax.annotation.Nonnull
 
 @Slf4j
 class ComponentLookupService {
@@ -135,7 +134,7 @@ class ComponentLookupService {
     switch ( namespaces.size() ) {
       case 0:
         if (ns_create) {
-          namespace = new IdentifierNamespace(value:ns.toLowerCase()).save(failOnError:true);
+          namespace = new IdentifierNamespace(value:ns.toLowerCase()).save(flush: true, failOnError:true);
         }
         break;
       case 1:
@@ -147,50 +146,57 @@ class ComponentLookupService {
     }
 
     if (namespace) {
-      def norm_id = Identifier.normalizeIdentifier(value)
-      def existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
-      log.debug("Found ID: ${existing}")
+      def isValid = grails.util.Holders.applicationContext.getBean('validationService').checkIdForNamespace(value, namespace)
 
-      if ( existing?.size() == 1 ) {
-        identifier = existing[0]
-      }
-      else if ( existing?.size() > 1 ) {
-        log.error("Conflicting identifiers found: ${existing}")
-        throw new RuntimeException("Found duplicates for Identifier: ${existing}");
-      }
-      else {
-        log.debug("No matches: ${existing}")
-        def final_val = value
+      if (isValid) {
+        def norm_id = Identifier.normalizeIdentifier(value)
+        def existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
+        log.debug("Found ID: ${existing}")
 
-        if (!identifier) {
-          if (namespace.family == 'isxn') {
-            final_val = final_val.replaceAll("x","X")
-          }
-          log.debug("Creating new Identifier ${namespace}:${value} ..")
+        if ( existing?.size() == 1 ) {
+          identifier = existing[0]
+        }
+        else if ( existing?.size() > 1 ) {
+          log.error("Conflicting identifiers found: ${existing}")
+          throw new RuntimeException("Found duplicates for Identifier: ${existing}");
+        }
+        else {
+          log.debug("No matches: ${existing}")
+          def final_val = value
 
-          try {
-            identifier = new Identifier(namespace: namespace, value: final_val, normname: norm_id).save(flush:true, failOnError:true)
-          }
-          catch (org.springframework.orm.hibernate5.HibernateOptimisticLockingFailureException lfe) {
-            log.error("Locking failure", lfe)
-            def ex = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
-            log.debug("After LFE: ${ex}")
-          }
-          catch (ValidationException ve) {
-            log.debug("Caught validation exception: ${ve.message}")
-            if (ve.message.contains('already exists')) {
-              def dupe = Identifier.executeQuery("from Identifier where normname = ? and namespace = ?",[norm_id, namespace])
-
-              if (dupe.size() == 1) {
-                identifier = dupe[0]
-              }
-              log.error("Thread synchronization failed for ID ${dupe} ...")
+          if (!identifier) {
+            if (namespace.family == 'isxn') {
+              final_val = final_val.replaceAll("x","X")
             }
-            else {
-              throw new ValidationException(ve.message, ve.errors)
+            log.debug("Creating new Identifier ${namespace}:${value} ..")
+
+            try {
+              identifier = new Identifier(namespace: namespace, value: final_val, normname: norm_id).save(flush:true, failOnError:true)
+            }
+            catch (org.springframework.orm.hibernate5.HibernateOptimisticLockingFailureException lfe) {
+              log.error("Locking failure", lfe)
+              def ex = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
+              log.debug("After LFE: ${ex}")
+            }
+            catch (ValidationException ve) {
+              log.debug("Caught validation exception: ${ve.message}")
+              if (ve.message.contains('already exists')) {
+                def dupe = Identifier.executeQuery("from Identifier where normname = ? and namespace = ?",[norm_id, namespace])
+
+                if (dupe.size() == 1) {
+                  identifier = dupe[0]
+                }
+                log.error("Thread synchronization failed for ID ${dupe} ...")
+              }
+              else {
+                throw new ValidationException(ve.message, ve.errors)
+              }
             }
           }
         }
+      }
+      else {
+        log.debug("Validation failed for ${namespace.vaue}:${value}!")
       }
     }
 
@@ -694,7 +700,7 @@ class ComponentLookupService {
   }
 
 
-  CuratoryGroup findCuratoryGroupOfInterest(@Nonnull KBComponent component, User user = null, def activeGroup = null){
+  CuratoryGroup findCuratoryGroupOfInterest(KBComponent component, User user = null, def activeGroup = null){
     CuratoryGroup activeCuratoryGroup = null
 
     if (activeGroup instanceof CuratoryGroup) {

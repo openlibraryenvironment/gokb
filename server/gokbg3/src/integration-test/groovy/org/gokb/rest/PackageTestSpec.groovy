@@ -27,8 +27,8 @@ class PackageTestSpec extends AbstractAuthSpec {
     CuratoryGroup testGroup = CuratoryGroup.findByName("cgtest1") ?: new CuratoryGroup(name: "cgtest1").save(flush: true)
     Identifier book_doi = Identifier.findByValueAndNamespace('10.1021/978-3-16-148410-0', IdentifierNamespace.findByValue('doi')) ?: new Identifier(value: '10.1021/978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('doi'))
     Identifier book_isbn = Identifier.findByValueAndNamespace('978-3-16-148410-0', IdentifierNamespace.findByValue('isbn')) ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn'))
-    Identifier serial_issn = Identifier.findByValueAndNamespace('9783-442X', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '9783-442X', namespace: IdentifierNamespace.findByValue('issn'))
-    Identifier serial_eissn = Identifier.findByValueAndNamespace('9783-4420', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '9783-4420', namespace: IdentifierNamespace.findByValue('eissn'))
+    Identifier serial_issn = Identifier.findByValueAndNamespace('0020-0255', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '0020-0255', namespace: IdentifierNamespace.findByValue('issn'))
+    Identifier serial_eissn = Identifier.findByValueAndNamespace('1872-6291', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '1872-6291', namespace: IdentifierNamespace.findByValue('eissn'))
     Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
     Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
     testPlt.provider = testOrg
@@ -278,23 +278,23 @@ class PackageTestSpec extends AbstractAuthSpec {
     pkg.tipps.size() == 2
   }
 
-  // void "test /rest/packages/<id>/ingest with partial matching conflicts"() {
-  //   given:
-  //   def urlPath = getUrlPath()
-  //   Resource kbart_file = new ClassPathResource("/test_rest_update_conflicts.txt")
-  //   def pkg = Package.findByName("TestPack")
-  //   Platform testPlt = Platform.findByName("PackTestPlt")
-  //   when:
-  //   String accessToken = getAccessToken()
-  //   RestResponse resp = rest.post("${urlPath}/rest/packages/${pkg.id}/ingest?async=false") {
-  //     accept('application/json')
-  //     contentType("multipart/form-data")
-  //     auth("Bearer $accessToken")
-  //     submissionFile=kbart_file.getFile()
-  //   }
-  //   then:
-  //   resp.status == 200
-  //   resp.json?.job_result?.report?.partial == 2
-  //   resp.json?.job_result?.report?.retired == 2
-  // }
+  void "test /rest/packages/<id>/ingest with partial matching conflicts"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_update_conflicts.txt")
+    def pkg = Package.findByName("TestPack")
+    Platform testPlt = Platform.findByName("PackTestPlt")
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("${urlPath}/rest/packages/${pkg.id}/ingest?async=false") {
+      accept('application/json')
+      contentType("multipart/form-data")
+      auth("Bearer $accessToken")
+      submissionFile=kbart_file.getFile()
+    }
+    then:
+    resp.status == 200
+    resp.json?.job_result?.report?.partial == 2
+    resp.json?.job_result?.report?.retired == 2
+  }
 }
