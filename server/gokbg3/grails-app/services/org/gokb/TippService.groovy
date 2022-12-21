@@ -907,9 +907,9 @@ class TippService {
     ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
     ClassUtils.setRefdataIfPresent(tippInfo.language, tipp, 'language')
 
-    if (tippInfo.paymentType in ['F', 'OA', 'Free']) {
+    if (tippInfo.paymentType in ['F', 'f']) {
       ClassUtils.setRefdataIfPresent('OA', tipp, 'paymentType')
-    } else if (tippInfo.paymentType in ['P', 'Paid']) {
+    } else if (tippInfo.paymentType in ['P', 'p']) {
       ClassUtils.setRefdataIfPresent('Paid', tipp, 'paymentType')
     }
 
