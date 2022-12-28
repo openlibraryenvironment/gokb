@@ -20,9 +20,16 @@ class FTUpdateService {
 
   public static boolean running = false
 
+  public static List<Class> FIRST_LEVEL_COMPONENTS =
+      [org.gokb.cred.Package.class, org.gokb.cred.Org.class,
+       org.gokb.cred.Platform.class, org.gokb.cred.JournalInstance.class,
+       org.gokb.cred.DatabaseInstance.class, org.gokb.cred.OtherInstance.class,
+       org.gokb.cred.BookInstance.class, org.gokb.cred.TitleInstancePackagePlatform.class]
+  public static List<Class> SECOND_LEVEL_COMPONENTS =
+      [org.gokb.cred.CuratoryGroup.class]
 
   /**
-   * Update ES.
+   * Update OpenSearch.
    * The caller is responsible for running this function in a task if needed. This method
    * is responsible for ensuring only 1 FT index task runs at a time. It's a simple mutex.
    * see https://async.grails.org/latest/guide/index.html
@@ -441,16 +448,14 @@ class FTUpdateService {
   synchronized def doFTUpdate() {
     log.debug("doFTUpdate")
     log.debug("Execute IndexUpdateJob starting at ${new Date()}")
-    def esclient = ESWrapperService.getClient()
+    def osClient = ESWrapperService.getClient()
     try {
-      updateES(esclient, org.gokb.cred.Package.class)
-      updateES(esclient, org.gokb.cred.Org.class)
-      updateES(esclient, org.gokb.cred.Platform.class)
-      updateES(esclient, org.gokb.cred.JournalInstance.class)
-      updateES(esclient, org.gokb.cred.DatabaseInstance.class)
-      updateES(esclient, org.gokb.cred.OtherInstance.class)
-      updateES(esclient, org.gokb.cred.BookInstance.class)
-      updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class)
+      for (Class clazz in FIRST_LEVEL_COMPONENTS) {
+        updateFirstLevelComponentsOS(osClient, clazz)
+      }
+      for (Class clazz in SECOND_LEVEL_COMPONENTS) {
+        updateSecondLevelComponentsOS(osClient, clazz)
+      }
     }
     catch (Exception e) {
       log.error("Problem", e)
@@ -466,111 +471,147 @@ class FTUpdateService {
     if (idx_record != null) {
       def recid = idx_record['_id'].toString()
       idx_record.remove('_id')
-      def esClient = ESWrapperService.getClient()
+      def osClient = ESWrapperService.getClient()
       IndexRequest request = new IndexRequest(es_index).id(recid).source(idx_record)
-      def result = esClient.index(request, RequestOptions.DEFAULT)
-      log.info("UpdateSingleItem :: ES returned ${result}")
+      def result = osClient.index(request, RequestOptions.DEFAULT)
+      log.info("UpdateSingleItem :: OpenSearch returned ${result}")
     }
   }
 
 
-  def updateES(esClient, domain) {
-    log.debug("updateES(${domain}...)")
+  def updateFirstLevelComponentsOS(osClient, domain) {
+    log.debug("updateFirstLevelComponentsOS - ${domain.name}")
     cleanUpGorm()
     def count = 0
     try {
-      log.debug("updateES - ${domain.name}")
-      def latest_ft_record = null
-      def highest_timestamp = 0
-      def highest_id = 0
-      FTControl.withNewTransaction {
-        latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name, 'ESIndex')
-
-        log.debug("result of findByDomain: ${domain} ${latest_ft_record}")
-        if (!latest_ft_record) {
-          latest_ft_record = new FTControl(domainClassName: domain.name, activity: 'ESIndex', lastTimestamp: 0, lastId: 0).save(flush: true, failOnError: true)
-          log.debug("Create new FT control record, as none available for ${domain.name}")
-        }
-        else {
-          highest_timestamp = latest_ft_record.lastTimestamp
-          log.debug("Got existing ftcontrol record for ${domain.name} max timestamp is ${highest_timestamp} which is ${new Date(highest_timestamp)}")
-        }
-      }
-      log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}")
-
-      def total = 0
-      Date from = new Date(latest_ft_record.lastTimestamp)
-      def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ", [ts: from], [readonly: true])[0]
-      log.debug("Will process ${countq} records")
-      def q = domain.executeQuery("select o.id from " + domain.name + " as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id", [ts: from], [readonly: true])
-      log.debug("Query completed.. processing rows...")
-
-      BulkRequest bulkRequest = new BulkRequest()
-      for (r_id in q) {
-        if (Thread.currentThread().isInterrupted()) {
-          log.warn("Job cancelling ..")
-          running = false
-          break
-        }
-        Object r = domain.get(r_id)
-        log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
-        def idx_record = buildEsRecord(r)
-        if (idx_record != null) {
-          IndexRequest singleRequest = new IndexRequest(grailsApplication.config.gokb.es.indices[ESSearchService.indicesPerType.get(idx_record['componentType'])])
-          singleRequest.id(idx_record['_id'].toString())
-          idx_record.remove('_id')
-          singleRequest.source((idx_record as JSON).toString(), XContentType.JSON)
-          bulkRequest.add(singleRequest)
-        }
-        if (r.lastUpdated?.getTime() > highest_timestamp) {
-          highest_timestamp = r.lastUpdated?.getTime()
-        }
-        highest_id = r.id
-        count++
-        total++
-        if (count > 250) {
-          count = 0
-          log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
-          BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
-          logBulkFailures(bulkResponse)
-          log.debug("... BulkResponse: ${bulkResponse}")
-          FTControl.withNewTransaction {
-            latest_ft_record = FTControl.get(latest_ft_record.id)
-            if (latest_ft_record) {
-              latest_ft_record.lastTimestamp = highest_timestamp
-              latest_ft_record.lastId = highest_id
-              latest_ft_record.save(flush: true, failOnError: true)
-            }
-            else {
-              log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update")
-            }
-          }
-          cleanUpGorm()
-          synchronized (this) {
-            Thread.yield()
-          }
-        }
-      }
-      if (count > 0) {
-        BulkResponse bulkFinalResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
-        log.debug("... final BulkResponse: ${bulkFinalResponse}")
-        logBulkFailures(bulkFinalResponse)
-      }
-      // update timestamp
-      if (total > 0) {
-        FTControl.withNewTransaction {
-          latest_ft_record = FTControl.get(latest_ft_record.id)
-          latest_ft_record.lastTimestamp = highest_timestamp
-          latest_ft_record.lastId = highest_id
-          latest_ft_record.save(flush: true, failOnError: true)
-        }
-      }
-      cleanUpGorm()
-      log.debug("... final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
+      def (q, Date from, long highest_timestamp, total, countq, FTControl latest_ft_record, int highest_id) = getUpdateObjects(domain)
+      osIndex(q, domain, null, from, highest_timestamp, count, total, countq, osClient, latest_ft_record, highest_id)
     }
     catch (Exception e) {
       log.error("Problem with FT index", e)
     }
+  }
+
+
+  def updateSecondLevelComponentsOS(osClient, domain) {
+    log.debug("updateSecondLevelComponentsOS - ${domain.name}")
+    cleanUpGorm()
+    def count = 0
+    try {
+      def (q, Date from, long highest_timestamp, total, countq, FTControl latest_ft_record, int highest_id) = getUpdateObjects(domain)
+      for (secondLevelObjectId in q) {
+        def secondLevelObject = domain.get(secondLevelObjectId)
+        for (firstLevelClass in FIRST_LEVEL_COMPONENTS){
+          def firstLevelResult = firstLevelClass.executeQuery(
+              "SELECT flc.id FROM " + firstLevelClass.name + " AS flc, " + domain.name + " AS slc, Combo AS com " +
+              "WHERE ((slc.lastUpdated > :ts) OR (slc.dateCreated > :ts)) AND slc.id = :sloId AND slc.id = com.toComponent AND flc.id = com.fromComponent " +
+              "ORDER BY slc.lastUpdated, flc.id",
+              [ts: from, sloId: secondLevelObjectId], [readonly: true])
+          osIndex(firstLevelResult, firstLevelClass, secondLevelObject, from, highest_timestamp, count, total, countq, osClient, latest_ft_record, highest_id)
+        }
+      }
+    }
+    catch (Exception e) {
+      log.error("Problem with FT index", e)
+    }
+  }
+
+
+  private List getUpdateObjects(domain){
+    def latest_ft_record = null
+    def highest_timestamp = 0
+    def highest_id = 0
+    FTControl.withNewTransaction {
+      latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name, 'ESIndex')
+
+      log.debug("... result of findByDomain: ${domain} ${latest_ft_record}")
+      if (!latest_ft_record){
+        latest_ft_record = new FTControl(domainClassName: domain.name, activity: 'ESIndex', lastTimestamp: 0, lastId: 0).save(flush: true, failOnError: true)
+        log.debug("... create new FT control record, as none available for ${domain.name}")
+      }
+      else{
+        highest_timestamp = latest_ft_record.lastTimestamp
+        log.debug("... got existing ftcontrol record for ${domain.name} max timestamp is ${highest_timestamp} which is ${new Date(highest_timestamp)}")
+      }
+    }
+    log.debug("updateOS ${domain.name} since ${latest_ft_record.lastTimestamp}")
+
+    def total = 0
+    Date from = new Date(latest_ft_record.lastTimestamp)
+    def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ", [ts: from], [readonly: true])[0]
+    log.debug("... will process ${countq} records")
+    def q = domain.executeQuery("select o.id from " + domain.name + " as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id", [ts: from], [readonly: true])
+    log.debug("... query completed --> processing rows ...")
+    [q, from, highest_timestamp, total, countq, latest_ft_record, highest_id]
+  }
+
+
+  private void osIndex(q, domain, tsObject, Date from, highest_timestamp, int count, total, countq, osClient, latest_ft_record, highest_id) throws Exception {
+    BulkRequest bulkRequest = new BulkRequest()
+    for (r_id in q){
+      if (Thread.currentThread().isInterrupted()){
+        log.warn("Job cancelling ..")
+        running = false
+        break
+      }
+      Object r = domain.get(r_id)
+      log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
+      def idx_record = buildEsRecord(r)
+      if (idx_record != null){
+        IndexRequest singleRequest = new IndexRequest(grailsApplication.config.gokb.es.indices[ESSearchService.indicesPerType.get(idx_record['componentType'])])
+        singleRequest.id(idx_record['_id'].toString())
+        idx_record.remove('_id')
+        singleRequest.source((idx_record as JSON).toString(), XContentType.JSON)
+        bulkRequest.add(singleRequest)
+      }
+      if (tsObject == null) {
+        tsObject = r
+      }
+      if (tsObject.lastUpdated?.getTime() > highest_timestamp){
+        highest_timestamp = tsObject.lastUpdated?.getTime()
+      }
+      highest_id = tsObject.id
+      count++
+      total++
+      if (count > 250){
+        count = 0
+        log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
+        BulkResponse bulkResponse = osClient.bulk(bulkRequest, RequestOptions.DEFAULT)
+        logBulkFailures(bulkResponse)
+        log.debug("... BulkResponse: ${bulkResponse}")
+        FTControl.withNewTransaction {
+          latest_ft_record = FTControl.get(latest_ft_record.id)
+          if (latest_ft_record){
+            latest_ft_record.lastTimestamp = highest_timestamp
+            latest_ft_record.lastId = highest_id
+            latest_ft_record.save(flush: true, failOnError: true)
+          }
+          else{
+            log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update")
+          }
+        }
+        cleanUpGorm()
+        synchronized(this){
+          Thread.yield()
+        }
+      }
+    }
+    if (count > 0){
+      BulkResponse bulkFinalResponse = osClient.bulk(bulkRequest, RequestOptions.DEFAULT)
+      log.debug("... final BulkResponse: ${bulkFinalResponse}")
+      logBulkFailures(bulkFinalResponse)
+    }
+    // update timestamp
+    if (total > 0){
+      FTControl.withNewTransaction {
+        latest_ft_record = FTControl.get(latest_ft_record.id)
+        latest_ft_record.lastTimestamp = highest_timestamp
+        latest_ft_record.lastId = highest_id
+        latest_ft_record.save(flush: true, failOnError: true)
+      }
+    }
+    cleanUpGorm()
+    log.debug("... final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
   }
 
 
@@ -579,7 +620,7 @@ class FTUpdateService {
       for (BulkItemResponse bulkItemResponse : bulkResponse){
         if (bulkItemResponse.isFailed()){
           BulkItemResponse.Failure failure = bulkItemResponse.getFailure()
-          log.debug("... Elasticsearch bulk operation failure: ${failure}")
+          log.debug("... Opensearch bulk operation failure: ${failure}")
         }
       }
     }
