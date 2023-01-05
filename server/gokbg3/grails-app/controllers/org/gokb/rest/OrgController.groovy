@@ -111,8 +111,8 @@ class OrgController {
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
 
+    def obj = null
     if (reqBody) {
-      def obj = null
       def lookup_result = orgService.restLookup(reqBody)
 
       if (lookup_result.to_create) {
