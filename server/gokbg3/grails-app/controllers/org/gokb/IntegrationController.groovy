@@ -1256,7 +1256,7 @@ class IntegrationController {
         job.setProgress(100)
         job.message("Finished processing ${job_result?.results?.size()} titles.".toString())
 
-        JobResult.withNewSession {
+        JobResult.withTransaction {
           def result_object = JobResult.findByUuid(job.uuid)
 
           if (!result_object) {
@@ -1303,7 +1303,7 @@ class IntegrationController {
 
     log.debug("crossReferenceTitle(${titleObj.type},${titleObj.name},${titleObj.identifiers}},...)");
 
-    TitleInstance.withNewSession {
+    TitleInstance.withTransaction {
       User user = User.get(userid)
 
       def title_validation = TitleInstance.validateDTO(titleObj, locale)

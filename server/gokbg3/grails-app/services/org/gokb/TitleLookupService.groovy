@@ -671,9 +671,7 @@ class TitleLookupService {
           results['ids'].each { rid ->
             log.error("Checking IDs: ${matches[0].ids}")
             matches[0].ids.each { mid ->
-              log.error("${rid.namespace}${rid.value}")
-              log.error("${mid.namespace}:${mid.value}")
-              if (rid.namespace == mid.namespace && rid.value != mid.value) {
+              if (rid.namespace.id == mid.namespace.id && rid.value != mid.value) {
                 if (!matches[0].ids.contains(rid)) {
                   id_mismatches.add(rid)
                 } else {
@@ -1048,113 +1046,111 @@ class TitleLookupService {
 
   public TitleInstance addPublisherHistory(TitleInstance ti, publishers) {
     if (publishers && ti) {
-      Org.withNewSession {
-        log.debug("Handling publisher history ..")
+      log.debug("Handling publisher history ..")
 
-        def publisher_combos = []
-        publisher_combos.addAll(ti.getCombosByPropertyName('publisher'))
-        String propName = ti.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
-        String tiPropName = ti.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+      def publisher_combos = []
+      publisher_combos.addAll(ti.getCombosByPropertyName('publisher'))
+      String propName = ti.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
+      String tiPropName = ti.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
 
-        // Go through each Org.
-        for (def pub_to_add : publishers) {
+      // Go through each Org.
+      for (def pub_to_add : publishers) {
 
-          Org publisher = null
-          // Lookup the publisher.
-          if (pub_to_add.uuid) {
-            publisher = Org.findByUuid(pub_to_add.uuid)
+        Org publisher = null
+        // Lookup the publisher.
+        if (pub_to_add.uuid) {
+          publisher = Org.findByUuid(pub_to_add.uuid)
+        }
+
+        def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
+        def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+        if (!publisher) {
+          publisher = Org.findByNormname(norm_pub_name)
+        }
+
+        if (!publisher || publisher.status == status_deleted) {
+          def variant_normname = GOKbTextUtils.normaliseString(pub_to_add.name)
+          def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = :nvn and o.status <> :sd", [variant_normname, status_deleted])
+
+          if (candidate_orgs.size() == 1) {
+            publisher = candidate_orgs[0]
           }
+        }
 
-          def norm_pub_name = KBComponent.generateNormname(pub_to_add.name)
-          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+        if (publisher) {
 
-          if (!publisher) {
-            publisher = Org.findByNormname(norm_pub_name)
-          }
+          LocalDateTime parsedStart = GOKbTextUtils.completeDateString(pub_to_add.startDate)
+          LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(pub_to_add.endDate, false)
+          Date pub_add_sd = parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null
+          Date pub_add_ed = parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null
 
-          if (!publisher || publisher.status == status_deleted) {
-            def variant_normname = GOKbTextUtils.normaliseString(pub_to_add.name)
-            def candidate_orgs = Org.executeQuery("select distinct o from Org as o join o.variantNames as v where v.normVariantName = :nvn and o.status <> :sd", [variant_normname, status_deleted])
+          boolean found = false
+          for (int i = 0; !found && i < publisher_combos.size(); i++) {
+            Combo pc = publisher_combos[i]
+            def idMatch = pc."${propName}".id == publisher.id
 
-            if (candidate_orgs.size() == 1) {
-              publisher = candidate_orgs[0]
-            }
-          }
-
-          if (publisher) {
-
-            LocalDateTime parsedStart = GOKbTextUtils.completeDateString(pub_to_add.startDate)
-            LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(pub_to_add.endDate, false)
-            Date pub_add_sd = parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null
-            Date pub_add_ed = parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null
-
-            boolean found = false
-            for (int i = 0; !found && i < publisher_combos.size(); i++) {
-              Combo pc = publisher_combos[i]
-              def idMatch = pc."${propName}".id == publisher.id
-
-              if (idMatch) {
-                if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
-                } else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
-                } else {
-                  found = true
-                }
+            if (idMatch) {
+              if (pub_add_sd && pc.startDate && pub_add_sd != pc.startDate) {
+              } else if (pub_add_ed && pc.endDate && pub_add_ed != pc.endDate) {
+              } else {
+                found = true
               }
-
-
             }
 
-            // Only add if we havn't found anything.
-            if (!found) {
 
-              log.debug("Adding new combo for publisher ${publisher} (${propName}) to title ${ti} (${tiPropName})")
+          }
 
-              Combo.withTransaction {
-                RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, ti.getComboTypeValue('publisher'))
+          // Only add if we havn't found anything.
+          if (!found) {
 
-                def combo = null
+            log.debug("Adding new combo for publisher ${publisher} (${propName}) to title ${ti} (${tiPropName})")
 
-                if (propName == "toComponent") {
-                  combo = new Combo(
-                    type: (type),
-                    status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-                    startDate: pub_add_sd,
-                    endDate: pub_add_ed,
-                    toComponent: publisher,
-                    fromComponent: ti
-                  )
-                } else {
-                  combo = new Combo(
-                    type: (type),
-                    status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
-                    startDate: pub_add_sd,
-                    endDate: pub_add_ed,
-                    fromComponent: publisher,
-                    toComponent: ti
-                  )
-                }
+            Combo.withTransaction {
+              RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, ti.getComboTypeValue('publisher'))
 
-                if (combo) {
-                  combo.save(flush: true, failOnError: true)
+              def combo = null
 
-                  // Add the combo to our list to avoid adding duplicates.
-                  publisher_combos.add(combo)
-
-                  log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
-                    (combo.startDate ? ' from ' + combo.startDate : '') +
-                    (combo.endDate ? ' to ' + combo.endDate : '')
-                } else {
-                  log.error("Could not create publisher Combo..")
-                }
+              if (propName == "toComponent") {
+                combo = new Combo(
+                  type: (type),
+                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                  startDate: pub_add_sd,
+                  endDate: pub_add_ed,
+                  toComponent: publisher,
+                  fromComponent: ti
+                )
+              } else {
+                combo = new Combo(
+                  type: (type),
+                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                  startDate: pub_add_sd,
+                  endDate: pub_add_ed,
+                  fromComponent: publisher,
+                  toComponent: ti
+                )
               }
 
-            } else {
-              log.debug "Publisher ${publisher.name} already set against '${ti.name}'"
+              if (combo) {
+                combo.save(flush: true, failOnError: true)
+
+                // Add the combo to our list to avoid adding duplicates.
+                publisher_combos.add(combo)
+
+                log.debug "Added publisher ${publisher.name} for '${ti.name}'" +
+                  (combo.startDate ? ' from ' + combo.startDate : '') +
+                  (combo.endDate ? ' to ' + combo.endDate : '')
+              } else {
+                log.error("Could not create publisher Combo..")
+              }
             }
 
           } else {
-            log.debug "Could not find org name: ${pub_to_add.name}, with normname: ${norm_pub_name}"
+            log.debug "Publisher ${publisher.name} already set against '${ti.name}'"
           }
+
+        } else {
+          log.debug "Could not find org name: ${pub_to_add.name}, with normname: ${norm_pub_name}"
         }
       }
     }

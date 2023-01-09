@@ -178,7 +178,7 @@ class IntegrationControllerSpec extends Specification {
             ],
             [
                 "type" : "issn",
-                "value": "1021-8561"
+                "value": "1021-8564"
             ]
         ],
         "name"             : "Journal of agricultural and food chemistry",
@@ -201,7 +201,7 @@ class IntegrationControllerSpec extends Specification {
     resp.body()?.message != null
     resp.body()?.result == 'OK'
     expect: "Find item by ID can now locate that item"
-    def ids = [['ns': 'issn', 'value': '1021-8561']]
+    def ids = [['ns': 'issn', 'value': '1021-8564']]
     def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
     matching_with_class_one_ids?.size() == 1
     matching_with_class_one_ids[0] == resp.body()?.titleId
@@ -631,7 +631,7 @@ class IntegrationControllerSpec extends Specification {
 
   void "Test crossReferenceTitle identifier lock"() {
     when: "Caller asks for this record to be cross referenced"
-    Map json_record = [
+    def json_record = [
         [
             "identifiers"    : [
                 [
@@ -1291,8 +1291,8 @@ class IntegrationControllerSpec extends Specification {
     pkg.tipps[0].volumeNumber != null
     pkg.name == "TestTokenPackageUpdate"
     def title = pkg.tipps[0].title //JournalInstance.findByName("Journal of agricultural and food chemistry")
-    title.publisher?.size() == 1
-    title.publisher[0].name == "ACS TestOrg"
-    title.name == pkg.tipps[0].name
+    title?.publisher?.size() == 1
+    title?.publisher[0].name == "ACS TestOrg"
+    title?.name == pkg.tipps[0].name
   }
 }
