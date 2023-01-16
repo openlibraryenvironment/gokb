@@ -51,6 +51,10 @@ class GlobalController {
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }
 
+    if (result.result == 'ERROR') {
+      response.status = (result.status ?: 500)
+    }
+
     render result as JSON
   }
 

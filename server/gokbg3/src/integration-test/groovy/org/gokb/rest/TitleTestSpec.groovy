@@ -1,13 +1,17 @@
 package org.gokb.rest
 
-import grails.converters.JSON
 import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
+
 import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
+import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.BlockingHttpClient
+import io.micronaut.http.uri.UriBuilder
+
 import org.gokb.cred.BookInstance
 import org.gokb.cred.Combo
 import org.gokb.cred.DatabaseInstance
@@ -18,6 +22,7 @@ import org.gokb.cred.Org
 import org.gokb.cred.RefdataCategory
 import org.gokb.TitleLookupService
 import org.springframework.web.client.RestTemplate
+
 import spock.lang.Specification
 import spock.lang.Shared
 
@@ -29,7 +34,7 @@ class TitleTestSpec extends AbstractAuthSpec {
   TitleLookupService titleLookupService
 
 
-  HttpClient http
+  BlockingHttpClient client
 
   def last = false
 
@@ -37,8 +42,12 @@ class TitleTestSpec extends AbstractAuthSpec {
   }
 
   def setup() {
+    if (!client) {
+      client = HttpClient.create(new URL(getUrlPath())).toBlocking()
+    }
+
     def ns_eissn = IdentifierNamespace.findByValue('eissn')
-    def new_id = Identifier.findByValue('2345-2334') ?: new Identifier(value: '2345-2334', namespace: ns_eissn).save(flush:true)
+    def new_id = Identifier.findByValue('2345-2331') ?: new Identifier(value: '2345-2331', namespace: ns_eissn).save(flush:true)
     def new_org = Org.findByName('TestOrg') ?: new Org(name: 'TestOrg').save(flush:true)
     def old_id = Identifier.findByValue('2345-2323') ?: new Identifier(value: '2345-2323', namespace: ns_eissn).save(flush:true)
 
@@ -67,10 +76,30 @@ class TitleTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/titles")
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = client.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
+  }
+
+  void "test journal index"() {
+    def urlPath = getUrlPath()
+    when:
+    String accessToken = getAccessToken()
+    URI uri = UriBuilder.of(urlPath)
+      .path("/rest/titles")
+      .queryParam('type', 'journal')
+      .queryParam('ids', '2345-2323')
+      .build()
+
+    HttpRequest request = HttpRequest.GET(uri)
+      .bearerAuth(accessToken)
+    HttpResponse resp = client.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    expect:
+    resp.body().data?.size() == 1
   }
 
   void "test /rest/titles/<id> with valid token"() {
@@ -79,7 +108,7 @@ class TitleTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/titles")
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = client.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -88,7 +117,7 @@ class TitleTestSpec extends AbstractAuthSpec {
   void "test insert new title"() {
     def urlPath = getUrlPath()
     def issn_ns = IdentifierNamespace.findByValue('issn')
-    def test_id = Identifier.findByValue('2345-2334')
+    def test_id = Identifier.findByValue('2345-2331')
     def publisher = Org.findByName("TestOrg")
 
     when:
@@ -96,39 +125,27 @@ class TitleTestSpec extends AbstractAuthSpec {
       name: "TestFullJournal",
       ids: [
         test_id.id,
-        [namespace: issn_ns.id, value: "3344-5544"],
-        [namespace: "zdb", value: "1234435-6"]
+        [namespace: issn_ns.id, value: "3344-5540"],
+        [namespace: "zdb", value: "1483109-0"]
       ],
       publisher: publisher.id
     ]
 
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.POST("${urlPath}/rest/titles", json_record as JSON)
+    URI uri = UriBuilder.of(urlPath)
+      .path("/rest/titles")
       .queryParam('type', 'journal')
+      .build()
+
+    HttpRequest request = HttpRequest.POST(uri, json_record)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = client.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.CREATED
     expect:
-    resp.json._embedded?.ids?.size() == 3
-    resp.json._embedded?.publisher?.size() == 1
-  }
-
-  void "test journal index"() {
-    def urlPath = getUrlPath()
-    when:
-    String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.GET("${urlPath}/rest/titles")
-      .queryParam('type', 'journal')
-      .queryParam('ids', '2345-2323')
-      .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
-
-    then:
-    resp.status == HttpStatus.OK
-    expect:
-    resp.json.data?.size() == 1
+    resp.body()._embedded?.ids?.size() == 3
+    resp.body()._embedded?.publisher?.size() == 1
   }
 
   void "test add title history event"() {
@@ -143,14 +160,14 @@ class TitleTestSpec extends AbstractAuthSpec {
     ]
 
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.POST("${urlPath}/rest/titles/$id/history", json_record as JSON)
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/titles/$id/history", json_record)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = client.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
     expect:
-    resp.json.size() == 1
+    resp.body().size() == 1
   }
 
   void "test update title history events"() {
@@ -172,13 +189,13 @@ class TitleTestSpec extends AbstractAuthSpec {
     ]
 
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles", json_record as JSON)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/$id/history", json_record)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = client.exchange(request, Map)
 
     then:
     // resp.status == 200 // OK
-    resp.json?.data?.size() == 2
+    resp.body()?.data?.size() == 2
   }
 
   void "test remove title history event by update"() {
@@ -197,13 +214,13 @@ class TitleTestSpec extends AbstractAuthSpec {
     ]
 
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/$id/history", json_record as JSON)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/titles/$id/history", json_record)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = client.exchange(request, Map)
 
     then:
     // resp.status == 200 // OK
-    resp.json?.data?.size() == 1
+    resp.body()?.data?.size() == 1
   }
   void "test send stale update info"() {
     def urlPath = getUrlPath()
@@ -216,20 +233,27 @@ class TitleTestSpec extends AbstractAuthSpec {
     ]
 
     String accessToken = getAccessToken()
-    HttpRequest req1 = HttpRequest.PUT("${urlPath}/rest/titles/$id", json_record as JSON)
+    HttpRequest req1 = HttpRequest.PUT("${urlPath}/rest/titles/$id", json_record)
       .bearerAuth(accessToken)
-    HttpResponse resp1 = http.toBlocking().exchange(req2)
+    HttpResponse resp1 = client.exchange(req1, Map)
 
     def json_stale_record = [
       name: "TestJournalV2",
       version: "0"
     ]
-    HttpRequest req2 = HttpRequest.PUT("${urlPath}/rest/titles/$id", json_stale_record as JSON)
+    HttpRequest req2 = HttpRequest.PUT("${urlPath}/rest/titles/$id", json_stale_record)
       .bearerAuth(accessToken)
-    HttpResponse resp2 = http.toBlocking().exchange(req2)
+    HttpStatus status2
+
+    try {
+      HttpRequest resp2 = client.exchange(req2)
+    }
+    catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      status2 = e.status
+    }
 
     then:
     resp1.status == HttpStatus.OK
-    resp2.status == HttpStatus.CONFLICT
+    status2 == HttpStatus.CONFLICT
   }
 }

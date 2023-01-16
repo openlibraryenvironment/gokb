@@ -43,6 +43,7 @@ class IngestKbartRun {
   static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
   static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
+  static ValidationService validationService = Holders.grailsApplication.mainContext.getBean('validationService')
   static def concurrencyManagerService = Holders.grailsApplication.mainContext.getBean('concurrencyManagerService')
   static TippService tippService = Holders.grailsApplication.mainContext.getBean('tippService')
   static DateFormatService dateFormatService = Holders.grailsApplication.mainContext.getBean('dateFormatService')
@@ -52,12 +53,22 @@ class IngestKbartRun {
   boolean dryRun
   boolean isUpdate
   User user
-  Map jsonResult = [result: "SUCCESS"]
   Map errors = [global: [], tipps: []]
   int removedNum = 0
   def invalidTipps = []
   def matched_tipps = [:]
   def titleIdMap = [:]
+  def titleMatchResult = [
+    matches: [
+      partial: 0,
+      full: 0
+    ],
+    created: 0,
+    conflicts: 0,
+    noid: 0
+  ]
+  def titleMatchConflicts = []
+  def badRows = []
   Package pkg
   CuratoryGroup activeGroup
   def pkg_validation
@@ -98,12 +109,17 @@ class IngestKbartRun {
 
   def start(nJob) {
     job = nJob ?: job
+    def pid = pkg.id
     log.debug("ingest start")
     def result = [result: 'OK', dryRun: dryRun]
     result.messages = []
 
     long start_time = System.currentTimeMillis()
     log.debug("Got Datafile ${datafile?.uploadName}")
+
+    if (job && !job.startTime) {
+      job.startTime = new Date()
+    }
 
     status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
     status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
@@ -143,8 +159,6 @@ class IngestKbartRun {
       log.debug("Set progress")
       job?.setProgress(0)
 
-      def badrows = []
-      def titleMatchStats = [matches: [partial: 0, full: 0], created: 0, conflicts: 0, noid: 0]
       def file_info = checkFile(datafile)
       def running_jobs = concurrencyManagerService.getComponentJobs(pkg.id)
 
@@ -158,7 +172,16 @@ class IngestKbartRun {
 
         String[] header = csv.readNext()
 
-        header = header.collect { it.trim() }
+        header = header.collect { it.toLowerCase().trim() }
+
+        Map col_positions = [:]
+        int ctr = 0
+
+        header.each {
+          col_positions[it] = ctr++
+        }
+
+        log.debug("Handling header ${header}")
 
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                                 'from TitleInstancePackagePlatform as tipp, Combo as c '+
@@ -172,6 +195,11 @@ class IngestKbartRun {
         }
 
         long startTime = System.currentTimeMillis()
+        RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+
+        Combo.withTransaction {
+          new Combo(fromComponent: pkg, toComponent: datafile, type: type_fa).save(flush: true)
+        }
 
         log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rownum} rows. Package is ${pkg.id}")
 
@@ -184,32 +212,31 @@ class IngestKbartRun {
           if (row_data != null) {
             rownum++
 
-            Package.withNewSession {
-              def row_kbart_beans = getKbartBeansForRow(header, row_data)
-              def row_specific_cfg = getRowSpecificCfg(ingest_cfg, row_kbart_beans)
-              log.debug("**Ingesting ${rownum} of ${file_info.rownum} ${row_kbart_beans}")
+            if (row_data.size() == header.size()) {
+                def row_kbart_beans = getKbartBeansForRow(col_positions, row_data)
+                def row_specific_cfg = getRowSpecificCfg(ingest_cfg, row_kbart_beans)
+                log.debug("**Ingesting ${rownum} of ${file_info.rownum} ${row_kbart_beans}")
 
-              long rowStartTime = System.currentTimeMillis()
+                long rowStartTime = System.currentTimeMillis()
 
-              if (dryRun) {
-                checkTitleMatchRow(row_kbart_beans, ingest_cfg, titleMatchStats)
-              }
+                if (dryRun) {
+                  checkTitleMatchRow(row_kbart_beans, rownum, ingest_cfg)
+                }
 
-              if (validateRow(rownum, badrows, row_kbart_beans)) {
-                def line_result = writeToDB(row_kbart_beans,
-                          ingest_date,
-                          ingest_systime,
-                          ingest_cfg,
-                          badrows,
-                          row_specific_cfg)
+                if (validateRow(row_data, rownum, col_positions)) {
+                  def line_result = writeToDB(row_kbart_beans,
+                            ingest_date,
+                            ingest_systime,
+                            ingest_cfg,
+                            row_specific_cfg)
 
-                result.report[line_result]++
-              }
-              else {
-                result.report.invalid++
-              }
+                  result.report[line_result]++
+                }
+                else {
+                  result.report.invalid++
+                }
 
-              log.debug("ROW ELAPSED : ${System.currentTimeMillis() - rowStartTime}")
+                log.debug("ROW ELAPSED : ${System.currentTimeMillis() - rowStartTime}")
             }
 
             job?.setProgress(rownum, file_info.rownum)
@@ -228,16 +255,16 @@ class IngestKbartRun {
           }
         }
 
-        if (result.reult != 'CANCELLED' && dryRun) {
-          result.titleMatch = titleMatchStats
+        if (result.result != 'CANCELLED' && dryRun) {
+          result.titleMatch = titleMatchResult
         }
 
         if (addOnly) {
           log.debug("Incremental -- no expunge")
         }
-        else {
+        else if (isUpdate) {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
-          if (!dryRun && result.reult != 'CANCELLED') {
+          if (!dryRun && result.result != 'CANCELLED') {
             try {
               // Find all tipps in this package which have a lastSeen before the ingest date
               def retire_pars = [
@@ -251,13 +278,15 @@ class IngestKbartRun {
 
               log.debug("Retiring via pars ${retire_pars}")
 
-              def retired_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
-                  set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
-                  where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
-                  and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
+              TitleInstancePackagePlatform.withTransaction {
+                def retired_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
+                    set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
+                    where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
+                    and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
 
-              result.report.retired = retired_count
-              log.debug("Completed tipp cleanup (${retired_count} retired)")
+                result.report.retired = retired_count
+                log.debug("Completed tipp cleanup (${retired_count} retired)")
+              }
             }
             catch (Exception e) {
               log.error("Problem retiring TIPPs", e)
@@ -269,9 +298,9 @@ class IngestKbartRun {
           }
         }
 
-        if (badrows.size() > 0) {
-          def msg = "There are ${badrows.size()} bad rows -- write to badfile and report"
-          result.badrows = badrows
+        if (badRows.size() > 0) {
+          def msg = "There are ${badRows.size()} bad rows -- write to badfile and report"
+          result.badrows = badRows
           result.messages.add(msg)
         }
 
@@ -286,39 +315,44 @@ class IngestKbartRun {
         result.report.averagePerRow = average_milliseconds_per_row
         result.report.averagePerHour = average_per_hour
         result.report.elapsed = processing_elapsed
-        job.message("Processing Complete : numRows:${file_info.rownum}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
+        job?.message("Processing Complete : numRows:${file_info.rownum}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
 
         if (!dryRun) {
           try {
-            def update_agent = User.findByUsername('IngestAgent')
-            // insertBenchmark updateBenchmark
-            def p = Package.get(pkg.id)
+            Package.withNewSession {
+              Package p = Package.get(pid)
 
-            if ( p.insertBenchmark == null )
-              p.insertBenchmark = processing_elapsed
-            p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
-            p.lastUpdatedBy = update_agent
-            p.updateBenchmark = processing_elapsed
-            p.save(flush: true, failOnError: true)
+              def update_agent = User.findByUsername('IngestAgent')
+              // insertBenchmark updateBenchmark
+              Package.withTransaction {
+                if ( p.insertBenchmark == null )
+                  p.insertBenchmark = processing_elapsed
 
-            def matching_job = concurrencyManagerService.createJob { mjob ->
-              Package.withNewSession {
-                tippService.matchPackage(p, mjob)
+                p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
+                p.lastUpdatedBy = update_agent
+                p.updateBenchmark = processing_elapsed
+                p.save(flush: true, failOnError: true)
               }
-            }
 
-            matching_job.description = "Package Title Matching".toString()
-            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
-            matching_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
-            matching_job.message("Starting title match for Package ${p.name}".toString())
-            matching_job.startOrQueue()
-            matching_job.startTime = new Date()
+              def matching_job = concurrencyManagerService.createJob { mjob ->
+                TitleInstancePackagePlatform.withNewSession {
+                  tippService.matchPackage(pid, mjob)
+                }
+              }
 
-            if (!async) {
-              result.matchingJob = matching_job.get()
-            }
-            else {
-              result.matchingJob = matching_job.uuid
+              matching_job.description = "Package Title Matching".toString()
+              matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+              matching_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
+              matching_job.message("Starting title match for Package ${pkg.name}".toString())
+              matching_job.startOrQueue()
+              matching_job.startTime = new Date()
+
+              if (!async) {
+                result.matchingJob = matching_job.get()
+              }
+              else {
+                result.matchingJob = matching_job.uuid
+              }
             }
           }
           catch (Exception e) {
@@ -328,42 +362,54 @@ class IngestKbartRun {
       }
       else if (running_jobs.data?.size() > 1) {
         result.result = 'ERROR'
-        reult.messageCode = 'kbart.errors.alreadyRunning'
+        result.messageCode = 'kbart.errors.alreadyRunning'
         result.messages.add('An import job for this package is already in progress!')
       }
     }
     catch (IllegalCharactersException ice) {
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.replacementChars'
-      result.messages.add(ice.toString())
-      job.message(ice.toString())
+
+      if (job) {
+        job.exception = ice.toString()
+      }
     }
     catch (Exception e) {
-      job.message(e.toString())
+      if (job) {
+        job.exception = e.toString()
+      }
       result.result = 'ERROR'
-      result.messages.add(e.toString())
       log.error("Problem", e)
     }
 
-    job?.setProgress(100)
-    job?.endTime = new Date()
+    if (job) {
+      job.setProgress(100)
+      job.endTime = new Date()
 
-    def result_object = JobResult.findByUuid(job?.uuid)
+      JobResult.withNewSession {
+        def result_object = JobResult.findByUuid(job.uuid)
 
-    if (!result_object) {
-      def job_map = [
-          uuid        : (job?.uuid),
-          description : (job?.description),
-          resultObject: (result as JSON).toString(),
-          type        : (job?.type),
-          statusText  : (result.result),
-          ownerId     : (job?.ownerId),
-          groupId     : (job?.groupId),
-          startTime   : (job?.startTime),
-          endTime     : (job?.endTime),
-          linkedItemId: (job?.linkedItem?.id)
-      ]
-      new JobResult(job_map).save(flush: true, failOnError: true)
+        if (result.titleMatch) {
+          result.titleMatch.rowConflicts = titleMatchConflicts
+        }
+
+        if (!result_object) {
+          def job_map = [
+              uuid        : (job.uuid),
+              description : (job.description),
+              resultObject: (result as JSON).toString(),
+              type        : (job.type),
+              statusText  : (result.result),
+              ownerId     : (job.ownerId),
+              groupId     : (job.groupId),
+              startTime   : (job.startTime),
+              endTime     : (job.endTime),
+              linkedItemId: (job.linkedItem?.id)
+          ]
+
+          def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+        }
+      }
     }
 
     def elapsed = System.currentTimeMillis() - start_time
@@ -377,7 +423,6 @@ class IngestKbartRun {
                ingest_date,
                ingest_systime,
                ingest_cfg,
-               badrows,
                row_specific_config) {
 
     //simplest method is to assume that everything is new.
@@ -471,7 +516,7 @@ class IngestKbartRun {
         }
         else {
           log.debug("Skipping row - no identifiers")
-          badrows.add([rowdata: the_kbart, message: 'No usable identifiers'])
+          badRows.add([rowdata: the_kbart, message: 'No usable identifiers'])
           result = 'invalid'
         }
 
@@ -510,43 +555,44 @@ class IngestKbartRun {
     TitleInstancePackagePlatform tipp = null
 
     def tipp_map = [
-      url: the_kbart.title_url ?: '',
+      url: the_kbart.title_url?.trim(),
       coverageStatements: [
         [
-          embargo: the_kbart.embargo_info ?: '',
-          coverageDepth: the_kbart.coverage_depth?: '',
-          coverageNote: the_kbart.coverage_note ?: '',
-          startDate: the_kbart.date_first_issue_online,
-          startVolume: the_kbart.num_first_vol_online,
-          startIssue: the_kbart.num_first_issue_online,
-          endDate: the_kbart.date_last_issue_online,
-          endVolume: the_kbart.num_last_vol_online,
-          endIssue: the_kbart.num_last_issue_online
+          embargo: the_kbart.embargo_info?.trim(),
+          coverageDepth: the_kbart.coverage_depth?.trim(),
+          coverageNote: the_kbart.coverage_note?.trim(),
+          startDate: the_kbart.date_first_issue_online?.trim(),
+          startVolume: the_kbart.num_first_vol_online?.trim(),
+          startIssue: the_kbart.num_first_issue_online?.trim(),
+          endDate: the_kbart.date_last_issue_online?.trim(),
+          endVolume: the_kbart.num_last_vol_online?.trim(),
+          endIssue: the_kbart.num_last_issue_online?.trim()
         ]
       ],
-      importId: the_kbart.title_id,
-      name: the_kbart.publication_title,
-      publicationType: the_kbart.publication_type,
-      parentPublicationTitleId: the_kbart.parent_publication_title_id,
-      precedingPublicationTitleId: the_kbart.preceding_publication_title_id,
-      firstAuthor: the_kbart.first_author,
-      publisherName: the_kbart.publisher_name,
-      volumeNumber: the_kbart.monograph_volume,
-      editionStatement: the_kbart.monograph_edition,
-      dateFirstInPrint: the_kbart.date_monograph_published_print,
-      dateFirstOnline: the_kbart.date_monograph_published_online,
-      firstEditor: the_kbart.first_editor,
-      url: the_kbart.title_url,
-      subjectArea: the_kbart.subject_area ?: (the_kbart.subject ?: the_kbart.primary_subject),
-      series: (the_kbart.monograph_parent_collection_title ?: the_kbart.series),
-      language: the_kbart.language,
-      medium: the_kbart.medium,
-      accessStartDate:the_kbart.access_start_date ?: ingest_date,
-      accessEndDate: the_kbart.access_end_date,
+      importId: the_kbart.title_id?.trim(),
+      name: the_kbart.publication_title?.trim(),
+      publicationType: the_kbart.publication_type?.trim(),
+      parentPublicationTitleId: the_kbart.parent_publication_title_id?.trim(),
+      precedingPublicationTitleId: the_kbart.preceding_publication_title_id?.trim(),
+      firstAuthor: the_kbart.first_author?.trim(),
+      publisherName: the_kbart.publisher_name?.trim(),
+      volumeNumber: the_kbart.monograph_volume?.trim(),
+      editionStatement: the_kbart.monograph_edition?.trim(),
+      dateFirstInPrint: the_kbart.date_monograph_published_print?.trim(),
+      dateFirstOnline: the_kbart.date_monograph_published_online?.trim(),
+      firstEditor: the_kbart.first_editor?.trim(),
+      url: the_kbart.title_url?.trim(),
+      subjectArea: the_kbart.subject_area?.trim() ?: (the_kbart.subject?.trim() ?: the_kbart.primary_subject?.trim()),
+      series: (the_kbart.monograph_parent_collection_title ?: the_kbart.series?.trim()),
+      language: the_kbart.language?.trim(),
+      medium: the_kbart.medium?.trim(),
+      accessStartDate:the_kbart.access_start_date?.trim() ?: ingest_date,
+      accessEndDate: the_kbart.access_end_date?.trim(),
       lastSeen: ingest_systime,
       identifiers: identifiers,
       pkg: [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
-      hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name]
+      hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name],
+      paymentType: the_kbart.access_type?.trim()
     ]
 
     if (isUpdate || !tipp_map.importId) {
@@ -555,6 +601,11 @@ class IngestKbartRun {
       if (match_result.full_matches.size() > 0) {
         result = 'matched'
         tipp = match_result.full_matches[0]
+
+        if (tipp.accessStartDate) {
+          tipp_map.accessStartDate = null
+        }
+
         // update Data
         log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
 
@@ -588,9 +639,9 @@ class IngestKbartRun {
           def tipp_fields = [
             pkg: pkg,
             hostPlatform: the_platform,
-            url: the_kbart.title_url,
-            name: the_kbart.publication_title,
-            importId: the_kbart.title_id
+            url: the_kbart.title_url?.trim(),
+            name: the_kbart.publication_title.trim(),
+            importId: the_kbart.title_id?.trim()
           ]
 
           tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
@@ -632,7 +683,9 @@ class IngestKbartRun {
           matched_tipps[tipp.id] = 1
 
           if (result != 'created' && result != 'partial') {
-            TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = ?1", [tipp])
+            TIPPCoverageStatement.withTransaction {
+              TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = :tipp", [tipp: tipp])
+            }
             tipp.refresh()
           }
         }
@@ -651,7 +704,7 @@ class IngestKbartRun {
       if (titleIdMap[tipp_map.importId]) {
         for (tidm in titleIdMap[tipp_map.importId]) {
           jsonIdMap.each { ns, val ->
-            if (tidm.ids[tipp_map.importId][ns] != jsonIdMap[ns]) {
+            if (tidm.ids[ns] != val) {
               result = 'partial'
             }
           }
@@ -660,7 +713,7 @@ class IngestKbartRun {
             result = 'matched'
 
             if (!dryRun) {
-              tipp = TitleInstancePackagePlatform.get(tidm.oid)
+              tipp = TitleInstancePackagePlatform.findById(tidm.oid)
             }
           }
         }
@@ -669,8 +722,12 @@ class IngestKbartRun {
         result = 'created'
       }
 
-      if (!dryRun) {
-        if (result != 'matched') {
+      if (result != 'matched') {
+        if (!titleIdMap[tipp_map.importId]) {
+          titleIdMap[tipp_map.importId] = []
+        }
+
+        if (!dryRun) {
           def tipp_fields = [
             pkg: pkg,
             hostPlatform: the_platform,
@@ -680,30 +737,25 @@ class IngestKbartRun {
           ]
 
           tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
-
-          if (!titleIdMap[tipp_map.importId]) {
-            titleIdMap[tipp_map.importId] = []
-          }
-
-          titleIdMap[tipp_map.importId] << [
-            ids: jsonIdMap,
-            oid: tipp.id
-          ]
         }
-        else {
 
-        }
+        titleIdMap[tipp_map.importId] << [
+          ids: jsonIdMap,
+          oid: (dryRun ? null : tipp.id)
+        ]
+      }
+      else if (tipp.accessStartDate) {
+        tipp_map.accessStartDate = null
       }
     }
 
     if (!dryRun) {
-      tippService.checkCoverage(tipp, tipp_map, (result == 'created' || result == 'partial'))
-      tippService.updateSimpleFields(tipp, tipp_map, true, user)
+      tippService.updateTippFields(tipp, tipp_map, user)
 
       // log.debug("Values updated, set lastSeen");
 
       if (ingest_systime) {
-        // log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date}")
+        log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date} (${tipp.lastSeen} -> ${ingest_systime})")
         tipp.lastSeen = ingest_systime
       }
 
@@ -716,7 +768,20 @@ class IngestKbartRun {
       // addUnmappedCustprops(tipp, the_kbart.unmapped, 'tipp.custprops.')
 
       log.debug("manualUpsertTIPP returning")
-      tipp.save(flush: true)
+      log.debug("TIPP ${tipp.id} info check: ${tipp.name}, ${tipp.url}")
+
+      if (tipp.validate()) {
+        TitleInstancePackagePlatform.withTransaction {
+          tipp.save(flush: true, failOnError: true)
+        }
+      }
+      else {
+        log.error("Validation failed!")
+        tipp.errors.allErrors.each {
+            log.error("${it}")
+        }
+      }
+
     }
 
     result
@@ -770,6 +835,9 @@ class IngestKbartRun {
 
     Map col_positions = [:]
     String[] header = csv.readNext()
+
+    header = header.collect { it.toLowerCase().trim() }
+
     int ctr = 0
 
     header.each {
@@ -783,8 +851,7 @@ class IngestKbartRun {
       'online_identifier',
       'title_url',
       'title_id',
-      'publication_type',
-      'access_type'
+      'publication_type'
     ]
 
     for (mc in mandatoryColumns) {
@@ -805,26 +872,29 @@ class IngestKbartRun {
     while (nl != null) {
       result.rownum++
 
-      if (nl.length != header.size()) {
-        result.errors.columnsCount = [message: "Inconsistent column count in row ${rownum}!", code: "kbart.errors.tabsCountFile"]
+      if (nl.size() > 1 && nl.size() != header.size()) {
+        result.errors.columnsCount = [message: "Inconsistent column count in row ${result.rownum} (${nl.size()} <> ${header.size()})!", code: "kbart.errors.tabsCountFile"]
       }
-      else if (nl.length > 0) {
+      else if (nl.size() >= mandatoryColumns.size()){
         for (key in col_positions.keySet()) {
           // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
           if (key && key.length() > 0) {
             if (col_positions[key] != null && col_positions[key] < nl.length) {
               if (nl[col_positions[key]].length() > 4092) {
-                result.errors.longVals = [message: "Unexpectedly long value in row ${rownum} -- Probably miscoded quote in line. Correct and resubmit", code: "kbart.errors.longValsFile"]
+                result.errors.longVals = [message: "Unexpectedly long value in row ${result.rownum} -- Probably miscoded quote in line. Correct and resubmit", code: "kbart.errors.longValsFile"]
               }
               else if (nl[col_positions[key]].contains('�')) {
-                result.errors.replacementChars = [message: "Found UTF-8 replacement char in row ${rownum} -- Probably opened and then saved non-UTF-8 file as UTF-8!", code: "kbart.errors.replacementChars"]
+                result.errors.replacementChars = [message: "Found UTF-8 replacement char in row ${result.rownum} -- Probably opened and then saved non-UTF-8 file as UTF-8!", code: "kbart.errors.replacementChars"]
               }
             }
             else {
-              log.error("Column references value not present in col ${col_positions[key]} row ${rownum}")
+              log.error("Column references value not present in col ${col_positions[key]} row ${result.rownum}")
             }
           }
         }
+      }
+      else {
+        log.debug("Found and skipped short row ${nl}")
       }
 
       if (result.errors) {
@@ -848,7 +918,7 @@ class IngestKbartRun {
 
     CSVReader csv = new CSVReaderBuilder(
         new InputStreamReader(
-            new org.apache.commons.io.input.BOMInputStream(
+            new BOMInputStream(
                 new ByteArrayInputStream(the_data.fileData),
                 ByteOrderMark.UTF_16LE,
                 ByteOrderMark.UTF_16BE,
@@ -864,15 +934,8 @@ class IngestKbartRun {
     return csv
   }
 
-  def getKbartBeansForRow(header, row_data) {
+  def getKbartBeansForRow(col_positions, row_data) {
     def result = [:]
-
-    Map col_positions = [:]
-    int ctr = 0
-
-    header.each {
-      col_positions[it] = ctr++
-    }
 
     for (key in col_positions.keySet()) {
       // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
@@ -885,7 +948,7 @@ class IngestKbartRun {
             result[key] = row_data[col_positions[key]]
           }
           else {
-            log.error("Column references value not present in col ${col_positions[key]} row ${rownum}")
+            log.error("Column references value not present in col ${col_positions[key]}!")
           }
         }
       }
@@ -894,74 +957,18 @@ class IngestKbartRun {
     result
   }
 
-  def validateRow(rownum, badrows, row_data) {
+  def validateRow(row_data, rownum, col_positions) {
     log.debug("Validate :: ${row_data}")
-    def result = true
-    def errors = []
+    def valid = true
+    def result = validationService.checkRow(row_data, rownum, col_positions, providerIdentifierNamespace)
 
-    // check the_kbart.date_first_issue_online is present and validates
-    if (row_data.date_first_issue_online != null && row_data.date_first_issue_online.trim()) {
-      def parsed_start_date = parseDate(row_data.date_first_issue_online)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for date_first_issue_online :: ${row_data.date_first_issue_online}")
-        result = false
-      }
+    if (result.errors) {
+      log.error("Recording bad row ${rownum}: ${result.errors}")
+      valid = false
+      badRows.add([rowdata: row_data, errors: result.errors, row: rownum])
     }
 
-    if (row_data.date_last_issue_online != null && row_data.date_last_issue_online.trim()) {
-      def parsed_start_date = parseDate(row_data.date_first_issue_online)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_last_issue_online' :: ${row_data.date_last_issue_online}")
-        result = false
-      }
-    }
-
-    if (row_data.date_monograph_published_online != null && row_data.date_monograph_published_online.trim()) {
-      def parsed_start_date = parseDate(row_data.date_monograph_published_online)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_online' :: ${row_data.date_monograph_published_online}")
-        result = false
-      }
-    }
-
-    if (row_data.date_monograph_published_print != null && row_data.date_monograph_published_print.trim()) {
-      def parsed_start_date = parseDate(row_data.date_monograph_published_print)
-
-      if (parsed_start_date == null) {
-        errors.add("Row ${rownum} contains an invalid or unrecognised date format for 'date_monograph_published_print' :: ${row_data.date_monograph_published_online}")
-        result = false
-      }
-    }
-
-    if (!row_data.title_id || !row_data.title_id.trim()) {
-      errors.add("Row ${rownum} does not contain a value for 'title_id'")
-      result = false
-    }
-
-    if (!row_data.publication_title || !row_data.publication_title.trim()) {
-      errors.add("Row ${rownum} does not contain a value for 'publication_title'")
-      result = false
-    }
-
-    if (!row_data.publication_type || !row_data.publication_type.trim() || !TitleInstance.determineTitleClass(row_data.publication_type)) {
-      errors.add("Row ${rownum} does not contain a valid 'publication_type' :: ${row_data.publication_type}")
-      result = false
-    }
-
-    if (!row_data.title_url || !row_data.title_url.trim()) {
-      errors.add("Row ${rownum} does not contain a value for 'title_url'")
-      result = false
-    }
-
-    if (!result) {
-      log.error("Recording bad row : ${reasons}")
-      badrows.add([rowdata: row_data, errors: errors, row: rownum])
-    }
-
-    result
+    valid
   }
 
   /**
@@ -1023,7 +1030,7 @@ class IngestKbartRun {
     result
   }
 
-  def checkTitleMatchRow(the_kbart, ingest_cfg, match_result) {
+  def checkTitleMatchRow(the_kbart, rownum, ingest_cfg) {
     def row_specific_cfg = getRowSpecificCfg(ingest_cfg, the_kbart)
 
     TitleInstance.withNewSession {
@@ -1057,32 +1064,52 @@ class IngestKbartRun {
             TitleInstance.determineTitleClass(the_kbart.publication_type)
         )
 
-        if (title_lookup_result.conflicts) {
-          match_result.conflicts++
-        }
-        else if (title_lookup_result.to_create) {
-          match_result.created++
+        boolean hasConflicts = false
+        boolean partial = false
+        def matchConflicts = []
 
-          if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
-            log.debug("New title -- Conflicts: ${title_lookup_result.matches}")
-            match_result.matches.partial++
-          }
+        title_lookup_result.matches.each { trm ->
+          if (trm.conflicts.size() > 0) {
+            partial = true
 
-          if (title_lookup_result.matches.size() > 1) {
-            match_result.conflicts++
+            def match = [
+              id: trm.object.id,
+              name: trm.object.name,
+              conflicts: trm.conflicts
+            ]
+            matchConflicts << match
+
+            if (trm.warnings.contains('duplicate')) {
+              hasConflicts = true
+            }
           }
         }
-        else if (title_lookup_result.matches?.collect { it.conflicts?.size() > 0 }?.size() > 0) {
-          log.debug("Partial Match -- Conflicts: ${title_lookup_result.matches}")
-          match_result.matches.partial++
+
+        if (matchConflicts) {
+          titleMatchConflicts << [row: rownum, matches: matchConflicts]
+        }
+
+        if (hasConflicts) {
+          titleMatchResult.conflicts++
+        }
+
+        if (title_lookup_result.to_create) {
+          titleMatchResult.created++
+
+          if (partial) {
+            titleMatchResult.matches.partial++
+          }
+        }
+        else if (partial) {
+          titleMatchResult.matches.partial++
         }
         else {
-          match_result.matches.full++
+          titleMatchResult.matches.full++
         }
       }
       else {
         log.warn("[${the_kbart.publication_title}] No identifiers.")
-        match_result.noid++
+        titleMatchResult.noid++
       }
     }
   }
@@ -1107,10 +1134,12 @@ class IngestKbartRun {
     }
 
     if (changed) {
-      obj.save(flush:true, failOnError:true)
+      KBComponent.withTransaction {
+        obj.save(flush:true, failOnError:true)
+      }
     }
 
-    return;
+    return
   }
 
   /**
@@ -1133,7 +1162,9 @@ class IngestKbartRun {
     }
 
     if (changed) {
-      obj.save(flush:true, failOnError:true)
+      KBComponent.withTransaction {
+        obj.save(flush:true, failOnError:true)
+      }
     }
 
     return

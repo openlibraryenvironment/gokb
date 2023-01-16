@@ -56,6 +56,7 @@ dependencies {
     developmentOnly "org.springframework.boot:spring-boot-devtools"
     implementation "org.springframework.boot:spring-boot-starter-logging"
     implementation "org.springframework.boot:spring-boot-autoconfigure"
+    implementation group: 'org.codehaus.groovy', name: 'groovy-dateutil', version: '3.0.13'
     implementation "org.grails:grails-core"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation "org.springframework.boot:spring-boot-starter-undertow"
@@ -93,10 +94,12 @@ dependencies {
     implementation group: 'org.aspectj', name: 'aspectjweaver', version: '1.9.9.1'
     implementation group: 'joda-time', name: 'joda-time', version: '2.10.14'
     implementation group: 'org.apache.commons', name: 'commons-compress', version: '1.21'
+    implementation group: 'commons-validator', name: 'commons-validator', version: '1.7'
     implementation group: 'com.opencsv', name: 'opencsv', version: '5.6'
     implementation group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.7.1'
-    implementation 'org.opensearch:opensearch:2.3.0'
-    implementation 'org.opensearch.client:opensearch-rest-high-level-client:2.3.0'
+    implementation group: 'com.github.ladutsko', name: 'isbn-core', version: '1.1.0'
+    implementation 'org.opensearch:opensearch:2.4.1'
+    implementation 'org.opensearch.client:opensearch-rest-high-level-client:2.4.1'
     implementation 'org.locationtech.spatial4j:spatial4j:0.8'
     implementation 'org.slf4j:log4j-over-slf4j:2.0.3'
     implementation 'org.apache.tika:tika-core:2.4.1'
@@ -107,9 +110,10 @@ dependencies {
     //  and https://github.com/grails-plugins/grails-rest-client-builder
     // implementation 'org.grails:grails-datastore-rest-client:6.1.9.RELEASE'
     implementation "io.micronaut:micronaut-http-client"
+    implementation 'io.micronaut.xml:micronaut-jackson-xml:3.2.0'
     implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    implementation group: 'org.postgresql', name: 'postgresql', version: '42.5.0'
+    implementation 'org.postgresql:postgresql:42.5.1'
     runtimeOnly "com.h2database:h2"
     runtimeOnly "org.apache.tomcat:tomcat-jdbc"
     runtimeOnly "com.bertramlabs.plugins:asset-pipeline-grails:3.3.1"
@@ -130,7 +134,7 @@ dependencies {
 
 bootRun {
     systemProperties System.properties
-    jvmArgs = ['-Dspring.output.ansi.enabled=always','-Xmx8g']
+    jvmArgs = ['-Dspring.output.ansi.enabled=always','-Xmx4g']
     sourceResources sourceSets.main
 }
 

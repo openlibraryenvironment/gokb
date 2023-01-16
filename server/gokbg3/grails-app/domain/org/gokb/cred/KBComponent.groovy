@@ -489,7 +489,9 @@ where cp.owner = :c
     if (normid && namespace) {
       def id = Identifier.findByNamespaceAndNormname(namespace, normid)
 
-      id?.activeIdentifiedComponents.each { component ->
+      id?.activeIdentifiedComponents.each { proxy ->
+        def component = KBComponent.deproxy(proxy)
+
         if (!result) {
           result = component
         }
@@ -508,7 +510,9 @@ where cp.owner = :c
     if (normid && namespace) {
       def id = Identifier.findByNamespaceAndNormname(namespace, normid)
 
-      id?.activeIdentifiedComponents.each { component ->
+      id?.activeIdentifiedComponents.each { proxy ->
+        def component = KBComponent.deproxy(proxy)
+
         if (!result.contains(component)) {
           result.add(component)
         }
@@ -1111,9 +1115,10 @@ where cp.owner = :c
     def result = null
     if (name.trim().size() != 0) {
       def normname = generateNormname(name)
+      def status_deleted = RefdataCategory.lookup(RD_STATUS, STATUS_DELETED)
 
       // Check that name is not already a name or a variant, if so, add it.
-      def existing_component = this.class.findByNormname(normname)
+      def existing_component = this.class.findByNormnameAndStatusNotEqual(normname, status_deleted)
 
       if (existing_component == null) {
 
@@ -1295,9 +1300,6 @@ where cp.owner = :c
     ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component=:component", [component: this])
     KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner=:component", [component: this])
 
-    ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)", [component: this])
-    AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup as g where g.review in ( select r from ReviewRequest as r where r.componentToReview=:component)", [component: this])
-
     def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: this])
 
     events_to_delete.each {
@@ -1305,17 +1307,28 @@ where cp.owner = :c
       ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
     }
 //     ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this]);
-    if (this?.class == CuratoryGroup) {
+    if (this.class == CuratoryGroup) {
       AllocatedReviewGroup.removeAll(this)
+
+      this.users*.id.each { user_id ->
+        User.get(user_id).removeFromCuratoryGroups(this).save()
+      }
     }
-    ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview=:component", [component: this])
+    else {
+      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)", [component: this])
+
+      ReviewRequest.executeQuery("select id from ReviewRequest where componentToReview=:component", [component: this]).each {
+        ReviewRequest.findById(it).expunge()
+      }
+    }
+
     ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component", [component: this])
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component", [component: this])
     ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component", [component: this])
     KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component", [component: this])
     KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: this])
     this.delete(failOnError: true)
-    result;
+    result
   }
 
   static def expungeAll(List components) {
@@ -1401,23 +1414,6 @@ where cp.owner = :c
           String pName = prop.propertyDefn?.propertyName
           if (pName && prop.apValue) {
             builder.'additionalProperty'('name': pName, 'value': prop.apValue)
-          }
-        }
-      }
-    }
-    if (fileAttachments) {
-      builder.'fileAttachments' {
-        fileAttachments.each { fa ->
-          builder.'fileAttachment' {
-            builder.'guid'(fa.guid)
-            builder.'md5'(fa.md5)
-            builder.'uploadName'(fa.uploadName)
-            builder.'uploadMimeType'(fa.uploadMimeType)
-            builder.'filesize'(fa.filesize)
-            builder.'doctype'(fa.doctype)
-            builder.'content' {
-              builder.'mkp'.yieldUnescaped "<![CDATA[${fa.fileData.encodeBase64().toString()}]]>"
-            }
           }
         }
       }

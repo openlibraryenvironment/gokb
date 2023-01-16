@@ -8,6 +8,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.BlockingHttpClient
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.Role
 import org.gokb.cred.User
@@ -24,8 +25,14 @@ class ProfileTestSpec extends AbstractAuthSpec {
   private User normalUser
   private CuratoryGroup cg
 
+  BlockingHttpClient http
+
   @Transactional
   def setup() {
+    if (!http) {
+      http = HttpClient.create(new URL(getUrlPath())).toBlocking()
+    }
+
     normalUser = User.findByUsername("normalUser") ?: new User(username: "normalUser", password: "normalUser", enabled: true, email: 'someone@somewhere.org').save(flush: true)
     Role roleUser = Role.findByAuthority('ROLE_USER')
     if (!normalUser.hasRole('ROLE_USER')) {
@@ -49,10 +56,16 @@ class ProfileTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/profile")
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpStatus status
+
+    try {
+      HttpResponse resp = http.exchange(request)
+    } catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      status = e.status
+    }
 
     then:
-    resp.status == HttpStatus.UNAUTHORIZED
+    status == HttpStatus.UNAUTHORIZED
   }
 
   void "test GET /rest/profile with valid token"() {
@@ -62,7 +75,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken('normalUser', 'normalUser')
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/profile")
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -75,22 +88,33 @@ class ProfileTestSpec extends AbstractAuthSpec {
     // use the bearerToken to read /rest/profile
     when:
     String accessToken = getAccessToken('normalUser', 'normalUser')
+    def reqBody = [
+      username: 'normalUser',
+      password: 'normalUser'
+    ]
+
     // logout => invalidate token on the server
-    HttpRequest req1 = HttpRequest.POST("${urlPath}/rest/logout")
+    HttpRequest req1 = HttpRequest.POST("${urlPath}/rest/logout", reqBody)
       .bearerAuth(accessToken)
-    HttpResponse resp1 = http.toBlocking().exchange(req1)
+    HttpResponse resp = http.exchange(req1)
 
     then:
-    resp1.status == HttpStatus.OK
+    resp.status == HttpStatus.OK
 
     when:
     // reuse the stale token
     HttpRequest req2 = HttpRequest.GET("${urlPath}/rest/profile")
       .bearerAuth(accessToken)
-    HttpResponse resp2 = http.toBlocking().exchange(req2)
+    HttpStatus status2
+
+    try {
+      HttpResponse resp2 = http.exchange(req2)
+    } catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      status2 = e.status
+    }
 
     then:
-    resp2.status == HttpStatus.UNAUTHORIZED // Unauthorized
+    status2 == HttpStatus.UNAUTHORIZED // Unauthorized
   }
 
   void "test PUT /rest/profile"() {
@@ -99,12 +123,11 @@ class ProfileTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken("normalUser", "normalUser")
     Map bodyData = [displayName    : null,
                     email          : "MrX@localhost",
-       //             curatoryGroupIds: [cg.id],
                     defaultPageSize: 10
     ]
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/profile", bodyData as JSON)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/profile", bodyData)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -119,13 +142,12 @@ class ProfileTestSpec extends AbstractAuthSpec {
     Map bodyData = [
       displayName : "tempo",
       email       : "frank@gmail.com",
-  //    curatoryGroupIds: [cg.id],
       password    : "normalUser",
       new_password: "roles"
     ]
-    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/profile", bodyData as JSON)
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/profile", bodyData)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -143,9 +165,9 @@ class ProfileTestSpec extends AbstractAuthSpec {
     Map bodyData = [
       new_password: "secr3t"
     ]
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/profile", bodyData as JSON)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/profile", bodyData)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -167,12 +189,18 @@ class ProfileTestSpec extends AbstractAuthSpec {
       curatoryGroupIds: [cg.id],
       new_password    : "roles"
     ]
-    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/profile", bodyData as JSON)
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/profile", bodyData)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpStatus status
+
+    try {
+      HttpResponse resp = http.exchange(request)
+    } catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      status = e.status
+    }
 
     then:
-    resp.status == HttpStatus.BAD_REQUEST
+    status == HttpStatus.BAD_REQUEST
   }
 
   void "test POST /rest/profile/"() {
@@ -185,11 +213,17 @@ class ProfileTestSpec extends AbstractAuthSpec {
       email      : "frank@gmail.com",
       password   : "otherthan"
     ]
-    HttpRequest request = HttpRequest.POST("${urlPath}/rest/profile", bodyData as JSON)
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/profile", bodyData)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpStatus status
+
+    try {
+      HttpResponse resp = http.exchange(request)
+    } catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      status = e.status
+    }
 
     then:
-    resp.status == HttpStatus.NOT_FOUND
+    status == HttpStatus.NOT_FOUND
   }
 }

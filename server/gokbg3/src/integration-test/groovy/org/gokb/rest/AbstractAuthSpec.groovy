@@ -1,6 +1,5 @@
 package org.gokb.rest
 
-import grails.converters.JSON
 import grails.core.GrailsApplication
 import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
@@ -18,9 +17,6 @@ class AbstractAuthSpec extends Specification {
 
   @Autowired
   WebApplicationContext ctx
-
-
-  HttpClient http
 
   private def accessToken = null
   private String refreshToken = null
@@ -47,8 +43,10 @@ class AbstractAuthSpec extends Specification {
   private void login(username, password) {
     // calling /authRest/login to obtain a valid bearerToken
 
-    HttpRequest request = HttpRequest.POST(getUrlPath() + "/rest/login", [username: username, password: password] as JSON)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    Map request_body = [username: username, password: password]
+
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/rest/login", request_body)
+    HttpResponse resp = HttpClient.create(new URL(getUrlPath())).toBlocking().exchange(request, Map)
 
     accessToken = resp.body().access_token ?: accessToken
     refreshToken = resp.body().refresh_token ?: refreshToken

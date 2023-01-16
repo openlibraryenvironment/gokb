@@ -9,6 +9,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.BlockingHttpClient
 import io.micronaut.http.client.multipart.MultipartBody
 import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
@@ -20,19 +21,21 @@ import spock.lang.Shared
 
 
 @Integration
-@Rollback
 @Ignore
 class PackageUploadSpec extends Specification {
 
 
     GrailsApplication grailsApplication
 
-    HttpClient http
+    BlockingHttpClient http
 
     @Autowired
     WebApplicationContext ctx
 
     def setup() {
+      if (!http) {
+        http = HttpClient.create(new URL(getUrlPath())).toBlocking()
+      }
     }
 
     def cleanup() {
@@ -73,7 +76,7 @@ class PackageUploadSpec extends Specification {
         HttpRequest request = HttpRequest.POST("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/packages/deposit", requestBody)
           .basicAuth('admin', 'admin')
           .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-        HttpResponse resp = http.toBlocking().exchange(request)
+        HttpResponse resp = http.exchange(request)
 
 
       then:

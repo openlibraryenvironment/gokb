@@ -169,6 +169,7 @@ class ReviewRequest {
 
   def expunge() {
     ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog where rr = :rr",[rr: this])
+    AllocatedReviewGroup.removeAll(this)
     this.delete(failOnError: true)
   }
 

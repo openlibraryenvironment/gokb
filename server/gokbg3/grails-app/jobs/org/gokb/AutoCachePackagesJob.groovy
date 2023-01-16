@@ -5,7 +5,7 @@ import org.gokb.cred.Package
 
 class AutoCachePackagesJob {
 
-  def packageService
+  def packageCachingService
   // Allow only one run at a time.
   static concurrent = false
 
@@ -17,7 +17,7 @@ class AutoCachePackagesJob {
   def execute() {
     if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false)) {
       log.debug("Beginning scheduled auto cache packages job.")
-      packageService.cachePackageXml()
+      packageCachingService.cachePackageXml()
       log.debug("Finished scheduled package caching ..")
     }
   }

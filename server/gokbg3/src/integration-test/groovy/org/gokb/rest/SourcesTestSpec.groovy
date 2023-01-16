@@ -4,11 +4,16 @@ import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
+
 import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
+import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.BlockingHttpClient
+import io.micronaut.http.uri.UriBuilder
+
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Source
@@ -22,9 +27,13 @@ import spock.lang.Shared
 class SourcesTestSpec extends AbstractAuthSpec {
 
 
-  HttpClient http
+  BlockingHttpClient http
 
   def setup() {
+    if (!http) {
+      http = HttpClient.create(new URL(getUrlPath())).toBlocking()
+    }
+
     def src_upd = Source.findByName("Source PreUpdate") ?: new Source(name: "Source PreUpdate")
     IdentifierNamespace titleNS = IdentifierNamespace.findByName("TestSourceTitleNS") ?: new IdentifierNamespace(
       value: "testsourcetitlenamespace",
@@ -47,11 +56,15 @@ class SourcesTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.GET("$urlPath/rest/sources?_sort=name&_order=asc")
+    URI uri = UriBuilder.of(urlPath)
+      .path("/rest/sources")
       .queryParam('_sort', 'name')
       .queryParam('_order', 'asc')
+      .build()
+
+    HttpRequest request = HttpRequest.GET(uri)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -66,7 +79,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
     Source quelle = Source.findByName("TestSource")
     HttpRequest request = HttpRequest.GET("$urlPath/rest/sources/$quelle.id")
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -80,9 +93,9 @@ class SourcesTestSpec extends AbstractAuthSpec {
     when:
     String accessToken = getAccessToken()
     Map restBody = [shortcode: 'q1', name: 'Quelle 1']
-    HttpRequest request = HttpRequest.POST("$urlPath/rest/sources", restBody as JSON)
+    HttpRequest request = HttpRequest.POST("$urlPath/rest/sources", restBody)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.CREATED
@@ -103,9 +116,9 @@ class SourcesTestSpec extends AbstractAuthSpec {
         url            : "http://kbart-source.com/test-pkg",
         targetNamespace: namespace.id
     ]
-    HttpRequest request = HttpRequest.PUT("$urlPath/rest/sources/$srcId", restBody as JSON)
+    HttpRequest request = HttpRequest.PUT("$urlPath/rest/sources/$srcId", restBody)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK

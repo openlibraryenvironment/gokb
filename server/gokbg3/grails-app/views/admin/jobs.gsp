@@ -54,17 +54,69 @@
         </tr>
         <tr>
           <td colspan="6">
-            messages:
-            <ul>
-              <g:each in="${v.messages}" var="m">
-                <g:if test="${m instanceof String}">
-                  <li>${m}</li>
-                </g:if>
-                <g:else>
-                  <li>${m?.message}</li>
-                </g:else>
-              </g:each>
-            </ul>
+            <div class="panel-heading" role="tab" id="${k}_messages">
+              <h4 class="panel-title">
+                <a role="button" class="collapsed" data-toggle="collapse" href="#collapse${k}_messages" aria-expanded="true" aria-controls="collapse${k}_messages">
+                  Messages (${v.messages.size()})
+                </a>
+              </h4>
+            </div>
+            <div id="collapse${k}_messages" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="${k}_messages">
+              <div class="panel-body">
+                <div class="container-fluid">
+                  <div class="row well">
+                    <ul>
+                      <g:each in="${v.messages}" var="m">
+                        <g:if test="${m instanceof String}">
+                          <li>${m}</li>
+                        </g:if>
+                        <g:else>
+                          <li>${m?.message}</li>
+                        </g:else>
+                      </g:each>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <g:if test="${v.isDone()}">
+              <div class="panel-heading" role="tab" id="${k}_result">
+                <h4 class="panel-title">
+                  <a role="button" class="collapsed" data-toggle="collapse" href="#collapse${k}_result" aria-expanded="false" aria-controls="collapse${k}_result">
+                    Result
+                  </a>
+                </h4>
+              </div>
+              <div id="collapse${k}_result" class="panel-collapse collapse" role="tabpanel" aria-labelledby="${k}_result">
+                <div class="panel-body">
+                  <div class="container-fluid">
+                    <div class="row well">
+                      ${v.get()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </g:if>
+
+            <g:if test="${v.exception}">
+              <div class="panel-heading" role="tab" id="${k}_exception">
+                <h4 class="panel-title">
+                  <a role="button" class="collapsed" data-toggle="collapse" href="#collapse${k}_exception" aria-expanded="false" aria-controls="collapse${k}_exception">
+                    Exception
+                  </a>
+                </h4>
+              </div>
+              <div id="collapse${k}_exception" class="panel-collapse collapse" role="tabpanel" aria-labelledby="${k}_exception">
+                <div class="panel-body">
+                  <div class="container-fluid">
+                    <div class="row well">
+                      ${v.exception}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </g:if>
           </td>
         </tr>
       </g:each>

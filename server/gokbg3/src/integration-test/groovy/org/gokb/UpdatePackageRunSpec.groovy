@@ -1,18 +1,21 @@
 package org.gokb
 
-import grails.converters.JSON
 import grails.core.GrailsApplication
+import grails.gorm.transactions.*
+import grails.testing.mixin.integration.Integration
+
 import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
-import grails.testing.mixin.integration.Integration
-import grails.gorm.transactions.*
+import io.micronaut.http.client.BlockingHttpClient
+
 import org.gokb.TitleLookupService
 import org.gokb.cred.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.WebApplicationContext
+
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -27,7 +30,7 @@ class UpdatePackageRunSpec extends Specification {
   @Autowired
   WebApplicationContext ctx
 
-  HttpClient http
+  BlockingHttpClient http
 
   // extending IntegrationSpec means this works
   @Autowired
@@ -38,6 +41,10 @@ class UpdatePackageRunSpec extends Specification {
   }
 
   def setup() {
+    if (!http) {
+      http = HttpClient.create(new URL(getUrlPath())).toBlocking()
+    }
+
     def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush: true)
     def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush: true)
     def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush: true)
@@ -46,7 +53,7 @@ class UpdatePackageRunSpec extends Specification {
     def test_journal = JournalInstance.findByName('TestJournal') ?: new JournalInstance(name: 'TestJournal').save(flush: true)
     Identifier book_doi = Identifier.findByValueAndNamespace('10.1021/978-3-16-148410-0', IdentifierNamespace.findByValue('doi')) ?: new Identifier(value: '10.1021/978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('doi'))
     Identifier book_isbn = Identifier.findByValueAndNamespace('978-3-16-148410-0', IdentifierNamespace.findByValue('isbn')) ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn'))
-    Identifier serial_issn = Identifier.findByValueAndNamespace('9783-442X', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '9783-442X', namespace: IdentifierNamespace.findByValue('issn'))
+    Identifier serial_issn = Identifier.findByValueAndNamespace('9783-4424', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '9783-4424', namespace: IdentifierNamespace.findByValue('issn'))
     Identifier serial_eissn = Identifier.findByValueAndNamespace('9783-4420', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '9783-4420', namespace: IdentifierNamespace.findByValue('eissn'))
 
     def test_book = BookInstance.findByName('TestBook') ?: new BookInstance(name: 'TestBook').save(flush: true)
@@ -104,7 +111,7 @@ class UpdatePackageRunSpec extends Specification {
     TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
       title.expunge()
     }
-    ['9783-442X', '9783-4420', '9784-442X', '978-3-16-148410-0', '10.1021/978-3-16-148410-0'].each {
+    ['9783-4424', '9783-4420', '9784-442X', '978-3-16-148410-0', '10.1021/978-3-16-148410-0'].each {
       Identifier.findByValue(it)?.expunge()
     }
     ['Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
@@ -113,9 +120,6 @@ class UpdatePackageRunSpec extends Specification {
     ['TestJournalTIPP', 'TestBookTIPP', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
-    ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog")
-    AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup")
-    ReviewRequest.executeUpdate("delete from ReviewRequest")
   }
 
   void "Test updatePackageTipps :: match book by one of two identifiers"() {
@@ -150,7 +154,7 @@ class UpdatePackageRunSpec extends Specification {
                 "identifiers": [
                     [
                         "type" : "doi",
-                        "value": "10.1021/978-3-16-148410-3"  // different
+                        "value": "10.1021/978-3-16-148410-0"  // different
                     ],
                     [
                         "type" : "isbn",
@@ -169,7 +173,7 @@ class UpdatePackageRunSpec extends Specification {
                     "identifiers": [
                         [
                             "type" : "doi",
-                            "value": "10.1021/978-3-16-148410-3"  // different
+                            "value": "10.1021/978-3-16-148410-0"  // different
                         ],
                         [
                             "type" : "isbn",
@@ -187,11 +191,12 @@ class UpdatePackageRunSpec extends Specification {
     ]
 
     HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then: "The item is found in the database based on the issn"
+    resp.status == HttpStatus.OK
+    resp.body().result == "OK"
     resp.body().message != null
-    resp.body().message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
@@ -237,11 +242,11 @@ class UpdatePackageRunSpec extends Specification {
                 "identifiers": [
                     [
                         "type" : "issn",
-                        "value": "9783-442X"  // same
+                        "value": "9783-4424"  // same
                     ],
                     [
                         "type" : "eissn",
-                        "value": "9783-4429"  // different
+                        "value": "9783-4327"  // different
                     ]
                 ],
                 "coverage"   : [
@@ -272,11 +277,11 @@ class UpdatePackageRunSpec extends Specification {
                         ],
                         [
                             "type" : "issn",
-                            "value": "9783-442X"  // same
+                            "value": "9783-4424"  // same
                         ],
                         [
                             "type" : "eissn",
-                            "value": "9783-4429"  // different
+                            "value": "9783-4327"  // different
                         ]
                     ],
                     "name"       : "Journal of agricultural and food chemistry",
@@ -290,11 +295,11 @@ class UpdatePackageRunSpec extends Specification {
     ]
 
     HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then: "The item is found in the database based on the issn"
+    resp.body().result == "OK"
     resp.body().message != null
-    resp.body().message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
@@ -340,7 +345,7 @@ class UpdatePackageRunSpec extends Specification {
                 "identifiers": [
                     [
                         "type": "issn",
-                        "value": "9783-442X"
+                        "value": "9783-4424"
                     ]
                 ],
                 "coverage": [
@@ -371,7 +376,7 @@ class UpdatePackageRunSpec extends Specification {
                         ],
                         [
                             "type": "issn",
-                            "value": "9783-442X"
+                            "value": "9783-4424"
                         ]
                     ],
                     "name": "Journal of agricultural and food chemistry",
@@ -385,11 +390,11 @@ class UpdatePackageRunSpec extends Specification {
     ]
 
     HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then: "The item is found in the database based on the issn"
+    resp.body().result == "OK"
     resp.body().message != null
-    resp.body().message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
@@ -460,11 +465,11 @@ class UpdatePackageRunSpec extends Specification {
     ]
 
     HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then: "The item is created in the database because it does not exist"
+    resp.body().result == "OK"
     resp.body().message != null
-    resp.body().message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
@@ -573,11 +578,11 @@ class UpdatePackageRunSpec extends Specification {
     ]
 
     HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then: "The item is created in the database because it does not exist"
-    resp.body()?.message != null
-    resp.body().message.startsWith('Created')
+    resp.body().result == "OK"
+    resp.body().message != null
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("American Chemical Society: ACS Legacy Archives")
     matching_pkgs.size() == 1
@@ -624,7 +629,7 @@ class UpdatePackageRunSpec extends Specification {
                     ],
                     [
                         "type" : "issn",
-                        "value": "9783-442X"
+                        "value": "9783-4424"
                     ]
 
                 ],
@@ -656,7 +661,7 @@ class UpdatePackageRunSpec extends Specification {
                         ],
                         [
                             "type" : "issn",
-                            "value": "9783-442X"
+                            "value": "9783-4424"
                         ]
                     ],
                     "name"       : "Journal of agricultural and food chemistry",
@@ -670,11 +675,11 @@ class UpdatePackageRunSpec extends Specification {
     ]
 
     HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then: "The item is created in the database because it does not exist"
+    resp.body().result == "OK"
     resp.body().message != null
-    resp.body().message.startsWith('Created/Updated')
     expect: "Find pkg by name, which is connected to the new TIPP"
     def rr_mismatch = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch')
     def matching_pkgs = Package.findAllByName("TestPackage")

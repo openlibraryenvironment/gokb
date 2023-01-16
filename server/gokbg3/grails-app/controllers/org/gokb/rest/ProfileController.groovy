@@ -78,7 +78,7 @@ class ProfileController {
     Map reqData = request.JSON
     User user = User.get(springSecurityService.principal.id)
     if (reqData.new_password && reqData.password) {
-      if (passwordEncoder.isPasswordValid(user.password, reqData.password, null)) {
+      if (passwordEncoder.matches(reqData.password, user.password)) {
         user.password = reqData.new_password
         user.save(flush: true, failOnError: true);
       } else {

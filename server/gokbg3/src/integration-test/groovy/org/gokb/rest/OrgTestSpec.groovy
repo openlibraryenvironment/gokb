@@ -3,11 +3,15 @@ package org.gokb.rest
 import grails.converters.JSON
 import grails.testing.mixin.integration.Integration
 import grails.gorm.transactions.*
+
 import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.BlockingHttpClient
+import io.micronaut.http.uri.UriBuilder
+
 import org.gokb.cred.KBComponent
 import org.gokb.cred.Office
 import org.gokb.cred.Org
@@ -15,6 +19,7 @@ import org.gokb.cred.Platform
 import org.gokb.TitleLookupService
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Source
+
 import spock.lang.Specification
 import spock.lang.Shared
 
@@ -23,16 +28,19 @@ import spock.lang.Shared
 class OrgTestSpec extends AbstractAuthSpec {
 
 
-  HttpClient http
+  BlockingHttpClient http
 
   def setupSpec() {
   }
 
   def setup() {
+    if (!http) {
+      http = HttpClient.create(new URL(getUrlPath())).toBlocking()
+    }
     def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true)
     def new_plt_upd = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate").save(flush: true)
     def new_source = Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource").save(flush: true)
-    def new_office = Office.findByName("firstTestOffice") ?: new Office(name: "firstTestOffice", language: RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "ger"))
+    def new_office = Office.findByName("firstTestOffice") ?: new Office(name: "firstTestOffice")
         new_office.save(flush: true)
     def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source, offices:[new_office])
         patch_org.save(flush: true)
@@ -71,7 +79,7 @@ class OrgTestSpec extends AbstractAuthSpec {
     when:
 
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/orgs")
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request)
 
     then:
 
@@ -88,7 +96,7 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/orgs/${Org.findByName("TestOrgPatch").id}")
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
 
@@ -101,7 +109,7 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     def urlPath = getUrlPath()
     String accessToken = getAccessToken()
-    def json_record = [
+    Map json_record = [
       name             : "TestOrgPost",
       ids              : [
         [namespace: "global", value: "test-org-id-val"]
@@ -109,21 +117,18 @@ class OrgTestSpec extends AbstractAuthSpec {
       providedPlatforms: ["TestOrgPlt"],
       offices: [
           [name: "TestOffice1",
-           language:"ger",
            function: "Technical Support"],
           [name: "TestOffice2",
-           language:"epo",
            function: "other"],
-          [name: "TestOffice3",
-           language:"hun"]
+          [name: "TestOffice3"]
       ],
     ]
 
     when:
 
-    HttpRequest request = HttpRequest.POST("${urlPath}/rest/orgs", json_record as JSON)
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/orgs", json_record)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
 
@@ -135,7 +140,6 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.body()?._embedded?.offices?.size()==3
     resp.body()?._embedded?.offices*.function.name.count("Technical Support")==2
     resp.body()?._embedded?.offices*.function.name.count("Other")
-    resp.body()?._embedded?.offices*.language.name.containsAll(["hun", "ger", "epo"])
   }
 
   void "test org index"() {
@@ -147,7 +151,7 @@ class OrgTestSpec extends AbstractAuthSpec {
     when:
 
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/orgs")
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
 
@@ -166,26 +170,27 @@ class OrgTestSpec extends AbstractAuthSpec {
     def updated_plt = Platform.findByName("TestOrgPltUpdate")
     def id = Org.findByName("TestOrgPatch")?.id
 
-    def update_record = [
+    Map update_record = [
       name             : "TestOrgUpdateNew",
       ids              : [
         [namespace: "global", value: "test-org-id-val-new"]
       ],
       providedPlatforms: [updated_plt.id],
-      offices: [[name: "2ndTestOffice1",
-                 language:"ger",
-                 function:"Technical Support"],
-                [name: "2ndTestOffice2",
-                 language:RefdataCategory.lookup(KBComponent.RD_LANGUAGE, "eng").id,
-                 function: "other"]
+      offices: [
+        [name: "2ndTestOffice1", function:"Technical Support"],
+        [name: "2ndTestOffice2", function:"other"]
       ]
     ]
 
     when:
-
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/orgs/$id", update_record as JSON)
+    URI uri = UriBuilder.of(urlPath)
+      .path("/rest/orgs/$id")
       .queryParam('_embed', 'providedPlatforms,ids,offices')
+      .build()
+
+    HttpRequest request = HttpRequest.PUT(uri, update_record)
       .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
     then:
 
     resp.status == HttpStatus.OK
@@ -206,19 +211,19 @@ class OrgTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken()
     def id = Org.findByName("TestOrgPatch")?.id
 
-    def update_record = [
-      name             : "TestOrgUpdateSource",
-      ids              : [
+    Map update_record = [
+      name: "TestOrgUpdateSource",
+      ids: [
         [namespace: "global", value: "test-org-id-val-new"]
       ],
-      source           : null
+      source: null
     ]
 
     when:
 
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/orgs/$id", update_record as JSON)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/orgs/$id", update_record)
       .bearerAuth(accessToken)
-
+    HttpResponse resp = http.exchange(request, Map)
     then:
 
     resp.status == HttpStatus.OK

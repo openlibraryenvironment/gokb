@@ -37,7 +37,12 @@ class RefdataController {
         def rdv = [:]
         rdv['_links'] = ['self': ['href': base + "/refdata/values/${rv.id}"], 'owner': ['href': base + "/refdata/categories/${rc.id}"]]
         rdv['value'] = rv.value
+        rdv['deprecated'] = rv.deprecated
+        rdv['description'] = rv.description
+        rdv['sortKey'] = rv.sortKey
+        rdv['useInstead'] = rv.useInstead ? rv.id : null
         rdv['id'] = rv.id
+
         rdc['_embedded']['values'] << rdv
       }
       result['_embedded']['categories'] << rdc
@@ -69,7 +74,7 @@ class RefdataController {
       def vals = cat.values.sort { it.sortKey }
 
       vals.each { v ->
-        if (!v.useInstead) {
+        if (!v.useInstead && (!v.deprecated || params.boolean('ignoreDeprecation'))) {
           def val = [:]
           val['_links'] = [
             ['self': ['href': base + "/refdata/values/${v.id}"]],
@@ -104,6 +109,9 @@ class RefdataController {
         ['owner': ['href': base + "/refdata/categories/${val.owner.id}"]]
       ]
       result['value'] = val.value
+      result['description'] = val.description
+      result['deprecated'] = val.deprecated
+      result['useInstead'] = val.useInstead
       result['_embedded'] = [:]
       result['_embedded']['owner'] = [
         '_links'   : [
@@ -124,6 +132,9 @@ class RefdataController {
         ]
         siblings['value'] = v.value
         siblings['id'] = v.id
+        siblings['description'] = v.description
+        siblings['deprecated'] = v.deprecated
+        siblings['useInstead'] = v.useInstead ? v.useInstead.id : null
 
         result['_embedded']['owner']['_embedded']['values'].add(siblings)
       }
@@ -205,16 +216,21 @@ class RefdataController {
       result['label'] = cat.label
 
       cat.values.each { v ->
-        def val = [:]
-        val['_links'] = [
-          ['self': ['href': base + "/refdata/values/${v.id}"]],
-          ['owner': ['href': base + "/refdata/categories/${cat.id}"]]
-        ]
+        if (!v.deprecated || params.boolean('ignoreDeprecation')) {
+          def val = [:]
+          val['_links'] = [
+            ['self': ['href': base + "/refdata/values/${v.id}"]],
+            ['owner': ['href': base + "/refdata/categories/${cat.id}"]]
+          ]
 
-        val['value'] = v.value
-        val['id'] = v.id
+          val['value'] = v.value
+          val['description'] = val.description
+          val['deprecated'] = val.deprecated
+          val['useInstead'] = val.useInstead ? val.useInstead.id : null
+          val['id'] = v.id
 
-        resultData << val
+          resultData << val
+        }
       }
     }
     result.data = resultData

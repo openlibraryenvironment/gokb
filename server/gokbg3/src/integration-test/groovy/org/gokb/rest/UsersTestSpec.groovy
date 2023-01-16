@@ -3,11 +3,15 @@ package org.gokb.rest
 import grails.converters.JSON
 import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
+
 import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.BlockingHttpClient
+import io.micronaut.http.uri.UriBuilder
+
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.Role
 import org.gokb.cred.User
@@ -28,12 +32,16 @@ class UsersTestSpec extends AbstractAuthSpec {
   Role role
 
 
-  HttpClient http
+  BlockingHttpClient http
 
   def setup() {
+    if (!http) {
+      http = HttpClient.create(new URL(getUrlPath())).toBlocking()
+    }
+
     role = Role.findByAuthority("ROLE_USER")
     cg = CuratoryGroup.findByName("UserTestGroup") ?: new CuratoryGroup(name: "UserTestGroup").save(flush: true)
-    delUser = User.findByUsername("deleteUser") ?: new User(username: "deleteUser", curatoryGroups: [cg]).save(flush: true)
+    delUser = User.findByUsername("UserTestDeleteUser") ?: new User(username: "UserTestDeleteUser", curatoryGroups: [cg]).save(flush: true)
     UserRole.findOrCreateByRoleAndUser(role, delUser).save(flush: true)
     altUser = User.findByUsername("altUser") ?: new User(username: "altUser", curatoryGroups: [cg], enabled: true).save(flush: true)
     UserRole.findOrCreateByRoleAndUser(role, altUser).save(flush: true)
@@ -52,17 +60,14 @@ class UsersTestSpec extends AbstractAuthSpec {
     }
     User user = User.findByUsername(delUser.username)
     if (user) {
-      user.curatoryGroups -= cg
       user.delete(flush: true)
     }
     user = User.findByUsername(altUser.username)
     if (user) {
-      user.curatoryGroups -= cg
       user.delete(flush: true)
     }
     user = User.findByUsername("newerUser")
     if (user) {
-      user.curatoryGroups -= cg
       user.delete(flush: true)
     }
     CuratoryGroup group = CuratoryGroup.findByName(cg.name)
@@ -73,32 +78,41 @@ class UsersTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/users/$altUser.id")
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpStatus status
+
+    try {
+      HttpResponse resp = http.exchange(request, Map)
+    } catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      status = e.status
+    }
 
     then:
-    resp.status == HttpStatus.FORBIDDEN
+    status == HttpStatus.UNAUTHORIZED
   }
 
   void "test GET /rest/users/{id} with valid token"() {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.GET("${urlPath}/rest/users/$delUser.id")
-      .queryParam('_embed', 'id,organisations,roles')
-      .queryParam('_include', 'id,name')
+    URI uri = UriBuilder.of(urlPath)
+      .path("rest/users/$altUser.id")
+      .build()
+
+    HttpRequest request = HttpRequest.GET(uri)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
-    resp.body().data.username == "deleteUser"
+    resp.body().data.username == "altUser"
   }
 
   void "test GET /rest/users?{params} with valid token and parameters"() {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.GET("${urlPath}/rest/users")
+    URI uri = UriBuilder.of(urlPath)
+      .path("/rest/users")
       .queryParam('name', 'Use')
       .queryParam('roleId', role.id)
       .queryParam('curatoryGroupId', cg.id)
@@ -108,8 +122,11 @@ class UsersTestSpec extends AbstractAuthSpec {
       .queryParam('_order', 'desc')
       .queryParam('offset', '0')
       .queryParam('limit', '10')
+      .build()
+
+    HttpRequest request = HttpRequest.GET(uri)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -122,7 +139,7 @@ class UsersTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.DELETE("${urlPath}/rest/users/$delUser.id")
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.NO_CONTENT
@@ -153,9 +170,9 @@ class UsersTestSpec extends AbstractAuthSpec {
                     defaultPageSize : 15,
                     roleIds         : [contributorRole.id, userRole.id, editorRole.id, apiRole.id]
     ]
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/users/$altUser.id", bodyData as JSON)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/users/$altUser.id", bodyData)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -184,9 +201,9 @@ class UsersTestSpec extends AbstractAuthSpec {
       curatoryGroupIds: []
     ]
 
-    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/users/$altUser.id", bodyData as JSON)
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/users/$altUser.id", bodyData)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -214,13 +231,19 @@ class UsersTestSpec extends AbstractAuthSpec {
       organisation    : 666
     ]
 
-    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/users/$altUser.id", bodyData as JSON)
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/users/$altUser.id", bodyData)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+
+    HttpStatus status
+
+    try {
+      HttpResponse resp = http.exchange(request, Map)
+    } catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      status = e.status
+    }
 
     then:
-    resp.status == HttpStatus.BAD_REQUEST
-    resp.body().data == null
+    status == HttpStatus.BAD_REQUEST
     sleep(500)
     def checkUser = User.findById(altUser.id).refresh()
     checkUser.enabled == true
@@ -244,9 +267,9 @@ class UsersTestSpec extends AbstractAuthSpec {
       roleIds         : [contributorRole.id, editorRole.id],
       curatoryGroupIds: [cg.id]
     ]
-    HttpRequest request = HttpRequest.POST("${urlPath}/rest/users", bodyData as JSON)
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/users", bodyData)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.CREATED
@@ -269,9 +292,9 @@ class UsersTestSpec extends AbstractAuthSpec {
   //     email: "nobody@localhost",
   //     password: "defaultPassword"
   //   ]
-  //   HttpRequest request = HttpRequest.POST("${urlPath}/rest/register", reqBody as JSON)
+  //   HttpRequest request = HttpRequest.POST("${urlPath}/rest/register", reqBody)
   //     .bearerAuth(accessToken)
-  //   HttpResponse resp = http.toBlocking().exchange(request)
+  //   HttpResponse resp = http.exchange(request, Map)
 
   //   then:
   //   resp.status == HttpStatus.OK

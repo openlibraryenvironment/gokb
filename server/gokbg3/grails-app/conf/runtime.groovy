@@ -520,27 +520,6 @@ grails.converters.json.circular.reference.behaviour = 'INSERT_NULL'
  */
 grails.plugin.springsecurity.ui.encodePassword = false
 
-defaultOaiConfig = [
-  lastModified:'lastUpdated',
-  schemas:[
-    'oai_dc':[
-      type:'method',
-      methodName:'toOaiDcXml',
-      schema:'http://www.openarchives.org/OAI/2.0/oai_dc.xsd',
-      metadataNamespaces: [
-        '_default_' : 'http://www.openarchives.org/OAI/2.0/oai_dc/',
-        'dc'        : "http://purl.org/dc/elements/1.1/"
-      ]],
-    'gokb':[
-      type:'method',
-      methodName:'toGoKBXml',
-      schema:'http://www.gokb.org/schemas/oai_metadata.xsd',
-      metadataNamespaces: [
-        '_default_': 'http://www.gokb.org/oai_metadata/'
-      ]],
-  ]
-]
-
 apiClasses = [
   "com.k_int.apis.SecurityApi",
   "com.k_int.apis.GrailsDomainHelpersApi"

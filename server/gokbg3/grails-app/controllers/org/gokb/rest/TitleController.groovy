@@ -53,7 +53,7 @@ class TitleController {
     def es_search = params.es ? true : false
     Class type = setType(params)
 
-    params.componentType = params.type ?: 'title' // Tells ESSearchService what to look for
+    params.componentType = params.type ?: 'TitleInstance' // Tells ESSearchService what to look for
 
     if (es_search) {
       params.remove('es')
@@ -61,18 +61,27 @@ class TitleController {
       def start_es = LocalDateTime.now()
       result = ESSearchService.find(params, null, user)
       log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+
+      if (result.result == 'ERROR') {
+        response.status = (result.status ?: 500)
+      }
     }
     else {
-
       if (type) {
         def start_db = LocalDateTime.now()
         result = componentLookupService.restLookup(user, type, params)
         log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
+
+        if (result.result == 'ERROR') {
+          response.status = (result.status ?: 500)
+        }
       }
       else {
         result.errors = [
           [message: "Unrecognized type ${params.type}", code: 400, result:"ERROR"]
         ]
+
+        response.status = 400
       }
     }
 
@@ -818,7 +827,7 @@ class TitleController {
       }
     }
 
-    def pub_result = restMappingService.updatePublisher(obj, reqBody.publisher, remove)
+    def pub_result = restMappingService.updatePublisherList(obj, reqBody.publisher, remove)
 
     changed |= pub_result.changed
 
@@ -999,8 +1008,11 @@ class TitleController {
               def tippObj = TitleInstancePackagePlatform.get(tipp.id)
 
               tippObj.title = target
+              target.save(flush: true)
             }
           }
+
+          obj.refresh()
 
           if (params.list('ids')?.size() > 0) {
             params.list('ids').each { tid ->
@@ -1008,6 +1020,7 @@ class TitleController {
 
               if (idObj && !target.ids.contains(idObj)) {
                 target.ids.add(idObj)
+                target.save(flush: true)
               }
             }
           }
@@ -1028,6 +1041,8 @@ class TitleController {
               }
             }
           }
+
+          target.save(flush: true)
 
           obj.deleteSoft()
         }

@@ -49,8 +49,9 @@ class ConcurrencyManagerService {
     int progress
     Date startTime = new Date()
     Date endTime
-    boolean begun = false;
+    boolean begun = false
     String description
+    String exception
     List messages = []
     Map linkedItem
     RefdataValue type
@@ -69,6 +70,10 @@ class ConcurrencyManagerService {
 
     public getMessages() {
       return messages
+    }
+
+    public getException() {
+      return exception
     }
 
     /**
@@ -93,7 +98,7 @@ class ConcurrencyManagerService {
      */
     @Override
     public synchronized boolean isDone() {
-      this.task.done
+      return (this.task ? this.task.done : true)
     }
 
     @Override
@@ -122,14 +127,14 @@ class ConcurrencyManagerService {
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
-      this.task.cancel(mayInterruptIfRunning)
+      this.task?.cancel(mayInterruptIfRunning)
       message("cancel Job ($uuid)")
       endTime = new Date()
     }
 
     @Override
     public boolean isCancelled() {
-      this.task.isCancelled();
+      return (this.task ? this.task.isCancelled() : true)
     }
 
     /**
@@ -180,8 +185,9 @@ class ConcurrencyManagerService {
      * activities on this monitor. Removed for test..
      */
     @Override
+    @Transactional
     public def get() {
-      return task.get()
+      return task?.get() ?: null
     }
 
     /**
@@ -225,6 +231,24 @@ class ConcurrencyManagerService {
     allJobs.each { uuid, value ->
       if (value.type in jobTypes && value.begun && !value.isDone() && !value.isCancelled()) {
         result << value
+      }
+    }
+    return result
+  }
+
+  public def getActiveJobsForType(def type) {
+    def result = []
+    def allJobs = getJobs()
+
+    if (type instanceof String) {
+      type = RefdataCategory.lookup("Job.Type", type)
+    }
+
+    if (type) {
+      allJobs.each { uuid, value ->
+        if (value.type == type && value.begun && !value.isDone() && !value.isCancelled()) {
+          result << value
+        }
       }
     }
     return result
@@ -336,7 +360,7 @@ class ConcurrencyManagerService {
 
     // Filter the jobs.
     allJobs.each { k, v ->
-      if (v.hasProperty(propertyName) && (showFinished || !v.isDone()))
+      if (v && v.hasProperty(propertyName) && (showFinished || !v.isDone())) {
         if ((Integer.isInstance(v[propertyName]) && v[propertyName] == id) ||
             (Map.isInstance(v[propertyName]) && v[propertyName].id == id)) {
           CuratoryGroup cg = CuratoryGroup.get(v.groupId)
@@ -354,6 +378,10 @@ class ConcurrencyManagerService {
               cancelled  : v.isCancelled()
           ]
         }
+      }
+      else if (!v) {
+        log.error("Empty job $k in list!")
+      }
     }
 
     total = selected.size()

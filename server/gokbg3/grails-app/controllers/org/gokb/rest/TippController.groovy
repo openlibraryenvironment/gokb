@@ -57,6 +57,9 @@ class TippController {
       result = componentLookupService.restLookup(user, TitleInstancePackagePlatform, params)
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }
+    if (result.result == 'ERROR') {
+      response.status = (result.status ?: 500)
+    }
 
     render result as JSON
   }
@@ -226,7 +229,9 @@ class TippController {
           errors << updateCombos(obj, reqBody)
 
           if (obj?.validate()) {
-            obj = tippService.updateCoverage(obj, reqBody)
+            if (reqBody.coverageStatements instanceof List) {
+              obj = tippService.updateCoverage(obj, reqBody)
+            }
 
             log.debug("No errors.. saving")
             obj = obj.merge(flush: true)

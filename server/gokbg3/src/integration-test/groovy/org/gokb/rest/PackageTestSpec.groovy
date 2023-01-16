@@ -4,13 +4,17 @@ import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.gorm.transactions.*
 import grails.testing.mixin.integration.Integration
+
 import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.BlockingHttpClient
 import io.micronaut.http.client.multipart.MultipartBody
+import io.micronaut.http.uri.UriBuilder
+
 import org.gokb.cred.*
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.Source
@@ -18,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
 import org.springframework.web.context.WebApplicationContext
+
 import spock.lang.Specification
 import spock.lang.Shared
 
@@ -28,21 +33,24 @@ class PackageTestSpec extends AbstractAuthSpec {
   @Autowired
   WebApplicationContext ctx
 
-
-  HttpClient http
+  BlockingHttpClient http
 
   def setup() {
+    if (!http) {
+      http = HttpClient.create(new URL(getUrlPath())).toBlocking()
+    }
+
     CuratoryGroup testGroup = CuratoryGroup.findByName("cgtest1") ?: new CuratoryGroup(name: "cgtest1").save(flush: true)
     Identifier book_doi = Identifier.findByValueAndNamespace('10.1021/978-3-16-148410-0', IdentifierNamespace.findByValue('doi')) ?: new Identifier(value: '10.1021/978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('doi'))
     Identifier book_isbn = Identifier.findByValueAndNamespace('978-3-16-148410-0', IdentifierNamespace.findByValue('isbn')) ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn'))
-    Identifier serial_issn = Identifier.findByValueAndNamespace('9783-442X', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '9783-442X', namespace: IdentifierNamespace.findByValue('issn'))
-    Identifier serial_eissn = Identifier.findByValueAndNamespace('9783-4420', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '9783-4420', namespace: IdentifierNamespace.findByValue('eissn'))
+    Identifier serial_issn = Identifier.findByValueAndNamespace('0020-0255', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '0020-0255', namespace: IdentifierNamespace.findByValue('issn'))
+    Identifier serial_eissn = Identifier.findByValueAndNamespace('1872-6291', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '1872-6291', namespace: IdentifierNamespace.findByValue('eissn'))
     Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
     Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
     testPlt.provider = testOrg
     testPlt.save(flush: true)
 
-    def http = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
+    def http_method = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
     def kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
     def freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
     def combo_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids').save(flush: true)
@@ -50,7 +58,7 @@ class PackageTestSpec extends AbstractAuthSpec {
         name: "TestPack",
         url: "https://org/package",
         frequency: freq,
-        defaultSupplyMethod: http,
+        defaultSupplyMethod: http_method,
         defaultDataFormat: kbart).save(flush: true)
 
     Package testPackage = Package.findByName("TestPack") ?: new Package(name: "TestPack", source: testSource).save(flush: true)
@@ -122,7 +130,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     def testPackage = Package.findByName("TestPack")
     when:
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/packages/${testPackage.id}")
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request)
 
     then:
     resp.status == HttpStatus.OK
@@ -136,7 +144,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.GET("${urlPath}/rest/packages/${testPackage.id}")
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -150,9 +158,9 @@ class PackageTestSpec extends AbstractAuthSpec {
     def testPackage = Package.findByName("TestPack")
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/packages/${testPackage.id}", upd_body as JSON)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/packages/${testPackage.id}", upd_body)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -167,9 +175,9 @@ class PackageTestSpec extends AbstractAuthSpec {
     def testPackage = Package.findByName("TestPack")
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/packages/${testPackage.id}", upd_body as JSON)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/packages/${testPackage.id}", upd_body)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -182,7 +190,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     def testSource = Source.findByName("TestPack")
     Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
     Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
-    def new_body = [
+    Map new_body = [
         name           : "TestPackageWithProviderAndPlatform",
         breakable      : "Yes",
         consistent     : "Yes",
@@ -205,9 +213,9 @@ class PackageTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", new_body as JSON)
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", new_body)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.body().errors == null
@@ -224,7 +232,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     given:
     JournalInstance testTitle = JournalInstance.findByName("PackTestTitle")
     Platform testPlt = Platform.findByName("PackTestPlt")
-    def upd_body = [
+    Map upd_body = [
         name : "TestPackageWithTipps",
         tipps: [
             [
@@ -245,9 +253,14 @@ class PackageTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
-    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages", upd_body as JSON)
+    URI uri = UriBuilder.of(urlPath)
+      .path("/rest/packages")
       .queryParam('_embed', 'tipps')
+      .build()
+
+    HttpRequest request = HttpRequest.POST(uri, upd_body)
       .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
     then:
     resp.status == HttpStatus.CREATED
     resp.body()?._embedded?.tipps?.size() == 1
@@ -276,7 +289,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
       .bearerAuth(accessToken)
       .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -284,23 +297,32 @@ class PackageTestSpec extends AbstractAuthSpec {
     pkg.tipps.size() == 2
   }
 
-  // void "test /rest/packages/<id>/ingest with partial matching conflicts"() {
-  //   given:
-  //   def urlPath = getUrlPath()
-  //   Resource kbart_file = new ClassPathResource("/test_rest_update_conflicts.txt")
-  //   def pkg = Package.findByName("TestPack")
-  //   Platform testPlt = Platform.findByName("PackTestPlt")
-  //   when:
-  //   String accessToken = getAccessToken()
-  //   RestResponse resp = rest.post("${urlPath}/rest/packages/${pkg.id}/ingest?async=false") {
-  //     accept('application/json')
-  //     contentType("multipart/form-data")
-  //     auth("Bearer $accessToken")
-  //     submissionFile=kbart_file.getFile()
-  //   }
-  //   then:
-  //   resp.status == 200
-  //   resp.body()?.job_result?.report?.partial == 2
-  //   resp.body()?.job_result?.report?.retired == 2
-  // }
+  void "test /rest/packages/<id>/ingest with partial matching conflicts"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_update_conflicts.txt")
+    def pkg = Package.findByName("TestPack")
+    Platform testPlt = Platform.findByName("PackTestPlt")
+    when:
+    String accessToken = getAccessToken()
+    MultipartBody requestBody = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_update_conflicts.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file.getFile()
+      )
+      .addPart('async', 'false')
+      .build()
+
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().job_result?.report?.partial == 2
+    resp.body().job_result?.report?.retired == 2
+  }
 }

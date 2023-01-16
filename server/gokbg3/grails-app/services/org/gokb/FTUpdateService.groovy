@@ -16,6 +16,7 @@ class FTUpdateService {
   def ESWrapperService
   def sessionFactory
   def dateFormatService
+  def grailsApplication
 
   public static boolean running = false
 
@@ -56,6 +57,7 @@ class FTUpdateService {
         result.altname = []
         result.listStatus = kbc.listStatus?.value ?: ""
         result.editStatus = kbc.editStatus?.value ?: ""
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
@@ -93,7 +95,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -109,6 +112,7 @@ class FTUpdateService {
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.roles = []
         kbc.roles.each { role ->
@@ -123,7 +127,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         result.platforms = []
@@ -143,7 +148,9 @@ class FTUpdateService {
         result.updater = 'platform'
         result.cpname = kbc.provider?.name
         result.provider = kbc.provider ? kbc.provider.getLogEntityId() : ""
-        result.providerUuid = kbc.provider ? kbc.provider?.uuid : ""
+        result.providerUuid = kbc.provider ? kbc.provider.uuid : ""
+        result.providerName = kbc.provider ? kbc.provider.name : ""
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.curatoryGroups = []
         kbc.curatoryGroups?.each { cg ->
@@ -160,7 +167,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -174,17 +182,21 @@ class FTUpdateService {
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
+        if (kbc.publishedFrom) result.publishedFrom = dateFormatService.formatDate(kbc.publishedFrom)
+        if (kbc.publishedTo) result.publishedTo = dateFormatService.formatDate(kbc.publishedTo)
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -197,17 +209,21 @@ class FTUpdateService {
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
+        if (kbc.publishedFrom) result.publishedFrom = dateFormatService.formatDate(kbc.publishedFrom)
+        if (kbc.publishedTo) result.publishedTo = dateFormatService.formatDate(kbc.publishedTo)
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -220,17 +236,21 @@ class FTUpdateService {
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
+        if (kbc.publishedFrom) result.publishedFrom = dateFormatService.formatDate(kbc.publishedFrom)
+        if (kbc.publishedTo) result.publishedTo = dateFormatService.formatDate(kbc.publishedTo)
         result.altname = []
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -243,18 +263,24 @@ class FTUpdateService {
         result.publisher = current_pub ? current_pub.getLogEntityId() : ""
         result.publisherName = current_pub?.name
         result.publisherUuid = current_pub?.uuid ?: ""
+        if (kbc.publishedFrom) result.publishedFrom = dateFormatService.formatDate(kbc.publishedFrom)
+        if (kbc.publishedTo) result.publishedTo = dateFormatService.formatDate(kbc.publishedTo)
+        if (kbc.dateFirstInPrint) result.dateFirstInPrint = dateFormatService.formatDate(kbc.dateFirstInPrint)
+        if (kbc.dateFirstOnline) result.dateFirstOnline = dateFormatService.formatDate(kbc.dateFirstOnline)
         result.altname = []
         result.updater = 'book'
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.status = kbc.status?.value
         result.identifiers = []
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
         result.componentType = kbc.class.simpleName
         break
@@ -269,6 +295,7 @@ class FTUpdateService {
           result.curatoryGroups.add(cg.name)
         }
         result.titleType = kbc.title?.niceName ?: 'Unknown'
+        result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
         result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
         result.url = kbc.url
         if (kbc.title?.niceName == 'Journal') {
@@ -368,7 +395,8 @@ class FTUpdateService {
         kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
           result.identifiers.add([namespace    : idc.toComponent.namespace.value,
                                   value        : idc.toComponent.value,
-                                  namespaceName: idc.toComponent.namespace.name])
+                                  namespaceName: idc.toComponent.namespace.name,
+                                  baseUrl      : idc.toComponent.namespace.baseUrl])
         }
 
         if (kbc.dateFirstOnline) result.dateFirstOnline = dateFormatService.formatDate(kbc.dateFirstOnline)
@@ -434,12 +462,14 @@ class FTUpdateService {
   def updateSingleItem(kbc) {
     def idx_record = buildEsRecord(kbc)
     def es_index = ESSearchService.indicesPerType.get(idx_record['componentType'])
+
     if (idx_record != null) {
       def recid = idx_record['_id'].toString()
       idx_record.remove('_id')
       def esClient = ESWrapperService.getClient()
-      IndexRequest request = new IndexRequest("single").id(recid).source(idx_record)
-      esClient.index(request, RequestOptions.DEFAULT)
+      IndexRequest request = new IndexRequest(es_index).id(recid).source(idx_record)
+      def result = esClient.index(request, RequestOptions.DEFAULT)
+      log.info("UpdateSingleItem :: ES returned ${result}")
     }
   }
 
@@ -478,7 +508,7 @@ class FTUpdateService {
       BulkRequest bulkRequest = new BulkRequest()
       for (r_id in q) {
         if (Thread.currentThread().isInterrupted()) {
-          log.debug("Job cancelling ..")
+          log.warn("Job cancelling ..")
           running = false
           break
         }
@@ -486,7 +516,7 @@ class FTUpdateService {
         log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
         def idx_record = buildEsRecord(r)
         if (idx_record != null) {
-          IndexRequest singleRequest = new IndexRequest(ESSearchService.indicesPerType.get(idx_record['componentType']))
+          IndexRequest singleRequest = new IndexRequest(grailsApplication.config.gokb.es.indices[ESSearchService.indicesPerType.get(idx_record['componentType'])])
           singleRequest.id(idx_record['_id'].toString())
           idx_record.remove('_id')
           singleRequest.source((idx_record as JSON).toString(), XContentType.JSON)

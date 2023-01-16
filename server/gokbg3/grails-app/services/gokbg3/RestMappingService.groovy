@@ -70,7 +70,7 @@ class RestMappingService {
     def include_list = params['_include']?.split(',') ?: null
     def exclude_list = params['_exclude']?.split(',') ?: null
     def nested = params['nested'] ? true : false
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
     def curatedClass = obj.respondsTo('curatoryGroups')
     def jsonMap = null
     def is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
@@ -541,9 +541,19 @@ class RestMappingService {
               try {
                 if (ns) {
                   id = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, i.value)
+
+                  if (!id) {
+                    result.errors << [message: 'This identifier value is invalid!', baddata: i.value, messageCode: 'identifier.validation.generic']
+                    valid = false
+                  }
                 }
                 else {
                   log.warn("Unable to determine namespace ${ns_val}!")
+
+                  if (!id) {
+                    result.errors << [message: "Unable to reference namespace ${ns_val}!", baddata: i.value, messageCode: 'identifier.validation.namespace']
+                    valid = false
+                  }
                 }
               }
               catch (grails.validation.ValidationException ve) {
@@ -924,8 +934,15 @@ class RestMappingService {
     result
   }
 
+  /**
+   *  updatePublisher : Updates the list of publishers linked to a TitleInstance.
+   * @param obj : The TitleInstance object to be updated
+   * @param new_pubs : A list of Org IDs
+   * @param remove : Flag for removal of existing Combos not present in the new list
+   */
+
   @Transactional
-  public def updatePublisher(obj, new_pubs, boolean remove = true) {
+  public def updatePublisherList(obj, new_pubs, boolean remove = true) {
     def result = [changed: false, errors: []]
     def publisher_combos = obj.getCombosByPropertyName('publisher')
     def combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
@@ -934,50 +951,51 @@ class RestMappingService {
     String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
     def pubs_to_add = []
 
-    if (new_pubs instanceof Collection) {
-      new_pubs.each { pub ->
-        if (!pubs_to_add.findAll { it.id == pub }) {
+    new_pubs.each { pub ->
+      if (!pubs_to_add.findAll { it.id == pub }) {
+        def pub_obj = Org.get(pub)
+
+        if (pub_obj) {
           pubs_to_add << Org.get(pub)
         }
         else {
-          log.warn("Duplicate for incoming publisher ${pub}!")
+          result.errors << [message: "Unable to reference publisher with ID ${new_pubs}!", baddata: pub]
+        }
+      }
+      else {
+        log.warn("Duplicate for incoming publisher ${pub}!")
+      }
+    }
+
+    if (!result.errors) {
+      pubs_to_add.each { publisher ->
+        boolean found = false
+        for (int i = 0; !found && i < publisher_combos.size(); i++) {
+          Combo pc = publisher_combos[i]
+          def idMatch = pc."${propName}".id == publisher.id
+
+          if (idMatch) {
+            found = true
+          }
+        }
+
+        if (!found) {
+          def new_combo = new Combo(fromComponent: obj, toComponent: publisher, type: combo_type).save(flush: true)
+          result.changed = true
+        }
+        else {
+          log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
         }
       }
     }
-    else {
-      if (!pubs_to_add.findAll { it.id == new_pubs }) {
-        pubs_to_add << Org.get(new_pubs)
-      }
-      else {
-        log.warn("Duplicate for incoming publisher ${new_pubs}!")
-      }
-    }
 
-    pubs_to_add.each { publisher ->
-      boolean found = false
-      for (int i = 0; !found && i < publisher_combos.size(); i++) {
-        Combo pc = publisher_combos[i]
-        def idMatch = pc."${propName}".id == publisher.id
+    if (remove && !result.errors) {
+      Iterator items = publisher_combos.iterator()
+      Object element
 
-        if (idMatch) {
-          found = true
-        }
-      }
-
-      if (!found) {
-        def new_combo = new Combo(fromComponent: obj, toComponent: publisher, type: combo_type).save(flush: true)
-        result.changed = true
-      }
-      else {
-        log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
-      }
-    }
-
-    if (remove) {
-      Iterator items = publisher_combos.iterator();
-      Object element;
       while (items.hasNext()) {
-        element = items.next();
+        element = items.next()
+
         if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
           // Remove.
           element.delete()

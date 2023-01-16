@@ -9,6 +9,7 @@ class IdentifierNamespace {
   RefdataValue targetType
   String pattern
   String family
+  String baseUrl
 
   static mapping = {
     name column:'idns_name'
@@ -17,6 +18,7 @@ class IdentifierNamespace {
     targetType column:'idns_targettype'
     family column:'idns_family'
     pattern column:'idns_pattern'
+    baseUrl column:'idns_baseurl'
   }
 
   static constraints = {
@@ -27,6 +29,7 @@ class IdentifierNamespace {
     family (nullable:true, blank:false)
     pattern (nullable:true, blank:false)
     targetType (nullable:true, blank:false)
+    baseUrl (nullable:true, blank:false)
   }
 
   public static final String restPath = "/namespaces"

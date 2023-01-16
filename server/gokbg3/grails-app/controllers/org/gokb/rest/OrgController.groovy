@@ -53,6 +53,10 @@ class OrgController {
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }
 
+    if (result.result == 'ERROR') {
+      response.status = (result.status ?: 500)
+    }
+
     render result as JSON
   }
 
@@ -107,8 +111,8 @@ class OrgController {
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
 
+    def obj = null
     if (reqBody) {
-      def obj = null
       def lookup_result = orgService.restLookup(reqBody)
 
       if (lookup_result.to_create) {

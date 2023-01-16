@@ -32,8 +32,29 @@ class OaiController {
           def o = dc.clazz.oaiConfig
           if ( o.id == params.id ) {
 
+            def defaultOaiConfig = [
+              lastModified:'lastUpdated',
+              schemas:[
+                'oai_dc':[
+                  type:'method',
+                  methodName:'toOaiDcXml',
+                  schema:'http://www.openarchives.org/OAI/2.0/oai_dc.xsd',
+                  metadataNamespaces: [
+                    '_default_' : 'http://www.openarchives.org/OAI/2.0/oai_dc/',
+                    'dc'        : "http://purl.org/dc/elements/1.1/"
+                  ]],
+                'gokb':[
+                  type:'method',
+                  methodName:'toGoKBXml',
+                  schema:'http://www.gokb.org/schemas/oai_metadata.xsd',
+                  metadataNamespaces: [
+                    '_default_': 'http://www.gokb.org/oai_metadata/'
+                  ]],
+              ]
+            ]
+
             // Combine the default props with the locally set ones.
-            result.oaiConfig = grailsApplication.config.getProperty('defaultOaiConfig') + o
+            result.oaiConfig = defaultOaiConfig + o
 
             // Also add the class name.
             result.className = dc.clazz.name
@@ -201,6 +222,9 @@ class OaiController {
             xml.'record'() {
               xml.'header'() {
                 identifier("${record.class.name}:${record.id}")
+                if (result.oaiConfig.uriPath) {
+                  uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${result.oaiConfig.uriPath}/${record.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${result.oaiConfig.uriPath}/${record.uuid}"))
+                }
                 uuid(record.uuid)
                 datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? record.lastCachedDate : record.lastUpdated))
                 if (record.status == status_deleted) {
@@ -445,6 +469,9 @@ class OaiController {
             records.each { rec ->
               mkp.'header'() {
                 identifier("${rec.class.name}:${rec.id}")
+                if (result.oaiConfig.uriPath) {
+                  uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${result.oaiConfig.uriPath}/${rec.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${result.oaiConfig.uriPath}/${rec.uuid}"))
+                }
                 uuid(rec.uuid)
                 datestamp(dateFormatService.formatIsoTimestamp(rec.lastUpdated))
               }
@@ -784,6 +811,9 @@ class OaiController {
                   mkp.'record'() {
                     mkp.'header' () {
                       identifier("${rec.class.name}:${rec.id}")
+                      if (result.oaiConfig.uriPath) {
+                        uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${result.oaiConfig.uriPath}/${rec.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${result.oaiConfig.uriPath}/${rec.uuid}"))
+                      }
                       uuid(rec.uuid)
                       datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? rec.lastCachedDate : rec.lastUpdated))
                       if (rec.status == status_deleted) {

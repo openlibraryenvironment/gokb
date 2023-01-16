@@ -24,8 +24,13 @@
 	      <tr><th>JVM version</th><td> ${System.getProperty('java.version')}</td></tr>
 	      <tr><th>Reloading active</th><td> ${grails.util.Environment.reloadingAgentEnabled}</td></tr>
 	      <tr><th>Build Date</th><td> <g:meta name="build.time"/></td></tr>
-	      <tr><th>ES Cluster</th><td>${grailsApplication.config.gokb?.es?.cluster}</td></tr>
 	      <tr><th>ES Index</th><td>${grailsApplication.config.gokb?.es?.indices?.values().join(", ")}</td></tr>
+		  <tr><th>ES Automated Indexing </th><td>Enabled: ${grailsApplication.config.gokb.ftupdate_enabled}</td></tr>
+		  <tr><th>Package Caching</th><td>Enabled: ${grailsApplication.config.gokb.packageOaiCaching.enabled} - Path: ${grailsApplication.config.gokb.packageXmlCacheDirectory}</td></tr>
+		  <tr><th>EZB Public Collections Import</th><td>Enabled: ${grailsApplication.config.gokb.ezbOpenCollections?.enabled}</td></tr>
+		  <tr><th>Automated Package Updates</th><td>Enabled: ${grailsApplication.config.gokb.packageUpdate?.enabled}</td></tr>
+		  <tr><th>ZDB Title Augmenting</th><td>Enabled: ${grailsApplication.config.gokb.zdbAugment?.enabled} - Curator: ${grailsApplication.config.gokb.zdbAugment?.rrCurators}</td></tr>
+		  <tr><th>EZB Title Augmenting</th><td>Enabled: ${grailsApplication.config.gokb.ezbAugment?.enabled} - Curator: ${grailsApplication.config.gokb.ezbAugment?.rrCurators}</td></tr>
 	    </table>
   	</div>
   </body>

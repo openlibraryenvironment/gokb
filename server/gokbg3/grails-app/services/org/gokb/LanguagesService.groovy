@@ -22,8 +22,8 @@ class LanguagesService{
    */
   static void initialize(){
 
-    if (Holders.grailsApplication.config.gokb.languagesUrl) {
-      String uriString = "${Holders.grailsApplication.config.gokb.languagesUrl}/api/listIso639two"
+    if (Holders.grailsApplication.config.getProperty('gokb.languagesUrl')) {
+      String uriString = "${Holders.grailsApplication.config.getProperty('gokb.languagesUrl')}/api/listIso639two"
       URI microserviceUrl = new URI(uriString)
       def httpBuilder = new HTTPBuilder(microserviceUrl)
       httpBuilder.request(GET) { request ->

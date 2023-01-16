@@ -238,6 +238,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     lastChangedExternal(nullable: true, blank: true)
     medium(nullable: true, blank: true)
     importId(nullable: true, blank: true)
+    publisherName(nullabe: true, blank: true)
   }
 
   public static final String restPath = "/package-titles"
@@ -275,7 +276,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
     def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
     def tipp_language = tipp_fields.language ? RefdataCategory.lookup('KBComponent.Language', tipp_fields.language) : null
-    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid, status: tipp_status, editStatus: tipp_editstatus, name: tipp_fields.name, language: tipp_language).save(failOnError: true)
+    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid, status: tipp_status, editStatus: tipp_editstatus, name: tipp_fields.name, language: tipp_language, url: tipp_fields.url).save(failOnError: true, flush:true)
 
     if (result) {
 
@@ -315,7 +316,9 @@ class TitleInstancePackagePlatform extends KBComponent {
     if (normid && namespace) {
       def id = Identifier.findByNamespaceAndNormname(namespace, normid)
 
-      id?.activeIdentifiedComponents.each { component ->
+      id?.activeIdentifiedComponents.each { proxy ->
+        def component = KBComponent.deproxy(proxy)
+
         if (component.class == TitleInstancePackagePlatform && !result) {
           result = component
         }
@@ -335,7 +338,9 @@ class TitleInstancePackagePlatform extends KBComponent {
     if (normid && namespace) {
       def id = Identifier.findByNamespaceAndNormname(namespace, normid)
 
-      id?.activeIdentifiedComponents.each { component ->
+      id?.activeIdentifiedComponents.each { proxy ->
+        def component = KBComponent.deproxy(proxy)
+
         if (component.class == TitleInstancePackagePlatform && !result.contains(component)) {
           result.add(component)
         }
@@ -939,7 +944,8 @@ class TitleInstancePackagePlatform extends KBComponent {
       textDescription: 'TIPP repository for GOKb',
       pkg            : 'Package.Tipps',
       query          : " from TitleInstancePackagePlatform as o ",
-      pageSize       : 10
+      pageSize       : 10,
+      uriPath        : '/package-title'
   ]
 
   /**

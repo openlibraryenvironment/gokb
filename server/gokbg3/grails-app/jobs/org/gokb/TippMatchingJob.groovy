@@ -15,8 +15,7 @@ class TippMatchingJob {
   static concurrent = false
 
   static triggers = {
-    // Cron timer.
-    cron name: 'TippMatchingTrigger', cronExpression: "0 0 4 * * ?"
+    // See Bootstrap.groovy
   }
 
   def tippService
@@ -29,6 +28,7 @@ class TippMatchingJob {
     if (!activeJobs) {
       def startTime = LocalDateTime.now()
       def count = 0
+      def result = [matched: 0, created: 0, unmatched: 0]
       def tippIDs = TitleInstancePackagePlatform.executeQuery(
           "select id from TitleInstancePackagePlatform tipp where status != :sdel and not exists (select c from Combo as c where c.type = :ctype and c.toComponent = tipp)",
           [sdel : RefdataCategory.lookup('KBComponent.Status', 'Deleted'),
@@ -36,6 +36,7 @@ class TippMatchingJob {
       log.info("${tippIDs.size()} detached TIPPs to check")
 
       for (Long tippID : tippIDs) {
+        def session = sessionFactory.currentSession
         log.debug("begin tipp")
         count++
         TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippID)
@@ -45,7 +46,9 @@ class TippMatchingJob {
           if (rrList.size() == 0) {
             log.debug("match tipp $tipp")
             def group = tipp.pkg.curatoryGroups?.size() > 0 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null
-            tippService.matchTitle(tipp, group)
+            def match_result = tippService.matchTitle(tipp, group)
+
+            result[match_result]++
           }
           else {
             log.debug("tipp $tipp has ${rrList.size()} recent Review Requests and is ignored.")
@@ -54,8 +57,6 @@ class TippMatchingJob {
         }
 
         if (count % 50 == 0) {
-          def session = sessionFactory.currentSession
-
           session.flush()
           session.clear()
         }
@@ -66,7 +67,7 @@ class TippMatchingJob {
           break
         }
       }
-      log.info("end matching Job after ${(LocalDateTime.now().minusNanos(startTime.getNano())).second} sec and ${tippIDs.size()} TIPPs")
+      log.info("end matching Job after ${(LocalDateTime.now().minusNanos(startTime.getNano())).second} sec and ${tippIDs.size()} TIPPs.. ${result}")
     }
     else {
       log.info("Skipping title matching Job due to active import jobs ..")

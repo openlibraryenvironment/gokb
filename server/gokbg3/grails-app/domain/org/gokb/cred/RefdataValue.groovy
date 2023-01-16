@@ -8,6 +8,7 @@ class RefdataValue {
   String icon
   String description
   String sortKey
+  Boolean deprecated = false
   RefdataValue useInstead
   RefdataCategory owner
 

@@ -1,20 +1,27 @@
 package org.gokb
 
-import grails.testing.mixin.integration.Integration
+import grails.core.GrailsApplication
 import grails.gorm.transactions.*
-import spock.lang.Specification
-import spock.lang.Shared
+import grails.testing.mixin.integration.Integration
+
+import groovy.xml.XmlSlurper
+
 import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.BlockingHttpClient
+import io.micronaut.http.uri.UriBuilder
+
 import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
 import org.springframework.beans.factory.annotation.*
 import org.springframework.web.context.WebApplicationContext
-import grails.core.GrailsApplication
 import org.gokb.cred.*
+
+import spock.lang.Specification
+import spock.lang.Shared
 
 
 @groovy.util.logging.Slf4j
@@ -25,7 +32,7 @@ class OaiSpec extends Specification {
   GrailsApplication grailsApplication
 
 
-  HttpClient http
+  BlockingHttpClient http
 
   @Autowired
   WebApplicationContext ctx
@@ -35,7 +42,15 @@ class OaiSpec extends Specification {
   Package test_pkg
   Org test_org
 
+  private String getUrlPath() {
+    return "http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}".toString()
+  }
+
   def setup() {
+    if (!http) {
+      http = HttpClient.create(new URL(getUrlPath())).toBlocking()
+    }
+
     def http = RefdataCategory.lookup('Source.DataSupplyMethod', 'HTTP Url').save(flush: true)
     def kbart = RefdataCategory.lookup('Source.DataFormat', 'KBART').save(flush: true)
     def freq = RefdataCategory.lookup('Source.Frequency', 'Weekly').save(flush: true)
@@ -90,10 +105,14 @@ class OaiSpec extends Specification {
   void "test ListRecords response status"() {
     when:
     // RestResponse resp = authRest.get("http://localhost:${serverPort}/search/search")
-    HttpRequest request = HttpRequest.GET("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/packages")
+    URI uri = UriBuilder.of(getUrlPath())
+      .path("/oai/packages")
       .queryParam('verb', 'ListRecords')
       .queryParam('metadataPrefix', 'gokb')
-    HttpResponse resp = http.toBlocking().exchange(request)
+      .build()
+
+    HttpRequest request = HttpRequest.GET(uri)
+    HttpResponse resp = http.exchange(request)
 
     then:
     // println(resp.json)
@@ -102,59 +121,74 @@ class OaiSpec extends Specification {
 
   void "test ListRecords package response"() {
     when:
-    HttpRequest request = HttpRequest.GET("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/packages")
+    URI uri = UriBuilder.of(getUrlPath())
+      .path("/oai/packages")
       .queryParam('verb', 'ListRecords')
       .queryParam('metadataPrefix', 'gokb')
-    HttpResponse resp = http.toBlocking().exchange(request)
+      .build()
+
+    HttpRequest request = HttpRequest.GET(uri)
+    HttpResponse resp = http.exchange(request, String)
 
     then:
-
-    log.info("${resp.xml.'OAI-PMH'?.'ListRecords'?.'record'?.'metadata'?.'gokb'?.'package'?.'name'?.text()}")
     resp.status == HttpStatus.OK
-    resp.body().'OAI-PMH'?.'ListRecords'?.'record'?.'metadata'?.'gokb'?.'package'?.'name'?.text() != null
+    def body = new XmlSlurper().parseText(resp.body())
+    body.'OAI-PMH'?.'ListRecords'?.'record'?.'metadata'?.'gokb'?.'package'?.'name'?.text() != null
   }
 
   void "test GetRecord journal response"() {
     when:
-    HttpRequest request = HttpRequest.GET("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/titles")
+    URI uri = UriBuilder.of(getUrlPath())
+      .path("/oai/titles")
       .queryParam('verb', 'GetRecord')
       .queryParam('metadataPrefix', 'gokb')
       .queryParam('identifier', "org.gokb.cred.JournalInstance:$title1.id")
-    HttpResponse resp = http.toBlocking().exchange(request)
+      .build()
+
+    HttpRequest request = HttpRequest.GET(uri)
+    HttpResponse resp = http.exchange(request, String)
 
     then:
-    log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'name'?.text()}")
     resp.status == HttpStatus.OK
-    resp.body().'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'title'.'TIPPs'.'TIPP'.'prices'.'price'.'type'.'list'.text() != null
-    resp.body().'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'title'.'TIPPs'.'TIPP'.'publisherName'.text() != null
+    def body = new XmlSlurper().parseText(resp.body())
+    body.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'title'.'TIPPs'.'TIPP'.'prices'.'price'.'type'.'list'.text() != null
+    body.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'title'.'TIPPs'.'TIPP'.'publisherName'.text() != null
   }
 
   void "test GetRecord org response"() {
     when:
-    HttpRequest request = HttpRequest.GET("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/orgs")
+    URI uri = UriBuilder.of(getUrlPath())
+      .path("/oai/orgs")
       .queryParam('verb', 'GetRecord')
       .queryParam('metadataPrefix', 'gokb')
       .queryParam('identifier', "org.gokb.cred.OrgInstance:$test_org.id")
-    HttpResponse resp = http.toBlocking().exchange(request)
+      .build()
+
+    HttpRequest request = HttpRequest.GET(uri)
+    HttpResponse resp = http.exchange(request, String)
 
     then:
-    log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'org'?.'name'?.text()}")
     resp.status == HttpStatus.OK
-    resp.body().'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'org'.'titleNamespace'.'namespaceName' != null
-    resp.body().'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'org'.'packageNamespace'.'value' != null
+    def body = new XmlSlurper().parseText(resp.body())
+    body.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'org'.'titleNamespace'.'namespaceName' != null
+    body.'OAI-PMH'.'GetRecord'.'record'.'metadata'.'gokb'.'org'.'packageNamespace'.'value' != null
   }
 
   void "test GetRecord package response"() {
     when:
-    HttpRequest request = HttpRequest.GET("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/oai/packages")
+    URI uri = UriBuilder.of(getUrlPath())
+      .path("/oai/packages")
       .queryParam('verb', 'GetRecord')
       .queryParam('metadataPrefix', 'gokb')
-      .queryParam('identifier', "org.gokb.cred.Package:$title1.id")
-    HttpResponse resp = http.toBlocking().exchange(request)
+      .queryParam('identifier', "org.gokb.cred.Package:$test_pkg.id")
+      .build()
+
+    HttpRequest request = HttpRequest.GET(uri)
+    HttpResponse resp = http.exchange(request, String)
 
     then:
-    log.info("${resp.xml.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'title'?.'name'?.text()}")
     resp.status == HttpStatus.OK
-    resp.body().'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'package'?.'source' != null
+    def body = new XmlSlurper().parseText(resp.body())
+    body.'OAI-PMH'?.'GetRecord'?.'record'?.'metadata'?.'gokb'?.'package'?.'source' != null
   }
 }

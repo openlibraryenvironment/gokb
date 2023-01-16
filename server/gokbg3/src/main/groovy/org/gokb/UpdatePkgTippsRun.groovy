@@ -176,8 +176,10 @@ class UpdatePkgTippsRun {
           idx++
           def currentTippError = [index: idx]
           log.debug("Handling #$idx TIPP ${json_tipp.name ?: json_tipp.title.name}")
-          if ((json_tipp.package == null) && (pkg.id)) {
+
+          if (pkg.id) {
             json_tipp.package = [id: pkg.id, internalId: pkg.id]
+
             if (rjson.packageHeader.fileNameDate) {
               json_tipp.updateDate = dateFormatService.parseDate(rjson.packageHeader.fileNameDate)
             }
@@ -191,6 +193,7 @@ class UpdatePkgTippsRun {
           if (!invalidTipps.contains(json_tipp)) {
             // validate and upsert PlatformInstance
             Map pltErrorMap = handlePlt(json_tipp)
+
             if (pltErrorMap.size() > 0) {
               currentTippError.put('platform', pltErrorMap)
             }
@@ -199,6 +202,7 @@ class UpdatePkgTippsRun {
           if (!invalidTipps.contains(json_tipp)) {
             // validate and upsert TIPP
             Map tippErrorMap = handleTIPP(json_tipp)
+
             if (tippErrorMap.size() > 0) {
               currentTippError.put('tipp', tippErrorMap)
             }
@@ -316,7 +320,7 @@ class UpdatePkgTippsRun {
           }
         }
 
-        tippService.matchPackage(pkg, job)
+        tippService.matchPackage(pkg.id, job)
 
         log.debug("final flush")
         cleanupService.cleanUpGorm()
@@ -567,7 +571,7 @@ class UpdatePkgTippsRun {
               matched_tipps[tipp.id] = 1
 
               if (!created) {
-                TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = ?1", [tipp])
+                TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = :tipp", [tipp: tipp])
                 tipp.refresh()
               }
             }
@@ -575,8 +579,7 @@ class UpdatePkgTippsRun {
               matched_tipps[tipp.id]++
             }
 
-            tippService.checkCoverage(tipp, tippJson, created)
-            tippService.updateSimpleFields(tipp, tippJson, true, user)
+            tippService.updateTippFields(tipp, tippJson, user)
           }
         }
         catch (grails.validation.ValidationException ve) {

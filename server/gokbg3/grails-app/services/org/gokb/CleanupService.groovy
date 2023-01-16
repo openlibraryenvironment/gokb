@@ -5,6 +5,7 @@ import com.k_int.ESSearchService
 import grails.gorm.DetachedCriteria
 import grails.gorm.transactions.Transactional
 import org.opensearch.action.delete.DeleteRequest
+import org.opensearch.client.RequestOptions
 import org.opensearch.client.Requests
 import org.gokb.cred.*
 
@@ -123,10 +124,8 @@ class CleanupService {
           def expunge_result = component.expunge()
           log.debug("${expunge_result}")
           if (ESSearchService.indicesPerType[component.class.getSimpleName()]){
-            DeleteRequest req = new DeleteRequest(ESSearchService.indicesPerType[component.class.getSimpleName()])
-                .type('component')
-                .id(c_id)
-            def es_response = esclient.delete(req)
+            DeleteRequest req = new DeleteRequest(grailsApplication.config.gokb.es.indices[ESSearchService.indicesPerType[component.class.getSimpleName()]], c_id)
+            def es_response = esclient.delete(req, RequestOptions.DEFAULT)
             log.debug("${es_response}")
           }
           result.report.add(expunge_result)
@@ -734,10 +733,8 @@ class CleanupService {
         def oid = "${kbc.class.name}:${it}"
 
         if (ESSearchService.indicesPerType[kbc.class.getSimpleName()]){
-          DeleteRequest req = new DeleteRequest(ESSearchService.indicesPerType[kbc.class.getSimpleName()])
-              .type('component')
-              .id(oid)
-          def es_response = esclient.delete(req)
+          DeleteRequest req = new DeleteRequest(grailsApplication.config.gokb.es.indices[ESSearchService.indicesPerType[component.class.getSimpleName()]], oid)
+          def es_response = esclient.delete(req, RequestOptions.DEFAULT)
         }
       }
 

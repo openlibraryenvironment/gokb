@@ -27,6 +27,7 @@ class UserProfileService {
       RefineProject.executeUpdate("update RefineProject set createdBy = :del where createdBy = :utd", [utd: user_to_delete, del: del_user])
       RefineProject.executeUpdate("update RefineProject set modifiedBy = :del where modifiedBy = :utd", [utd: user_to_delete, del: del_user])
       RefineProject.executeUpdate("update RefineProject set lastCheckedOutBy = :del where lastCheckedOutBy = :utd", [utd: user_to_delete, del: del_user])
+      ReviewRequestAllocationLog.executeUpdate("update ReviewRequestAllocationLog set allocatedTo = :del where allocatedTo = :utd", [utd: user_to_delete, del: del_user])
       Folder.executeUpdate("update Folder set owner = :del where owner = :utd", [utd: user_to_delete, del: del_user])
       CuratoryGroup.executeUpdate("update CuratoryGroup set owner = :del where owner = :utd", [utd: user_to_delete, del: del_user])
       Note.executeUpdate("update Note set creator = :del where creator = :utd", [utd: user_to_delete, del: del_user])
@@ -64,7 +65,16 @@ class UserProfileService {
     def errors = []
     log.debug("Updating user ${user.id} ..")
     def immutables = ['id', 'username', 'last_alert_check']
-    def adminAttributes = ['roleIds', 'password', 'curatoryGroupIds', 'enabled', 'accountExpired', 'accountLocked', 'passwordExpired', 'last_alert_check']
+    def adminAttributes = [
+      'roleIds',
+      'password',
+      'curatoryGroupIds',
+      'enabled',
+      'accountExpired',
+      'accountLocked',
+      'passwordExpired',
+      'last_alert_check'
+    ]
 
     if (!adminUser.isAdmin() && user != adminUser) {
       errors << [user: [message: "user $adminUser.username is not allowed to change properties of user $user.username",
@@ -72,12 +82,13 @@ class UserProfileService {
     }
     data.each { field, value ->
       if (field in immutables && (user[field] != value)) {
-        errors << ["${field}": [message: "property is immutable!",
-                            baddata: value, code: null]]
+        errors << ["${field}": [message: "property is immutable!", baddata: value, code: null]
+        ]
       }
       if (field in adminAttributes && !adminUser.isAdmin()) {
         errors << [user: [message: "user $adminUser.username is not allowed to change property $field of user $user.username",
-                          baddata: field, code: null]]
+                          baddata: field,
+                          code: null]]
       }
     }
     if (errors.size() > 0) {
@@ -190,47 +201,20 @@ class UserProfileService {
 
   def collectUserProps(User user, params = [:]) {
     def base = grailsApplication.config.serverURL + "/rest"
-    def includes = [], excludes = [],
-        newUserData = [
-          'id'             : user.id,
-          'username'       : user.username,
-          'displayName'    : user.displayName,
-          'email'          : user.email,
-          'enabled'        : user.enabled,
-          'accountExpired' : user.accountExpired,
-          'accountLocked'  : user.accountLocked,
-          'passwordExpired': user.passwordExpired,
-          'status'         : user.enabled && !user.accountExpired && !user.accountLocked && !user.passwordExpired,
-          'defaultPageSize': user.defaultPageSize
-        ]
-    if (params._embed?.split(',')?.contains('curatoryGroups'))
-      newUserData.curatoryGroups = user.curatoryGroups
-    else {
-      newUserData.curatoryGroups = []
-      user.curatoryGroups.each { group ->
-        newUserData.curatoryGroups += [
-          id    : group.id,
-          name  : group.name,
-          _links: [
-            'self': [href: base + "/curatoryGroups/$group.id"]
-          ]
-        ]
-      }
-    }
-    if (params._embed?.split(',')?.contains('roles'))
-      newUserData.roles = user.authorities
-    else {
-      newUserData.roles = []
-      user.authorities.each { role ->
-        newUserData.roles += [
-          id       : role.id,
-          authority: role.authority,
-          _links   : [
-            'self': [href: base + "/roles/$role.id"]
-          ]
-        ]
-      }
-    }
+    def includes = []
+    def excludes = []
+    def newUserData = [
+      id             : user.id,
+      username       : user.username,
+      displayName    : user.displayName,
+      email          : user.email,
+      enabled        : user.enabled,
+      accountExpired : user.accountExpired,
+      accountLocked  : user.accountLocked,
+      passwordExpired: user.passwordExpired,
+      status         : user.enabled && !user.accountExpired && !user.accountLocked && !user.passwordExpired,
+      defaultPageSize: user.defaultPageSize
+    ]
 
     if (params._include)
       includes = params._include.split(',')
@@ -243,6 +227,32 @@ class UserProfileService {
 
     newUserData = newUserData.findAll { k, v ->
       (!excludes.contains(k) || (!includes.empty && includes.contains(k)))
+    }
+
+    if (!params._embed || params._embed.split(',').contains("curatoryGroups")) {
+      newUserData.curatoryGroups = []
+      user.curatoryGroups.each { group ->
+        newUserData.curatoryGroups += [
+          id    : group.id,
+          name  : group.name,
+          _links: [
+            'self': [href: base + "/curatoryGroups/$group.id"]
+          ]
+        ]
+      }
+    }
+
+    if (!params._embed || params._embed.split(',').contains("roles")) {
+      newUserData.roles = []
+      user.authorities.each { role ->
+        newUserData.roles += [
+          id       : role.id,
+          authority: role.authority,
+          _links   : [
+            'self': [href: base + "/roles/$role.id"]
+          ]
+        ]
+      }
     }
 
     newUserData._links = [

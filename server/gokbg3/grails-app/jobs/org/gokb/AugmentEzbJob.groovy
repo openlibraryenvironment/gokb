@@ -50,6 +50,10 @@ class AugmentEzbJob{
         }
         cleanUpGorm()
         offset += batchSize
+
+        if (Thread.currentThread().isInterrupted()) {
+          break
+        }
       }
       log.info("Finished EZB augment job, augmenting ${count_journals_without_ezb_id} Journals.")
     }

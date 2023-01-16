@@ -34,12 +34,11 @@ class PackageController {
   def messageService
   def restMappingService
   def packageService
+  def packageSourceUpdateService
   def componentLookupService
   def componentUpdateService
   def concurrencyManagerService
-  def sessionFactory
   def FTUpdateService
-  def reviewRequestService
   def titleLookupService
   def TSVIngestionService
 
@@ -68,14 +67,19 @@ class PackageController {
       log.debug("DB duration: ${Duration.between(start_db, LocalDateTime.now()).toMillis();}")
     }
 
-    result.data?.each { obj ->
-      obj['_links'] << ['tipps': ['href': (base + "/packages/${obj.uuid}/tipps")]]
-      def countTippsParams = [:]
-      countTippsParams.componentType = "TIPP"
-      countTippsParams.tippPackage = obj.uuid
-      countTippsParams.status = "Current"
-      countTippsParams.max = 0
-      obj['_tippCount'] = ESSearchService.find(countTippsParams)?._pagination?.total ?: 0
+    if (result.result == 'ERROR') {
+      response.status = (result.status ?: 500)
+    }
+    else {
+      result.data?.each { obj ->
+        obj['_links'] << ['tipps': ['href': (base + "/packages/${obj.uuid}/tipps")]]
+        def countTippsParams = [:]
+        countTippsParams.componentType = "TIPP"
+        countTippsParams.tippPackage = obj.uuid
+        countTippsParams.status = "Current"
+        countTippsParams.max = 0
+        obj['_tippCount'] = ESSearchService.find(countTippsParams)?._pagination?.total ?: 0
+      }
     }
 
     render result as JSON
@@ -339,7 +343,7 @@ class PackageController {
           response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request_locale)
         }
-        if (grailsApplication.config.gokb.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
+        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
           FTUpdateService.updateSingleItem(obj)
         }
       }
@@ -839,12 +843,12 @@ class PackageController {
       def upload_mime_type = request.getFile("submissionFile")?.contentType
       def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
       def deposit_token = java.util.UUID.randomUUID().toString()
-      def temp_file = packageService.copyUploadedFile(request.getFile("submissionFile"), deposit_token)
+      def temp_file = TSVIngestionService.copyUploadedFile(request.getFile("submissionFile"), deposit_token)
       CuratoryGroup active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
       IdentifierNamespace title_ns = params.int('titleIdNamespace') ? IdentifierNamespace.get(params.int('titleIdNamespace')) : null
       Boolean add_only = params.boolean('addOnly') ?: false
       Boolean dry_run = params.boolean('dryRun') ?: false
-      def info = packageService.analyseFile(temp_file)
+      def info = TSVIngestionService.analyseFile(temp_file)
       def platform_url = pkg.nominalPlatform?.primaryUrl ?: null
       def pkg_source = pkg.source
       Boolean async = params.async ? params.boolean('async') : true
@@ -933,7 +937,7 @@ class PackageController {
 
     if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
-        packageService.startSourceUpdate(pkg, user, job, active_group)
+        packageSourceUpdateService.startSourceUpdate(pkg, user, job, active_group)
       }
 
       background_job.groupId = active_group.id

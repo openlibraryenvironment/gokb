@@ -39,6 +39,10 @@ class ReviewsController {
     User user = User.get(springSecurityService.principal.id)
     result = componentLookupService.restLookup(user, ReviewRequest, params)
 
+    if (result.result == 'ERROR') {
+      response.status = (result.status ?: 500)
+    }
+
     render result as JSON
   }
 
@@ -595,9 +599,7 @@ class ReviewsController {
         return result
       }
       else{
-        response.status = 404
-        result.result = 'ERROR'
-        result.message = "Could not get curatory group to be escalated from due to missing active curatory group."
+        result.message = "This active group is not linked to this review."
         return result
       }
     }

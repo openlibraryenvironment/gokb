@@ -114,7 +114,7 @@ class IdentifierController {
         Identifier obj = null
 
         try {
-          obj = componentLookupService.lookupOrCreateCanonicalIdentifier(ns.value, reqBody.value,false)
+          obj = componentLookupService.lookupOrCreateCanonicalIdentifier(ns.value, reqBody.value, false)
         }
         catch (grails.validation.ValidationException ve) {
           log.debug("Identifier ${reqBody} has failed validation!")
@@ -130,6 +130,9 @@ class IdentifierController {
 
         if (!obj) {
           log.debug("Could not create identifier!")
+          result.message = "Unable to create identifier ${reqBody}"
+          errors = [value: [[message: messageService.resolveCode('identifier.validation.generic', null, request.locale), baddata: reqBody.value, messageCode: 'identifier.validation.generic']]]
+          response.status = 400
         }
         else if ( obj.hasErrors() ) {
           errors = messageService.processValidationErrors(obj.errors, request.locale)
@@ -252,7 +255,7 @@ class IdentifierController {
     }
 
     if (params.q?.trim()) {
-      nss = nss.collect { it.name.startsWith(params.q.trim()) }
+      nss = nss.findAll { it.name.startsWith(params.q.trim()) }
     }
 
     nss.each { ns ->
@@ -261,7 +264,8 @@ class IdentifierController {
         value:ns.value,
         id: ns.id,
         pattern: ns.pattern,
-        family: ns.family
+        family: ns.family,
+        baseUrl: ns.baseUrl
       ]
     }
     result.data=data

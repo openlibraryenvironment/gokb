@@ -8,6 +8,7 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.BlockingHttpClient
 import org.gokb.UserProfileService
 import org.gokb.cred.AllocatedReviewGroup
 import org.gokb.cred.CuratoryGroup
@@ -25,7 +26,7 @@ import spock.lang.Shared
 class ReviewsTestSpec extends AbstractAuthSpec {
 
 
-  HttpClient http
+  BlockingHttpClient http
 
   private ReviewRequest rr
   private ReviewRequest rrDeescalate
@@ -45,17 +46,21 @@ class ReviewsTestSpec extends AbstractAuthSpec {
 
   @Transactional
   def setup() {
-    title = JournalInstance.findOrCreateWhere(name: "testTitle for integration testing").save(flush: true, failOnError: true)
-    matchedTitle = JournalInstance.findOrCreateWhere(name: "review matching title").save(flush: true, failOnError: true)
-    rr = ReviewRequest.findOrCreateWhere(reviewRequest: "fake review request for integration testing", descriptionOfCause: "testCause", componentToReview:title)
-    rr.save(flush: true, failOnError: true)
+    if (!http) {
+      http = HttpClient.create(new URL(getUrlPath())).toBlocking()
+    }
 
-    Role contributorRole = Role.findByAuthority('ROLE_CONTRIBUTOR')
-    Role userRole = Role.findByAuthority('ROLE_USER')
-    Role editorRole = Role.findByAuthority('ROLE_EDITOR')
+    if (!title) {
+      title = JournalInstance.findOrCreateWhere(name: "testTitle for integration testing").save(flush: true, failOnError: true)
+    }
+    if (!matchedTitle) {
+      matchedTitle = JournalInstance.findOrCreateWhere(name: "review matching title").save(flush: true, failOnError: true)
+    }
 
-    rrDeescalate = ReviewRequest.findOrCreateWhere(reviewRequest: "fake review request for deescalation testing", descriptionOfCause: "testCause", componentToReview:title)
-    rrDeescalate.save(flush: true, failOnError: true)
+    if (!rr) {
+      rr = ReviewRequest.findOrCreateWhere(reviewRequest: "fake review request for integration testing", descriptionOfCause: "testCause", componentToReview:title)
+      rr.save(flush: true, failOnError: true)
+    }
 
     if (!editorialGroup) {
       editorialGroup = CuratoryGroup.findByName("Journal Central Curators")
@@ -78,14 +83,23 @@ class ReviewsTestSpec extends AbstractAuthSpec {
       inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
     }
 
-    AllocatedReviewGroup.create(pkgGroup, rr, true)
-    def argBase = AllocatedReviewGroup.create(pkgGroup, rrDeescalate, true)
-    argBase.status = inactive
-    argBase.save(flush: true)
+    if (!rrDeescalate) {
+      rrDeescalate = ReviewRequest.findOrCreateWhere(reviewRequest: "fake review request for deescalation testing", descriptionOfCause: "testCause", componentToReview:title)
+      rrDeescalate.save(flush: true, failOnError: true)
+      AllocatedReviewGroup.create(pkgGroup, rr, true)
 
-    def argEsc = AllocatedReviewGroup.create(titleGroup, rrDeescalate, true)
-    argEsc.escalatedFrom = argBase
-    argEsc.save(flush: true)
+      def argBase = AllocatedReviewGroup.create(pkgGroup, rrDeescalate, true)
+      argBase.status = inactive
+      argBase.save(flush: true)
+
+      def argEsc = AllocatedReviewGroup.create(titleGroup, rrDeescalate, true)
+      argEsc.escalatedFrom = argBase
+      argEsc.save(flush: true)
+    }
+
+    Role contributorRole = Role.findByAuthority('ROLE_CONTRIBUTOR')
+    Role userRole = Role.findByAuthority('ROLE_USER')
+    Role editorRole = Role.findByAuthority('ROLE_EDITOR')
 
     if (!User.findByUsername("pkgGroupUser")) {
       pkgGroupUser = new User(username: "pkgGroupUser", password: 'pkgGrp1', curatoryGroups: [pkgGroup], enabled: true, locked: false).save(flush: true)
@@ -110,24 +124,8 @@ class ReviewsTestSpec extends AbstractAuthSpec {
 
   @Transactional
   def cleanup() {
-    AllocatedReviewGroup.executeQuery("select id from AllocatedReviewGroup where escalatedFrom is not null").each {
-      AllocatedReviewGroup.get(it).delete(flush:true)
-    }
-
-    AllocatedReviewGroup.executeUpdate("delete from AllocatedReviewGroup")
-
-    ReviewRequest.executeQuery("select id from ReviewRequest").each {
-      ReviewRequest.findById(it)?.expunge()
-    }
-
-    if (pkgGroupUser) userProfileService.delete(pkgGroupUser)
-    if (titleGroupUser) userProfileService.delete(titleGroupUser)
-    if (editorialGroupUser) userProfileService.delete(editorialGroupUser)
-
-    JournalInstance.findById(title.id)?.expunge()
-    JournalInstance.findById(matchedTitle.id)?.expunge()
-    pkgGroup?.expunge()
-    titleGroup?.expunge()
+    JournalInstance.findById(title.id)?.refresh()?.expunge()
+    JournalInstance.findById(matchedTitle.id)?.refresh().expunge()
   }
 
   void "test GET /rest/reviews with params"() {
@@ -138,7 +136,7 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.GET("$urlPath/rest/reviews")
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -153,7 +151,7 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken()
     HttpRequest request = HttpRequest.GET("$urlPath/rest/reviews/${rr.id}")
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -176,12 +174,13 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
     HttpRequest request = HttpRequest.POST("$urlPath/rest/reviews", restBody)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.CREATED
     resp.body().reviewRequest == 'POST Test Review'
     resp.body().additionalInfo?.otherComponents?.size() == 1
+    sleep(200)
   }
 
   void "test PUT /rest/reviews"() {
@@ -199,7 +198,7 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
     HttpRequest request = HttpRequest.PUT("$urlPath/rest/reviews/${rr.id}", restBody)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -220,7 +219,7 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken('pkgGroupUser', 'pkgGrp1')
     HttpRequest request = HttpRequest.PUT("$urlPath/rest/reviews/escalate/${rr.id}", restBody)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK
@@ -238,7 +237,7 @@ class ReviewsTestSpec extends AbstractAuthSpec {
     String accessToken = getAccessToken('titleGroupUser', 'ttlGrp1')
     HttpRequest request = HttpRequest.PUT("$urlPath/rest/reviews/deescalate/${rrDeescalate.id}", restBody)
       .bearerAuth(accessToken)
-    HttpResponse resp = http.toBlocking().exchange(request)
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
     resp.status == HttpStatus.OK

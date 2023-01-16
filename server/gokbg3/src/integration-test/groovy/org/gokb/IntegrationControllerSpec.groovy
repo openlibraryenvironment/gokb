@@ -1,31 +1,31 @@
 package org.gokb
 
-import org.gokb.TitleLookupService
+import grails.core.GrailsApplication
+import grails.gorm.transactions.*
+import grails.testing.mixin.integration.Integration
+
+import groovy.json.JsonSlurper
+
 import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.BlockingHttpClient
 import io.micronaut.http.client.HttpClient
-import spock.lang.Shared
-import spock.lang.Specification
-import org.gokb.cred.*
 
-// For @Autowired
-import org.springframework.beans.factory.annotation.*
-
-import grails.testing.mixin.integration.Integration
-import spock.lang.*
-import grails.converters.JSON
-import groovy.json.JsonSlurper
-import grails.core.GrailsApplication
-import org.springframework.core.io.ClassPathResource
-import org.springframework.core.io.Resource
-import org.springframework.web.context.WebApplicationContext
-import grails.gorm.transactions.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+
+import org.gokb.cred.*
+import org.gokb.TitleLookupService
+import org.springframework.beans.factory.annotation.*
+import org.springframework.core.io.ClassPathResource
+import org.springframework.core.io.Resource
+import org.springframework.web.context.WebApplicationContext
+
+import spock.lang.Shared
+import spock.lang.Specification
 
 @Integration
 @Rollback
@@ -135,6 +135,7 @@ class IntegrationControllerSpec extends Specification {
     resp.body()?.message != null
     resp.body()?.result == 'OK'
     expect: "Find item by name only returns one item"
+    sleep(200)
     def matching_orgs = Org.executeQuery('select o from Org as o where o.name = :n', [n: json_record.name])
     matching_orgs.size() == 1
     matching_orgs[0].id == resp.body()?.orgId
@@ -158,7 +159,7 @@ class IntegrationControllerSpec extends Specification {
     resp.body()?.result == "OK"
     expect: "Find item by name only returns one item"
     sleep(500)
-    def matching_platforms = Platform.executeQuery('select p from Platform as p where p.name = :n', [n: json_record.platformName]);
+    def matching_platforms = Platform.executeQuery('select p from Platform as p where p.name = :n', [n: json_record.platformName])
     matching_platforms.size() == 1
     matching_platforms[0].id == resp.body()?.platformId
   }
@@ -214,7 +215,7 @@ class IntegrationControllerSpec extends Specification {
         "identifiers"      : [
             [
                 "type" : "zdb",
-                "value": "1423434-0"
+                "value": "2477443-1"
             ]
         ],
         "name"             : "TestJournal_Dates",
@@ -636,7 +637,7 @@ class IntegrationControllerSpec extends Specification {
             "identifiers"    : [
                 [
                     "type" : "isbn",
-                    "value": "978-13-12232-23-9"
+                    "value": "978-13-12232-24-2"
                 ]
             ],
             "type"           : "Monograph",
@@ -650,7 +651,7 @@ class IntegrationControllerSpec extends Specification {
             "identifiers"    : [
                 [
                     "type" : "isbn",
-                    "value": "978-13-12232-23-9"
+                    "value": "978-13-12232-24-2"
                 ]
             ],
             "name"           : "Test Book 1",
@@ -667,7 +668,7 @@ class IntegrationControllerSpec extends Specification {
     then: "Item is created in the database"
     resp.body()?.results?.size() == 2
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
-    def ids = [['ns': 'isbn', 'value': '978-13-12232-23-9']]
+    def ids = [['ns': 'isbn', 'value': '978-13-12232-24-2']]
     resp.body()?.results[0].titleId == resp.body()?.results[1].titleId
   }
 
@@ -677,11 +678,11 @@ class IntegrationControllerSpec extends Specification {
         "identifiers"    : [
             [
                 "type" : "isbn",
-                "value": "978-13-12232-23-8"
+                "value": "978-13-12232-25-9"
             ],
             [
                 "type" : "isbn",
-                "value": "978-13-12232-23-8"
+                "value": "978-13-12232-25-9"
             ]
         ],
         "type"           : "Monograph",
@@ -697,9 +698,9 @@ class IntegrationControllerSpec extends Specification {
     then: "Item is created in the database"
     resp.body()?.result == 'OK'
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
-    def ids = [['ns': 'isbn', 'value': '978-13-12232-23-8']]
+    def ids = [['ns': 'isbn', 'value': '978-13-12232-25-9']]
     def ns = IdentifierNamespace.findByValueIlike('isbn')
-    def id_num = Identifier.findAllByValueAndNamespace('978-13-12232-23-8', ns)
+    def id_num = Identifier.findAllByValueAndNamespace('978-13-12232-25-9', ns)
     def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
     id_num.size() == 1
     matching_with_class_one_ids?.size() == 1
@@ -718,46 +719,16 @@ class IntegrationControllerSpec extends Specification {
     ]
 
     HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle", book_record).basicAuth('admin', 'admin')
-    def resp =  client.exchange(request, Map)
+    def resp = client.exchange(request, Map)
 
     then: "Item is rejected"
-    respBook.body()?.result == 'ERROR'
-  }
-
-  @Ignore
-  void "Test crossReferenceTitle multithreading"() {
-    given:
-    Resource journals = new ClassPathResource("/karger_journals_test.json")
-    Map jsonSlurper = new JsonSlurper()
-    def journals_json = jsonSlurper.parse(journals.getFile())
-    when: "Caller asks for this list of titles to be cross referenced"
-
-    HttpRequest request1 = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle?async=true", journal_json).basicAuth('admin', 'admin')
-
-    HttpRequest request2 = HttpRequest.POST(getUrlPath() + "/integration/crossReferenceTitle?", journal_json).basicAuth('admin', 'admin')
-    def respOne =  client.exchange(request1, Map)
-    def respTwo =  client.exchange(request2, Map)
-
-    then: "Both calls are successful"
-    respOne.body()?.job_id != null
-    respTwo.body()?.results.size() > 0
-    expect: "Find item by ID can now locate that item and the discriminator is set correctly"
-    journals_json.each {
-      def ids = []
-      it.identifiers.each { idr ->
-        if (idr.type == 'zdb') {
-          ids << [ns: idr.type, value: idr.value]
-        }
-      }
-      def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
-      matching_with_class_one_ids?.size() == 1
-    }
+    resp.body()?.result == 'ERROR'
   }
 
   void "Test crossReferenceTitle with prices"() {
     given:
     Resource journal = new ClassPathResource("/journal_prices_test.json")
-    Map jsonSlurper = new JsonSlurper()
+    def jsonSlurper = new JsonSlurper()
     def journal_json = jsonSlurper.parse(journal.getFile())
     when: "Caller asks for this list of titles to be cross referenced"
 
@@ -765,7 +736,7 @@ class IntegrationControllerSpec extends Specification {
     def resp =  client.exchange(request, Map)
 
     then: "call is successful"
-    resp.status == 200
+    resp.status == HttpStatus.OK
 
     expect: "prices are set correctly"
     sleep(400)
@@ -988,7 +959,7 @@ class IntegrationControllerSpec extends Specification {
     def pkg = Package.get(resp.body()?.pkgId)
     pkg.tipps?.size() == 1
     pkg.tipps[0].name.startsWith("TippName")
-    pkg.lastUpdatedBy == User.findByUsername('ingestAgent')
+    pkg.lastUpdatedBy.username == 'admin'
     pkg.name == "TestTokenPackageUpdate"
     def title = pkg.tipps[0].title //JournalInstance.findByName("Journal of agricultural and food chemistry")
     title.publisher?.size() == 1
@@ -1002,7 +973,7 @@ class IntegrationControllerSpec extends Specification {
         "identifiers"    : [
             [
                 "type" : "isbn",
-                "value": "978-13-12232-23-8"
+                "value": "978-13-12232-26-6"
             ]
         ],
         "variantNames"   : [
@@ -1020,7 +991,7 @@ class IntegrationControllerSpec extends Specification {
         "identifiers"    : [
             [
                 "type" : "isbn",
-                "value": "978-13-12232-23-8"
+                "value": "978-13-12232-26-6"
             ]
         ],
         "type"           : "Monograph",
@@ -1053,7 +1024,7 @@ class IntegrationControllerSpec extends Specification {
         "identifiers"    : [
             [
                 "type" : "isbn",
-                "value": "978-13-12112-23-2"
+                "value": "978-13-12112-23-0"
             ]
         ],
         "type"           : "Monograph",
@@ -1179,120 +1150,130 @@ class IntegrationControllerSpec extends Specification {
     resp.body()?.errors.tipps[0].tipp.identifiers.zdb.baddata == "1483109-0X"
   }
 
-  void "Test updatePkgTipps new package"() {
+  void "Test updatePkgTipps update package via token"() {
     given:
     Map json_record = [
-      "updateToken": "TestUpdateToken",
-      "packageHeader": [
-        "breakable": "No",
-        "consistent": "Yes",
-        "editStatus": "In Progress",
-        "listStatus": "Checked",
-        "fixed": "No",
-        "global": "Consortium",
-        "identifiers": [
+      updateToken: "TestUpdateToken",
+      packageHeader: [
+        breakable: "No",
+        consistent: "Yes",
+        editStatus: "In Progress",
+        listStatus: "Checked",
+        fixed: "No",
+        global: "Consortium",
+        identifiers: [
           [
-            "type": "isil",
-            "value": "ZDB-3-ACS"
+            type: "isil",
+            value: "ZDB-3-ACS"
           ]
         ],
-        "name": "TestTokenPackageUpdate",
-        "nominalPlatform": [
-          "name": "ACS Publications",
-          "primaryUrl": "https://pubs.acs.org"
+        name: "TestTokenPackageUpdate",
+        nominalPlatform: [
+          name: "ACS Publications",
+          primaryUrl: "https://pubs.acs.org"
         ],
-        "nominalProvider": "American Chemical Society"
+        nominalProvider: "American Chemical Society"
       ],
-      "tipps": [
+      tipps: [
         [
-          "accessEnd": "",
-          "accessStart": "",
-          "medium": "Electronic",
-          "name": "TippName for Allgemeine und spezielle Pharmakologie",
-          "platform": [
-            "name": "ACS Publications",
-            "primaryUrl": "https://pubs.acs.org"
+          accessEnd: "",
+          accessStart: "",
+          medium: "Electronic",
+          name: "TippName for Allgemeine und spezielle Pharmakologie",
+          platform: [
+            name: "ACS Publications",
+            primaryUrl: "https://pubs.acs.org"
           ],
-          "status": "Current",
-          "prices": [
+          prices: [
             [
-              "type": "list",
-              "currency": "EUR",
-              "amount": 123.45,
-              "startDate": "2010-01-31"
+              type: "list",
+              currency: "EUR",
+              amount: 123.45,
+              startDate: "2010-01-31"
             ],
             [
-              "type": "topup",
-              "currency": "USD",
-              "amount": 43.12,
-              "startDate": "2020-01-01"
+              type: "topup",
+              currency: "USD",
+              amount: 43.12,
+              startDate: "2020-01-01"
             ]
           ],
-          "status": "Current",
-          "series": "Mystery Cloud",
-          "subjectArea": "Fringe",
-          "dateFirstOnline": "2020-01-01",
-          "dateFirstInPrint": "2018",
-          "firstAuthor": "TestAuthor",
-          "firstEditor": "TestEditor",
-          "editionStatement": "1",
-          "volumeNumber": "87",
-          "coverage": [
+          status: "Current",
+          series: "Mystery Cloud",
+          subjectArea: "Fringe",
+          dateFirstOnline: "2020-01-01",
+          dateFirstInPrint: "2018",
+          firstAuthor: "TestAuthor",
+          firstEditor: "TestEditor",
+          editionStatement: "1",
+          volumeNumber: "87",
+          coverage: [
             [
-              "coverageDepth": "fulltext"
+              coverageDepth: "fulltext"
             ]
           ],
-          "identifiers": [
+          identifiers: [
             [
-              "type": "isbn",
-              "value": "978-3-437-42523-3"
+              type: "isbn",
+              value: "978-3-437-42523-3"
             ]
           ],
-          "title": [
-            "identifiers": [
+          title: [
+            identifiers: [
               [
-                "type": "isbn",
-                "value": "978-3-437-42523-3"
+                type: "isbn",
+                value: "978-3-437-42523-3"
               ]
             ],
-            "publisher_history": [
+            publisher_history: [
               [
-                "endDate": "",
-                "name": "ACS TestOrg",
-                "startDate": "1990",
-                "status": ""
+                endDate: "",
+                name: "ACS TestOrg",
+                startDate: "1990",
+                status: ""
               ]
             ],
-            "name": "Allgemeine und spezielle Pharmakologie",
+            name: "Allgemeine und spezielle Pharmakologie",
+            publicationType: "Monograph"
           ],
-          "publisherName": "ACS TestOrg",
-          "publicationType": "Serial",
-          "url": "http://pubs.acs.org/journal/jafcau"
+          publisherName: "ACS TestOrg",
+          publicationType: "Monograph",
+          url: "http://pubs.acs.org/journal/jafcau"
         ]
       ]
     ]
     when: "Caller asks for this package to be imported"
 
-    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps", json_record).basicAuth('admin', 'admin')
-    def resp =  client.exchange(request, Map)
+    HttpRequest request = HttpRequest.POST(getUrlPath() + "/integration/updatePackageTipps?async=false", json_record).basicAuth('admin', 'admin')
+    HttpResponse resp
+
+    try {
+      resp = client.exchange(request, Map)
+    }
+    catch (Exception e) {
+      resp = e.response
+    }
 
     then: "The request is sucessfully processed"
     resp.body()?.result == 'OK'
     expect: "The Package updater is set correctly"
     sleep(200)
     def pkg = Package.get(resp.body()?.pkgId)
-    pkg.tipps?.size() == 1
-    pkg.tipps[0].name.startsWith("TippName")
-    pkg.tipps[0].dateFirstInPrint != null
-    pkg.tipps[0].dateFirstOnline != null
-    pkg.tipps[0].firstAuthor == "TestAuthor"
-    pkg.tipps[0].firstEditor == "TestEditor"
-    pkg.tipps[0].editionStatement != null
-    pkg.tipps[0].volumeNumber != null
+    def current_tipps = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as t where status = :sc and exists (select 1 from Combo where fromComponent = :pkg and toComponent = t)",
+      [pkg: pkg, sc: RefdataCategory.lookup("KBComponent.Status", "Current")]
+    )
+    current_tipps?.size() == 1
+    current_tipps[0].name.startsWith("TippName")
+    current_tipps[0].dateFirstInPrint != null
+    current_tipps[0].dateFirstOnline != null
+    current_tipps[0].firstAuthor == "TestAuthor"
+    current_tipps[0].firstEditor == "TestEditor"
+    current_tipps[0].editionStatement != null
+    current_tipps[0].volumeNumber != null
     pkg.name == "TestTokenPackageUpdate"
-    def title = pkg.tipps[0].title //JournalInstance.findByName("Journal of agricultural and food chemistry")
+    def title = current_tipps[0].title //JournalInstance.findByName("Journal of agricultural and food chemistry")
     title?.publisher?.size() == 1
     title?.publisher[0].name == "ACS TestOrg"
-    title?.name == pkg.tipps[0].name
+    title?.name == current_tipps[0].name
   }
 }
