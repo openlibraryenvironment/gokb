@@ -82,7 +82,7 @@
               </div>
             </div>
 
-            <g:if test="${v.isDone()}">
+            <g:if test="${v.isDone() && !v.exception && !v.isCancelled()}">
               <div class="panel-heading" role="tab" id="${k}_result">
                 <h4 class="panel-title">
                   <a role="button" class="collapsed" data-toggle="collapse" href="#collapse${k}_result" aria-expanded="false" aria-controls="collapse${k}_result">
