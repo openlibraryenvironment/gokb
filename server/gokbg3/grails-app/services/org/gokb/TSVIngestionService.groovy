@@ -97,7 +97,7 @@ class TSVIngestionService {
   }
 
   def copyUploadedFile(inputfile, deposit_token) {
-    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '/tmp/gokb/ingest'
+    def baseUploadDir = grailsApplication.config.getProperty('baseUploadDir') ?: '/tmp/gokb/ingest'
     log.debug("copyUploadedFile...")
     def sub1 = deposit_token.substring(0,2)
     def sub2 = deposit_token.substring(2,4)
@@ -112,7 +112,7 @@ class TSVIngestionService {
   }
 
   def createTempFile(deposit_token) {
-    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '/tmp/gokb/ingest'
+    def baseUploadDir = grailsApplication.config.getProperty('baseUploadDir') ?: '/tmp/gokb/ingest'
     def sub1 = deposit_token.substring(0,2)
     def sub2 = deposit_token.substring(2,4)
     validateUploadDir("${baseUploadDir}/${sub1}/${sub2}")

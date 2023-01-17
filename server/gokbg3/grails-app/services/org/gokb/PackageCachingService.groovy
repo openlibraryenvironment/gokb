@@ -103,11 +103,11 @@ class PackageCachingService {
               def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
               def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
               def pkg_ids = Identifier.executeQuery('''select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i,
-                                                        Combo as c where c.fromComponent = ?
-                                                        and c.type = ?
+                                                        Combo as c where c.fromComponent = :pid
+                                                        and c.type = :ct
                                                         and c.toComponent = i
-                                                        and c.status = ?''',
-                                                        [item, refdata_ids, status_active],
+                                                        and c.status = :cs''',
+                                                        [pid: item, ct: refdata_ids, cs: status_active],
                                                         [readOnly: true])
               String cName = item.class.name
 
@@ -293,7 +293,7 @@ class PackageCachingService {
                 FileUtils.moveFile(tmpFile, cachedRecord)
 
                 if (!force || !currentCacheFile || item.lastUpdated > currentCacheDate) {
-                  Package.executeUpdate("update Package p set p.lastCachedDate = ? where p.id = ?", [new Date(cachedRecord.lastModified()), item.id])
+                  Package.executeUpdate("update Package p set p.lastCachedDate = :lcd where p.id = :pid", [lcd: new Date(cachedRecord.lastModified()), pid: item.id])
                 }
 
                 log.info("Caching KBART ..")
@@ -343,11 +343,11 @@ class PackageCachingService {
     def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def result = Identifier.executeQuery('''select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i,
                                             Combo as c
-                                            where c.fromComponent.id = ?
-                                            and c.type = ?
+                                            where c.fromComponent.id = :tid
+                                            and c.type = :ct
                                             and c.toComponent = i
-                                            and c.status = ?''',
-                                            [tipp_id, refdata_ids, status_active],
+                                            and c.status = :cs''',
+                                            [tid: tipp_id, ct: refdata_ids, cs: status_active],
                                             [readOnly: true])
     result
   }

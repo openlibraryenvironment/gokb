@@ -83,8 +83,8 @@ class AjaxSupportController {
 
       config = [
         domain:'RefdataValue',
-        countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc = ?1",
-        rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc = ?1 order by rdv.sortKey asc, rdv.description asc",
+        countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc = ?0",
+        rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc = ?0 order by rdv.sortKey asc, rdv.description asc",
         rdvCat: "${params.id}",
         qryParams:[],
         cols:['value'],
@@ -96,14 +96,14 @@ class AjaxSupportController {
       result.add([text:'Yes', value: 1])
       result.add([text:'No', value: 0])
     } else {
-      def query_params = [1: config.rdvCat]
+      def query_params = [config.rdvCat.toString()]
 
       config.qryParams.each { qp ->
         if ( qp.clos ) {
-          query_params.put(2, qp.clos(params[qp.param]?:''))
+          query_params.add(qp.clos(params[qp.param]?:'').toString())
         }
         else {
-          query_params.put(2, params[qp.param] ?: qp.cat)
+          query_params.add(params[qp.param] ?: qp.cat.toString())
         }
       }
 
@@ -137,27 +137,27 @@ class AjaxSupportController {
 
   def refdata_config = [
     'ContentProvider' : [
-      domain:'Org',
-      countQry:'select count(o) from Org as o where lower(o.name) like ?',
-      rowQry:'select o from Org as o where lower(o.name) like ? order by o.name asc',
-      qryParams:[
-    [
-      param:'sSearch',
-      clos:{ value ->
-      def result = '%'
-      if ( value && ( value.length() > 0 ) )
-        result = "%${value.trim().toLowerCase()}%"
-      result
-      }
-    ]
-    ],
+        domain:'Org',
+        countQry:'select count(o) from Org as o where lower(o.name) like ?0',
+        rowQry:'select o from Org as o where lower(o.name) like ?0 order by o.name asc',
+        qryParams:[
+          [
+            param:'sSearch',
+            clos:{ value ->
+            def result = '%'
+            if ( value && ( value.length() > 0 ) )
+              result = "%${value.trim().toLowerCase()}%"
+              result
+            }
+          ]
+      ],
       cols:['name'],
       format:'map'
     ],
     'PackageType' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
       qryParams:[['cat': "Package Type"]],
       rdvCat: "Package.Scope",
       cols:['value'],
@@ -167,8 +167,8 @@ class AjaxSupportController {
       domain:'RefdataValue',
       // countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
       // rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
       required:true,
       qryParams:[],
       rdvCat: "KBComponent.Status",
@@ -177,8 +177,8 @@ class AjaxSupportController {
     ],
     'KBComponent.EditStatus' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc = ?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc = ?0",
       required:true,
       qryParams:[],
       rdvCat: "KBComponent.EditStatus",
@@ -187,8 +187,8 @@ class AjaxSupportController {
     ],
     'VariantNameType' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
       qryParams:[],
       rdvCat: "KBComponentVariantName.VariantType",
       cols:['value'],
@@ -196,8 +196,8 @@ class AjaxSupportController {
     ],
     'KBComponentVariantName.VariantType' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
       qryParams:[],
       rdvCat: "KBComponentVariantName.VariantType",
       cols:['value'],
@@ -205,8 +205,8 @@ class AjaxSupportController {
     ],
     'Locale' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
       qryParams:[],
       rdvCat: "KBComponentVariantName.Locale",
       cols:['value'],
@@ -216,8 +216,8 @@ class AjaxSupportController {
       domain:'RefdataValue',
       // countQry:"select count(rdv) from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
       // rowQry:"select rdv from RefdataValue as rdv where rdv.owner.desc='KBComponent.Status' and rdv.value !='${KBComponent.STATUS_DELETED}'",
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
       qryParams:[],
       rdvCat: "ReviewRequest.Status",
       cols:['value'],
@@ -225,8 +225,8 @@ class AjaxSupportController {
     ],
     'TitleInstance.Medium' : [
         domain:'RefdataValue',
-        countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-        rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+        countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+        rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
         required:true,
         qryParams:[],
         rdvCat: "TitleInstance.Medium",
@@ -235,8 +235,8 @@ class AjaxSupportController {
     ],
     'TitleInstancePackagePlatform.Medium' : [
         domain:'RefdataValue',
-        countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-        rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+        countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+        rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
         required:true,
         qryParams:[],
         rdvCat: "TitleInstancePackagePlatform.Medium",
@@ -245,8 +245,8 @@ class AjaxSupportController {
     ],
     'TitleInstancePackagePlatform.CoverageDepth' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
       required:true,
       qryParams:[],
       rdvCat: "TitleInstancePackagePlatform.CoverageDepth",
@@ -255,8 +255,8 @@ class AjaxSupportController {
     ],
     'TIPPCoverageStatement.CoverageDepth' : [
       domain:'RefdataValue',
-      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
-      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?",
+      countQry:"select count(rdv) from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
+      rowQry:"select rdv from RefdataValue as rdv where rdv.useInstead is null and rdv.owner.desc=?0",
       required:true,
       qryParams:[],
       rdvCat: "TIPPCoverageStatement.CoverageDepth",

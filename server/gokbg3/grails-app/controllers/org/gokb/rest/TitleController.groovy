@@ -1031,7 +1031,7 @@ class TitleController {
 
               def old_combo = Combo.findByFromComponentAndToComponent(obj, old_id)
 
-              def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = ?1 and c.fromComponent = ?2 and c.type = ?3", [old_id, target, id_combo_type])
+              def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = ?0 and c.fromComponent = ?1 and c.type = ?2", [old_id, target, id_combo_type])
               if (!dupes || dupes.size() == 0){
                 log.debug("Adding Identifier ${old_id} to ${target}")
                 Combo new_id = new Combo(toComponent: old_id, fromComponent: target, type: id_combo_type, status: old_combo.status).save(flush: true, failOnError: true)

@@ -117,8 +117,8 @@ class ProfileController {
 
     if (params.boolean('archived') == true || params.boolean('combined') == true) {
       result.data = []
-      def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?1", [user.id])[0]
-      def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ?1 order by jr.startTime desc", [user.id], [max: max, offset: offset])
+      def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?0", [user.id])[0]
+      def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ?0 order by jr.startTime desc", [user.id], [max: max, offset: offset])
 
       if (params.boolean('combined') == true) {
         def active_jobs = concurrencyManagerService.getUserJobs(user.id, max, offset, false)

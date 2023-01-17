@@ -336,8 +336,8 @@ class CuratoryGroupsController {
     if (group && (group.users.contains(user) || user.isAdmin())) {
       if (params.boolean('archived') == true || params.boolean('combined') == true) {
         result.data = []
-        def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?1", [group.id])[0]
-        def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ?1 order by jr.startTime desc", [group.id], [max: max, offset: offset])
+        def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?0", [group.id])[0]
+        def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ?0 order by jr.startTime desc", [group.id], [max: max, offset: offset])
 
         if (params.boolean('combined') == true) {
           def active_jobs = concurrencyManagerService.getGroupJobs(group.id, max, offset, false)

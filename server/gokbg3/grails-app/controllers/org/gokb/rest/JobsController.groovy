@@ -39,8 +39,8 @@ class JobsController {
 
           if (params.boolean('archived') == true || params.boolean('combined') == true) {
             result.data = []
-            def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?1", [userId])[0]
-            def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ?1 order by jr.startTime desc", [userId], [max: max, offset: offset])
+            def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.ownerId = ?0", [userId])[0]
+            def jobs = JobResult.executeQuery("from JobResult as jr where jr.ownerId = ?0 order by jr.startTime desc", [userId], [max: max, offset: offset])
 
             if (params.boolean('combined') == true) {
               def active_jobs = concurrencyManagerService.getUserJobs(userId, max, offset, false)
@@ -90,8 +90,8 @@ class JobsController {
 
           if (params.boolean('archived') == true || params.boolean('combined') == true) {
             result.data = []
-            def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?1", [groupId])[0]
-            def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ?1 order by jr.startTime desc", [groupId], [max: max, offset: offset])
+            def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.groupId = ?0", [groupId])[0]
+            def jobs = JobResult.executeQuery("from JobResult as jr where jr.groupId = ?0 order by jr.startTime desc", [groupId], [max: max, offset: offset])
 
             if (params.boolean('combined') == true) {
               def active_jobs = concurrencyManagerService.getGroupJobs(groupId, max, offset, false)
@@ -140,8 +140,8 @@ class JobsController {
 
         if (params.boolean('archived') == true || params.boolean('combined') == true) {
           result.data = []
-          def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.linkedItemId = ?1", [compId])[0]
-          def jobs = JobResult.executeQuery("from JobResult as jr where jr.linkedItemId = ?1 order by jr.startTime desc", [compId], [max: max, offset: offset])
+          def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.linkedItemId = ?0", [compId])[0]
+          def jobs = JobResult.executeQuery("from JobResult as jr where jr.linkedItemId = ?0 order by jr.startTime desc", [compId], [max: max, offset: offset])
 
           if (params.boolean('combined') == true) {
             def active_jobs = concurrencyManagerService.getComponentJobs(compId, max, offset, false)
