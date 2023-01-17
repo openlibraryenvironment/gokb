@@ -36,7 +36,7 @@ class HomeController {
   def index () {
     log.debug("Home::index -- ${params}")
 
-    if ( grailsApplication.config?.newDash ) {
+    if ( grailsApplication.config.getProperty('newDash', Boolean, false) ) {
       forward ( action: "userdash", params: (params))
     }
     else {

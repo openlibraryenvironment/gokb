@@ -170,7 +170,7 @@ class IngestController {
 
 
   def copyUploadedFile(inputfile, deposit_token) {
-    def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
+    def baseUploadDir = grailsApplication.config.getProperty('baseUploadDir') ?: '.'
     log.debug("copyUploadedFile...");
     def sub1 = deposit_token.substring(0,2);
     def sub2 = deposit_token.substring(2,4);

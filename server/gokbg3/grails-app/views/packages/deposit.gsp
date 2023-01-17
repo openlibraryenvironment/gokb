@@ -27,10 +27,10 @@
         <dt>Deposit file:</dt><dd> <input type="file" name="content"/></dd>
         <dt>Source:</dt><dd> <input type="text" name="source" value="${params.source?:'CUFTS'}"/></dd>
         <dt>Format:</dt>
-        <dd> 
+        <dd>
           <select name="fmt">
             <option value="kbart2">KBART</option>
-            <g:each in="${grailsApplication.config.kbart2.mappings}" var="k,v">
+            <g:each in="${grailsApplication.config.getProperty('kbart2.mappings', Map, [:])}" var="k,v">
               <option value="${k}">${k}</option>
             </g:each>
           </select>
@@ -44,7 +44,7 @@
         <dt>Incremental:</dt><dd> <input type="text" name="incremental" value="${params.incremental?:'N'}"/></dd>
         <dt>Synchronous:</dt><dd> <input type="text" name="synchronous" value="${params.synchronous?:'Y'}"/></dd>
         <dt>Flags:</dt><dd> <input type="text" name="flags" value="${params.flags}"/></dd>
-        
+
         <button type="submit">Submit</button>
       </g:form>
       </div>

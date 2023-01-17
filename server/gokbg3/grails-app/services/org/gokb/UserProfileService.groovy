@@ -200,7 +200,7 @@ class UserProfileService {
   }
 
   def collectUserProps(User user, params = [:]) {
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
     def includes = []
     def excludes = []
     def newUserData = [

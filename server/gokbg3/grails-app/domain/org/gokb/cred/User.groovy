@@ -223,7 +223,7 @@ class User extends Party {
 
   def getUserOptions(GrailsApplication grailsApplication) {
     def userOptions = [:]
-    userOptions.availableSearches = grailsApplication.config.globalSearchTemplates.sort{ it.value.title }
+    userOptions.availableSearches = grailsApplication.config.getProperty('globalSearchTemplates', Map, [:]).sort{ it.value.title }
     userOptions
   }
 

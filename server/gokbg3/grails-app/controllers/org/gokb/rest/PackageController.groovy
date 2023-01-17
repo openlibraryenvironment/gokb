@@ -667,7 +667,7 @@ class PackageController {
 
     if (obj) {
       def context = "/packages/" + params.id + "/tipps"
-      def base = grailsApplication.config.serverURL + "/rest"
+      def base = grailsApplication.config.getProperty('serverURL') + "/rest"
       def es_search = params.es ? true : false
 
       params.remove('id')

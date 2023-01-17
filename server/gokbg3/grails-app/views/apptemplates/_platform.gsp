@@ -42,7 +42,7 @@
       <li><a href="#titledetails" data-toggle="tab">Hosted TIPPs</span> </a></li>
       <li><a href="#packages" data-toggle="tab">Packages</a></li>
       <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
-      <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}">
+      <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}">
         <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       </g:if>
       <li><a href="#review" data-toggle="tab">Review Tasks (Open/Total)<span
@@ -54,7 +54,7 @@
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Hosted TIPPs </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Packages </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
-      <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}">
+      <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}">
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Decision Support </span></li>
       </g:if>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Tasks </span></li>

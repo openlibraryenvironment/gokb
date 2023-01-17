@@ -380,8 +380,8 @@ class TitleInstance extends KBComponent {
                     org_ids?.each { org_id ->
                       builder.'identifier'('namespace': org_id?.namespace?.value, 'namespaceName': org_id?.namespace?.name, 'value': org_id?.value)
                     }
-                    if (grailsApplication.config.serverUrl) {
-                      builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.serverUrl}/resource/show/org.gokb.cred.Org:${pub_org?.id}")
+                    if (grailsApplication.config.getProperty('serverUrl')) {
+                      builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl')}/resource/show/org.gokb.cred.Org:${pub_org?.id}")
                     }
                   }
                 }
@@ -411,8 +411,8 @@ class TitleInstance extends KBComponent {
                           hti.ids?.each { tid ->
                             builder.'identifier'('namespace': tid.namespace?.value, 'namespaceName': tid.namespace?.name, 'value': tid.value, 'datatype': tid.namespace.datatype?.value)
                           }
-                          if (grailsApplication.config.serverUrl) {
-                            builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")
+                          if (grailsApplication.config.getProperty('serverUrl')) {
+                            builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl')}/resource/show/${hti.class.name}:${hti.id}")
                           }
                         }
                       }
@@ -429,8 +429,8 @@ class TitleInstance extends KBComponent {
                           hti.ids?.each { tid ->
                             builder.'identifier'('namespace': tid.namespace?.value, 'namespaceName': tid.namespace?.name, 'value': tid.value, 'datatype': tid.namespace.datatype?.value)
                           }
-                          if (grailsApplication.config.serverUrl) {
-                            builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.serverUrl}/resource/show/${hti.class.name}:${hti.id}")
+                          if (grailsApplication.config.getProperty('serverUrl')) {
+                            builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl')}/resource/show/${hti.class.name}:${hti.id}")
                           }
                         }
                       }

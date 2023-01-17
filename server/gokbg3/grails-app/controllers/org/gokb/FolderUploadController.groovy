@@ -12,7 +12,7 @@ class FolderUploadController {
   def folderService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def index() { 
+  def index() {
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -50,7 +50,7 @@ class FolderUploadController {
 
  def copyUploadedFile(inputfile, deposit_token) {
 
-   def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
+   def baseUploadDir = grailsApplication.config.getProperty('baseUploadDir') ?: '.'
 
     log.debug("copyUploadedFile...");
     def sub1 = deposit_token.substring(0,2);

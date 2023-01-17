@@ -19,7 +19,7 @@ from Folder as f,
      TitleInstance as title_in_group,
      Combo as tipp_combo,
      TitleInstancePackagePlatform as tipp
-where 
+where
       ( ( tipp.accessStartDate between :startDate and :endDate ) OR ( tipp.accessEndDate between :startDate and :endDate ) ) AND
       ( ( tipp_combo.fromComponent = title_in_group ) and ( tipp_combo.type.value = 'TitleInstance.Tipps' ) and ( tipp_combo.toComponent = tipp ) ) AND
       ( title_in_group.work = work ) AND
@@ -95,7 +95,7 @@ order by f.id, ti.id, title_in_group.id
     def result = [:]
     result.start_date = startDate;
     result.end_date = endDate;
-    result.serverUrl = grailsApplication.config.serverUrl ?: 'http://localhost:8080/gokb'
+    result.serverUrl = grailsApplication.config.getProperty('serverUrl') ?: 'http://localhost:8080/gokb'
     result.updates = getTippsInUserWatchList(user, startDate, endDate)
 
     def emailTemplateFile = applicationContext.getResource("WEB-INF/mail-templates/gokbAlerts.gsp").file
@@ -103,13 +103,13 @@ order by f.id, ti.id, title_in_group.id
     def tmpl = engine.createTemplate(emailTemplateFile).make(result)
     def content = tmpl.toString()
     EmailValidator validator = EmailValidator.getInstance();
-    
+
     if (user.email && validator.isValid(user.email)) {
 
       mailService.sendMail {
         to user.email
-        from "${grailsApplication.config.alerts.emailFrom ?: 'GOKb <user-alerts@gokb.org>'}"
-        subject "${grailsApplication.config.alerts.subject ?: 'Your GOKb User Alerts'} - ${new Date()}"
+        from "${grailsApplication.config.getProperty('alerts.emailFrom') ?: 'GOKb <user-alerts@gokb.org>'}"
+        subject "${grailsApplication.config.getProperty('alerts.subject') ?: 'Your GOKb User Alerts'} - ${new Date()}"
         html content
       }
 
@@ -137,7 +137,7 @@ order by f.id, ti.id, title_in_group.id
 
       current_folder.titles.add([watchlist_title:mt[4], watchlist_work:mt[2], matched_title:mt[3], tipp:mt[5]])
     }
-    
+
     result
   }
 

@@ -420,7 +420,7 @@ class Package extends KBComponent {
 
     log.debug("toGoKBXml... ${this.class.name}:${id}");
 
-    def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
+    def identifier_prefix = "uri://gokb/${grailsApplication.config.getProperty('sysid')}/title/"
 
     def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps');
     def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps');

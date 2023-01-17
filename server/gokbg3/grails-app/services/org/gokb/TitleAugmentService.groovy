@@ -20,8 +20,8 @@ class TitleAugmentService {
 
   def augmentZdb(titleInstance) {
     log.debug("Augment ZDB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
-    CuratoryGroup editorialGroup = grailsApplication.config.gokb.zdbAugment?.rrCurators ?
-        (CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.zdbAugment.rrCurators) ?: new CuratoryGroup(name: grailsApplication.config.gokb.zdbAugment.rrCurators).save(flush: true)) : null
+    CuratoryGroup editorialGroup = grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators') ?
+        (CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators')) ?: new CuratoryGroup(name: grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators')).save(flush: true)) : null
     int num_existing_zdb_ids = titleInstance.ids.findAll { it.namespace.value == 'zdb' }.size()
 
     if (titleInstance.niceName == 'Journal') {
@@ -215,8 +215,8 @@ class TitleAugmentService {
 
   def augmentEzb(titleInstance) {
     log.debug("Augment EZB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
-    CuratoryGroup editorialGroup = grailsApplication.config.gokb.ezbAugment?.rrCurators ?
-        (CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.ezbAugment.rrCurators) ?: new CuratoryGroup(name: grailsApplication.config.gokb.ezbAugment.rrCurators).save(flush: true)) : null
+    CuratoryGroup editorialGroup = grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators') ?
+        (CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')) ?: new CuratoryGroup(name: grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')).save(flush: true)) : null
 
     if ( titleInstance.niceName == 'Journal' ) {
       def rr_multi_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple EZB Results')

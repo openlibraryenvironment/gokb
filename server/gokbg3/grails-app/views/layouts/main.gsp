@@ -18,11 +18,11 @@
   <g:layoutHead />
   <asset:javascript src="gokb/application.grass.js" />
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
-  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
+  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.getProperty('gokb.theme') }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
 </head>
 
-<body class="theme-${ grailsApplication.config.gokb.theme }">
+<body class="theme-${ grailsApplication.config.getProperty('gokb.theme') }">
   <div class="navbar navbar-default navbar-fixed-top">
     <div class="container-fuid">
       <div class="navbar-header">

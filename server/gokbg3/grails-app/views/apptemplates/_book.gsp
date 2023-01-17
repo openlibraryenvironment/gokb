@@ -150,10 +150,10 @@
           ${d.reviewRequests?.findAll { it.status == org.gokb.cred.RefdataCategory.lookup('ReviewRequest.Status','Open') }?.size() ?: '0'}/${d.reviewRequests.size()}
         </span>
       </a></li>
-      <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}" >
+      <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}" >
         <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
       </g:if>
-      <g:if test="${grailsApplication.config.gokb.handleSubjects}" >
+      <g:if test="${grailsApplication.config.getProperty('gokb.handleSubjects', Boolean, false)}" >
         <li><a href="#subjects" data-toggle="tab">Subjects <span class="badge badge-warning"> ${d.subjects?.size() ?: '0'} </span></a></li>
       </g:if>
     </g:if>
@@ -165,10 +165,10 @@
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Platforms </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Custom Fields </span></li>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Tasks </span></li>
-      <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}" >
+      <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}" >
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Decision Support </span></li>
       </g:if>
-      <g:if test="${grailsApplication.config.gokb.handleSubjects}" >
+      <g:if test="${grailsApplication.config.getProperty('gokb.handleSubjects', Boolean, false)}" >
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Subjects </span></li>
       </g:if>
     </g:else>

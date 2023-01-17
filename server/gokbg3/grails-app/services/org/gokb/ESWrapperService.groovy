@@ -36,8 +36,8 @@ class ESWrapperService {
 
 
   private void newClient() {
-    def es_host_name = grailsApplication.config?.gokb?.es?.host
-    def es_port = grailsApplication.config?.gokb?.es?.ports?.get(0) ?: 9200
+    def es_host_name = grailsApplication.config.getProperty('gokb.es.host')
+    def es_port = grailsApplication.config.getProperty('gokb.es.ports', Collection).get(0) ?: 9200
 
     log.debug("Elasticsearch client is null, creating now... host: ${es_host_name}")
     log.debug("... looking for Elasticsearch on host ${es_host_name}")

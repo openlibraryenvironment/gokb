@@ -16,7 +16,7 @@
 <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
 
   <g:each in="${d.getDecisionSupportLines(params.DSFilter)?.values()}" var="dsl">
- 
+
     <div class="panel panel-default">
 
       <div class="panel-heading" role="tab" id="${dsl.id}">
@@ -56,7 +56,7 @@
                         <g:if test="${c['otherVotes'].isEmpty()}">
                             No one else has rated yet
                         </g:if>
-                        <g:elseif test="${grailsApplication.config.gokb.decisionSupport.otherVoters}">
+                        <g:elseif test="${grailsApplication.config.getProperty('gokb.decisionSupport.otherVoters', Boolean, false)}">
                             <table class="otherVoters" style="margin: 0; padding: 0">
                                 <thead>
                                 <tr>
@@ -116,7 +116,7 @@
                           <!-- Default panel contents -->
                           <div class="panel-heading">Comments</div>
                           <!-- List group -->
-                          <ul class="list-group" id="${c['appliedTo']}_${id}_notestable"> 
+                          <ul class="list-group" id="${c['appliedTo']}_${id}_notestable">
                             <g:each in="${c['notes']}" var="note">
                               <li class="list-group-item">
                                 <g:if test="${!note.isDeleted && note.criterion.user.id == user.id}" >
@@ -152,7 +152,7 @@
                                         </g:if>
                                         <g:else>Edited: <g:formatDate date="${note.lastUpdated}" type="datetime" /></g:else></strong>
 
-                                  
+
                                 </div>
                               </li>
                             </g:each>

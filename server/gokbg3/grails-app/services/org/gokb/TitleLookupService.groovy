@@ -26,8 +26,8 @@ class TitleLookupService {
   private Map class_one_match(def ids, ti_class, def fullsync = false) {
 
     // Get the class 1 identifier namespaces.
-    Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
-    def xcheck = grailsApplication.config.identifiers.cross_checks
+    Set<String> class_one_ids = grailsApplication.config.getProperty('identifiers.class_ones', Set<String>)
+    def xcheck = grailsApplication.config.getProperty('identifiers.cross_checks', Map)
     def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
     def status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
 
@@ -1236,7 +1236,7 @@ class TitleLookupService {
     String comparable_title = GOKbTextUtils.generateComparableKey(title)
 
     // The threshold for a good match.
-    double threshold = grailsApplication.config.cosine.good_threshold
+    double threshold = grailsApplication.config.getProperty('cosine.good_threshold')
 
     // Work out the distance between the 2 title strings.
     double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.name), comparable_title)
@@ -1305,7 +1305,7 @@ class TitleLookupService {
     def result = [] as Set
 
     // Get the class 1 identifier namespaces.
-    Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
+    Set<String> class_one_ids = grailsApplication.config.getProperty('identifiers.class_ones', Set<String>)
 
     def start_time = System.currentTimeMillis();
 
@@ -1365,7 +1365,7 @@ class TitleLookupService {
 
     try {
       // Get the class 1 identifier namespaces.
-      Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
+      Set<String> class_one_ids = grailsApplication.config.getProperty('identifiers.class_ones', Set<String>)
 
       def start_time = System.currentTimeMillis();
       def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')

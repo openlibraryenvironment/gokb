@@ -65,8 +65,8 @@ class EzbCollectionService {
   private def fetchUpdatedLists (job) {
     def result = [result: 'OK', report: [:]]
 
-    if (grailsApplication.config.gokb.ezbOpenCollections?.url) {
-      def baseUrl = grailsApplication.config.gokb.ezbOpenCollections.url
+    if (grailsApplication.config.getProperty('gokb.ezbOpenCollections.url')) {
+      def baseUrl = grailsApplication.config.getProperty('gokb.ezbOpenCollections.url')
       def allCollections = [:]
       boolean cancelled = false
 
@@ -140,7 +140,7 @@ class EzbCollectionService {
               def pkgName = "${item.ezb_collection_id}: ${item.ezb_collection_name}"
               log.debug("Processing ${type} ${item.ezb_collection_name}")
 
-              CuratoryGroup curator = CuratoryGroup.findByName(grailsApplication.config.gokb.ezbAugment.rrCurators)
+              CuratoryGroup curator = CuratoryGroup.findByName(grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators'))
               Platform platform = item.ezb_collection_platform ? Platform.findByUuid(item.ezb_collection_platform) : null
               IdentifierNamespace ezb_ns = IdentifierNamespace.findByValue('ezb')
               Org provider = item.ezb_collection_provider ? Org.findByUuid(item.ezb_collection_provider) : null

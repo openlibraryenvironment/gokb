@@ -119,7 +119,7 @@
     </dd>
   </g:if>
 
-  <g:if test="${grailsApplication.config.feature.directUpload}">
+  <g:if test="${grailsApplication.config.getProperty('feature.directUpload', Boolean, false)}">
     <dt><g:annotatedLabel owner="${d}" property="name">Load Title List</g:annotatedLabel> (<a href="https://github.com/k-int/gokb-phase1/wiki/Title-List-Upload-Format">Format</a>)</dt>
     <dd class="container">
       <g:form controller="folderUpload" action="processSubmission" method="post" enctype="multipart/form-data">
@@ -147,7 +147,7 @@
             dataType:"json"
           }).done(function(data) {
             if ( data.result == 'OK' ) {
-              
+
               var uoTable = document.getElementById("uomembers");
               var newRow = uoTable.insertRow(-1);
               var newUser = newRow.insertCell(0);

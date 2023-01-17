@@ -17,15 +17,15 @@
 
   <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon"/>
   <g:layoutHead />
-  <asset:script> var contextPath="${grailsApplication.config.server.contextPath ?: ''}"; </asset:script>
+  <asset:script> var contextPath="${grailsApplication.config.getProperty('server.servlet.context-path') ?: ''}"; </asset:script>
   <asset:javascript src="gokb/application.grass.js" />
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
-  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
+  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.getProperty('gokb.theme') }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
 
 </head>
 
-<body class="theme-${ grailsApplication.config.gokb.theme }">
+<body class="theme-${ grailsApplication.config.getProperty('gokb.theme') }">
 
   <div id="wrapper">
 
@@ -42,8 +42,8 @@
         </button>
         <g:link uri="/" class="navbar-brand" style="font-weight:bold;">
           <g:message code="gokb.appname" default="GOKb"/> v<g:meta name="info.app.version" />
-          <g:if test="${grailsApplication.config.gokb.instance?.description}">
-            – ${grailsApplication.config.gokb.instance?.description}
+          <g:if test="${grailsApplication.config.getProperty('gokb.instance.description')}">
+            – ${grailsApplication.config.getProperty('gokb.instance.description')}
           </g:if>
         </g:link>
       </div>

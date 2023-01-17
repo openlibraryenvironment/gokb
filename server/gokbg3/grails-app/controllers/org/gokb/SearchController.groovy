@@ -79,27 +79,27 @@ class SearchController {
         // Global template, look in config
         def global_qbe_template_shortcode = params.qbe.substring(2,params.qbe.length());
         // log.debug("Looking up global template ${global_qbe_template_shortcode}");
-        result.qbetemplate = grailsApplication.config.globalSearchTemplates[global_qbe_template_shortcode]
+        result.qbetemplate = grailsApplication.config.getProperty('globalSearchTemplates.' + global_qbe_template_shortcode, Map)
         // log.debug("Using template: ${result.qbetemplate}");
       }
 
       // Looked up a template from somewhere, see if we can execute a search
       if ( result.qbetemplate) {
-      
+
         Class target_class = Class.forName(result.qbetemplate.baseclass);
         def read_perm = target_class.isTypeReadable()
-        
+
         if (read_perm && !params.init) {
-        
+
           log.debug("Execute query");
           doQuery(result.qbetemplate, cleaned_params, result)
           log.debug("Query complete");
           result.lasthit = result.offset + result.max > result.reccount ? result.reccount : ( result.offset + result.max )
-          
+
           // Add the page information.
           result.page_current = (result.offset / result.max) + 1
           result.page_total = (result.reccount / result.max).toInteger() + (result.reccount % result.max > 0 ? 1 : 0)
-          
+
         }else if (!read_perm){
           response.sendError(403);
         }
@@ -108,7 +108,7 @@ class SearchController {
         log.error("no template ${result?.qbetemplate}");
       }
 
-      
+
       if ( result.det && result.recset ) {
 
         log.debug("Got details page");
@@ -125,29 +125,29 @@ class SearchController {
             recno = 0;
             result.det = 0;
           }
-  
+
           // log.debug("Trying to display record ${recno}");
 
           result.displayobj = result.recset.get(recno)
-          
+
           def display_start_time = System.currentTimeMillis();
           if ( result.displayobj != null ) {
 
             if ( result.displayobj.class.name == "org.gokb.cred.ComponentWatch"  && result.displayobj.component?.id ) {
               result.displayobj = KBComponent.get(result.displayobj.component?.id)
             }
-  
+
             result.displayobjclassname = result.displayobj.class.name
             result.displaytemplate = displayTemplateService.getTemplateInfo(result.displayobjclassname)
             result.__oid = "${result.displayobjclassname}:${result.displayobj.id}"
-      
+
             // Add any refdata property names for this class to the result.
             result.refdata_properties = classExaminationService.getRefdataPropertyNames(result.displayobjclassname)
             result.displayobjclassname_short = result.displayobj.class.simpleName
             result.isComponent = (result.displayobj instanceof KBComponent)
-            
+
             result.acl = gokbAclService.readAclSilently(result.displayobj)
-        
+
             if ( result.displaytemplate == null ) {
               log.error("Unable to locate display template for class ${result.displayobjclassname} (oid ${params.displayoid})");
             }
@@ -155,7 +155,7 @@ class SearchController {
               // log.debug("Got display template ${result.displaytemplate} for rec ${result.det} - class is ${result.displayobjclassname}");
             }
           }
-          else { 
+          else {
             log.error("Result row for display was NULL");
           }
           log.debug("Display completed after ${System.currentTimeMillis() - display_start_time}");

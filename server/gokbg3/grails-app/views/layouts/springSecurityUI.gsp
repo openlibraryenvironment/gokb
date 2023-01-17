@@ -6,16 +6,16 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 	<meta http-equiv="x-ua-compatible" content="ie=edge"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <asset:script> var contextPath="${grailsApplication.config.server.contextPath ?: '/gokb'}"; </asset:script>
+  <asset:script> var contextPath="${grailsApplication.config.getProperty('server.servlet.context-path') ?: '/gokb'}"; </asset:script>
   <asset:javascript src="gokb/application.grass.js" />
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
   <asset:stylesheet src="gokb/application.css"/>
   <s2ui:stylesheet src='spring-security-ui'/>
   <asset:stylesheet src="gokb/security-styles.css"/>
-  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.gokb.theme }/theme.css"/>
+  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.getProperty('gokb.theme') }/theme.css"/>
 <g:layoutHead/>
 </head>
-<body class="theme-${ grailsApplication.config.gokb.theme }">
+<body class="theme-${ grailsApplication.config.getProperty('gokb.theme') }">
   <div id="wrapper">
 
     <!-- Navigation -->
@@ -31,8 +31,8 @@
         </button>
         <g:link uri="/" class="navbar-brand" style="font-weight:bold;">
           <g:message code="gokb.appname" default="GOKb"/> v<g:meta name="info.app.version" />
-          <g:if test="${grailsApplication.config.gokb.instance?.description}">
-            – ${grailsApplication.config.gokb.instance?.description}
+          <g:if test="${grailsApplication.config.getProperty('gokb.instance.description')}">
+            – ${grailsApplication.config.getProperty('gokb.instance.description')}
           </g:if>
         </g:link>
       </div>

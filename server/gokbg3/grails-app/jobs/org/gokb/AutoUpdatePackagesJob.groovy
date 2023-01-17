@@ -17,7 +17,7 @@ class AutoUpdatePackagesJob {
   }
 
   def execute() {
-    if (grailsApplication.config.gokb.packageUpdate.enabled) {
+    if (grailsApplication.config.getProperty('gokb.packageUpdate.enabled', Boolean, false)) {
       log.debug("Beginning scheduled auto update packages job.")
       def status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
       // find all updateable packages
@@ -55,7 +55,7 @@ class AutoUpdatePackagesJob {
       log.debug("automatic package update is not enabled - set config.gokb.packageUpdate_enabled = true in config to enable")
     }
 
-    if (grailsApplication.config.gokb.ezbOpenCollections?.enabled) {
+    if (grailsApplication.config.getProperty('gokb.ezbOpenCollections.enabled', Boolean, false)) {
       log.debug("Beginning scheduled ezb package update job.")
       ezbCollectionService.startUpdate()
     }

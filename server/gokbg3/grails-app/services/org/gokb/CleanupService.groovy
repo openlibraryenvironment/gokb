@@ -124,7 +124,7 @@ class CleanupService {
           def expunge_result = component.expunge()
           log.debug("${expunge_result}")
           if (ESSearchService.indicesPerType[component.class.getSimpleName()]){
-            DeleteRequest req = new DeleteRequest(grailsApplication.config.gokb.es.indices[ESSearchService.indicesPerType[component.class.getSimpleName()]], c_id)
+            DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType[component.class.getSimpleName()], c_id))
             def es_response = esclient.delete(req, RequestOptions.DEFAULT)
             log.debug("${es_response}")
           }
@@ -733,7 +733,7 @@ class CleanupService {
         def oid = "${kbc.class.name}:${it}"
 
         if (ESSearchService.indicesPerType[kbc.class.getSimpleName()]){
-          DeleteRequest req = new DeleteRequest(grailsApplication.config.gokb.es.indices[ESSearchService.indicesPerType[component.class.getSimpleName()]], oid)
+          DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType[component.class.getSimpleName()], oid))
           def es_response = esclient.delete(req, RequestOptions.DEFAULT)
         }
       }

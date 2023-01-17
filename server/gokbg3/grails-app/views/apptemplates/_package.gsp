@@ -95,12 +95,12 @@
           <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span>
         </a></li>
         <li><a href="#relationships" data-toggle="tab">Relations</a></li>
-        <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}">
+        <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}">
           <li role="presentation"><a href="#ds" data-toggle="tab">Decision Support</a></li>
         </g:if>
         <li role="presentation"><a href="#activity" data-toggle="tab">Activity</a></li>
         <li role="presentation"><a href="#review" data-toggle="tab">Review Requests</a></li>
-        <g:if test="${grailsApplication.config.gokb.costInfo}">
+        <g:if test="${grailsApplication.config.getProperty('gokb.costInfo', Boolean, false)}">
           <li role="presentation"><a href="#pkgCosts" data-toggle="tab">Package Cost Info</a></li>
         </g:if>
       </g:if>
@@ -109,12 +109,12 @@
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Identifiers </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Relations </span></li>
-        <g:if test="${grailsApplication.config.gokb.decisionSupport?.active}">
+        <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}">
           <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Decision Support </span></li>
         </g:if>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Activity </span></li>
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Review Requests </span></li>
-        <g:if test="${grailsApplication.config.gokb.costInfo}">
+        <g:if test="${grailsApplication.config.getProperty('gokb.costInfo', Boolean, false)}">
           <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Package Cost Info </span></li>
         </g:if>
       </g:else>

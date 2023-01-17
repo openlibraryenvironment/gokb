@@ -79,7 +79,7 @@
             </ul>
           </li>
         </g:if>
-        <g:if test="${grailsApplication.config.feature.directUpload}">
+        <g:if test="${grailsApplication.config.getProperty('feature.directUpload', Boolean, false)}">
           <li class="${params?.controller == "savedItems" ? 'active' : ''}" ><g:link controller="savedItems" action="index"><i class="fa fa-folder fa-fw"></i> Saved Items</g:link></li>
           <sec:ifAnyGranted roles="ROLE_EDITOR, ROLE_CONTRIBUTOR, ROLE_ADMIN, ROLE_SUPERUSER">
           <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
@@ -128,7 +128,7 @@
           </li>
           <li class="${params?.controller == "home" && params?.action == 'about' ? 'active' : ''}" ><g:link controller="home" action="about"><i class="fa fa-info fa-fw"></i> Operating environment</g:link></li>
         </sec:ifAnyGranted>
-        <g:if test="${ grailsApplication.config.gokb.decisionSupport}">
+        <g:if test="${ grailsApplication.config.getProperty('gokb.decisionSupport', Boolean, false)}">
           <sec:ifAnyGranted roles="ROLE_EDITOR">
             <li><g:link controller="decisionSupport"><i class="fa fa-search fa-fw"></i> Decision Support Dashboard</g:link></li>
           </sec:ifAnyGranted>

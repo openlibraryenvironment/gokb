@@ -1572,7 +1572,7 @@ class PackageService {
   }
 
   private String exportFilePath() {
-    String exportPath = grailsApplication.config.gokb.tsvExportTempDirectory ?: "/tmp/gokb/export"
+    String exportPath = grailsApplication.config.getProperty('gokb.tsvExportTempDirectory') ?: "/tmp/gokb/export"
     Files.createDirectories(Paths.get(exportPath))
     exportPath.endsWith('/') ? exportPath : exportPath + '/'
   }

@@ -36,7 +36,7 @@ class TippController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -67,7 +67,7 @@ class TippController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
     def is_curator = true
     User user = null
 

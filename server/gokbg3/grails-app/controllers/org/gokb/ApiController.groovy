@@ -596,7 +596,7 @@ class ApiController {
   def esconfig () {
 
     // If etag matches then we can just return the 304 to denote that the resource is unchanged.
-    render grailsApplication.config.searchApi as JSON
+    render grailsApplication.config.getProperty('searchApi', Map, [:]) as JSON
   }
 
   private static final Closure SERVER_VERSION_ETAG_DSL = {

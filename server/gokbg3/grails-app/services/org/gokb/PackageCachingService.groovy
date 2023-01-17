@@ -47,7 +47,7 @@ class PackageCachingService {
   private def updatePackageCaches(force, job) {
     def result = 'OK'
     def attr = [:]
-    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    File dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
     boolean cancelled = false
     File tempDir = new File('/tmp/gokb/oai/')
     job?.startTime = new Date()
@@ -69,7 +69,7 @@ class PackageCachingService {
             }
 
             attr["xmlns:gokb"] = 'http://gokb.org/oai_metadata/'
-            def identifier_prefix = "uri://gokb/${grailsApplication.config.sysid}/title/"
+            def identifier_prefix = "uri://gokb/${grailsApplication.config.getProperty('sysid')}/title/"
 
             def fileName = "${item.uuid}_${dateFormatService.formatIsoMsTimestamp(item.lastUpdated)}.xml"
             File cachedRecord = new File("${dir}/${fileName}")
@@ -365,7 +365,7 @@ class PackageCachingService {
 
   private boolean removeCacheEntriesForItem(uuid) {
     boolean result = true
-    File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
+    File dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
     File[] files = dir.listFiles()
 
     for (def file : files) {

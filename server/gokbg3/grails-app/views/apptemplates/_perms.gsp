@@ -24,13 +24,13 @@
       <td>${ent.permission.mask}</td>
       <td>${ent.permission.pattern}</td>
       -->
-      <td>${grailsApplication.config.permNames[ent.permission.mask]?.name}</td>
+      <td>${grailsApplication.config.getProperty('permNames.' + ent.permission.mask, Map, [:])?.name}</td>
       <td>
         <g:if test="${ent.sid instanceof org.springframework.security.acls.domain.PrincipalSid}">
-          <g:link controller="ajaxSupport" action="revoke" params="${[__context:d.class.name+':'+d.id,grantee:ent.sid.principal,perm:grailsApplication.config.permNames[ent.permission.mask].name]}">Revoke</g:link>
+          <g:link controller="ajaxSupport" action="revoke" params="${[__context:d.class.name+':'+d.id,grantee:ent.sid.principal,perm:grailsApplication.config.getProperty('permNames.' + ent.permission.mask, Map, [:])?.name]}">Revoke</g:link>
         </g:if>
         <g:else>
-          <g:link controller="ajaxSupport" action="revoke" params="${[__context:d.class.name+':'+d.id,grantee:ent.sid.grantedAuthority,perm:grailsApplication.config.permNames[ent.permission.mask].name]}">Revoke</g:link>
+          <g:link controller="ajaxSupport" action="revoke" params="${[__context:d.class.name+':'+d.id,grantee:ent.sid.grantedAuthority,perm:grailsApplication.config.getProperty('permNames.' + ent.permission.mask, Map, [:])?.name]}">Revoke</g:link>
         </g:else>
       </td>
     </tr>

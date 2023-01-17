@@ -139,7 +139,7 @@ class ESSearchService{
       log.debug("Start to build search request. Query: ${query_str}")
       SearchResponse searchResponse
       try{
-        SearchRequest searchRequest = new SearchRequest(params.componentType ? [grailsApplication.config?.gokb?.es?.indices[indicesPerType[params.componentType]]] as String[] : grailsApplication.config?.gokb?.es?.indices?.values() as String[])
+        SearchRequest searchRequest = new SearchRequest(params.componentType ? [grailsApplication.config.getProperty('gokb.es.indices.' + indicesPerType[params.componentType])] as String[] : grailsApplication.config.getProperty('gokb.es.indices', Map).values() as String[])
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         TermsAggregationBuilder pragg = AggregationBuilders.terms("provider").field("provider")
         TermsAggregationBuilder cgagg = AggregationBuilders.terms("curatoryGroups").field("curatoryGroups")
@@ -649,7 +649,7 @@ class ESSearchService{
 
     for (def ct in usedComponentTypes.keySet()){
       if (ct in indicesPerType.keySet()){
-        usedComponentTypes."${ct}" = grailsApplication.config.gokb.es.indices[indicesPerType.get(ct)]
+        usedComponentTypes."${ct}" = grailsApplication.config.getProperty('gokb.es.indices.' + indicesPerType.get(ct))
       }
       else{
         result.result = "ERROR"
@@ -699,9 +699,7 @@ class ESSearchService{
           exactQuery.must(statusQuery)
         }
 
-        SearchRequest searchRequest = new SearchRequest(component_type ? [
-          grailsApplication.config.gokb.es.indices[indicesPerType[component_type]]] as String[] :
-          grailsApplication.config.gokb.es.indices.values() as String[])
+        SearchRequest searchRequest = new SearchRequest(component_type ? [grailsApplication.config.getProperty('gokb.es.indices.' + indicesPerType[component_type])] as String[] : grailsApplication.config.getProperty('gokb.es.indices', Map).values() as String[])
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         searchSourceBuilder.trackTotalHits(true)
         searchSourceBuilder.query(exactQuery)
@@ -929,7 +927,7 @@ class ESSearchService{
 
   private Map mapEsToDomain(record, params, def user = null) {
     def domainMapping = [:]
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
     def linkedObjects = [:]
     def embed_active = params['_embed']?.split(',') ?: []
     def include_list = params['_include']?.split(',') ?: null
@@ -1076,7 +1074,7 @@ class ESSearchService{
    */
 
   private def convertEsLinks(es_result, params, component_endpoint) {
-    def base = grailsApplication.config.serverURL + "/rest" + "${component_endpoint}"
+    def base = grailsApplication.config.getProperty('serverURL') + "/rest" + "${component_endpoint}"
 
     es_result['_links'] = [:]
     es_result['data'] = es_result.records
@@ -1162,7 +1160,7 @@ class ESSearchService{
    */
 
   private def mapCuratoryGroups(domainMapping, cgs) {
-    def base = grailsApplication.config.serverURL + "/rest"
+    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
 
     domainMapping['_embedded']['curatoryGroups'] = []
     cgs.each { cg ->
@@ -1269,9 +1267,9 @@ class ESSearchService{
     if (!params || !params.q){
       return null
     }
-    int port = grailsApplication.config.searchApi.port
-    def indices = grailsApplication?.config?.gokb?.es?.indices?.values()
-    String host = grailsApplication?.config?.gokb?.es?.host
+    int port = grailsApplication.config.getProperty('searchApi.port')
+    def indices = grailsApplication.config.getProperty('gokb.es.indices', Map).values() as String[]
+    String host = grailsApplication.config.getProperty('gokb.es.host')
     String url = "http://${host}:${port}/${indices.join(',')}/_search?q=${params.q}"
     if (params.size){
       url = url + "&size=${params.size}"
