@@ -3,11 +3,13 @@ package org.gokb.cred
 class CuratoryGroup extends KBComponent {
 
   static belongsTo = User
+  static final String RDC_ORGA_TYPE = "CuratoryGroup.OrganizationType"
 
   User owner
   String email
   CuratoryGroupType type
   CuratoryGroup superordinatedGroup
+  RefdataValue organizationType
 
   static hasMany = [
     users: User,
@@ -16,6 +18,7 @@ class CuratoryGroup extends KBComponent {
 
   static mapping = {
     includes KBComponent.mapping
+    organizationType column:'cg_orgatype_fk_rv'
   }
 
   static mappedBy = [users: "curatoryGroups", subordinatedGroups: "superordinatedGroup"]
@@ -57,7 +60,14 @@ class CuratoryGroup extends KBComponent {
     email (nullable: true, blank: false, email: true)
     superordinatedGroup (nullable:true, blank:false)
     subordinatedGroups (empty:true)
+    organizationType (nullable: true, blank: false)
   }
+
+
+  private static refdataDefaults = [
+    "organizationType"		: "Library"
+  ]
+
 
   public String getRestPath() {
     return "/curatoryGroups";
