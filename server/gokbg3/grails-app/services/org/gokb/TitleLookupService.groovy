@@ -311,7 +311,7 @@ class TitleLookupService {
           def active_ids = Identifier.executeQuery('from Identifier as i where exists (select 1 from Combo where toComponent = i and fromComponent = :title and status = :ca)', [title: matches[0], ca: status_active])
 
           active_ids.each { mid ->
-            if (rid.namespace == mid.namespace && rid.value != mid.value) {
+            if (mid.namespace.value in grailsApplication.config.identifiers.class_ones && rid.namespace == mid.namespace && rid.value != mid.value) {
               if (!active_ids.contains(rid)) {
                 id_mismatches.add([incoming: rid, matched: mid])
               }
@@ -377,7 +377,7 @@ class TitleLookupService {
 
           results['ids'].each { rid ->
             active_ids.each { mid ->
-              if (rid.namespace == mid.namespace && rid.value != mid.value) {
+              if (mid.namespace.value in grailsApplication.config.identifiers.class_ones && rid.namespace == mid.namespace && rid.value != mid.value) {
                 if (!active_ids.contains(rid)) {
                   full_match = false
                   id_conflicts.add([
@@ -677,7 +677,7 @@ class TitleLookupService {
 
         results['ids'].each { rid ->
           active_ids.each { mid ->
-            if (rid.namespace == mid.namespace && rid.value != mid.value) {
+            if (mid.namespace.value in grailsApplication.config.identifiers.class_ones && rid.namespace == mid.namespace && rid.value != mid.value) {
               if (!active_ids.contains(rid)) {
                 id_mismatches.add(rid)
               } else {
@@ -818,7 +818,7 @@ class TitleLookupService {
 
           results['ids'].each { rid ->
             active_ids.each { mid ->
-              if (rid.namespace == mid.namespace && rid.value != mid.value) {
+              if (mid.namespace.value in grailsApplication.config.identifiers.class_ones && rid.namespace == mid.namespace && rid.value != mid.value) {
                 if (!active_ids.contains(rid)) {
                   full_match = false
                 }
