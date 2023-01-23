@@ -441,13 +441,12 @@ class ValidationService {
   def checkAccessType(String value) {
     def final_val = null
 
-    if (value?.toLowerCase() in ['p', 'paid']) {
+    if (value in ['P', 'p']) {
       final_val = 'P'
     }
-    else if (value?.toLowerCase() in ['f', 'free']) {
+    else if (value in ['F', 'f']) {
       final_val = 'F'
     }
-
     final_val
   }
 

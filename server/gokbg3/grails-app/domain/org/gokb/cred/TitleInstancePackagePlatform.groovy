@@ -70,7 +70,6 @@ class TitleInstancePackagePlatform extends KBComponent {
       "delayedOA"    : "Unknown",
       "hybridOA"     : "Unknown",
       "primary"      : "No",
-      "paymentType"  : "Paid",
       "coverageDepth": "Fulltext"
   ]
 

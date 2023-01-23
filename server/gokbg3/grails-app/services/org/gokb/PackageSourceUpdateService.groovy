@@ -230,7 +230,7 @@ class PackageSourceUpdateService {
                                                              (user ? true : false),
                                                              false,
                                                              user,
-                                                             activeGroup,
+                                                             preferred_group,
                                                              false,
                                                              job)
                 }
@@ -242,7 +242,7 @@ class PackageSourceUpdateService {
                                                       (user ? true : false),
                                                       false,
                                                       user,
-                                                      activeGroup,
+                                                      preferred_group,
                                                       false,
                                                       j)
                   }

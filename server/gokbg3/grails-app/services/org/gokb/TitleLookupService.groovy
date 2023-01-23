@@ -309,7 +309,7 @@ class TitleLookupService {
 
         results['ids'].each { rid ->
           active_ids.each { mid ->
-            if (rid.namespace == mid.namespace && rid.value != mid.value) {
+            if (mid.namespace.value in grailsApplication.config.getProperty('identifiers.class_ones', Collection) && rid.namespace == mid.namespace && rid.value != mid.value) {
               if (!active_ids.contains(rid)) {
                 id_mismatches.add([incoming: rid, matched: mid])
               }
@@ -375,7 +375,7 @@ class TitleLookupService {
 
           results['ids'].each { rid ->
             active_ids.each { mid ->
-              if (rid.namespace == mid.namespace && rid.value != mid.value) {
+              if (mid.namespace.value in grailsApplication.config.getProperty('identifiers.class_ones', Collection) && rid.namespace == mid.namespace && rid.value != mid.value) {
                 if (!active_ids.contains(rid)) {
                   full_match = false
                   id_conflicts.add([
@@ -675,7 +675,7 @@ class TitleLookupService {
 
           results['ids'].each { rid ->
             active_ids.each { mid ->
-              if (rid.namespace.id == mid.namespace.id && rid.value != mid.value) {
+              if (mid.namespace.value in grailsApplication.config.getProperty('identifiers.class_ones', Collection) && rid.namespace.id == mid.namespace.id && rid.value != mid.value) {
                 if (!matches[0].ids.contains(rid)) {
                   id_mismatches.add(rid)
                 } else {
@@ -816,7 +816,7 @@ class TitleLookupService {
 
             results['ids'].each { rid ->
               active_ids.each { mid ->
-                if (rid.namespace == mid.namespace && rid.value != mid.value) {
+                if (mid.namespace.value in grailsApplication.config.getProperty('identifiers.class_ones', Collection) && rid.namespace == mid.namespace && rid.value != mid.value) {
                   if (!mti.ids.contains(rid)) {
                     full_match = false
                   }
