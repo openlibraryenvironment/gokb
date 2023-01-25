@@ -50,4 +50,9 @@ class LanguagesService{
     }
   }
 
+
+  Map getLanguages(){
+    languages
+  }
+
 }
