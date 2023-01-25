@@ -155,23 +155,6 @@ class CleanupService {
     return new Date();
   }
 
-  // @Transactional
-  // def expungeDeletedComponents(Job j = null) {
-
-  //   log.debug("Process delete candidates");
-
-  //   def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-
-  //   def delete_candidates = KBComponent.executeQuery('select kbc.id from KBComponent as kbc where kbc.status=:deletedStatus and kbc.duplicateOf IS NULL',[deletedStatus: status_deleted])
-
-  //   def result = expungeByIds(delete_candidates, j)
-
-  //   log.debug("Done")
-  //   j.endTime = new Date()
-
-  //   return result
-  // }
-
   @Transactional
   def expungeRejectedComponents(Job j = null) {
 
