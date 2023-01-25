@@ -225,6 +225,7 @@ class TitleLookupService {
     TitleInstance the_title = null
     Class ti_class = Class.forName(newTitleClassName)
     def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
 
     // Lookup any class 1 identifier matches
     def results = class_one_match(identifiers, ti_class)
@@ -311,7 +312,7 @@ class TitleLookupService {
           def active_ids = Identifier.executeQuery('from Identifier as i where exists (select 1 from Combo where toComponent = i and fromComponent = :title and status = :ca)', [title: matches[0], ca: status_active])
 
           active_ids.each { mid ->
-            if (mid.namespace.value in grailsApplication.config.identifiers.class_ones && rid.namespace == mid.namespace && rid.value != mid.value) {
+            if (mid.namespace.value in class_one_ids && rid.namespace == mid.namespace && rid.value != mid.value) {
               if (!active_ids.contains(rid)) {
                 id_mismatches.add([incoming: rid, matched: mid])
               }
@@ -377,7 +378,7 @@ class TitleLookupService {
 
           results['ids'].each { rid ->
             active_ids.each { mid ->
-              if (mid.namespace.value in grailsApplication.config.identifiers.class_ones && rid.namespace == mid.namespace && rid.value != mid.value) {
+              if (mid.namespace.value in class_one_ids && rid.namespace == mid.namespace && rid.value != mid.value) {
                 if (!active_ids.contains(rid)) {
                   full_match = false
                   id_conflicts.add([
@@ -481,6 +482,7 @@ class TitleLookupService {
     // The TitleInstance
     TitleInstance the_title = null
     Class ti_class = Class.forName(newTitleClassName)
+    Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
     def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def rr_map = [:]
     def title_created = false
@@ -677,7 +679,7 @@ class TitleLookupService {
 
         results['ids'].each { rid ->
           active_ids.each { mid ->
-            if (mid.namespace.value in grailsApplication.config.identifiers.class_ones && rid.namespace == mid.namespace && rid.value != mid.value) {
+            if (mid.namespace.value in class_one_ids && rid.namespace == mid.namespace && rid.value != mid.value) {
               if (!active_ids.contains(rid)) {
                 id_mismatches.add(rid)
               } else {
@@ -818,7 +820,7 @@ class TitleLookupService {
 
           results['ids'].each { rid ->
             active_ids.each { mid ->
-              if (mid.namespace.value in grailsApplication.config.identifiers.class_ones && rid.namespace == mid.namespace && rid.value != mid.value) {
+              if (mid.namespace.value in class_one_ids && rid.namespace == mid.namespace && rid.value != mid.value) {
                 if (!active_ids.contains(rid)) {
                   full_match = false
                 }
