@@ -31,9 +31,9 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
       service.checkAccessType("P") == 'P'
   }
 
-  void "test checkAccessType with interpreted match"() {
+  void "test checkAccessType with previously interpreted match"() {
     expect:
-      service.checkAccessType("Paid") == 'P'
+      service.checkAccessType("Paid") == null
   }
 
   void "test checkAccessType with invalid value"() {

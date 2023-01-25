@@ -162,6 +162,7 @@ class ValidationService {
     ],
     zdb_id: [
       mandatory: false,
+      pubType: "Serial",
       namespaces: [
         'Serial': 'zdb',
       ],
@@ -400,12 +401,28 @@ class ValidationService {
       ]
     }
 
-    if (!col_positions['online_identifier'] && !col_positions['print_identifier'] && !col_positions['title_id']) {
-      result.errors["noIds"] = [
-        message: "This row contains no usable identifiers and will not be processed!",
-        messageCode: "kbart.errors.noIds",
-        args: []
-      ]
+    if (!col_positions['online_identifier'] && !col_positions['print_identifier']) {
+      if (!col_positions['title_id']) {
+        result.errors["noIds"] = [
+          message: "This row contains no usable identifiers!",
+          messageCode: "kbart.errors.noIds",
+          args: []
+        ]
+      }
+      else if (!strict && !titleIdNamespace && (pubType != 'Serial' || !col_positions['zdb_id'])) {
+        result.errors["noIds"] = [
+          message: "This row contains no usable identifiers and will not be processed!",
+          messageCode: "kbart.errors.noIds",
+          args: []
+        ]
+      }
+      else {
+        result.warnings["noIds"] = [
+          message: "This row contains neither a 'print_identifier', nor an 'online identifier'!",
+          messageCode: "kbart.errors.noAuthIds",
+          args: []
+        ]
+      }
     }
 
     if (col_positions['date_first_issue_online'] && col_positions['date_last_issue_online']) {
