@@ -500,7 +500,7 @@ class IngestKbartRun {
 
         def titleClass = TitleInstance.determineTitleClass(the_kbart.publication_type)
 
-        if (titleClass && identifiers.size() > 0) {
+        if (titleClass) {
           result = manualUpsertTIPP(the_kbart,
               platform,
               ingest_date,
@@ -508,9 +508,7 @@ class IngestKbartRun {
               identifiers)
         }
         else {
-          log.debug("Skipping row - no identifiers")
-          badRows.add([rowdata: the_kbart, message: 'No usable identifiers'])
-          result = 'invalid'
+          log.error("Unable to reference title class!")
         }
 
     } else {
