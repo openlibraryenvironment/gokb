@@ -461,7 +461,7 @@ class FTUpdateService {
 
   def updateSingleItem(kbc) {
     def idx_record = buildEsRecord(kbc)
-    def es_index = ESSearchService.indicesPerType.get(idx_record['componentType'])
+    def es_index = grailsApplication.config.gokb.es.indices[ESSearchService.indicesPerType.get(idx_record['componentType'])]
 
     if (idx_record != null) {
       def recid = idx_record['_id'].toString()
