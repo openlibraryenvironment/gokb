@@ -808,7 +808,7 @@ class IngestKbartRun {
         log.debug("match platform found: ${result}")
         break
       default:
-        log.error("found multiple platforms when looking for ${host}")
+        log.debug("found multiple platforms when looking for ${host}")
       break
     }
 
@@ -950,7 +950,7 @@ class IngestKbartRun {
     def result = validationService.checkRow(row_data, rownum, col_positions, providerIdentifierNamespace)
 
     if (result.errors) {
-      log.error("Recording bad row ${rownum}: ${result.errors}")
+      log.debug("Recording bad row ${rownum}: ${result.errors}")
       valid = false
       badRows.add([rowdata: row_data, errors: result.errors, row: rownum])
     }
