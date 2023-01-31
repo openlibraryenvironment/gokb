@@ -292,20 +292,6 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
-  def cleanup() {
-    Job j = concurrencyManagerService.createJob { Job j ->
-      cleanupService.expungeDeletedComponents(j)
-    }.startOrQueue()
-
-    log.debug "Triggering cleanup task. Started job #${j.uuid}"
-
-    j.description = "Cleanup Deleted Components"
-    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'CleanupDeletedComponents')
-    j.startTime = new Date()
-
-    render(view: "logViewer", model: logViewer())
-  }
-
   def cleanupRejected() {
     Job j = concurrencyManagerService.createJob { Job j ->
       cleanupService.expungeRejectedComponents(j)

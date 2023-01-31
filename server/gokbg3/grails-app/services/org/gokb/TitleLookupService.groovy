@@ -224,6 +224,7 @@ class TitleLookupService {
     TitleInstance the_title = null
     Class ti_class = Class.forName(newTitleClassName)
     def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
 
     // Lookup any class 1 identifier matches
     def results = class_one_match(identifiers, ti_class)
@@ -316,7 +317,6 @@ class TitleLookupService {
             }
           }
         }
-
 
         // Take whatever we can get if what we have is an unknown title
         if (title?.startsWith("Unknown Title")) {
@@ -479,6 +479,7 @@ class TitleLookupService {
     // The TitleInstance
     TitleInstance the_title = null
     Class ti_class = Class.forName(newTitleClassName)
+    Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
     def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def rr_map = [:]
     def title_created = false
@@ -897,7 +898,8 @@ class TitleLookupService {
               if (matched_with_name.size() == 1) {
                 log.debug("Only one matched TI (${matched_with_name[0]}) has the same name!")
                 the_title = matched_with_name[0]
-              } else {
+              }
+              else {
                 log.debug("Could not match a specific title. Selection needs review")
                 def matched_sorted = matched_with_name?.size() > 0 ? matched_with_name.sort { it.id } : all_matched.sort { it.id }
                 the_title = matched_sorted[0]
@@ -935,7 +937,6 @@ class TitleLookupService {
         if (the_title.validate()) {
 
           // addIdentifiers(results.ids, the_title)
-
           // addPublisher(metadata.publisher_name, the_title)
 
           if (the_title.name.startsWith("Unknown Title")) {
@@ -943,7 +944,6 @@ class TitleLookupService {
           }
 
           log.debug("${the_title.ids}")
-
 
           if (title_created) {
             the_title = the_title.save(flush: true)

@@ -507,7 +507,7 @@ class IngestKbartRun {
 
         def titleClass = TitleInstance.determineTitleClass(the_kbart.publication_type)
 
-        if (titleClass && identifiers.size() > 0) {
+        if (titleClass) {
           result = manualUpsertTIPP(the_kbart,
               platform,
               ingest_date,
@@ -515,9 +515,7 @@ class IngestKbartRun {
               identifiers)
         }
         else {
-          log.debug("Skipping row - no identifiers")
-          badRows.add([rowdata: the_kbart, message: 'No usable identifiers'])
-          result = 'invalid'
+          log.error("Unable to reference title class!")
         }
 
     } else {
@@ -821,7 +819,7 @@ class IngestKbartRun {
         log.debug("match platform found: ${result}")
         break
       default:
-        log.error("found multiple platforms when looking for ${host}")
+        log.debug("found multiple platforms when looking for ${host}")
       break
     }
 
@@ -963,7 +961,7 @@ class IngestKbartRun {
     def result = validationService.checkRow(row_data, rownum, col_positions, providerIdentifierNamespace)
 
     if (result.errors) {
-      log.error("Recording bad row ${rownum}: ${result.errors}")
+      log.debug("Recording bad row ${rownum}: ${result.errors}")
       valid = false
       badRows.add([rowdata: row_data, errors: result.errors, row: rownum])
     }
