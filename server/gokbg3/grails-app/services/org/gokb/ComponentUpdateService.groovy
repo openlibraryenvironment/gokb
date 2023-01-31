@@ -376,6 +376,9 @@ class ComponentUpdateService {
       else if (obj.allocatedGroups?.group.id.intersect(user.curatoryGroups?.id)) {
         curator = true
       }
+      else if (!obj.allocatedGroups && user.contributorStatus) {
+        curator = true
+      }
     }
     else {
       curator = true
