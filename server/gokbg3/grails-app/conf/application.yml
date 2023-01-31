@@ -177,6 +177,9 @@ environments:
                 rrCurators: EZB
                 cron: "0 30 2 ? * MON,TUE,WED,THU,FRI *"
                 breakInMs: 1000
+            ezbOpenCollections:
+                enabled: false
+                url: https://ezb-api.ur.de/collections/v1/
             es:
                 host: localhost
                 ports:

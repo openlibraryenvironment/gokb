@@ -83,6 +83,7 @@ class UrlMappings {
       post "/identifiers"(controller: 'identifier', namespace: 'rest', action: 'save')
       get "/identifiers"(controller: 'identifier', namespace: 'rest', action: 'index')
       get "/identifier-namespaces"(controller: 'identifier', namespace: 'rest', action: 'namespace')
+      get "/languages"(controller: 'language', namespace: 'rest', action: 'index')
 
       get "/profile"(controller: 'profile', namespace: 'rest', action: 'show')
       get "/profile/jobs/"(controller: 'profile', namespace: 'rest', action: 'getJobs')
