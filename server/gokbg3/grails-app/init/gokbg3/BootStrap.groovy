@@ -1020,11 +1020,11 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Source.DataFormat', 'KBART').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Source.DataFormat', 'Proprietary').save(flush: true, failOnError: true)
 
-        RefdataCategory.lookupOrCreate('Source.Frequency', 'Daily', '100').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Source.Frequency', 'Weekly', '200').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Source.Frequency', 'Monthly', '300').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Source.Frequency', 'Quarterly', '400').save(flush: true, failOnError: true)
-        RefdataCategory.lookupOrCreate('Source.Frequency', 'Yearly', '500').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Source.Frequency', 'Daily', '001').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Source.Frequency', 'Weekly', '007').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Source.Frequency', 'Monthly', '030').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Source.Frequency', 'Quarterly', '090').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Source.Frequency', 'Yearly', '365').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate('RDFDataType', 'uri').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('RDFDataType', 'string').save(flush: true, failOnError: true)

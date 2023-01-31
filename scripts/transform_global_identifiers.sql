@@ -1,5 +1,5 @@
 # CHECK BEFORE
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'global'
   AND id.id_value LIKE '%gnd%';
@@ -13,14 +13,14 @@ WHERE id.id_value LIKE '%d-nb.info/gnd/%'
   AND idns2.idns_value LIKE 'gnd-id';
 
 # CHECK AFTER
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'gnd-id';
 
 
 
 # CHECK BEFORE
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'global'
   AND id.id_value LIKE '%dbpedia.org/resource/%';
@@ -34,12 +34,12 @@ WHERE id.id_value LIKE '%dbpedia.org/resource/%'
   AND idns2.idns_value LIKE 'dbpedia';
 
 # CHECK AFTER
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'dbpedia';
 
 # CHECK AFTER FOR ORGS
-SELECT * FROM kbcomponent AS kbc, combo AS com, identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc.kbc_id) FROM kbcomponent AS kbc, combo AS com, identifier AS id, identifier_namespace AS idns
 WHERE com.combo_from_fk = kbc.kbc_id
   AND com.combo_to_fk = id.kbc_id
   AND id.id_namespace_fk = idns.id
@@ -48,11 +48,11 @@ WHERE com.combo_from_fk = kbc.kbc_id
 
 
 # CHECK BEFORE
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'global'
   AND id.id_value LIKE '%id.loc.gov/authorities/names/%';
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'loc';
 
@@ -71,7 +71,7 @@ WHERE com.combo_from_fk = kbc.kbc_id
   AND com.combo_to_fk = id.kbc_id
   AND id.id_namespace_fk = idns.id
   AND idns.idns_value = 'loc';
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'loc';
 
@@ -79,11 +79,11 @@ WHERE id.id_namespace_fk = idns.id
 
 
 # CHECK BEFORE
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'global'
   AND id.id_value LIKE '%www.lib.ncsu.edu/ld/onld/%';
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'ncsu';
 
@@ -96,14 +96,14 @@ WHERE id.id_value LIKE '%www.lib.ncsu.edu/ld/onld/%'
   AND idns2.idns_value LIKE 'ncsu';
 
 # CHECK AFTER
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'ncsu';
 
 
 
 # CHECK BEFORE
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'global'
   AND id.id_value LIKE '%isni-url.oclc.nl/isni/%';
@@ -117,14 +117,14 @@ WHERE id.id_value LIKE '%isni-url.oclc.nl/isni/%'
   AND idns2.idns_value LIKE 'isni';
 
 # CHECK AFTER
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'isni';
 
 
 
 # CHECK BEFORE
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'global'
   AND id.id_value LIKE '%viaf.org/viaf/%';
@@ -138,14 +138,14 @@ WHERE id.id_value LIKE '%viaf.org/viaf/%'
   AND idns2.idns_value LIKE 'viaf';
 
 # CHECK AFTER
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'viaf';
 
 
 
 # CHECK BEFORE
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'global'
   AND id.id_value LIKE '%www.wikidata.org/wiki/%';
@@ -159,6 +159,6 @@ WHERE id.id_value LIKE '%www.wikidata.org/wiki/%'
   AND idns2.idns_value LIKE 'wikidata';
 
 # CHECK AFTER
-SELECT * FROM identifier AS id, identifier_namespace AS idns
+SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id
   AND idns.idns_value = 'wikidata';
