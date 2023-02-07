@@ -1630,9 +1630,9 @@ class PackageService {
     record.date_monograph_published_online = selectDateField(tipp.dateFirstOnline, tipp.title?.hasProperty('dateFirstOnline') ? tipp.title.dateFirstOnline : null, exportType)
     record.monograph_volume = pick(tipp.volumeNumber, tipp.title?.hasProperty('volumeNumber') ? tipp.title.volumeNumber : null, exportType)
     record.monograph_edition = pick(tipp.editionStatement, tipp.title?.hasProperty('editionStatement') ? tipp.title.editionStatement : null, exportType)
-    record.title_id = pick(tipp.importId, tipp.title?.id, exportType)
+    record.title_id = tipp.importId
     record.publisher_name = pick(tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
-    record.preceding_publication_title_id = pick(tipp.precedingPublicationTitleId, tipp.title?.getPrecedingTitleId(), exportType)
+    record.preceding_publication_title_id = tipp.precedingPublicationTitleId
     record.parent_publication_title_id = tipp.parentPublicationTitleId
     record.access_type = pick((tipp.paymentType && ['OA','Uncharged'].contains(tipp.paymentType.value) ? 'F' : 'P'), null, exportType)
     record.zdb_id = pick(tipp.getIdentifierValue('ZDB'), tipp.title?.getIdentifierValue('ZDB'), exportType)
