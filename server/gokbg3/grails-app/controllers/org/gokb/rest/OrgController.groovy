@@ -256,6 +256,10 @@ class OrgController {
         }
         if (grailsApplication.config.gokb.ftupdate_enabled == true) {
           FTUpdateService.updateSingleItem(obj)
+
+          obj.providedPackages.each {
+            FTUpdateService.updateSingleItem(it)
+          }
         }
       }
       else {
