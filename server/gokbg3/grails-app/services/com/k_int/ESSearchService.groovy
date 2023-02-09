@@ -313,7 +313,13 @@ class ESSearchService{
   }
 
   private String sanitizeParam(String param) {
-    return param.replaceAll(":", "\\\\:").replaceAll("/", "\\\\/")
+    return param.replaceAll(":", "\\\\:").replaceAll("/", "\\\\/").replaceAll("[()]", " ")
+  }
+
+  private String escapeQueryString(String param) {
+    param = param.replaceAll(/[<>]/, "")
+    param = param.replaceAll(/([=!{}^])/, '\\\\$1')
+    return param
   }
 
   private void addDateQueries(query, errors, qpars) {
@@ -454,7 +460,8 @@ class ESSearchService{
       query.must(QueryBuilders.matchQuery('suggest', sanitized_param).operator(Operator.AND).boost(0.6f))
     }
     else if (qpars.qsName) {
-      def sanitized_param = sanitizeParam(qpars.qsName).replaceAll("[()]", " ")
+      def sanitized_param = sanitizeParam(qpars.qsName)
+      sanitized_param = escapeQueryString(sanitized_param)
 
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
       labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 8f))
@@ -462,7 +469,9 @@ class ESSearchService{
 
       // search in OR-mode, but for ALL terms across different name fields
       QueryBuilder splitQuery = QueryBuilders.boolQuery()
-      for (String word in sanitized_param.split(" ")) {
+      def querystring_filter = ['NOT', 'AND', 'OR', '&&', '||', '-', '+', '"', '~', '*', '?','/']
+
+      for (String word in sanitized_param.split(" ").findAll { !querystring_filter.contains(it) }) {
         splitQuery.must(QueryBuilders.queryStringQuery(word).fields(["name": 1.0f, "altname": 1.0f]))
       }
       labelQuery.should(splitQuery)
