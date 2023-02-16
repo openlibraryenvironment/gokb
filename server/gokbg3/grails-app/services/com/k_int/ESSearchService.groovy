@@ -469,10 +469,10 @@ class ESSearchService{
 
       // search in OR-mode, but for ALL terms across different name fields
       QueryBuilder splitQuery = QueryBuilders.boolQuery()
-      def querystring_filter = ['NOT', 'AND', 'OR', '&&', '||', '-', '+', '"', '~', '*', '?','/']
+      String[] fields = ['name', 'altname']
 
-      for (String word in sanitized_param.split(" ").findAll { !querystring_filter.contains(it) }) {
-        splitQuery.must(QueryBuilders.queryStringQuery(word).fields(["name": 1.0f, "altname": 1.0f]))
+      for (String word in sanitized_param.split(" ")) {
+        splitQuery.must(QueryBuilders.multiMatchQuery(word, fields))
       }
       labelQuery.should(splitQuery)
 
