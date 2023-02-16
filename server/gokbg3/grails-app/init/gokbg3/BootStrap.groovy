@@ -301,16 +301,16 @@ class BootStrap {
                     targetType: targetTypeOrg,
                     pattern: "^(Q|Property:P|Lexeme:L)\\d{1,10}\$",
                     baseUrl: "https://www.wikidata.org/wiki/"
-                ]
-            ]
-
-            if (grailsApplication.config.getProperty('gokb.ezbOpenCollections.url')) {
-                namespaces << [
+                ],
+                [
                     value: 'ezb',
                     name: 'EZB-ID',
                     pattern: "^\\d+\$",
                     baseUrl: "https://ezb.uni-regensburg.de/detail.phtml?jour_id="
                 ]
+            ]
+
+            if (grailsApplication.config.getProperty('gokb.ezbOpenCollections.url')) {
                 namespaces << [
                     value: 'ezb-collection-id',
                     name: 'EZB Collection ID',
