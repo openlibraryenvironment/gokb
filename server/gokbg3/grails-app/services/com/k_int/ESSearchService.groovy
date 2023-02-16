@@ -313,7 +313,13 @@ class ESSearchService{
   }
 
   private String sanitizeParam(String param) {
-    return param.replaceAll(":", "\\\\:").replaceAll("/", "\\\\/")
+    return param.replaceAll(":", "\\\\:").replaceAll("/", "\\\\/").replaceAll("[()]", " ")
+  }
+
+  private String escapeQueryString(String param) {
+    param = param.replaceAll(/[<>]/, "")
+    param = param.replaceAll(/([=!{}^])/, '\\\\$1')
+    return param
   }
 
   private void addDateQueries(query, errors, qpars) {
@@ -455,13 +461,20 @@ class ESSearchService{
     }
     else if (qpars.qsName) {
       def sanitized_param = sanitizeParam(qpars.qsName)
-
-      sanitized_param = sanitized_param.replaceAll("[()]", " ")
+      sanitized_param = escapeQueryString(sanitized_param)
 
       QueryBuilder labelQuery = QueryBuilders.boolQuery()
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 8f))
+      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 5.2f))
 
-      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("name", 2f))
-      labelQuery.should(QueryBuilders.queryStringQuery(sanitized_param).defaultOperator(Operator.AND).field("altname", 1.3f))
+      // search in OR-mode, but for ALL terms across different name fields
+      QueryBuilder splitQuery = QueryBuilders.boolQuery()
+      String[] fields = ['name', 'altname']
+
+      for (String word in sanitized_param.split(" ")) {
+        splitQuery.must(QueryBuilders.multiMatchQuery(word, fields))
+      }
+      labelQuery.should(splitQuery)
 
       labelQuery.minimumShouldMatch(1)
 
@@ -965,7 +978,6 @@ class ESSearchService{
         ]
 
         def is_curator = true
-
         if (user && recordSource.curatoryGroups?.size() > 0) {
           is_curator = user?.curatoryGroups?.name.intersect(recordSource.curatoryGroups)
         }
@@ -976,9 +988,7 @@ class ESSearchService{
       }
 
       domainMapping['_embedded'] = [:]
-
       domainMapping['id'] = rec_id
-
       domainMapping['type'] = obj_cls.niceName
 
       recordSource.each { field, val ->
@@ -1114,7 +1124,6 @@ class ESSearchService{
       selfLink.removeQueryParam('componentType')
     }
     es_result['_links']['self'] = [href: selfLink.toString()]
-
 
     if (es_result.count > es_result.offset+es_result.max) {
       def nextLink = selfLink
