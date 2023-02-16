@@ -324,5 +324,6 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.status == HttpStatus.OK
     resp.body().job_result?.report?.partial == 2
     resp.body().job_result?.report?.retired == 2
+    resp.body().job_result?.report?.reviews > 0
   }
 }
