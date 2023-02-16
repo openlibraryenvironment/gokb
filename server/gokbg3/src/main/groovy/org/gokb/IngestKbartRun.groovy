@@ -188,7 +188,7 @@ class IngestKbartRun {
                                 'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
                               [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
-        result.report = [matched: 0, partial: 0, created: 0, retired: 0, invalid: 0, previous: old_tipp_count]
+        result.report = [matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0, previous: old_tipp_count]
 
         if (old_tipp_count > 0) {
           isUpdate = true
@@ -227,7 +227,11 @@ class IngestKbartRun {
                             ingest_cfg,
                             row_specific_cfg)
 
-                  result.report[line_result]++
+                  result.report[line_result.status]++
+
+                  if (line_result.reviewCreated) {
+                    result.report.reviews++
+                  }
                 }
                 else {
                   result.report.invalid++
@@ -425,7 +429,7 @@ class IngestKbartRun {
 
     //first we need a platform:
     def platform = null
-    def result = null
+    def result = [status: null, reviewCreated: false]
 
     if (the_kbart.title_url != null) {
       log.debug("Extract host from ${the_kbart.title_url}")
@@ -513,7 +517,7 @@ class IngestKbartRun {
 
     } else {
       log.warn("couldn't resolve platform - title not added.")
-      result = 'invalid'
+      result.status = 'invalid'
     }
     result
   }
@@ -542,7 +546,7 @@ class IngestKbartRun {
 
     assert pkg != null && the_platform != null
 
-    def result = null
+    def result = [status: null, reviewCreated: false]
     TitleInstancePackagePlatform tipp = null
 
     def tipp_map = [
@@ -590,7 +594,7 @@ class IngestKbartRun {
       def match_result = tippService.restLookup(tipp_map)
 
       if (match_result.full_matches.size() > 0) {
-        result = 'matched'
+        result.status = 'matched'
         tipp = match_result.full_matches[0]
 
         if (tipp.accessStartDate) {
@@ -609,6 +613,7 @@ class IngestKbartRun {
               additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
             }
           }
+          result.reviewCreated = true
 
           // RR für Multimatch generieren
           reviewRequestService.raise(
@@ -624,7 +629,7 @@ class IngestKbartRun {
         }
       }
       else {
-        result = 'created'
+        result.status = 'created'
 
         if (!dryRun) {
           def tipp_fields = [
@@ -640,7 +645,8 @@ class IngestKbartRun {
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
 
           if (match_result.failed_matches.size() > 0) {
-            result = 'partial'
+            result.status = 'partial'
+            result.reviewCreated = true
 
             def additionalInfo = [otherComponents: []]
 
@@ -673,7 +679,7 @@ class IngestKbartRun {
         if (!matched_tipps[tipp.id]) {
           matched_tipps[tipp.id] = 1
 
-          if (result != 'created' && result != 'partial') {
+          if (result.status != 'created' && result.status != 'partial') {
             TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = ?", [tipp])
             tipp.refresh()
           }
@@ -694,12 +700,12 @@ class IngestKbartRun {
         for (tidm in titleIdMap[tipp_map.importId]) {
           jsonIdMap.each { ns, val ->
             if (tidm.ids[ns] != val) {
-              result = 'partial'
+              result.status = 'partial'
             }
           }
 
-          if (result != 'partial') {
-            result = 'matched'
+          if (result.status != 'partial') {
+            result.status = 'matched'
 
             if (!dryRun) {
               tipp = TitleInstancePackagePlatform.findById(tidm.oid)
@@ -708,10 +714,10 @@ class IngestKbartRun {
         }
       }
       else {
-        result = 'created'
+        result.status = 'created'
       }
 
-      if (result != 'matched') {
+      if (result.status != 'matched') {
         if (!titleIdMap[tipp_map.importId]) {
           titleIdMap[tipp_map.importId] = []
         }
@@ -808,7 +814,7 @@ class IngestKbartRun {
         log.debug("match platform found: ${result}")
         break
       default:
-        log.error("found multiple platforms when looking for ${host}")
+        log.debug("found multiple platforms when looking for ${host}")
       break
     }
 
@@ -950,7 +956,7 @@ class IngestKbartRun {
     def result = validationService.checkRow(row_data, rownum, col_positions, providerIdentifierNamespace)
 
     if (result.errors) {
-      log.error("Recording bad row ${rownum}: ${result.errors}")
+      log.debug("Recording bad row ${rownum}: ${result.errors}")
       valid = false
       badRows.add([rowdata: row_data, errors: result.errors, row: rownum])
     }

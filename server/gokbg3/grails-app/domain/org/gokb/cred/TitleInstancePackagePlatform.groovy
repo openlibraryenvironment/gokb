@@ -762,7 +762,7 @@ class TitleInstancePackagePlatform extends KBComponent {
         else if (tipp_dto.paymentType instanceof Integer) {
           def int_rdv = RefdataValue.get(tipp_dto.paymentType)
 
-          if (int_rdv?.owner.value == 'TitleInstancePackagePlatform.PaymentType') {
+          if (int_rdv?.owner.label == 'TitleInstancePackagePlatform.PaymentType') {
             tipp.paymentType = int_rdv
           }
         }

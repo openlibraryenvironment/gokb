@@ -296,5 +296,6 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.status == 200
     resp.json?.job_result?.report?.partial == 2
     resp.json?.job_result?.report?.retired == 2
+    resp.json?.job_result?.report?.reviews > 0
   }
 }

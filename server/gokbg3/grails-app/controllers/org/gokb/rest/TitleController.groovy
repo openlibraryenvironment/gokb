@@ -254,7 +254,16 @@ class TitleController {
               errors.ids = []
             }
 
-            errors.ids << [message:"There has been an identifier conflict with another title!", baddata: reqBody.ids, item: [id: tlm.object.id, name: tlm.object.name, href: (base + "/titles/" + tlm.object.id)]]
+            errors.ids << [
+              message:"There has been an identifier conflict with another title!",
+              messageCode: 'error.create.title.identifierConflict',
+              baddata: reqBody.ids,
+              item: [
+                id: tlm.object.id,
+                name: tlm.object.name,
+                href: (base + "/titles/" + tlm.object.id)
+              ]
+            ]
           }
         }
       }
@@ -273,7 +282,13 @@ class TitleController {
       result.message = "Specific title type required!"
     }
     else {
-      errors.name = [[baddata: reqBody?.name, message:"Request is missing a title name!"]]
+      errors.name = [
+        [
+          baddata: reqBody?.name,
+          message:"Request is missing a title name!",
+          messageCode: "validiation.missingName"
+        ]
+      ]
     }
 
     if (errors.size() > 0) {
