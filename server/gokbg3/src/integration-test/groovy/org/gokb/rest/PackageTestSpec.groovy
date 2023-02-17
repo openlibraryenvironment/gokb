@@ -29,6 +29,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     Identifier book_isbn = Identifier.findByValueAndNamespace('978-3-16-148410-0', IdentifierNamespace.findByValue('isbn')) ?: new Identifier(value: '978-3-16-148410-0', namespace: IdentifierNamespace.findByValue('isbn'))
     Identifier serial_issn = Identifier.findByValueAndNamespace('0020-0255', IdentifierNamespace.findByValue('issn')) ?: new Identifier(value: '0020-0255', namespace: IdentifierNamespace.findByValue('issn'))
     Identifier serial_eissn = Identifier.findByValueAndNamespace('1872-6291', IdentifierNamespace.findByValue('eissn')) ?: new Identifier(value: '1872-6291', namespace: IdentifierNamespace.findByValue('eissn'))
+    Platform handlePlt = Platform.findByName("dx.doi.org") ?: new Platform(name: "dx.doi.org", primaryUrl: "http://dx.doi.org/", status: RefdataCategory.lookup('KBComponent.Status', 'Deleted')).save(flush: true)
     Platform testPlt = Platform.findByName("PackTestPlt") ?: new Platform(name: "PackTestPlt").save(flush: true)
     Org testOrg = Org.findByName("PackTestOrg") ?: new Org(name: "PackTestOrg").save(flush: true)
     testPlt.provider = testOrg
@@ -49,6 +50,11 @@ class PackageTestSpec extends AbstractAuthSpec {
     testPackage.nominalPlatform = testPlt
     testPackage.provider = testOrg
     testPackage.save(flush:true)
+
+    Package pkg = new Package(name: "TestPackHandleUrl").save(flush: true)
+    pkg.nominalPlatform = testPlt
+    pkg.provider = testOrg
+    pkg.save(flush: true)
 
     JournalInstance testTitle = JournalInstance.findByName("PackTestTitle") ?: new JournalInstance(name: "PackTestTitle").save(flush: true)
     testTitle.ids.add(serial_issn)
@@ -97,12 +103,13 @@ class PackageTestSpec extends AbstractAuthSpec {
     ['TestPackJournalTIPP', 'TestJournalTIPPUpdate', 'TestPackBookTIPP', 'TestBookTIPPUpdate', 'TIPP Name', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
-    ["TestPack","UpdPack","TestPackageWithTipps","TestPackageWithProviderAndPlatform"].each {
+    ["TestPack","UpdPack","TestPackageWithTipps","TestPackageWithProviderAndPlatform", "TestPackHandleUrl"].each {
       Package.findByName(it)?.expunge()
     }
     CuratoryGroup.findByName("cgtest1")?.expunge()
     JournalInstance.findByName("PackTestTitle")?.expunge()
     Platform.findByName("PackTestPlt")?.expunge()
+    Platform.findByName("dx.doi.org")?.expunge()
     Org.findByName("PackTestOrg")?.expunge()
     Source.findByName("TestPack")?.expunge()
     BookInstance.findByName('PackTestBook')?.expunge()
@@ -297,5 +304,26 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.json?.job_result?.report?.partial == 2
     resp.json?.job_result?.report?.retired == 2
     resp.json?.job_result?.report?.reviews > 0
+  }
+
+  void "test /rest/packages/<id>/ingest platform fallback"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_import_platform_fallback.txt")
+    Package pkg = Package.findByName("TestPackHandleUrl")
+    Platform handlePlt = Platform.findByName("dx.doi.org")
+
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("${urlPath}/rest/packages/${pkg.id}/ingest?async=false") {
+      accept('application/json')
+      contentType("multipart/form-data")
+      auth("Bearer $accessToken")
+      submissionFile=kbart_file.getFile()
+    }
+    then:
+    resp.status == 200
+    resp.json?.job_result?.report?.created == 2
+    !pkg.tipps*.hostPlatform.contains(handlePlt)
   }
 }
