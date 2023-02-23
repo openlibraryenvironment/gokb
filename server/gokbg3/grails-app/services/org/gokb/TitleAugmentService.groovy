@@ -339,17 +339,17 @@ class TitleAugmentService {
       info.history.each { he ->
         def id_map = []
 
-        if (he.zdbId) {
+        if (he.zdbId && he.zdbId ==~ ~"^\\d{7,10}-[\\dxX]\$") {
           id_map << [type: "zdb", value: he.zdbId]
+        }
+        else {
+          log.debug("Skipping item with illegal ID value ${he.zdbId}!")
         }
 
         def match_result = null
 
-        try {
+        if (id_map) {
           match_result = titleLookupService.find(he.name, null, id_map, 'org.gokb.cred.JournalInstance')
-        }
-        catch (Exception e) {
-          log.debug("Unable to reference history title", e)
         }
 
         if (match_result && !match_result.to_create && match_result.matches?.size() == 1) {
@@ -373,7 +373,7 @@ class TitleAugmentService {
       log.debug("Updating title name ${titleInstance.name} -> ${info.title}")
       def old_title = titleInstance.name
       titleInstance.name = info.title
-      titleInstance.addVariantTitle(old_title)
+      titleInstance.ensureVariantName(old_title)
     }
 
     titleInstance.save(flush: true)
