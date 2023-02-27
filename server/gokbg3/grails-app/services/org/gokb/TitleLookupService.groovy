@@ -27,7 +27,7 @@ class TitleLookupService {
 
     // Get the class 1 identifier namespaces.
     Set<String> class_one_ids = grailsApplication.config.getProperty('identifiers.class_ones', Set<String>)
-    def xcheck = grailsApplication.config.getProperty('identifiers.cross_checks', Map)
+    def xcheck = grailsApplication.config.getProperty('identifiers.cross_checks', List)
     def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
     def status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
 

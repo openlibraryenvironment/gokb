@@ -812,7 +812,7 @@ class IngestKbartRun {
       host = host.substring(4)
     }
 
-    def platforms = Platform.executeQuery("select p from Platform as p where p.primaryUrl like :host or p.name = :host and status != :sc", ['host': "%" + host + "%", sc: RefdataCategory.lookup('KBComponent.Status', 'Deleted')], [readonly: false])
+    def platforms = Platform.executeQuery("select p from Platform as p where status != :sc and (p.primaryUrl like :host or p.name = :host)", ['host': "%" + host + "%", sc: RefdataCategory.lookup('KBComponent.Status', 'Deleted')], [readonly: false])
 
     switch (platforms.size()) {
       case 0:

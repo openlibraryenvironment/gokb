@@ -262,7 +262,7 @@ class PackageSourceUpdateService {
                   update_job.startOrQueue()
                   result.job_result = update_job.get()
 
-                  if (result.job_result.badrows || result.job_result.report.reviews > 0 || result.job_result.matchingJob.reviews > 0) {
+                  if (result.job_result?.badrows || result.job_result?.report?.reviews > 0 || result.job_result?.matchingJob?.reviews > 0) {
                     log.debug("There were issues with the automated job, keeping listStatus in progress..")
                   }
                   else {

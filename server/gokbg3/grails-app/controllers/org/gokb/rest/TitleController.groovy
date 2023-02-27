@@ -196,7 +196,7 @@ class TitleController {
           type.name
         )
 
-        if (title_lookup.to_create) {
+        if (title_lookup.to_create || reqBody._checked == true) {
           obj = type.newInstance()
           obj.name = reqBody.name.trim()
 
@@ -205,14 +205,19 @@ class TitleController {
           if ( obj.validate() ) {
             obj.save(flush:true)
 
-            if (title_lookup.matches.size() > 0) {
+            if (title_lookup.matches.size() > 0 && !reqBody._checked) {
               def additionalInfo = [:]
               def combo_ids = [obj.id]
 
               additionalInfo.otherComponents = []
 
               title_lookup.matches.each { tlm ->
-                additionalInfo.otherComponents.add([oid:"${tlm.object.id}", name:"${tlm.object.name}"])
+                additionalInfo.otherComponents.add([
+                  oid:"${tlm.object.class.name}:${tlm.object.id}",
+                  name:"${tlm.object.name}",
+                  id: tlm.object.id,
+                  uuid: tlm.object.uuid
+                ])
                 combo_ids.add(tlm.object.id)
               }
 

@@ -369,7 +369,7 @@ class ValidationService {
 
           if (!field_valid_result) {
             result.errors[key] = [
-              message: "Identifier value '${trimmed_value}' in column 'title_id' is not valid!",
+              message: "Identifier value '${trimmed_val}' in column 'title_id' is not valid!",
               messageCode: "kbart.errors.illegalVal",
               args: [trimmed_val]
             ]
