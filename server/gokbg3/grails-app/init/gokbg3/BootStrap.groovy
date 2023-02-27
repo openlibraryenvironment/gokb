@@ -376,12 +376,10 @@ class BootStrap {
     }
 
     private Object ensureCuratoryGroup(String groupName){
-        CuratoryGroup.withTransaction(){
-            if (groupName != null){
-                log.debug("Ensure curatory group: ${groupName}");
-                def local_cg = CuratoryGroup.findByName(groupName) ?:
-                    new CuratoryGroup(name: groupName).save(flush: true, failOnError: true);
-            }
+        if (groupName != null){
+            log.debug("Ensure curatory group: ${groupName}");
+            def local_cg = CuratoryGroup.findByName(groupName) ?:
+                new CuratoryGroup(name: groupName).save(flush: true, failOnError: true);
         }
     }
 
@@ -1131,6 +1129,9 @@ class BootStrap {
 
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Technical Support').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Other').save(flush: true, failOnError: true)
+
+        RefdataCategory.lookupOrCreate(CuratoryGroup.RDC_ORGA_TYPE, 'Library').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate(CuratoryGroup.RDC_ORGA_TYPE, 'Provider').save(flush: true, failOnError: true)
 
         lookupOrCreateCuratoryGroupTypes()
 

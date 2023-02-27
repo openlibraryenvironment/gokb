@@ -67,7 +67,6 @@ class IntegrationControllerSpec extends Specification {
 
   def cleanup() {
     CuratoryGroup.findByName('TestGroup1')?.expunge()
-    CuratoryGroup.findByName('TestGroup2')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
     Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
