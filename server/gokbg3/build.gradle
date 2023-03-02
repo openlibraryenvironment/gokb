@@ -103,7 +103,7 @@ dependencies {
     implementation 'org.locationtech.spatial4j:spatial4j:0.8'
     implementation 'org.slf4j:log4j-over-slf4j:2.0.3'
     implementation 'org.apache.tika:tika-core:2.4.1'
-    implementation 'dk.glasius:external-config:2.0.1'
+    implementation 'dk.glasius:external-config:3.1.1'
 
     // This  is for rest integration tests -  see more at
     //  http://guides.grails.org/grails-controller-testing/guide/index.html

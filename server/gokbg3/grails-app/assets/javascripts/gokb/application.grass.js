@@ -2,6 +2,7 @@
  * GOKb application javascript file.
  */
 //=require jquery-2.2.0.min
+//=require jquery-migrate-3.4.1.js
 //=require jquery.mask
 //=require raphael.min
 //=require morris.min
