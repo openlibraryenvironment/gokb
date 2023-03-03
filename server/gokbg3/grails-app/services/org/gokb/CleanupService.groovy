@@ -15,6 +15,7 @@ class CleanupService {
   def grailsApplication
   def reviewRequestService
   def componentLookupService
+  def validationService
 
   def tidyMissnamedPublishers () {
 
@@ -718,6 +719,11 @@ class CleanupService {
 
       result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)", [component: batch])
       j?.setProgress(result.num_expunged, result.num_requested)
+
+      if (Thread.currentThread().isInterrupted()){
+        log.debug("Job cancelling ..")
+        break
+      }
     }
     result
   }
@@ -751,14 +757,72 @@ class CleanupService {
         tsession.flush()
         tsession.clear()
 
+        if (Thread.currentThread().isInterrupted()){
+          log.debug("Job cancelling ..")
+          break
+        }
+
         if (batch.size() == 0) {
           more = false
         }
       }
 
-      if (j && offset > 0) {
+      if (j) {
+        j.endTime = new Date()
         j.message("Created ${offset} reviews ('Invalid Name') for illegal characters in component names.".toString())
       }
     }
+  }
+
+  def markInvalidIdentifiers(Job j = null) {
+    log.debug("Checking for invalid identifiers")
+    def result = [occurrences: 0, components: [:]]
+    Identifier.withNewSession { tsession ->
+      boolean more = true
+      RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Identifier")
+      RefdataValue combo_ids = RefdataCategory.lookup('Combo.Type', "KBComponent.Ids")
+      int offset = 0
+      int total = Identifier.executeQuery("select count(i.id) from Identifier as i where exists (select 1 from Combo where toComponent = i)")[0]
+
+      while (more) {
+        def batch = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where toComponent = i)", [max: 50, offset: offset])
+
+        batch.each { idc ->
+          def isValid = validationService.checkIdForNamespace(idc.value, idc.namespace)
+
+          if (!isValid) {
+            result.occurrences++
+            idc.identifiedComponents.each { kbc ->
+              if (!result.components[kbc.id]) {
+                result.components[kbc.id] = [name: kbc.name, uuid: kbc.uuid, invalid: []]
+              }
+
+              result.components[kbc.id].invalid << [value: idc.value, namespace: idc.namespace.value]
+            }
+          }
+        }
+
+        offset += batch.size()
+        j.setProgress(offset, total)
+        tsession.flush()
+        tsession.clear()
+
+        if (Thread.currentThread().isInterrupted()) {
+          log.debug("Job cancelling ..")
+          break
+        }
+
+        if (offset >= total) {
+          more = false
+        }
+      }
+
+      if (j) {
+        j.setProgress(100)
+        j.endTime = new Date()
+        j.message("Found ${result.occurrences} connected to ${result.components.size()} invalid Identifiers.".toString())
+      }
+    }
+    result
   }
 }

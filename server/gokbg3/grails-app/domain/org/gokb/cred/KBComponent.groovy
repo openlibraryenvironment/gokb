@@ -546,7 +546,7 @@ where cp.owner = :c
   }
 
   /*
-   *  ignore any namespace or type - see if we can find a componenet where a linked identifier has the specified value
+   *  ignore any namespace or type - see if we can find a component where a linked identifier has the specified value
    *  @return LIST of all components with this identifier as a value
    */
 
