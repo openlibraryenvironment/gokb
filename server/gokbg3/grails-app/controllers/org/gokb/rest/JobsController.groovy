@@ -136,7 +136,7 @@ class JobsController {
       }
       // by linked Component
       if (params.linkedItem) {
-        Long compId = KBComponent.findByUuid(params.linkedItem) ?: params.long('linkedItem')
+        Long compId = KBComponent.findByUuid(params.linkedItem)?.id ?: params.long('linkedItem')
 
         if (compId) {
           if (params.boolean('archived') == true || params.boolean('combined') == true) {
