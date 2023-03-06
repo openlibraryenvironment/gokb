@@ -273,19 +273,15 @@ class TippService {
     if (title_class_name) {
       TitleInstance ti = null
 
-      try {
-        found = titleLookupService.find(
-            tipp.name,
-            tipp.getPublisherName(),
-            my_ids,
-            title_class_name
-        )
-      } catch (Exception e) {
-        log.error("Title lookup failed due to invalid identifiers on ${tipp}!")
-      }
+      found = titleLookupService.find(
+          tipp.name,
+          tipp.getPublisherName(),
+          my_ids,
+          title_class_name
+      )
 
-      if (!found) {
-        log.debug("Skipping ..")
+      if (found.invalid) {
+        log.debug("Skipping Invalid..")
       }
       else if (found.to_create == true) {
         log.debug("No existing title matched, creating ${tipp.name}")
@@ -343,8 +339,14 @@ class TippService {
       }
       else {
         log.debug("Unable to match title!")
-        if (pkg.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
-          pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+
+        Package.withNewSession {
+          Package p = Package.get(pkg.id)
+
+          if (p.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
+            p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+            p.save(flush: true)
+          }
         }
         result.status = 'unmatched'
       }
@@ -540,17 +542,18 @@ class TippService {
     def result = false
 
     TitleInstancePackagePlatform.withNewSession {
-      if (!found) {
+      if (found.invalid) {
         result = true
+        def additionalInfo = [invalidIds: found.invalid]
 
         reviewRequestService.raise(
             tipp,
-            "Invalid Identifiers",
+            "Invalid identifiers found",
             "Check Component Identifiers.".toString(),
             null,
             null,
-            null,
-            RefdataCategory.lookup("ReviewRequest.StdDesc", "Generic Matching Conflict"),
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Indentifiers"),
             componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
         )
       }
