@@ -10,6 +10,7 @@ import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 import groovy.transform.Synchronized
 import com.k_int.ClassUtils
+import grails.converters.JSON
 import grails.util.Holders
 
 import groovy.util.logging.*
@@ -254,6 +255,10 @@ class ComponentUpdateService {
               hasChanged = true
             } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
+              def additionalInfo = [:]
+
+              additionalInfo.vars = [testKey, the_title.name]
+
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
               reviewRequestService.raise(
                 component,
@@ -261,7 +266,7 @@ class ComponentUpdateService {
                 "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
                 user,
                 null,
-                null,
+                (additionalInfo as JSON).toString(),
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
                 group ?: componentLookupService.findCuratoryGroupOfInterest(component, user)
               )
