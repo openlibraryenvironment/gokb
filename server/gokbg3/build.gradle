@@ -91,6 +91,7 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-compress', version: '1.21'
     implementation group: 'commons-validator', name: 'commons-validator', version: '1.7'
     implementation group: 'com.opencsv', name: 'opencsv', version: '5.6'
+    implementation group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.7.1'
     implementation group: 'com.github.ladutsko', name: 'isbn-core', version: '1.1.0'
     implementation 'org.opensearch:opensearch:2.6.0'
     implementation 'org.opensearch.client:opensearch-rest-high-level-client:2.6.0'
