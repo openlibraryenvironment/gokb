@@ -4,6 +4,7 @@ import com.k_int.ClassUtils
 
 import gokbg3.DateFormatService
 
+import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.util.GrailsNameUtils
 import grails.util.Holders
@@ -257,6 +258,10 @@ class ComponentUpdateService {
               hasChanged = true
             } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
 
+              def additionalInfo = [:]
+
+              additionalInfo.vars = [testKey, the_title.name]
+
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
               reviewRequestService.raise(
                 component,
@@ -264,7 +269,7 @@ class ComponentUpdateService {
                 "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
                 user,
                 null,
-                null,
+                (additionalInfo as JSON).toString(),
                 RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
                 group ?: componentLookupService.findCuratoryGroupOfInterest(component, user)
               )

@@ -43,7 +43,7 @@ class OaiSpec extends Specification {
   Org test_org
 
   private String getUrlPath() {
-    return "http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}".toString()
+    return "http://localhost:${serverPort}${grailsApplication.config.server.servlet.context-path ?: ''}".toString()
   }
 
   def setup() {

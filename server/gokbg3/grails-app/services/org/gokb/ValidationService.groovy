@@ -557,7 +557,7 @@ class ValidationService {
       }
       checkDigit %= 11
 
-      if (checkDigit == 10 && parts[1] in ['x', 'X'] || checkDigit == Integer.valueOf(parts[1])) {
+      if (checkDigit == 10 && parts[1] in ['x', 'X'] || (parts[1] in ['0','1', '2', '3', '4', '5', '6', '7', '8', '9'] && checkDigit == Integer.valueOf(parts[1]))) {
         result = zdbId
       }
     }

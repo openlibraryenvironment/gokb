@@ -8,7 +8,7 @@ buildscript {
         maven { url "https://repo.grails.org/grails/core" }
     }
     dependencies {
-        classpath "org.grails:grails-gradle-plugin:$grailsVersion"
+        classpath "org.grails:grails-gradle-plugin:$grailsGradlePluginVersion"
         classpath "org.grails.plugins:hibernate5:${gormVersion-".RELEASE"}"
         classpath "com.bertramlabs.plugins:asset-pipeline-gradle:3.4.7"
         // Experiment with guide from http://guides.grails.org/grails-as-docker-container/guide/index.html
@@ -54,12 +54,12 @@ configurations {
 
 dependencies {
     developmentOnly "org.springframework.boot:spring-boot-devtools"
+    developmentOnly "org.springframework.boot:spring-boot-starter-tomcat"
     implementation "org.springframework.boot:spring-boot-starter-logging"
     implementation "org.springframework.boot:spring-boot-autoconfigure"
-    implementation group: 'org.codehaus.groovy', name: 'groovy-dateutil', version: '3.0.13'
+    // implementation group: 'org.codehaus.groovy', name: 'groovy-dateutil', version: '3.0.13'
     implementation "org.grails:grails-core"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
-    implementation "org.springframework.boot:spring-boot-starter-undertow"
     implementation "org.grails:grails-web-boot"
     implementation "org.grails:grails-logging"
     implementation "org.grails:grails-plugin-rest"
@@ -68,7 +68,6 @@ dependencies {
     implementation "org.grails:grails-plugin-services"
     implementation "org.grails:grails-plugin-url-mappings"
     implementation "org.grails:grails-plugin-interceptors"
-    implementation "org.grails.plugins:cache:5.0.1"
     implementation "org.grails.plugins:async"
     implementation "org.grails.plugins:scaffolding"
     implementation "org.grails.plugins:events"
@@ -84,7 +83,7 @@ dependencies {
     implementation 'org.grails.plugins:database-migration:4.1.0'
     // implementation 'org.grails.plugins:grails-melody-plugin:1.80.0'
 
-    implementation 'org.grails.plugins:spring-security-core:5.1.0'
+    implementation 'org.grails.plugins:spring-security-core:5.1.1'
     implementation 'org.grails.plugins:spring-security-acl:4.0.0.M2'
     implementation 'org.grails.plugins:spring-security-ui:4.0.0.M1'
     implementation 'org.grails.plugins:spring-security-rest:3.0.1'
@@ -103,7 +102,7 @@ dependencies {
     implementation 'org.locationtech.spatial4j:spatial4j:0.8'
     implementation 'org.slf4j:log4j-over-slf4j:2.0.3'
     implementation 'org.apache.tika:tika-core:2.4.1'
-    implementation 'dk.glasius:external-config:2.0.1'
+    // implementation 'dk.glasius:external-config:2.0.1'
 
     // This  is for rest integration tests -  see more at
     //  http://guides.grails.org/grails-controller-testing/guide/index.html

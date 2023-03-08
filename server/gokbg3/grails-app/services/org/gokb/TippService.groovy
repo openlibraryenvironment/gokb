@@ -272,6 +272,8 @@ class TippService {
     def title_class_name = TitleInstance.determineTitleClass(pubType)
 
     if (title_class_name) {
+      TitleInstance ti = null
+
       found = titleLookupService.find(
           tipp.name,
           tipp.getPublisherName(),
@@ -279,8 +281,10 @@ class TippService {
           title_class_name
       )
 
-      TitleInstance ti = null
-      if (found.to_create == true) {
+      if (found.invalid) {
+        log.debug("Skipping Invalid..")
+      }
+      else if (found.to_create == true) {
         log.debug("No existing title matched, creating ${tipp.name}")
         ti = createTitleFromTippData(tipp, tipp_ids)
         result.status = 'created'
@@ -336,8 +340,14 @@ class TippService {
       }
       else {
         log.debug("Unable to match title!")
-        if (pkg.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
-          pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+
+        Package.withNewSession {
+          Package p = Package.get(pkg.id)
+
+          if (p.listStatus == RefdataCategory.lookup('Package.ListStatus', 'Checked')) {
+            p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+            p.save(flush: true)
+          }
         }
         result.status = 'unmatched'
       }
@@ -533,7 +543,22 @@ class TippService {
     def result = false
 
     TitleInstancePackagePlatform.withNewSession {
-      if (found.matches.size > 1 && !tipp.title) {
+      if (found.invalid) {
+        result = true
+        def additionalInfo = [invalidIds: found.invalid]
+
+        reviewRequestService.raise(
+            tipp,
+            "Invalid identifiers found",
+            "Check Component Identifiers.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Indentifiers"),
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
+        )
+      }
+      else if (found.matches.size > 1 && !tipp.title) {
         result = true
         def additionalInfo = [otherComponents: []]
         found.matches.each { comp ->
@@ -641,7 +666,7 @@ class TippService {
         )
       }
 
-      if (found.conflicts?.size > 0) {
+      if (found?.conflicts?.size > 0) {
         def additionalInfo = [otherComponents: []]
         result = true
 
