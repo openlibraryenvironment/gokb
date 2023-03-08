@@ -42,7 +42,7 @@ class TippMatchingJob {
         TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippID)
         // ignore Tipp if RR.Date > Tipp.Date
         if (tipp) {
-          def rrList = ReviewRequest.findAllByComponentToReviewAndStatus(tipp, RefdataCategory.lookup("ReviewRequest.Status", "Open"))
+          def rrList = ReviewRequest.findAllByComponentToReviewAndStatusAndStdDesc(tipp, RefdataCategory.lookup("ReviewRequest.Status", "Open"), RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"))
           if (rrList.size() == 0) {
             log.debug("match tipp $tipp")
             def group = tipp.pkg.curatoryGroups?.size() > 0 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null

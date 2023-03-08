@@ -104,6 +104,8 @@ info:
         grailsVersion: '@info.grails.version@'
 
 spring:
+    application:
+        name: GOKb
     main:
         banner-mode: "off"
     groovy:
@@ -327,3 +329,6 @@ gokb:
 quartz:
     autoStartup: true
     waitForJobsToCompleteOnShutdown: false
+server:
+  servlet:
+      context-path: /gokb

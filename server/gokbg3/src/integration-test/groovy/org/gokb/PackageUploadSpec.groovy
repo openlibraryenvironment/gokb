@@ -73,7 +73,7 @@ class PackageUploadSpec extends Specification {
         .addPart('flags','+ReviewNewTitles,+ReviewVariantTitles,+ReviewNewOrgs')
         .build()
 
-        HttpRequest request = HttpRequest.POST("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/packages/deposit", requestBody)
+        HttpRequest request = HttpRequest.POST("http://localhost:${serverPort}${grailsApplication.config.server.servlet.context-path ?: ''}/packages/deposit", requestBody)
           .basicAuth('admin', 'admin')
           .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
         HttpResponse resp = http.exchange(request)

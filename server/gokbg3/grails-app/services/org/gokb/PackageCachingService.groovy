@@ -57,8 +57,9 @@ class PackageCachingService {
 
       for (id in ids) {
         Package item = Package.get(id)
+        def activeJobs = concurrencyManagerService.getComponentJobs(id)
 
-        if (item) {
+        if (item && activeJobs?.data?.size() == 0) {
           try {
             if (!dir.exists()) {
               dir.mkdirs()
@@ -318,9 +319,11 @@ class PackageCachingService {
             log.error("Exception in Package Caching for ID ${id}!", e)
           }
         }
-        else {
+        else if (!item) {
           result = 'ERROR'
           log.debug("Unable to reference package by id!")
+        } else {
+          result = 'SKIPPED_CURRENTLY_CHANGING'
         }
 
         session.flush()

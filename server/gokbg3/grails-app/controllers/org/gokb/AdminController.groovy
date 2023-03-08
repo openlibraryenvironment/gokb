@@ -363,6 +363,20 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def invalidIdentifiers() {
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.markInvalidIdentifiers(j)
+    }.startOrQueue()
+
+    log.debug("Mark invalid identifiers. Started job #${j.uuid}")
+
+    j.description = "Find invalid identifier occurrences"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'MarkInvalidIdentifiers')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def cleanupPlatforms() {
     Job j = concurrencyManagerService.createJob { Job j ->
       cleanupService.deleteNoUrlPlatforms(j)

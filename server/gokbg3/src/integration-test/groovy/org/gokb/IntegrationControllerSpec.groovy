@@ -44,7 +44,7 @@ class IntegrationControllerSpec extends Specification {
   BlockingHttpClient client
 
   private String getUrlPath() {
-    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.contextPath', String) ?: ''}".toString()
+    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.servlet.context-path', String) ?: ''}".toString()
   }
 
   def setup() {

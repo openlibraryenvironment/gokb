@@ -136,46 +136,54 @@ class JobsController {
       }
       // by linked Component
       if (params.linkedItem) {
-        long compId = params.long('linkedItem')
+        Long compId = KBComponent.findByUuid(params.linkedItem)?.id ?: params.long('linkedItem')
 
-        if (params.boolean('archived') == true || params.boolean('combined') == true) {
-          result.data = []
-          def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.linkedItemId = ?0", [compId])[0]
-          def jobs = JobResult.executeQuery("from JobResult as jr where jr.linkedItemId = ?0 order by jr.startTime desc", [compId], [max: max, offset: offset])
+        if (compId) {
+          if (params.boolean('archived') == true || params.boolean('combined') == true) {
+            result.data = []
+            def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where jr.linkedItemId = ?", [compId])[0]
+            def jobs = JobResult.executeQuery("from JobResult as jr where jr.linkedItemId = ? order by jr.startTime desc", [compId], [max: max, offset: offset])
 
-          if (params.boolean('combined') == true) {
-            def active_jobs = concurrencyManagerService.getComponentJobs(compId, max, offset, false)
+            if (params.boolean('combined') == true) {
+              def active_jobs = concurrencyManagerService.getComponentJobs(compId, max, offset, false)
 
-            hqlTotal += active_jobs._pagination.total
+              hqlTotal += active_jobs._pagination.total
 
-            if (offset == 0) {
-              result.data = active_jobs.data
+              if (offset == 0) {
+                result.data = active_jobs.data
+              }
             }
-          }
 
-          jobs.each { j ->
-            def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
-            // No JsonObject for list view
+            jobs.each { j ->
+              def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+              // No JsonObject for list view
 
-            result.data << [
-              uuid: j.uuid,
-              description: j.description,
-              type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-              linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
-              startTime: j.startTime,
-              endTime: j.endTime,
-              status: j.statusText
+              result.data << [
+                uuid: j.uuid,
+                description: j.description,
+                type: j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+                linkedItem: (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+                startTime: j.startTime,
+                endTime: j.endTime,
+                status: j.statusText
+              ]
+            }
+
+            result['_pagination'] = [
+              offset: offset,
+              limit: max,
+              total: hqlTotal
             ]
           }
-
-          result['_pagination'] = [
-            offset: offset,
-            limit: max,
-            total: hqlTotal
-          ]
+          else {
+            result = concurrencyManagerService.getComponentJobs(compId, max, offset, showFinished)
+          }
         }
         else {
-          result = concurrencyManagerService.getComponentJobs(compId, max, offset, showFinished)
+          result.result = 'ERROR'
+          response.status = 404
+          result.messageCode = "job.fetch.error.linkedItem.notFound"
+          result.message = "Unable to reference linked item id."
         }
       }
     }
@@ -243,7 +251,7 @@ class JobsController {
     else {
       result.result = 'ERROR'
       response.status = 403
-      result.message = "Insuffictient permissions to retrieve all jobs"
+      result.message = "Insufficient permissions to retrieve all jobs"
     }
 
     render result as JSON
