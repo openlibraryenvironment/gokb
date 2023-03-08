@@ -104,6 +104,7 @@ dependencies {
     // implementation 'org.grails:grails-datastore-rest-client:6.1.9.RELEASE'
     implementation "io.micronaut:micronaut-http-client"
     implementation 'io.micronaut.xml:micronaut-jackson-xml:3.2.0'
+    implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
     implementation 'org.postgresql:postgresql:42.5.1'
     runtimeOnly "com.h2database:h2"
