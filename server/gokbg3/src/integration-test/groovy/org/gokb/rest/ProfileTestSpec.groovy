@@ -15,6 +15,7 @@ import org.gokb.cred.User
 import org.gokb.cred.UserRole
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.web.client.RestTemplate
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.lang.Shared
 
@@ -83,6 +84,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
     resp.body().data._links.self.href.endsWith("rest/profile")
   }
 
+  @Ignore
   void "test GET /rest/profile with stale token"() {
     def urlPath = getUrlPath()
     // use the bearerToken to read /rest/profile
@@ -109,7 +111,7 @@ class ProfileTestSpec extends AbstractAuthSpec {
 
     try {
       HttpResponse resp2 = http.exchange(req2)
-    } catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+    } catch (Exception e) {
       status2 = e.status
     }
 

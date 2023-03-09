@@ -37,7 +37,7 @@ class UpdatePackageRunSpec extends Specification {
   TitleLookupService titleLookupService
 
   private String getUrlPath() {
-    return "http://localhost:${serverPort}${grailsApplication.config.server.servlet.context-path ?: ''}".toString()
+    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.servlet.context-path') ?: ''}".toString()
   }
 
   def setup() {

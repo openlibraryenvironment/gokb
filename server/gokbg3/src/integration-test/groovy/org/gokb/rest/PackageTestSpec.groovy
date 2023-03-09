@@ -62,25 +62,37 @@ class PackageTestSpec extends AbstractAuthSpec {
         defaultSupplyMethod: http_method,
         defaultDataFormat: kbart).save(flush: true)
 
-    Package testPackage = Package.findByName("TestPack") ?: new Package(name: "TestPack", source: testSource).save(flush: true)
-    testPackage.nominalPlatform = testPlt
-    testPackage.provider = testOrg
-    testPackage.save(flush:true)
+    Package testPackage = Package.findByName("TestPack")
+    if (!testPackage) {
+      testPackage = new Package(name: "TestPack", source: testSource).save(flush: true)
+      testPackage.nominalPlatform = testPlt
+      testPackage.provider = testOrg
+      testPackage.save(flush:true)
+    }
 
-    Package pkg = new Package(name: "TestPackHandleUrl").save(flush: true)
-    pkg.nominalPlatform = testPlt
-    pkg.provider = testOrg
-    pkg.save(flush: true)
+    Package pkg = Package.findByName("TestPackHandleUrl")
+    if (!pkg) {
+      pkg = new Package(name: "TestPackHandleUrl").save(flush: true)
+      pkg.nominalPlatform = testPlt
+      pkg.provider = testOrg
+      pkg.save(flush: true)
+    }
 
-    JournalInstance testTitle = JournalInstance.findByName("PackTestTitle") ?: new JournalInstance(name: "PackTestTitle").save(flush: true)
-    testTitle.ids.add(serial_issn)
-    testTitle.ids.add(serial_eissn)
-    testTitle.save(flush: true)
+    JournalInstance testTitle = JournalInstance.findByName("PackTestTitle")
+    if (!testTitle) {
+      testTitle = new JournalInstance(name: "PackTestTitle").save(flush: true)
+      testTitle.ids.add(serial_issn)
+      testTitle.ids.add(serial_eissn)
+      testTitle.save(flush: true)
+    }
 
-    def test_book = BookInstance.findByName('PackTestBook') ?: new BookInstance(name: 'PackTestBook').save(flush: true)
-    test_book.ids.add(book_doi)
-    test_book.ids.add(book_isbn)
-    test_book.save(flush: true)
+    def test_book = BookInstance.findByName('PackTestBook')
+    if (!test_book) {
+      test_book = new BookInstance(name: 'PackTestBook').save(flush: true)
+      test_book.ids.add(book_doi)
+      test_book.ids.add(book_isbn)
+      test_book.save(flush: true)
+    }
 
     if (!TitleInstancePackagePlatform.findByName('TestPackJournalTIPP')) {
       def test_tipp1 = new TitleInstancePackagePlatform([

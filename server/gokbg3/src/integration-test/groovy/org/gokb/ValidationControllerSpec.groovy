@@ -35,7 +35,7 @@ class ValidationControllerSpec extends Specification {
   String baseUrl
 
   def setup() {
-    baseUrl = "http://localhost:${serverPort}${grailsApplication.config.server.servlet.context-path ?: ''}"
+    baseUrl = "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.servlet.context-path') ?: ''}"
 
     if (!http) {
       http = HttpClient.create(new URL(baseUrl)).toBlocking()

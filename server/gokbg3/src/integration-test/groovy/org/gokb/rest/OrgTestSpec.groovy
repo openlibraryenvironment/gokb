@@ -40,10 +40,8 @@ class OrgTestSpec extends AbstractAuthSpec {
     def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true)
     def new_plt_upd = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate").save(flush: true)
     def new_source = Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource").save(flush: true)
-    def new_office = Office.findByName("firstTestOffice") ?: new Office(name: "firstTestOffice")
-        new_office.save(flush: true)
-    def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source, offices:[new_office])
-        patch_org.save(flush: true)
+    def new_office = Office.findByName("firstTestOffice") ?: new Office(name: "firstTestOffice").save(flush: true)
+    def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source, offices:[new_office]).save(flush: true)
   }
 
   def cleanup() {
