@@ -237,9 +237,9 @@ class TitleAugmentService {
         }
         else if (ezbCandidates.size() == 0){
           // no EZB match ==> raise ReviewRequest with type Information
-          if (titleInstance.ids.collect { it.namespace.value == 'issn' || it.namespace.value == 'eissn' }) {
+          if (titleInstance.ids.findAll { it.namespace.value == 'issn' || it.namespace.value == 'eissn' }) {
             log.debug("No EZB result for ids of title ${titleInstance} (${titleInstance.ids.collect { it.value }})")
-            if (titleInstance.reviewRequests.collect {it.stdDesc == rr_info}.size() == 0) {
+            if (titleInstance.reviewRequests.findAll {it.stdDesc == rr_info}.size() == 0) {
               reviewRequestService.raise(
                   titleInstance,
                   "Check for reference ID",
@@ -270,9 +270,9 @@ class TitleAugmentService {
           }
           else if (nameCandidates.size() == 0) {
             // found multiple matches by ID matching but 0 EZB match by name matching (very unlikely)
-            if (titleInstance.ids.collect { it.namespace.value == 'issn' || it.namespace.value == 'eissn' }) {
+            if (titleInstance.ids.findAll { it.namespace.value == 'issn' || it.namespace.value == 'eissn' }) {
               log.debug("Multiple EZB results for ID, but no EZB result for names of title ${titleInstance} (${titleInstance.ids.collect { it.value }})")
-              if (titleInstance.reviewRequests.collect {it.stdDesc == rr_info}.size() == 0) {
+              if (titleInstance.reviewRequests.findAll {it.stdDesc == rr_info}.size() == 0) {
                 reviewRequestService.raise(
                     titleInstance,
                     "No action required.",
@@ -286,7 +286,7 @@ class TitleAugmentService {
               }
             }
           }
-          else {
+          else if (titleInstance.reviewRequests.findAll {it.stdDesc == rr_multi_results}.size() == 0) {
             reviewRequestService.raise(
                 titleInstance,
                 "No action required.",
@@ -294,7 +294,7 @@ class TitleAugmentService {
                 null,
                 null,
                 ([candidates: ezbCandidates] as JSON).toString(),
-                rr_info,
+                rr_multi_results,
                 editorialGroup
             )
           }
