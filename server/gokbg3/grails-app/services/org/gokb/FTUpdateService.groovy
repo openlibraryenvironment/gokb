@@ -346,6 +346,7 @@ class FTUpdateService {
           result.hostPlatform = kbc.hostPlatform.getLogEntityId()
           result.hostPlatformName = kbc.hostPlatform.name
           result.hostPlatformUuid = kbc.hostPlatform.uuid
+          result.hostPlatformUrl = kbc.hostPlatform.primaryUrl
         }
 
         // title history
