@@ -10,6 +10,7 @@ node {
   }
 
   stage('Build') {
+    cleanWs()
     dir ('server/gokbg3') {
 //      def props = readProperties file: 'gradle.properties'
       sh './gradlew --no-daemon --console plain war'
