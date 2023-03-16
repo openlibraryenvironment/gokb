@@ -34,12 +34,12 @@ class SourcesTestSpec extends AbstractAuthSpec {
       http = HttpClient.create(new URL(getUrlPath())).toBlocking()
     }
 
-    def src_upd = Source.findByName("Source PreUpdate") ?: new Source(name: "Source PreUpdate")
+    def src_upd = Source.findByName("Source PreUpdate") ?: new Source(name: "Source PreUpdate").save(flush:true)
     IdentifierNamespace titleNS = IdentifierNamespace.findByName("TestSourceTitleNS") ?: new IdentifierNamespace(
       value: "testsourcetitlenamespace",
       name: "TestSourceTitleNS",
-      targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title'))
-    Source quelle = Source.findByName("TestSource") ?: new Source(name: "TestSource", targetNamespace: titleNS)
+      targetType: RefdataCategory.lookup('IdentifierNamespace.TargetType', 'Title')).save(flush:true)
+    Source quelle = Source.findByName("TestSource") ?: new Source(name: "TestSource", targetNamespace: titleNS).save(flush:true)
   }
 
   @Transactional

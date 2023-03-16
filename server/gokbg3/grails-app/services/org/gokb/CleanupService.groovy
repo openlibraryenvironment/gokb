@@ -16,6 +16,7 @@ class CleanupService {
   def grailsApplication
   def reviewRequestService
   def componentLookupService
+  def validationService
 
   def tidyMissnamedPublishers () {
 
@@ -156,10 +157,8 @@ class CleanupService {
   }
 
   @Transactional
-  def expungeDeletedComponents(Job j = null) {
-
-    log.debug("Process delete candidates")
-
+  def expungeRejectedComponents(Job j = null) {
+    log.debug("Process rejected candidates")
     def status_rejected = RefdataCategory.lookup('KBComponent.EditStatus', 'Rejected')
     def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     def delete_candidates = KBComponent.executeQuery('select kbc.id from KBComponent as kbc where kbc.editStatus=:rejectedStatus and kbc.status=:deletedStatus',[rejectedStatus: status_rejected, deletedStatus: status_deleted])
@@ -724,45 +723,110 @@ class CleanupService {
 
       result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)", [component: batch])
       j?.setProgress(result.num_expunged, result.num_requested)
+
+      if (Thread.currentThread().isInterrupted()){
+        log.debug("Job cancelling ..")
+        break
+      }
     }
     result
   }
 
-  @Transactional
   def markInvalidComponentNames(Job j = null) {
     log.debug("Checking for corrupted component names")
     boolean more = true
     int offset = 0
-    RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Name")
-    RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
-    RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
+    TitleInstance.withNewSession { tsession ->
+      RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Name")
+      RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+      RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
 
-    while (more) {
-      def batch = KBComponent.executeQuery("from KBComponent as kbc where name like '%�%' and status != :del and not exists (select 1 from ReviewRequest where componentToReview = kbc and stdDesc = :type and status = :status)", [type: rr_type, status: status_open, del: deleted_status], [max: 50])
+      while (more) {
+        def batch = KBComponent.executeQuery("from KBComponent as kbc where name like '%�%' and status != :del and not exists (select 1 from ReviewRequest where componentToReview = kbc and stdDesc = :type and status = :status)", [type: rr_type, status: status_open, del: deleted_status], [max: 50])
 
-      batch.each { kbc ->
-        reviewRequestService.raise(
-          kbc,
-          "Remove invalid characters from the title string.",
-          "Invalid characters in title string",
-          null,
-          null,
-          null,
-          rr_type,
-          componentLookupService.findCuratoryGroupOfInterest(kbc)
-        )
+        batch.each { kbc ->
+          reviewRequestService.raise(
+            kbc,
+            "Remove invalid characters from the title string.",
+            "Invalid characters in title string",
+            null,
+            null,
+            null,
+            rr_type,
+            componentLookupService.findCuratoryGroupOfInterest(kbc)
+          )
+        }
+
+        offset += batch.size()
+        tsession.flush()
+        tsession.clear()
+
+        if (Thread.currentThread().isInterrupted()){
+          log.debug("Job cancelling ..")
+          break
+        }
+
+        if (batch.size() == 0) {
+          more = false
+        }
       }
 
-      offset += batch.size()
-      cleanUpGorm()
-
-      if (batch.size() == 0) {
-        more = false
+      if (j) {
+        j.endTime = new Date()
+        j.message("Created ${offset} reviews ('Invalid Name') for illegal characters in component names.".toString())
       }
     }
+  }
 
-    if (j && offset > 0) {
-      j.message("Created ${offset} reviews ('Invalid Name') for illegal characters in component names.".toString())
+  def markInvalidIdentifiers(Job j = null) {
+    log.debug("Checking for invalid identifiers")
+    def result = [occurrences: 0, components: [:]]
+    Identifier.withNewSession { tsession ->
+      boolean more = true
+      RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Identifier")
+      RefdataValue combo_ids = RefdataCategory.lookup('Combo.Type', "KBComponent.Ids")
+      int offset = 0
+      int total = Identifier.executeQuery("select count(i.id) from Identifier as i where exists (select 1 from Combo where toComponent = i)")[0]
+
+      while (more) {
+        def batch = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where toComponent = i)", [max: 50, offset: offset])
+
+        batch.each { idc ->
+          def isValid = validationService.checkIdForNamespace(idc.value, idc.namespace)
+
+          if (!isValid) {
+            result.occurrences++
+            idc.identifiedComponents.each { kbc ->
+              if (!result.components[kbc.id]) {
+                result.components[kbc.id] = [name: kbc.name, uuid: kbc.uuid, invalid: []]
+              }
+
+              result.components[kbc.id].invalid << [value: idc.value, namespace: idc.namespace.value]
+            }
+          }
+        }
+
+        offset += batch.size()
+        j.setProgress(offset, total)
+        tsession.flush()
+        tsession.clear()
+
+        if (Thread.currentThread().isInterrupted()) {
+          log.debug("Job cancelling ..")
+          break
+        }
+
+        if (offset >= total) {
+          more = false
+        }
+      }
+
+      if (j) {
+        j.setProgress(100)
+        j.endTime = new Date()
+        j.message("Found ${result.occurrences} connected to ${result.components.size()} invalid Identifiers.".toString())
+      }
     }
+    result
   }
 }

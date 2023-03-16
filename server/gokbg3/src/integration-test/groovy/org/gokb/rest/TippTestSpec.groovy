@@ -56,7 +56,7 @@ class TippTestSpec extends AbstractAuthSpec {
     testGroup = CuratoryGroup.findByName("cgtipptest") ?: new CuratoryGroup(name: "cgtipptest").save(flush: true)
 
     if (!TitleInstancePackagePlatform.findByName("previous TIPP")) {
-      previousTipp = new TitleInstancePackagePlatform(name: "previous TIPP", pkg: testPackage, hostPlatform: testPlatform, url: "http://some.uri/").save(flush: true)
+      previousTipp = new TitleInstancePackagePlatform(name: "previous TIPP", pkg: testPackage, hostPlatform: testPlatform, url: "http://some.net/").save(flush: true)
       def coverage = new TIPPCoverageStatement(owner: previousTipp, startVolume: 1, startIssue: 1, coverageDepth: RefdataCategory.lookup("Coverage.Depth", "Selected Articles")).save(flush: true)
     }
     else {
@@ -145,14 +145,14 @@ class TippTestSpec extends AbstractAuthSpec {
 
   void "test /rest/tipps/<id> PUT"() {
     given:
-    def tipp = TitleInstancePackagePlatform.findByUrl("http://some.uri/")
+    def tipp = TitleInstancePackagePlatform.findByUrl("http://some.net/")
     def coverage_id = tipp.coverageStatements[0].id
     def upd_body = [
         pkg               : testPackage.id,
         hostPlatform      : testPlatform.id,
         title             : testTitle.id,
         publisherName     : "some Publisher",
-        url               : "http://new-url.url",
+        url               : "http://new-url.com",
         coverageStatements: [
             [
                 id           : coverage_id,
@@ -201,14 +201,14 @@ class TippTestSpec extends AbstractAuthSpec {
 
   void "test add new TIPP price"() {
     given:
-    def tipp = TitleInstancePackagePlatform.findByUrl("http://new-url.url")
+    def tipp = TitleInstancePackagePlatform.findByUrl("http://new-url.com")
     def coverage_id = tipp.coverageStatements[0].id
     def upd_body = [
         pkg               : testPackage.id,
         hostPlatform      : testPlatform.id,
         title             : testTitle.id,
         publisherName     : "some Publisher",
-        url               : "http://new-url.url",
+        url               : "http://new-url.com",
         coverageStatements: [
             [
                 id           : coverage_id,
@@ -267,14 +267,14 @@ class TippTestSpec extends AbstractAuthSpec {
 
   void "test remove TIPP price"() {
     given:
-    def tipp = TitleInstancePackagePlatform.findByUrl("http://new-url.url")
+    def tipp = TitleInstancePackagePlatform.findByUrl("http://new-url.com")
     def coverage_id = tipp.coverageStatements[0].id
     def upd_body = [
         pkg               : testPackage.id,
         hostPlatform      : testPlatform.id,
         title             : testTitle.id,
         publisherName     : "some Publisher",
-        url               : "http://new-url.url",
+        url               : "http://new-url.com",
         coverageStatements: [
             [
                 id           : coverage_id,
@@ -325,14 +325,14 @@ class TippTestSpec extends AbstractAuthSpec {
 
   void "test replace TIPP price"() {
     given:
-    def tipp = TitleInstancePackagePlatform.findByUrl("http://new-url.url")
+    def tipp = TitleInstancePackagePlatform.findByUrl("http://new-url.com")
     def coverage_id = tipp.coverageStatements[0].id
     def init_body = [
         pkg               : testPackage.id,
         hostPlatform      : testPlatform.id,
         title             : testTitle.id,
         publisherName     : "some Publisher",
-        url               : "http://new-url.url",
+        url               : "http://new-url.com",
         ids: [
           [
             type: 'issn',
@@ -357,7 +357,7 @@ class TippTestSpec extends AbstractAuthSpec {
         hostPlatform      : testPlatform.id,
         title             : testTitle.id,
         publisherName     : "some Publisher",
-        url               : "http://new-url.url",
+        url               : "http://new-url.com",
         ids: [
           [
             type: 'issn',

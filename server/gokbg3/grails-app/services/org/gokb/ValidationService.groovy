@@ -348,6 +348,13 @@ class ValidationService {
           args: []
         ]
       }
+      else if (trimmed_val.contains('¶') || trimmed_val.contains('¦') || trimmed_val.contains('¤') || trimmed_val ==~ /\p{Cc}/ || trimmed_val.contains('Ãƒ')) {
+        result.warnings[key] = [
+          message: "Value '${trimmed_val}' contains unusual characters.",
+          messageCode: "kbart.errors.unusualCharsVal",
+          args: [trimmed_val]
+        ]
+      }
 
       if (KNOWN_COLUMNS[key]) {
         if (KNOWN_COLUMNS[key].mandatory && !trimmed_val) {
@@ -362,7 +369,7 @@ class ValidationService {
 
           if (!field_valid_result) {
             result.errors[key] = [
-              message: "Identifier value '${trimmed_value}' in column 'title_id' is not valid!",
+              message: "Identifier value '${trimmed_val}' in column 'title_id' is not valid!",
               messageCode: "kbart.errors.illegalVal",
               args: [trimmed_val]
             ]
@@ -550,7 +557,7 @@ class ValidationService {
       }
       checkDigit %= 11
 
-      if (checkDigit == 10 && parts[1] in ['x', 'X'] || checkDigit == Integer.valueOf(parts[1])) {
+      if (checkDigit == 10 && parts[1] in ['x', 'X'] || (parts[1] in ['0','1', '2', '3', '4', '5', '6', '7', '8', '9'] && checkDigit == Integer.valueOf(parts[1]))) {
         result = zdbId
       }
     }

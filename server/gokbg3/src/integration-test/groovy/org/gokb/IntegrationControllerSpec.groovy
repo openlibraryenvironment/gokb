@@ -44,7 +44,7 @@ class IntegrationControllerSpec extends Specification {
   BlockingHttpClient client
 
   private String getUrlPath() {
-    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.contextPath', String) ?: ''}".toString()
+    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.servlet.context-path', String) ?: ''}".toString()
   }
 
   def setup() {
@@ -67,7 +67,6 @@ class IntegrationControllerSpec extends Specification {
 
   def cleanup() {
     CuratoryGroup.findByName('TestGroup1')?.expunge()
-    CuratoryGroup.findByName('TestGroup2')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
     Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()

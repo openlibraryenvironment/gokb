@@ -261,6 +261,14 @@ class PackageSourceUpdateService {
                   update_job.message("Starting upsert for Package ${p.name}".toString())
                   update_job.startOrQueue()
                   result.job_result = update_job.get()
+
+                  if (result.job_result?.badrows || result.job_result?.report?.reviews > 0 || result.job_result?.matchingJob?.reviews > 0) {
+                    log.debug("There were issues with the automated job, keeping listStatus in progress..")
+                  }
+                  else {
+                    p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
+                    p.save(flush: true)
+                  }
                 }
               }
               else {
@@ -279,6 +287,8 @@ class PackageSourceUpdateService {
           }
           else {
             result.message = "No KBART found for provided URL!"
+            result.messageCode = 'kbart.transmission.skipped.noFile'
+            result.result = 'SKIPPED'
             log.debug("KBART url ${src_url} returned MIME type ${file_info.content_mime_type}")
           }
         }

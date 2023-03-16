@@ -124,8 +124,6 @@ class ReviewsTestSpec extends AbstractAuthSpec {
 
   @Transactional
   def cleanup() {
-    JournalInstance.findById(title.id)?.refresh()?.expunge()
-    JournalInstance.findById(matchedTitle.id)?.refresh().expunge()
   }
 
   void "test GET /rest/reviews with params"() {

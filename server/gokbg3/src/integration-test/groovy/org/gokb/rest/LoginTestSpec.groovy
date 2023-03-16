@@ -27,7 +27,7 @@ class LoginTestSpec extends Specification {
   BlockingHttpClient http
 
   private String getUrlPath() {
-    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.contextPath') ?: ''}".toString()
+    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.servlet.context-path') ?: ''}".toString()
   }
 
   def setup() {
@@ -51,10 +51,6 @@ class LoginTestSpec extends Specification {
     response.body().access_token != null
   }
 
-  @Ignore
-  /*
-  refresh_token is not supported by the grailscache token store
-  */
   void "test refresh tokens "() {
     when:
     Map requestBody = [
@@ -63,7 +59,7 @@ class LoginTestSpec extends Specification {
     ]
 
     HttpRequest req1 = HttpRequest.POST(getUrlPath() + "/rest/login", requestBody)
-    HttpResponse resp1 = http.exchange(req1)
+    HttpResponse resp1 = http.exchange(req1, Map)
 
     String refreshToken = resp1.body().refresh_token
     String accessToken = resp1.body().access_token
@@ -73,7 +69,7 @@ class LoginTestSpec extends Specification {
       .queryParam("refresh_token", refreshToken)
       .build()
 
-    HttpRequest req2 = HttpRequest.POST(uri)
+    HttpRequest req2 = HttpRequest.POST(uri, [:])
     HttpResponse response = http.exchange(req2, Map)
 
     then:
@@ -81,6 +77,10 @@ class LoginTestSpec extends Specification {
     response.body().access_token != accessToken
   }
 
+  /*
+    JWT does not support logout
+  */
+  @Ignore
   void "test logout"() {
     when:
     Map requestBody = [

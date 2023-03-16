@@ -37,7 +37,7 @@ class AbstractAuthSpec extends Specification {
   }
 
   private String getUrlPath() {
-    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.contextPath', String) ?: ''}".toString()
+    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.servlet.context-path', String) ?: ''}".toString()
   }
 
   private void login(username, password) {

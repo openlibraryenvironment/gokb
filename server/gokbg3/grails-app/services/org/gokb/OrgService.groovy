@@ -362,9 +362,13 @@ class OrgService {
 
       if (office_obj) {
         // create combo to connect org & office
-        new Combo(fromComponent: office_obj, toComponent: org, type: OFFICE_ORG, status: STATUS_ACTIVE).save(flush: true)
-        new_offices << office_obj
-        result.changed = true
+        def dupes = Combo.executeQuery("from Combo where fromComponent = :off and toComponent = :org", [off: office_obj, org: org])
+
+        if (!dupes) {
+          new Combo(fromComponent: office_obj, toComponent: org, type: OFFICE_ORG, status: STATUS_ACTIVE).save(flush: true)
+          new_offices << office_obj
+          result.changed = true
+        }
       }
       else {
         result.errors << [message: "Unable to lookup or create office!", baddata: office]

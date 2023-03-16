@@ -26,7 +26,7 @@
 	      <tr><th>Build Date</th><td> <g:meta name="build.time"/></td></tr>
 	      <tr><th>ES Index</th><td>${grailsApplication.config.getProperty('gokb.es.indices', Map).values().join(", ")}</td></tr>
 		  <tr><th>ES Automated Indexing </th><td>Enabled: ${grailsApplication.config.getProperty('gokb.ftupdate_enabled')}</td></tr>
-		  <tr><th>Package Caching</th><td>Enabled: ${grailsApplication.config.gokb.getProperty('packageOaiCaching.enabled')} - Path: ${grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory')}</td></tr>
+		  <tr><th>Package Caching</th><td>Enabled: ${grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled')} - Path: ${grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory')}</td></tr>
 		  <tr><th>EZB Public Collections Import</th><td>Enabled: ${grailsApplication.config.getProperty('gokb.ezbOpenCollections.enabled')}</td></tr>
 		  <tr><th>Automated Package Updates</th><td>Enabled: ${grailsApplication.config.getProperty('gokb.packageUpdate.enabled')}</td></tr>
 		  <tr><th>ZDB Title Augmenting</th><td>Enabled: ${grailsApplication.config.getProperty('gokb.zdbAugment.enabled')} - Curator: ${grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators')}</td></tr>

@@ -68,7 +68,7 @@ class PackageExportSpec extends Specification {
   }
 
   private String getUrlPath() {
-    return "http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}".toString()
+    return "http://localhost:${serverPort}${grailsApplication.config.getProperty('server.servlet.context-path') ?: ''}".toString()
   }
 
   void "test GET /packages/kbart/<uuid>"() {

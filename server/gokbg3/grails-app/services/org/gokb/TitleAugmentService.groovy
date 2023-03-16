@@ -323,7 +323,7 @@ class TitleAugmentService {
 
       if (!pub_obj) {
         def variant_normname = GOKbTextUtils.normaliseString(info.publisher)
-        def var_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [variant_normname, status_deleted])
+        def var_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
         if (var_candidates.size() == 1) {
           pub_obj = var_candidates[0]
@@ -340,13 +340,20 @@ class TitleAugmentService {
       info.history.each { he ->
         def id_map = []
 
-        if (he.zdbId) {
+        if (he.zdbId && he.zdbId ==~ ~"^\\d{7,10}-[\\dxX]\$") {
           id_map << [type: "zdb", value: he.zdbId]
         }
+        else {
+          log.debug("Skipping item with illegal ID value ${he.zdbId}!")
+        }
 
-        def match_result = titleLookupService.find(he.name, null, id_map, 'org.gokb.cred.JournalInstance')
+        def match_result = null
 
-        if (!match_result.to_create && match_result.matches?.size() == 1) {
+        if (id_map) {
+          match_result = titleLookupService.find(he.name, null, id_map, 'org.gokb.cred.JournalInstance')
+        }
+
+        if (match_result && !match_result.to_create && match_result.matches?.size() == 1) {
           def candidate = match_result.matches[0].object
           def parsedLocal = he.prev ? GOKbTextUtils.completeDateString(info.publishedFrom) : GOKbTextUtils.completeDateString(he.publishedFrom ?: info.publishedTo)
           Date event_date = null
@@ -367,7 +374,7 @@ class TitleAugmentService {
       log.debug("Updating title name ${titleInstance.name} -> ${info.title}")
       def old_title = titleInstance.name
       titleInstance.name = info.title
-      titleInstance.addVariantTitle(old_title)
+      titleInstance.ensureVariantName(old_title)
     }
 
     titleInstance.save(flush: true)

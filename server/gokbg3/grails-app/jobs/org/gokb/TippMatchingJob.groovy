@@ -28,7 +28,7 @@ class TippMatchingJob {
     if (!activeJobs) {
       def startTime = LocalDateTime.now()
       def count = 0
-      def result = [matched: 0, created: 0, unmatched: 0]
+      def result = [matched: 0, created: 0, unmatched: 0, reviews: 0]
       def tippIDs = TitleInstancePackagePlatform.executeQuery(
           "select id from TitleInstancePackagePlatform tipp where status != :sdel and not exists (select c from Combo as c where c.type = :ctype and c.toComponent = tipp)",
           [sdel : RefdataCategory.lookup('KBComponent.Status', 'Deleted'),
@@ -42,13 +42,16 @@ class TippMatchingJob {
         TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippID)
         // ignore Tipp if RR.Date > Tipp.Date
         if (tipp) {
-          def rrList = ReviewRequest.findAllByComponentToReviewAndStatus(tipp, RefdataCategory.lookup("ReviewRequest.Status", "Open"))
+          def rrList = ReviewRequest.findAllByComponentToReviewAndStatusAndStdDesc(tipp, RefdataCategory.lookup("ReviewRequest.Status", "Open"), RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"))
           if (rrList.size() == 0) {
             log.debug("match tipp $tipp")
             def group = tipp.pkg.curatoryGroups?.size() > 0 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null
             def match_result = tippService.matchTitle(tipp, group)
 
-            result[match_result]++
+            result[match_result.status]++
+            if(match_result.reviewCreated) {
+              result.reviews++
+            }
           }
           else {
             log.debug("tipp $tipp has ${rrList.size()} recent Review Requests and is ignored.")
