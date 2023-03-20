@@ -1,5 +1,5 @@
 node {
-  jdk = tool name: 'OracleJava8'
+  jdk = tool name: 'OpenJava11'
   env.JAVA_HOME = "${jdk}"
 
   stage('Test') {
