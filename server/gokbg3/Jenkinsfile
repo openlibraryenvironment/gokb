@@ -21,8 +21,8 @@ node {
      dir ('server/gokbg3') {
         def props = readProperties file: 'gradle.properties'
 //        sh "echo ${props.appVersion}"
-        sh "cp build/libs/gokbg3-${props.appVersion}.war /opt/laser/apache-tomcat/default/webapps/gokb.${props.appVersion}#${BUILD_NUMBER}.${env.BRANCH_NAME}.war.bak"
-        sh "cp build/libs/gokbg3-${props.appVersion}.war /opt/laser/apache-tomcat/default/webapps/gokb.war"
+        sh "cp build/libs/gokbg3-${props.appVersion}.war /opt/tomcat/latest/webapps/gokb.${props.appVersion}#${BUILD_NUMBER}.${branch}.war.bak"
+        sh "cp build/libs/gokbg3-${props.appVersion}.war /opt/tomcat/latest/webapps/gokb.war"
      }
   }
 }
