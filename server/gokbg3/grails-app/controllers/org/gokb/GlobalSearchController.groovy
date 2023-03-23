@@ -9,6 +9,7 @@ import org.opensearch.search.builder.SearchSourceBuilder
 import org.opensearch.search.sort.FieldSortBuilder
 import org.opensearch.search.sort.SortOrder
 
+
 class GlobalSearchController {
 
   static def reversemap = ['subject':'subjectKw','componentType':'componentType','status':'status']
@@ -19,7 +20,7 @@ class GlobalSearchController {
 
   def index() {
     def result = [:]
-    def apiresponse = null
+    def apiresponse = [:]
 
     def esclient = ESWrapperService.getClient()
     if ( params.q && params.q.length() > 0) {
@@ -87,7 +88,6 @@ class GlobalSearchController {
         }
       }
       if ( ( response.format == 'json' ) || ( response.format == 'xml' ) ) {
-        apiresponse = [:]
         apiresponse.count = result.resultsTotal
         apiresponse.max = result.max
         apiresponse.offset = result.offset
@@ -104,12 +104,19 @@ class GlobalSearchController {
       }
     }
 
-    withFormat {
-      html result
-      json { render apiresponse as JSON }
-      xml { render apiresponse as XML }
+    if (params.export) {
+      withFormat {
+        html result
+        json { render apiresponse as JSON }
+        xml { render apiresponse as XML }
+      }
+    }
+    else {
+      def zipFileName = FolderService.exportFilePath() + "gokbSearchExport_${pathPrefix}.zip"
+      FolderService.exportAsZip(zipFileName, apiresponse)
     }
   }
+
 
   private def buildQuery(params) {
 

@@ -1,12 +1,12 @@
 package org.gokb
 
+import grails.io.IOUtils
 import org.gokb.cred.*
-import org.hibernate.Session
 import com.opencsv.*
-import com.opencsv.bean.CsvToBean
-import com.opencsv.bean.HeaderColumnNameMappingStrategy
-import com.opencsv.bean.HeaderColumnNameTranslateMappingStrategy
 import org.apache.commons.io.ByteOrderMark
+
+import java.nio.file.Files
+import java.nio.file.Paths
 
 class FolderService {
 
@@ -16,6 +16,7 @@ class FolderService {
   def executorService
   def sessionFactory
   def titleLookupService
+  def grailsApplication
 
   static def columns_config = [
     'list.name':[action:'process',target:'listname'],   // For ingesting into multiple folders
@@ -54,10 +55,8 @@ class FolderService {
 
       // Open File
       if ( file ) {
-        log.debug("Got file ${file}");
-
+        log.debug("Got file ${file}")
         def charset='UTF-8'
-
         final CSVParser parser = new CSVParserBuilder()
         .withSeparator('\t' as char)
         .build()
@@ -133,6 +132,30 @@ class FolderService {
     // Return
     return
   }
+
+
+  static void exportAsZip(String zipFileName, response) {
+    File file = new File(zipFileName)
+    response.setContentType('application/octet-stream');
+    response.setHeader("Content-Disposition", "attachment; filename=\"gokbExport.zip\"")
+    response.setHeader("Content-Description", "File Transfer")
+    response.setHeader("Content-Transfer-Encoding", "binary")
+    response.setContentLength(file.length())
+
+    InputStream input = new FileInputStream(file)
+    OutputStream output = response.outputStream
+    IOUtils.copy(input, output)
+    output.close()
+    input.close()
+  }
+
+
+  String exportFilePath() {
+    String exportPath = grailsApplication.config.gokb.tsvExportTempDirectory ?: "/tmp/gokb/export"
+    Files.createDirectories(Paths.get(exportPath))
+    exportPath.endsWith('/') ? exportPath : exportPath + '/'
+  }
+
 
   private void processRow(row, user, org, default_folder) {
     log.debug("processRow(${row},${user},${org},${default_folder})");

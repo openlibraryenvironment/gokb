@@ -6,31 +6,20 @@ import grails.gorm.transactions.Transactional
 
 import grails.io.IOUtils
 import groovy.util.logging.Slf4j
-import groovy.xml.MarkupBuilder
-import groovy.xml.StreamingMarkupBuilder
-import groovyx.net.http.*
-import org.apache.commons.io.FileUtils
-import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
 import org.hibernate.ScrollMode
 import org.hibernate.ScrollableResults
 import org.hibernate.Session
 import org.hibernate.type.StandardBasicTypes
-import org.mozilla.universalchardet.UniversalDetector
 import org.springframework.util.FileCopyUtils
 
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-import static groovyx.net.http.Method.GET
-import static grails.async.Promises.*
 
 @Slf4j
 class PackageService {
@@ -38,7 +27,6 @@ class PackageService {
   def genericOIDService
   def restMappingService
   def componentLookupService
-  def grailsApplication
   def dateFormatService
 
   private static final String[] KBART_FIELDS = ['publication_title',
@@ -300,7 +288,7 @@ class PackageService {
    * @param master the master package
    * @return the master tipp
    */
-  public TitleInstancePackagePlatform setOrUpdateMasterTippFor(long tipp_id, long master_id) {
+  TitleInstancePackagePlatform setOrUpdateMasterTippFor(long tipp_id, long master_id) {
 
     Package master = Package.get(master_id)
     TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
@@ -363,7 +351,7 @@ class PackageService {
   /**
    * Get the Set of Orgs currently acting as a provider.
    */
-  public Set<Org> getAllProviders() {
+  Set<Org> getAllProviders() {
 
     log.debug("Looking for all providers.")
 
@@ -1202,7 +1190,7 @@ class PackageService {
   void createKbartExport(Package pkg, ExportType exportType=ExportType.KBART_TIPP) {
     if (pkg) {
       def exportFileName = generateExportFileName(pkg, exportType)
-      def path = exportFilePath()
+      def path = FolderService.exportFilePath()
       try {
         def out = new File("${path}${exportFileName}")
         if (out.isFile())
@@ -1264,10 +1252,10 @@ class PackageService {
     }
   }
 
-  public void createTsvExport(Package pkg) {
+  void createTsvExport(Package pkg) {
     def export_date = dateFormatService.formatDate(new Date());
     String filename = generateExportFileName(pkg, ExportType.TSV)
-    String path = exportFilePath()
+    String path = FolderService.exportFilePath()
     try {
       if (pkg) {
         String lastUpdate = dateFormatService.formatDate(pkg.lastUpdated)
@@ -1461,14 +1449,14 @@ class PackageService {
     String fileName = generateExportFileName(pkg, type)
 
     try {
-      File file = new File(exportFilePath() + fileName)
+      File file = new File(FolderService.exportFilePath() + fileName)
 
       if (!file.isFile()) {
         if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
           createKbartExport(pkg, type)
         else
           createTsvExport(pkg)
-        file = new File(exportFilePath() + fileName)
+        file = new File(FolderService.exportFilePath() + fileName)
       }
       else if (Duration.between(Instant.ofEpochMilli(file.lastModified()), Instant.now()).getSeconds() < 2) {
         while (Duration.between(Instant.ofEpochMilli(file.lastModified()), Instant.now()).getSeconds() < 2) {
@@ -1492,33 +1480,39 @@ class PackageService {
     }
   }
 
-  public void sendZip(Collection packs, ExportType type, def response) {
+  void sendZip(Collection packs, ExportType type, def response) {
     def pathPrefix = UUID.randomUUID().toString()
-    File tempDir = new File(exportFilePath() + "/" + pathPrefix)
+    File tempDir = new File(FolderService.exportFilePath() + "/" + pathPrefix)
     tempDir.mkdir()
     // step one: collect data files in temp directory
     packs.each { pkg ->
       String fileName = generateExportFileName(pkg, type)
       try {
-        File src = new File(exportFilePath() + fileName)
+        File src = new File(FolderService.exportFilePath() + fileName)
         if (!src.isFile()) {
           if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
             createKbartExport(pkg, type)
           else
             createTsvExport(pkg)
-          src = new File(exportFilePath() + fileName)
+          src = new File(FolderService.exportFilePath() + fileName)
         }
-        File dest = new File("${exportFilePath()}/${pathPrefix}/${fileName.substring(0, fileName.length() - 13)}.tsv")
+        File dest = new File("${FolderService.exportFilePath()}/${pathPrefix}/${fileName.substring(0, fileName.length() - 13)}.tsv")
         FileCopyUtils.copy(src, dest)
       } catch (IOException iox) {
         log.error("Problem while collecting data", iox)
       }
     }
 
+    getZipFile(pathPrefix)
+
+    FolderService.exportAsZip(zipFileName, response)
+  }
+
+  void getZipFile(pathPrefix) {
     // step two: zip data
-    def zipFileName = exportFilePath() + "gokbExport_${pathPrefix}.zip"
+    def zipFileName = FolderService.exportFilePath() + "gokbExport_${pathPrefix}.zip"
     ZipOutputStream zipFile = new ZipOutputStream(new FileOutputStream(zipFileName))
-    new File("${exportFilePath()}/$pathPrefix").eachFile() { file ->
+    new File("${FolderService.exportFilePath()}/$pathPrefix").eachFile() { file ->
       //check if file
       if (file.isFile()) {
         zipFile.putNextEntry(new ZipEntry(file.name))
@@ -1530,25 +1524,8 @@ class PackageService {
       }
     }
     zipFile.close()
-
-    // step three: copy the zipfile into the response
-    File file = new File(zipFileName)
-    response.setContentType('application/octet-stream');
-    response.setHeader("Content-Disposition", "attachment; filename=\"gokbExport.zip\"")
-    response.setHeader("Content-Description", "File Transfer")
-    response.setHeader("Content-Transfer-Encoding", "binary")
-    response.setContentLength(file.length())
-
-    InputStream input = new FileInputStream(file)
-    OutputStream output = response.outputStream
-    IOUtils.copy(input, output)
-    output.close()
-    input.close()
   }
 
-  static String urlStringToFileString(String url){
-    url.replace("://", "_").replace(".", "_").replace("/", "_")
-  }
 
   private String generateExportFileName(Package pkg, ExportType type) {
     String lastUpdate = dateFormatService.formatTimestamp(pkg.lastUpdated)
@@ -1566,11 +1543,6 @@ class PackageService {
     return name.toString()
   }
 
-  private String exportFilePath() {
-    String exportPath = grailsApplication.config.gokb.tsvExportTempDirectory ?: "/tmp/gokb/export"
-    Files.createDirectories(Paths.get(exportPath))
-    exportPath.endsWith('/') ? exportPath : exportPath + '/'
-  }
 
   private String toCamelCase(String before) {
     StringBuilder ret = new StringBuilder()
