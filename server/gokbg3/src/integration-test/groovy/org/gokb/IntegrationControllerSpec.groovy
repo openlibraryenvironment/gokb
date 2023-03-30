@@ -1332,11 +1332,6 @@ class IntegrationControllerSpec extends Specification {
   }
 
   void "Test create new bulk config"() {
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertBulkConfig") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
-
     given:
     def json_record = [
       code: 'test_bulk_import',
@@ -1350,7 +1345,7 @@ class IntegrationControllerSpec extends Specification {
               package_nominal_platform: Platform.findByName('TestBulkPlt').uuid,
               package_curatory_group: 'TestBulkCG',
               package_titlelist: "",
-              package_id_namespace: "",
+              package_id_namespace: null,
               package_content_type: "Journal",
               title_id_namespace: "DOI",
               validity_range: "Consortial",
@@ -1361,5 +1356,18 @@ class IntegrationControllerSpec extends Specification {
         ]
       ]
     ]
+    when: "Caller asks for this bulk config to be created"
+
+    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertBulkConfig") {
+      auth('admin', 'admin')
+      body(json_record as JSON)
+    }
+
+    then: "The request is successful"
+    resp.status == 200
+    expect:
+    def new_config = BulkImportListConfig.findByCode('test_bulk_import')
+    new_config != null
+    new_config.cfg != null
   }
 }

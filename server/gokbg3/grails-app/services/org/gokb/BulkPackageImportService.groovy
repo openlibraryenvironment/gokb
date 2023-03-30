@@ -99,8 +99,8 @@ class BulkPackageImportService {
     }
 
     if (config.cfg) {
-      config.cfg.collections.each { cname, package_list ->
-        package_list.eachWithIndex { info, idx ->
+      config.cfg.collections.each { cname, collection_info ->
+        collection_info.package_list.eachWithIndex { info, idx ->
           def pkg_errors = [:]
 
           KNOWN_CONFIG_FIELDS.each { fname, cfg ->
@@ -263,6 +263,7 @@ class BulkPackageImportService {
 
               if (curator && provider && platform) {
                 Package obj = Package.findByNormname(KBComponent.generateNormname(pkgName))
+                boolean skip = false
 
                 if (!obj && collection_id) {
                   def candidates = Package.executeQuery('''from Package as p
@@ -283,7 +284,7 @@ class BulkPackageImportService {
                         messageCode: "import.bulk.error.matched.multiple.label",
                       ]
                     ]
-                    continue
+                    skip = true
                   }
                 } else if (obj && !obj.curatoryGroups.contains(curator)) {
                   log.warn("Matched package has other curators!")
@@ -295,154 +296,156 @@ class BulkPackageImportService {
                       messageCode: "import.bulk.error.matched.wrongCurator.label",
                     ]
                   ]
-                  continue
+                  skip = true
                 }
 
-                if (!obj) {
-                  log.debug("Creating new Package ..")
-
-                  try {
-                    obj = new Package(name: pkgName).save(flush: true, failOnError: true)
-                    type_results.created++
-                  }
-                  catch (Exception e) {
-                    log.debug("Errors creating new package!", e)
-                    type_results.errors++
-                  }
-                }
-                else {
-                  log.debug("Handling package ${obj.name}")
-                  type_results.updated++
-                }
-
-                if (obj) {
-                  pkg_result.gokb_uuid = obj.uuid
-
-                  if (!obj.contentType && item.content_type) {
-                    obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type)
-                  }
-
-                  if (!obj.global && item.validity_range) {
-                    obj.global = RefdataCategory.lookup('Package.Global', item.validity_range)
-                  }
-
-                  obj.nominalPlatform = platform
-                  obj.provider = provider
-                  obj.save()
-
-                  if (collection_id && !obj.ids.contains(collection_id)) {
-                    obj.ids << collection_id
-                  }
-
-                  if (!obj.curatoryGroups.contains(curator)) {
-                    obj.curatoryGroups << curator
-                  }
-
-                  obj.save()
-
-                  source = obj.source
-
-                  if (!source) {
-                    log.debug("Setting new package source..")
+                if (!skip) {
+                  if (!obj) {
+                    log.debug("Creating new Package ..")
 
                     try {
-                      def dupe = Source.findByName(pkgName)
-
-                      if (!dupe) {
-                        source = new Source(name: pkgName, url: item.package_titlelist, targetNamespace: item.title_id_namespace).save(flush:true, failOnError: true)
-                      }
-                      else {
-                        log.warn("Found existing source with package name ${pkgName}!")
-                        source = dupe
-                      }
+                      obj = new Package(name: pkgName).save(flush: true, failOnError: true)
+                      type_results.created++
                     }
                     catch (Exception e) {
-                      log.error("Exception creating source:", e)
-                      type_results.errors++
-                    }
-
-                    if (source) {
-                      source.curatoryGroups << curator
-                      source.save()
-
-                      obj.source = source
-                      obj.save(flush: true)
-                    }
-                  }
-
-                  if (source && source.url != item.package_titlelist) {
-                    source.url = item.package_titlelist
-                    source.save()
-                  }
-                }
-
-                if (obj && source) {
-                  def deposit_token = java.util.UUID.randomUUID().toString()
-                  File tmp_file = TSVIngestionService.createTempFile(deposit_token)
-                  def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.package_titlelist))
-                  def pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
-                  RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
-
-                  def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
-                                                            where c.type = :ct
-                                                            and c.fromComponent.id = :pkg
-                                                            order by c.dateCreated desc''', [ct: type_fa, pkg: obj.id])
-
-                  def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
-
-                  if (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex) {
-                    obj.refresh()
-                    log.debug("Creating new import job ..")
-
-                    try {
-                      Job pkg_job = concurrencyManagerService.createJob { pjob ->
-                        packageSourceUpdateService.updateFromSource(obj, null, pjob, curator, dryRun)
-                      }
-
-                      pkg_job.groupId = curator?.id
-                      pkg_job.description = "EZB KBART Source ingest (${obj.name})".toString()
-                      pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
-                      pkg_job.linkedItem = pkgInfo
-                      pkg_job.message("Starting upsert for Package ${obj.name}".toString())
-                      pkg_job.startOrQueue()
-                      def job_result = pkg_job.get()
-
-                      log.debug("Finished job with result: ${job_result}")
-
-                      if (job_result?.badrows) {
-                        pkg_result.errors.validation = job_result.badrows.collect { [errors: it.errors, rownum: it.row] }
-                      }
-
-                      if (job_result?.result == 'ERROR') {
-                        pkg_result.result = 'ERROR'
-                        type_results.errors++
-                      }
-                      else {
-                        type_results.success++
-                      }
-                    }
-                    catch (Exception e) {
-                      log.error("Exception creating source update job!", e)
-                      pkg_result.result = 'ERROR'
-                      pkg_result.errors.processing = [
-                        [
-                          message: "There was an error processing the package import!",
-                          messageCode: "import.bulk.error.generic.label"
-                        ]
-                      ]
+                      log.debug("Errors creating new package!", e)
                       type_results.errors++
                     }
                   }
                   else {
-                    log.debug("Skipping unchanged Package file ${obj.name}.")
-                    type_results.unchanged++
+                    log.debug("Handling package ${obj.name}")
+                    type_results.updated++
                   }
-                }
-                else if (!source) {
-                  log.debug("No source object created.. skip")
-                }
-                else {
-                  log.warn("Unable to reference package!")
+
+                  if (obj) {
+                    pkg_result.gokb_uuid = obj.uuid
+
+                    if (!obj.contentType && item.content_type) {
+                      obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type)
+                    }
+
+                    if (!obj.global && item.validity_range) {
+                      obj.global = RefdataCategory.lookup('Package.Global', item.validity_range)
+                    }
+
+                    obj.nominalPlatform = platform
+                    obj.provider = provider
+                    obj.save()
+
+                    if (collection_id && !obj.ids.contains(collection_id)) {
+                      obj.ids << collection_id
+                    }
+
+                    if (!obj.curatoryGroups.contains(curator)) {
+                      obj.curatoryGroups << curator
+                    }
+
+                    obj.save()
+
+                    source = obj.source
+
+                    if (!source) {
+                      log.debug("Setting new package source..")
+
+                      try {
+                        def dupe = Source.findByName(pkgName)
+
+                        if (!dupe) {
+                          source = new Source(name: pkgName, url: item.package_titlelist, targetNamespace: item.title_id_namespace).save(flush:true, failOnError: true)
+                        }
+                        else {
+                          log.warn("Found existing source with package name ${pkgName}!")
+                          source = dupe
+                        }
+                      }
+                      catch (Exception e) {
+                        log.error("Exception creating source:", e)
+                        type_results.errors++
+                      }
+
+                      if (source) {
+                        source.curatoryGroups << curator
+                        source.save()
+
+                        obj.source = source
+                        obj.save(flush: true)
+                      }
+                    }
+
+                    if (source && source.url != item.package_titlelist) {
+                      source.url = item.package_titlelist
+                      source.save()
+                    }
+                  }
+
+                  if (obj && source) {
+                    def deposit_token = java.util.UUID.randomUUID().toString()
+                    File tmp_file = TSVIngestionService.createTempFile(deposit_token)
+                    def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.package_titlelist))
+                    def pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
+                    RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+
+                    def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
+                                                              where c.type = :ct
+                                                              and c.fromComponent.id = :pkg
+                                                              order by c.dateCreated desc''', [ct: type_fa, pkg: obj.id])
+
+                    def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
+
+                    if (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex) {
+                      obj.refresh()
+                      log.debug("Creating new import job ..")
+
+                      try {
+                        Job pkg_job = concurrencyManagerService.createJob { pjob ->
+                          packageSourceUpdateService.updateFromSource(obj, null, pjob, curator, dryRun)
+                        }
+
+                        pkg_job.groupId = curator?.id
+                        pkg_job.description = "EZB KBART Source ingest (${obj.name})".toString()
+                        pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+                        pkg_job.linkedItem = pkgInfo
+                        pkg_job.message("Starting upsert for Package ${obj.name}".toString())
+                        pkg_job.startOrQueue()
+                        def job_result = pkg_job.get()
+
+                        log.debug("Finished job with result: ${job_result}")
+
+                        if (job_result?.badrows) {
+                          pkg_result.errors.validation = job_result.badrows.collect { [errors: it.errors, rownum: it.row] }
+                        }
+
+                        if (job_result?.result == 'ERROR') {
+                          pkg_result.result = 'ERROR'
+                          type_results.errors++
+                        }
+                        else {
+                          type_results.success++
+                        }
+                      }
+                      catch (Exception e) {
+                        log.error("Exception creating source update job!", e)
+                        pkg_result.result = 'ERROR'
+                        pkg_result.errors.processing = [
+                          [
+                            message: "There was an error processing the package import!",
+                            messageCode: "import.bulk.error.generic.label"
+                          ]
+                        ]
+                        type_results.errors++
+                      }
+                    }
+                    else {
+                      log.debug("Skipping unchanged Package file ${obj.name}.")
+                      type_results.unchanged++
+                    }
+                  }
+                  else if (!source) {
+                    log.debug("No source object created.. skip")
+                  }
+                  else {
+                    log.warn("Unable to reference package!")
+                  }
                 }
               }
               else if (!curator) {
