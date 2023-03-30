@@ -31,6 +31,7 @@ class IntegrationController {
   def messageService
   def titleHistoryService
   def crossReferenceService
+  def bulkPackageImportService
 
   @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def index() {
@@ -1819,6 +1820,36 @@ class IntegrationController {
     }
     log.debug("Done");
     redirect(action: 'index');
+  }
+
+  @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
+  def assertBulkConfig () {
+    def result = [result: 'OK']
+    def rjson = request.json
+
+    if (rjson && BulkImportListConfig.isTypeEditable()) {
+      def upsertResult = bulkPackageImportService.upsertConfig(rjson)
+
+      if (upsertResult.result == 'ERROR') {
+        result.result = 'ERROR'
+        result.errors = upsertResult.errors
+        response.status = 400
+      }
+      else {
+        result.message = 'Successfully asserted bulk import config!'
+      }
+    }
+    else if (!reqBody) {
+      result.result = 'ERROR'
+      response.message = 'Unable to parse request JSON body!'
+      response.status = 400
+    } else {
+      result.result = 'ERROR'
+      response.message = 'Insufficient permissions to edit bulk configs!'
+      reponse.status = 403
+    }
+
+    render result as JSON
   }
 
   private def cleanUpGorm() {

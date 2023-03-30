@@ -18,6 +18,7 @@ import org.gokb.GOKbTextUtils
 class ValidationService {
 
   def TSVIngestionService
+  def dateFormatService
 
   static final Map KNOWN_COLUMNS = [
     publication_title: [
@@ -572,6 +573,33 @@ class ValidationService {
 
     if (full_date) {
       result = value
+    }
+
+    result
+  }
+
+  def checkTimestamp(String value, def format = null) {
+    def result = null
+
+    if (!format || format == 'sec') {
+      try {
+        result = dateFormatService.parseTimestamp(value) ? value : null
+      }
+      catch (Exception e) {}
+    }
+
+    if (!result && (!format || format == 'ms')) {
+      try {
+        result = dateFormatService.parseTimestampMs(value) ? value : null
+      }
+      catch (Exception e) {}
+    }
+
+    if (!result && (!format || format == 'iso')) {
+      try {
+        result = dateFormatService.parseIsoMsTimestamp(value) ? value : null
+      }
+      catch (Exception e) {}
     }
 
     result

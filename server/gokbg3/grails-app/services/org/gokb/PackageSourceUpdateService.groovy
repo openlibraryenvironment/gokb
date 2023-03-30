@@ -14,14 +14,14 @@ class PackageSourceUpdateService {
   def concurrencyManagerService
   def TSVIngestionService
 
-  def updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
+  def updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null, boolean dryRun = false) {
     log.debug("updateFromSource ${p.name}")
     def result = null
     def activeJobs = concurrencyManagerService.getComponentJobs(p.id)
 
     if (job || activeJobs?.data?.size() == 0) {
       log.debug("UpdateFromSource started")
-      result = startSourceUpdate(p, user, job, activeGroup)
+      result = startSourceUpdate(p, user, job, activeGroup, dryRun)
     }
     else {
       log.error("update skipped - already running")
@@ -30,7 +30,7 @@ class PackageSourceUpdateService {
     result
   }
 
-  private def startSourceUpdate(pkg, user, job, activeGroup) {
+  private def startSourceUpdate(pkg, user, job, activeGroup, dryRun) {
     log.debug("Source update start..")
     def result = [result: 'OK']
 
@@ -231,7 +231,7 @@ class PackageSourceUpdateService {
                                                              false,
                                                              user,
                                                              preferred_group,
-                                                             false,
+                                                             dryRun,
                                                              job)
                 }
                 else {
@@ -243,7 +243,7 @@ class PackageSourceUpdateService {
                                                       false,
                                                       user,
                                                       preferred_group,
-                                                      false,
+                                                      dryRun,
                                                       j)
                   }
 
