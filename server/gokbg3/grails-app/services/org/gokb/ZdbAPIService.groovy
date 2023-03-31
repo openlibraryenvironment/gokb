@@ -8,6 +8,7 @@ class ZdbAPIService {
   static transactional = false
   def endpoint = 'zdb'
   def grailsApplication
+  def marcXmlMappingService
 
   def config = [
     version: [
@@ -295,6 +296,13 @@ class ZdbAPIService {
     }
 
     result
+  }
+
+  def requestNewId(title) {
+    def result = null
+    def record = marcXmlMappingService.mapJournal(title)
+
+    // TODO: Send XML
   }
 
   @javax.annotation.PreDestroy

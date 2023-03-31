@@ -15,6 +15,7 @@ class TitleAugmentService {
   def titleLookupService
   def zdbAPIService
   def ezbAPIService
+  def marcXmlMappingService
 
 
   def augmentZdb(titleInstance) {
@@ -95,18 +96,29 @@ class TitleAugmentService {
           if (existing_noresults.size() > 0 && titleInstance.ids.findAll { it.namespace.value == 'issn' || it.namespace.value == 'eissn' || it.namespace.value == 'zdb' }.size() > 0) {
             log.debug("No ZDB result for ids of title ${titleInstance} (${titleInstance.ids.collect { it.value }})")
 
-            if (titleInstance.reviewRequests.findAll { it.stdDesc == rr_no_results}.size() == 0) {
-              reviewRequestService.raise(
-                titleInstance,
-                "Check for reference ID",
-                "No ZDB matches for linked IDs",
-                null,
-                null,
-                null,
-                rr_no_results,
-                editorialGroup
-              )
+            if (titleInstance.ids.findAll { it.namespace.value == 'eissn' }.size() > 0 && titleInstance.ids.findAll { it.namespace.value == 'zdb' }.size() > 0) {
+              def new_id = zdbAPIService.requestNewId(titleInstance)
+
+              if (new_id) {
+                new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
+              }
+              else {
+                log.error("Unable to create ZDB title stump")
+              }
             }
+
+            // if (titleInstance.reviewRequests.findAll { it.stdDesc == rr_no_results}.size() == 0) {
+            //   reviewRequestService.raise(
+            //     titleInstance,
+            //     "Check for reference ID",
+            //     "No ZDB matches for linked IDs",
+            //     null,
+            //     null,
+            //     null,
+            //     rr_no_results,
+            //     editorialGroup
+            //   )
+            // }
           }
         }
         else if (existing_multiple.size() == 0) {
