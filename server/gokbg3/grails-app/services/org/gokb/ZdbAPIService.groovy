@@ -300,7 +300,7 @@ class ZdbAPIService {
 
   def requestNewId(title) {
     def result = null
-    def record = marcXmlMappingService.mapJournal(title)
+    def record = marcXmlMappingService.mapZdbJournal(title)
 
     // TODO: Send XML
   }

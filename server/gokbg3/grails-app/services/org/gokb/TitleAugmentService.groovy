@@ -96,10 +96,11 @@ class TitleAugmentService {
           if (existing_noresults.size() > 0 && titleInstance.ids.findAll { it.namespace.value == 'issn' || it.namespace.value == 'eissn' || it.namespace.value == 'zdb' }.size() > 0) {
             log.debug("No ZDB result for ids of title ${titleInstance} (${titleInstance.ids.collect { it.value }})")
 
-            if (titleInstance.ids.findAll { it.namespace.value == 'eissn' }.size() > 0 && titleInstance.ids.findAll { it.namespace.value == 'zdb' }.size() > 0) {
-              def new_id = zdbAPIService.requestNewId(titleInstance)
+            if (titleInstance.ids.findAll { it.namespace.value == 'eissn' }.size() > 0 && titleInstance.ids.findAll { it.namespace.value == 'zdb' }.size() == 0) {
+              def returned_id_value = zdbAPIService.requestNewId(titleInstance)
 
-              if (new_id) {
+              if (returned_id_value) {
+                def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', returned_id_value)
                 new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true, failOnError: true)
               }
               else {
