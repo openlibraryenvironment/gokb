@@ -299,6 +299,7 @@ class IngestKbartRun {
 
         if (badRows.size() > 0) {
           def msg = "There are ${badRows.size()} bad rows -- write to badfile and report"
+          result.result = 'WARNING'
           result.badrows = badRows
           result.messages.add(msg)
         }
@@ -857,6 +858,7 @@ class IngestKbartRun {
     }
 
     if (!['UTF-8', 'US-ASCII'].contains(the_data.encoding)) {
+      log.debug("GOT invalid encoding ${the_data.encoding}")
       result.errors.encoding = [message: "The encoding of this file is not UTF-8. Please correct this before importing!", code: "kbart.errors.encoding"]
     }
 
