@@ -1825,7 +1825,7 @@ class IntegrationController {
   @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def assertBulkConfig () {
     def result = [result: 'OK']
-    def rjson = request.json
+    def rjson = request.JSON
 
     if (rjson && BulkImportListConfig.isTypeEditable()) {
       def upsertResult = bulkPackageImportService.upsertConfig(rjson)
@@ -1833,19 +1833,20 @@ class IntegrationController {
       if (upsertResult.result == 'ERROR') {
         result.result = 'ERROR'
         result.errors = upsertResult.errors
+        result.message = "There have been issues with the import config!"
         response.status = 400
       }
       else {
         result.message = 'Successfully asserted bulk import config!'
       }
     }
-    else if (!reqBody) {
+    else if (!rjson) {
       result.result = 'ERROR'
-      response.message = 'Unable to parse request JSON body!'
+      result.message = 'Unable to parse request JSON body!'
       response.status = 400
     } else {
       result.result = 'ERROR'
-      response.message = 'Insufficient permissions to edit bulk configs!'
+      result.message = 'Insufficient permissions to edit bulk configs!'
       reponse.status = 403
     }
 

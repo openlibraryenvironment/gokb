@@ -160,14 +160,21 @@ class IngestKbartRun {
       job?.setProgress(0)
 
       def file_info = checkFile(datafile)
-      def running_jobs = concurrencyManagerService.getComponentJobs(pkg.id)
+      result.errors = file_info.errors
 
-      if (file_info.errors) {
+      if (badRows.size() > 0) {
+        def msg = "There are ${badRows.size()} bad rows -- write to badfile and report"
         result.result = 'ERROR'
-        result.errors = file_info.errors
+        result.badrows = badRows
+        result.messages.add(msg)
+      }
+      else if (file_info.errors) {
+        result.result = 'ERROR'
       }
 
-      if (!file_info.errors && running_jobs.data?.size() <= 1) {
+      def running_jobs = concurrencyManagerService.getComponentJobs(pkg.id)
+
+      if (!file_info.errors && !badRows && running_jobs.data?.size() <= 1) {
         CSVReader csv = initReader(datafile)
 
         String[] header = csv.readNext()
@@ -188,7 +195,7 @@ class IngestKbartRun {
                                 'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
                               [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
-        result.report = [matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0, previous: old_tipp_count]
+        result.report = [matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, previous: old_tipp_count]
 
         if (old_tipp_count > 0) {
           isUpdate = true
@@ -220,21 +227,16 @@ class IngestKbartRun {
                   checkTitleMatchRow(row_kbart_beans, rownum, ingest_cfg)
                 }
 
-                if (validateRow(row_data, rownum, col_positions)) {
-                  def line_result = writeToDB(row_kbart_beans,
-                            ingest_date,
-                            ingest_systime,
-                            ingest_cfg,
-                            row_specific_cfg)
+                def line_result = writeToDB(row_kbart_beans,
+                          ingest_date,
+                          ingest_systime,
+                          ingest_cfg,
+                          row_specific_cfg)
 
-                  result.report[line_result.status]++
+                result.report[line_result.status]++
 
-                  if (line_result.reviewCreated) {
-                    result.report.reviews++
-                  }
-                }
-                else {
-                  result.report.invalid++
+                if (line_result.reviewCreated) {
+                  result.report.reviews++
                 }
 
                 log.debug("ROW ELAPSED : ${System.currentTimeMillis() - rowStartTime}")
@@ -295,13 +297,6 @@ class IngestKbartRun {
               log.debug("Done")
             }
           }
-        }
-
-        if (badRows.size() > 0) {
-          def msg = "There are ${badRows.size()} bad rows -- write to badfile and report"
-          result.result = 'WARNING'
-          result.badrows = badRows
-          result.messages.add(msg)
         }
 
         long processing_elapsed = System.currentTimeMillis() - startTime
@@ -871,22 +866,7 @@ class IngestKbartRun {
         result.errors.columnsCount = [message: "Inconsistent column count in row ${result.rownum} (${nl.size()} <> ${header.size()})!", code: "kbart.errors.tabsCountFile"]
       }
       else if (nl.size() >= mandatoryColumns.size()){
-        for (key in col_positions.keySet()) {
-          // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
-          if (key && key.length() > 0) {
-            if (col_positions[key] != null && col_positions[key] < nl.length) {
-              if (nl[col_positions[key]].length() > 4092) {
-                result.errors.longVals = [message: "Unexpectedly long value in row ${result.rownum} -- Probably miscoded quote in line. Correct and resubmit", code: "kbart.errors.longValsFile"]
-              }
-              else if (nl[col_positions[key]].contains('�')) {
-                result.errors.replacementChars = [message: "Found UTF-8 replacement char in row ${result.rownum} -- Probably opened and then saved non-UTF-8 file as UTF-8!", code: "kbart.errors.replacementChars"]
-              }
-            }
-            else {
-              log.error("Column references value not present in col ${col_positions[key]} row ${result.rownum}")
-            }
-          }
-        }
+        validateRow(nl, result.rownum, col_positions)
       }
       else {
         log.debug("Found and skipped short row ${nl}")

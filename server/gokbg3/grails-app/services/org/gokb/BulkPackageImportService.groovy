@@ -23,7 +23,7 @@ class BulkPackageImportService {
   def TSVIngestionService
   def validationService
 
-  static final KNOWN_CONFIG_FIELDS = [
+  static final Map KNOWN_CONFIG_FIELDS = [
     "package_name": [required: true],
     "package_id": [required: false],
     "package_source": [required: false],
@@ -32,9 +32,9 @@ class BulkPackageImportService {
     "package_curatory_group": [required: true, cls: CuratoryGroup, field: 'name'],
     "package_titlelist": [required: true, validate: 'checkUrl' ],
     "package_id_namespace": [required: false, cls: IdentifierNamespace, field: 'value'],
-    "package_content_type": [required: false, rdc: 'Package.ContentType'],
+    "content_type": [required: false, rdc: 'Package.ContentType'],
     "title_id_namespace": [required: false, cls: IdentifierNamespace, field: 'value'],
-    "validity_range": [required: false, rdc: 'Package.Global'],
+    "global": [required: false, rdc: 'Package.Global'],
     "package_created_date": [required: false, validate: 'checkTimestamp'],
     "package_changed_date": [required: false, validate: 'checkTimestamp']
   ]
@@ -77,8 +77,11 @@ class BulkPackageImportService {
     }
     else {
       result.result = 'ERROR'
+      result.errors = validation.errors
       result.message = 'There are validation errors in the provided JSON!'
     }
+
+    result
   }
 
   def deleteConfig
@@ -86,56 +89,57 @@ class BulkPackageImportService {
   def validateConfig (config) {
     def result = [valid: true, errors:[:]]
 
-    if (!config.url && !config.cfg ) {
+    if (!config.code || !config.code.trim()) {
       result.valid = false
+      result.errors.info = [message: "No config code provided!"]
+    }
+
+    if (!config.url && !config.cfg) {
+      result.valid = false
+      result.errors.info = [message: "No config content info provided (JSON/URL)!"]
     }
 
     if (config.url) {
       result.valid &= validationService.checkUrl(config.url) ? true : false
+      result.errors.url = [message: "Invalid URL provided: ${config.url}!", value: config.url]
     }
 
     if (config.frequency) {
       result.valid &= RefdataCategory.lookup('BulkImportListConfig.Frequency', config.frequency) ? true : false
+      result.errors.frequency = [message: "Unable to lookup frequency ${config.frequency}!", value: config.frequency]
     }
 
     if (config.cfg) {
-      config.cfg.collections.each { cname, collection_info ->
-        collection_info.package_list.eachWithIndex { info, idx ->
-          def pkg_errors = [:]
+      config.cfg.collections.each { col ->
+        log.debug("Checking collection info: ${col}")
+        def col_errors = checkConfigObject(col, false)
 
-          KNOWN_CONFIG_FIELDS.each { fname, cfg ->
-            if (field.required && !info[fname]) {
-              result.valid = false
-              pkg_errors[fname] = [message: "Missing required field '${fname}'!"]
-            }
-            else if (cfg.cls && cfg.field  == 'uuid' && !cfg.cls.findByUuid(info[fname])) {
-              result.valid = false
-              pkg_errors[fname] = [message: "Unable to reference '${fname}'!"]
-            }
-            else if (cfg.cls && cfg.field  == 'name' && !cfg.cls.findByName(info[fname])) {
-              result.valid = false
-              pkg_errors[fname] = [message: "Unable to reference '${fname}'!"]
-            }
-            else if (cfg.cls && cfg.field  == 'value' && !cfg.cls.findByValue(info[fname])) {
-              result.valid = false
-              pkg_errors[fname] = [message: "Unable to reference '${fname}'!"]
-            }
-            else if (cfg.rdc && info[fname] && RefdataCategory.lookup(cfg.rdc, info[fname])) {
-              result.valid = false
-              pkg_errors[fname] = [message: "Unable to lookup refdata ${fname} ${cfg.rdc}:${info[fname]}!"]
-            }
-            else if (cfg.validate && info[fname] && !validationService."${cfg.validate}"(info[fname])) {
-              result.valid = false
-              pkg_errors[fname] = [message: "Unable to lookup refdata ${fname}:${info[fname]}!"]
-            }
+        if (col_errors.size() > 0) {
+          result.valid = false
+
+          if (!result.errors[col.collection_name]) {
+            result.errors[col.collection_name] = [:]
           }
 
-          if (pkg_errors) {
-            if (!result.errors[cname]) {
-              result.errors[cname] = []
+          result.errors[col.collection_name].generic = col_errors
+        }
+
+        col.package_list.eachWithIndex { info, idx ->
+          log.debug("Checking package info: ${info}")
+          def pkg_errors = checkConfigObject(info, true)
+
+          if (pkg_errors.size() > 0) {
+            result.valid = false
+
+            if (!result.errors[col.collection_name]) {
+              result.errors[col.collection_name] = [:]
             }
 
-            result.errors[cname] << [index: idx, errors: pkg_errors]
+            if (!result.errors[col.collection_name].packages) {
+              result.errors[col.collection_name].packages = []
+            }
+
+            result.errors[col.collection_name].packages << [index: idx, errors: pkg_errors]
           }
         }
       }
@@ -144,7 +148,34 @@ class BulkPackageImportService {
     result
   }
 
-  def startUpdate(listInfo, dryRun, User user = null) {
+  def checkConfigObject(cobj, boolean specific = false) {
+    def errors = [:]
+
+    KNOWN_CONFIG_FIELDS.each { fname, cfg ->
+      if (specific && cfg.required && !cobj[fname]) {
+        errors[fname] = [message: "Missing required field '${fname}'!"]
+      }
+      else if (cfg.cls && cobj[fname] && cfg.field  == 'uuid' && !cfg.cls.findByUuid(cobj[fname])) {
+        errors[fname] = [message: "Unable to reference '${fname}'!"]
+      }
+      else if (cfg.cls && cobj[fname] && cfg.field  == 'name' && !cfg.cls.findByName(cobj[fname])) {
+        errors[fname] = [message: "Unable to reference '${fname}'!"]
+      }
+      else if (cfg.cls && cobj[fname] && cfg.field  == 'value' && !cfg.cls.findByValue(cobj[fname])) {
+        errors[fname] = [message: "Unable to reference '${fname}'!"]
+      }
+      else if (cfg.rdc && cobj[fname] && !RefdataCategory.lookup(cfg.rdc, cobj[fname])) {
+        errors[fname] = [message: "Unable to lookup refdata ${fname} ${cfg.rdc}:${cobj[fname]}!"]
+      }
+      else if (cfg.validate && cobj[fname] && !validationService."${cfg.validate}"(cobj[fname])) {
+        errors[fname] = [message: "Unable to lookup refdata ${fname}:${cobj[fname]}!"]
+      }
+    }
+
+    errors
+  }
+
+  def startUpdate(listInfo, dryRun, async, User user = null) {
     def result = [result: 'OK']
 
     RefdataCategory.withNewSession {
@@ -153,7 +184,7 @@ class BulkPackageImportService {
       if (running_jobs.size() == 0) {
           log.debug("Creating new job..")
           Job new_job = concurrencyManagerService.createJob { ljob ->
-            fetchUpdatedLists(listInfo, dryRun, ljob)
+            fetchUpdatedLists(listInfo, dryRun, async, ljob)
           }
 
           if (user) {
@@ -164,8 +195,11 @@ class BulkPackageImportService {
           new_job.type = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
           new_job.startOrQueue()
 
-          if (!user) {
+          if (!user || async) {
             result = new_job.get()
+          }
+          else {
+            result.job_id = new_job.uuid
           }
       }
       else {
@@ -179,7 +213,7 @@ class BulkPackageImportService {
 
   private def fetchUpdatedLists (listInfo, dryRun, job) {
     def result = [result: 'OK', report: [:]]
-    def allCollections = [:]
+    def allCollections = []
     boolean cancelled = false
 
     if (listInfo.url) {
@@ -188,17 +222,11 @@ class BulkPackageImportService {
 
       client.request(GET, ContentType.JSON) {
         response.success = { resp, data ->
-          log.debug("Got EZB collection list")
-          data.collections?.each { type, items ->
-            log.debug("Mapping ${type} with ${items.size()} items")
-            if (type in activeTypes) {
-              log.debug("Added items for active type")
-              allCollections[type] = items
-            }
-            else {
-              log.debug("Skipped inactive type..")
-            }
-          }
+          log.debug("Got bulk collection list")
+          def validation_result = validateConfig([cfg: data])
+
+          if (validation_result.valid)
+            allCollections = data
         }
         response.failure = { resp, data ->
           log.error("Got status ${resp.status} .. ${data}")
@@ -211,8 +239,8 @@ class BulkPackageImportService {
     }
 
     if (allCollections) {
-      allCollections.each { type, items ->
-        log.debug("Starting with type ${type} ..")
+      allCollections.each { type ->
+        log.debug("Starting with type ${type.collection_name} ..")
         def type_results = [
           total: 0,
           skipped: 0,
@@ -228,7 +256,7 @@ class BulkPackageImportService {
         ]
 
         if (!cancelled) {
-          for (item in items) {
+          for (item in type.package_list) {
             if (Thread.currentThread().isInterrupted()) {
               break
               cancelled = true
@@ -236,13 +264,13 @@ class BulkPackageImportService {
 
             Package.withNewSession { session ->
               type_results.total++
-              CuratoryGroup curator = CuratoryGroup.findByNameIlike(item.package_curatory_group)
-              Platform platform = item.package_nominal_platform ? Platform.findByUuid(item.package_nominal_platform) : null
-              IdentifierNamespace title_id_ns = item.title_id_namespace ? IdentifierNamespace.findByValue(item.title_id_namespace) : null
-              Org provider = item.package_provider ? Org.findByUuid(item.package_provider) : null
+              CuratoryGroup curator = (item.package_curatory_group || type.package_curatory_group) ? CuratoryGroup.findByNameIlike(item.package_curatory_group ?: type.package_curatory_group) : null
+              Platform platform = (item.package_nominal_platform || type.package_nominal_platform) ? Platform.findByUuid(item.package_nominal_platform ?: type.package_nominal_platform) : null
+              IdentifierNamespace title_id_ns = (item.title_id_namespace || type.title_id_namespace) ? IdentifierNamespace.findByValue(item.title_id_namespace ?: type.title_id_namespace) : null
+              Org provider = (item.package_provider || type.package_provider) ? Org.findByUuid(item.package_provider ?: type.package_provider) : null
+              Identifier collection_id = ((item.package_id_namespace || type.package_id_namespace) && item.package_id) ? componentLookupService.lookupOrCreateCanonicalIdentifier((item.package_id_namespace ?: type.package_id_namespace), item.package_id) : null
               boolean skipped = false
               Source source = null
-              Identifier collection_id = item.package_id_namespace ? componentLookupService.lookupOrCreateCanonicalIdentifier(item.package_id_namespace, item.package_id) : null
 
               def pkg_result = [
                 id: collection_id,
@@ -251,10 +279,10 @@ class BulkPackageImportService {
                 gokb_uuid: null,
                 errors: [:]
               ]
-              log.debug("Processing ${type} ${item.package_name}")
+              log.debug("Processing ${type.collection_name} ${item.package_name}")
 
-              if (item.package_curatory_group) {
-                def local_cg = CuratoryGroup.findByUuid(item.package_curatory_group)
+              if (item.package_curatory_group || type.package_curatory_group) {
+                def local_cg = CuratoryGroup.findByUuid(item.package_curatory_group ?: type.package_curatory_group)
 
                 if (local_cg) {
                   curator = local_cg
@@ -262,7 +290,7 @@ class BulkPackageImportService {
               }
 
               if (curator && provider && platform) {
-                Package obj = Package.findByNormname(KBComponent.generateNormname(pkgName))
+                Package obj = Package.findByNormname(KBComponent.generateNormname(item.package_name))
                 boolean skip = false
 
                 if (!obj && collection_id) {
@@ -304,7 +332,7 @@ class BulkPackageImportService {
                     log.debug("Creating new Package ..")
 
                     try {
-                      obj = new Package(name: pkgName).save(flush: true, failOnError: true)
+                      obj = new Package(name: item.package_name).save(flush: true, failOnError: true)
                       type_results.created++
                     }
                     catch (Exception e) {
@@ -320,12 +348,12 @@ class BulkPackageImportService {
                   if (obj) {
                     pkg_result.gokb_uuid = obj.uuid
 
-                    if (!obj.contentType && item.content_type) {
-                      obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type)
+                    if (!obj.contentType && (item.content_type || type.content_type)) {
+                      obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type ?: type.content_type)
                     }
 
-                    if (!obj.global && item.validity_range) {
-                      obj.global = RefdataCategory.lookup('Package.Global', item.validity_range)
+                    if (!obj.global && (item.global || type.global)) {
+                      obj.global = RefdataCategory.lookup('Package.Global', item.global ?: type.global)
                     }
 
                     obj.nominalPlatform = platform
@@ -348,13 +376,13 @@ class BulkPackageImportService {
                       log.debug("Setting new package source..")
 
                       try {
-                        def dupe = Source.findByName(pkgName)
+                        def dupe = Source.findByName(item.package_name)
 
                         if (!dupe) {
-                          source = new Source(name: pkgName, url: item.package_titlelist, targetNamespace: item.title_id_namespace).save(flush:true, failOnError: true)
+                          source = new Source(name: item.package_name, url: item.package_titlelist, targetNamespace: title_id_ns).save(flush:true, failOnError: true)
                         }
                         else {
-                          log.warn("Found existing source with package name ${pkgName}!")
+                          log.warn("Found existing source with package name ${item.package_name}!")
                           source = dupe
                         }
                       }
@@ -449,7 +477,7 @@ class BulkPackageImportService {
                 }
               }
               else if (!curator) {
-                log.debug("Unable to reference a local curatory group for ${item.package_curatory_group}")
+                log.debug("Unable to reference a local curatory group for ${item.package_curatory_group ?: type.package_curatory_group}")
                 type_results.skipped++
                 type_results.noCurator++
                 pkg_result.result = 'ERROR'

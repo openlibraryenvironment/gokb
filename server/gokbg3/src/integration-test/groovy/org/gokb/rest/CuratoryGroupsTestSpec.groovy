@@ -57,7 +57,7 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data.size() == 6
+    resp.json.data.size() == 5
     resp.json.data*.email.contains(group1.email)
   }
 
@@ -72,6 +72,6 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data[5].id == group1.id
+    resp.json.data[4].id == group1.id
   }
 }

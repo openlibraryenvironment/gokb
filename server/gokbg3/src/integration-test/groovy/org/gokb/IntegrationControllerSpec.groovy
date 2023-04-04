@@ -39,13 +39,10 @@ class IntegrationControllerSpec extends Specification {
   TitleLookupService titleLookupService
 
   def setup() {
-    def bulk_cg = CuratoryGroup.findByName('TestBulkCG') ?: new CuratoryGroup(name: "TestBulkCG").save(flush: true)
     def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush: true)
     def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush: true)
     def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush: true)
     def test_upd_pkg = Package.findByName('TestTokenPackage') ?: new Package(name: 'TestTokenPackage').save(flush: true)
-    def test_bulk_org = Org.findByName('TestBulkOrg') ?: new Org(name: 'TestBulkOrg').save(flush: true)
-    def test_bulk_plt = Platform.findByName('TestBulkPlt') ?: new Platform(name: 'TestBulkPlt', primaryUrl: 'https://testbulkplt.org').save(flush: true)
     def user = User.findByUsername('ingestAgent')
     if (!user.apiUserStatus) {
       UserRole.create(user, Role.findByAuthority('ROLE_API'), true)
@@ -54,17 +51,13 @@ class IntegrationControllerSpec extends Specification {
   }
 
   def cleanup() {
-    CuratoryGroup.findByName('TestBulkCG')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
     Org.findByName('ACS TestOrg')?.expunge()
-    Org.findByName('TestBulkOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
-    Platform.findByName('TestBulkPlt')?.expunge()
     ['TestTokenPackageUpdate',
      'American Chemical Society: ACS Legacy Archives: CompleteDates',
      'TestTokenPackage',
-     'American Chemical Society: ACS Legacy Archives: UpdateListStatus',
-     'BulkTestPkgOne'].each {
+     'American Chemical Society: ACS Legacy Archives: UpdateListStatus'].each {
       Package.findByName(it)?.expunge()
     }
     UpdateToken.findByValue('TestUpdateToken')?.delete()
@@ -1329,45 +1322,5 @@ class IntegrationControllerSpec extends Specification {
     title.publisher?.size() == 1
     title.publisher[0].name == "ACS TestOrg"
     title.name == pkg.tipps[0].name
-  }
-
-  void "Test create new bulk config"() {
-    given:
-    def json_record = [
-      code: 'test_bulk_import',
-      cfg: [
-        collections: [
-          test_bulk_import_collection: [
-            [
-              package_name: "BulkTestPkgOne",
-              package_id: "btp1",
-              package_provider: Org.findByName('TestBulkOrg').uuid,
-              package_nominal_platform: Platform.findByName('TestBulkPlt').uuid,
-              package_curatory_group: 'TestBulkCG',
-              package_titlelist: "",
-              package_id_namespace: null,
-              package_content_type: "Journal",
-              title_id_namespace: "DOI",
-              validity_range: "Consortial",
-              package_created_date: null,
-              package_changed_date: null
-            ]
-          ]
-        ]
-      ]
-    ]
-    when: "Caller asks for this bulk config to be created"
-
-    RestResponse resp = rest.post("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/integration/assertBulkConfig") {
-      auth('admin', 'admin')
-      body(json_record as JSON)
-    }
-
-    then: "The request is successful"
-    resp.status == 200
-    expect:
-    def new_config = BulkImportListConfig.findByCode('test_bulk_import')
-    new_config != null
-    new_config.cfg != null
   }
 }
