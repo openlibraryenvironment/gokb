@@ -161,7 +161,7 @@ class PackageController {
               if (!errors[e.field])
                 errors[e.field] = []
 
-              errors[e.field] << [message: e.message, baddata: e.value, matches: id]
+              errors[e.field] << [matches: id] + e
             }
           }
         }
