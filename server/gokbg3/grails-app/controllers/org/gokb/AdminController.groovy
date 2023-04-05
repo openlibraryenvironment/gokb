@@ -549,15 +549,6 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
-  def runBulkUpdate() {
-    boolean dryRun = params.boolean('dryRun') ?: true
-    booleen async = params.boolean('async') ?: false
-    BulkImportListConfig config = BulkImportListConfig.findByCode(params.code)
-
-    def result = bulkPackageImportService.startUpdate(config, dryRun, async, springSecurityService.currentUser)
-    render result as JSON
-  }
-
   def fetchEzbCollections() {
     log.debug("Triggering EZB open collections sync")
 

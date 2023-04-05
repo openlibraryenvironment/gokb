@@ -65,13 +65,13 @@ class BulkPackageImportService {
       }
       else {
         def info = [
-          code: name,
-          cfg: (reqBody.cfg ? (reqBody as JSON).toString() : null),
+          code: reqBody.code,
+          cfg: (reqBody.cfg ? (reqBody.cfg as JSON).toString() : null),
           url: reqBody.url,
           automatedUpdate: reqBody.automatedUpdate
         ]
 
-        existing_cfg = new BulkImportListConfig(code: name, cfg: (reqBody.cfg ? (reqBody as JSON).toString() : null), url: reqBody.url)
+        existing_cfg = new BulkImportListConfig(info)
         existing_cfg.save(flush: true, failOnError: true)
       }
     }
@@ -99,13 +99,13 @@ class BulkPackageImportService {
       result.errors.info = [message: "No config content info provided (JSON/URL)!"]
     }
 
-    if (config.url) {
-      result.valid &= validationService.checkUrl(config.url) ? true : false
+    if (config.url && !validationService.checkUrl(config.url)) {
+      result.valid = false
       result.errors.url = [message: "Invalid URL provided: ${config.url}!", value: config.url]
     }
 
-    if (config.frequency) {
-      result.valid &= RefdataCategory.lookup('BulkImportListConfig.Frequency', config.frequency) ? true : false
+    if (config.frequency && !RefdataCategory.lookup('BulkImportListConfig.Frequency', config.frequency)) {
+      result.valid = false
       result.errors.frequency = [message: "Unable to lookup frequency ${config.frequency}!", value: config.frequency]
     }
 
@@ -177,35 +177,33 @@ class BulkPackageImportService {
 
   def startUpdate(listInfo, dryRun, async, User user = null) {
     def result = [result: 'OK']
+    def running_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup('Job.Type', 'BulkPackageIngest'))
 
-    RefdataCategory.withNewSession {
-      def running_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup('Job.Type', 'BulkPackageIngest'))
+    if (running_jobs.size() == 0) {
+        log.debug("Creating new job..")
+        Job new_job = concurrencyManagerService.createJob { ljob ->
+          fetchUpdatedLists(listInfo, dryRun, ljob)
+        }
 
-      if (running_jobs.size() == 0) {
-          log.debug("Creating new job..")
-          Job new_job = concurrencyManagerService.createJob { ljob ->
-            fetchUpdatedLists(listInfo, dryRun, async, ljob)
-          }
+        if (user) {
+          new_job.ownerId = user.id
+        }
 
-          if (user) {
-            new_job.ownerId = user.id
-          }
+        new_job.description = "Bulk package import ${user ? '(manual)' : ''}"
+        new_job.type = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
+        new_job.startOrQueue()
 
-          new_job.description = "Bulk package import ${user ? '(manual)' : ''}"
-          new_job.type = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
-          new_job.startOrQueue()
-
-          if (!user || async) {
-            result = new_job.get()
-          }
-          else {
-            result.job_id = new_job.uuid
-          }
-      }
-      else {
-        log.debug("Job is already running!")
-        result.result = 'SKIPPED_ALREADY_RUNNING'
-      }
+        if (!user || async) {
+          result = new_job.get()
+          log.debug("Got result ${result}!")
+        }
+        else {
+          result.job_id = new_job.uuid
+        }
+    }
+    else {
+      log.debug("Job is already running!")
+      result.result = 'SKIPPED_ALREADY_RUNNING'
     }
 
     result
@@ -217,6 +215,7 @@ class BulkPackageImportService {
     boolean cancelled = false
 
     if (listInfo.url) {
+      log.debug("Fetching config from ${listInfo.url} ..")
       def client = new RESTClient(listInfo.url)
       job.startTime = new Date()
 
@@ -226,21 +225,28 @@ class BulkPackageImportService {
           def validation_result = validateConfig([cfg: data])
 
           if (validation_result.valid)
-            allCollections = data
+            allCollections = data.collections
         }
         response.failure = { resp, data ->
           log.error("Got status ${resp.status} .. ${data}")
-          return 'SKIPPED_API_ERROR'
+          result.result = 'SKIPPED_API_ERROR'
+          return result
         }
       }
     }
-    else if (listInfo.cfg) {
-      allCollections = JSON.parse(listInfo.cfg)
+    else if (listInfo.cfg != null) {
+      log.debug("Parsing static config ..")
+      def local_cfg = JSON.parse(listInfo.cfg)
+
+      if (local_cfg) {
+        log.debug("Parsed successfully: ${local_cfg}")
+        allCollections = local_cfg.collections
+      }
     }
 
     if (allCollections) {
       allCollections.each { type ->
-        log.debug("Starting with type ${type.collection_name} ..")
+        log.debug("Starting with collection ${type.collection_name} ..")
         def type_results = [
           total: 0,
           skipped: 0,
@@ -273,7 +279,7 @@ class BulkPackageImportService {
               Source source = null
 
               def pkg_result = [
-                id: collection_id,
+                id: collection_id?.value,
                 name: item.package_name,
                 result: 'OK',
                 gokb_uuid: null,
@@ -513,16 +519,16 @@ class BulkPackageImportService {
                   ]
                 }
               }
+              type_results.report << pkg_result
             }
-            type_results.report << pkg_result
           }
         }
         else {
           log.debug("Job was cancelled.. skipping further processing")
         }
 
-        job.message("Completed type ${type} with ${type_results}".toString())
-        result.report[type] = type_results
+        job.message("Completed type ${type.collection_name} with ${type_results}".toString())
+        result.report[type.collection_name] = type_results
       }
 
       result.result = 'FINISHED'
@@ -532,6 +538,8 @@ class BulkPackageImportService {
       log.debug("No collections found.")
       result.result = 'SKIPPED_NO_API_URL'
     }
+
+    log.debug("Saving job result ${result}")
 
     JobResult.withNewSession {
       def job_map = [
