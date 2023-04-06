@@ -51,10 +51,15 @@ class PackageTestSpec extends AbstractAuthSpec {
     testPackage.provider = testOrg
     testPackage.save(flush:true)
 
-    Package pkg = new Package(name: "TestPackHandleUrl").save(flush: true)
-    pkg.nominalPlatform = testPlt
-    pkg.provider = testOrg
-    pkg.save(flush: true)
+    Package urlTestPackage = new Package(name: "TestPackHandleUrl").save(flush: true)
+    urlTestPackage.nominalPlatform = testPlt
+    urlTestPackage.provider = testOrg
+    urlTestPackage.save(flush: true)
+
+    Package partialErrorPackage = new Package(name: "TestPackPartialError").save(flush: true)
+    partialErrorPackage.nominalPlatform = testPlt
+    partialErrorPackage.provider = testOrg
+    partialErrorPackage.save(flush: true)
 
     JournalInstance testTitle = JournalInstance.findByName("PackTestTitle") ?: new JournalInstance(name: "PackTestTitle").save(flush: true)
     testTitle.ids.add(serial_issn)
@@ -103,7 +108,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     ['TestPackJournalTIPP', 'TestJournalTIPPUpdate', 'TestPackBookTIPP', 'TestBookTIPPUpdate', 'TIPP Name', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
-    ["TestPack","UpdPack","TestPackageWithTipps","TestPackageWithProviderAndPlatform", "TestPackHandleUrl"].each {
+    ["TestPack","UpdPack","TestPackageWithTipps","TestPackageWithProviderAndPlatform", "TestPackHandleUrl", "TestPackPartialError"].each {
       Package.findByName(it)?.expunge()
     }
     CuratoryGroup.findByName("cgtest1")?.expunge()
@@ -325,5 +330,44 @@ class PackageTestSpec extends AbstractAuthSpec {
     resp.status == 200
     resp.json?.job_result?.report?.created == 2
     !pkg.tipps*.hostPlatform.contains(handlePlt)
+  }
+
+  void "test /rest/packages/<id>/ingest with single invalid line"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_import_partial_error.txt")
+    Package pkg = Package.findByName("TestPackPartialError")
+
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("${urlPath}/rest/packages/${pkg.id}/ingest?async=false") {
+      accept('application/json')
+      contentType("multipart/form-data")
+      auth("Bearer $accessToken")
+      submissionFile=kbart_file.getFile()
+    }
+    then:
+    resp.status == 200
+    resp.json?.job_result.report == null
+    resp.json?.job_result?.validation?.rows.error == 1
+  }
+
+  void "test /rest/packages/<id>/ingest with single invalid line & skipInvalid"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_import_partial_error.txt")
+    Package pkg = Package.findByName("TestPackPartialError")
+
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("${urlPath}/rest/packages/${pkg.id}/ingest?async=false&skipInvalid=true") {
+      accept('application/json')
+      contentType("multipart/form-data")
+      auth("Bearer $accessToken")
+      submissionFile=kbart_file.getFile()
+    }
+    then:
+    resp.status == 200
+    resp.json?.job_result?.report?.created == 1
   }
 }

@@ -468,14 +468,14 @@ class ValidationService {
   def checkCoverageRange(startVolume, startIssue, endVolume, endIssue) {
     def result = [valid: true, errors: []]
 
-    if (startVolume?.isInteger() && endVolume?.isInteger()) {
-      if (startVolume.toInteger() > endVolume.toInteger()) {
+    if ((startVolume instanceof Integer || startVolume?.isInteger()) && (endVolume instanceof Integer || endVolume?.isInteger())) {
+      if (startVolume > endVolume) {
         result.valid = false
         result.errors << ['num_first_vol_online': [message: "The start volume is greater than the end volume!", messageCode: "validation.volumeRange"]]
       }
-      else if (startVolume.toInteger() == endVolume.toInteger()) {
-        if (startIssue?.isInteger() && endIssue?.isInteger()) {
-          if (startIssue.toInteger() > endIssue.toInteger()) {
+      else if (startVolume as int == endVolume as int) {
+        if ((startIssue instanceof Integer || startIssue?.isInteger()) && (endIssue instanceof Integer || endIssue?.isInteger())) {
+          if (startIssue > endIssue) {
             result.valid = false
             result.errors << ['num_first_issue_online': [message: "The start issue for is greater than the last issue!", messageCode: "validation.issueRange"]]
           }

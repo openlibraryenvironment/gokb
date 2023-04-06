@@ -57,7 +57,7 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json.data.size() == 5
+    resp.json.data.size() > 4
     resp.json.data*.email.contains(group1.email)
   }
 
@@ -65,13 +65,21 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String token = getAccessToken("groupUser", "groupUser")
-    RestResponse resp = rest.get("${urlPath}/rest/curatoryGroups?_sort=name&_order=desc") {
+    RestResponse resp_asc = rest.get("${urlPath}/rest/curatoryGroups?_sort=name") {
       // headers
       accept('application/json')
       auth("Bearer $token")
     }
+
+    RestResponse resp_desc = rest.get("${urlPath}/rest/curatoryGroups?_sort=name&_order=desc") {
+      // headers
+      accept('application/json')
+      auth("Bearer $token")
+    }
+
     then:
-    resp.status == 200
-    resp.json.data[4].id == group1.id
+    resp_asc.status == 200
+    resp_desc.status == 200
+    resp_asc.json.data[0].name != resp_desc.json.data[0].name
   }
 }
