@@ -39,7 +39,6 @@ class IntegrationControllerSpec extends Specification {
   TitleLookupService titleLookupService
 
   def setup() {
-    def new_cg = CuratoryGroup.findByName('TestGroup1') ?: new CuratoryGroup(name: "TestGroup1").save(flush: true)
     def acs_org = Org.findByName("American Chemical Society") ?: new Org(name: "American Chemical Society").save(flush: true)
     def acs_test_plt = Platform.findByName('ACS Publications') ?: new Platform(name: 'ACS Publications', primaryUrl: 'https://pubs.acs.org').save(flush: true)
     def test_upd_org = Org.findByName('ACS TestOrg') ?: new Org(name: 'ACS TestOrg').save(flush: true)
@@ -52,8 +51,6 @@ class IntegrationControllerSpec extends Specification {
   }
 
   def cleanup() {
-    CuratoryGroup.findByName('TestGroup1')?.expunge()
-    CuratoryGroup.findByName('TestGroup2')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
     Org.findByName('ACS TestOrg')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()

@@ -18,6 +18,7 @@ import org.gokb.GOKbTextUtils
 class ValidationService {
 
   def TSVIngestionService
+  def dateFormatService
 
   static final Map KNOWN_COLUMNS = [
     publication_title: [
@@ -91,10 +92,10 @@ class ValidationService {
       ]
     ],
     first_author: [
-      mandatory: false,
+      mandatory: false
     ],
     title_id: [
-      mandatory: true
+      mandatory: false
     ],
     embargo_info: [
       mandatory: false,
@@ -375,6 +376,13 @@ class ValidationService {
             ]
           }
         }
+        else if (key == 'title_id' && !trimmed_val) {
+          result.warnings[key] = [
+            message: "This line does not contain a value for the common title id!",
+            messageCode: "kbart.errors.noTitleId",
+            args: []
+          ]
+        }
         else if (!pubType && (key == 'online_identifier' || key == 'print_identifier')) {
           log.debug("Skipping ID columns due to missing publication_type")
         }
@@ -444,11 +452,46 @@ class ValidationService {
       }
     }
 
+    def coverageCheck = checkCoverageRange(col_positions['num_first_vol_online'], col_positions['num_first_issue_online'], col_positions['num_last_vol_online'], col_positions['num_last_issue_online'])
+
+    if (!coverageCheck.valid) {
+      result.errors << coverageCheck.errors
+    }
+
     result
   }
 
   def checkEmbargoCode(String value) {
     return (value ==~ ~"^(([RP][1-9][0-9]*[DMY])|(R[1-9][0-9]*[DMY];P[1-9][0-9]*[DMY]))\$" ? value : false)
+  }
+
+  def checkCoverageRange(startVolume, startIssue, endVolume, endIssue) {
+    def result = [valid: true, errors: []]
+
+    if ((startVolume instanceof Integer || startVolume?.isInteger()) && (endVolume instanceof Integer || endVolume?.isInteger())) {
+      if (startVolume > endVolume) {
+        result.valid = false
+        result.errors << ['num_first_vol_online': [message: "The start volume is greater than the end volume!", messageCode: "validation.volumeRange"]]
+      }
+      else if (startVolume as int == endVolume as int) {
+        if ((startIssue instanceof Integer || startIssue?.isInteger()) && (endIssue instanceof Integer || endIssue?.isInteger())) {
+          if (startIssue > endIssue) {
+            result.valid = false
+            result.errors << ['num_first_issue_online': [message: "The start issue for is greater than the last issue!", messageCode: "validation.issueRange"]]
+          }
+        }
+      }
+      else if (!startIssue && endIssue) {
+        result.valid = false
+        result.errors << ['num_last_issue_online': [message: "Coverage has a last issue but no first issue!", messageCode: "validation.missingStartIssue"]]
+      }
+    }
+    else if (!startVolume && endVolume) {
+      result.valid = false
+      result.errors << ['num_last_vol_online': [message: "Coverage has a last volume but no first volume!", messageCode: "validation.missingStartVolume"]]
+    }
+
+    result
   }
 
   def checkPubType(String value) {
@@ -572,6 +615,33 @@ class ValidationService {
 
     if (full_date) {
       result = value
+    }
+
+    result
+  }
+
+  def checkTimestamp(String value, def format = null) {
+    def result = null
+
+    if (!format || format == 'sec') {
+      try {
+        result = dateFormatService.parseTimestamp(value) ? value : null
+      }
+      catch (Exception e) {}
+    }
+
+    if (!result && (!format || format == 'ms')) {
+      try {
+        result = dateFormatService.parseTimestampMs(value) ? value : null
+      }
+      catch (Exception e) {}
+    }
+
+    if (!result && (!format || format == 'iso')) {
+      try {
+        result = dateFormatService.parseIsoMsTimestamp(value) ? value : null
+      }
+      catch (Exception e) {}
     }
 
     result
