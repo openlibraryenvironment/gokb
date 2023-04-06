@@ -47,8 +47,11 @@ window.gokb = {
   }
 };
 
-(function($) {
+jQuery.htmlPrefilter = function( html ) {
+  return html;
+};
 
+(function($) {
   // When DOM is ready.
   $(document).ready(function(){
 

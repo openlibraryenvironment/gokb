@@ -355,4 +355,52 @@ class TitleHistoryService {
       log.debug("Not adding duplicate event between ${from} -> ${to}!")
     }
   }
+
+  public def transferEvents(old_ti, new_ti) {
+    def ti_history = old_ti.getTitleHistory()
+    ti_history.each{ ohe ->
+      def new_from = []
+      def new_to = []
+      def dupe = false
+      if (ohe.to.contains(old_ti)){
+        ohe.to.removeIf { it == old_ti }
+        ohe.to.add(new_ti)
+        new_to = ohe.to
+        ohe.from.each{ hep ->
+          def he_match = ComponentHistoryEvent.executeQuery("select che from ComponentHistoryEvent as che where exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :fromPart) AND exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :toPart)", [fromPart: hep, toPart: new_ti])
+          if (he_match){
+            dupe = true
+          }
+        }
+        new_from = ohe.from
+      }
+      else if (ohe.from.contains(old_ti)){
+        ohe.from.removeIf { it == old_ti }
+        ohe.from.add(new_ti)
+        new_from = ohe.from
+        ohe.from.each{ hep ->
+          def he_match = ComponentHistoryEvent.executeQuery("select che from ComponentHistoryEvent as che where exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :fromPart) AND exists ( select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :toPart)", [fromPart: new_ti, toPart: hep])
+          if (he_match){
+            dupe = true
+          }
+        }
+        new_to = ohe.to
+      }
+      if (!dupe){
+        def he = new ComponentHistoryEvent()
+        if (ohe.date){
+          he.eventDate = ohe.date
+        }
+        he.save(flush: true, failOnError: true)
+        new_from.each{
+          def hep = new ComponentHistoryEventParticipant(event: he, participant: it, participantRole: 'in')
+          hep.save(flush: true, failOnError: true)
+        }
+        new_to.each{
+          def hep = new ComponentHistoryEventParticipant(event: he, participant: it, participantRole: 'out')
+          hep.save(flush: true, failOnError: true)
+        }
+      }
+    }
+  }
 }
