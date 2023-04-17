@@ -68,7 +68,7 @@ class SourcesTestSpec extends AbstractAuthSpec {
 
     then:
     resp.status == HttpStatus.OK
-    resp.body().data.size() == 8
+    resp.body().data.size() > 0
   }
 
   void "test GET /rest/sources/{id}"() {

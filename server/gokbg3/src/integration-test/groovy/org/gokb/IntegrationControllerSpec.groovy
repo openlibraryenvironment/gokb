@@ -107,7 +107,7 @@ class IntegrationControllerSpec extends Specification {
 
     then: "The item is created up as it does not already exist"
     resp.body()?.groupId != null
-    resp.body()?.message != null
+    resp.body()?.message == 'Created new group TestGroup2!'
     resp.body()?.result == 'OK'
     expect: "Find item by name only returns one item"
     def matching_groups = CuratoryGroup.executeQuery('select cg from CuratoryGroup as cg where cg.name = :n', [n: json_record.name]);

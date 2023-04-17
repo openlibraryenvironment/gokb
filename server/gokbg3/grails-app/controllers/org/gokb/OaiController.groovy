@@ -56,6 +56,10 @@ class OaiController {
             // Combine the default props with the locally set ones.
             result.oaiConfig = defaultOaiConfig + o
 
+            if (params.id == 'packages' && grailsApplication.config.gokb.packageOaiCaching.enabled) {
+              result.oaiConfig.lastModified = 'lastCachedDate'
+            }
+
             // Also add the class name.
             result.className = dc.clazz.name
             r = true
@@ -249,7 +253,8 @@ class OaiController {
   def identify(result) {
 
     // Get the information needed to describe this entry point.
-    def obj = KBComponent.executeQuery("from ${result.className} as o ORDER BY ${result.oaiConfig.lastModified} ASC".toString(), [], [max:1, readOnly:true])[0];
+    def first_timestamp = KBComponent.executeQuery("select ${result.oaiConfig.lastModified} from ${result.className} as o ORDER BY ${result.oaiConfig.lastModified} ASC".toString(), [], [max:1, readOnly:true])[0];
+    def last_timestamp = KBComponent.executeQuery("select ${result.oaiConfig.lastModified} from ${result.className} as o ORDER BY ${result.oaiConfig.lastModified} DESC".toString(), [], [max:1, readOnly:true])[0];
 
     def writer = new StringWriter()
     def xml = new MarkupBuilder(writer)
@@ -269,7 +274,8 @@ class OaiController {
             ))
         'protocolVersion'('2.0')
         'adminEmail'('admin@gokb.org')
-        'earliestDatestamp'(dateFormatService.formatIsoTimestamp(obj."${result.oaiConfig.lastModified}"))
+        'earliestDatestamp'(dateFormatService.formatIsoTimestamp(first_timestamp))
+        'lastDatestamp'(dateFormatService.formatIsoTimestamp(last_timestamp))
         'deletedRecord'('transient')
         'granularity'('YYYY-MM-DDThh:mm:ssZ')
         'compression'('deflate')

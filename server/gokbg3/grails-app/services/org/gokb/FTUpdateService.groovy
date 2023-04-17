@@ -346,6 +346,7 @@ class FTUpdateService {
           result.hostPlatform = kbc.hostPlatform.getLogEntityId()
           result.hostPlatformName = kbc.hostPlatform.name
           result.hostPlatformUuid = kbc.hostPlatform.uuid
+          result.hostPlatformUrl = kbc.hostPlatform.primaryUrl
         }
 
         // title history
@@ -358,7 +359,7 @@ class FTUpdateService {
           result.tippTitle = kbc.title.getLogEntityId()
           result.tippTitleName = kbc.title.name
           result.tippTitleUuid = kbc.title.uuid
-          result.tippTitleMedium = kbc.title.medium.value
+          result.tippTitleMedium = kbc.title.medium?.value
           kbc.title.titleHistory?.each { he ->
             if (he.date) {
               def event = [:]
@@ -375,6 +376,7 @@ class FTUpdateService {
               result.titleHistory.add(event)
             }
           }
+
           kbc.title.publisher?.each { pub ->
             def publisher = [:]
             publisher.name = pub.name ?: ""

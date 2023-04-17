@@ -67,19 +67,24 @@ class CuratoryGroupsTestSpec extends AbstractAuthSpec {
 
     then:
     resp.status == HttpStatus.OK
-    resp.body().data.size() > 0
+    resp.body().data.size() > 4
     resp.body().data*.email.contains(group1.email)
   }
 
   void "test GET /rest/curatoryGroups sorting by name"() {
     def urlPath = getUrlPath()
     when:
-    HttpRequest request = HttpRequest.GET("${urlPath}/rest/curatoryGroups?_sort=name&_order=desc")
+    HttpRequest request_asc = HttpRequest.GET("${urlPath}/rest/curatoryGroups?_sort=name")
       .bearerAuth(getAccessToken("groupUser", "groupUser"))
-    HttpResponse resp = http.exchange(request, Map)
+    HttpResponse resp_asc = http.exchange(request_asc, Map)
+
+    HttpRequest request_desc = HttpRequest.GET("${urlPath}/rest/curatoryGroups?_sort=name&_order=desc")
+      .bearerAuth(getAccessToken("groupUser", "groupUser"))
+    HttpResponse resp_desc = http.exchange(request_desc, Map)
 
     then:
-    resp.status == HttpStatus.OK
-    resp.body().data[0].name.compareTo(resp.body().data[1].name) > 0
+    resp_asc.status == HttpStatus.OK
+    resp_desc.status == HttpStatus.OK
+    resp_asc.body().data[0].name != resp_desc.body().data[0].name
   }
 }

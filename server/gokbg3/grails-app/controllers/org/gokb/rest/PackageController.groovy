@@ -161,7 +161,7 @@ class PackageController {
               if (!errors[e.field])
                 errors[e.field] = []
 
-              errors[e.field] << [message: e.message, baddata: e.value, matches: id]
+              errors[e.field] << [matches: id] + e
             }
           }
         }
@@ -848,6 +848,7 @@ class PackageController {
       IdentifierNamespace title_ns = params.int('titleIdNamespace') ? IdentifierNamespace.get(params.int('titleIdNamespace')) : null
       Boolean add_only = params.boolean('addOnly') ?: false
       Boolean dry_run = params.boolean('dryRun') ?: false
+      Boolean skip_invalid = params.boolean('skipInvalid') ?: false
       def info = TSVIngestionService.analyseFile(temp_file)
       def platform_url = pkg.nominalPlatform?.primaryUrl ?: null
       def pkg_source = pkg.source
@@ -884,6 +885,7 @@ class PackageController {
                                             user,
                                             active_group,
                                             dry_run,
+                                            skip_invalid,
                                             job)
         }
 
@@ -931,13 +933,15 @@ class PackageController {
   def triggerSourceUpdate() {
     def result = ['result': 'OK']
     def active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
-    def async = params.async ? params.boolean('async') : true
+    Boolean async = params.boolean('async') ?: true
+    Boolean dry_run = params.boolean('dryRun') ?: false
+    Boolean skip_invalid = params.boolean('skipInvalid') ?: false
     Package pkg = Package.get(params.id)
     def user = User.get(springSecurityService.principal.id)
 
     if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
-        packageSourceUpdateService.startSourceUpdate(pkg, user, job, active_group)
+        packageSourceUpdateService.updateFromSource(pkg, user, job, active_group, dry_run, skip_invalid)
       }
 
       background_job.groupId = active_group.id

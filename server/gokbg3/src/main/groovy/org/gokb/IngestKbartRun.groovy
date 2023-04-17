@@ -52,6 +52,7 @@ class IngestKbartRun {
   boolean async
   boolean dryRun
   boolean isUpdate
+  boolean skipInvalid
   User user
   Map errors = [global: [], tipps: []]
   int removedNum = 0
@@ -96,7 +97,8 @@ class IngestKbartRun {
                         Boolean incremental = false,
                         User u = null,
                         CuratoryGroup active_group = null,
-                        Boolean dry_run = false) {
+                        Boolean dry_run = false,
+                        Boolean skip_invalid = false) {
     pkg = pack
     addOnly = incremental
     user = u
@@ -105,6 +107,7 @@ class IngestKbartRun {
     dryRun = dry_run
     datafile = data_file
     providerIdentifierNamespace = titleIdNamespace
+    skipInvalid = skip_invalid
   }
 
   def start(nJob) {
@@ -160,14 +163,21 @@ class IngestKbartRun {
       job?.setProgress(0)
 
       def file_info = checkFile(datafile)
-      def running_jobs = concurrencyManagerService.getComponentJobs(pkg.id)
+      result.validation = file_info
 
-      if (file_info.errors) {
+      if (badRows.size() > 0) {
+        def msg = "There are ${badRows.size()} bad rows -- write to badfile and report"
         result.result = 'ERROR'
-        result.errors = file_info.errors
+        result.badrows = badRows
+        result.messages.add(msg)
+      }
+      else if (!file_info.valid) {
+        result.result = 'ERROR'
       }
 
-      if (!file_info.errors && running_jobs.data?.size() <= 1) {
+      def running_jobs = concurrencyManagerService.getComponentJobs(pkg.id)
+
+      if ((file_info.valid || (skipInvalid && !file_info.message)) && running_jobs.data?.size() <= 1) {
         CSVReader csv = initReader(datafile)
 
         String[] header = csv.readNext()
@@ -188,7 +198,7 @@ class IngestKbartRun {
                                 'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
                               [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
-        result.report = [matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0, previous: old_tipp_count]
+        result.report = [numRows: file_info.rows.total, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0, previous: old_tipp_count]
 
         if (old_tipp_count > 0) {
           isUpdate = true
@@ -201,7 +211,7 @@ class IngestKbartRun {
           new Combo(fromComponent: pkg, toComponent: datafile, type: type_fa).save(flush: true)
         }
 
-        log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rownum} rows. Package is ${pkg.id}")
+        log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rows.total} rows. Package is ${pkg.id}")
 
         boolean more = true
         int rownum = 0
@@ -215,7 +225,7 @@ class IngestKbartRun {
             if (row_data.size() == header.size()) {
                 def row_kbart_beans = getKbartBeansForRow(col_positions, row_data)
                 def row_specific_cfg = getRowSpecificCfg(ingest_cfg, row_kbart_beans)
-                log.debug("**Ingesting ${rownum} of ${file_info.rownum} ${row_kbart_beans}")
+                log.debug("**Ingesting ${rownum} of ${file_info.rows.total} ${row_kbart_beans}")
 
                 long rowStartTime = System.currentTimeMillis()
 
@@ -223,7 +233,7 @@ class IngestKbartRun {
                   checkTitleMatchRow(row_kbart_beans, rownum, ingest_cfg)
                 }
 
-                if (validateRow(row_data, rownum, col_positions)) {
+                if (!result.validation.errors.rows["${rownum}"]) {
                   def line_result = writeToDB(row_kbart_beans,
                             ingest_date,
                             ingest_systime,
@@ -243,7 +253,7 @@ class IngestKbartRun {
                 log.debug("ROW ELAPSED : ${System.currentTimeMillis() - rowStartTime}")
             }
 
-            job?.setProgress(rownum, file_info.rownum)
+            job?.setProgress(rownum, file_info.rows.total)
 
             if (rownum % 25 == 0) {
               cleanupService.cleanUpGorm()
@@ -302,24 +312,17 @@ class IngestKbartRun {
           }
         }
 
-        if (badRows.size() > 0) {
-          def msg = "There are ${badRows.size()} bad rows -- write to badfile and report"
-          result.badrows = badRows
-          result.messages.add(msg)
-        }
-
         long processing_elapsed = System.currentTimeMillis() - startTime
-        def average_milliseconds_per_row = file_info.rownum > 0 ? processing_elapsed.intdiv(file_info.rownum) : 0
+        def average_milliseconds_per_row = file_info.rows.total > 0 ? processing_elapsed.intdiv(file_info.rows.total) : 0
         // 3600 seconds in an hour, * 1000ms in a second
         def average_per_hour = average_milliseconds_per_row > 0 ? 3600000.intdiv(average_milliseconds_per_row) : 0
 
         result.report.timestamp = System.currentTimeMillis()
         result.report.event = (result.result == 'CANCELLED' ? 'ProcessingCancelled' : 'ProcessingComplete')
-        result.report.numRows = file_info.rownum
         result.report.averagePerRow = average_milliseconds_per_row
         result.report.averagePerHour = average_per_hour
         result.report.elapsed = processing_elapsed
-        job?.message("Processing Complete : numRows:${file_info.rownum}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
+        job?.message("Processing Complete : numRows:${file_info.rows.total}, avgPerRow:${average_milliseconds_per_row}, avgPerHour:${average_per_hour}")
 
         if (!dryRun) {
           try {
@@ -812,7 +815,8 @@ class IngestKbartRun {
       host = host.substring(4)
     }
 
-    def platforms = Platform.executeQuery("select p from Platform as p where status != :sc and (p.primaryUrl like :host or p.name = :host)", ['host': "%" + host + "%", sc: RefdataCategory.lookup('KBComponent.Status', 'Deleted')], [readonly: false])
+    def plt_params = ['host': "%" + host + "%", sc: RefdataCategory.lookup('KBComponent.Status', 'Deleted')]
+    def platforms = Platform.executeQuery("select p from Platform as p where status != :sc and (p.primaryUrl like :host or p.name = :host)", plt_params, [readonly: false])
 
     switch (platforms.size()) {
       case 0:
@@ -831,8 +835,22 @@ class IngestKbartRun {
   }
 
   def checkFile(the_data) {
-    def result = [errors: [:], rownum: 0]
-    log.debug("Checking for errors causing complete rejection ..")
+    def result = [
+      valid: true,
+      message: "",
+      rows: [total: 0, error: 0, warning: 0],
+      errors: [
+        missingColumns: [],
+        rows: [:],
+        type: [:]
+      ],
+      warnings: [
+        missingColumns: [],
+        rows: [:],
+        type: [:]
+      ]
+    ]
+
     CSVReader csv = initReader(the_data)
 
     Map col_positions = [:]
@@ -858,56 +876,93 @@ class IngestKbartRun {
 
     for (mc in mandatoryColumns) {
       if (!header.contains(mc)) {
-        if (!result.errors.missingColumns) {
-          result.errors.missingColumns = []
-        }
         result.errors.missingColumns.add(mc)
       }
     }
 
     if (!['UTF-8', 'US-ASCII'].contains(the_data.encoding)) {
-      result.errors.encoding = [message: "The encoding of this file is not UTF-8. Please correct this before importing!", code: "kbart.errors.encoding"]
+      log.debug("GOT invalid encoding ${the_data.encoding}")
+      result.valid = false
+      result.message = "The encoding of this file is not UTF-8. Please correct this before importing!"
+      result.errors.type.encoding = [message: "The encoding of this file is not UTF-8. Please correct this before importing!", code: "kbart.errors.encoding"]
     }
 
     String[] nl = csv.readNext()
+    int rowCount = 0
 
-    while (nl != null) {
-      result.rownum++
+    if (result.errors.missingColumns.size() == 0) {
+      while (nl != null) {
+        rowCount++
 
-      if (nl.size() > 1 && nl.size() != header.size()) {
-        result.errors.columnsCount = [message: "Inconsistent column count in row ${result.rownum} (${nl.size()} <> ${header.size()})!", code: "kbart.errors.tabsCountFile"]
-      }
-      else if (nl.size() >= mandatoryColumns.size()){
-        for (key in col_positions.keySet()) {
-          // log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
-          if (key && key.length() > 0) {
-            if (col_positions[key] != null && col_positions[key] < nl.length) {
-              if (nl[col_positions[key]].length() > 4092) {
-                result.errors.longVals = [message: "Unexpectedly long value in row ${result.rownum} -- Probably miscoded quote in line. Correct and resubmit", code: "kbart.errors.longValsFile"]
-              }
-              else if (nl[col_positions[key]].contains('�')) {
-                result.errors.replacementChars = [message: "Found UTF-8 replacement char in row ${result.rownum} -- Probably opened and then saved non-UTF-8 file as UTF-8!", code: "kbart.errors.replacementChars"]
-              }
+        if (nl.size() > 1 && nl.size() != header.size()) {
+          result.rows.error++
+          result.rows.total++
+          result.errors.rows["${rowCount}"] = [
+            columnsCount: [
+              message: "Inconsistent column count (${nl.size()} <> ${header.size()})!",
+              messageCode: "kbart.errors.tabsCountRow",
+              args: [nl.size(), header.size()]
+            ]
+          ]
+          result.valid = false
+        }
+        else if (nl.size() >= mandatoryColumns.size()){
+          result.rows.total++
+
+          def row_result = validateRow(nl, rowCount, col_positions)
+
+          if (row_result.errors) {
+            result.rows.error++
+            result.valid = false
+            result.errors.rows["${rowCount}"] = row_result.errors
+
+            row_result.errors.each { error_key, error_list ->
+              addOrIncreaseTypedCount(result, error_key, 'errors')
             }
-            else {
-              log.error("Column references value not present in col ${col_positions[key]} row ${result.rownum}")
+          }
+          if (row_result.warnings) {
+            result.rows.warning++
+            result.warnings.rows["${rowCount}"] = row_result.warnings
+
+            row_result.warnings.each { warn_key, warn_list ->
+              addOrIncreaseTypedCount(result, warn_key, 'warnings')
             }
           }
         }
-      }
-      else {
-        log.debug("Found and skipped short row ${nl}")
-      }
+        else {
+          log.debug("Found and skipped short row ${nl}")
+          result.rows.warning++
 
-      if (result.errors) {
-        break
+          if (!result.warnings.rows["${rowCount}"]) {
+            result.warnings.rows["${rowCount}"] = [:]
+          }
+
+          result.warnings.rows["${rowCount}"]["shortRow"] = [
+            message: "Skipped short/empty row!",
+            messageCode: "kbart.errors.shortRow"
+          ]
+        }
+
+        nl = csv.readNext()
       }
-      nl = csv.readNext()
+    }
+    else {
+      log.debug("Missing mandatory columns... skipping file processing!")
+      result.message = "File processing was skipped due to missing mandatory columns!"
     }
 
     csv.close()
 
     result
+  }
+
+  private void addOrIncreaseTypedCount(result, String column, String type) {
+    if (!result[type].type[column]) {
+      result[type].type[column] = 1
+    }
+    else {
+      result[type].type[column]++
+    }
   }
 
   private CSVReader initReader (the_data) {
@@ -961,16 +1016,14 @@ class IngestKbartRun {
 
   def validateRow(row_data, rownum, col_positions) {
     log.debug("Validate :: ${row_data}")
-    def valid = true
-    def result = validationService.checkRow(row_data, rownum, col_positions, providerIdentifierNamespace)
+    def result = validationService.checkRow(row_data, rownum, col_positions, providerIdentifierNamespace, false)
 
     if (result.errors) {
       log.debug("Recording bad row ${rownum}: ${result.errors}")
-      valid = false
       badRows.add([rowdata: row_data, errors: result.errors, row: rownum])
     }
 
-    valid
+    result
   }
 
   /**

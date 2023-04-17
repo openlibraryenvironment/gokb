@@ -14,23 +14,23 @@ class PackageSourceUpdateService {
   def concurrencyManagerService
   def TSVIngestionService
 
-  def updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null) {
+  def updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null, boolean dryRun = false, boolean skipInvalid = false) {
     log.debug("updateFromSource ${p.name}")
-    def result = null
+    def result = [result: 'OK']
     def activeJobs = concurrencyManagerService.getComponentJobs(p.id)
 
     if (job || activeJobs?.data?.size() == 0) {
       log.debug("UpdateFromSource started")
-      result = startSourceUpdate(p, user, job, activeGroup)
+      result = startSourceUpdate(p, user, job, activeGroup, dryRun, skipInvalid)
     }
     else {
       log.error("update skipped - already running")
-      result = 'ALREADY_RUNNING'
+      result.result = 'ALREADY_RUNNING'
     }
     result
   }
 
-  private def startSourceUpdate(pkg, user, job, activeGroup) {
+  private def startSourceUpdate(pkg, user, job, activeGroup, dryRun, skipInvalid) {
     log.debug("Source update start..")
     def result = [result: 'OK']
 
@@ -231,7 +231,8 @@ class PackageSourceUpdateService {
                                                              false,
                                                              user,
                                                              preferred_group,
-                                                             false,
+                                                             dryRun,
+                                                             skipInvalid,
                                                              job)
                 }
                 else {
@@ -243,7 +244,8 @@ class PackageSourceUpdateService {
                                                       false,
                                                       user,
                                                       preferred_group,
-                                                      false,
+                                                      dryRun,
+                                                      skipInvalid,
                                                       j)
                   }
 

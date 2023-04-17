@@ -229,7 +229,7 @@ class TippController {
           errors << updateCombos(obj, reqBody)
 
           if (obj?.validate()) {
-            if (reqBody.coverageStatements instanceof List) {
+            if (reqBody.coverageStatements != null) {
               obj = tippService.updateCoverage(obj, reqBody)
             }
 
