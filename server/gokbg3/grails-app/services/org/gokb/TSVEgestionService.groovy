@@ -1,8 +1,8 @@
 package org.gokb
 
 import grails.gorm.transactions.Transactional
+import grails.io.IOUtils
 import liquibase.util.StringUtils
-import org.grails.web.json.JSONArray
 import org.grails.web.json.JSONObject
 
 import java.time.LocalDateTime
@@ -13,20 +13,20 @@ class TSVEgestionService {
   def grailsApplication
 
   /**
-   * Generically create a TSV output from any json structure.
+   * Generically create a TSV file from any JSONArray structure.
    * @param json The Json data to be exported.
    * @param fields The list of fields to be exported, optionally mapped with the name of the TSV column.
    * @param filterEmptyColumns Columns defined in fields that do not provide data in any of the json objects can be left
    *        out of the TSV result. This might be at the expense of performance, since it requires an iterative check
    *        before writing the output.
    */
-  File jsonToTsv (JSONArray jsonArray, Map<String, String> fields, boolean filterEmptyColumns) {
-    File result = new File(grailsApplication.config.gokb.tsvExportTempDirectory + File.separator +
+  File jsonToTsv (List data, Map<String, String> fields, boolean filterEmptyColumns) {
+    File resultFile = new File(grailsApplication.config.gokb.tsvExportTempDirectory + File.separator +
             LocalDateTime.now().toString() + ".tsv")
-    FileWriter fileWriter = new FileWriter(result, true)
-    Map<String, String> refinedFields = refineFields(fields, filterEmptyColumns, jsonArray)
+    FileWriter fileWriter = new FileWriter(resultFile, true)
+    Map<String, String> refinedFields = refineFields(fields, filterEmptyColumns, data)
     StringBuilder stringBuilder = new StringBuilder()
-    refinedFields.forEach { it ->
+    refinedFields.entrySet().forEach { it ->
       if (!StringUtils.isEmpty(it.value)) {
         stringBuilder.append(it.value + "\t")
       }
@@ -35,9 +35,9 @@ class TSVEgestionService {
       }
     }
     endLine(stringBuilder)
-    jsonArray.forEach { JSONObject jsonRow ->
-      refinedFields.each { def field ->
-        stringBuilder.append(jsonRow.get(field.key)).append("\t")
+    data.forEach { dataEntry ->
+      refinedFields.entrySet().each { def field ->
+        stringBuilder.append(dataEntry.get(field.key)).append("\t")
       }
       endLine(stringBuilder)
       if (stringBuilder.size() > 1024) {
@@ -47,7 +47,23 @@ class TSVEgestionService {
     }
     fileWriter.write(stringBuilder.toString())
     fileWriter.close()
-    result
+    resultFile
+  }
+
+
+  def sendTsvAsDownload (def response, File tsvFile) {
+    InputStream inFile = new FileInputStream(tsvFile)
+    String fileName = tsvFile.getName()
+
+    response.setContentType('text/tab-separated-values')
+    response.setHeader("Content-Disposition", "attachment; filename=\"${fileName}\"")
+    response.setHeader("Content-Encoding", "UTF-8")
+    response.setContentLength(tsvFile.bytes.length)
+
+    def out = response.outputStream
+    IOUtils.copy(inFile, out)
+    inFile.close()
+    out.close()
   }
 
 
@@ -63,21 +79,21 @@ class TSVEgestionService {
   }
 
 
-  private def refineFields (Map<String, String> fields, boolean filterEmptyColumns, JSONArray jsonArray) {
+  private def refineFields(Map<String, String> fields, boolean filterEmptyColumns, List data) {
     Map<String, String> refinedFields = [:]
     if (fields == null || fields.isEmpty()) {
       if (filterEmptyColumns) {
-        jsonArray.forEach { JSONObject jsonLine ->
-          jsonLine.each { it ->
-            if (!StringUtils.isEmpty(it.value)) {
+        data.forEach { dataEntry ->
+          dataEntry.each { it ->
+            if (it.value) {
               refinedFields.put(it.key, null)
             }
           }
         }
       }
       else {
-        jsonArray.forEach { JSONObject jsonLine ->
-          jsonLine.each { it ->
+        data.forEach { dataEntry ->
+          dataEntry.each { it ->
             refinedFields.put(it.key, null)
           }
         }
@@ -95,6 +111,8 @@ class TSVEgestionService {
         refinedFields.putAll(fields)
       }
     }
+    refinedFields.remove("_embedded")
+    refinedFields.remove("_links")
     refinedFields
   }
 }

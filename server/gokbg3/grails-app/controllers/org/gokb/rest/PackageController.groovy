@@ -1,26 +1,16 @@
 package org.gokb.rest
 
-import com.k_int.ClassUtils
-import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.*
-import grails.core.GrailsClass
 import grails.gorm.transactions.*
 import grails.plugin.springsecurity.annotation.Secured
 
-import groovyx.net.http.URIBuilder
-
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 import org.apache.commons.lang.RandomStringUtils
-import org.gokb.GOKbTextUtils
 import org.gokb.cred.*
-import org.grails.datastore.mapping.model.*
-import org.grails.datastore.mapping.model.types.*
 import org.springframework.web.servlet.support.RequestContextUtils
 
 @Transactional(readOnly = true)
@@ -41,6 +31,7 @@ class PackageController {
   def FTUpdateService
   def titleLookupService
   def TSVIngestionService
+  def TSVEgestionService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -48,18 +39,20 @@ class PackageController {
     def base = grailsApplication.config.serverURL + "/rest"
     User user = null
 
+    String format = params.format
+    params.remove("format")
+
     if (springSecurityService.isLoggedIn()) {
       user = User.get(springSecurityService.principal?.id)
     }
-    def es_search = params.es ? true : false
-
+    boolean searchEs = Boolean.valueOf(params.es)
     params.componentType = "Package" // Tells ESSearchService what to look for
 
-    if (es_search) {
+    if (searchEs) {
       params.remove('es')
-      def start_es = LocalDateTime.now()
+      def esStartTime = LocalDateTime.now()
       result = ESSearchService.find(params, null, user)
-      log.debug("ES duration: ${Duration.between(start_es, LocalDateTime.now()).toMillis();}")
+      log.debug("ES duration: ${Duration.between(esStartTime, LocalDateTime.now()).toMillis();}")
     }
     else {
       def start_db = LocalDateTime.now()
@@ -82,7 +75,13 @@ class PackageController {
       }
     }
 
-    render result as JSON
+    if (result.data && 'tsv' == format){
+      File tsvFile = TSVEgestionService.jsonToTsv(result.data, null, true)
+      TSVEgestionService.sendTsvAsDownload(response, tsvFile)
+    }
+    else{
+      render result as JSON
+    }
   }
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
