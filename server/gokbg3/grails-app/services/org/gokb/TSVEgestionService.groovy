@@ -37,7 +37,10 @@ class TSVEgestionService {
     endLine(stringBuilder)
     data.forEach { dataEntry ->
       refinedFields.entrySet().each { def field ->
-        stringBuilder.append(dataEntry.get(field.key)).append("\t")
+        if (dataEntry.get(field.key) != null) {
+          stringBuilder.append(dataEntry.get(field.key).toString().replaceAll("[\r\n]+", ", "))
+        }
+        stringBuilder.append("\t")
       }
       endLine(stringBuilder)
       if (stringBuilder.size() > 1024) {
