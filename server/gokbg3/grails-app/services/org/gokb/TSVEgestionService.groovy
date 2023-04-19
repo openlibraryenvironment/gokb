@@ -3,8 +3,10 @@ package org.gokb
 import grails.gorm.transactions.Transactional
 import grails.io.IOUtils
 import liquibase.util.StringUtils
+import org.apache.tika.metadata.Metadata
 import org.grails.web.json.JSONObject
 
+import javax.servlet.http.HttpServletResponse
 import java.time.LocalDateTime
 
 @Transactional
@@ -54,8 +56,8 @@ class TSVEgestionService {
   }
 
 
-  def sendTsvAsDownload (def response, File tsvFile) {
-    InputStream inFile = new FileInputStream(tsvFile)
+  HttpServletResponse sendTsvAsDownload (HttpServletResponse response, File tsvFile) {
+    InputStream fis = new FileInputStream(tsvFile)
     String fileName = tsvFile.getName()
 
     response.setContentType('text/tab-separated-values')
@@ -63,10 +65,18 @@ class TSVEgestionService {
     response.setHeader("Content-Encoding", "UTF-8")
     response.setContentLength(tsvFile.bytes.length)
 
-    def out = response.outputStream
-    IOUtils.copy(inFile, out)
-    inFile.close()
-    out.close()
+    int bytes_to_read = tsvFile.bytes.length
+    long buf_size = tsvFile.bytes.length > 4096 ? 4096 : tsvFile.bytes.length
+    byte[] buffer = new byte[buf_size]
+    while (bytes_to_read) {
+      bytes_to_read -= fis.read(buffer)
+      response.outputStream << buffer
+    }
+    response.flushBuffer()
+
+    fis.close()
+    response.outputStream.close()
+    response
   }
 
 

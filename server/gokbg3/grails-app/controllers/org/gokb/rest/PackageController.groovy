@@ -77,11 +77,9 @@ class PackageController {
 
     if (result.data && 'tsv' == format){
       File tsvFile = TSVEgestionService.jsonToTsv(result.data, null, true)
-      TSVEgestionService.sendTsvAsDownload(response, tsvFile)
+      response = TSVEgestionService.sendTsvAsDownload(response, tsvFile)
     }
-    else{
-      render result as JSON
-    }
+    render result as JSON
   }
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
