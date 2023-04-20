@@ -229,7 +229,9 @@ class TippController {
           errors << updateCombos(obj, reqBody)
 
           if (obj?.validate()) {
-            obj = tippService.updateCoverage(obj, reqBody)
+            if (reqBody.coverageStatements != null) {
+              obj = tippService.updateCoverage(obj, reqBody)
+            }
 
             log.debug("No errors.. saving")
             obj = obj.merge(flush: true)

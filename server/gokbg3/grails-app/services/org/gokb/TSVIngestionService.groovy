@@ -22,6 +22,7 @@ class TSVIngestionService {
                     def request_user,
                     def active_group,
                     boolean dry_run,
+                    boolean skip_invalid,
                     Job job = null) {
     def session = null
 
@@ -40,7 +41,8 @@ class TSVIngestionService {
                                                 incremental,
                                                 request_user,
                                                 active_group,
-                                                dry_run)
+                                                dry_run,
+                                                skip_invalid)
       return myRun.start(job)
     }
     else {
@@ -52,7 +54,8 @@ class TSVIngestionService {
                                                   incremental,
                                                   request_user,
                                                   active_group,
-                                                  dry_run)
+                                                  dry_run,
+                                                  skip_invalid)
         return myRun.start(job)
       }
     }

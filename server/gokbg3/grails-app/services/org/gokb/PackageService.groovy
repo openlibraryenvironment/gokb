@@ -677,7 +677,7 @@ class PackageService {
         if (!matches["${nc.id}"])
           matches["${nc.id}"] = []
 
-        matches["${nc.id}"] << [field: 'name', value: packageHeaderDTO.name, message: "Another package with this name already exists!"]
+        matches["${nc.id}"] << [field: 'name', value: packageHeaderDTO.name, baddata: packageHeaderDTO.name, message: "Another package with this name already exists!"]
       }
     }
 
@@ -722,7 +722,7 @@ class PackageService {
       if (!matches["${vm.id}"])
         matches["${vm.id}"] = []
 
-      matches["${vm.id}"] << ['field': 'name', value: packageHeaderDTO.name, message: "Provided name matched a variant of an existing package!"]
+      matches["${vm.id}"] << ['field': 'name', value: packageHeaderDTO.name, baddata: it, message: "Provided name matched a variant of an existing package!", code: 'inUse']
     }
 
     if (packageHeaderDTO.variantNames?.size() > 0) {
@@ -745,7 +745,7 @@ class PackageService {
             if (!matches["${nm.id}"])
               matches["${nm.id}"] = []
 
-            matches["${nm.id}"] << [field: 'variantNames', value: variant, message: "Provided variant matched the title of an existing package!"]
+            matches["${nm.id}"] << [field: 'variantNames', value: variant, baddata: it, message: "Provided variant matched the title of an existing package!", code: 'inUse']
           }
 
           def variant_nn = GOKbTextUtils.normaliseString(variant)
@@ -756,7 +756,7 @@ class PackageService {
             if (!matches["${vc.id}"])
               matches["${vc.id}"] = []
 
-            matches["${vc.id}"] << ['field': 'variantNames', value: variant, message: "Provided variant matched that of an existing package!"]
+            matches["${vc.id}"] << ['field': 'variantNames', value: variant, baddata: it, message: "Provided variant matched that of an existing package!", code: 'inUse']
           }
         }
       }

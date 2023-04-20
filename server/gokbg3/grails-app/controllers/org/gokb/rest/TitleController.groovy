@@ -1064,7 +1064,18 @@ class TitleController {
 
           target.save(flush: true)
 
+          titleHistoryService.transferEvents(obj, target)
+
+
+          if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+            FTUpdateService.updateSingleItem(target)
+          }
+
           obj.deleteSoft()
+
+          if (grailsApplication.config.gokb.ftupdate_enabled == true) {
+            FTUpdateService.updateSingleItem(obj)
+          }
         }
         else {
           result.result = 'ERROR'
