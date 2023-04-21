@@ -182,7 +182,7 @@ class ValidationService {
     def result = [
       valid: true,
       message: "",
-      rows: [total: 0, error: 0, warning: 0],
+      rows: [total: 0, error: 0, warning: 0, skipped: 0],
       errors: [
         missingColumns: [],
         rows: [:],
@@ -236,7 +236,6 @@ class ValidationService {
             ]
           ]
           addOrIncreaseTypedCount(result, 'columnCount', 'errors')
-
           result.valid = false
         }
         else if (nl.size() >= NUM_MANDATORY_COLS) {
@@ -265,6 +264,7 @@ class ValidationService {
         else {
           log.debug("Found and skipped short row ${nl}")
           result.rows.warning++
+          result.rows.skipped++
 
           if (!result.warnings.rows["${rowCount}"]) {
             result.warnings.rows["${rowCount}"] = [:]

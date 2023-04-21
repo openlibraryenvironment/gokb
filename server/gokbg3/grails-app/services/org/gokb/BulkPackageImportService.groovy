@@ -39,34 +39,47 @@ class BulkPackageImportService {
     "package_changed_date": [required: false, validate: 'checkTimestamp']
   ]
 
-  def upsertConfig (reqBody) {
+  def upsertConfig (reqBody, user) {
     def result = [result: 'OK']
     def validation = validateConfig(reqBody)
+
+    if (validation.errors) {
+      result.errors = validation.errors
+      result.result = 'WARNING'
+      result.message = 'There are single package level validation errors in the provided JSON!'
+    }
 
     if (validation.valid) {
       def existing_cfg = BulkImportListConfig.findByCode(reqBody.code)
 
       if (existing_cfg) {
-        if (reqBody.cfg) {
-          existing_cfg.cfg = (reqBody.cfg as JSON).toString()
-        }
+        if (user.superUserStatus || existing_cfg.owner == user) {
+          if (reqBody.cfg) {
+            existing_cfg.cfg = (reqBody.cfg as JSON).toString()
+          }
 
-        if (reqBody.url) {
-          existing_cfg.url = reqBody.url
-        }
+          if (reqBody.url) {
+            existing_cfg.url = reqBody.url
+          }
 
-        if (reqBody.active == true) {
-          existing_cfg.automatedUpdate = true
+          if (reqBody.frequency) {
+            existing_cfg.frequency = RefdataCategory.lookup('BulkImportListConfig.Frequency', config.frequency)
+          }
+
+          if (reqBody.active == true) {
+            existing_cfg.automatedUpdate = true
+          }
+          else if (reqBody.active == false) {
+            existing_cfg.automatedUpdate = false
+          }
+          existing_cfg.save(flush: true)
         }
-        else if (reqBody.active == false) {
-          existing_cfg.automatedUpdate = false
-        }
-        existing_cfg.save(flush: true)
       }
       else {
         def info = [
           code: reqBody.code,
           cfg: (reqBody.cfg ? (reqBody.cfg as JSON).toString() : null),
+          frequency: (config.frequency ? RefdataCategory.lookup('BulkImportListConfig.Frequency', config.frequency) : null),
           url: reqBody.url,
           automatedUpdate: reqBody.automatedUpdate
         ]
@@ -77,16 +90,13 @@ class BulkPackageImportService {
     }
     else {
       result.result = 'ERROR'
-      result.errors = validation.errors
-      result.message = 'There are validation errors in the provided JSON!'
+      result.message = 'There have been critical validation errors!'
     }
 
     result
   }
 
-  def deleteConfig
-
-  def validateConfig (config) {
+  private def validateConfig (config) {
     def result = [valid: true, errors:[:]]
 
     if (!config.code || !config.code.trim()) {
@@ -96,12 +106,44 @@ class BulkPackageImportService {
 
     if (!config.url && !config.cfg) {
       result.valid = false
-      result.errors.info = [message: "No config content info provided (JSON/URL)!"]
+      result.errors.info = [message: "No config content info provided (local/URL)!"]
     }
 
-    if (config.url && !validationService.checkUrl(config.url)) {
-      result.valid = false
-      result.errors.url = [message: "Invalid URL provided: ${config.url}!", value: config.url]
+    if (config.url) {
+      if (!validationService.checkUrl(config.url)) {
+        result.valid = false
+        result.errors.url = [message: "Invalid URL provided: ${config.url}!", value: config.url]
+      }
+      else {
+        def remote_conf = fetchRemoteConfig(config.url)
+
+        if (remote_conf) {
+          boolean conf_valid = true
+          remote_conf.collections?.eachWithIndex { col, idx ->
+            def col_errors = validateCollection(col)
+
+            if (col_errors) {
+              if (col_errors.generic) {
+                result.valid = false
+              }
+              if (!result.errors.cfg) {
+                result.errors.cfg = [remote: [:]]
+              }
+
+              result.errors.cfg.remote["${idx}"] = col_errors
+            }
+          }
+
+          if (!conf_valid) {
+            result.valid = false
+            result.errors.url = [message: "Invalid config at provided URL ${config.url}!", value: config.url]
+          }
+        }
+        else {
+          result.valid = false
+          result.errors.url = [message: "Unable to fetch config item from url ${config.url}!", value: config.url]
+        }
+      }
     }
 
     if (config.frequency && !RefdataCategory.lookup('BulkImportListConfig.Frequency', config.frequency)) {
@@ -110,37 +152,20 @@ class BulkPackageImportService {
     }
 
     if (config.cfg) {
-      config.cfg.collections.each { col ->
-        log.debug("Checking collection info: ${col}")
-        def col_errors = checkConfigObject(col, false)
+      config.cfg.collections.eachWithIndex { col, idx ->
+        def col_errors = validateCollection(it)
 
-        if (col_errors.size() > 0) {
-          result.valid = false
-
-          if (!result.errors[col.collection_name]) {
-            result.errors[col.collection_name] = [:]
-          }
-
-          result.errors[col.collection_name].generic = col_errors
-        }
-
-        col.package_list.eachWithIndex { info, idx ->
-          log.debug("Checking package info: ${info}")
-          def pkg_errors = checkConfigObject(info, true)
-
-          if (pkg_errors.size() > 0) {
+        if (col_errors) {
+          if (col_errors.generic) {
             result.valid = false
-
-            if (!result.errors[col.collection_name]) {
-              result.errors[col.collection_name] = [:]
-            }
-
-            if (!result.errors[col.collection_name].packages) {
-              result.errors[col.collection_name].packages = []
-            }
-
-            result.errors[col.collection_name].packages << [index: idx, errors: pkg_errors]
           }
+          if (!result.errors.cfg) {
+            result.errors.cfg = [local: [:]]
+          } else if (!result.errors.cfg.local) {
+            result.errors.cfg.local = [:]
+          }
+
+          result.errors.cfg.local["${idx}"] = col_errors
         }
       }
     }
@@ -148,15 +173,69 @@ class BulkPackageImportService {
     result
   }
 
-  def checkConfigObject(cobj, boolean specific = false) {
+  private def validateCollection(col) {
+    log.debug("Checking collection info: ${col}")
+    def errors = [:]
+    def col_errors = checkConfigItem(col, false)
+
+    if (col_errors.size() > 0) {
+      errors.generic = col_errors
+    }
+
+    col.package_list.eachWithIndex { info, idx ->
+      log.debug("Checking package info: ${info}")
+      def pkg_errors = checkConfigItem(info, true)
+
+      if (pkg_errors.size() > 0) {
+        if (!errors.packages) {
+          errors.packages = []
+        }
+
+        errors.packages << [index: idx, errors: pkg_errors]
+      }
+    }
+
+    errors
+  }
+
+  private def fetchRemoteConfig(url) {
+    def client = new RESTClient(url)
+
+    client.request(GET, ContentType.JSON) {
+      response.success = { resp, data ->
+        log.debug("Got bulk collection list")
+
+        if (data.collections) {
+          return data
+        }
+        else {
+          return null
+        }
+      }
+      response.failure = { resp, data ->
+        log.error("Got remote config request status ${resp.status} .. ${data}")
+        return null
+      }
+    }
+  }
+
+  private def checkConfigItem(cobj, boolean specific = false) {
     def errors = [:]
 
     KNOWN_CONFIG_FIELDS.each { fname, cfg ->
       if (specific && cfg.required && !cobj[fname]) {
         errors[fname] = [message: "Missing required field '${fname}'!"]
       }
-      else if (cfg.cls && cobj[fname] && cfg.field  == 'uuid' && !cfg.cls.findByUuid(cobj[fname])) {
-        errors[fname] = [message: "Unable to reference '${fname}'!"]
+      else if (cfg.cls && cobj[fname] && cfg.field  == 'uuid') {
+        if (!cfg.cls.findByUuid(cobj[fname])) {
+          if (!cfg.cls.findByName(cobj[fname])) {
+            errors[fname] = [message: "Unable to reference '${fname}'!"]
+          }
+          else if (cfg.cls.findAllByName(cobj[fname]).size() > 1) {
+            log.error("BulkConfig: Found dupes for ${fname} ${cobj[fname]}!")
+            errors[fname] = [message: "Found dupes for ${fname} ${cobj[fname]}!"]
+          }
+        }
       }
       else if (cfg.cls && cobj[fname] && cfg.field  == 'name' && !cfg.cls.findByName(cobj[fname])) {
         errors[fname] = [message: "Unable to reference '${fname}'!"]
@@ -177,7 +256,8 @@ class BulkPackageImportService {
 
   def startUpdate(listInfo, dryRun, async, User user = null) {
     def result = [result: 'OK']
-    def running_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup('Job.Type', 'BulkPackageIngest'))
+    def job_rdv = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
+    def running_jobs = concurrencyManagerService.getActiveJobsForType(job_rdv)
 
     if (running_jobs.size() == 0) {
         log.debug("Creating new job..")
@@ -190,10 +270,10 @@ class BulkPackageImportService {
         }
 
         new_job.description = "Bulk package import ${user ? '(manual)' : ''}"
-        new_job.type = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')
+        new_job.type = job_rdv
         new_job.startOrQueue()
 
-        if (!user || async) {
+        if (!user || !async) {
           result = new_job.get()
           log.debug("Got result ${result}!")
         }
@@ -216,23 +296,8 @@ class BulkPackageImportService {
 
     if (listInfo.url) {
       log.debug("Fetching config from ${listInfo.url} ..")
-      def client = new RESTClient(listInfo.url)
       job.startTime = new Date()
 
-      client.request(GET, ContentType.JSON) {
-        response.success = { resp, data ->
-          log.debug("Got bulk collection list")
-          def validation_result = validateConfig([cfg: data])
-
-          if (validation_result.valid)
-            allCollections = data.collections
-        }
-        response.failure = { resp, data ->
-          log.error("Got status ${resp.status} .. ${data}")
-          result.result = 'SKIPPED_API_ERROR'
-          return result
-        }
-      }
     }
     else if (listInfo.cfg != null) {
       log.debug("Parsing static config ..")
@@ -245,7 +310,7 @@ class BulkPackageImportService {
     }
 
     if (allCollections) {
-      allCollections.each { type ->
+      for (type in allCollections) {
         log.debug("Starting with collection ${type.collection_name} ..")
         def type_results = [
           total: 0,
@@ -275,7 +340,7 @@ class BulkPackageImportService {
               IdentifierNamespace title_id_ns = (item.title_id_namespace || type.title_id_namespace) ? IdentifierNamespace.findByValue(item.title_id_namespace ?: type.title_id_namespace) : null
               Org provider = (item.package_provider || type.package_provider) ? Org.findByUuid(item.package_provider ?: type.package_provider) : null
               Identifier collection_id = ((item.package_id_namespace || type.package_id_namespace) && item.package_id) ? componentLookupService.lookupOrCreateCanonicalIdentifier((item.package_id_namespace ?: type.package_id_namespace), item.package_id) : null
-              boolean skipped = false
+              boolean skip = false
               Source source = null
 
               def pkg_result = [
@@ -287,6 +352,16 @@ class BulkPackageImportService {
               ]
               log.debug("Processing ${type.collection_name} ${item.package_name}")
 
+              if (curator && !listInfo.owner?.curatoryGroups?.contains(curator) && !listInfo.owner?.superUserStatus) {
+                skip = true
+                errors.curatoryGroup = [
+                  [
+                    message: "Config owner does not have the permission!",
+                    messageCode: "import.bulk.error.curator.permissions"
+                  ]
+                ]
+              }
+
               if (item.package_curatory_group || type.package_curatory_group) {
                 def local_cg = CuratoryGroup.findByUuid(item.package_curatory_group ?: type.package_curatory_group)
 
@@ -295,9 +370,8 @@ class BulkPackageImportService {
                 }
               }
 
-              if (curator && provider && platform) {
+              if (!skip && curator && provider && platform) {
                 Package obj = Package.findByNormname(KBComponent.generateNormname(item.package_name))
-                boolean skip = false
 
                 if (!obj && collection_id) {
                   def candidates = Package.executeQuery('''from Package as p
@@ -328,6 +402,17 @@ class BulkPackageImportService {
                     [
                       message: "The matched Package already has another curator!",
                       messageCode: "import.bulk.error.matched.wrongCurator.label",
+                    ]
+                  ]
+                  skip = true
+                }
+
+                if (obj?.source?.bulkConfig && obj?.source?.bulkConfig != listInfo) {
+                  log.warn("Matched package ${obj} already has another bulk config assigned!")
+                  pkg_result.errors.matching = [
+                    [
+                      message: "A single package has been matched, but its source is already connected to antother bulk config!",
+                      messageCode: "import.bulk.error.matched.sourceBulkConfig.label",
                     ]
                   ]
                   skip = true
@@ -385,7 +470,7 @@ class BulkPackageImportService {
                         def dupe = Source.findByName(item.package_name)
 
                         if (!dupe) {
-                          source = new Source(name: item.package_name, url: item.package_titlelist, targetNamespace: title_id_ns).save(flush:true, failOnError: true)
+                          source = new Source(name: item.package_name).save(flush:true, failOnError: true)
                         }
                         else {
                           log.warn("Found existing source with package name ${item.package_name}!")
@@ -406,8 +491,20 @@ class BulkPackageImportService {
                       }
                     }
 
-                    if (source && source.url != item.package_titlelist) {
+                    if (source) {
+                      log.debug("Setting source info ..")
+                      source.bulkConfig = listInfo
+                      source.targetNamespace = title_id_ns
                       source.url = item.package_titlelist
+
+                      if (listInfo.frequency) {
+                        source.automaticUpdates = listInfo.automatedUpdate
+                        source.frequency = RefdataCategory.lookup('Source.Frequency', listInfo.frequency.value)
+                      }
+                      else {
+                        log.debug("No frequency for ${item.package_name} - Setting automated source update to 'false'!")
+                        source.automaticUpdates = false
+                      }
                       source.save()
                     }
                   }
@@ -436,18 +533,16 @@ class BulkPackageImportService {
                         }
 
                         pkg_job.groupId = curator?.id
-                        pkg_job.description = "EZB KBART Source ingest (${obj.name})".toString()
+                        pkg_job.description = "BulkConfig KBART Source ingest (${obj.name})".toString()
                         pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
                         pkg_job.linkedItem = pkgInfo
                         pkg_job.message("Starting upsert for Package ${obj.name}".toString())
                         pkg_job.startOrQueue()
                         def job_result = pkg_job.get()
 
-                        log.debug("Finished job with result: ${job_result}")
+                        log.debug("Finished job with result: ${job_result?.result}")
 
-                        if (job_result?.badrows) {
-                          pkg_result.errors.validation = job_result.badrows.collect { [errors: it.errors, rownum: it.row] }
-                        }
+                        pkg_result.validation = job_result?.validation
 
                         if (job_result?.result == 'ERROR') {
                           pkg_result.result = 'ERROR'

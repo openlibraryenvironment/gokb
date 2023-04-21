@@ -7,6 +7,7 @@ class BulkImportListConfig {
   String url
   Boolean automatedUpdate = false
   RefdataValue frequency
+  User owner
   Date lastRun
 
   static mapping = {
@@ -17,14 +18,29 @@ class BulkImportListConfig {
     automatedUpdate column:'bilc_automated_update'
     frequency column:'bilc_frequency'
     lastRun column:'bilc_last_run'
+    owner column:'bilc_owner_fk'
  }
 
   static constraints = {
-    code (nullable:false, blank:false)
+    code (validator: { val, obj ->
+      if (obj.hasChanged('code')) {
+        if (val && val.trim()) {
+          def dupes = BulkImportListConfig.findAllByCodeIlike(val)
+
+          if (dupes?.size() > 0 && dupes.any { it != obj }) {
+            return ['notUnique']
+          }
+        }
+        else {
+          return ['notNull']
+        }
+      }
+    })
     cfg (nullable:true, blank:false)
     url (nullable:true, blank:false)
     automatedUpdate (nullable:true, default:false)
     frequency (nullable:true, blank:false)
     lastRun (nullable:true, blank:false)
+    owner (nullable:true, blank:false)
   }
 }

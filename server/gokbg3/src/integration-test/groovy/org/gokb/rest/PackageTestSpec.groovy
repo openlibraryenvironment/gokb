@@ -105,7 +105,7 @@ class PackageTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
-    ['TestPackJournalTIPP', 'TestJournalTIPPUpdate', 'TestPackBookTIPP', 'TestBookTIPPUpdate', 'TIPP Name', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
+    ['TestPackJournalTIPP', 'TestJournalTIPPUpdate', 'TestPackBookTIPP', 'TestBookTIPPUpdate', 'TestJournalTIPPSkip', 'TIPP Name', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
     ["TestPack","UpdPack","TestPackageWithTipps","TestPackageWithProviderAndPlatform", "TestPackHandleUrl", "TestPackPartialError"].each {
@@ -348,7 +348,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     }
     then:
     resp.status == 200
-    resp.json?.job_result.report == null
+    resp.json?.job_result.report?.invalid == 1
     resp.json?.job_result?.validation?.rows.error == 1
   }
 
@@ -369,5 +369,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     then:
     resp.status == 200
     resp.json?.job_result?.report?.created == 1
+    def invalid_tipps = TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as t where exists (select 1 from Combo where fromComponent = :pkg and type = :ct) and name = :inv", [pkg: pkg, ct: RefdataValue.findByValue('Package.Tipps'), inv: 'TestJournalTIPPSkip'])
+    invalid_tipps.size() == 0
   }
 }

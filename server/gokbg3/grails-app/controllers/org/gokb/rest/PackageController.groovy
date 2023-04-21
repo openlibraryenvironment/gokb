@@ -933,13 +933,12 @@ class PackageController {
     def active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
     Boolean async = params.boolean('async') ?: true
     Boolean dry_run = params.boolean('dryRun') ?: false
-    Boolean skip_invalid = params.boolean('skipInvalid') ?: false
     Package pkg = Package.get(params.id)
     def user = User.get(springSecurityService.principal.id)
 
     if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
-        packageSourceUpdateService.updateFromSource(pkg, user, job, active_group, dry_run, skip_invalid)
+        packageSourceUpdateService.updateFromSource(pkg, user, job, active_group, dry_run)
       }
 
       background_job.groupId = active_group.id

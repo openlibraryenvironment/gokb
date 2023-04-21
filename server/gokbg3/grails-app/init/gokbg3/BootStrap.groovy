@@ -1132,6 +1132,7 @@ class BootStrap {
         RefdataCategory.lookupOrCreate('Job.Type', 'PackageTitleMatch').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'PackageUpdateTipps').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate('Job.Type', 'EZBCollectionIngest').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Job.Type', 'BulkPackageIngest').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Technical Support').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(Office.RD_FUNCTION, 'Other').save(flush: true, failOnError: true)
