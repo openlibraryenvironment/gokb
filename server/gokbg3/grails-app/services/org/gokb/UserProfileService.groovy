@@ -37,7 +37,7 @@ class UserProfileService {
       WebHookEndpoint.executeUpdate("update WebHookEndpoint set owner = null where owner = :utd", [utd: user_to_delete])
       Package.executeUpdate("update Package set userListVerifier = null where userListVerifier = :utd", [utd: user_to_delete])
       // Better to abort deletion?
-      BulkImportListConfig.executeQuery("update BulkImportListConfig set owner = null where owner = :utd", [utd: user_to_delete])
+      BulkImportListConfig.executeUpdate("update BulkImportListConfig set owner = null where owner = :utd", [utd: user_to_delete])
 
       log.debug("Deleting dependent entities ..")
       DSAppliedCriterion.executeUpdate("delete from DSAppliedCriterion where user = :utd", [utd: user_to_delete])

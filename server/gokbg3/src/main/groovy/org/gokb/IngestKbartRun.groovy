@@ -204,7 +204,7 @@ class IngestKbartRun {
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                                 'from TitleInstancePackagePlatform as tipp, Combo as c '+
                                 'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
-                              [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
+                              [pkg: pkg.id, sc: status_current])[0]
 
         result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0,  previous: old_tipp_count]
 
@@ -213,8 +213,13 @@ class IngestKbartRun {
         }
 
         long startTime = System.currentTimeMillis()
-        RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
-        new Combo(fromComponent: pkg, toComponent: datafile, type: type_fa).save(flush: true)
+
+        if (!dryRun) {
+          pkg.refresh()
+          pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+          pkg.fileAttachments << datafile
+          pkg = pkg.merge()
+        }
 
         log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rows.total + file_info.rows.skipped} rows. Package is ${pkg.id}")
 

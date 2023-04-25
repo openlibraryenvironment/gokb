@@ -258,7 +258,7 @@ class PackageSourceUpdateService {
                   }
 
                   update_job.description = "KBART REST ingest (${p.name})".toString()
-                  update_job.type = RefdataCategory.lookup('Job.Type', 'KBARTIngest')
+                  update_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
                   update_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
                   update_job.message("Starting upsert for Package ${p.name}".toString())
                   update_job.startOrQueue()
@@ -267,7 +267,7 @@ class PackageSourceUpdateService {
                   if (result.job_result?.validation?.valid == false || result.job_result?.report?.reviews > 0 || result.job_result?.matchingJob?.reviews > 0) {
                     log.debug("There were issues with the automated job, keeping listStatus in progress..")
                   }
-                  else {
+                  else if (!dryRun) {
                     p.refresh()
                     p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
                     p.save(flush: true)

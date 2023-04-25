@@ -145,7 +145,7 @@ class BulkImportSpec extends Specification {
       body(json_record as JSON)
     }
 
-    RestResponse resp = rest.get("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/bulkImport/runBulkUpdate?dryRun=true&async=true&code=testbulkimport") {
+    RestResponse resp = rest.get("http://localhost:${serverPort}${grailsApplication.config.server.contextPath ?: ''}/bulkImport/runBulkUpdate?dryRun=false&async=false&code=testbulkimport") {
       auth('admin', 'admin')
     }
 

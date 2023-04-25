@@ -365,6 +365,13 @@ class ValidationService {
             args: [key]
           ]
         }
+        else if (key == 'title_id' && !trimmed_val) {
+          result.warnings[key] = [
+            message: "This line does not contain a value for the common title id!",
+            messageCode: "kbart.errors.noTitleId",
+            args: []
+          ]
+        }
         else if (key == 'title_id' && titleIdNamespace) {
           def field_valid_result = checkIdForNamespace(trimmed_val, titleIdNamespace)
 
@@ -375,13 +382,6 @@ class ValidationService {
               args: [trimmed_val]
             ]
           }
-        }
-        else if (key == 'title_id' && !trimmed_val) {
-          result.warnings[key] = [
-            message: "This line does not contain a value for the common title id!",
-            messageCode: "kbart.errors.noTitleId",
-            args: []
-          ]
         }
         else if (!pubType && (key == 'online_identifier' || key == 'print_identifier')) {
           log.debug("Skipping ID columns due to missing publication_type")

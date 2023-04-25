@@ -63,7 +63,7 @@ class BulkPackageImportService {
           }
 
           if (reqBody.frequency) {
-            existing_cfg.frequency = RefdataCategory.lookup('BulkImportListConfig.Frequency', config.frequency)
+            existing_cfg.frequency = RefdataCategory.lookup('BulkImportListConfig.Frequency', reqBody.frequency)
           }
 
           if (reqBody.active == true) {
@@ -79,7 +79,8 @@ class BulkPackageImportService {
         def info = [
           code: reqBody.code,
           cfg: (reqBody.cfg ? (reqBody.cfg as JSON).toString() : null),
-          frequency: (config.frequency ? RefdataCategory.lookup('BulkImportListConfig.Frequency', config.frequency) : null),
+          frequency: (reqBody.frequency ? RefdataCategory.lookup('BulkImportListConfig.Frequency', reqBody.frequency) : null),
+          owner: user,
           url: reqBody.url,
           automatedUpdate: reqBody.automatedUpdate
         ]
@@ -153,7 +154,7 @@ class BulkPackageImportService {
 
     if (config.cfg) {
       config.cfg.collections.eachWithIndex { col, idx ->
-        def col_errors = validateCollection(it)
+        def col_errors = validateCollection(col)
 
         if (col_errors) {
           if (col_errors.generic) {
@@ -271,6 +272,7 @@ class BulkPackageImportService {
 
         new_job.description = "Bulk package import ${user ? '(manual)' : ''}"
         new_job.type = job_rdv
+        new_job.startTime = new Date()
         new_job.startOrQueue()
 
         if (!user || !async) {
@@ -296,8 +298,6 @@ class BulkPackageImportService {
 
     if (listInfo.url) {
       log.debug("Fetching config from ${listInfo.url} ..")
-      job.startTime = new Date()
-
     }
     else if (listInfo.cfg != null) {
       log.debug("Parsing static config ..")
@@ -352,9 +352,9 @@ class BulkPackageImportService {
               ]
               log.debug("Processing ${type.collection_name} ${item.package_name}")
 
-              if (curator && !listInfo.owner?.curatoryGroups?.contains(curator) && !listInfo.owner?.superUserStatus) {
+              if (curator && listInfo.owner && !listInfo.owner.superUserStatus && !listInfo.owner.curatoryGroups.contains(curator)) {
                 skip = true
-                errors.curatoryGroup = [
+                pkg_result.errors.curatoryGroup = [
                   [
                     message: "Config owner does not have the permission!",
                     messageCode: "import.bulk.error.curator.permissions"

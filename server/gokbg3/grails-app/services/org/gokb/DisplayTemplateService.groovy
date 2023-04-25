@@ -40,6 +40,7 @@ public class DisplayTemplateService {
     globalDisplayTemplates.put('org.gokb.cred.UserOrganisation',[ type:'staticgsp', rendername:'user_org' ]);
     globalDisplayTemplates.put('org.gokb.cred.Folder',[ type:'staticgsp', rendername:'folder' ]);
     globalDisplayTemplates.put('org.gokb.cred.Work',[ type:'staticgsp', rendername:'work' ]);
+    globalDisplayTemplates.put('org.gokb.cred.BulkImportListConfig',[ type:'staticgsp', rendername:'bulkconfig', noCreate:true ]);
   }
 
   public Map getTemplateInfo(String type) {
