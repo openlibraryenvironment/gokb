@@ -534,7 +534,7 @@ class BulkPackageImportService {
 
                         pkg_job.groupId = curator?.id
                         pkg_job.description = "BulkConfig KBART Source ingest (${obj.name})".toString()
-                        pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+                        pkg_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
                         pkg_job.linkedItem = pkgInfo
                         pkg_job.message("Starting upsert for Package ${obj.name}".toString())
                         pkg_job.startOrQueue()
