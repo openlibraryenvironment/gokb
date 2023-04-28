@@ -20,6 +20,7 @@ while ( moredata ) {
       
       resourceFieldMap['platformName'] = cleanText(data.name.text())
       resourceFieldMap['platformUrl'] = cleanText(data.primaryUrl.text())
+      resourceFieldMap['primaryUrl'] = cleanText(data.primaryUrl.text())
 
       if (data.provider?.name) {
         resourceFieldMap['provider'] = addCoreItems ( data.provider )
