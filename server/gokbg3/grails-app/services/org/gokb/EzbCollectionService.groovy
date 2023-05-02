@@ -292,8 +292,8 @@ class EzbCollectionService {
 
                       log.debug("Finished job with result: ${job_result}")
 
-                      if (job_result?.badrows) {
-                        type_results.validationErrors[item.ezb_collection_id] = job_result.badrows.collect { [errors: it.errors, rownum: it.row] }
+                      if (job_result?.validation?.errors?.rows || job_result?.validation?.errors?.missingColumns) {
+                        type_results.validationErrors[item.ezb_collection_id] = job_result.validation
                       }
 
                       if (job_result?.result == 'ERROR') {

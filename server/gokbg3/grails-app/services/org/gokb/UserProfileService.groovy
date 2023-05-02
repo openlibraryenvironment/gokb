@@ -19,7 +19,6 @@ class UserProfileService {
     def del_user = User.findByUsername('deleted')
 
     if (user_to_delete && del_user) {
-
       log.debug("Replacing links to user with placeholder ..")
       ReviewRequest.executeUpdate("update ReviewRequest set raisedBy = :del where raisedBy = :utd", [utd: user_to_delete, del: del_user])
       ReviewRequest.executeUpdate("update ReviewRequest set closedBy = :del where closedBy = :utd", [utd: user_to_delete, del: del_user])
@@ -37,6 +36,8 @@ class UserProfileService {
       ReviewRequest.executeUpdate("update ReviewRequest set allocatedTo = null where allocatedTo = :utd", [utd: user_to_delete])
       WebHookEndpoint.executeUpdate("update WebHookEndpoint set owner = null where owner = :utd", [utd: user_to_delete])
       Package.executeUpdate("update Package set userListVerifier = null where userListVerifier = :utd", [utd: user_to_delete])
+      // Better to abort deletion?
+      BulkImportListConfig.executeUpdate("update BulkImportListConfig set owner = null where owner = :utd", [utd: user_to_delete])
 
       log.debug("Deleting dependent entities ..")
       DSAppliedCriterion.executeUpdate("delete from DSAppliedCriterion where user = :utd", [utd: user_to_delete])

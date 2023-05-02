@@ -941,6 +941,10 @@ class TippService {
 
     if (tippInfo.accessEndDate) {
       ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
+
+      if (tipp.accessEndDate < new Date()) {
+        tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+      }
     }
 
     ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')

@@ -182,7 +182,7 @@ class ValidationService {
     def result = [
       valid: true,
       message: "",
-      rows: [total: 0, error: 0, warning: 0],
+      rows: [total: 0, error: 0, warning: 0, skipped: 0],
       errors: [
         missingColumns: [],
         rows: [:],
@@ -236,7 +236,6 @@ class ValidationService {
             ]
           ]
           addOrIncreaseTypedCount(result, 'columnCount', 'errors')
-
           result.valid = false
         }
         else if (nl.size() >= NUM_MANDATORY_COLS) {
@@ -265,6 +264,7 @@ class ValidationService {
         else {
           log.debug("Found and skipped short row ${nl}")
           result.rows.warning++
+          result.rows.skipped++
 
           if (!result.warnings.rows["${rowCount}"]) {
             result.warnings.rows["${rowCount}"] = [:]
@@ -365,6 +365,13 @@ class ValidationService {
             args: [key]
           ]
         }
+        else if (key == 'title_id' && !trimmed_val) {
+          result.warnings[key] = [
+            message: "This line does not contain a value for the common title id!",
+            messageCode: "kbart.errors.noTitleId",
+            args: []
+          ]
+        }
         else if (key == 'title_id' && titleIdNamespace) {
           def field_valid_result = checkIdForNamespace(trimmed_val, titleIdNamespace)
 
@@ -375,13 +382,6 @@ class ValidationService {
               args: [trimmed_val]
             ]
           }
-        }
-        else if (key == 'title_id' && !trimmed_val) {
-          result.warnings[key] = [
-            message: "This line does not contain a value for the common title id!",
-            messageCode: "kbart.errors.noTitleId",
-            args: []
-          ]
         }
         else if (!pubType && (key == 'online_identifier' || key == 'print_identifier')) {
           log.debug("Skipping ID columns due to missing publication_type")
