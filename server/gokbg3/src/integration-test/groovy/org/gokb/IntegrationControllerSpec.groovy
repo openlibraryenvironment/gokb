@@ -92,9 +92,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item is created up as it does not already exist"
+    resp.status == 200
     resp.json.groupId != null
     resp.json.message != null
-    resp.json.message.startsWith('Created')
     expect: "Find item by name only returns one item"
     def matching_groups = CuratoryGroup.executeQuery('select cg from CuratoryGroup as cg where cg.name = :n', [n: json_record.name]);
     matching_groups.size() == 1
@@ -119,8 +119,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item is created up as it does not already exist"
+    resp.status == 200
     resp.json.message != null
-    resp.json.message.startsWith('Added')
+    resp.json.result == 'OK'
     expect: "Find item by name only returns one item"
     def matching_orgs = Org.executeQuery('select o from Org as o where o.name = :n', [n: json_record.name]);
     matching_orgs.size() == 1
@@ -142,8 +143,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item was created"
+    resp.status == 200
     resp.json.message != null
-    resp.json.result == "OK"
+    resp.json.result == 'OK'
     expect: "Find item by name only returns one item"
     sleep(500)
     def matching_platforms = Platform.executeQuery('select p from Platform as p where p.name = :n', [n: json_record.platformName]);
@@ -188,8 +190,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item is created in the database because it does not exist"
+    resp.status == 200
     resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.json.result == 'OK'
     expect: "Find item by ID can now locate that item"
     def ids = [['ns': 'issn', 'value': '1021-8564']]
     def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
@@ -226,8 +229,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item is created in the database because it does not exist"
+    resp.status == 200
     resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.json.result == 'OK'
     expect: "Find item by ID can now locate that item"
     def title = TitleInstance.findById(resp.json.titleId)
     title != null
@@ -305,8 +309,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item is created in the database because it does not exist"
+    resp.status == 200
     resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.json.result == 'OK'
     expect: "Find item by ID can now locate the history item"
     def ids = [['ns': 'eissn', 'value': '1541-5732']]
     def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
@@ -400,8 +405,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item is created in the database because it does not exist"
+    resp.status == 200
     resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.json.result == 'OK'
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("American Chemical Society")
     matching_pkgs.size() == 1
@@ -488,8 +494,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item is created in the database because it does not exist"
+    resp.status == 200
     resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.json.result == 'OK'
     expect: "The TIPP coverage dates are correctly set"
     def pkg = Package.get(resp.json.pkgId)
     pkg.tipps?.size() == 1
@@ -586,8 +593,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item is created in the database because it does not exist"
+    resp.status == 200
     resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.json.result == 'OK'
     expect: "The TIPP properties are correctly set"
     def pkg = Package.get(resp.json.pkgId)
     pkg.tipps?.size() == 1
@@ -623,8 +631,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item is created in the database because it does not exist"
+    resp.status == 200
     resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.json.result == 'OK'
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
     def ids = [['ns': 'isbn', 'value': '978-13-12232-23-5']]
     def obj = TitleInstance.get(resp.json.titleId)
@@ -669,6 +678,7 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "Item is created in the database"
+    resp.status == 200
     resp.json.results?.size() == 2
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
     def ids = [['ns': 'isbn', 'value': '978-13-12232-24-2']]
@@ -701,7 +711,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "Item is created in the database"
-    resp.json.message.startsWith('Created')
+    resp.status == 200
+    resp.json.message != null
+    resp.json.result == 'OK'
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
     def ids = [['ns': 'isbn', 'value': '978-13-12232-25-9']]
     def ns = IdentifierNamespace.findByValueIlike('isbn')
@@ -885,8 +897,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item is created in the database because it does not exist"
-    resp1.json?.message?.startsWith('Created')
-    resp2.json?.message?.startsWith('Created')
+    resp1.status == 200
+    resp1.json?.message != null
+    resp2.json?.result == 'OK'
     expect: "The TIPP coverage dates are correctly set"
     def pkg = Package.get(resp1.json.pkgId)
     pkg.tipps?.size() == 1
@@ -1001,7 +1014,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The request is sucessfully processed"
-    resp.json?.message?.startsWith('Created')
+    resp.status == 200
+    resp.json.message != null
+    resp.json.result == 'OK'
     expect: "The Package updater is set correctly"
     sleep(200)
     def pkg = Package.get(resp.json.pkgId)
@@ -1062,8 +1077,11 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "Item is created in the database"
-    resp.json.message.startsWith('Created')
-    update_resp.json.message.startsWith('Created')
+    resp.status == 200
+    resp.json.message != null
+    resp.json.result == 'OK'
+    update_resp.json.message != null
+    update_resp.json.result == 'OK'
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
     resp.json.titleId == update_resp.json.titleId
     def bookInstance = BookInstance.get(update_resp.json.titleId)
@@ -1093,7 +1111,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "Item is created in the database"
-    resp.json.message.startsWith('Created')
+    resp.status == 200
+    resp.json.message != null
+    resp.json.result == 'OK'
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
     def bookInstance = BookInstance.get(resp.json.titleId)
     bookInstance?.name == 'TestVariantBookName "Quotes Test"'
@@ -1196,8 +1216,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The item is created in the database because it does not exist"
+    resp.status == 200
     resp.json.message != null
-    resp.json.message.startsWith('Created')
+    resp.json.result == 'OK'
     expect: "Find errors in teh response JSON"
     resp.json.errors.tipps[0].index == 1
     resp.json.errors.tipps[0].title.identifiers.issn.baddata == "0021-8561-XXX"
@@ -1305,7 +1326,9 @@ class IntegrationControllerSpec extends Specification {
     }
 
     then: "The request is sucessfully processed"
-    resp.json?.message?.startsWith('Created')
+    resp.status == 200
+    resp.json.message != null
+    resp.json.result == 'OK'
     expect: "The Package updater is set correctly"
     sleep(200)
     def pkg = Package.get(resp.json.pkgId)

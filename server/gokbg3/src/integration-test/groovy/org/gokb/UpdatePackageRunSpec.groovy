@@ -188,7 +188,7 @@ class UpdatePackageRunSpec extends Specification {
 
     then: "The item is found in the database based on the issn"
     resp.json.message != null
-    resp.json.message.startsWith('Created/Updated')
+    resp.json.result == 'OK'
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
@@ -294,7 +294,7 @@ class UpdatePackageRunSpec extends Specification {
 
     then: "The item is found in the database based on the issn"
     resp.json.message != null
-    resp.json.message.startsWith('Created/Updated')
+    resp.json.result == 'OK'
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
@@ -392,7 +392,7 @@ class UpdatePackageRunSpec extends Specification {
 
     then: "The item is found in the database based on the issn"
     resp.json.message != null
-    resp.json.message.startsWith('Created/Updated')
+    resp.json.result == 'OK'
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
@@ -470,7 +470,7 @@ class UpdatePackageRunSpec extends Specification {
 
     then: "The item is created in the database because it does not exist"
     resp.json.message != null
-    resp.json.message.startsWith('Created/Updated')
+    resp.json.result == 'OK'
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("TestPackage")
     matching_pkgs.size() == 1
@@ -586,7 +586,7 @@ class UpdatePackageRunSpec extends Specification {
 
     then: "The item is created in the database because it does not exist"
     resp.json?.message != null
-    resp.json.message.startsWith('Created')
+    resp.json.result == 'OK'
     expect: "Find pkg by name, which is connected to the new TIPP"
     def matching_pkgs = Package.findAllByName("American Chemical Society: ACS Legacy Archives")
     matching_pkgs.size() == 1
@@ -686,7 +686,7 @@ class UpdatePackageRunSpec extends Specification {
 
     then: "The item is created in the database because it does not exist"
     resp.json.message != null
-    resp.json.message.startsWith('Created/Updated')
+    resp.json.result == 'OK'
     expect: "Find pkg by name, which is connected to the new TIPP"
     def rr_mismatch = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch')
     def matching_pkgs = Package.findAllByName("TestPackage")

@@ -204,10 +204,6 @@ class PackageSourceUpdateService {
                       result.messageCode = 'kbart.transmission.skipped.sameFile'
                       return result
                     }
-                    else {
-                      p.fileAttachments.add(datafile)
-                      p.save(flush: true)
-                    }
                   }
                 }
                 else {
