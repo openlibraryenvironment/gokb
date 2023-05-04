@@ -1,136 +1,89 @@
 package org.gokb
 
-import static groovyx.net.http.Method.*
-import groovyx.net.http.*
+import io.micronaut.http.*
+import io.micronaut.http.client.*
+import io.micronaut.http.uri.UriBuilder
+import groovy.util.XmlSlurper
 
 class ZdbAPIService {
 
   static transactional = false
   def endpoint = 'zdb'
   def grailsApplication
+  static BlockingHttpClient client
 
   def config = [
-    version: [
-      kxp: "1.2",
-      zdb: "1.1"
-    ],
-    recordSchema: [
-      kxp: "picaxml",
-      zdb: "PicaPlus-xml"
-    ],
-    issTerm: [
-      kxp: "pica.iss=",
-      zdb: "dnb.iss="
-    ],
-    zdbTerm: [
-      kxp: "pica.zdb=",
-      zdb: "dnb.zdbid="
-    ],
-    onlineOnly: [
-      kxp: " and pica.bbg=O*",
-      zdb: " and dnb.frm=O"
-    ],
-    prefix: [
-      kxp: "zs:",
-      zdb: ""
-    ],
-    baseUrl: [
-      kxp: "http://sru.k10plus.de/k10plus",
-      zdb: "http://services.dnb.de/sru/zdb"
-    ]
+    version: "1.1",
+    recordSchema: "PicaPlus-xml",
+    baseUrl: "http://services.dnb.de"
   ]
 
   @javax.annotation.PostConstruct
   def init() {
     log.debug("Initialising rest endpoint for ZDB service...");
-    // endpoint = checkKxpAccess() ? 'kxp' : 'zdb'
-  }
-
-  def checkKxpAccess () {
-    boolean result = true
-
-    def testUrl = "https://sru.k10plus.de/k10plus"
-    def testClient = new RESTClient(testUrl)
-
-    try {
-      testClient.request(GET, ContentType.XML) { request ->
-        uri.query = [
-          version: config.version.kxp,
-          operation: "searchRetrieve",
-          recordSchema: config.recordSchema.kxp,
-          maximumRecords: "10",
-          query: "pica.zdb=2936849-2"
-        ]
-        response.success = { resp, data ->
-          if (data?.diagnostics.isEmpty()) {
-            log.debug("KXP access established ..")
-          }
-          else {
-            log.debug("KXP access denied ..")
-            result = false
-          }
-        }
-        response.failure = { resp, data ->
-          log.debug("KXP returned error status ${resp.status}")
-          result = false
-        }
-      }
-    }
-    catch (Exception e) {
-      log.debug("Exception trying to lookup KXP access..", e)
-      result = false
-    }
-    result
   }
 
   def lookup(String name, def ids) {
     def candidate_ids = [direct: [], parallel: [], matched: []]
 
-    ids.each { id ->
+    if (!client) {
+      client = HttpClient.create(config.baseUrl.toURL()).toBlocking()
+    }
+
+    for (id in ids) {
       if (id.namespace.value == 'eissn' || id.namespace.value == 'issn' || id.namespace.value == 'zdb') {
+        def response
+        def pars = [
+          version: config.version,
+          operation: "searchRetrieve",
+          recordSchema: config.recordSchema,
+          maximumRecords: "10",
+          query: (id.namespace.value == 'zdb' ? "dnb.zdbid=" : "dnb.iss=") + id.value + " and dnb.frm=O"
+        ]
+
+        def uriBuilder = UriBuilder.of(config.baseUrl).path("/sru/zdb")
+
+        pars.each { k, v ->
+          uriBuilder.queryParam(k, v)
+        }
+
+        URI final_uri = uriBuilder.build()
+
         try {
-          new RESTClient(config.baseUrl[endpoint]).request(GET, ContentType.XML) { request ->
-            uri.query = [
-              version: config.version[endpoint],
-              operation: "searchRetrieve",
-              recordSchema: config.recordSchema[endpoint],
-              maximumRecords: "10",
-              query: (id.namespace.value == 'zdb' ? config.zdbTerm[endpoint] : config.issTerm[endpoint]) + id.value + config.onlineOnly[endpoint]
-            ]
+          def resp = client.exchange(HttpRequest.GET(final_uri), String)
+          def data = new XmlSlurper().parseText(resp.body())
+          log.debug("Got " + data.records.record.size() + " for " + id.namespace.value + ": " + id.value)
 
-            response.success = { resp, data ->
-              log.debug("Got " + data.records.record.size() + " for " + id.namespace.value + ": " + id.value)
+          if (data.records.record.size() > 0) {
+            data.records.children().each { rec ->
+              def zdb_info = getZdbInfo(rec)
 
-              if (!data.records.children().isEmpty()) {
-                data.records.record.findAll { rec ->
-                  def zdb_info = null
-
-                  if (endpoint == 'kxp') {
-                    zdb_info = getKxpInfo(rec)
-                  }
-                  else {
-                    zdb_info = getZdbInfo(rec)
-                  }
-
-                  if (zdb_info) {
-                    log.debug("Found ID candidate ${zdb_info.id}")
-                    if (id.namespace.value == 'eissn' && !candidate_ids.direct.find { it.id == zdb_info.id }) {
-                      candidate_ids.direct.add(zdb_info)
-                    }
-                    else if (!candidate_ids.parallel.find { it.id == zdb_info.id }) {
-                      candidate_ids.parallel.add(zdb_info)
-                    }
-                    else if (id.namespace.value == 'zdb') {
-                      candidate_ids.matched.add(zdb_info)
-                    }
-                  }
+              if (zdb_info) {
+                log.debug("Found ID candidate ${zdb_info.id}")
+                if (id.namespace.value == 'eissn' && !candidate_ids.direct.find { it.id == zdb_info.id }) {
+                  candidate_ids.direct.add(zdb_info)
+                }
+                else if (!candidate_ids.parallel.find { it.id == zdb_info.id }) {
+                  candidate_ids.parallel.add(zdb_info)
+                }
+                else if (id.namespace.value == 'zdb') {
+                  candidate_ids.matched.add(zdb_info)
                 }
               }
             }
           }
         }
+        catch (io.micronaut.http.client.exceptions.ReadTimeoutException e) {
+          log.error('Error fetching ZDB record!', e)
+          return 408
+        }
+        catch ( io.micronaut.http.client.exceptions.HttpClientResponseException e ) {
+          log.error('Error fetching ZDB record!', e)
+          return e.status.code
+        }
         catch ( Exception e ) {
           log.error('Error fetching ZDB record!', e)
+          return 500
         }
       }
     }
@@ -143,33 +96,6 @@ class ZdbAPIService {
     else {
       return candidate_ids.parallel
     }
-  }
-
-  def getKxpInfo(record, isOnline) {
-    def result = [:]
-    def rec = record.recordData.record
-
-    result.id = rec.'*'.find { it.@tag == '006Z' }.subfield[0].text()
-
-    rec.'*'.findAll { it.@tag == '039D' }.each { lf ->
-      def validLink = false
-      def idVal = null
-
-      lf.'*'.each { subfield ->
-        if (subfield.@code == 'R') {
-          validLink = subfield.text().startsWith('O')
-        }
-        if (subfield.@code == '7') {
-          idVal = subfield.text().substring(5, subfield.text().length())
-        }
-      }
-
-      if (validLink) {
-        result.id = idVal
-      }
-    }
-
-    result
   }
 
   def getZdbInfo(record) {

@@ -11,7 +11,6 @@ import org.gokb.cred.Package
 import org.gokb.cred.Platform
 import org.gokb.cred.TitleInstancePackagePlatform
 import spock.lang.Specification
-import groovyx.net.http.HTTPBuilder
 
 import java.text.SimpleDateFormat
 

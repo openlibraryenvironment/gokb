@@ -3,11 +3,10 @@ package org.gokb
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
-import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 
-import static groovyx.net.http.Method.*
-import groovyx.net.http.*
+import io.micronaut.http.*
+import io.micronaut.http.client.HttpClient
 
 import org.gokb.cred.*
 
@@ -200,24 +199,21 @@ class BulkPackageImportService {
   }
 
   private def fetchRemoteConfig(url) {
-    def client = new RESTClient(url)
+    def result = null
+    def client = HttpClient.create(url.toURL()).toBlocking()
 
-    client.request(GET, ContentType.JSON) {
-      response.success = { resp, data ->
-        log.debug("Got bulk collection list")
+    try {
+      def body = client.exchange(url, Map).body()
 
-        if (data.collections) {
-          return data
-        }
-        else {
-          return null
-        }
-      }
-      response.failure = { resp, data ->
-        log.error("Got remote config request status ${resp.status} .. ${data}")
-        return null
+      if (body.collections) {
+        result = body.collections
       }
     }
+    catch (Exception e) {
+      log.error("Unable to retrieve bulk config via ${url}!", e)
+    }
+
+    result
   }
 
   private def checkConfigItem(cobj, boolean specific = false) {

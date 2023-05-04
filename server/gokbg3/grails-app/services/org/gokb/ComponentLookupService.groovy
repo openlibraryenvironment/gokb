@@ -1,16 +1,16 @@
 package org.gokb
 
 import grails.util.GrailsNameUtils
-import groovyx.net.http.URIBuilder
+import grails.util.Holders
+import grails.validation.ValidationException
+
+import groovy.transform.Synchronized
+import groovy.util.logging.*
 
 import org.gokb.cred.*
 import org.gokb.ValidationService
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
-import grails.util.Holders
-import groovy.transform.Synchronized
-import grails.validation.ValidationException
-import groovy.util.logging.*
 import org.grails.web.json.JSONObject
 
 @Slf4j
@@ -638,67 +638,54 @@ class ComponentLookupService {
     def base = grailsApplication.config.serverURL + "/rest" + "${context ?: endpoint}"
 
     result['_links'] = [:]
-
-    def selfLink = new URIBuilder(base)
-
-    if (selfLink) {
-      selfLink.addQueryParams(params)
-      params.each { p, vals ->
-        log.debug("handling param ${p}: ${vals}")
-        if (vals instanceof String[]) {
-          selfLink.removeQueryParam(p)
-          vals.each { val ->
-            if (val.trim()) {
-              log.debug("Val: ${val} -- ${val.class.name}")
-              selfLink.addQueryParam(p, val)
-            }
-          }
-          log.debug("${selfLink.toString()}")
-        }
-        else if (!p.trim()) {
-          selfLink.removeQueryParam(p)
-        }
-      }
-      if(params.id) {
-        selfLink.removeQueryParam('id')
-      }
-      if(params.controller) {
-        selfLink.removeQueryParam('controller')
-      }
-      if (params.action) {
-        selfLink.removeQueryParam('action')
-      }
-      if (params.componentType) {
-        selfLink.removeQueryParam('componentType')
-      }
-    }
-    else {
-      selfLink = new URIBuilder(grailsApplication.config.serverURL + "/rest")
-    }
-    result['_links']['self'] = [href: selfLink.toString()]
-
+    result['_links']['self'] = [href: createTypedLink(params, base, max, offset, 'self')]
 
     if (total > offset+max) {
-      def nextLink = selfLink
-      if(nextLink.query.offset){
-        nextLink.removeQueryParam('offset')
-      }
-      nextLink.addQueryParam('offset', "${offset + max}")
-      result['_links']['next'] = ['href': (nextLink.toString())]
+      result['_links']['next'] = ['href': createTypedLink(params, base, max, offset, 'next')]
     }
     if (offset > 0) {
-      def prevLink = selfLink
-
-      if(prevLink.query.offset){
-        prevLink.removeQueryParam('offset')
-      }
-      prevLink.addQueryParam('offset', "${(offset - max) > 0 ? offset - max : 0}")
-      result['_links']['prev'] = ['href': prevLink.toString()]
+      result['_links']['prev'] = ['href': createTypedLink(params, base, max, offset, 'prev')]
     }
 
-    return result
+    result
   }
 
+  private String createTypedLink(params, base, max, offset, type) {
+    boolean first = true
+    def result = base
+
+    params.each { p, vals ->
+      log.debug("handling param ${p}: ${vals}")
+      if (!['controller', 'action', 'componentType', 'offset', 'id'].contains(p)) {
+        if (vals instanceof String[]) {
+          vals.each { val ->
+            if (val?.trim()) {
+              log.debug("Val: ${val} -- ${val.class.name}")
+              first = false
+              result += "${first ? '?' : '&' }${p}=" + URLEncoder.encode(val, 'UTF-8')
+            }
+          }
+        }
+        else if (vals instanceof String  && vals?.trim()) {
+          first = false
+          result += "${first ? '?' : '&' }${p}=" + URLEncoder.encode(vals, 'UTF-8')
+        }
+        else if (vals) {
+          first = false
+          result += "${first ? '?' : '&' }${p}=" + URLEncoder.encode(vals.toString(), 'UTF-8')
+        }
+      }
+    }
+
+    if (type == 'prev') {
+      result += "${first ? '?' : '&' }offset=${(offset - max) > 0 ? offset - max : 0}"
+    }
+    else if (type == 'next') {
+      result += "${first ? '?' : '&' }offset=${offset + max}"
+    }
+
+    result
+  }
 
   CuratoryGroup findCuratoryGroupOfInterest(KBComponent component, User user = null, def activeGroup = null){
     CuratoryGroup activeCuratoryGroup = null
@@ -732,8 +719,8 @@ class ComponentLookupService {
       if (activeCuratoryGroup?.superordinatedGroup && component_classname in ['JournalInstance', 'BookInstance', 'DatabaseInstance', 'OtherInstance']) {
         return activeCuratoryGroup.superordinatedGroup
       }
-      if (grailsApplication.config.gokb.centralGroups[component_classname]) {
-        CuratoryGroup cg = CuratoryGroup.findByNameIlike(grailsApplication.config.gokb.centralGroups[component_classname])
+      if (grailsApplication.config.getProperty("gokb.centralGroups.$component_classname")) {
+        CuratoryGroup cg = CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty("gokb.centralGroups.$component_classname"))
         return cg
       }
       else {
