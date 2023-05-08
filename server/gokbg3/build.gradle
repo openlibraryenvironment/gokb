@@ -22,7 +22,7 @@ buildscript {
 }
 
 version appVersion
-group "gokbg3"
+group "gokb"
 
 apply plugin:"eclipse"
 apply plugin:"idea"
