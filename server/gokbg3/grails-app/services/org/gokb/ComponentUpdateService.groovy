@@ -7,11 +7,8 @@ import gokbg3.DateFormatService
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.util.GrailsNameUtils
-import grails.util.Holders
 
 import groovy.transform.Synchronized
-
-import groovyx.net.http.URIBuilder
 
 import org.gokb.cred.*
 import org.gokb.rest.RefdataController

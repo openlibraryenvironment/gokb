@@ -1,8 +1,8 @@
 package com.k_int
 
-import groovyx.net.http.HTTPBuilder
-import groovyx.net.http.Method
-import groovyx.net.http.URIBuilder
+import io.micronaut.http.*
+import io.micronaut.http.client.*
+import io.micronaut.http.uri.UriBuilder
 
 import org.apache.lucene.search.join.ScoreMode
 import org.opensearch.action.search.*
@@ -35,6 +35,8 @@ class ESSearchService{
   def grailsApplication
   def genericOIDService
   def classExaminationService
+
+  static BlockingHttpClient tunnelClient
 
   def requestMapping = [
       generic: [
@@ -1084,7 +1086,7 @@ class ESSearchService{
    */
 
   private def convertEsLinks(es_result, params, component_endpoint) {
-    def base = grailsApplication.config.getProperty('serverURL') + "/rest" + "${component_endpoint}"
+    def base = grailsApplication.config.getProperty('serverURL') + "/rest" + "${component_endpoint ?: ''}"
 
     es_result['_links'] = [:]
     es_result['data'] = es_result.records
@@ -1096,58 +1098,57 @@ class ESSearchService{
         total: es_result.count
     ]
 
-    def selfLink = new URIBuilder(base)
-    selfLink.addQueryParams(params)
-
-    params.each { p, vals ->
-      log.debug("handling param ${p}: ${vals}")
-      if (vals instanceof String[]) {
-        selfLink.removeQueryParam(p)
-        vals.each { val ->
-          if (val?.trim()) {
-            log.debug("Val: ${val} -- ${val.class.name}")
-            selfLink.addQueryParam(p, val)
-          }
-        }
-        log.debug("${selfLink.toString()}")
-      }
-    }
-    if(params.controller) {
-      selfLink.removeQueryParam('controller')
-    }
-    if (params.action) {
-      selfLink.removeQueryParam('action')
-    }
-    if (params.componentType) {
-      selfLink.removeQueryParam('componentType')
-    }
-    es_result['_links']['self'] = [href: selfLink.toString()]
+    es_result['_links']['self'] = [href: createTypedLink(params, base, es_result['_pagination'], 'self')]
 
     if (es_result.count > es_result.offset+es_result.max) {
-      def nextLink = selfLink
-
-      if(nextLink.query.offset){
-        nextLink.removeQueryParam('offset')
-      }
-
-      nextLink.addQueryParam('offset', "${es_result.offset + es_result.max}")
-      es_result['_links']['next'] = ['href': (nextLink.toString())]
+      es_result['_links']['next'] = ['href': createTypedLink(params, base, es_result['_pagination'], 'next')]
     }
     if (es_result.offset > 0) {
-      def prevLink = selfLink
-
-      if(prevLink.query.offset){
-        prevLink.removeQueryParam('offset')
-      }
-
-      prevLink.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
-      es_result['_links']['prev'] = ['href': prevLink.toString()]
+      es_result['_links']['prev'] = ['href': createTypedLink(params, base, es_result['_pagination'], 'prev')]
     }
+
     es_result.remove("offset")
     es_result.remove("max")
     es_result.remove("count")
 
     es_result
+  }
+
+  private String createTypedLink(params, base, pagination, type) {
+    boolean first = true
+    def result = base
+
+    params.each { p, vals ->
+      log.debug("handling param ${p}: ${vals}")
+      if (!['controller', 'action', 'componentType', 'offset'].contains(p)) {
+        if (vals instanceof String[]) {
+          vals.each { val ->
+            if (val?.trim()) {
+              log.debug("Val: ${val} -- ${val.class.name}")
+              first = false
+              result += "${first ? '?' : '&' }${p}=" + URLEncoder.encode(val, 'UTF-8')
+            }
+          }
+        }
+        else if (vals instanceof String  && vals?.trim()) {
+          first = false
+          result += "${first ? '?' : '&' }${p}=" + URLEncoder.encode(vals, 'UTF-8')
+        }
+        else if (vals) {
+          first = false
+          result += "${first ? '?' : '&' }${p}=" + URLEncoder.encode(vals.toString(), 'UTF-8')
+        }
+      }
+    }
+
+    if (type == 'prev') {
+      result += "${first ? '?' : '&' }offset=${(pagination.offset - pagination.limit) > 0 ? pagination.offset - pagination.limit : 0}"
+    }
+    else if (type == 'next') {
+      result += "${first ? '?' : '&' }offset=${pagination.offset + pagination.limit}"
+    }
+
+    result
   }
 
   private def mapIdentifiers(ids) {
@@ -1276,25 +1277,27 @@ class ESSearchService{
     if (!params || !params.q){
       return null
     }
-    int port = grailsApplication.config.getProperty('searchApi.port')
-    def indices = grailsApplication.config.getProperty('gokb.es.indices', Map).values() as String[]
+    int port = grailsApplication.config.getProperty('searchApi.port', Integer, 9200)
+    def indices = grailsApplication.config.getProperty('gokb.es.indices', Map)?.values()
     String host = grailsApplication.config.getProperty('gokb.es.host')
-    String url = "http://${host}:${port}/${indices.join(',')}/_search?q=${params.q}"
-    if (params.size){
-      url = url + "&size=${params.size}"
+
+    if (!tunnelClient) {
+      tunnelClient = HttpClient.create("http://${host}:${port}".toURL()).toBlocking()
     }
-    HTTPBuilder httpBuilder = new HTTPBuilder(url)
-    httpBuilder.request(Method.GET){ req ->
-      response.success = { resp, html ->
-        return html
-      }
-      response.failure = { resp ->
-        return [
-            'error': "Could not process opensearch request.",
-            'status': resp.statusLine,
-            'message': resp.message
-        ]
-      }
+
+    try {
+      def uriBuilder = UriBuilder.of("http://${host}:${port}")
+        .path("/${indices.join(',')}/_search")
+        .queryParam('q', params.q)
+        .queryParam('size', params.size)
+
+      URI uri = uriBuilder.build()
+
+      def response = client.exchange(HttpRequest.GET(uri), Map)
+      return response.body()
+    }
+    catch (Exception e) {
+      log.error("Unable to pass along search!", e)
     }
   }
 }

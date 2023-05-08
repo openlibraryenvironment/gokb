@@ -18,7 +18,7 @@ class BulkImportController {
     def rjson = request.JSON
 
     if (rjson && BulkImportListConfig.isTypeEditable()) {
-      def upsertResult = bulkPackageImportService.upsertConfig(rjson)
+      def upsertResult = bulkPackageImportService.upsertConfig(rjson, springSecurityService.currentUser)
 
       if (upsertResult.result == 'ERROR') {
         result.result = 'ERROR'
@@ -45,12 +45,26 @@ class BulkImportController {
 
   @Secured(value = ["hasRole('ROLE_API')", 'IS_AUTHENTICATED_FULLY'])
   def runBulkUpdate() {
+    def result = [result: 'OK']
+    def user = springSecurityService.currentUser
     boolean dryRun = params.boolean('dryRun') ?: true
     boolean async = params.boolean('async') ?: false
     BulkImportListConfig config = BulkImportListConfig.findByCode(params.code)
 
-    log.error("Trigger bulk update (${config?.code} - Dry Run: ${params.dryRun} - Async: ${params.async})")
-    def result = bulkPackageImportService.startUpdate(config, dryRun, async, springSecurityService.currentUser)
+    if (config && (user.superUserStatus || user == config.owner)) {
+      log.debug("Trigger bulk update (${config?.code} - Dry Run: ${params.dryRun} - Async: ${params.async})")
+      result = bulkPackageImportService.startUpdate(config, dryRun, async, springSecurityService.currentUser)
+    }
+    else if (!config) {
+      result.result = 'ERROR'
+      response.status = 404
+      result.message = "Unable to reference config with code '${config.code}'!"
+    }
+    else {
+      result.result = 'ERROR'
+      response.status = 403
+      result.message = "No permission to edit this config!"
+    }
 
     render result as JSON
   }

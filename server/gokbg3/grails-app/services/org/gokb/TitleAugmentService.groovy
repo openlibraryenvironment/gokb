@@ -19,6 +19,7 @@ class TitleAugmentService {
 
 
   def augmentZdb(titleInstance) {
+    def result = [result: 'OK', status: null]
     log.debug("Augment ZDB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
     CuratoryGroup editorialGroup = grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators') ?
         (CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators')) ?: new CuratoryGroup(name: grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators')).save(flush: true)) : null
@@ -39,6 +40,12 @@ class TitleAugmentService {
         def existing_noresults = ReviewRequest.executeQuery("from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc = :type", [ti: titleInstance, type: rr_no_results])
         def existing_multiple = ReviewRequest.executeQuery("from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc = :type", [ti: titleInstance, type: rr_multiple])
         def candidates = zdbAPIService.lookup(titleInstance.name, titleInstance.ids)
+
+        if (candidates instanceof Integer) {
+          result.result = 'ERROR'
+          result.status = candidates
+          return result
+        }
 
         if (candidates.size() == 1) {
           if (num_existing_zdb_ids == 0) {
@@ -211,9 +218,12 @@ class TitleAugmentService {
         log.debug("Skipping title with existing RR ..")
       }
     }
+
+    result
   }
 
   def augmentEzb(titleInstance) {
+    def result = [result: 'OK', status: null]
     log.debug("Augment EZB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
     CuratoryGroup editorialGroup = grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators') ?
         (CuratoryGroup.findByNameIlike(grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')) ?: new CuratoryGroup(name: grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')).save(flush: true)) : null
@@ -226,6 +236,13 @@ class TitleAugmentService {
 
       if (existing_rr.size() == 0) {
         def ezbCandidates = ezbAPIService.lookup(titleInstance.name, titleInstance.ids)
+
+        if (ezbCandidates instanceof Integer) {
+          result.result = 'ERROR'
+          result.status = ezbCandidates
+          return result
+        }
+
         RefdataValue comboTypeId = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
         RefdataValue statusDeleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
         String ezbId

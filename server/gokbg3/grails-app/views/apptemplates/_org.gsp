@@ -7,6 +7,12 @@
           <g:xEditable class="ipe" owner="${d}" field="name" />
   </dd>
   <dt>
+          <g:annotatedLabel owner="${d}" property="preferredShortname">Preferred Short Form</g:annotatedLabel>
+  </dt>
+  <dd>
+          <g:xEditable class="ipe" owner="${d}" field="preferredShortname" />
+  </dd>
+  <dt>
           <g:annotatedLabel owner="${d}" property="status">Status</g:annotatedLabel>
   </dt>
   <dd>

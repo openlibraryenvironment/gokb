@@ -13,6 +13,7 @@ class Org extends KBComponent {
   String homepage
   IdentifierNamespace titleNamespace
   IdentifierNamespace packageNamespace
+  String preferredShortname
 
   def availableActions() {
     [
@@ -77,6 +78,7 @@ class Org extends KBComponent {
     includes KBComponent.mapping
     mission column: 'org_mission_fk_rv'
     homepage column: 'org_homepage'
+    preferredShortname column: 'org_preferred_shortname'
   }
 
   static constraints = {
@@ -217,6 +219,7 @@ class Org extends KBComponent {
 
         addCoreGOKbXmlFields(builder, attr)
         builder.'homepage'(homepage)
+        builder.'preferredShortname'(preferredShortname)
         if (titleNamespace)
           builder.'titleNamespace'('namespaceName': titleNamespace.name, 'value': titleNamespace.value, 'id': titleNamespace.id)
         if (packageNamespace)

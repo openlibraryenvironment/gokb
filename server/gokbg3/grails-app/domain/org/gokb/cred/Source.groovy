@@ -12,18 +12,17 @@ class Source extends KBComponent {
   String defaultAccessURL
   String explanationAtSource
   String contextualNotes
-  // Org combo -- What organisation - aggregator -- responsibleParty
   Boolean automaticUpdates = false
+  Boolean skipInvalid = false
   RefdataValue frequency
   String ruleset
-  // Default method refdata - email web ftp other
-  // Default data Format KBART,Prop
   RefdataValue defaultSupplyMethod
   RefdataValue defaultDataFormat
   IdentifierNamespace targetNamespace
   Date lastRun
   Boolean ezbMatch = false
   Org responsibleParty
+  BulkImportListConfig bulkConfig
 
   static manyByCombo = [
     curatoryGroups: CuratoryGroup
@@ -46,9 +45,11 @@ class Source extends KBComponent {
     responsibleParty(nullable:true, blank:true)
     ruleset(nullable:true, blank:true)
     targetNamespace(nullable:true, blank:true)
-    lastRun(nullable:true,default: null)
+    lastRun(nullable:true, default: null)
     ezbMatch(nullable:true, default: false)
-    automaticUpdates(nullable: true,default: false)
+    automaticUpdates(nullable: true, default: false)
+    skipInvalid(nullable: true, default: false)
+    bulkConfig(nullable: true, blank: false)
   }
 
   public static final String restPath = "/sources"

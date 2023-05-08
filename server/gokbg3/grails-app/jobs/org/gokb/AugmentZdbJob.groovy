@@ -33,6 +33,7 @@ class AugmentZdbJob{
         def issnNs = []
         issnNs << IdentifierNamespace.findByValue('issn')
         issnNs << IdentifierNamespace.findByValue('eissn')
+        boolean cancelled = false
         int offset = 0
         int batchSize = 50
         Instant start = Instant.now()
@@ -41,20 +42,31 @@ class AugmentZdbJob{
 
         def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(), [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs, lastRun: startDate])[0]
 
-        while (offset < count_journals_without_zdb_id) {
+        while (!cancelled && offset < count_journals_without_zdb_id) {
           def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(), [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs, lastRun: startDate], [offset: offset, max: batchSize])
 
           log.debug("Processing ${count_journals_without_zdb_id}")
 
-          journals_without_zdb_id.each { ti_id ->
+          for (ti_id in journals_without_zdb_id) {
             def ti = TitleInstance.get(ti_id)
             log.debug("Attempting augment on ${ti.id} ${ti.name}")
-            titleAugmentService.augmentZdb(ti)
+            def result = titleAugmentService.augmentZdb(ti)
+
+            if (result.result == 'ERROR') {            
+              log.error("Enrichment call returned status ${result.status}!")
+
+              if (result.status == 429 || result.status >= 500) {
+                log.debug("Cancelling enrichment run!")
+                cancelled = true  
+                break
+              }
+            }
           }
           cleanUpGorm()
           offset += batchSize
 
           if (Thread.currentThread().isInterrupted()) {
+            cancelled = true
             break
           }
         }

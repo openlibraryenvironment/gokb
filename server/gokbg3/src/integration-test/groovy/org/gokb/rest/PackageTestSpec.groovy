@@ -130,7 +130,7 @@ class PackageTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
-    ['TestPackJournalTIPP', 'TestJournalTIPPUpdate', 'TestPackBookTIPP', 'TestBookTIPPUpdate', 'TIPP Name', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
+    ['TestPackJournalTIPP', 'TestJournalTIPPUpdate', 'TestPackBookTIPP', 'TestBookTIPPUpdate', 'TestJournalTIPPSkip', 'TIPP Name', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
     ["TestPack","UpdPack","TestPackageWithTipps","TestPackageWithProviderAndPlatform", "TestPackHandleUrl", "TestPackPartialError"].each {

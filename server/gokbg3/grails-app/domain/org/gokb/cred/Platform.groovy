@@ -381,6 +381,12 @@ class Platform extends KBComponent {
       }
     }
 
-    result;
+    if (result) {
+      log.debug("Updating platform url ${result.primaryUrl} -> ${platformDTO.primaryUrl} ..")
+      result.primaryUrl = platformDTO.primaryUrl
+      result.save(flush:true, failOnError:true)
+    }
+
+    result
   }
 }

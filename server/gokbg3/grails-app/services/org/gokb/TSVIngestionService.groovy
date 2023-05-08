@@ -30,7 +30,7 @@ class TSVIngestionService {
       session = sessionFactory.currentSession
     }
     catch (org.hibernate.HibernateException he) {
-      log.debug("No Session foudn, creating a new one...")
+      log.debug("No Session found, creating a new one...")
     }
 
     if (session) {

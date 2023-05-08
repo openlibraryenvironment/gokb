@@ -109,6 +109,7 @@ class FTUpdateService {
         result.updater = 'org'
         result.titleNamespace = kbc.titleNamespace?.value
         result.packageNamespace = kbc.packageNamespace?.value
+        result.preferredShortname = kbc.preferredShortname ?: ""
         kbc.variantNames.each { vn ->
           result.altname.add(vn.variantName)
         }

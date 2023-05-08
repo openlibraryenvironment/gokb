@@ -12,7 +12,7 @@ buildscript {
         classpath "org.grails.plugins:hibernate5:${gormVersion-".RELEASE"}"
         classpath 'com.bertramlabs.plugins:asset-pipeline-gradle:4.1.0'
         classpath "com.bmuschko:gradle-docker-plugin:6.7.0"
-        classpath 'com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1'
+        classpath "com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1"
         classpath "gradle.plugin.com.github.erdi.webdriver-binaries:webdriver-binaries-gradle-plugin:2.7"
         classpath "org.grails.plugins:database-migration:4.1.0"
         // Fixing too long classpath in Windows development environment
@@ -99,7 +99,6 @@ dependencies {
     }
 
     // implementation 'org.grails.plugins:grails-melody-plugin:1.80.0'
-    implementation group: 'joda-time', name: 'joda-time', version: '2.10.14'
 
     implementation 'org.grails.plugins:spring-security-core:5.1.1'
     implementation 'org.grails.plugins:spring-security-acl:4.0.0.M2'

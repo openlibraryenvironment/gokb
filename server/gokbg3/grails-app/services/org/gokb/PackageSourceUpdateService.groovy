@@ -14,14 +14,14 @@ class PackageSourceUpdateService {
   def concurrencyManagerService
   def TSVIngestionService
 
-  def updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null, boolean dryRun = false, boolean skipInvalid = false) {
+  def updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null, boolean dryRun = false) {
     log.debug("updateFromSource ${p.name}")
     def result = [result: 'OK']
     def activeJobs = concurrencyManagerService.getComponentJobs(p.id)
 
     if (job || activeJobs?.data?.size() == 0) {
       log.debug("UpdateFromSource started")
-      result = startSourceUpdate(p, user, job, activeGroup, dryRun, skipInvalid)
+      result = startSourceUpdate(p, user, job, activeGroup, dryRun)
     }
     else {
       log.error("update skipped - already running")
@@ -30,7 +30,7 @@ class PackageSourceUpdateService {
     result
   }
 
-  private def startSourceUpdate(pkg, user, job, activeGroup, dryRun, skipInvalid) {
+  private def startSourceUpdate(pkg, user, job, activeGroup, dryRun) {
     log.debug("Source update start..")
     def result = [result: 'OK']
 
@@ -41,6 +41,7 @@ class PackageSourceUpdateService {
       def pkg_source = p.source
       def preferred_group = activeGroup ?: (p.curatoryGroups?.size() > 0 ? CuratoryGroup.deproxy(p.curatoryGroups[0]) : null)
       def title_ns = pkg_source?.targetNamespace ?: (p.provider?.titleNamespace ?: null)
+      def skipInvalid = false
 
       if (job && !job.startTime) {
         job.startTime = new Date()
@@ -50,6 +51,7 @@ class PackageSourceUpdateService {
         def src_url = null
         def dynamic_date = false
         LocalDate extracted_date
+        skipInvalid = pkg_source.skipInvalid ?: false
         def file_info = [:]
 
         try {
@@ -195,18 +197,12 @@ class PackageSourceUpdateService {
                   else {
                     log.debug("Found existing datafile ${datafile}")
 
-                    Boolean noChange = hasFileChanged(p.id, datafile.id)
-
-                    if (noChange) {
+                    if (!hasFileChanged(p.id, datafile.id)) {
                       log.debug("Datafile was already the last import for this package!")
                       result.result = 'SKIPPED'
                       result.message = 'Skipped repeated import of the same file for this package.'
                       result.messageCode = 'kbart.transmission.skipped.sameFile'
                       return result
-                    }
-                    else {
-                      p.fileAttachments.add(datafile)
-                      p.save(flush: true)
                     }
                   }
                 }
@@ -258,16 +254,17 @@ class PackageSourceUpdateService {
                   }
 
                   update_job.description = "KBART REST ingest (${p.name})".toString()
-                  update_job.type = RefdataCategory.lookup('Job.Type', 'KBARTIngest')
+                  update_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
                   update_job.linkedItem = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
                   update_job.message("Starting upsert for Package ${p.name}".toString())
                   update_job.startOrQueue()
                   result.job_result = update_job.get()
 
-                  if (result.job_result?.badrows || result.job_result?.report?.reviews > 0 || result.job_result?.matchingJob?.reviews > 0) {
+                  if (result.job_result?.validation?.valid == false || result.job_result?.report?.reviews > 0 || result.job_result?.matchingJob?.reviews > 0) {
                     log.debug("There were issues with the automated job, keeping listStatus in progress..")
                   }
-                  else {
+                  else if (!dryRun) {
+                    p.refresh()
                     p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
                     p.save(flush: true)
                   }
@@ -367,6 +364,6 @@ class PackageSourceUpdateService {
                                               and c.fromComponent.id = :pkg
                                               order by c.dateCreated desc''', [ct: type_fa, pkg: pkgId])
 
-    return (ordered_combos.size() > 0 && ordered_combos[0] == datafileId)
+    return (ordered_combos.size() == 0 || ordered_combos[0] != datafileId)
   }
 }

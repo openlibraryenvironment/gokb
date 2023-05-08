@@ -1,14 +1,15 @@
 package org.gokb
 
-import groovy.json.JsonSlurper
 import grails.gorm.transactions.Transactional
 import grails.util.Holders
-import groovyx.net.http.HTTPBuilder
-import groovyx.net.http.RESTClient
+
+import groovy.json.JsonSlurper
+
+import io.micronaut.http.*
+import io.micronaut.http.client.*
+
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
-
-import static groovyx.net.http.Method.GET
 
 @Transactional
 class LanguagesService{
@@ -21,20 +22,15 @@ class LanguagesService{
    * https://github.com/hbz/languages-microservice#get-the-whole-iso-639-2-list for details.
    */
   static void initialize(){
-
     if (Holders.grailsApplication.config.getProperty('gokb.languagesUrl')) {
-      String uriString = "${Holders.grailsApplication.config.getProperty('gokb.languagesUrl')}/api/listIso639two"
-      URI microserviceUrl = new URI(uriString)
-      def httpBuilder = new HTTPBuilder(microserviceUrl)
-      httpBuilder.request(GET) { request ->
-        response.success = { statusResp, responseData ->
-          log.debug("GET ${uriString} => success")
-          languages = responseData
-        }
-        response.failure = { statusResp, statusData ->
-          log.debug("GET ${uriString} => failure => will be showing languages as shortcodes")
-          return
-        }
+      try {
+        def client = HttpClient.create(Holders.grailsApplication.config.getProperty('gokb.languagesUrl').toURL()).toBlocking()
+        def response = client.exchange("/api/listIso639two", Map)
+      
+        languages = response.body()
+      }
+      catch (Exception e) {
+        e.printStackTrace()
       }
     }
     else {

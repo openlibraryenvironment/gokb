@@ -12,7 +12,6 @@ import org.gokb.cred.User
 import org.springframework.beans.factory.annotation.Autowired
 
 @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-@Transactional(readOnly = true)
 class UsersController {
 
   static namespace = 'rest'
@@ -33,7 +32,6 @@ class UsersController {
   }
 
   @Secured(['ROLE_ADMIN', 'IS_AUTHENTICATED_FULLY'])
-  @Transactional
   def index() {
     int pageSize = springSecurityService.currentUser.defaultPageSize
     def result = [data: []]
