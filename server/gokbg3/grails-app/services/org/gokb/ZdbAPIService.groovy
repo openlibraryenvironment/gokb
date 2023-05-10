@@ -130,7 +130,7 @@ class ZdbAPIService {
           }
         }
         catch ( Exception e ) {
-          log.error('Error fetching ZDB record!', e)
+          log.error("Error fetching ZDB record! ($id)", e)
         }
       }
     }
