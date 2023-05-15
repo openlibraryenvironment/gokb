@@ -1,7 +1,6 @@
 package org.gokb
 
 import grails.gorm.transactions.Transactional
-import grails.util.Holders
 
 import groovy.json.JsonSlurper
 
@@ -14,6 +13,8 @@ import org.gokb.cred.RefdataCategory
 @Transactional
 class LanguagesService{
 
+  def grailsApplication
+
   static Map languages = [:]
 
   /**
@@ -21,16 +22,17 @@ class LanguagesService{
    * provided in the ISO-639-2 map specified by the referenced languages microservice. See
    * https://github.com/hbz/languages-microservice#get-the-whole-iso-639-2-list for details.
    */
-  static void initialize(){
-    if (Holders.grailsApplication.config.getProperty('gokb.languagesUrl')) {
+  public void initialize(){
+    if (grailsApplication.config.getProperty('gokb.languagesUrl')) {
+      log.debug("Fetching current list for ")
       try {
-        def client = HttpClient.create(Holders.grailsApplication.config.getProperty('gokb.languagesUrl').toURL()).toBlocking()
-        def response = client.exchange("/api/listIso639two", Map)
-      
+        def client = HttpClient.create(grailsApplication.config.getProperty('gokb.languagesUrl').toURL()).toBlocking()
+        def response = client.exchange("/languages/api/listIso639two", Map)
+
         languages = response.body()
       }
       catch (Exception e) {
-        e.printStackTrace()
+        log.error("Unable to fetch languages file!", e.message)
       }
     }
     else {
