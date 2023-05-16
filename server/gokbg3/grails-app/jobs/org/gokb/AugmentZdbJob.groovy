@@ -46,10 +46,14 @@ class AugmentZdbJob{
 
           log.debug("Processing ${count_journals_without_zdb_id}")
 
-          journals_without_zdb_id.each { ti_id ->
+          for (ti_id in journals_without_zdb_id) {
             def ti = TitleInstance.get(ti_id)
             log.debug("Attempting augment on ${ti.id} ${ti.name}")
             titleAugmentService.augmentZdb(ti)
+
+            if (Thread.currentThread().isInterrupted()) {
+              break
+            }
           }
           cleanUpGorm()
           offset += batchSize

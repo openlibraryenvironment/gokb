@@ -86,7 +86,7 @@ class ZdbAPIService {
   def lookup(String name, def ids) {
     def candidate_ids = [direct: [], parallel: [], matched: []]
 
-    ids.each { id ->
+    for (id in ids) {
       if (id.namespace.value == 'eissn' || id.namespace.value == 'issn' || id.namespace.value == 'zdb') {
         try {
           new RESTClient(config.baseUrl[endpoint]).request(GET, ContentType.XML) { request ->
@@ -130,7 +130,8 @@ class ZdbAPIService {
           }
         }
         catch ( Exception e ) {
-          log.error('Error fetching ZDB record!', e)
+          log.error("Error fetching ZDB record for '$id'!", e.message)
+          break
         }
       }
     }
