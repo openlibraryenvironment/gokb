@@ -1,17 +1,32 @@
 package org.gokb
 
 import groovy.util.slurpersupport.NodeChild
-import groovy.util.XmlSlurper
 
-import io.micronaut.http.*
-import io.micronaut.http.client.*
-import io.micronaut.http.uri.UriBuilder
+import static groovyx.net.http.Method.*
+import groovyx.net.http.*
 
 class EzbAPIService {
   static transactional = false
-  static BlockingHttpClient client
+  def endpoint = 'rzblx1'
   def grailsApplication
-  static String baseUrl = "http://rzblx1.uni-regensburg.de"
+
+  def config = [
+    baseUrl: [
+      rzblx1: "http://rzblx1.uni-regensburg.de/ezeit/searchres.phtml?bibid=HBZ&"
+    ],
+    queryByZdbId: [
+      rzblx1: "jq_type1=ZD&jq_term1="
+    ],
+    queryByIssn: [
+      rzblx1: "jq_type1=IS&jq_term1="
+    ],
+    xmloutput: [
+      rzblx1: "1"
+    ],
+    xmlv: [
+      rzblx1: "3"
+    ]
+  ]
 
   @javax.annotation.PostConstruct
   def init() {
@@ -20,45 +35,32 @@ class EzbAPIService {
 
   def lookup(String name, def ids) {
     def candidates = []
-
-    if (!client) {
-      client = HttpClient.create(baseUrl.toURL()).toBlocking()
-    }
-
-    for (id in ids) {
-      if (id.namespace.value in ['eissn', 'issn', 'zdb']) {
+    ids.each { id ->
+      String queryTerm
+      if (id.namespace.value in ['eissn', 'issn']) {
+        queryTerm = config.queryByIssn[endpoint]
+      }
+      else if (id.namespace.value == 'zdb'){
+        queryTerm = config.queryByZdbId[endpoint]
+      }
+      if (queryTerm) {
         try {
-          def queryPars = [
-            bib: 'HBZ',
-            hits_per_page: '10',
-            xmloutput: '1',
-            xmlv: '3',
-            jq_type1: id.namespace.value == 'zdb' ? 'ZD' : 'IS',
-            jq_term: id.value
-          ]
-          def uriBuilder = UriBuilder.of(baseUrl)
-            .path("/ezeit/searchres.phtml")
-
-          queryPars.each { k, v ->
-            uriBuilder.queryParam(k, v)
+          String uri = config.baseUrl[endpoint] + queryTerm + id.value +
+              "&hits_per_page=10&xmloutput=${config.xmloutput[endpoint]}&xmlv=${config.xmlv[endpoint]}"
+          new RESTClient(uri).request(GET, ContentType.XML) { request ->
+            response.success = { resp, data ->
+              log.debug("Got " + data.records.record.size() + " for " + id.namespace.value + ": " + id.value)
+              if (!data.children().isEmpty()) {
+                candidates = data.'**'.findAll(){ node -> node.name() == 'journal' }
+              }
+            }
+            response.failure = { resp ->
+              log.debug("Got no results for " + id.namespace.value + " : " + id.value)
+            }
           }
-
-          URI final_uri = uriBuilder.build()
-
-          HttpResponse resp = client.exchange(HttpRequest.GET(final_uri), String)
-          def data = new XmlSlurper().parseText(resp.body())
-
-          if (!data.children().isEmpty()) {
-            candidates = data.'**'.findAll() { node -> node.name() == 'journal' }
-          }
-        }
-        catch ( io.micronaut.http.client.exceptions.HttpClientResponseException e ) {
-          log.error('Error fetching EZB record!', e)
-          return e.status.code
         }
         catch ( Exception e ) {
-          log.error('Error fetching EZB record!', e)
-          return 500
+          e.printStackTrace()
         }
       }
     }

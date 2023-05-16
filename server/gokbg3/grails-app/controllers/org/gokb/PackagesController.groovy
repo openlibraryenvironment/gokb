@@ -11,6 +11,7 @@ import com.k_int.ConcurrencyManagerService.Job
 import java.security.MessageDigest
 import grails.converters.JSON
 import grails.core.GrailsClass
+import groovyx.net.http.URIBuilder
 
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*

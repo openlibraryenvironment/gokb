@@ -2,6 +2,7 @@ package org.gokb
 
 import gokbg3.DateFormatService
 import grails.util.GrailsNameUtils
+import groovyx.net.http.URIBuilder
 
 import org.gokb.cred.*
 import org.gokb.rest.RefdataController

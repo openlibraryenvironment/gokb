@@ -6,8 +6,8 @@ import grails.converters.JSON
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 
-import io.micronaut.http.*
-import io.micronaut.http.client.*
+import static groovyx.net.http.Method.*
+import groovyx.net.http.*
 
 import org.gokb.cred.*
 
@@ -65,32 +65,32 @@ class EzbCollectionService {
   private def fetchUpdatedLists (job) {
     def result = [result: 'OK', report: [:]]
 
-    if (grailsApplication.config.getProperty('gokb.ezbOpenCollections.url')) {
-      def baseUrl = grailsApplication.config.getProperty('gokb.ezbOpenCollections.url')
+    if (grailsApplication.config.gokb.ezbOpenCollections?.url) {
+      def baseUrl = grailsApplication.config.gokb.ezbOpenCollections.url
       def allCollections = [:]
+      boolean cancelled = false
 
-      def client = HttpClient.create(baseUrl.toURL()).toBlocking()
+      def client = new RESTClient(baseUrl)
       job.startTime = new Date()
 
-      try {
-        def data = client.exchange(baseUrl, Map).body()
-        log.debug("Got EZB collection list")
-
-        data?.collections?.each { type, items ->
-          log.debug("Mapping ${type} with ${items.size()} items")
-          if (type in activeTypes) {
-            log.debug("Added items for active type")
-            allCollections[type] = items
-          }
-          else {
-            log.debug("Skipped inactive type..")
+      client.request(GET, ContentType.JSON) {
+        response.success = { resp, data ->
+          log.debug("Got EZB collection list")
+          data.collections?.each { type, items ->
+            log.debug("Mapping ${type} with ${items.size()} items")
+            if (type in activeTypes) {
+              log.debug("Added items for active type")
+              allCollections[type] = items
+            }
+            else {
+              log.debug("Skipped inactive type..")
+            }
           }
         }
-      }
-      catch (Exception e) {
-        log.error("Unable to fetch EZB collections!", e)
-        result.result = 'ERROR'
-        return result
+        response.failure = { resp, data ->
+          log.error("Got status ${resp.status} .. ${data}")
+          return 'SKIPPED_EZB_API_ERROR'
+        }
       }
 
       // Local backup for testing
@@ -128,10 +128,11 @@ class EzbCollectionService {
           validationErrors: [:]
         ]
 
-        if (!job.isCancelled()) {
+        if (!cancelled) {
           for (item in items) {
-            if (Thread.currentThread().isInterrupted() || job.isCancelled()) {
+            if (Thread.currentThread().isInterrupted()) {
               break
+              cancelled = true
             }
 
             Package.withNewSession { session ->
@@ -139,7 +140,7 @@ class EzbCollectionService {
               def pkgName = "${item.ezb_collection_id}: ${item.ezb_collection_name}"
               log.debug("Processing ${type} ${item.ezb_collection_name}")
 
-              CuratoryGroup curator = CuratoryGroup.findByName(grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')) ?: new CuratoryGroup(name: grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')).save(flush:true)
+              CuratoryGroup curator = CuratoryGroup.findByName(grailsApplication.config.gokb.ezbAugment.rrCurators)
               Platform platform = item.ezb_collection_platform ? Platform.findByUuid(item.ezb_collection_platform) : null
               IdentifierNamespace ezb_ns = IdentifierNamespace.findByValue('ezb')
               Org provider = item.ezb_collection_provider ? Org.findByUuid(item.ezb_collection_provider) : null

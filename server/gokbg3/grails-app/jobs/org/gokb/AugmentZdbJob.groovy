@@ -22,7 +22,7 @@ class AugmentZdbJob{
   static final String query = "from JournalInstance as ti where ti.status = :current and (ti.dateCreated > :lastRun or (not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)))"
 
   def execute() {
-    if (grailsApplication.config.getProperty('gokb.zdbAugment.enabled', Boolean, false)) {
+    if (grailsApplication.config.gokb.zdbAugment.enabled) {
       def active_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup("Job.Type", "Sync ZDB data"))
 
       if (!active_jobs) {
@@ -33,7 +33,6 @@ class AugmentZdbJob{
         def issnNs = []
         issnNs << IdentifierNamespace.findByValue('issn')
         issnNs << IdentifierNamespace.findByValue('eissn')
-        boolean cancelled = false
         int offset = 0
         int batchSize = 50
         Instant start = Instant.now()
@@ -42,31 +41,20 @@ class AugmentZdbJob{
 
         def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(), [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs, lastRun: startDate])[0]
 
-        while (!cancelled && offset < count_journals_without_zdb_id) {
+        while (offset < count_journals_without_zdb_id) {
           def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(), [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs, lastRun: startDate], [offset: offset, max: batchSize])
 
           log.debug("Processing ${count_journals_without_zdb_id}")
 
-          for (ti_id in journals_without_zdb_id) {
+          journals_without_zdb_id.each { ti_id ->
             def ti = TitleInstance.get(ti_id)
             log.debug("Attempting augment on ${ti.id} ${ti.name}")
-            def result = titleAugmentService.augmentZdb(ti)
-
-            if (result.result == 'ERROR') {            
-              log.error("Enrichment call returned status ${result.status}!")
-
-              if (result.status == 429 || result.status >= 500) {
-                log.debug("Cancelling enrichment run!")
-                cancelled = true  
-                break
-              }
-            }
+            titleAugmentService.augmentZdb(ti)
           }
           cleanUpGorm()
           offset += batchSize
 
           if (Thread.currentThread().isInterrupted()) {
-            cancelled = true
             break
           }
         }

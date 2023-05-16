@@ -29,6 +29,7 @@ import java.time.ZoneId
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
+import static groovyx.net.http.Method.GET
 import static grails.async.Promises.*
 
 @Slf4j

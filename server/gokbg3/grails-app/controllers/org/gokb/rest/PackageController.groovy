@@ -9,6 +9,8 @@ import grails.core.GrailsClass
 import grails.gorm.transactions.*
 import grails.plugin.springsecurity.annotation.Secured
 
+import groovyx.net.http.URIBuilder
+
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId

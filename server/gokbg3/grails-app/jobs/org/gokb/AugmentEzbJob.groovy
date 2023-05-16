@@ -21,8 +21,7 @@ class AugmentEzbJob{
   }
 
   def execute() {
-    def breakInMs = grailsApplication.config.getProperty('gokb.ezbAugment.breakInMs', Integer, 0)
-    
+    long breakInMs = Long.valueOf(grailsApplication.config.gokb.ezbAugment.breakInMs) ?: 0L
     if (grailsApplication.config.gokb.ezbAugment.enabled) {
       log.info("Starting EZB augment job.")
       def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
@@ -33,36 +32,26 @@ class AugmentEzbJob{
       issnNs << IdentifierNamespace.findByValue('eissn')
       int offset = 0
       int batchSize = 50
-      boolean cancelled = false
       Instant start = Instant.now()
       ZonedDateTime zdt = ZonedDateTime.ofInstant(start, ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS)
       Date startDate = Date.from(zdt.toInstant())
 
       def count_journals_without_ezb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(),[current: status_current, ctype: idComboType, ns: ezbNs, issns: issnNs, lastRun: startDate])[0]
 
-      while (!cancelled && offset < count_journals_without_ezb_id) {
+      while (offset < count_journals_without_ezb_id) {
         def journals_without_ezb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(),[current: status_current, ctype: idComboType, ns: ezbNs, issns: issnNs, lastRun: startDate], [offset: offset, max: batchSize])
         log.debug("Processing ${count_journals_without_ezb_id} journals.")
 
-        for (ti_id in journals_without_ezb_id) {
+        journals_without_ezb_id.each { ti_id ->
           def ti = TitleInstance.get(ti_id)
           log.debug("Attempting ezb augment on ${ti.id} ${ti.name}")
-          def result = titleAugmentService.augmentEzb(ti)
-
-          if (result.result == 'ERROR') {
-            cancelled = true
-            log.error("Enrichment call returned status ${result.status}!")
-            break
-          }
-          else {
-            Thread.sleep(breakInMs)
-          }
+          titleAugmentService.augmentEzb(ti)
+          Thread.sleep(breakInMs)
         }
         cleanUpGorm()
         offset += batchSize
 
         if (Thread.currentThread().isInterrupted()) {
-          cancelled = true
           break
         }
       }
