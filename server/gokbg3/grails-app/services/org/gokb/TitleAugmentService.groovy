@@ -413,10 +413,10 @@ class TitleAugmentService {
 
         offset += batchSize
         j?.setProgress(offset, count_journals_with_zdb_id)
+      }
 
-        if (Thread.currentThread().isInterrupted()) {
-          break
-        }
+      if (Thread.currentThread().isInterrupted()) {
+        break
       }
     }
     j?.endTime = new Date()

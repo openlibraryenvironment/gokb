@@ -16,6 +16,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
 
   private RestBuilder rest = new RestBuilder()
   IdentifierNamespace ns_eissn
+  IdentifierNamespace ns_isbn
   Identifier test_id
   JournalInstance test_journal
 
@@ -24,6 +25,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
 
   def setup() {
     ns_eissn = IdentifierNamespace.findByValue('eissn')
+    ns_isbn = IdentifierNamespace.findByValue('isbn')
     test_id = Identifier.findByValue("1234-4567") ?: new Identifier(value: "1234-4567", namespace: ns_eissn).save(flush:true)
     test_journal = JournalInstance.findByName("IdTestJournal") ?: new JournalInstance(name: "IdTestJournal").save(flush:true)
   }
@@ -35,6 +37,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     Identifier.findByValue("6644-2284")?.expunge()
     Identifier.findByValue("0001-5547")?.expunge()
     Identifier.findByValue("1938-2650")?.expunge()
+    Identifier.findByValue("9780781783385")?.expunge()
     test_id?.expunge()
     test_journal?.refresh().expunge()
   }
@@ -183,5 +186,25 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     resp.json.value == "6644-2281"
     resp.json._embedded?.identifiedComponents.size() == 1
     resp.json._embedded?.identifiedComponents[0].id == test_journal.id
+  }
+
+  void "test identifier create reformatted ISBN"() {
+    given:
+    def urlPath = getUrlPath()
+    def obj_map = [
+      value    : "0-7817-8338-0",
+      namespace: ns_isbn.id
+    ]
+    when:
+    String accessToken = getAccessToken()
+    RestResponse resp = rest.post("${urlPath}/rest/identifiers") {
+      // headers
+      accept('application/json')
+      auth("Bearer $accessToken")
+      body(obj_map as JSON)
+    }
+    then:
+    resp.status == 201 // Created
+    resp.json.value == "9780781783385"
   }
 }

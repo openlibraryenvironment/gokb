@@ -558,6 +558,10 @@ class ValidationService {
         def valid_isbn = ISBN.parseIsbn(value)
 
         result = value
+
+        if (ISBN.isIsbn10(value)) {
+          result = valid_isbn.getIsbn13()
+        }
       }
       catch(ISBNException ie) {}
     }
