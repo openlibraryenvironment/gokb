@@ -215,10 +215,9 @@ class IngestKbartRun {
         long startTime = System.currentTimeMillis()
 
         if (!dryRun) {
-          pkg.refresh()
           pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
-          pkg.fileAttachments << datafile
           pkg = pkg.merge()
+          new Combo(fromComponent: pkg, toComponent: datafile, type: RefdataCategory.lookup('Combo.Type','KBComponent.FileAttachments')).save(flush: true, failOnError: true)
         }
 
         log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rows.total + file_info.rows.skipped} rows. Package is ${pkg.id}")

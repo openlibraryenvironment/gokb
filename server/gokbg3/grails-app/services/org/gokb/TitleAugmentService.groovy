@@ -381,22 +381,26 @@ class TitleAugmentService {
 
 
   def syncZdbInfo(Job j = null) {
-    JournalInstance.withNewSession { session ->
-      RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-      RefdataValue combo_active = RefdataCategory.lookup("Combo.Status", "Active")
-      RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
-      IdentifierNamespace zdbNs = IdentifierNamespace.findByValue('zdb')
-      int offset = 0
-      int batchSize = 50
-      def queryString = "from JournalInstance as ti where ti.status = :current and exists " +
-                              "(Select ci from Combo as ci where ci.type = :ctype " +
-                              "and ci.fromComponent = ti and ci.toComponent.namespace = :ns " +
-                              "and ci.status = :active)"
-      def params = [current: status_current, active: combo_active, ctype: idComboType, ns: zdbNs]
-      def count_journals_with_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${queryString}".toString(), params)[0]
+    RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+    RefdataValue combo_active = RefdataCategory.lookup("Combo.Status", "Active")
+    RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+    IdentifierNamespace zdbNs = IdentifierNamespace.findByValue('zdb')
+    int offset = 0
+    int batchSize = 50
+    def count_journals_with_zdb_id
+    def queryString = "from JournalInstance as ti where ti.status = :current and exists " +
+                            "(Select ci from Combo as ci where ci.type = :ctype " +
+                            "and ci.fromComponent = ti and ci.toComponent.namespace = :ns " +
+                            "and ci.status = :active)"
+    def params = [current: status_current, active: combo_active, ctype: idComboType, ns: zdbNs]
 
-      // find the next 100 titles that do have a ZDB-ID
-      while (offset < count_journals_with_zdb_id) {
+    JournalInstance.withNewSession { session ->
+      count_journals_with_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${queryString}".toString(), params)[0]
+    }
+
+    // find the next 100 titles that do have a ZDB-ID
+    while (offset < count_journals_with_zdb_id) {
+      JournalInstance.withNewSession {
         def journals_with_zdb_id = JournalInstance.executeQuery("select ti.id ${queryString}".toString(), params, [offset: offset, max: batchSize])
 
         log.debug("Processing ${count_journals_with_zdb_id}")
@@ -407,9 +411,6 @@ class TitleAugmentService {
           augmentZdb(ti)
         }
 
-        session.flush()
-        session.clear()
-
         offset += batchSize
         j?.setProgress(offset, count_journals_with_zdb_id)
 
@@ -417,8 +418,8 @@ class TitleAugmentService {
           break
         }
       }
-      j?.endTime = new Date()
     }
+    j?.endTime = new Date()
   }
 
   def TitleInstance addPerson (person_name, role, ti, user = null, project = null) {
