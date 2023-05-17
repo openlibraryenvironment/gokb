@@ -1,16 +1,20 @@
 package org.gokb
 
+import com.github.ladutsko.isbn.*
+
 import grails.util.GrailsNameUtils
+import grails.util.Holders
+import grails.validation.ValidationException
+
+import groovy.transform.Synchronized
+import groovy.util.logging.*
+
 import groovyx.net.http.URIBuilder
 
 import org.gokb.cred.*
 import org.gokb.ValidationService
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
-import grails.util.Holders
-import groovy.transform.Synchronized
-import grails.validation.ValidationException
-import groovy.util.logging.*
 import org.grails.web.json.JSONObject
 
 @Slf4j
@@ -168,6 +172,11 @@ class ComponentLookupService {
             if (namespace.family == 'isxn') {
               final_val = final_val.replaceAll("x","X")
             }
+
+            if (namespace.value in ['isbn', 'pisbn']) {
+              final_val = ISBN.parseIsbn(final_val).getIsbn13()
+            }
+
             log.debug("Creating new Identifier ${namespace}:${value} ..")
 
             try {
