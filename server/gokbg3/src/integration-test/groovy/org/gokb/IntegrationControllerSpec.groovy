@@ -717,9 +717,7 @@ class IntegrationControllerSpec extends Specification {
     expect: "Find item by ID can now locate that item and the discriminator is set correctly"
     def ids = [['ns': 'isbn', 'value': '978-13-12232-25-9']]
     def ns = IdentifierNamespace.findByValueIlike('isbn')
-    def id_num = Identifier.findAllByValueAndNamespace('978-13-12232-25-9', ns)
     def matching_with_class_one_ids = titleLookupService.matchClassOneComponentIds(ids)
-    id_num.size() == 1
     matching_with_class_one_ids?.size() == 1
   }
 

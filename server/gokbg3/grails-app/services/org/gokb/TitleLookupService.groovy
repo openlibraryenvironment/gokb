@@ -1365,7 +1365,7 @@ class TitleLookupService {
   public def matchClassOneComponentIds(def ids) {
     def result = null
 
-    log.debug("matchClassOneComponentIds(${ids})");
+    log.debug("matchClassOneComponentIds(${ids})")
 
     try {
       // Get the class 1 identifier namespaces.
@@ -1374,27 +1374,25 @@ class TitleLookupService {
       def start_time = System.currentTimeMillis();
       def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
       def combo_id_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
-
-      def bindvars = []
-      StringWriter sw = new StringWriter()
-      sw.write("select DISTINCT c.fromComponent.id from Combo as c where ( ")
-
+      def bindvars = [cd: status_deleted, ct: combo_id_type]
 
       def ctr = 0;
+      def id_list = []
       ids.each { def id_def ->
         // Class ones only.
         if (id_def.value && id_def.ns && class_one_ids.contains(id_def.ns)) {
           def ns = IdentifierNamespace.findByValue(id_def.ns)
+          def normval = Identifier.generateNormname(id_def.value)
+
           if (ns) {
 
-            def the_id = Identifier.executeQuery('select i from Identifier as i where i.value = ? and i.namespace = ?', [id_def.value, ns])
+            def the_id = Identifier.executeQuery('select i from Identifier as i where i.normname = :val and i.namespace = :ns', [val: normval, ns: ns])
             if (the_id.size() == 1) {
               if (ctr++) {
-                sw.write(" or ");
+                sw.write(" or ")
               }
 
-              sw.write("( c.toComponent = ? )")
-              bindvars.add(the_id[0])
+              id_list.add(the_id[0])
             }
             if (the_id.size() > 1) {
               // applicationEventService.publishApplicationEvent('CriticalSystemMessages', 'ERROR', [description:"Multiple Identifiers Matched on lookup id:${id_def}"])
@@ -1404,23 +1402,18 @@ class TitleLookupService {
         }
       }
 
-
       if (ctr > 0) {
-        sw.write(" ) and c.type=? and c.fromComponent.status != ?");
-        bindvars.add(combo_id_type);
-        bindvars.add(status_deleted);
-        def qry = sw.toString();
-        log.debug("Run: ${qry} ${bindvars}");
-        result = TitleInstance.executeQuery(qry, bindvars);
+        bindvars['il'] = id_list
+        result = TitleInstance.executeQuery("select DISTINCT c.fromComponent.id from Combo as c where c.toComponent in (:il) and c.type = :ct and c.fromComponent.status != :cd", bindvars)
       } else {
-        log.warn("No class 1 identifiers(${class_one_ids}) in ${ids}");
+        log.warn("No class 1 identifiers(${class_one_ids}) in ${ids}")
       }
     }
     catch (Exception e) {
-      log.error("unexpected error attempting to find title by identifiers", e);
+      log.error("unexpected error attempting to find title by identifiers", e)
     }
 
-    log.debug("Returning Result of matchClassOneComponentIds(${ids}) : ${result}");
+    log.debug("Returning Result of matchClassOneComponentIds(${ids}) : ${result}")
     result
   }
 

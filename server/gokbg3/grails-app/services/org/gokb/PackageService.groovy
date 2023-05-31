@@ -1508,13 +1508,13 @@ class PackageService {
     String fileName = generateExportFileName(pkg, type)
 
     try {
-      File file = new File(exportFilePath() + fileName)
+      File file = new File(path + fileName)
 
       if (!file.isFile()) {
         def latest = getLatestFile(path, fileName)
 
         if (latest) {
-          file = new File(exportFilePath() + latest)
+          file = new File(path + latest)
         }
         else if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false) == false) {
           if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
@@ -1522,14 +1522,14 @@ class PackageService {
           else
             createTsvExport(pkg)
 
-          file = new File(exportFilePath() + fileName)
+          file = new File(path + fileName)
         }
         else {
           while (!file.isFile()) {
             sleep(500)
           }
 
-          file = new File(exportFilePath() + fileName)
+          file = new File(path + fileName)
         }
       }
 
@@ -1552,26 +1552,27 @@ class PackageService {
 
   public void sendZip(Collection packs, ExportType type, def response) {
     def pathPrefix = UUID.randomUUID().toString()
-    File tempDir = new File(exportFilePath() + "/" + pathPrefix)
+    String path = exportFilePath()
+    File tempDir = new File(path + "/" + pathPrefix)
     tempDir.mkdir()
     // step one: collect data files in temp directory
     packs.each { pkg ->
       String fileName = generateExportFileName(pkg, type)
       try {
-        File src = new File(exportFilePath() + fileName)
+        File src = new File(path + fileName)
 
         if (!src.isFile()) {
           def latest = getLatestFile(path, fileName)
 
           if (latest) {
-            src = new File(exportFilePath() + latest)
+            src = new File(path + latest)
           }
           else if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false) == false) {
             if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
               createKbartExport(pkg, type)
             else
               createTsvExport(pkg)
-            src = new File(exportFilePath() + fileName)
+            src = new File(path + fileName)
           }
           else {
             while (!file.isFile()) {
@@ -1581,7 +1582,7 @@ class PackageService {
             src = new File(exportFilePath() + fileName)
           }
         }
-        File dest = new File("${exportFilePath()}/${pathPrefix}/${fileName.substring(0, fileName.length() - 13)}.tsv")
+        File dest = new File("${path}/${pathPrefix}/${fileName.substring(0, fileName.length() - 13)}.tsv")
         FileCopyUtils.copy(src, dest)
       } catch (IOException iox) {
         log.error("Problem while collecting data", iox)
