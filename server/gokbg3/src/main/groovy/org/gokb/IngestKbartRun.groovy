@@ -77,10 +77,6 @@ class IngestKbartRun {
   IdentifierNamespace providerIdentifierNamespace
   Long ingest_systime
 
-  def status_current
-  def status_deleted
-  def status_retired
-  def status_expected
   DataFile datafile
 
   def possible_date_formats = [
@@ -122,11 +118,6 @@ class IngestKbartRun {
     if (job && !job.startTime) {
       job.startTime = new Date()
     }
-
-    status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
-    status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-    status_retired = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
-    status_expected = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Expected')
 
     def ingest_cfg = [
       defaultTypeName: 'org.gokb.cred.JournalInstance',
@@ -201,10 +192,14 @@ class IngestKbartRun {
 
         log.debug("Handling header ${header}")
 
-        int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
+        int old_tipp_count = 0
+
+        TitleInstancePackagePlatform.withNewSession {
+          old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                                 'from TitleInstancePackagePlatform as tipp, Combo as c '+
                                 'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
-                              [pkg: pkg.id, sc: status_current])[0]
+                              [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
+        }
 
         result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0,  previous: old_tipp_count]
 
@@ -215,9 +210,12 @@ class IngestKbartRun {
         long startTime = System.currentTimeMillis()
 
         if (!dryRun) {
-          pkg.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
-          pkg = pkg.merge()
-          new Combo(fromComponent: pkg, toComponent: datafile, type: RefdataCategory.lookup('Combo.Type','KBComponent.FileAttachments')).save(flush: true, failOnError: true)
+          Package.withNewSession {
+            def p = Package.get(pid)
+            p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+            p.save(flush: true)
+            new Combo(fromComponent: p, toComponent: datafile, type: RefdataCategory.lookup('Combo.Type','KBComponent.FileAttachments')).save(flush: true, failOnError: true)
+          }
         }
 
         log.debug("Ingesting ${ingest_cfg.defaultMedium} ${file_info.rows.total + file_info.rows.skipped} rows. Package is ${pkg.id}")
@@ -265,10 +263,6 @@ class IngestKbartRun {
 
             job?.setProgress(rownum, file_info.rows.total + file_info.rows.skipped)
 
-            if (rownum % 25 == 0) {
-              cleanupService.cleanUpGorm()
-            }
-
             if (Thread.currentThread().isInterrupted()) {
               result.result = 'CANCELLED'
               break
@@ -290,25 +284,27 @@ class IngestKbartRun {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
           if (!dryRun && result.result != 'CANCELLED') {
             try {
-              // Find all tipps in this package which have a lastSeen before the ingest date
-              def retire_pars = [
-                pkgid: pkg.id,
-                dt: ingest_systime,
-                sc: status_current,
-                sr: status_retired,
-                igdt: dateFormatService.parseDate(ingest_date),
-                now: new Date()
-              ]
+              TitleInstancePackagePlatform.withNewSession {
+                // Find all tipps in this package which have a lastSeen before the ingest date
+                def retire_pars = [
+                  pkgid: pkg.id,
+                  dt: ingest_systime,
+                  sc: RefdataCategory.lookup('KBComponent.Status', 'Current'),
+                  sr: RefdataCategory.lookup('KBComponent.Status', 'Retired'),
+                  igdt: dateFormatService.parseDate(ingest_date),
+                  now: new Date()
+                ]
 
-              log.debug("Retiring via pars ${retire_pars}")
+                log.debug("Retiring via pars ${retire_pars}")
 
-              def retired_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
-                  set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
-                  where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
-                  and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
+                def retired_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
+                    set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
+                    where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
+                    and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
 
-              result.report.retired = retired_count
-              log.debug("Completed tipp cleanup (${retired_count} retired)")
+                result.report.retired = retired_count
+                log.debug("Completed tipp cleanup (${retired_count} retired)")
+              }
             }
             catch (Exception e) {
               log.error("Problem retiring TIPPs", e)
@@ -346,26 +342,26 @@ class IngestKbartRun {
               p.lastUpdatedBy = update_agent
               p.updateBenchmark = processing_elapsed
               p.save(flush: true, failOnError: true)
+            }
 
-              def matching_job = concurrencyManagerService.createJob { mjob ->
-                TitleInstancePackagePlatform.withNewSession {
-                  tippService.matchPackage(pid, mjob)
-                }
-              }
+            def matching_job = concurrencyManagerService.createJob { mjob ->
+              tippService.matchPackage(pid, mjob)
+            }
 
+            RefdataCategory.withNewSession {
               matching_job.description = "Package Title Matching".toString()
               matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
               matching_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
               matching_job.message("Starting title match for Package ${pkg.name}".toString())
               matching_job.startOrQueue()
               matching_job.startTime = new Date()
+            }
 
-              if (!async) {
-                result.matchingJob = matching_job.get()
-              }
-              else {
-                result.matchingJob = matching_job.uuid
-              }
+            if (!async) {
+              result.matchingJob = matching_job.get()
+            }
+            else {
+              result.matchingJob = matching_job.uuid
             }
           }
           catch (Exception e) {
@@ -442,98 +438,100 @@ class IngestKbartRun {
     //however the golden rule is to check that something already exists and then
     //re-use it.
     log.debug("TSVINgestionService:writeToDB -- package id is ${pkg.id}")
-
-    //first we need a platform:
-    def platform = null
     def result = [status: null, reviewCreated: false]
 
-    if (the_kbart.title_url != null) {
-      log.debug("Extract host from ${the_kbart.title_url}")
+    TitleInstancePackagePlatform.withNewSession {
+      //first we need a platform:
+      def platform = null
 
-      def title_url_host = null
-      def title_url_protocol = null
+      if (the_kbart.title_url != null) {
+        log.debug("Extract host from ${the_kbart.title_url}")
 
-      try {
-        def title_url = new URL(the_kbart.title_url)
-        log.debug("Parsed title_url : ${title_url}")
-        title_url_host = title_url.getHost()
-        title_url_protocol = title_url.getProtocol()
-      }
-      catch (Exception e) {
-      }
+        def title_url_host = null
+        def title_url_protocol = null
 
-      if (title_url_host) {
-        log.debug("Got platform from title host :: ${title_url_host}")
-        platform = handlePlatform(title_url_host, title_url_protocol)
-        log.debug("Platform result : ${platform}")
-      }
-      else {
-        log.debug("title_url_host::${title_url_host}")
-      }
-    }
-    else {
-      log.debug("No title url")
-    }
-
-    if (platform == null) {
-      log.debug("Platform is still null - use the default (${pkg.nominalPlatform})")
-      platform = pkg.nominalPlatform
-    }
-
-    if (platform != null) {
-
-        log.debug("online_identifier ${the_kbart.online_identifier}")
-
-        def identifiers = []
-
-        if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
-          identifiers << [type: row_specific_config.identifierMap.online_identifier, value: the_kbart.online_identifier.trim()]
-
-        if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
-          identifiers << [type: row_specific_config.identifierMap.print_identifier, value: the_kbart.print_identifier.trim()]
-
-        if (the_kbart.title_id && the_kbart.title_id.trim()) {
-          log.debug("title_id ${the_kbart.title_id}")
-
-          if (ingest_cfg.providerIdentifierNamespace) {
-            identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
-          }
+        try {
+          def title_url = new URL(the_kbart.title_url)
+          log.debug("Parsed title_url : ${title_url}")
+          title_url_host = title_url.getHost()
+          title_url_protocol = title_url.getProtocol()
+        }
+        catch (Exception e) {
         }
 
-        if (the_kbart.zdb_id && the_kbart.zdb_id.trim()) {
-          identifiers << [type: 'zdb', value: the_kbart.zdb_id]
-        }
-
-        the_kbart.each { k, v ->
-          if (k.startsWith('identifier_')) {
-            def ns_val = k.split('_', 2)[1]
-            log.debug("Found potential additional namespace ${ns_val}")
-
-            if (IdentifierNamespace.findByValue(ns_val)) {
-              identifiers << [type: ns_val, value:v]
-            }
-            else {
-              log.debug("Unknown additional identifier namespace ${ns_val}!")
-            }
-          }
-        }
-
-        def titleClass = TitleInstance.determineTitleClass(the_kbart.publication_type)
-
-        if (titleClass) {
-          result = manualUpsertTIPP(the_kbart,
-              platform,
-              ingest_date,
-              ingest_systime,
-              identifiers)
+        if (title_url_host) {
+          log.debug("Got platform from title host :: ${title_url_host}")
+          platform = handlePlatform(title_url_host, title_url_protocol)
+          log.debug("Platform result : ${platform}")
         }
         else {
-          log.error("Unable to reference title class!")
+          log.debug("title_url_host::${title_url_host}")
         }
+      }
+      else {
+        log.debug("No title url")
+      }
 
-    } else {
-      log.warn("couldn't resolve platform - title not added.")
-      result.status = 'invalid'
+      if (platform == null) {
+        log.debug("Platform is still null - use the default (${pkg.nominalPlatform})")
+        platform = pkg.nominalPlatform
+      }
+
+      if (platform != null) {
+
+          log.debug("online_identifier ${the_kbart.online_identifier}")
+
+          def identifiers = []
+
+          if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
+            identifiers << [type: row_specific_config.identifierMap.online_identifier, value: the_kbart.online_identifier.trim()]
+
+          if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
+            identifiers << [type: row_specific_config.identifierMap.print_identifier, value: the_kbart.print_identifier.trim()]
+
+          if (the_kbart.title_id && the_kbart.title_id.trim()) {
+            log.debug("title_id ${the_kbart.title_id}")
+
+            if (ingest_cfg.providerIdentifierNamespace) {
+              identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
+            }
+          }
+
+          if (the_kbart.zdb_id && the_kbart.zdb_id.trim()) {
+            identifiers << [type: 'zdb', value: the_kbart.zdb_id]
+          }
+
+          the_kbart.each { k, v ->
+            if (k.startsWith('identifier_')) {
+              def ns_val = k.split('_', 2)[1]
+              log.debug("Found potential additional namespace ${ns_val}")
+
+              if (IdentifierNamespace.findByValue(ns_val)) {
+                identifiers << [type: ns_val, value:v]
+              }
+              else {
+                log.debug("Unknown additional identifier namespace ${ns_val}!")
+              }
+            }
+          }
+
+          def titleClass = TitleInstance.determineTitleClass(the_kbart.publication_type)
+
+          if (titleClass) {
+            result = manualUpsertTIPP(the_kbart,
+                platform,
+                ingest_date,
+                ingest_systime,
+                identifiers)
+          }
+          else {
+            log.error("Unable to reference title class!")
+          }
+
+      } else {
+        log.warn("couldn't resolve platform - title not added.")
+        result.status = 'invalid'
+      }
     }
     result
   }
@@ -612,6 +610,7 @@ class IngestKbartRun {
       if (match_result.full_matches.size() > 0) {
         result.status = 'matched'
         tipp = match_result.full_matches[0]
+        tipp.refresh()
 
         if (tipp.accessStartDate) {
           tipp_map.accessStartDate = null
@@ -761,7 +760,8 @@ class IngestKbartRun {
     }
 
     if (!dryRun) {
-      tippService.updateTippFields(tipp, tipp_map, user)
+      tipp = tippService.updateTippFields(tipp, tipp_map, user)
+      tipp.refresh()
 
       // log.debug("Values updated, set lastSeen");
 
@@ -770,7 +770,7 @@ class IngestKbartRun {
         tipp.lastSeen = ingest_systime
       }
 
-      setPrices(tipp, the_kbart)
+      // setPrices(tipp, the_kbart)
 
       // Look through the field list for any tipp.custprop values
       // log.debug("Checking for tipp custprops")
@@ -782,7 +782,7 @@ class IngestKbartRun {
       log.debug("TIPP ${tipp.id} info check: ${tipp.name}, ${tipp.url}")
 
       if (tipp.validate()) {
-        tipp.save(flush: true, failOnError: true)
+        tipp.save(flush: true)
       }
       else {
         log.error("Validation failed!")
@@ -815,24 +815,26 @@ class IngestKbartRun {
     def result
     def orig_host = host
 
-    if (host.startsWith("www.")){
-      host = host.substring(4)
-    }
+    Platform.withNewSession {
+      if (host.startsWith("www.")){
+        host = host.substring(4)
+      }
 
-    def plt_params = ['host': "%" + host + "%", sc: RefdataCategory.lookup('KBComponent.Status', 'Deleted')]
-    def platforms = Platform.executeQuery("select p from Platform as p where status != :sc and (p.primaryUrl like :host or p.name = :host)", plt_params, [readonly: false])
+      def plt_params = ['host': "%" + host + "%", sc: RefdataCategory.lookup('KBComponent.Status', 'Deleted')]
+      def platforms = Platform.executeQuery("select p from Platform as p where status != :sc and (p.primaryUrl like :host or p.name = :host)", plt_params, [readonly: false])
 
-    switch (platforms.size()) {
-      case 0:
-        log.debug("Unable to reference TIPP URL against existing platforms!")
-      case 1:
-        //found a match
-        result = platforms[0]
-        log.debug("match platform found: ${result}")
+      switch (platforms.size()) {
+        case 0:
+          log.debug("Unable to reference TIPP URL against existing platforms!")
+        case 1:
+          //found a match
+          result = platforms[0]
+          log.debug("match platform found: ${result}")
+          break
+        default:
+          log.debug("found multiple platforms when looking for ${host}")
         break
-      default:
-        log.debug("found multiple platforms when looking for ${host}")
-      break
+      }
     }
 
     result

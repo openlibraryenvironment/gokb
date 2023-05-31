@@ -29,18 +29,23 @@ class PublicController {
   def dateFormatService
   def sessionFactory
 
-  public static String TIPPS_QRY = 'from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=? and c.toComponent=tipp and c.type = ? and tipp.status = ?';
-
-
+  public static String TIPPS_QRY = 'from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id = :pkg and c.toComponent = tipp and c.type = :ct and tipp.status = :cs'
 
   def packageContent() {
     log.debug("packageContent::${params}")
     def result = [:]
+
     if ( params.id ) {
-      def pkg_id_components = params.id.split(':');
+      def pkg_id_components = params.id.split(':')
 
       if ( pkg_id_components?.size() == 2 ) {
-        result.pkg = Package.get(Long.parseLong(pkg_id_components[1]));
+        try {
+          result.pkg = Package.get(Long.parseLong(pkg_id_components[1]))
+        }
+        catch (Exception e) {
+          result.result = 'ERROR'
+          result.message = "Unable to resolve id parameter!"
+        }
       }
       else {
         result.pkg = Package.findByUuid(params.id)
@@ -52,11 +57,12 @@ class PublicController {
 
         result.pkgId = result.pkg.id
         result.pkgName = result.pkg.name
-        log.debug("Tipp qry name: ${result.pkgName}");
+        log.debug("Tipp qry name: ${result.pkgName}")
+        def offset = params.offset ? params.int('offset') : 0
 
-        result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY,[result.pkgId, tipp_combo_rdv, status_current])[0]
-        result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id',[result.pkgId, tipp_combo_rdv, status_current],[offset:params.offset?params.long('offset'):0,max:10])
-        log.debug("Tipp qry done ${result.tipps?.size()}");
+        result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY, [pkg: result.pkgId, ct: tipp_combo_rdv, cs: status_current])[0]
+        result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id', [pkg: result.pkgId, ct: tipp_combo_rdv, cs: status_current], [offset: offset, max:10])
+        log.debug("Tipp qry done ${result.tipps?.size()}")
       }
     }
     result
@@ -64,45 +70,65 @@ class PublicController {
 
 
   def index() {
-    log.debug("PublicController::index ${params}");
+    log.debug("PublicController::index ${params}")
     def result = [:]
 
     def mutableParams = new HashMap(params)
 
-    if ( mutableParams.max == null )
-      mutableParams.max = 10
+    if (mutableParams.max) {
+      try {
+        mutableParams.max = Integer.parseInt(mutableParams.max)
+      }
+      catch (Exception e ) {
+        result.result = 'ERROR'
+        result.message = "Unable to parse parameter value 'max'!"
+      }
+    }
     else
-      mutableParams.max = Integer.parseInt(mutableParams.max)
+      mutableParams.max = 10
 
     mutableParams.componentType = "Package" // Tells ESSearchService what to look for
 
-    if ( mutableParams.offset == null )
+    if (mutableParams.offset) {
+      try {
+        mutableParams.offset = Integer.parseInt(mutableParams.offset)
+      }
+      catch (Exception e ) {
+        result.result = 'ERROR'
+        result.message = "Unable to parse parameter value 'offset'!"
+      }
+    }
+    else {
       mutableParams.offset = 0
-    else
-      mutableParams.offset = Integer.parseInt(mutableParams.offset)
+    }
 
-    if( ( mutableParams.q == null ) || (mutableParams.q == '') )
+    if ((mutableParams.q == null ) || (mutableParams.q == ''))
       mutableParams.q = '*'
     // params.remove('q');
     // params.isPublic="Yes"
 
-    if(mutableParams.lastUpdated){
-      mutableParams.lastModified ="[${params.lastUpdated} TO 2100]"
+    if (mutableParams.lastUpdated) {
+      mutableParams.lastModified = "[${params.lastUpdated} TO 2100]"
     }
+
     if (!mutableParams.sort){
-      mutableParams.sort='sortname'
+      mutableParams.sort = 'sortname'
       mutableParams.order = 'asc'
     }
-    if(mutableParams.search.equals('yes')){
+
+    if (mutableParams.search.equals('yes')) {
       //when searching make sure results start from first page
       mutableParams.offset = 0
       mutableParams.search = null
     }
-    if(mutableParams.filter == 'current')
-      mutableParams.tempFQ = ' -pkg_scope:\"Master File\" -\"open access\" ';
 
-    result =  ESSearchService.search(mutableParams)
-    result.transforms = grailsApplication.config.packageTransforms
+    if (mutableParams.filter == 'current')
+      mutableParams.tempFQ = ' -pkg_scope:\"Master File\" -\"open access\" '
+
+    if (result.result != 'ERROR') {
+      result = ESSearchService.search(mutableParams)
+      result.transforms = grailsApplication.config.packageTransforms
+    }
 
     result
   }
@@ -113,12 +139,12 @@ class PublicController {
 
     def pkg = genericOIDService.resolveOID(params.id)
 
-    def export_date = dateFormatService.formatDate(new Date());
+    def export_date = dateFormatService.formatDate(new Date())
 
     def filename = "GOKb Export : ${pkg.name} : ${export_date}.tsv"
 
     try {
-      response.setContentType('text/tab-separated-values');
+      response.setContentType('text/tab-separated-values')
       response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
       response.contentType = "text/tab-separated-values" // "text/tsv"
 
@@ -153,7 +179,7 @@ class PublicController {
                        'first_editor\t'+
                        'parent_publication_title_id\t'+
                        'publication_type\t'+
-                       'access_type\n');
+                       'access_type\n')
 
           // scroll(ScrollMode.FORWARD_ONLY)
           def session = sessionFactory.getCurrentSession()
@@ -169,7 +195,7 @@ class PublicController {
           ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
 
           while (tipps.next()) {
-            def tipp_id = tipps.get(0);
+            def tipp_id = tipps.get(0)
 
               TitleInstancePackagePlatform.withNewSession {
                 def tipp = TitleInstancePackagePlatform.get(tipp_id)
@@ -189,8 +215,8 @@ class PublicController {
                             sanitize( tipp.embargo ) + '\t' +
                             sanitize( tipp.coverageDepth ) + '\t' +
                             sanitize( tipp.coverageNote ) + '\t' +
-                            sanitize( tipp.title.getCurrentPublisher() ? tipp.title.getCurrentPublisher().name : tipp.publisherName ) + '\t' +
-                            sanitize( tipp.title.getPrecedingTitleId() ?: tipp.precedingPublicationTitleId ) + '\t' +
+                            sanitize( tipp.title?.getCurrentPublisher() ? tipp.title.getCurrentPublisher()?.name : tipp.publisherName ) + '\t' +
+                            sanitize( tipp.title?.getPrecedingTitleId() ?: tipp.precedingPublicationTitleId ) + '\t' +
                             '\t' +  // date_monograph_published_print
                             '\t' +  // date_monograph_published_online
                             '\t' +  // monograph_volume
@@ -199,36 +225,36 @@ class PublicController {
                             '\t' +  // parent_publication_title_id
                             sanitize( tipp.title?.medium?.value ) + '\t' +  // publication_type
                             sanitize( tipp.paymentType?.value ) +  // access_type
-                            '\n');
-                tipp.discard();
+                            '\n')
+                tipp.discard()
               }
           }
 
           tipps.close()
 
-          writer.flush();
-          writer.close();
+          writer.flush()
+          writer.close()
         }
       out.close()
     }
     catch ( Exception e ) {
-      log.error("Problem with export",e);
+      log.error("Problem with export",e)
     }
   }
 
   def packageTSVExport() {
 
-    def export_date = dateFormatService.formatDate(new Date());
+    def export_date = dateFormatService.formatDate(new Date())
 
     def pkg = genericOIDService.resolveOID(params.id)
 
     if ( pkg == null )
       return;
 
-    def filename = "GoKBPackage-${params.id}.tsv";
+    def filename = "GoKBPackage-${params.id}.tsv"
 
     try {
-      response.setContentType('text/tab-separated-values');
+      response.setContentType('text/tab-separated-values')
       response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
       response.contentType = "text/tab-separated-values" // "text/tsv"
 
@@ -247,7 +273,7 @@ class PublicController {
                      '[TI] Continuing series	[TI] ISSN	[TI] EISSN	Package	Package ID	Package URL	Platform	'+
                      'Platform URL	Platform ID	Reference	Edit Status	Access Start Date	Access End Date	Coverage Start Date	'+
                      'Coverage Start Volume	Coverage Start Issue	Coverage End Date	Coverage End Volume	Coverage End Issue	'+
-                     'Embargo	Coverage note	Host Platform URL	Format	Payment Type\n');
+                     'Embargo	Coverage note	Host Platform URL	Format	Payment Type\n')
 
           def session = sessionFactory.getCurrentSession()
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -262,7 +288,7 @@ class PublicController {
 
           while (tipps.next()) {
 
-            def tipp_id = tipps.get(0);
+            def tipp_id = tipps.get(0)
 
             TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
 
@@ -277,17 +303,17 @@ class PublicController {
                           sanitize( tipp.accessEndDate ) + '\t' + sanitize( tipp.startDate ) + '\t' + sanitize( tipp.startVolume ) + '\t' + sanitize( tipp.startIssue ) + '\t' + sanitize( tipp.endDate ) + '\t' +
                           sanitize( tipp.endVolume ) + '\t' + sanitize( tipp.endIssue ) + '\t' + sanitize( tipp.embargo ) + '\t' + sanitize( tipp.coverageNote ) + '\t' + sanitize( tipp.hostPlatform.primaryUrl ) + '\t' +
                           sanitize( tipp.format?.value ) + '\t' + sanitize( tipp.paymentType?.value ) +
-                          '\n');
-            tipp.discard();
+                          '\n')
+            tipp.discard()
           }
         }
 
-        writer.flush();
-        writer.close();
+        writer.flush()
+        writer.close()
       out.close()
     }
     catch ( Exception e ) {
-      log.error("Problem with export",e);
+      log.error("Problem with export",e)
     }
   }
 }

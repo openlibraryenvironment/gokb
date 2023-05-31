@@ -257,7 +257,7 @@ class ComponentUpdateService {
 
               def additionalInfo = [:]
 
-              additionalInfo.vars = [testKey, the_title.name]
+              additionalInfo.vars = [testKey, component.name]
 
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
               reviewRequestService.raise(

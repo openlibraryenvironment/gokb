@@ -44,6 +44,15 @@
 			</g:manyToOneReferenceTypedown>
 		</dd>
 		<dt>
+			<g:annotatedLabel owner="${d}" property="responsibleParty">Bulk Config</g:annotatedLabel>
+		</dt>
+		<dd>
+			<g:manyToOneReferenceTypedown owner="${d}" field="bulkConfig"
+				baseClass="org.gokb.cred.BulkImportListConfig">
+				${d.bulkConfig?.code?:''}
+			</g:manyToOneReferenceTypedown>
+		</dd>
+		<dt>
 			<g:annotatedLabel owner="${d}" property="automaticUpdates">Automated Updates</g:annotatedLabel>
 		</dt>
 		<dd>
@@ -56,16 +65,10 @@
 			<g:manyToOneReferenceTypedown owner="${d}" field="targetNamespace" baseClass="org.gokb.cred.IdentifierNamespace">${ d.targetNamespace }</g:manyToOneReferenceTypedown>
 		</dd>
 		<dt>
-			<g:annotatedLabel owner="${d}" property="ezbMatch">EZB Matching Enabled</g:annotatedLabel>
-		</dt>
-		<dd>
-			<g:xEditableBoolean owner="${d}" field="ezbMatch" />
-		</dd>
-		<dt>
 			<g:annotatedLabel owner="${d}" property="lastRun">Last Run</g:annotatedLabel>
 		</dt>
 		<dd>
-			<g:xEditable class="ipe" owner="${d}" type="date" field="lastRun" />
+			<span> ${d.lastRun} </span>
 		</dd>
 	</dl>
 </g:if>

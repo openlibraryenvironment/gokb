@@ -407,8 +407,8 @@ class BulkPackageImportService {
                   skip = true
                 }
 
-                if (obj?.source?.bulkConfig && obj?.source?.bulkConfig != listInfo) {
-                  log.warn("Matched package ${obj} already has another bulk config assigned!")
+                if (obj?.source?.bulkConfig && obj.source.bulkConfig.id != listInfo.id) {
+                  log.warn("Matched package ${obj} already has another bulk config (${obj.source.bulkConfig.id}) assigned!")
                   pkg_result.errors.matching = [
                     [
                       message: "A single package has been matched, but its source is already connected to antother bulk config!",
@@ -443,7 +443,7 @@ class BulkPackageImportService {
                       obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type ?: type.content_type)
                     }
 
-                    if (!obj.global && (item.global || type.global)) {
+                    if (item.global || type.global) {
                       obj.global = RefdataCategory.lookup('Package.Global', item.global ?: type.global)
                     }
 
@@ -622,7 +622,7 @@ class BulkPackageImportService {
           log.debug("Job was cancelled.. skipping further processing")
         }
 
-        job.message("Completed type ${type.collection_name} with ${type_results}".toString())
+        // job.message("Completed type ${type.collection_name} with ${type_results}".toString())
         result.report[type.collection_name] = type_results
       }
 
@@ -633,8 +633,6 @@ class BulkPackageImportService {
       log.debug("No collections found.")
       result.result = 'SKIPPED_NO_API_URL'
     }
-
-    log.debug("Saving job result ${result}")
 
     JobResult.withNewSession {
       def job_map = [
