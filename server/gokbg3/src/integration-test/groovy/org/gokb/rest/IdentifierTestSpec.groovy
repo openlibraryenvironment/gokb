@@ -27,6 +27,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
   BlockingHttpClient http
 
   IdentifierNamespace ns_eissn
+  IdentifierNamespace ns_isbn
   Identifier test_id
   JournalInstance test_journal
 
@@ -39,6 +40,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     }
 
     ns_eissn = IdentifierNamespace.findByValue('eissn')
+    ns_isbn = IdentifierNamespace.findByValue('isbn')
     test_id = Identifier.findByValue("1234-4567") ?: new Identifier(value: "1234-4567", namespace: ns_eissn).save(flush:true)
     test_journal = JournalInstance.findByName("IdTestJournal") ?: new JournalInstance(name: "IdTestJournal").save(flush:true)
   }
@@ -50,6 +52,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     Identifier.findByValue("6644-2284")?.expunge()
     Identifier.findByValue("0001-5547")?.expunge()
     Identifier.findByValue("1938-2650")?.expunge()
+    Identifier.findByValue("9780781783385")?.expunge()
     test_id?.expunge()
     test_journal?.refresh().expunge()
   }
@@ -176,5 +179,22 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     resp.body().value == "6644-2281"
     resp.body()._embedded?.identifiedComponents.size() == 1
     resp.body()._embedded?.identifiedComponents[0].id == test_journal.id
+  }
+
+  void "test identifier create reformatted ISBN"() {
+    given:
+    def urlPath = getUrlPath()
+    def obj_map = [
+      value    : "0-7817-8338-0",
+      namespace: ns_isbn.id
+    ]
+    when:
+    String accessToken = getAccessToken()
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/identifiers", obj_map)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
+    then:
+    resp.status == HttpStatus.CREATED
+    resp.body().value == "9780781783385"
   }
 }

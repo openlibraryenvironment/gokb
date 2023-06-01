@@ -1,5 +1,6 @@
 package org.gokb
 
+import groovy.json.JsonSlurper
 import grails.gorm.transactions.Transactional
 
 import groovy.json.JsonSlurper
@@ -9,6 +10,8 @@ import io.micronaut.http.client.*
 
 import org.gokb.cred.KBComponent
 import org.gokb.cred.RefdataCategory
+
+import static groovyx.net.http.Method.GET
 
 @Transactional
 class LanguagesService{

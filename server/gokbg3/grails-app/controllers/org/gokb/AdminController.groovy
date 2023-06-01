@@ -448,6 +448,19 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def cleanupIssnConflicts() {
+    Job j = concurrencyManagerService.createJob { Job job ->
+      cleanupService.cleanupIssnConflictTitles(job)
+    }.startOrQueue()
+
+    log.debug("Triggering journal ISSN cleanup, job #${j.uuid}")
+    j.description = "Cleanup ISSN conflicts in current journals"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Cleanup ISSN Conflicts')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def setupAcl() {
 
     def default_dcs = ["BookInstance", "JournalInstance", "TitleInstancePackagePlatform", "DatabaseInstance", "Office", "Imprint", "Package", "ReviewRequest", "Org", "Platform", "Source", "KBComponentVariantName", "TitleInstancePlatform", "TIPPCoverageStatement"]

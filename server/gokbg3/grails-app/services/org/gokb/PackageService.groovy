@@ -29,6 +29,7 @@ import java.time.ZoneId
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
+import static groovyx.net.http.Method.GET
 import static grails.async.Promises.*
 
 @Slf4j
@@ -37,6 +38,7 @@ class PackageService {
   def genericOIDService
   def restMappingService
   def componentLookupService
+  def concurrencyManagerService
   def grailsApplication
   def dateFormatService
 
@@ -1207,152 +1209,217 @@ class PackageService {
     if (pkg) {
       def exportFileName = generateExportFileName(pkg, exportType)
       def path = exportFilePath()
-      try {
-        def out = new File("${path}${exportFileName}")
-        if (out.isFile())
-          return
-        else {
+      def activeJobs = concurrencyManagerService.getComponentJobs(pkg.id)
+
+      if (activeJobs?.data?.size() == 0) {
+        try {
+          def out = new File("${path}${exportFileName}")
+
+          if (out.isFile())
+            return
+
+          def tmpFile = new File("/tmp/gokb/${exportFileName}")
+
+          if (tmpFile.isFile()) {
+            tmpFile.delete()
+          }
+
+          tmpFile.withWriter { writer ->
+            // As per spec header at top of file / section
+            // II: Need to add in preceding_publication_title_id
+            KBART_FIELDS.eachWithIndex { field, i ->
+              writer.write(field)
+              writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
+            }
+
+            def session = sessionFactory.getCurrentSession()
+            def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+            def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+            def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status = :sc and c.type = :ct order by tipp.id")
+            query.setReadOnly(true)
+            query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)
+            query.setParameter('sc', status_current)
+            query.setParameter('ct', combo_tipps)
+
+            ScrollableResults tippIDs = query.scroll(ScrollMode.FORWARD_ONLY)
+            int ctr = 0
+
+            TitleInstancePackagePlatform.withNewSession { tsession ->
+              while (tippIDs.next()) {
+                def tipp_id = tippIDs.get(0)
+                TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+
+                kbartRecordsFor(tipp, exportType).each { record ->
+                  KBART_FIELDS.eachWithIndex { fieldName, i ->
+                    writer.write(sanitize(record[fieldName]))
+                    writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
+                  }
+                }
+
+                if (ctr % 50 == 0) {
+                  tsession.flush()
+                  tsession.clear()
+                }
+
+                if (Thread.currentThread().isInterrupted()) {
+                  break
+                }
+                ctr++
+              }
+            }
+            tippIDs.close()
+            writer.close()
+          }
+
           new File(path).list().each { fileName ->
             if (fileName.startsWith(exportFileName.substring(0, exportFileName.length() - 21))) {
-              if (!new File(path + fileName).delete())
-                log.warn("couldn't delete file ${path}${fileName}")
+              new File(path + fileName).delete()
             }
           }
+
+          FileUtils.moveFile(tmpFile, out)
         }
-        out.withWriter { writer ->
-          // As per spec header at top of file / section
-          // II: Need to add in preceding_publication_title_id
-          KBART_FIELDS.eachWithIndex { field, i ->
-            writer.write(field)
-            writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
-          }
-
-          def session = sessionFactory.getCurrentSession()
-          def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-          def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status = :sc and c.type = :ct order by tipp.id")
-          query.setReadOnly(true)
-          query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)
-          query.setParameter('sc', status_current)
-          query.setParameter('ct', combo_tipps)
-
-          ScrollableResults tippIDs = query.scroll(ScrollMode.FORWARD_ONLY)
-          int ctr = 0
-
-          TitleInstancePackagePlatform.withNewSession { tsession ->
-            while (tippIDs.next()) {
-              def tipp_id = tippIDs.get(0)
-              TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
-
-              kbartRecordsFor(tipp, exportType).each { record ->
-                KBART_FIELDS.eachWithIndex { fieldName, i ->
-                  writer.write(sanitize(record[fieldName]))
-                  writer.write(i < KBART_FIELDS.size() - 1 ? '\t' : '\n')
-                }
-              }
-
-              if (ctr % 50 == 0) {
-                tsession.flush()
-                tsession.clear()
-              }
-              ctr++
-            }
-          }
-          tippIDs.close()
-          writer.close()
+        catch (Exception e) {
+          log.error("Problem with creating KBART export data", e)
         }
       }
-      catch (Exception e) {
-        log.error("Problem with creating KBART export data", e)
+      else {
+        log.debug("createKbartExport:: Waiting for active Jobs to finish!")
       }
     }
   }
 
   public void createTsvExport(Package pkg) {
-    def export_date = dateFormatService.formatDate(new Date());
-    String filename = generateExportFileName(pkg, ExportType.TSV)
+    def export_date = dateFormatService.formatDate(new Date())
+    String exportFileName = generateExportFileName(pkg, ExportType.TSV)
     String path = exportFilePath()
-    try {
-      if (pkg) {
-        String lastUpdate = dateFormatService.formatDate(pkg.lastUpdated)
-        File out = new File("${path}${filename}")
-        if (out.isFile())
-          return
-        else {
-          new File(path).list().each { someFileName ->
-            if (someFileName.startsWith(filename.substring(0, filename.length() - 15))) {
-              if (!new File(path + someFileName).delete())
-                log.warn("couldn't delete file ${path}${someFileName}")
-            }
+    def activeJobs = concurrencyManagerService.getComponentJobs(pkg.id)
+
+    if (activeJobs?.data?.size() == 0) {
+      try {
+        if (pkg) {
+          def out = new File("${path}${exportFileName}")
+
+          if (out.isFile())
+            return
+
+          def tmpFile = new File("/tmp/gokb/${exportFileName}")
+
+          if (tmpFile.isFile()) {
+            tmpFile.delete()
           }
-        }
-        out.withWriter { writer ->
-          def sanitize = { it ? "${it}".trim() : "" }
 
-          // As per spec header at top of file / section
-          writer.write("GOKb Export : ${pkg.provider?.name} : ${pkg.name} : ${export_date}\n");
+          tmpFile.withWriter { writer ->
+            def sanitize = { it ? "${it}".trim() : "" }
 
-          writer.write('TIPP ID\t' +
-              'TIPP URL\t' +
-              'Title ID\t' +
-              'Title\t' +
-              'TIPP Status\t' +
-              '[TI] Publisher\t' +
-              '[TI] Imprint\t' +
-              '[TI] Published From\t' +
-              '[TI] Published to\t' +
-              '[TI] Medium\t' +
-              '[TI] OA Status\t' +
-              '[TI] Continuing series\t' +
-              '[TI] ISSN\t' +
-              '[TI] EISSN\t' +
-              '[TI] ZDB-ID\t' +
-              'Package\t' +
-              'Package ID\t' +
-              'Package URL\t' +
-              'Platform\t' +
-              'Platform URL\t' +
-              'Platform ID\t' +
-              'Reference\t' +
-              'Edit Status\t' +
-              'Access Start Date\t' +
-              'Access End Date\t' +
-              'Coverage Start Date\t' +
-              'Coverage Start Volume\t' +
-              'Coverage Start Issue\t' +
-              'Coverage End Date\t' +
-              'Coverage End Volume\t' +
-              'Coverage End Issue\t' +
-              'Embargo\t' +
-              'Coverage depth\t' +
-              'Coverage note\t' +
-              'Host Platform URL\t' +
-              'Format\t' +
-              'Payment Type\t' +
-              '[TI] DOI\t' +
-              '[TI] ISBN\t' +
-              '[TI] pISBN' +
-              '\n');
+            // As per spec header at top of file / section
+            writer.write("GOKb Export : ${pkg.provider?.name} : ${pkg.name} : ${export_date}\n")
 
-          def session = sessionFactory.getCurrentSession()
-          def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-          def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status <> :sd and c.type = :ct order by tipp.id")
-          query.setReadOnly(true)
-          query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)
-          query.setParameter('sd', status_deleted)
-          query.setParameter('ct', combo_tipps)
+            writer.write('TIPP ID\t' +
+                'TIPP URL\t' +
+                'Title ID\t' +
+                'Title\t' +
+                'TIPP Status\t' +
+                '[TI] Publisher\t' +
+                '[TI] Imprint\t' +
+                '[TI] Published From\t' +
+                '[TI] Published to\t' +
+                '[TI] Medium\t' +
+                '[TI] OA Status\t' +
+                '[TI] Continuing series\t' +
+                '[TI] ISSN\t' +
+                '[TI] EISSN\t' +
+                '[TI] ZDB-ID\t' +
+                'Package\t' +
+                'Package ID\t' +
+                'Package URL\t' +
+                'Platform\t' +
+                'Platform URL\t' +
+                'Platform ID\t' +
+                'Reference\t' +
+                'Edit Status\t' +
+                'Access Start Date\t' +
+                'Access End Date\t' +
+                'Coverage Start Date\t' +
+                'Coverage Start Volume\t' +
+                'Coverage Start Issue\t' +
+                'Coverage End Date\t' +
+                'Coverage End Volume\t' +
+                'Coverage End Issue\t' +
+                'Embargo\t' +
+                'Coverage depth\t' +
+                'Coverage note\t' +
+                'Host Platform URL\t' +
+                'Format\t' +
+                'Payment Type\t' +
+                '[TI] DOI\t' +
+                '[TI] ISBN\t' +
+                '[TI] pISBN' +
+                '\n');
 
-          ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
-          int ctr = 0
+            def session = sessionFactory.getCurrentSession()
+            def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+            def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+            def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status <> :sd and c.type = :ct order by tipp.id")
+            query.setReadOnly(true)
+            query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)
+            query.setParameter('sd', status_deleted)
+            query.setParameter('ct', combo_tipps)
 
-          TitleInstancePackagePlatform.withNewSession { tsession ->
-            while (tipps.next()) {
-              def tipp_id = tipps.get(0);
-              TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+            ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
+            int ctr = 0
 
-              if (tipp.coverageStatements?.size() > 0) {
-                tipp.coverageStatements.each { tcs ->
+            TitleInstancePackagePlatform.withNewSession { tsession ->
+              while (tipps.next()) {
+                def tipp_id = tipps.get(0);
+                TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+
+                if (tipp.coverageStatements?.size() > 0) {
+                  tipp.coverageStatements.each { tcs ->
+                    writer.write(
+                        sanitize(tipp.getId()) + '\t' +
+                            sanitize(tipp.url) + '\t' +
+                            sanitize(tipp.title?.getId()) + '\t' +
+                            sanitize(tipp.name ?: tipp.title?.name) + '\t' +
+                            sanitize(tipp.status.value) + '\t' +
+                            sanitize(tipp.title?.getCurrentPublisher()?.name) + '\t' +
+                            sanitize(tipp.title?.imprint?.name) + '\t' +
+                            sanitize(tipp.title?.publishedFrom) + '\t' +
+                            sanitize(tipp.title?.publishedTo) + '\t' +
+                            sanitize(tipp.title?.medium?.value) + '\t' +
+                            sanitize(tipp.title?.OAStatus?.value) + '\t' +
+                            sanitize(tipp.title?.continuingSeries?.value) + '\t' +
+                            sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title?.getIdentifierValue('ISSN')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title?.getIdentifierValue('eISSN')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title?.getIdentifierValue('ZDB')) + '\t' +
+                            sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
+                            '\t' +
+                            sanitize(tipp.hostPlatform.name) + '\t' +
+                            sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                            sanitize(tipp.hostPlatform.getId()) + '\t' +
+                            '\t' +
+                            sanitize(tipp.editStatus?.value) + '\t' +
+                            sanitize(tipp.accessStartDate) + '\t' +
+                            sanitize(tipp.accessEndDate) + '\t' +
+                            sanitize(tcs.startDate) + '\t' +
+                            sanitize(tcs.startVolume) + '\t' +
+                            sanitize(tcs.startIssue) + '\t' +
+                            sanitize(tcs.endDate) + '\t' +
+                            sanitize(tcs.endVolume) + '\t' +
+                            sanitize(tcs.endIssue) + '\t' +
+                            sanitize(tcs.embargo) + '\t' +
+                            sanitize(tcs.coverageDepth) + '\t' +
+                            sanitize(tcs.coverageNote) + '\t' +
+                            sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                            sanitize(tipp.format?.value) + '\t' +
+                            sanitize(tipp.paymentType?.value) + '\t' +
+                            sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title?.getIdentifierValue('DOI')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title?.getIdentifierValue('ISBN')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title?.getIdentifierValue('pISBN')) +
+                            '\n');
+                  }
+                }
+                else {
                   writer.write(
                       sanitize(tipp.getId()) + '\t' +
                           sanitize(tipp.url) + '\t' +
@@ -1371,114 +1438,106 @@ class PackageService {
                           sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title?.getIdentifierValue('ZDB')) + '\t' +
                           sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
                           '\t' +
-                          sanitize(tipp.hostPlatform.name) + '\t' +
-                          sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
-                          sanitize(tipp.hostPlatform.getId()) + '\t' +
+                          sanitize(tipp.hostPlatform?.name) + '\t' +
+                          sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
+                          sanitize(tipp.hostPlatform?.getId()) + '\t' +
                           '\t' +
                           sanitize(tipp.editStatus?.value) + '\t' +
                           sanitize(tipp.accessStartDate) + '\t' +
                           sanitize(tipp.accessEndDate) + '\t' +
-                          sanitize(tcs.startDate) + '\t' +
-                          sanitize(tcs.startVolume) + '\t' +
-                          sanitize(tcs.startIssue) + '\t' +
-                          sanitize(tcs.endDate) + '\t' +
-                          sanitize(tcs.endVolume) + '\t' +
-                          sanitize(tcs.endIssue) + '\t' +
-                          sanitize(tcs.embargo) + '\t' +
-                          sanitize(tcs.coverageDepth) + '\t' +
-                          sanitize(tcs.coverageNote) + '\t' +
-                          sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                          sanitize(tipp.startDate) + '\t' +
+                          sanitize(tipp.startVolume) + '\t' +
+                          sanitize(tipp.startIssue) + '\t' +
+                          sanitize(tipp.endDate) + '\t' +
+                          sanitize(tipp.endVolume) + '\t' +
+                          sanitize(tipp.endIssue) + '\t' +
+                          sanitize(tipp.embargo) + '\t' +
+                          sanitize(tipp.coverageDepth) + '\t' +
+                          sanitize(tipp.coverageNote) + '\t' +
+                          sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
                           sanitize(tipp.format?.value) + '\t' +
                           sanitize(tipp.paymentType?.value) + '\t' +
                           sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title?.getIdentifierValue('DOI')) + '\t' +
                           sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title?.getIdentifierValue('ISBN')) + '\t' +
                           sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title?.getIdentifierValue('pISBN')) +
-                          '\n');
+                          '\n')
+                }
+
+                if (ctr % 50 == 0) {
+                  tsession.flush()
+                  tsession.clear()
+                }
+                ctr++
+
+                if (Thread.currentThread().isInterrupted()) {
+                  break
                 }
               }
-              else {
-                writer.write(
-                    sanitize(tipp.getId()) + '\t' +
-                        sanitize(tipp.url) + '\t' +
-                        sanitize(tipp.title?.getId()) + '\t' +
-                        sanitize(tipp.name ?: tipp.title?.name) + '\t' +
-                        sanitize(tipp.status.value) + '\t' +
-                        sanitize(tipp.title?.getCurrentPublisher()?.name) + '\t' +
-                        sanitize(tipp.title?.imprint?.name) + '\t' +
-                        sanitize(tipp.title?.publishedFrom) + '\t' +
-                        sanitize(tipp.title?.publishedTo) + '\t' +
-                        sanitize(tipp.title?.medium?.value) + '\t' +
-                        sanitize(tipp.title?.OAStatus?.value) + '\t' +
-                        sanitize(tipp.title?.continuingSeries?.value) + '\t' +
-                        sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title?.getIdentifierValue('ISSN')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title?.getIdentifierValue('eISSN')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title?.getIdentifierValue('ZDB')) + '\t' +
-                        sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
-                        '\t' +
-                        sanitize(tipp.hostPlatform?.name) + '\t' +
-                        sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
-                        sanitize(tipp.hostPlatform?.getId()) + '\t' +
-                        '\t' +
-                        sanitize(tipp.editStatus?.value) + '\t' +
-                        sanitize(tipp.accessStartDate) + '\t' +
-                        sanitize(tipp.accessEndDate) + '\t' +
-                        sanitize(tipp.startDate) + '\t' +
-                        sanitize(tipp.startVolume) + '\t' +
-                        sanitize(tipp.startIssue) + '\t' +
-                        sanitize(tipp.endDate) + '\t' +
-                        sanitize(tipp.endVolume) + '\t' +
-                        sanitize(tipp.endIssue) + '\t' +
-                        sanitize(tipp.embargo) + '\t' +
-                        sanitize(tipp.coverageDepth) + '\t' +
-                        sanitize(tipp.coverageNote) + '\t' +
-                        sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
-                        sanitize(tipp.format?.value) + '\t' +
-                        sanitize(tipp.paymentType?.value) + '\t' +
-                        sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title?.getIdentifierValue('DOI')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title?.getIdentifierValue('ISBN')) + '\t' +
-                        sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title?.getIdentifierValue('pISBN')) +
-                        '\n')
-              }
+            }
+            tipps.close()
+            writer.close()
+          }
 
-              if (ctr % 50 == 0) {
-                tsession.flush()
-                tsession.clear()
-              }
-              ctr++
-
-              if (Thread.currentThread().isInterrupted()) {
-                break
-              }
+          new File(path).list().each { fileName ->
+            if (fileName.startsWith(exportFileName.substring(0, exportFileName.length() - 21))) {
+              new File(path + fileName).delete()
             }
           }
-          tipps.close()
-          writer.close()
+
+          FileUtils.moveFile(tmpFile, out)
         }
       }
+      catch (Exception e) {
+        log.error("Problem with writing tsv export file", e)
+      }
     }
-    catch (Exception e) {
-      log.error("Problem with writing tsv export file", e);
+    else {
+      log.debug("createTsvExport:: Waiting for active Jobs to finish!")
     }
   }
 
+  private def getLatestFile(path, filename) {
+    def result = null
+
+    new File(path).list().each { someFileName ->
+      if (someFileName.startsWith(filename.substring(0, filename.length() - 15))) {
+        result = someFileName
+      }
+    }
+
+    result
+  }
+
   void sendFile(Package pkg, ExportType type, def response) {
+    def path = exportFilePath()
     String fileName = generateExportFileName(pkg, type)
 
     try {
-      File file = new File(exportFilePath() + fileName)
+      File file = new File(path + fileName)
 
       if (!file.isFile()) {
-        if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
-          createKbartExport(pkg, type)
-        else
-          createTsvExport(pkg)
-        file = new File(exportFilePath() + fileName)
-      }
-      else if (Duration.between(Instant.ofEpochMilli(file.lastModified()), Instant.now()).getSeconds() < 2) {
-        while (Duration.between(Instant.ofEpochMilli(file.lastModified()), Instant.now()).getSeconds() < 2) {
-          sleep(1000)
+        def latest = getLatestFile(path, fileName)
+
+        if (latest) {
+          file = new File(path + latest)
+        }
+        else if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false) == false) {
+          if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
+            createKbartExport(pkg, type)
+          else
+            createTsvExport(pkg)
+
+          file = new File(path + fileName)
+        }
+        else {
+          while (!file.isFile()) {
+            sleep(500)
+          }
+
+          file = new File(path + fileName)
         }
       }
+
       InputStream inFile = new FileInputStream(file)
 
       response.setContentType('text/tab-separated-values')
@@ -1498,21 +1557,37 @@ class PackageService {
 
   public void sendZip(Collection packs, ExportType type, def response) {
     def pathPrefix = UUID.randomUUID().toString()
-    File tempDir = new File(exportFilePath() + "/" + pathPrefix)
+    String path = exportFilePath()
+    File tempDir = new File(path + "/" + pathPrefix)
     tempDir.mkdir()
     // step one: collect data files in temp directory
     packs.each { pkg ->
       String fileName = generateExportFileName(pkg, type)
       try {
-        File src = new File(exportFilePath() + fileName)
+        File src = new File(path + fileName)
+
         if (!src.isFile()) {
-          if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
-            createKbartExport(pkg, type)
-          else
-            createTsvExport(pkg)
-          src = new File(exportFilePath() + fileName)
+          def latest = getLatestFile(path, fileName)
+
+          if (latest) {
+            src = new File(path + latest)
+          }
+          else if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false) == false) {
+            if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
+              createKbartExport(pkg, type)
+            else
+              createTsvExport(pkg)
+            src = new File(path + fileName)
+          }
+          else {
+            while (!file.isFile()) {
+              sleep(500)
+            }
+
+            src = new File(exportFilePath() + fileName)
+          }
         }
-        File dest = new File("${exportFilePath()}/${pathPrefix}/${fileName.substring(0, fileName.length() - 13)}.tsv")
+        File dest = new File("${path}/${pathPrefix}/${fileName.substring(0, fileName.length() - 13)}.tsv")
         FileCopyUtils.copy(src, dest)
       } catch (IOException iox) {
         log.error("Problem while collecting data", iox)

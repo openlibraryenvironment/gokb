@@ -31,15 +31,7 @@ import spock.lang.Specification
 @Integration
 @Transactional
 @Rollback
-class TippServiceSpec extends Specification implements ServiceUnitTest<TippService> {
-
-  private Package pkg
-  private Platform plt
-  private TitleInstance book
-  private Identifier isbn
-  private Identifier issn
-  private Org publisher
-  private Package packMatch
+class TippServiceSpec extends Specification {
 
   @Autowired
   TippService tippService
@@ -48,28 +40,30 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
   ConcurrencyManagerService concurrencyManagerService
 
   def setup() {
-    pkg = new Package(name: "TS Test Package").save(flush: true)
-    plt = new Platform(name: "TS Test Platform").save(flush: true)
-    isbn = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5')
-    issn = new Identifier(namespace: IdentifierNamespace.findByValue('eissn'), value: '2209-7643')
-    book = new BookInstance(name: "TS Book 1").save(flush:true)
-    book.ids.add(isbn)
-    book.save(flush: true)
-    publisher = new Org(name: "Publizistenname").save(flush: true)
+    Package pkg = Package.findByName("TS Test Package") ?: new Package(name: "TS Test Package").save(flush: true)
+    Platform plt = Platform.findByName("TS Test Platform") ?: new Platform(name: "TS Test Platform").save(flush: true)
+    Org publisher = Org.findByName("Publizistenname") ?: new Org(name: "Publizistenname").save(flush: true)
+
+    if (!BookInstance.findByName("TS Book 1")) {
+      Identifier isbn = new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5').save(flush: true)
+      BookInstance book = new BookInstance(name: "TS Book 1").save(flush:true)
+      book.ids.add(isbn)
+      book.save(flush: true)
+    }
   }
 
   def cleanup() {
-    pkg.expunge()
-    plt.expunge()
-    book.expunge()
   }
 
   void "Test create new title from a minimal TIPP"() {
     given:
+    def pkg_id = Package.findByName("TS Test Package").id
+    def plt_id = Platform.findByName("TS Test Platform").id
+
     def tmap = [
-      pkg            : pkg.id,
-      hostPlatform   : plt.id,
-      url            : null,
+      pkg            : pkg_id,
+      hostPlatform   : plt_id,
+      url            : "http://test-url.net/",
       status         : "Current",
       name           : "Test Title from minimal TIPP",
       editStatus     : "Approved",
@@ -78,9 +72,9 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     ]
 
     when:
-    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
-
-    tippService.matchTitle(tipp)
+    def tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
+    sleep(100)
+    def result = tippService.matchTitle(tipp.id)
 
     then:
     tipp.title != null
@@ -88,10 +82,13 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
 
   void "Test create new BookInstance from a full TIPP"() {
     given:
+    def pkg_id = Package.findByName("TS Test Package").id
+    def plt_id = Platform.findByName("TS Test Platform").id
+
     def tmap = [
-      pkg                        : pkg.id,
-      hostPlatform               : plt.id,
-      url                        : "http://some.random.thing/",
+      pkg            : pkg_id,
+      hostPlatform   : plt_id,
+      url                        : "http://test-url.net/",
       importId                   : "völlig egal",
       status                     : "Current",
       name                       : "Test Title from full TIPP",
@@ -124,8 +121,8 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     ]
 
     when:
-    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
-    tippService.matchTitle(tipp)
+    def tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
+    tippService.matchTitle(tipp.id)
 
     then:
     tipp.title != null
@@ -143,10 +140,13 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
   void "Test attach existing title with a TIPP by its IDs"() {
     given:
     Identifier my_isbn = Identifier.findByNamespaceAndValue(IdentifierNamespace.findByValue('isbn'), '979-11-655-6390-5') ?: new Identifier(namespace: IdentifierNamespace.findByValue('isbn'), value: '979-11-655-6390-5')
+    def pkg_id = Package.findByName("TS Test Package").id
+    def plt_id = Platform.findByName("TS Test Platform").id
+
     def tmap = [
-      'pkg'            : pkg.id,
-      'hostPlatform'   : plt.id,
-      'url'            : null,
+      pkg            : pkg_id,
+      hostPlatform   : plt_id,
+      'url'            : "http://test-url.net/",
       'status'         : "Current",
       'name'           : "Test TIPP idmatch",
       'editStatus'     : "Approved",
@@ -155,14 +155,14 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     ]
 
     when:
-    TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
+    def tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
     tipp.ids.add(my_isbn)
     tipp.save(flush: true)
 
-    tippService.matchTitle(tipp)
+    tippService.matchTitle(tipp.id)
 
     then:
-    tipp.title == book
+    tipp.title == BookInstance.findByName("TS Book 1")
   }
 
   void "Test Package Update from TIPPs"() {
@@ -172,11 +172,12 @@ class TippServiceSpec extends Specification implements ServiceUnitTest<TippServi
     def updIsbn = new Identifier(value: '9783631725290', namespace: IdentifierNamespace.findByValue('isbn')).save(flush: true)
     updBook.ids.add(updIsbn)
     updBook.save(flush: true)
-    def tBook = TitleInstancePackagePlatform.tiplAwareCreate([name: "TS Book 1", pkg: updPack, hostPlatform: plt, url: 'http://tippservicebook.com/test'])
+    def tBook = TitleInstancePackagePlatform.tiplAwareCreate([name: "TS Book 1", pkg: updPack, hostPlatform: Platform.findByName("TS Test Platform"), url: 'http://tippservicebook.com/test'])
     tBook.ids.add(updIsbn)
     tBook.publicationType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Monograph')
     tBook.save(flush: true)
-    def tJournal = TitleInstancePackagePlatform.tiplAwareCreate([name: "TS Update Journal", pkg: updPack, hostPlatform: plt, url: 'http://tippservicejournal.com/test'])
+    def tJournal = TitleInstancePackagePlatform.tiplAwareCreate([name: "TS Update Journal", pkg: updPack, hostPlatform: Platform.findByName("TS Test Platform"), url: 'http://tippservicejournal.com/test'])
+    Identifier issn = new Identifier(namespace: IdentifierNamespace.findByValue('eissn'), value: '2209-7643')
     tJournal.ids.add(issn)
     tJournal.publicationType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Serial')
     tJournal.save(flush: true)

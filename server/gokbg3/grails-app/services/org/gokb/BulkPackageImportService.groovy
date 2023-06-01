@@ -3,10 +3,11 @@ package org.gokb
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
+import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 
-import io.micronaut.http.*
-import io.micronaut.http.client.HttpClient
+import static groovyx.net.http.Method.*
+import groovyx.net.http.*
 
 import org.gokb.cred.*
 
@@ -199,21 +200,24 @@ class BulkPackageImportService {
   }
 
   private def fetchRemoteConfig(url) {
-    def result = null
-    def client = HttpClient.create(url.toURL()).toBlocking()
+    def client = new RESTClient(url)
 
-    try {
-      def body = client.exchange(url, Map).body()
+    client.request(GET, ContentType.JSON) {
+      response.success = { resp, data ->
+        log.debug("Got bulk collection list")
 
-      if (body.collections) {
-        result = body.collections
+        if (data.collections) {
+          return data
+        }
+        else {
+          return null
+        }
+      }
+      response.failure = { resp, data ->
+        log.error("Got remote config request status ${resp.status} .. ${data}")
+        return null
       }
     }
-    catch (Exception e) {
-      log.error("Unable to retrieve bulk config via ${url}!", e)
-    }
-
-    result
   }
 
   private def checkConfigItem(cobj, boolean specific = false) {
@@ -403,8 +407,8 @@ class BulkPackageImportService {
                   skip = true
                 }
 
-                if (obj?.source?.bulkConfig && obj?.source?.bulkConfig != listInfo) {
-                  log.warn("Matched package ${obj} already has another bulk config assigned!")
+                if (obj?.source?.bulkConfig && obj.source.bulkConfig.id != listInfo.id) {
+                  log.warn("Matched package ${obj} already has another bulk config (${obj.source.bulkConfig.id}) assigned!")
                   pkg_result.errors.matching = [
                     [
                       message: "A single package has been matched, but its source is already connected to antother bulk config!",
@@ -439,7 +443,7 @@ class BulkPackageImportService {
                       obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type ?: type.content_type)
                     }
 
-                    if (!obj.global && (item.global || type.global)) {
+                    if (item.global || type.global) {
                       obj.global = RefdataCategory.lookup('Package.Global', item.global ?: type.global)
                     }
 
@@ -618,7 +622,7 @@ class BulkPackageImportService {
           log.debug("Job was cancelled.. skipping further processing")
         }
 
-        job.message("Completed type ${type.collection_name} with ${type_results}".toString())
+        // job.message("Completed type ${type.collection_name} with ${type_results}".toString())
         result.report[type.collection_name] = type_results
       }
 
@@ -629,8 +633,6 @@ class BulkPackageImportService {
       log.debug("No collections found.")
       result.result = 'SKIPPED_NO_API_URL'
     }
-
-    log.debug("Saving job result ${result}")
 
     JobResult.withNewSession {
       def job_map = [

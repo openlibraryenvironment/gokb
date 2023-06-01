@@ -7,6 +7,7 @@ import gokbg3.DateFormatService
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import grails.util.GrailsNameUtils
+import groovyx.net.http.URIBuilder
 
 import groovy.transform.Synchronized
 
@@ -257,7 +258,7 @@ class ComponentUpdateService {
 
               def additionalInfo = [:]
 
-              additionalInfo.vars = [testKey, the_title.name]
+              additionalInfo.vars = [testKey, component.name]
 
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
               reviewRequestService.raise(

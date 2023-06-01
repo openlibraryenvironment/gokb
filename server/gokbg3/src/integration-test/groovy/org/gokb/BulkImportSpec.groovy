@@ -46,10 +46,6 @@ class BulkImportSpec extends Specification {
   }
 
   def cleanup() {
-    CuratoryGroup.findByName('TestBulkCG')?.expunge()
-    Platform.findByName('TestBulkPlt')?.expunge()
-    Org.findByName('TestBulkOrg')?.expunge()
-    Package.findByName('BulkTestPkgOne')?.expunge()
   }
 
   void "Test create new bulk config"() {
@@ -151,7 +147,7 @@ class BulkImportSpec extends Specification {
     HttpRequest init_request = HttpRequest.POST(getUrlPath() + "/bulkImport/assertBulkConfig", json_record).basicAuth('admin', 'admin')
     client.exchange(init_request, Map)
 
-    HttpRequest request = HttpRequest.GET(getUrlPath() + "/bulkImport/runBulkUpdate?dryRun=false&async=true&code=testbulkimport").basicAuth('admin', 'admin')
+    HttpRequest request = HttpRequest.GET(getUrlPath() + "/bulkImport/runBulkUpdate?dryRun=false&async=false&code=testbulkimport").basicAuth('admin', 'admin')
     HttpResponse resp = client.exchange(request, Map)
 
     then: "The request is successful"
@@ -159,6 +155,7 @@ class BulkImportSpec extends Specification {
 
     expect:
     resp.body().result == 'FINISHED'
+    resp.body().report?.test_bulk_import_collection?.report != null
     def pkg = Package.findByName('BulkTestPkgOne')
     pkg != null
     pkg.provider == Org.findByName('TestBulkOrg')

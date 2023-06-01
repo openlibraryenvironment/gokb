@@ -515,6 +515,104 @@ class CleanupService {
   }
 
   @Transactional
+  def cleanupIssnConflictTitles(Job j = null) {
+    def result = [result: 'OK']
+    log.debug("Cleanup journal namespace conflicts..")
+    def qryString = '''
+      from Combo as cj
+      where cj.type = :cti
+      and cj.status = :csa
+      and cj.toComponent.id in (
+        select id from Identifier
+        where namespace = :nse
+      )
+      and cj.fromComponent.id in (
+        select ji.id from JournalInstance as ji
+        where ji.status = :sc
+        and exists (
+          select 1 from Combo as cc
+          where cc.type = :cti
+          and cc.status = :csa
+          and cc.fromComponent = ji
+          and cc.toComponent.id in (
+            select id from Identifier
+            where namespace = :nsp
+            and value = cj.toComponent.value
+          )
+        )
+        and exists (
+          select 1 from Combo as cp
+          where fromComponent = ji
+          and cp.type = :cti
+          and cp.status = :csa
+          and cp.toComponent.id in (
+            select id from Identifier
+            where namespace = :nse
+            and id != cj.toComponent.id
+          )
+        )
+      )
+    '''
+
+    TitleInstance.withNewSession { session ->
+      boolean more = true
+      int batch = 50
+      def type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+      def combo_active = RefdataCategory.lookup('Combo.Status', 'Active')
+      def combo_deleted = RefdataCategory.lookup('Combo.Status', 'Deleted')
+      def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+      def ns_eissn = IdentifierNamespace.findByValue('eissn')
+      def ns_issn = IdentifierNamespace.findByValue('issn')
+
+      int ctr = 0
+
+      def candidates = Combo.executeQuery("select cj.id " + qryString, [
+          cti: type_id,
+          csa: combo_active,
+          sc: status_current,
+          nse: ns_eissn,
+          nsp: ns_issn
+        ],
+        [readonly: true]
+      )
+
+      log.debug("cleanupIssnConflictTitles:: Processing ${candidates.size()}")
+      j.message("Processing ${candidates.size()} titles..")
+
+      for (c in candidates) {
+        def cobj = Combo.get(c)
+        cobj.status = combo_deleted
+        cobj.save(flush: true)
+
+        def journal = JournalInstance.get(cobj.fromComponent.id)
+
+        journal.lastSeen = new Date().getTime()
+        journal.save(flush: true)
+
+        journal.tipps.each { tipp ->
+          if (tipp.status != status_deleted) {
+            tipp.lastSeen = new Date().getTime()
+            tipp.save(flush: true)
+          }
+        }
+        ctr++
+
+        if (ctr % 50 == 0) {
+          cleanUpGorm()
+          j.setProgress(ctr, candidates.size())
+        }
+      }
+
+      result.total = ctr
+      j.setProgress(100)
+      j.endTime = new Date()
+    }
+
+    result
+  }
+
+  @Transactional
   def addMissingCoverageObjects(Job j = null) {
     log.debug("Creating missing coverage statements..")
     def ctr = 0

@@ -86,6 +86,11 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
       service.checkIdForNamespace("978-3-16-148410-2", isbn) == null
   }
 
+  void "test isbn validation with valid isbn10"() {
+    expect:
+      service.checkIdForNamespace("0-7817-8338-0", isbn) == "9780781783385"
+  }
+
   void "test zdb validation with valid value"() {
     expect:
       service.checkIdForNamespace("1483109-0", zdb) == "1483109-0"

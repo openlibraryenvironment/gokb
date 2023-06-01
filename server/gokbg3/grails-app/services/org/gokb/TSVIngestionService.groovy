@@ -24,41 +24,17 @@ class TSVIngestionService {
                     boolean dry_run,
                     boolean skip_invalid,
                     Job job = null) {
-    def session = null
 
-    try {
-      session = sessionFactory.currentSession
-    }
-    catch (org.hibernate.HibernateException he) {
-      log.debug("No Session found, creating a new one...")
-    }
-
-    if (session) {
-      IngestKbartRun myRun = new IngestKbartRun(pkg,
-                                                datafile,
-                                                title_id_ns,
-                                                async,
-                                                incremental,
-                                                request_user,
-                                                active_group,
-                                                dry_run,
-                                                skip_invalid)
-      return myRun.start(job)
-    }
-    else {
-      Package.withNewSession {
-        IngestKbartRun myRun = new IngestKbartRun(pkg,
-                                                  datafile,
-                                                  title_id_ns,
-                                                  async,
-                                                  incremental,
-                                                  request_user,
-                                                  active_group,
-                                                  dry_run,
-                                                  skip_invalid)
-        return myRun.start(job)
-      }
-    }
+    IngestKbartRun myRun = new IngestKbartRun(pkg,
+                                              datafile,
+                                              title_id_ns,
+                                              async,
+                                              incremental,
+                                              request_user,
+                                              active_group,
+                                              dry_run,
+                                              skip_invalid)
+    return myRun.start(job)
   }
 
   def analyseFile(temp_file) {

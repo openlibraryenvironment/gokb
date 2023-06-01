@@ -496,10 +496,13 @@ class ValidationService {
 
   def checkPubType(String value) {
     def result = null
-    RefdataValue resolvedType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', value)
 
-    if (resolvedType) {
-      result = resolvedType.value
+    RefdataValue.withNewSession {
+      RefdataValue resolvedType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', value)
+
+      if (resolvedType) {
+        result = resolvedType.value
+      }
     }
 
     result
@@ -525,10 +528,12 @@ class ValidationService {
       final_val = 'fulltext'
     }
 
-    RefdataValue resolvedType = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', final_val)
+    RefdataValue.withNewSession {
+      RefdataValue resolvedType = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', final_val)
 
-    if (resolvedType) {
-      result = value
+      if (resolvedType) {
+        result = value
+      }
     }
 
     result
@@ -543,8 +548,10 @@ class ValidationService {
     def final_type = checkPubType(pubType)
 
     if (final_type && KNOWN_COLUMNS[column]?.namespaces?."${final_type}") {
-      def namespace = IdentifierNamespace.findByValue(KNOWN_COLUMNS[column]?.namespaces?."${final_type}")
-      result = checkIdForNamespace(value, namespace)
+      IdentifierNamespace.withNewSession {
+        def namespace = IdentifierNamespace.findByValue(KNOWN_COLUMNS[column]?.namespaces?."${final_type}")
+        result = checkIdForNamespace(value, namespace)
+      }
     }
 
     result
@@ -558,6 +565,10 @@ class ValidationService {
         def valid_isbn = ISBN.parseIsbn(value)
 
         result = value
+
+        if (ISBN.isIsbn10(value)) {
+          result = valid_isbn.getIsbn13()
+        }
       }
       catch(ISBNException ie) {}
     }

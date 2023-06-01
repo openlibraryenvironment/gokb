@@ -402,7 +402,7 @@ class PackageTestSpec extends AbstractAuthSpec {
 
     then:
     resp.status == HttpStatus.OK
-    resp.body().job_result.report == null
+    resp.body().job_result?.report?.invalid == 1
     resp.body().job_result?.validation?.rows.error == 1
   }
 

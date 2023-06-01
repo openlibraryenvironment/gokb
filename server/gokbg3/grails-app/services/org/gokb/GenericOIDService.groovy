@@ -78,10 +78,20 @@ class GenericOIDService {
     if (oid) {
       if(oid.contains(':')){
         def oid_components = oid.split(':')
-        result = Long.parseLong(oid_components[1])
+        try {
+          result = Long.parseLong(oid_components[1])
+        }
+        catch (Exception e) {
+          log.debug("Unable to resolve oid $oid!")
+        }
       }
       else {
-        result = Long.parseLong(oid)
+        try {
+          result = Long.parseLong(oid)
+        }
+        catch (Exception e) {
+          log.debug("Unable to resolve oid $oid!")
+        }
       }
     }
 

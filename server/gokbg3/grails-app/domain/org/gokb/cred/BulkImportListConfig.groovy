@@ -43,4 +43,17 @@ class BulkImportListConfig {
     lastRun (nullable:true, blank:false)
     owner (nullable:true, blank:false)
   }
+
+  static def refdataFind(params) {
+    def result = []
+    def ql = BulkImportListConfig.findAllByCodeIlike(params.q)
+
+    if ( ql ) {
+      ql.each { id ->
+        result.add([id:"${id.class.name}:${id.id}", text: id.code])
+      }
+    }
+
+    result
+  }
 }

@@ -791,10 +791,10 @@ globalSearchTemplates = [
          'qparam':'qp_onlyCurrent', 'default':'on', 'cat':'KBComponent.Status', 'type': 'java.lang.Object']
       ],
       qbeResults:[
-        [heading:'ID', property:'id', sort:'id', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Name/Title', property:'name', sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Url', property:'url',sort:'url'],
-        [heading:'Status', property:'status?.value',sort:'status'],
+        [heading:'Active', property:'automaticUpdate'],
+        [heading:'Last Run', property:'lastRun',sort:'lastRun'],
       ]
     ]
   ],
@@ -1175,7 +1175,7 @@ globalSearchTemplates = [
       qbeGlobals:[
       ],
       qbeResults:[
-        [heading:'Name/Title', property:'displayName', link:[controller:'resource', action:'show', id:'x.r.linkedItem.class.name+\':\'+x.r.linkedItem.id'] ],
+        [heading:'Name/Title', property:'displayName', link:[controller:'resource', action:'show',      id:'x.r.linkedItem.class.name+\':\'+x.r.linkedItem.id'] ],
         [heading:'Availability', property:'linkedItem.tipps?.size()?:"none"'],
       ]
     ]
@@ -1212,28 +1212,29 @@ globalSearchTemplates = [
   ],
   'BulkImportListConfig':[
     baseclass:'org.gokb.cred.BulkImportListConfig',
-    title:'Bulk Configs',
-    defaultSort:'code',
-    defaultOrder:'asc',
+    title:'Bulk Import Configs',
+    group:'Secondary',
+    defaultSort:'id',
+    defaultOrder:'desc',
     qbeConfig:[
       qbeForm:[
-       [
+        [
           prompt:'Code',
           qparam:'qp_code',
-          placeholder:'Code',
-          contextTree:['ctxtp' : 'qry', 'comparator' : 'eq', 'prop' : 'code']
+          placeholder:'Name of config item',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'code','wildcard':'R']
         ],
       ],
       qbeGlobals:[
       ],
       qbeResults:[
-        [heading:'Code', property:'code', link:[controller:'resource', action:'show', id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Code', property:'code', link:[controller:'resource', action:'show', id:'x.r.uuid'] ],
         [heading:'Active', property:'automatedUpdate'],
-        [heading:'Frequency', property:'frequency?.value', sort:'frequency'],
         [heading:'Last Run', property:'lastRun',sort:'lastRun'],
       ]
     ]
   ],
+
 ]
 
 possible_date_formats = [
@@ -1283,4 +1284,3 @@ identifiers = [
     'eissn' : isxn_formatter
   ]
 ]
-

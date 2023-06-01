@@ -124,4 +124,3 @@ class PackageExportSpec extends Specification {
     resp.header("Content-Disposition") == "attachment; filename=\"gokbExport.zip\""
   }
 }
-

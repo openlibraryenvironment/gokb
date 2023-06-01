@@ -1369,7 +1369,7 @@ class TitleLookupService {
   public def matchClassOneComponentIds(def ids) {
     def result = null
 
-    log.debug("matchClassOneComponentIds(${ids})");
+    log.debug("matchClassOneComponentIds(${ids})")
 
     try {
       // Get the class 1 identifier namespaces.
@@ -1386,9 +1386,11 @@ class TitleLookupService {
         // Class ones only.
         if (id_def.value && id_def.ns && class_one_ids.contains(id_def.ns)) {
           def ns = IdentifierNamespace.findByValue(id_def.ns)
+          def normval = Identifier.generateNormname(id_def.value)
+
           if (ns) {
 
-            def the_id = Identifier.executeQuery('select i from Identifier as i where i.value = :val and i.namespace = :ns', [val: id_def.value, ns: ns])
+            def the_id = Identifier.executeQuery('select i from Identifier as i where i.normname = :val and i.namespace = :ns', [val: normval, ns: ns])
             if (the_id.size() == 1) {
               if (ctr++) {
                 sw.write(" or ")
