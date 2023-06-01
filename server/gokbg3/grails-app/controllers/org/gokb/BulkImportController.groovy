@@ -47,12 +47,12 @@ class BulkImportController {
   def runBulkUpdate() {
     def result = [result: 'OK']
     def user = springSecurityService.currentUser
-    boolean dryRun = params.boolean('dryRun') ?: true
-    boolean async = params.boolean('async') ?: false
+    Boolean dryRun = params.boolean('dryRun') ?: false
+    Boolean async = params.boolean('async') ?: false
     BulkImportListConfig config = BulkImportListConfig.findByCode(params.code)
 
     if (config && (user.superUserStatus || user == config.owner)) {
-      log.debug("Trigger bulk update (${config?.code} - Dry Run: ${params.dryRun} - Async: ${params.async})")
+      log.debug("Trigger bulk update (${config?.code} - Dry Run: ${dryRun} - Async: ${async})")
       result = bulkPackageImportService.startUpdate(config, dryRun, async, springSecurityService.currentUser)
     }
     else if (!config) {

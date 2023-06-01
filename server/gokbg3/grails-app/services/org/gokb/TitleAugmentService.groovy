@@ -373,7 +373,7 @@ class TitleAugmentService {
       log.debug("Updating title name ${titleInstance.name} -> ${info.title}")
       def old_title = titleInstance.name
       titleInstance.name = info.title
-      titleInstance.ensureVariantName(old_title)
+      addVariantName(old_title, titleInstance)
     }
 
     titleInstance.save(flush: true)
@@ -555,6 +555,26 @@ class TitleAugmentService {
     }
     else {
       log.debug("Not adding empty string..")
+    }
+  }
+
+  public void addVariantName(variant, ti) {
+    if (variant.trim()) {
+
+      // Variant names use different normalisation method.
+      def variant_normname = GOKbTextUtils.normaliseString(variant)
+
+      // not already a name
+      // Make sure not already a variant name
+      if (!KBComponentVariantName.findByOwnerAndNormVariantName(ti, variant_normname)) {
+        new KBComponentVariantName(owner: ti, variantName: variant).save(flush: true)
+      }
+      else {
+        log.debug("Unable to add ${variant} as an alternate name to ${id} - it's already an alternate name....");
+      }
+    }
+    else {
+      log.error("No viable variant name supplied!")
     }
   }
 

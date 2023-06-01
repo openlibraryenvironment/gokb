@@ -204,9 +204,7 @@ class EzbCollectionService {
                     obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Journal')
                   }
 
-                  if (!obj.global) {
-                    obj.global = RefdataCategory.lookup('Package.Global', 'Consortium')
-                  }
+                  obj.global = RefdataCategory.lookup('Package.Global', 'Consortium')
 
                   obj.nominalPlatform = platform
                   obj.provider = provider
