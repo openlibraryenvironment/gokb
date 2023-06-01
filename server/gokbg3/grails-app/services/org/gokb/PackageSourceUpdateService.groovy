@@ -5,6 +5,7 @@ import groovyx.net.http.*
 import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.regex.Pattern
 
 import org.gokb.cred.*
 import org.apache.commons.io.FileUtils
@@ -13,6 +14,10 @@ import org.mozilla.universalchardet.UniversalDetector
 class PackageSourceUpdateService {
   def concurrencyManagerService
   def TSVIngestionService
+
+  static Pattern DATE_PLACEHOLDER_PATTERN = ~/[0-9]{4}-[0-9]{2}-[0-9]{2}/
+  static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
+  static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/
 
   def updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null, boolean dryRun = false) {
     log.debug("updateFromSource ${p.name}")
@@ -75,13 +80,13 @@ class PackageSourceUpdateService {
         def existing_string = src_url.toString()
         String local_date_string = LocalDate.now().toString()
 
-        if (existing_string =~ /\{YYYY-MM-DD\}\.(tsv|txt)$/) {
+        if (existing_string =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
           log.debug("URL contains date placeholder ..")
           src_url = new URL(existing_string.replace('{YYYY-MM-DD}', local_date_string))
           dynamic_date = true
         }
         else {
-          def date_pattern_match = (existing_string =~ /([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/)
+          def date_pattern_match = (existing_string =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
 
           if (date_pattern_match && date_pattern_match[0].size() > 0) {
             String matched_date_string = date_pattern_match[0][1]
@@ -132,7 +137,7 @@ class PackageSourceUpdateService {
 
         if (!file_info.file_name && (dynamic_date || extracted_date)) {
           LocalDate active_date = LocalDate.now()
-          src_url = new URL(src_url.toString().replaceFirst(/[0-9]{4}-[0-9]{2}-[0-9]{2}/, active_date.toString()))
+          src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
           log.debug("Fetching dated URL for today..")
           file_info = fetchKbartFile(tmp_file, src_url)
 
@@ -140,14 +145,14 @@ class PackageSourceUpdateService {
           if (!file_info.file_name) {
             sleep(500)
             log.debug("Fetching first of the month..")
-            def som_date_url = new URL(src_url.toString().replaceFirst(/[0-9]{4}-[0-9]{2}-[0-9]{2}/, active_date.withDayOfMonth(1).toString()))
+            def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
             file_info = fetchKbartFile(tmp_file, som_date_url)
           }
 
           // Check all days of this month
           while (active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
             active_date = active_date.minusDays(1)
-            src_url = new URL(src_url.toString().replaceFirst(/[0-9]{4}-[0-9]{2}-[0-9]{2}/, active_date.toString()))
+            src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
             log.debug("Fetching dated URL for date ${active_date}")
             sleep(500)
             file_info = fetchKbartFile(tmp_file, src_url)
