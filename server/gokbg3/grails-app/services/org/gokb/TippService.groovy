@@ -86,7 +86,13 @@ class TippService {
 
       if (!ti) {
         result.valid = false
-        errors.title = [[message: "Could not resolve title id!", baddata: tiLink, code: 404]]
+        errors.title = [
+          [
+            message: "Could not resolve title id!",
+            baddata: tiLink,
+            code: 404
+          ]
+        ]
       }
     }
 
@@ -117,7 +123,11 @@ class TippService {
                 errors.ids = []
               }
 
-              errors.ids << [message: "Invalid identifier value ${namespace.value}:${idobj.value}!", baddata: idobj, code: 400]
+              errors.ids << [
+                message: "Invalid identifier value ${namespace.value}:${idobj.value}!",
+                baddata: idobj,
+                messageCode: 'component.identifier.validation.value'
+              ]
             }
           }
           else {
@@ -125,7 +135,12 @@ class TippService {
               errors.ids = []
             }
 
-            errors.ids << [message: "Unable to reference namespace ${ns_val} for identifier value ${idobj.value}!", baddata: idobj, code: 400]
+            errors.ids << [
+              message: "Unable to reference namespace ${ns_val} for identifier value ${idobj.value}!",
+              baddata: idobj,
+              messageCode: 'component.identifier.validation.namespace',
+              code: 400
+            ]
           }
         }
         else {
@@ -133,7 +148,11 @@ class TippService {
             errors.ids = []
           }
 
-          errors.ids << [message: "Missing namespace info for ID value ${idobj.value}", baddata: idobj, code: 400]
+          errors.ids << [
+            message: "Missing namespace info for ID value ${idobj.value}",
+            baddata: idobj,
+            code: 400
+          ]
         }
       }
     }
