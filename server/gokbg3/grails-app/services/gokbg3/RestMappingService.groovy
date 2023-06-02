@@ -543,7 +543,7 @@ class RestMappingService {
                   id = componentLookupService.lookupOrCreateCanonicalIdentifier(ns, i.value)
 
                   if (!id) {
-                    result.errors << [message: 'This identifier value is invalid!', baddata: i.value, messageCode: 'identifier.validation.generic']
+                    result.errors << [message: "Identifier ${ns_val}:${i.value} is invalid!", baddata: i.value, messageCode: 'identifier.validation.generic']
                     valid = false
                   }
                 }

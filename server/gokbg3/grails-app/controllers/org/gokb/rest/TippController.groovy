@@ -120,7 +120,7 @@ class TippController {
 
       if (curator) {
         log.debug("Incoming: ${reqBody}")
-        def tipp_validation = TitleInstancePackagePlatform.validateDTO(reqBody, RequestContextUtils.getLocale(request))
+        def tipp_validation = tippService.validateDTO(reqBody)
 
         if (tipp_validation.valid) {
           def obj = TitleInstancePackagePlatform.upsertDTO(reqBody, user)
@@ -186,7 +186,7 @@ class TippController {
 
       if (curator || user.isAdmin()) {
         reqBody.id = reqBody.id?:params.id // storing the TIPP ID in the JSON data for later use in upsertDTO
-        def tipp_validation = TitleInstancePackagePlatform.validateDTO(reqBody, RequestContextUtils.getLocale(request))
+        def tipp_validation = tippService.validateDTO(reqBody)
 
         if (tipp_validation.valid) {
           if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
