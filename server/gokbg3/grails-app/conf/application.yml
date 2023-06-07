@@ -7,10 +7,12 @@ grails:
             - ~/.grails/gokb-config.properties
     cors:
         enabled: true
+        allowCredentials: true
+        allowedOriginPatterns: '*'
         mappings:
-            /rest/**: inherit
-            /validation/**: inherit
-            /api/**: inherit
+            '[/rest/**]': inherit
+            '[/validation/**]': inherit
+            '[/api/**]': inherit
 
     profile: web
     codegen:
