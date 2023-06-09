@@ -298,6 +298,57 @@ class TippService {
     return result
   }
 
+  public static RefdataValue determineMediumRef(def mediumType) {
+    if (mediumType instanceof String) {
+      def rdv = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, mediumType)
+
+      if (rdv) {
+        return rdv
+      }
+    }
+    else if (mediumType instanceof Integer) {
+      def rdv = RefdataValue.get(mediumType)
+
+      if (rdv && rdv.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)) {
+        return rdv
+      }
+    }
+    else if (mediumType instanceof Map && mediumType.id) {
+      def rdv = RefdataValue.get(mediumType.id)
+
+      if (rdv && rdv.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)) {
+        return rdv
+      }
+    }
+
+    return null
+  }
+
+  public static RefdataValue determinePubTypeRef(def someType) {
+    if (someType instanceof String) {
+      RefdataValue pubType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, someType)
+
+      if (pubType) {
+        return pubType
+      }
+    }
+    else if (someType instanceof Integer) {
+      RefdataValue pubType = RefdataValue.get(someType)
+
+      if (pubType && pubType.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE)) {
+        return pubType
+      }
+    }
+    else if (someType instanceof Map && someType.id) {
+      RefdataValue pubType = RefdataValue.get(someType.id)
+
+      if (pubType && pubType.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE)) {
+        return pubType
+      }
+    }
+    return null
+  }
+
   /**
    * updating the coverage of this TIPP with the coverageData in reqBody
    *

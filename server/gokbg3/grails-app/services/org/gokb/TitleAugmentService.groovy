@@ -307,76 +307,78 @@ class TitleAugmentService {
   }
 
   private void setNewTitleInfo(titleInstance, info) {
-    if (!titleInstance.publishedFrom && info.publishedFrom) {
-      log.debug("Adding new start journal start date ..")
-      com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedFrom), titleInstance, 'publishedFrom')
-    }
-    if (!titleInstance.publishedTo && info.publishedTo) {
-      log.debug("Adding new start journal end date ..")
-      com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedTo), titleInstance, 'publishedTo')
-    }
+    TitleInstance.withNewSession {
+      if (!titleInstance.publishedFrom && info.publishedFrom) {
+        log.debug("Adding new start journal start date ..")
+        com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedFrom), titleInstance, 'publishedFrom')
+      }
+      if (!titleInstance.publishedTo && info.publishedTo) {
+        log.debug("Adding new start journal end date ..")
+        com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedTo), titleInstance, 'publishedTo')
+      }
 
-    if (!titleInstance.currentPublisher && info.publisher) {
-      RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
-      def pub_obj = Org.findByNameAndStatusNot(info.publisher, status_deleted)
+      if (!titleInstance.currentPublisher && info.publisher) {
+        RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+        def pub_obj = Org.findByNameAndStatusNot(info.publisher, status_deleted)
 
-      if (!pub_obj) {
-        def variant_normname = GOKbTextUtils.normaliseString(info.publisher)
-        def var_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted])
+        if (!pub_obj) {
+          def variant_normname = GOKbTextUtils.normaliseString(info.publisher)
+          def var_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted])
 
-        if (var_candidates.size() == 1) {
-          pub_obj = var_candidates[0]
+          if (var_candidates.size() == 1) {
+            pub_obj = var_candidates[0]
+          }
+        }
+
+        if (pub_obj) {
+          def publisher_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
+          new Combo(fromComponent: titleInstance, toComponent: pub_obj, type: publisher_combo).save(flush: true, failOnError: true)
         }
       }
 
-      if (pub_obj) {
-        def publisher_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
-        new Combo(fromComponent: titleInstance, toComponent: pub_obj, type: publisher_combo).save(flush: true, failOnError: true)
-      }
-    }
+      try {
+        info.history.each { he ->
+          def id_map = []
 
-    try {
-      info.history.each { he ->
-        def id_map = []
-
-        if (he.zdbId && he.zdbId ==~ ~"^\\d{7,10}-[\\dxX]\$") {
-          id_map << [type: "zdb", value: he.zdbId]
-        }
-        else {
-          log.debug("Skipping item with illegal ID value ${he.zdbId}!")
-        }
-
-        def match_result = null
-
-        if (id_map) {
-          match_result = titleLookupService.find(he.name, null, id_map, 'org.gokb.cred.JournalInstance')
-        }
-
-        if (match_result && !match_result.to_create && match_result.matches?.size() == 1) {
-          def candidate = match_result.matches[0].object
-          def parsedLocal = he.prev ? GOKbTextUtils.completeDateString(info.publishedFrom) : GOKbTextUtils.completeDateString(he.publishedFrom ?: info.publishedTo)
-          Date event_date = null
-
-          if (parsedLocal) {
-            event_date = Date.from(parsedLocal.atZone(ZoneId.systemDefault()).toInstant())
+          if (he.zdbId && he.zdbId ==~ ~"^\\d{7,10}-[\\dxX]\$") {
+            id_map << [type: "zdb", value: he.zdbId]
+          }
+          else {
+            log.debug("Skipping item with illegal ID value ${he.zdbId}!")
           }
 
-          titleHistoryService.addDirectEvent((he.prev ? candidate : titleInstance), (he.prev ? titleInstance : candidate), event_date)
+          def match_result = null
+
+          if (id_map) {
+            match_result = titleLookupService.find(he.name, null, id_map, 'org.gokb.cred.JournalInstance')
+          }
+
+          if (match_result && !match_result.to_create && match_result.matches?.size() == 1) {
+            def candidate = match_result.matches[0].object
+            def parsedLocal = he.prev ? GOKbTextUtils.completeDateString(info.publishedFrom) : GOKbTextUtils.completeDateString(he.publishedFrom ?: info.publishedTo)
+            Date event_date = null
+
+            if (parsedLocal) {
+              event_date = Date.from(parsedLocal.atZone(ZoneId.systemDefault()).toInstant())
+            }
+
+            titleHistoryService.addDirectEvent((he.prev ? candidate : titleInstance), (he.prev ? titleInstance : candidate), event_date)
+          }
         }
       }
-    }
-    catch (Exception e) {
-      log.error("Error while processing ZDB history event:", e)
-    }
+      catch (Exception e) {
+        log.error("Error while processing ZDB history event:", e)
+      }
 
-    if (titleInstance.name != info.title) {
-      log.debug("Updating title name ${titleInstance.name} -> ${info.title}")
-      def old_title = titleInstance.name
-      titleInstance.name = info.title
-      addVariantName(old_title, titleInstance)
-    }
+      if (titleInstance.name != info.title) {
+        log.debug("Updating title name ${titleInstance.name} -> ${info.title}")
+        def old_title = titleInstance.name
+        titleInstance.name = info.title
+        addVariantName(old_title, titleInstance)
+      }
 
-    titleInstance.save(flush: true)
+      titleInstance.save(flush: true)
+    }
   }
 
 
