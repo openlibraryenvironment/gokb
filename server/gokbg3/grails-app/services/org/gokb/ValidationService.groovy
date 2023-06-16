@@ -498,7 +498,7 @@ class ValidationService {
     def result = null
 
     RefdataValue.withNewSession {
-      RefdataValue resolvedType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', value)
+      RefdataValue resolvedType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', value.trim())
 
       if (resolvedType) {
         result = resolvedType.value
@@ -511,10 +511,10 @@ class ValidationService {
   def checkAccessType(String value) {
     def final_val = null
 
-    if (value in ['P', 'p']) {
+    if (value.trim() in ['P', 'p']) {
       final_val = 'P'
     }
-    else if (value in ['F', 'f']) {
+    else if (value.trim() in ['F', 'f']) {
       final_val = 'F'
     }
     final_val
@@ -524,12 +524,12 @@ class ValidationService {
     def result = null
     def final_val = value
 
-    if (value?.toLowerCase() in ['full text', 'volltext']) {
+    if (value?.toLowerCase()?.trim() in ['full text', 'volltext']) {
       final_val = 'fulltext'
     }
 
     RefdataValue.withNewSession {
-      RefdataValue resolvedType = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', final_val)
+      RefdataValue resolvedType = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', final_val.trim())
 
       if (resolvedType) {
         result = value
@@ -550,7 +550,7 @@ class ValidationService {
     if (final_type && KNOWN_COLUMNS[column]?.namespaces?."${final_type}") {
       IdentifierNamespace.withNewSession {
         def namespace = IdentifierNamespace.findByValue(KNOWN_COLUMNS[column]?.namespaces?."${final_type}")
-        result = checkIdForNamespace(value, namespace)
+        result = checkIdForNamespace(value.trim(), namespace)
       }
     }
 

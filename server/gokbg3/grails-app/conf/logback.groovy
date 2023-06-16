@@ -57,6 +57,7 @@ if (Environment.isDevelopmentMode() || Environment.current == Environment.TEST) 
   logger('org.gokb.cred.TitleInstancePackagePlatform', DEBUG)
   logger('gokbg3.UserDetailsInterceptor', ERROR)
   logger('gokbg3.PreferencesInterceptor', ERROR)
+  logger('com.k_int.ESSearchService', INFO)
 }
 else {
   logger('com.k_int', INFO)

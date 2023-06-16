@@ -306,8 +306,10 @@ class TitleAugmentService {
     }
   }
 
-  private void setNewTitleInfo(titleInstance, info) {
+  private void setNewTitleInfo(ti, info) {
     TitleInstance.withNewSession {
+      def titleInstance = TitleInstance.get(ti.id)
+
       if (!titleInstance.publishedFrom && info.publishedFrom) {
         log.debug("Adding new start journal start date ..")
         com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedFrom), titleInstance, 'publishedFrom')
