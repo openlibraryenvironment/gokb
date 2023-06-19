@@ -12,6 +12,7 @@ import org.gokb.rest.TippController
 import org.grails.web.json.JSONObject
 
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 
 class TippService {
@@ -22,6 +23,331 @@ class TippService {
   def sessionFactory
   def reviewRequestService
   def autoTimestampEventListener
+  def validationService
+
+  def validateDTO(tipp_dto) {
+    def result = [valid: true]
+    def errors = [:]
+    def pkgLink = tipp_dto.pkg ?: tipp_dto.package
+    def pltLink = tipp_dto.hostPlatform ?: tipp_dto.platform
+    def tiLink = tipp_dto.title
+
+    if (!pkgLink) {
+      result.valid = false
+      errors.pkg = [[message: "Missing package link!", baddata: pkgLink]]
+    }
+    else {
+      def pkg = null
+
+      if (pkgLink instanceof Map) {
+        pkg = Package.get(pkgLink.id ?: pkgLink.internalId)
+      }
+      else {
+        pkg = Package.get(pkgLink)
+      }
+
+      if (!pkg) {
+        result.valid = false
+        errors.pkg = [[message: "Could not resolve package id!", baddata: pkgLink, code: 404]]
+      }
+    }
+
+    if (!pltLink) {
+      result.valid = false
+      errors.hostPlatform = [[message: "Missing platform link!", baddata: pltLink]]
+    }
+    else {
+      def plt = null
+
+      if (pltLink instanceof Map) {
+        plt = Platform.get(pltLink.id ?: pltLink.internalId)
+      }
+      else {
+        plt = Platform.get(pltLink)
+      }
+
+      if (!plt) {
+        result.valid = false
+        errors.hostPlatform = [[message: "Could not resolve platform id!", baddata: pltLink, code: 404]]
+      }
+    }
+
+    // since a tipp is valid without a title connection, the validation of the tipp should drop this
+    // precondition too
+    if (tiLink) {
+      def ti = null
+
+      if (tiLink instanceof Map) {
+        ti = TitleInstance.get(tiLink.id ?: tiLink.internalId)
+      }
+      else {
+        ti = TitleInstance.get(tiLink)
+      }
+
+      if (!ti) {
+        result.valid = false
+        errors.title = [
+          [
+            message: "Could not resolve title id!",
+            baddata: tiLink,
+            code: 404
+          ]
+        ]
+      }
+    }
+
+    def ids_list = tipp_dto.ids ?: tipp_dto.identifiers
+
+    if (ids_list) {
+      ids_list.each { idobj ->
+        def ns_val = idobj.type ?: idobj.namespace
+
+        if (ns_val) {
+          def namespace = null
+
+          if (ns_val instanceof String) {
+            namespace = IdentifierNamespace.findByValueIlike(ns_val)
+          }
+          else if (ns_val instanceof Map) {
+            namespace = IdentifierNamespace.findByValueIlike(ns_val.value)
+          }
+          else if (ns_val instanceof Integer) {
+            namespace = IdentifierNamespace.get(ns_val)
+          }
+
+          if (namespace) {
+            def valid_val = validationService.checkIdForNamespace(idobj.value, namespace)
+
+            if (!valid_val) {
+              if (!errors.ids) {
+                errors.ids = []
+              }
+
+              errors.ids << [
+                message: "Invalid identifier value ${namespace.value}:${idobj.value}!",
+                baddata: idobj,
+                messageCode: 'component.identifier.validation.value'
+              ]
+            }
+          }
+          else {
+            if (!errors.ids) {
+              errors.ids = []
+            }
+
+            errors.ids << [
+              message: "Unable to reference namespace ${ns_val} for identifier value ${idobj.value}!",
+              baddata: idobj,
+              messageCode: 'component.identifier.validation.namespace',
+              code: 400
+            ]
+          }
+        }
+        else {
+          if (!errors.ids) {
+            errors.ids = []
+          }
+
+          errors.ids << [
+            message: "Missing namespace info for ID value ${idobj.value}",
+            baddata: idobj,
+            code: 400
+          ]
+        }
+      }
+    }
+
+    if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
+      tipp_dto.coverage = tipp_dto.coverageStatements
+    }
+
+    for (def coverage : tipp_dto.coverage) {
+      LocalDateTime parsedStart = GOKbTextUtils.completeDateString(coverage.startDate)
+      LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(coverage.endDate, false)
+
+      if (coverage.startDate && !parsedStart) {
+        if (!errors.startDate) {
+          errors.startDate = []
+        }
+
+        result.valid = false
+        errors.startDate << [message: "Unable to parse coverage start date ${coverage.startDate}!", baddata: coverage.startDate]
+      }
+
+      if (coverage.endDate && !parsedEnd) {
+        if (!errors.endDate) {
+          errors.endDate = []
+        }
+
+        result.valid = false
+        errors.endDate << [message: "Unable to parse coverage end date ${coverage.endDate}!", baddata: coverage.endDate]
+      }
+
+      if (!coverage.coverageDepth) {
+        if (!errors.coverageDepth) {
+          errors.coverageDepth = []
+        }
+        coverage.coverageDepth = "fulltext"
+        errors.coverageDepth << [message: "Missing value for coverage depth: set to fulltext", baddata: coverage.coverageDepth]
+      }
+      else {
+        if (coverage.coverageDepth instanceof String && !['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase())) {
+          if (!errors.coverageDepth) {
+            errors.coverageDepth = []
+          }
+
+          result.valid = false
+          errors.coverageDepth << [message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+        }
+        else if (coverage.coverageDepth instanceof Integer) {
+          try {
+            def candidate = RefdataValue.get(coverage.coverageDepth)
+
+            if (!candidate && candidate.owner.label == "TIPPCoverageStatement.CoverageDepth") {
+              if (!errors.coverageDepth) {
+                errors.coverageDepth = []
+              }
+
+              result.valid = false
+              errors.coverageDepth << [message: "Illegal value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+            }
+          } catch (Exception e) {
+            log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Integer")
+          }
+        }
+        else if (coverage.coverageDepth instanceof Map) {
+          if (coverage.coverageDepth.id) {
+            try {
+              def candidate = RefdataValue.get(coverage.coverageDepth.id)
+
+              if (!candidate && candidate.owner.label == "TIPPCoverageStatement.CoverageDepth") {
+                if (!errors.coverageDepth) {
+                  errors.coverageDepth = []
+                }
+
+                result.valid = false
+                errors.coverageDepth << [message: "Illegal ID value '${coverage.coverageDepth.id}' for coverage depth", baddata: coverage.coverageDepth]
+              }
+            } catch (Exception e) {
+              log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Map")
+            }
+          }
+          else if (coverage.coverageDepth.value || coverage.coverageDepth.name) {
+            if (!['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase())) {
+              if (!errors.coverageDepth) {
+                errors.coverageDepth = []
+              }
+
+              result.valid = false
+              errors.coverageDepth << [message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+            }
+          }
+        }
+      }
+
+      if (parsedStart && parsedEnd && (parsedEnd < parsedStart)) {
+        result.valid = false
+        errors.endDate = [[message: "Coverage end date must not be prior to its start date!", baddata: coverage.endDate]]
+      }
+    }
+
+    if (tipp_dto.medium) {
+      def ref = determineMediumRef(tipp_dto.medium)
+      if (ref == null)
+        errors.put('medium', [message: "unknown", baddata: tipp_dto.remove('medium')])
+      else
+        tipp_dto.medium = ref.value
+    }
+
+    if (tipp_dto.publicationType) {
+      def type = determinePubTypeRef(tipp_dto.publicationType)
+      if (type == null)
+        errors.put('publicationType', [message: "unknown", baddata: tipp_dto.remove('publicationType')])
+      else
+        tipp_dto.publicationType = type.value
+    }
+
+    if (tipp_dto.dateFirstInPrint) {
+      LocalDateTime dfip = GOKbTextUtils.completeDateString(tipp_dto.dateFirstInPrint, false)
+      if (!dfip) {
+        errors.put('dateFirstInPrint', [message: "Unable to parse", baddata: tipp_dto.remove('dateFirstInPrint')])
+      }
+    }
+
+    if (tipp_dto.dateFirstOnline) {
+      LocalDateTime dfo = GOKbTextUtils.completeDateString(tipp_dto.dateFirstOnline, false)
+      if (!dfo) {
+        errors.put('dateFirstOnline', [message: "Unable to parse", baddata: tipp_dto.remove('dateFirstOnline')])
+      }
+    }
+
+    if (tipp_dto.lastChangedExternal) {
+      LocalDateTime lce = GOKbTextUtils.completeDateString(tipp_dto.lastChangedExternal, false)
+      if (!lce) {
+        errors.put('lastChangedExternal', [message: "Unable to parse", baddata: tipp_dto.remove('lastChangedExternal')])
+      }
+    }
+
+    if (!result.valid) {
+      log.warn("Tipp failed validation: ${tipp_dto} - pkg:${pkgLink} plat:${pltLink} ti:${tiLink} -- Errors: ${errors}")
+    }
+
+    if (errors.size() > 0) {
+      result.errors = errors
+    }
+    return result
+  }
+
+  public static RefdataValue determineMediumRef(def mediumType) {
+    if (mediumType instanceof String) {
+      def rdv = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, mediumType)
+
+      if (rdv) {
+        return rdv
+      }
+    }
+    else if (mediumType instanceof Integer) {
+      def rdv = RefdataValue.get(mediumType)
+
+      if (rdv && rdv.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)) {
+        return rdv
+      }
+    }
+    else if (mediumType instanceof Map && mediumType.id) {
+      def rdv = RefdataValue.get(mediumType.id)
+
+      if (rdv && rdv.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)) {
+        return rdv
+      }
+    }
+
+    return null
+  }
+
+  public static RefdataValue determinePubTypeRef(def someType) {
+    if (someType instanceof String) {
+      RefdataValue pubType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, someType)
+
+      if (pubType) {
+        return pubType
+      }
+    }
+    else if (someType instanceof Integer) {
+      RefdataValue pubType = RefdataValue.get(someType)
+
+      if (pubType && pubType.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE)) {
+        return pubType
+      }
+    }
+    else if (someType instanceof Map && someType.id) {
+      RefdataValue pubType = RefdataValue.get(someType.id)
+
+      if (pubType && pubType.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE)) {
+        return pubType
+      }
+    }
+    return null
+  }
 
   /**
    * updating the coverage of this TIPP with the coverageData in reqBody

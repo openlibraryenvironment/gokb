@@ -520,6 +520,10 @@ class IngestKbartRun {
             }
           }
 
+          if (the_kbart.doi_identifier && the_kbart.doi_identifier.trim() && !identifiers.findAll { it.type == 'doi'}) {
+            identifiers << [type: 'doi', value: the_kbart.doi_identifier.trim()]
+          }
+
           def titleClass = TitleInstance.determineTitleClass(the_kbart.publication_type)
 
           if (titleClass) {
@@ -977,6 +981,10 @@ class IngestKbartRun {
         if (ingest_cfg.providerIdentifierNamespace) {
           identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
         }
+      }
+
+      if (the_kbart.doi_identifier && the_kbart.doi_identifier.trim() && !identifiers.findAll { it.type == 'doi'}) {
+        identifiers << [type: 'doi', value: the_kbart.doi_identifier.trim()]
       }
 
       log.debug("TitleMatch title:${the_kbart.publication_title} identifiers:${identifiers}")

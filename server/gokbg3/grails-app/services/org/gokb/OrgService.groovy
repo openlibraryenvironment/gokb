@@ -8,6 +8,7 @@ import org.hibernate.SessionFactory
 
 class OrgService {
   def platformService
+  def FTUpdateService
 
   def restLookup(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}");
@@ -207,7 +208,7 @@ class OrgService {
   @Transactional
   def updatePlatforms(obj, plts, boolean remove = true) {
     def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
-    def old_combos = obj.getCombosByPropertyName('providedPlatforms')
+    def removed_plts = obj.providedPlatforms*.id
     def new_plts = []
     def result = [changed: false, errors: []]
     plts.each { plt ->
@@ -273,6 +274,8 @@ class OrgService {
 
       if (plt_obj) {
         new_plts << plt_obj
+
+        removed_plts.removeElement(plt_obj.id)
       }
       else {
         result.errors << [message: "Unable to lookup platform!", code: 404, baddata: plt]
@@ -281,9 +284,11 @@ class OrgService {
 
     if (!obj.hasErrors() || result.errors.size() > 0) {
       new_plts.each { c ->
-        if (!obj.providedPlatforms.contains(c)) {
+        if (c.provider != obj) {
           log.debug("Adding new platform ${c}..")
-          def new_combo = new Combo(fromComponent: c, toComponent: obj, type: plt_combo_type).save(flush: true)
+          c.provider = obj
+          c.save(flush: true)
+          FTUpdateService.updateSingleItem(c)
           result.changed = true
         }
         else {
@@ -292,16 +297,12 @@ class OrgService {
       }
 
       if (remove) {
-        Iterator items = old_combos.iterator();
-        List removedCombos = []
-        Object element;
-        while (items.hasNext()) {
-          element = items.next();
-          if (!new_plts.contains(element.fromComponent)) {
-            // Remove.
-            element.delete()
-            result.changed = true
-          }
+        removed_plts.each { pid ->
+          Platform plt_obj = Platform.get(pid)
+          plt_obj.provider = null
+          plt_obj.save(flush: true)
+          FTUpdateService.updateSingleItem(plt_obj)
+          result.changed = true
         }
       }
     }

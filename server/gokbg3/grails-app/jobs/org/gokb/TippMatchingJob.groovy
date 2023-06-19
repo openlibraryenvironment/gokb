@@ -46,8 +46,8 @@ class TippMatchingJob {
 
           if (rrList.size() == 0) {
             log.debug("match tipp $tipp")
-            def group = tipp.pkg.curatoryGroups?.size() > 0 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id) : null
-            def match_result = tippService.matchTitle(tipp.id, group.id)
+            def groupId = tipp.pkg.curatoryGroups?.size() > 0 ? CuratoryGroup.get(tipp.pkg.curatoryGroups[0].id).id : null
+            def match_result = tippService.matchTitle(tipp.id, groupId)
 
             result[match_result.status]++
 
