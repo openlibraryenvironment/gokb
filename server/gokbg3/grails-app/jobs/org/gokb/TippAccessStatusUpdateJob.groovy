@@ -1,6 +1,5 @@
 package org.gokb
 
-
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.ReviewRequest
 import org.gokb.cred.TitleInstance

@@ -941,7 +941,7 @@ class PackageController {
         packageSourceUpdateService.updateFromSource(pkg, user, job, active_group, dry_run)
       }
 
-      background_job.groupId = active_group.id
+      background_job.groupId = active_group?.id ?: (componentLookupService.findCuratoryGroupOfInterest(pkg, user)?.id ?: null)
       background_job.ownerId = user?.id ?: null
       background_job.description = "KBART Source ingest (${pkg.name})".toString()
       background_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')

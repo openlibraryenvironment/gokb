@@ -39,6 +39,7 @@ class PackageSourceUpdateService {
     log.debug("Source update start..")
     def result = [result: 'OK']
     def platform_url
+    Boolean async = (user ? true : false)
     Source pkg_source
     CuratoryGroup preferred_group
     IdentifierNamespace title_ns
@@ -238,7 +239,7 @@ class PackageSourceUpdateService {
                 result = TSVIngestionService.updatePackage(pkg,
                                                             datafile,
                                                             title_ns,
-                                                            (user ? true : false),
+                                                            async,
                                                             false,
                                                             user,
                                                             preferred_group,
@@ -246,10 +247,10 @@ class PackageSourceUpdateService {
                                                             skipInvalid,
                                                             job)
 
-                if (result.validation?.valid == false || result.report?.reviews > 0 || result.matchingJob?.reviews > 0) {
+                if (result.validation?.valid == false || result.report?.reviews > 0 || (!async && result.matchingJob?.reviews > 0)) {
                   log.info("There were issues with the automated job (valid: ${result.validation?.valid}, reviews: ${result.report?.reviews}, matching reviews: ${result.matchingJob?.reviews}), keeping listStatus in progress..")
                 }
-                else if (!dryRun) {
+                else if (!async && !dryRun) {
                   Package.withNewSession {
                     def pack = Package.get(pkg.id)
                     pack.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
@@ -262,7 +263,7 @@ class PackageSourceUpdateService {
                   TSVIngestionService.updatePackage(pkg,
                                                     datafile,
                                                     title_ns,
-                                                    (user ? true : false),
+                                                    async,
                                                     false,
                                                     user,
                                                     preferred_group,
@@ -289,10 +290,10 @@ class PackageSourceUpdateService {
                 }
                 result.job_result = update_job.get()
 
-                if (result.job_result?.validation?.valid == false || result.job_result?.report?.reviews > 0 || result.job_result?.matchingJob?.reviews > 0) {
+                if (result.job_result?.validation?.valid == false || result.job_result?.report?.reviews > 0 || (!async && result.job_result?.matchingJob?.reviews > 0)) {
                   log.info("There were issues with the automated job (valid: ${result.job_result?.validation?.valid}, reviews: ${result.job_result?.report?.reviews}, matching reviews: ${result.job_result?.matchingJob?.reviews}), keeping listStatus in progress..")
                 }
-                else if (!dryRun) {
+                else if (!async && !dryRun) {
                   Package.withNewSession {
                     Package p = Package.get(pkg.id)
                     p.refresh()

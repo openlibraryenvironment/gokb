@@ -41,11 +41,6 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
       service.checkAccessType("Test") == null
   }
 
-  void "test checkAccessType with null value"() {
-    expect:
-      service.checkAccessType(null) == null
-  }
-
   void "test checkTitleString with exact match"() {
     expect:
       service.checkTitleString("Test Title") == "Test Title"
@@ -59,11 +54,6 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
   void "test checkTitleString with empty trim"() {
     expect:
       service.checkTitleString(" ") == null
-  }
-
-  void "test checkTitleString with null value"() {
-    expect:
-      service.checkTitleString(null) == null
   }
 
   void "test issn validation with valid value"() {

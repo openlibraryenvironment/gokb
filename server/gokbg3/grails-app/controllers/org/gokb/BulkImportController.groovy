@@ -58,7 +58,7 @@ class BulkImportController {
     else if (!config) {
       result.result = 'ERROR'
       response.status = 404
-      result.message = "Unable to reference config with code '${config.code}'!"
+      result.message = "Unable to reference config with code '${params.code}'!"
     }
     else {
       result.result = 'ERROR'
