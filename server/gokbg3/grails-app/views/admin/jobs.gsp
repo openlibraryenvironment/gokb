@@ -5,9 +5,30 @@
 <title>GOKb: Jobs</title>
 </head>
 <body>
-  <h1 class="page-header">Jobs</h1>
+  <h1 class="page-header">Active Scheduled Jobs</h1>
+  <ul>
+    <g:each in="${scheduledJobs}" var="job">
+      <li>${job.jobDetail.key.name}
+        <ul>
+          <g:each in="${job.mergedJobDataMap}" var="k, v">
+            <li>${k}: ${v}</li>
+          </g:each>
+          <li>
+            <g:link controller="admin" action="cancelQuartzJob" id="${job.jobDetail.key.name}" onclick="return confirm('Are you sure you want to interrupt this scheduled job?')">Cancel</g:link>
+          </li>
+        </ul>
+      </li>
+    </g:each>
+  </ul>
+  <h1 class="page-header">Manually Triggered Jobs</h1>
   <div style="margin:10px 0px;text-align:right">
-    <button style="margin-left:10px;" class="btn btn-default pull-right" value="Refresh Page" onClick="window.location.reload()">Reload <i class="fa fa-refresh" aria-hidden="true"></i></button>
+    <button
+      style="margin-left:10px;"
+      class="btn btn-default pull-right"
+      value="Refresh Page"
+      onClick="window.location.reload()">
+      Reload <i class="fa fa-refresh" aria-hidden="true"></i>
+    </button>
     <g:form controller="admin" action="cleanJobList">
       <button onClick="clearList()" class="btn btn-default">Clean Job List</button>
     </g:form>

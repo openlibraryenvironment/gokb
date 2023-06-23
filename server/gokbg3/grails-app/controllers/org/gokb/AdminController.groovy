@@ -27,6 +27,7 @@ class AdminController {
   def springSecurityService
   def titleAugmentService
   def uploadAnalysisService
+  def jobManagerService
   CleanupService cleanupService
   ConcurrencyManagerService concurrencyManagerService
   TippService tippService
@@ -208,6 +209,7 @@ class AdminController {
     result.jobs = concurrencyManagerService.jobs.sort { a, b -> b.value.startTime <=> a.value.startTime }
     log.debug("concurrency manager service");
     result.cms = concurrencyManagerService
+    result.scheduledJobs = jobManagerService.runningJobs
 
     result.jobs.each { k, j ->
       if (j && j.isDone() && !j.endTime) {
@@ -438,6 +440,20 @@ class AdminController {
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
+  }
+
+  def cancelQuartzJob() {
+    def result = [result: 'OK', message: null]
+
+    try {
+      result.result = jobManagerService.interruptJob('GRAILS_JOBS', params.id)
+    }
+    catch (Exception e) {
+      log.warn("Interruption Exception:", e)
+      result.message = e.message
+    }
+
+    redirect(controller: 'admin', action: 'jobs')
   }
 
   def fetchEzbCollections() {

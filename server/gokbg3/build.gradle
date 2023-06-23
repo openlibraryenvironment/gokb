@@ -105,9 +105,9 @@ dependencies {
     implementation 'org.grails.plugins:spring-security-ui:4.0.0.M1'
     implementation 'org.grails.plugins:spring-security-rest:3.0.1'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
-    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'com.google.guava:guava:32.0.1-jre'
     implementation 'commons-fileupload:commons-fileupload:1.5'
-    implementation 'org.pac4j:pac4j-core:5.7.0'
+    implementation 'org.pac4j:pac4j-core:5.7.1'
 
     implementation 'org.apache.httpcomponents:httpcore:4.4.14'
     implementation 'commons-io:commons-io:2.11.0'

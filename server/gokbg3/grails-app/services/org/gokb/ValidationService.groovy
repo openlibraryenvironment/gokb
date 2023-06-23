@@ -334,7 +334,7 @@ class ValidationService {
     for (key in col_positions.keySet()) {
       def trimmed_val = nl[col_positions[key]].trim()
 
-      if (trimmed_val.length() > 4092) {
+      if (trimmed_val?.length() > 1023) {
         result.errors["longVals"] = [
           message: "Unexpectedly long value in row -- Probably miscoded quote in line.",
           messageCode: "kbart.errors.longValsFile",
@@ -342,14 +342,14 @@ class ValidationService {
         ]
       }
 
-      if (trimmed_val.contains('�') && !result.errors["replacementChars"]) {
+      if (trimmed_val?.contains('�') && !result.errors["replacementChars"]) {
         result.errors["replacementChars"] = [
           message: "Value contains UTF-8 replacement characters!",
           messageCode: "kbart.errors.replacementCharsRow",
           args: []
         ]
       }
-      else if (trimmed_val.contains('¶') || trimmed_val.contains('¦') || trimmed_val.contains('¤') || trimmed_val ==~ /\p{Cc}/ || trimmed_val.contains('Ãƒ')) {
+      else if (trimmed_val?.contains('¶') || trimmed_val?.contains('¦') || trimmed_val?.contains('¤') || trimmed_val ==~ /\p{Cc}/ || trimmed_val?.contains('Ãƒ')) {
         result.warnings[key] = [
           message: "Value '${trimmed_val}' contains unusual characters.",
           messageCode: "kbart.errors.unusualCharsVal",
@@ -511,10 +511,10 @@ class ValidationService {
   def checkAccessType(String value) {
     def final_val = null
 
-    if (value.trim() in ['P', 'p']) {
+    if (value in ['P', 'p']) {
       final_val = 'P'
     }
-    else if (value.trim() in ['F', 'f']) {
+    else if (value in ['F', 'f']) {
       final_val = 'F'
     }
     final_val

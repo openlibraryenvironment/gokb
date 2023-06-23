@@ -742,10 +742,6 @@ class IngestKbartRun {
       }
 
       if (result.status != 'matched') {
-        if (!titleIdMap[tipp_map.importId]) {
-          titleIdMap[tipp_map.importId] = []
-        }
-
         if (!dryRun) {
           def tipp_fields = [
             pkg: pkg,
@@ -758,10 +754,16 @@ class IngestKbartRun {
           tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
         }
 
-        titleIdMap[tipp_map.importId] << [
-          ids: jsonIdMap,
-          oid: (dryRun ? null : tipp.id)
-        ]
+        if (tipp_map.importId) {
+          if (!titleIdMap[tipp_map.importId]) {
+            titleIdMap[tipp_map.importId] = []
+          }
+
+          titleIdMap[tipp_map.importId] << [
+            ids: jsonIdMap,
+            oid: (dryRun ? null : tipp.id)
+          ]
+        }
       }
       else if (tipp.accessStartDate) {
         tipp_map.accessStartDate = null

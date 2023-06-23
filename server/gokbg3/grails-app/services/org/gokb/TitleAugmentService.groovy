@@ -326,7 +326,7 @@ class TitleAugmentService {
 
         if (!pub_obj) {
           def variant_normname = GOKbTextUtils.normaliseString(info.publisher)
-          def var_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = ? and p.status <> ? ", [variant_normname, status_deleted])
+          def var_candidates = Org.executeQuery("select distinct p from Org as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
           if (var_candidates.size() == 1) {
             pub_obj = var_candidates[0]
