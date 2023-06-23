@@ -15,7 +15,6 @@ import org.gokb.AugmentEzbJob
 import org.gokb.AugmentZdbJob
 import org.gokb.AutoUpdatePackagesJob
 import org.gokb.TippMatchingJob
-import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
 
@@ -37,6 +36,7 @@ class BootStrap {
     def ComponentStatisticService
     def concurrencyManagerService
     def ESWrapperService
+    def languagesService
 
     def init = { servletContext ->
 
@@ -1146,7 +1146,7 @@ class BootStrap {
         // Can be activated on local development instances.
         // assignMissingCGsToRRs()
 
-        LanguagesService.initialize()
+        // languagesService.initialize()
 
         log.debug("Deleting any null refdata values");
         RefdataValue.executeUpdate('delete from RefdataValue where value is null');
