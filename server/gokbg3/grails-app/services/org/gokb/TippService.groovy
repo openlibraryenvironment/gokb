@@ -747,19 +747,22 @@ class TippService {
   }
 
   def statusUpdate() {
+    def result = [retired: 0, activated: 0]
     log.info("Updating TIPP status via access dates..")
     RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
     RefdataValue status_retired = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
     RefdataValue status_expected = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED)
 
-    String update_retire_str = "update TitleInstancePackagePlatform tipp set tipp.status=:retired, tipp.lastUpdated=:today where tipp.status=:current and accessEndDate<:today"
-    String update_current_str = "update TitleInstancePackagePlatform tipp set tipp.status=:current, tipp.lastUpdated=:today where tipp.status=:expected and accessStartDate<=:today"
+    String update_retire_str = "update TitleInstancePackagePlatform tipp set tipp.status = :retired, tipp.lastUpdated = :today where tipp.status = :current and accessEndDate < :today"
+    String update_current_str = "update TitleInstancePackagePlatform tipp set tipp.status = :current, tipp.lastUpdated = :today where tipp.status = :expected and accessStartDate <= :today"
 
-    def num_retired = TitleInstancePackagePlatform.executeUpdate(update_retire_str, [retired: status_retired, current: status_current, today: new Date()])
-    log.info("Retired ${num_retired} TIPPs.")
+    result.retired = TitleInstancePackagePlatform.executeUpdate(update_retire_str, [retired: status_retired, current: status_current, today: new Date()])
+    log.info("Retired ${result.retired} TIPPs.")
 
-    def num_current = TitleInstancePackagePlatform.executeUpdate(update_current_str, [expected: status_expected, current: status_current, today: new Date()])
-    log.info("Activated ${num_current} TIPPs.")
+    result.activated = TitleInstancePackagePlatform.executeUpdate(update_current_str, [expected: status_expected, current: status_current, today: new Date()])
+    log.info("Activated ${result.activated} TIPPs.")
+
+    result
   }
 
   def scanTIPPs(Job job = null) {
@@ -1264,10 +1267,23 @@ class TippService {
     }
 
     if (tippInfo.dateFirstOnline) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline), tipp, 'dateFirstOnline')
+      LocalDateTime dfo = GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline)
+
+      ClassUtils.setDateIfPresent(dfo, tipp, 'dateFirstOnline')
+
+      if (dfo && dfo > LocalDateTime.now()) {
+        tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+      }
     }
+
     if (tippInfo.accessStartDate) {
-      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessStartDate), tipp, 'accessStartDate')
+      LocalDateTime access_start_ldt = GOKbTextUtils.completeDateString(tippInfo.accessStartDate)
+
+      ClassUtils.setDateIfPresent(access_start_ldt, tipp, 'accessStartDate')
+
+      if (access_start_ldt && access_start_ldt > LocalDateTime.now()) {
+        tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+      }
     }
 
     if (tippInfo.accessEndDate) {

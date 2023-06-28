@@ -1230,7 +1230,13 @@ class PackageService {
             def session = sessionFactory.getCurrentSession()
             def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
             def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-            def query = session.createQuery("select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id=:p and c.toComponent=tipp  and tipp.status = :sc and c.type = :ct order by tipp.id")
+            def query = session.createQuery('''select tipp.id from TitleInstancePackagePlatform as tipp,
+                                               Combo as c
+                                               where c.fromComponent.id=:p
+                                               and c.toComponent=tipp
+                                               and tipp.status = :sc
+                                               and c.type = :ct
+                                               order by tipp.id''')
             query.setReadOnly(true)
             query.setParameter('p', pkg.getId(), StandardBasicTypes.LONG)
             query.setParameter('sc', status_current)

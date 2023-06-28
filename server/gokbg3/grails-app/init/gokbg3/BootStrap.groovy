@@ -344,11 +344,11 @@ class BootStrap {
         registerUsers()
 
         if (grailsApplication.config.gokb.packageOaiCaching.enabled) {
-            log.debug("Ensuring Package cache dates")
+            log.info("Ensuring Package cache dates")
             registerPkgCache()
         }
 
-        log.debug("Ensuring ElasticSearch index")
+        log.info("Ensuring ElasticSearch index")
         ensureEsIndices()
 
         Job hk_job = concurrencyManagerService.createJob {
