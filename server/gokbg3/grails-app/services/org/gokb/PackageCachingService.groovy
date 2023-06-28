@@ -49,7 +49,7 @@ class PackageCachingService {
     def attr = [:]
     File dir = new File(grailsApplication.config.gokb.packageXmlCacheDirectory)
     boolean cancelled = false
-    File tempDir = new File('/tmp/gokb/oai/')
+    File tempDir = new File('/tmp/gokb/')
     job?.startTime = new Date()
 
     Package.withNewSession { session ->
@@ -330,6 +330,7 @@ class PackageCachingService {
         session.clear()
 
         if (Thread.currentThread().isInterrupted()) {
+          log.debug("Job was cancelled..")
           cancelled = true
           result = 'CANCELLED'
           break
