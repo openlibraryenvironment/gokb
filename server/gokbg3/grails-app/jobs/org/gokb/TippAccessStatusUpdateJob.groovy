@@ -18,8 +18,7 @@ class TippAccessStatusUpdateJob {
     cron name: 'TippAccessStatusUpdateTrigger', cronExpression: "0 0 1 * * ?"
   }
 
-  @Autowired
-  TippService tippService
+  def tippService
 
   def execute() {
     tippService.statusUpdate()

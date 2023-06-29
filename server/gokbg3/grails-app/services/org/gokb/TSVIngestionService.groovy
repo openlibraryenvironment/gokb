@@ -23,6 +23,7 @@ class TSVIngestionService {
                     def active_group,
                     boolean dry_run,
                     boolean skip_invalid,
+                    boolean cleanup,
                     Job job = null) {
 
     IngestKbartRun myRun = new IngestKbartRun(pkg,
@@ -33,7 +34,8 @@ class TSVIngestionService {
                                               request_user,
                                               active_group,
                                               dry_run,
-                                              skip_invalid)
+                                              skip_invalid,
+                                              cleanup)
     return myRun.start(job)
   }
 

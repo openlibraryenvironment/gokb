@@ -5,41 +5,24 @@ import com.opencsv.CSVReaderBuilder
 import com.opencsv.CSVParser
 import com.opencsv.CSVParserBuilder
 
-import com.k_int.ClassUtils
-import com.k_int.ESSearchService
-
-import gokbg3.DateFormatService
-import gokbg3.MessageService
-
 import grails.converters.JSON
-import grails.plugin.springsecurity.SpringSecurityService
-import grails.gorm.transactions.Transactional
 import grails.util.Holders
-import grails.util.TypeConvertingMap
 
 import groovy.util.logging.Slf4j
 
+import gokbg3.DateFormatService
+
 import java.text.SimpleDateFormat
 import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 import org.apache.commons.io.ByteOrderMark
 import org.apache.commons.io.input.BOMInputStream
-import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
 import org.gokb.exceptions.*
 import org.gokb.GOKbTextUtils
-import org.grails.web.json.JSONObject
 
 @Slf4j
 class IngestKbartRun {
-
-  static MessageService messageService = Holders.grailsApplication.mainContext.getBean('messageService')
-  static PackageService packageService = Holders.grailsApplication.mainContext.getBean('packageService')
-  static SpringSecurityService springSecurityService = Holders.grailsApplication.mainContext.getBean('springSecurityService')
-  static ComponentUpdateService componentUpdateService = Holders.grailsApplication.mainContext.getBean('componentUpdateService')
-  static CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
   static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
   static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
@@ -53,6 +36,7 @@ class IngestKbartRun {
   boolean dryRun
   boolean isUpdate
   boolean skipInvalid
+  boolean isCleanup
   User user
   Map errors = [global: [], tipps: []]
   int removedNum = 0
@@ -93,7 +77,8 @@ class IngestKbartRun {
                         User u = null,
                         CuratoryGroup active_group = null,
                         Boolean dry_run = false,
-                        Boolean skip_invalid = false) {
+                        Boolean skip_invalid = false,
+                        Boolean cleanup = false) {
     pkg = pack
     addOnly = incremental
     user = u
@@ -103,6 +88,7 @@ class IngestKbartRun {
     datafile = data_file
     providerIdentifierNamespace = titleIdNamespace
     skipInvalid = skip_invalid
+    isCleanup = cleanup
   }
 
   def start(nJob) {
@@ -280,7 +266,7 @@ class IngestKbartRun {
         if (addOnly) {
           log.debug("Incremental -- no expunge")
         }
-        else if (isUpdate) {
+        else if (isUpdate || isCleanup) {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
           if (!dryRun && result.result != 'CANCELLED') {
             try {
@@ -290,20 +276,26 @@ class IngestKbartRun {
                   pkgid: pkg.id,
                   dt: ingest_systime,
                   sc: RefdataCategory.lookup('KBComponent.Status', 'Current'),
-                  sr: RefdataCategory.lookup('KBComponent.Status', 'Retired'),
+                  sr: RefdataCategory.lookup('KBComponent.Status', (isCleanup ? 'Deleted' : 'Retired')),
                   igdt: dateFormatService.parseDate(ingest_date),
                   now: new Date()
                 ]
 
                 log.debug("Retiring via pars ${retire_pars}")
 
-                def retired_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
+                def removed_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
                     set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
                     where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
                     and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
 
-                result.report.retired = retired_count
-                log.debug("Completed tipp cleanup (${retired_count} retired)")
+                if (isCleanup) {
+                  result.report.deleted = removed_count
+                }
+                else {
+                  result.report.retired = removed_count
+                }
+
+                log.debug("Completed tipp cleanup (${removed_count} ${isCleanup ? 'deleted' : 'retired'})")
               }
             }
             catch (Exception e) {
@@ -771,11 +763,6 @@ class IngestKbartRun {
 
       // log.debug("Values updated, set lastSeen");
 
-      if (ingest_systime) {
-        log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date} (${tipp.lastSeen} -> ${ingest_systime})")
-        tipp.lastSeen = ingest_systime
-      }
-
       // setPrices(tipp, the_kbart)
 
       // Look through the field list for any tipp.custprop values
@@ -788,6 +775,11 @@ class IngestKbartRun {
       log.debug("TIPP ${tipp.id} info check: ${tipp.name}, ${tipp.url}")
 
       if (tipp.validate()) {
+        if (ingest_systime) {
+          log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date} (${tipp.lastSeen} -> ${ingest_systime})")
+          tipp.lastSeen = ingest_systime
+        }
+
         tipp.save(flush: true)
       }
       else {

@@ -502,6 +502,12 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def triggerTippStatusUpdate() {
+    def result = tippService.statusUpdate()
+
+    render result as JSON
+  }
+
   def exportGroups() {
     def result = [:]
     CuratoryGroup.createCriteria().list({

@@ -45,6 +45,7 @@ class PackageSourceUpdateService {
     IdentifierNamespace title_ns
     DataFile datafile = null
     def skipInvalid = false
+    Boolean deleteMissing = false
 
     Package.withNewSession {
       Package p = Package.get(pkg.id)
@@ -245,6 +246,7 @@ class PackageSourceUpdateService {
                                                             preferred_group,
                                                             dryRun,
                                                             skipInvalid,
+                                                            deleteMissing,
                                                             job)
 
                 if (result.validation?.valid == false || result.report?.reviews > 0 || (!async && result.matchingJob?.reviews > 0)) {
@@ -269,6 +271,7 @@ class PackageSourceUpdateService {
                                                     preferred_group,
                                                     dryRun,
                                                     skipInvalid,
+                                                    deleteMissing,
                                                     j)
                 }
 

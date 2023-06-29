@@ -15,7 +15,6 @@ import org.gokb.AugmentEzbJob
 import org.gokb.AugmentZdbJob
 import org.gokb.AutoUpdatePackagesJob
 import org.gokb.TippMatchingJob
-import org.gokb.LanguagesService
 
 import javax.servlet.http.HttpServletRequest
 
@@ -37,6 +36,7 @@ class BootStrap {
     def ComponentStatisticService
     def concurrencyManagerService
     def ESWrapperService
+    def languagesService
 
     def init = { servletContext ->
 
@@ -344,11 +344,11 @@ class BootStrap {
         registerUsers()
 
         if (grailsApplication.config.gokb.packageOaiCaching.enabled) {
-            log.debug("Ensuring Package cache dates")
+            log.info("Ensuring Package cache dates")
             registerPkgCache()
         }
 
-        log.debug("Ensuring ElasticSearch index")
+        log.info("Ensuring ElasticSearch index")
         ensureEsIndices()
 
         Job hk_job = concurrencyManagerService.createJob {
@@ -1146,7 +1146,7 @@ class BootStrap {
         // Can be activated on local development instances.
         // assignMissingCGsToRRs()
 
-        LanguagesService.initialize()
+        // languagesService.initialize()
 
         log.debug("Deleting any null refdata values");
         RefdataValue.executeUpdate('delete from RefdataValue where value is null');
