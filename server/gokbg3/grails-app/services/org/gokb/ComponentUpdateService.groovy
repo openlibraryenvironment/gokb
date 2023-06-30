@@ -254,22 +254,21 @@ class ComponentUpdateService {
               def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
               hasChanged = true
             } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
-
-              def additionalInfo = [:]
-
-              additionalInfo.vars = [testKey, component.name]
-
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")
-              reviewRequestService.raise(
-                component,
-                "Review ID status.",
-                "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
-                user,
-                null,
-                (additionalInfo as JSON).toString(),
-                RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
-                group ?: componentLookupService.findCuratoryGroupOfInterest(component, user)
-              )
+
+              // def additionalInfo = [:]
+
+              // additionalInfo.vars = [testKey, component.name]
+              // reviewRequestService.raise(
+              //   component,
+              //   "Review ID status.",
+              //   "Identifier ${canonical_identifier} was previously connected to '${component}', but has since been manually removed.",
+              //   user,
+              //   null,
+              //   (additionalInfo as JSON).toString(),
+              //   RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Removed Identifier'),
+              //   group ?: componentLookupService.findCuratoryGroupOfInterest(component, user)
+              // )
             } else {
               log.debug("Identifier combo is already present.")
             }

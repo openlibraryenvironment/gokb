@@ -337,7 +337,6 @@ class TitleHistoryService {
   }
 
   public void addDirectEvent(from, to, date) {
-    def new_event = null
     def che_query = '''from ComponentHistoryEvent as che where
       exists (select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :source and participantRole = :pri) and
       exists (select chep from ComponentHistoryEventParticipant as chep where chep.event = che and chep.participant = :target and participantRole = :pro)'''
@@ -346,7 +345,7 @@ class TitleHistoryService {
 
     if (!dupes) {
       log.debug("Adding new history event ${from.name} -> ${to.name}")
-      new_event = new ComponentHistoryEvent(eventDate: date).save(flush:true, failOnError:true)
+      def new_event = new ComponentHistoryEvent(eventDate: date).save(flush:true, failOnError:true)
 
       new ComponentHistoryEventParticipant(event:new_event, participant:from, participantRole:'in').save(flush:true, failOnError:true)
       new ComponentHistoryEventParticipant(event:new_event, participant:to, participantRole:'out').save(flush:true, failOnError:true)
