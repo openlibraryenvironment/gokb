@@ -1267,26 +1267,26 @@ class TippService {
     }
 
     LocalDateTime access_start_ldt = GOKbTextUtils.completeDateString(tippInfo.accessStartDate)
-    LocalDateTime dfo = GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline)
+    LocalDateTime date_first_online = GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline)
 
     if (access_start_ldt) {
       ClassUtils.setDateIfPresent(access_start_ldt, tipp, 'accessStartDate')
     }
 
-    if (dfo)
-      ClassUtils.setDateIfPresent(dfo, tipp, 'dateFirstOnline')
+    if (date_first_online) {
+      ClassUtils.setDateIfPresent(date_first_online, tipp, 'dateFirstOnline')
     }
 
     if (tippInfo.accessEndDate) {
       ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
-
-      if (tipp.accessEndDate < new Date()) {
-        tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
-      }
     }
-    else if (dfo && dfo > LocalDateTime.now()) {
+
+    if (tipp.accessEndDate < new Date()) {
+      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    }
+    else if (date_first_online && date_first_online > LocalDateTime.now()) {
       tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-      ClassUtils.setDateIfPresent(dfo, tipp, 'accessStartDate')
+      ClassUtils.setDateIfPresent(date_first_online, tipp, 'accessStartDate')
     }
     else if (access_start_ldt && access_start_ldt > LocalDateTime.now()) {
       tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')

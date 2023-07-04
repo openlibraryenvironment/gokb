@@ -1146,7 +1146,9 @@ class BootStrap {
         // Can be activated on local development instances.
         // assignMissingCGsToRRs()
 
-        // languagesService.initialize()
+        if (Environment.current != Environment.PRODUCTION) {
+          languagesService.initialize()
+        }
 
         log.debug("Deleting any null refdata values");
         RefdataValue.executeUpdate('delete from RefdataValue where value is null');

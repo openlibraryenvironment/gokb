@@ -223,7 +223,7 @@ class TitleAugmentService {
     if ( titleInstance.niceName == 'Journal' ) {
       def rr_multi_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Multiple EZB Results')
       def rr_in_use = RefdataCategory.lookup('ReviewRequest.StdDesc', 'EZB Title Overlap')
-      def rr_info = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Information')
+      def rr_info = RefdataCategory.lookup('ReviewRequest.StdDesc', 'No EZB Results')
       def existing_rr = ReviewRequest.executeQuery("select rr.id from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc IN (:types)", [ti: titleInstance, types: [rr_multi_results, rr_in_use]])
 
       if (existing_rr.size() == 0) {
