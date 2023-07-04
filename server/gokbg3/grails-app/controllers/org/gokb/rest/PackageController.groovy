@@ -849,6 +849,7 @@ class PackageController {
       Boolean add_only = params.boolean('addOnly') ?: false
       Boolean dry_run = params.boolean('dryRun') ?: false
       Boolean skip_invalid = params.boolean('skipInvalid') ?: false
+      Boolean delete_missing = params.boolean('deleteMissing') ?: false
       def info = TSVIngestionService.analyseFile(temp_file)
       def platform_url = pkg.nominalPlatform?.primaryUrl ?: null
       def pkg_source = pkg.source
@@ -886,6 +887,7 @@ class PackageController {
                                             active_group,
                                             dry_run,
                                             skip_invalid,
+                                            delete_missing,
                                             job)
         }
 

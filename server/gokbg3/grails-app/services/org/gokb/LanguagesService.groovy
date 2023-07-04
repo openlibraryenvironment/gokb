@@ -54,7 +54,6 @@ class LanguagesService{
 
 
   Map getLanguages(){
-
     if (!languages) {
       initialize()
     }
