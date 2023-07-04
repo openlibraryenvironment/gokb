@@ -1266,24 +1266,15 @@ class TippService {
       log.debug("No dateFirstInPrint -> ${tippInfo.dateFirstInPrint}")
     }
 
-    if (tippInfo.dateFirstOnline) {
-      LocalDateTime dfo = GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline)
+    LocalDateTime access_start_ldt = GOKbTextUtils.completeDateString(tippInfo.accessStartDate)
+    LocalDateTime dfo = GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline)
 
-      ClassUtils.setDateIfPresent(dfo, tipp, 'dateFirstOnline')
-
-      if (dfo && dfo > LocalDateTime.now()) {
-        tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-      }
+    if (access_start_ldt) {
+      ClassUtils.setDateIfPresent(access_start_ldt, tipp, 'accessStartDate')
     }
 
-    if (tippInfo.accessStartDate) {
-      LocalDateTime access_start_ldt = GOKbTextUtils.completeDateString(tippInfo.accessStartDate)
-
-      ClassUtils.setDateIfPresent(access_start_ldt, tipp, 'accessStartDate')
-
-      if (access_start_ldt && access_start_ldt > LocalDateTime.now()) {
-        tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-      }
+    if (dfo)
+      ClassUtils.setDateIfPresent(dfo, tipp, 'dateFirstOnline')
     }
 
     if (tippInfo.accessEndDate) {
@@ -1292,6 +1283,13 @@ class TippService {
       if (tipp.accessEndDate < new Date()) {
         tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
       }
+    }
+    else if (dfo && dfo > LocalDateTime.now()) {
+      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+      ClassUtils.setDateIfPresent(dfo, tipp, 'accessStartDate')
+    }
+    else if (access_start_ldt && access_start_ldt > LocalDateTime.now()) {
+      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
     }
 
     ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
