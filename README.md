@@ -11,24 +11,25 @@ GOKb development has moved here from https://github.com/k-int/gokb-phase1
 
 ## Dependencies
 
-* Java 8
-* Groovy 2.5 && Grails 3.3
+* Java 11
+* Groovy 3.0.11 && Grails 5.3.2 (consider using sdkman)
 * Clean Postgres database
-* Running Elasticsearch cluster (index will be created automatically)
+* Running (local) Opensearch cluster (index will be created automatically)
 
 ## Configuration
 
-Default configuration in `server/gokbg3/grails-app/conf/application.yml` can be overridden by placing an `application-development.yml` (such as the example in `template_files/`) in `server/gokbg3/`
+Default configuration in `server/grails-app/conf/application.yml` can be overridden by placing an `application-development.yml` (such as the example in `template_files/`) in `server/`
 
 As some scripts rely on the path `/gokb`, it is recommended to deploy GOKb in this path. For local development environment, add to your local `application-development.yml`:
 
 ```
 server:
     port: 8080
-    contextPath: /gokb
+    servlet:
+     context-path: /gokb
 ```
 
 ## Starting the application
 
-from `server/gokbg3/`
+from `server/`
 `grails run-app`
