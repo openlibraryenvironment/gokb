@@ -70,7 +70,7 @@ if (typeof jQuery !== 'undefined') {
 
       // Add the submit handler to the "action" form to prompt for confirmation
       // On certain types of action.
-      $("ul.actions").click(function(event) {
+      $("ul.actions").on('click', function(event) {
         // The button.
 
         var selectedLink = $(event.target).closest("a.selectedAction");
@@ -79,7 +79,7 @@ if (typeof jQuery !== 'undefined') {
         // Prevent the click bubbling through to eventually submitting the form.
         event.preventDefault();
         event.stopImmediatePropagation();
-        
+
         if(selectedLink.length > 0){
           // Selected option.
           // We need to confirm these actions.
@@ -106,8 +106,8 @@ if (typeof jQuery !== 'undefined') {
         updateAvailableActions ();
       }
 
-      // Also bind the method to the change method. 
-      $('input.obj-action-ck-box').change( updateAvailableActions );
+      // Also bind the method to the change method.
+      $('input.obj-action-ck-box').on('change', updateAvailableActions );
 
     });
 

@@ -248,7 +248,7 @@
         var hash = window.location.hash;
         hash && $('ul.nav a[href="' + hash + '"]').tab('show');
 
-        $('.nav-tabs > li > a').not('.disabled').click(function (e) {
+        $('.nav-tabs > li > a').not('.disabled').on('click', function (e) {
           $(this).tab('show');
           var scrollmem = $('body').scrollTop();
           console.log("scrollTop");

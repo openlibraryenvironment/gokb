@@ -83,7 +83,7 @@
 </table>
 
 <asset:script>
-  $("select[name='${pstring}']").change(function(event) {
+  $("select[name='${pstring}']").on('change', function(event) {
     var form =$(event.target).closest("form")
     form.submit();
   });

@@ -342,8 +342,7 @@
 
 <asset:script type="text/javascript">
 
-  $("select[name='publisher_status']").change(function(event) {
-  console.log("In here")
+  $("select[name='publisher_status']").on('change', function(event) {
     var form =$(event.target).closest("form")
     form.submit();
   });

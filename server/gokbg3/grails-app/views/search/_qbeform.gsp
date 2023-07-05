@@ -130,7 +130,7 @@
   // When DOM is ready.
   $(document).ready(function(){
 
-    $("#savePopupForm").click(function(e) {
+    $("#savePopupForm").on('click', function(e) {
       e.stopPropagation();
       // $('#savePopupForm').toggle();
     });
@@ -191,4 +191,3 @@
 
   });
 </g:javascript>
-

@@ -1,7 +1,7 @@
 /**
  * GOKb application javascript file.
  */
-//=require jquery-2.2.0.min
+//=require jquery-3.7.0.min
 //=require jquery.mask
 //=require raphael.min
 //=require morris.min
@@ -104,7 +104,7 @@ jQuery.htmlPrefilter = function( html ) {
     };
 
     // Add some default behaviours we wish to define application wide.
-    $('.confirm-click').click(function(e) {
+    $('.confirm-click').on('click', function(e) {
 
       // The target.
       var target = $(this);

@@ -1,5 +1,5 @@
 $(document).ready(function(){
-  $('#tab-decision-suppport .vote a').click(function(e){
+  $('#tab-decision-suppport .vote a').on('click', function(e){
 
     // The ID.
     var id = $(this).attr('id');
@@ -56,13 +56,13 @@ function setAppliedCriterion(target, component_id, criterion_id, v ,c) {
       if ( !data.changedFrom || data.changedFrom != v ) {
         var selectedCount = target.parents(".DSVote").siblings(".otherVoters").find(".count-" + v);
         var addedNew = 1 + + selectedCount.text();
-        
+
         selectedCount.text(addedNew.toString());
 
         if ( data.changedFrom ) {
           var oldCount = target.parent().next().find('.count-' + data.changedFrom);
           var removedNew = -1 + + oldCount.text();
-          
+
           oldCount.text(removedNew.toString());
         }
       }
