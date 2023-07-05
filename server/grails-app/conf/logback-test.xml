@@ -10,7 +10,6 @@
 
   <logger name="com.k_int" level="DEBUG"/>
   <logger name="org.gokb" level="DEBUG"/>
-  <logger name="gokbg3" level="INFO"/>
 
   <logger name="org.gokb.DomainClassExtender" level="WARN"/>
   <logger name="org.gokb.ClassExaminationService" level="WARN"/>
@@ -39,8 +38,8 @@
   <logger name="org.gokb.cred.RefdataCategory" level="ERROR"/>
   <logger name="org.gokb.cred.Package" level="DEBUG"/>
   <logger name="org.gokb.cred.TitleInstancePackagePlatform" level="DEBUG"/>
-  <logger name="gokbg3.UserDetailsInterceptor" level="ERROR"/>
-  <logger name="gokbg3.PreferencesInterceptor" level="ERROR"/>
+  <logger name="org.gokb.UserDetailsInterceptor" level="ERROR"/>
+  <logger name="org.gokb.PreferencesInterceptor" level="ERROR"/>
 
   <root level="error">
     <appender-ref ref="STDOUT" />

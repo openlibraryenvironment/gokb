@@ -1,4 +1,4 @@
-package gokbg3
+package org.gokb
 
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.acls.model.NotFoundException

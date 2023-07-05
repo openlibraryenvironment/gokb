@@ -11,7 +11,6 @@
 
   <logger name="com.k_int" level="INFO"/>
   <logger name="org.gokb" level="INFO"/>
-  <logger name="gokbg3" level="INFO"/>
 
   <root level="WARN">
     <appender-ref ref="STDOUT" />

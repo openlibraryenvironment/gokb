@@ -1,4 +1,4 @@
-package gokbg3
+package org.gokb
 
 import grails.testing.web.interceptor.InterceptorUnitTest
 import spock.lang.Specification

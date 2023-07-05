@@ -150,6 +150,44 @@ class OaiController {
     log.debug("buildMetadata.... done");
   }
 
+  private def buildHeader(record, builder, result, request) {
+    Boolean cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false))
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    builder.'header'() {
+      identifier("${record.class.name}:${record.id}")
+
+      if (result.oaiConfig.uriPath) {
+        uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${result.oaiConfig.uriPath}/${record.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${result.oaiConfig.uriPath}/${record.uuid}"))
+      }
+
+      uuid(record.uuid)
+      datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? record.lastCachedDate : record.lastUpdated))
+
+      if (record.status == status_deleted) {
+        status('deleted')
+      }
+
+      if (record.class.name == 'Package') {
+        if (!record.global || record.global?.value != 'Local') {
+          set('package:nonlocal')
+        }
+
+        if (record.global) {
+          set("package:${record.global.value.toLowerCase()}")
+        }
+
+        record.curatoryGroups.each {
+          set("package:curator:${it.id}${record.global?.value == 'Local' ? ':local' : ''}")
+        }
+
+        if (record.contentType) {
+          set("package:content:${record.contentType.value.toLowerCase()}")
+        }
+      }
+    }
+  }
+
   def getRecord(result) {
     log.debug("getRecord - ${result}");
 
@@ -158,8 +196,8 @@ class OaiController {
       def errors = []
       def oid = params.identifier
       def record = null
-      def returnAttrs = true
-      def cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false))
+      Boolean returnAttrs = true
+      Boolean cachedPackageResponse = (result.oaiConfig.id == 'packages' && grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false))
       def request_map = params
       def legalClassNames = (result.className == 'org.gokb.cred.TitleInstance' ? ['org.gokb.cred.TitleInstance', 'org.gokb.cred.BookInstance', 'org.gokb.cred.JournalInstance', 'org.gokb.cred.DatabaseInstance', 'org.gokb.cred.OtherInstance'] : [result.className])
       request_map.keySet().removeAll(['controller','action','id'])
@@ -189,7 +227,6 @@ class OaiController {
 
       def writer = new StringWriter()
       def xml = new MarkupBuilder(writer)
-      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
 
       def prefixHandler = result.oaiConfig.schemas[params.metadataPrefix]
@@ -224,17 +261,7 @@ class OaiController {
 
           'GetRecord'() {
             xml.'record'() {
-              xml.'header'() {
-                identifier("${record.class.name}:${record.id}")
-                if (result.oaiConfig.uriPath) {
-                  uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${result.oaiConfig.uriPath}/${record.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${result.oaiConfig.uriPath}/${record.uuid}"))
-                }
-                uuid(record.uuid)
-                datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? record.lastCachedDate : record.lastUpdated))
-                if (record.status == status_deleted) {
-                  status('deleted')
-                }
-              }
+              buildHeader(record, xml, result, request)
               buildMetadata(record, xml, result, params.metadataPrefix, prefixHandler)
             }
           }
@@ -545,6 +572,12 @@ class OaiController {
         def resumption = null
         def metadataPrefix = null
         def errors = []
+        def setFilters = [
+          curator: [],
+          content: [],
+          validity: []
+        ]
+        boolean local_cg_only = false
         def from = null
         def until = null
         def max = result.oaiConfig.pageSize ?: 10
@@ -557,8 +590,30 @@ class OaiController {
         def order_by_clause = cachedPackageResponse ? 'order by o.lastCachedDate' : 'order by o.lastUpdated'
         request_map.keySet().removeAll(['controller','action','id'])
 
+        // Check sets for package requests
+
+        if (result.oaiConfig.id == 'packages') {
+          if (params.list('set') instanceof List) {
+            params.list('set').each { ps ->
+              def set_parts = ps.split(':')
+
+              if (set_parts?.size() > 1 && setFilters.containsKey(set_parts[1])) {
+                setFilters[set_parts[1]] << set_parts[2]
+              }
+
+              if (set_parts.size() == 4 && set_parts[3] == 'local') {
+                local_cg_only = true
+              }
+            }
+          }
+          else {
+            log.debug("${params.list('set')}")
+          }
+        }
+
         if ( params.resumptionToken && ( params.resumptionToken.trim() ) ) {
-          def rtc = params.resumptionToken.split('\\|');
+          def rtc = params.resumptionToken.split('\\|')
+
           log.debug("Got resumption: ${rtc}")
           if ( rtc.length == 4 ) {
             if ( rtc[0].trim() ) {
@@ -608,23 +663,38 @@ class OaiController {
         def query = result.oaiConfig.query
 
         def status_filter = result.oaiConfig.statusFilter
+        def cg = null
 
-        if ( params.curator && result.oaiConfig.curators) {
-          def cg = CuratoryGroup.findByName(params.curator)
-          def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.curators)
+        if (setFilters.curators) {
+          if (setFilters.curators.size() > 1) {
+            errors.add([code:'badArgument', name: 'set', expl: 'Unable to process multiple curator filter sets'])
+            returnAttrs = false
+          }
+          else {
+            def cg_id = setFilters.curators[0].split(':')
 
-          if (cg) {
-            query += ', Combo as cgCombo, CuratoryGroup as cg where cgCombo.toComponent = :cgo and cgCombo.type = :cgtype and cgCombo.fromComponent = o '
-            wClause = true
-            query_params.put('cgo', cg)
-            query_params.put('cgtype', comboType)
-          } else {
+            if (cg_id.size() > 2 && cg_id[2].trim() && cg_id[2].isInteger()) {
+              cg = CuratoryGroup.get(cg_id[2] as int)
+            }
+          }
+        }
+        else if (params.curator && result.oaiConfig.curators) {
+          cg = CuratoryGroup.findByName(params.curator)
+
+          if (!cg) {
             errors.add([code:'badArgument', name: 'curator', expl: 'Unable to lookup Curatory Group.'])
             returnAttrs = false
           }
         }
 
-        if ( params.pkg && result.oaiConfig.pkg ) {
+        if (cg) {
+          query += ', Combo as cgCombo, CuratoryGroup as cg where cgCombo.toComponent = :cgo and cgCombo.type = :cgtype and cgCombo.fromComponent = o '
+          wClause = true
+          query_params.put('cgo', cg)
+          query_params.put('cgtype', RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.curators))
+        }
+
+        if (params.pkg && result.oaiConfig.pkg) {
           def linked_pkg = Package.findByUuid(params.pkg)
 
           if (!linked_pkg) {
@@ -637,13 +707,10 @@ class OaiController {
           }
 
           if (linked_pkg) {
-
-            def comboType = RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.pkg)
-
             query += ', Combo as pkgCombo, Package as pkg where pkgCombo.fromComponent = :lpkg and pkgCombo.type = :cpkgt and pkgCombo.toComponent = o '
             wClause = true
             query_params.put('lpkg', linked_pkg)
-            query_params.put('cpkgt', comboType)
+            query_params.put('cpkgt', RefdataCategory.lookupOrCreate('Combo.Type', result.oaiConfig.pkg))
           }
           else {
             errors.add([code:'badArgument', name: 'pkg', expl: 'Unable to lookup Package.'])
@@ -678,6 +745,95 @@ class OaiController {
           wClause = true
         }
 
+        if (result.oaiConfig.id == 'packages') {
+          if (!local_cg_only) {
+            def vl_objects = []
+            def rdv_local = RefdataCategory.lookup('Package.Global', 'Local')
+            boolean nonlocal_only = false
+
+            setFilters.validity.each { vl ->
+              if (vl == 'nonlocal') {
+                nonlocal_only = true
+              }
+              else {
+                def rdv = RefdataCategory.lookup('Package.Global', vl)
+
+                if (rdv) {
+                  vl_objects << rdv
+                }
+              }
+            }
+
+            if (nonlocal_only) {
+              if(!wClause){
+                query += 'where '
+                wClause = true
+              }
+              else{
+                query += ' and '
+              }
+
+              query += 'o.global != :local'
+              query_params.put('local', rdv_local)
+              wClause = true
+            }
+            else if (vl_objects) {
+              if(!wClause){
+                query += 'where '
+                wClause = true
+              }
+              else{
+                query += ' and '
+              }
+
+              query += 'o.global in (:global)'
+              query_params.put('global', vl_objects)
+              wClause = true
+            }
+          }
+          else {
+            if(!wClause){
+              query += 'where '
+              wClause = true
+            }
+            else{
+              query += ' and '
+            }
+
+            if (val instanceof String) {
+              query += 'o.global = :local'
+              query_params.put('local', rdv_local)
+              wClause = true
+            }
+          }
+
+          def ct_objects = []
+
+          setFilters.content.each { ct ->
+            def rdv = RefdataCategory.lookup('Package.ContentType', vl.replaceAll('_', ' '))
+
+            if (rdv) {
+              vl_objects << rdv
+            }
+          }
+
+          if (ct_objects) {
+            if(!wClause){
+              query += 'where '
+              wClause = true
+            }
+            else{
+              query += ' and '
+            }
+
+            if (val instanceof String) {
+              query += 'o.contentType in (:content)'
+              query_params.put('content', ct_objects)
+              wClause = true
+            }
+          }
+        }
+
         if (status_filter && status_filter.size() > 0) {
           status_filter.eachWithIndex { val, index ->
             if(!wClause){
@@ -695,7 +851,7 @@ class OaiController {
               wClause = true
             }
             else if (val instanceof org.gokb.cred.RefdataValue) {
-              query += 'o.status != ?'
+              query += 'o.status != :status'
               query_params.put('status', val)
               wClause = true
             }
@@ -815,17 +971,7 @@ class OaiController {
               'ListRecords'() {
                 records.each { rec ->
                   mkp.'record'() {
-                    mkp.'header' () {
-                      identifier("${rec.class.name}:${rec.id}")
-                      if (result.oaiConfig.uriPath) {
-                        uri(request.serverPort == 80 ? new URL(request.scheme, request.serverName, "${result.oaiConfig.uriPath}/${rec.uuid}") : new URL(request.scheme, request.serverName, request.serverPort, "${result.oaiConfig.uriPath}/${rec.uuid}"))
-                      }
-                      uuid(rec.uuid)
-                      datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? rec.lastCachedDate : rec.lastUpdated))
-                      if (rec.status == status_deleted) {
-                        status('deleted')
-                      }
-                    }
+                    buildHeader(rec, mkp, result, request)
                     buildMetadata(rec, mkp, result, metadataPrefix, prefixHandler)
                   }
                 }
@@ -861,8 +1007,50 @@ class OaiController {
         'responseDate'( dateFormatService.formatIsoTimestamp(new Date()) )
         'request'('verb':'ListSets', request.requestURL)
 
-        // For now we are not supporting sets...
-        'error'('code' : "noSetHierarchy", "This repository does not support sets" )
+        'ListSets'() {
+          'set'() {
+            'setSpec'('package')
+            'setName'('Package')
+          }
+          'set'() {
+            'setSpec'('package:validity')
+            'setName'('Package Validity range')
+          }
+          'set'() {
+            'setSpec'("package:validity:nonlocal")
+            'setName'("Package validity range is not 'Local'")
+          }
+          RefdataCategory.lookup('Package.Global').each { rdv ->
+            'set'() {
+              'setSpec'("package:validity:${rdv.value.toLowerCase()}")
+              'setName'("Package validity range ${rdv.value}")
+            }
+          }
+          'set'() {
+            'setSpec'('package:content')
+            'setName'('Package content type')
+          }
+          RefdataCategory.lookup('Package.ContentType').each { rdv ->
+            'set'() {
+              'setSpec'("package:content:${rdv.value.toLowerCase()}")
+              'setName'("Package content type ${rdv.value}")
+            }
+          }
+          'set'() {
+            'setSpec'('package:curator')
+            'setName'('Package curator')
+          }
+          CuratoryGroup.list().each { cg ->
+            'set'() {
+              'setSpec'("package:curator:${cg.id}")
+              'setName'("Package curated by '${cg.name}'")
+            }
+            'set'() {
+              'setSpec'("package:curator:${cg.id}:local")
+              'setName'("Local Package curated by '${cg.name}'")
+            }
+          }
+        }
       }
     }
 

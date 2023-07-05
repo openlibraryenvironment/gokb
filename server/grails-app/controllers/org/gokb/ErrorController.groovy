@@ -1,4 +1,4 @@
-package gokbg3
+package org.gokb
 
 import grails.converters.JSON
 import grails.util.Environment

@@ -1,4 +1,4 @@
-package gokbg3
+package org.gokb
 
 import grails.boot.GrailsApp
 import grails.boot.config.GrailsAutoConfiguration

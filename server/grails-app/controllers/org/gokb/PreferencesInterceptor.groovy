@@ -1,4 +1,4 @@
-package gokbg3
+package org.gokb
 
 
 class PreferencesInterceptor {

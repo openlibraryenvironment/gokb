@@ -1,6 +1,5 @@
 package org.gokb.rest
 
-import gokbg3.RegisterController
 import grails.converters.JSON
 import grails.core.GrailsApplication
 import grails.gorm.transactions.Transactional
