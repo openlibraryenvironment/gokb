@@ -251,10 +251,10 @@ jQuery.htmlPrefilter = function( html ) {
             return {results: data.values};
           }
         },
-        initSelection : function (element, callback) {
-          var idv=$(element).val();
-          // console.log("initSelection..%o"+idv,element);
-          var txt=$(element).context.dataset.displayvalue;
+        initSelection: function (element, callback) {
+          var idv = $(element).val();
+          //console.log("initSelection..%o"+idv,element);
+          var txt = $(element)[0].dataset.displayvalue;
           var data = {id: idv, text: txt};
           callback(data);
         }

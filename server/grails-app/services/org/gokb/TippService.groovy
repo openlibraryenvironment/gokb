@@ -608,6 +608,8 @@ class TippService {
             title_class_name
         )
 
+        log.debug("Lookup returned ${found}")
+
         if (found.invalid) {
           log.debug("Skipping Invalid..")
         }
@@ -661,7 +663,7 @@ class TippService {
             titleAugmentService.addPublisher(tipp.publisherName, ti)
           }
 
-          def ti_combo = new Combo(fromComponent: ti, toComponent: tipp, type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')).save(flush: true)
+          new Combo(fromComponent: ti, toComponent: tipp, type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')).save(flush: true)
 
           log.debug("linked TIPP $tipp with TitleInstance $ti")
         }
@@ -916,6 +918,7 @@ class TippService {
 
         comp.conflicts.each { conflict ->
           if (conflict.field == "identifier.namespace") {
+            log.debug("Creating RR for namespace conflict ${conflict}..")
             result = true
             def additionalInfo = [otherComponents: [otherComponent], conflict: conflict]
 
@@ -939,6 +942,7 @@ class TippService {
         }
 
         if (mismatches.size() > 0 && found.to_create) {
+          log.debug("Creating RR on new title ${tipp.title} for id conflicts ${mismatches}")
           result = true
           def additionalInfo = [
             otherComponents: [otherComponent],
@@ -948,7 +952,7 @@ class TippService {
 
           reviewRequestService.raise(
             tipp.title,
-            "Identifier mismatch",
+            "A new title has been created because of conflicts with an existing match!",
             "Title ${comp.object.name} matched, but ingest identifiers ${mismatches} differ from existing ones in the same namespaces.",
             null,
             null,
@@ -958,6 +962,8 @@ class TippService {
           )
         }
         else if (mismatches.size() > 0 && !found.to_create) {
+          log.debug("Creating RR on tipp for id conflicts ${mismatches}")
+
           result = true
           def additionalInfo = [
             otherComponents: [otherComponent],
@@ -965,15 +971,15 @@ class TippService {
             vars: [comp.object.name, mismatches]
           ]
 
-          reviewRequestService.raise(
-            tipp.title,
-            comp.message,
+          def review = reviewRequestService.raise(
+            tipp,
+            "There have been conflicts while linking the TIPP to an existing title!",
             "Check Title identifiers",
             null,
             null,
             (additionalInfo as JSON).toString(),
             RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Secondary Identifier Conflict'),
-            componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
           )
         }
       }
@@ -1015,6 +1021,7 @@ class TippService {
           componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
       )
     }
+    result
   }
 
   def crossCheckIds(def current_tipps, tippInfo) {
@@ -1197,51 +1204,80 @@ class TippService {
     result
   }
 
-  public TitleInstancePackagePlatform updateTippFields(tipp, tippInfo, User user = null) {
+  def convertCoverageItem(c) {
+    def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+    def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+    def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+    def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+    def cov_depth = null
+
+    log.debug("StartDate: ${parsedStart} -> ${startAsDate}, EndDate: ${parsedEnd} -> ${endAsDate}")
+
+    if (c.coverageDepth instanceof String) {
+      cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
+    }
+    else if (c.coverageDepth instanceof Integer) {
+      cov_depth = RefdataValue.get(c.coverageDepth)
+    }
+    else if (c.coverageDepth instanceof Map) {
+      if (c.coverageDepth.id) {
+        cov_depth = RefdataValue.get(c.coverageDepth.id)
+      }
+      else {
+        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
+      }
+    }
+
+    if (!cov_depth) {
+      cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+    }
+
+    def coverage_item = [
+      'startVolume': c.startVolume,
+      'startIssue': c.startIssue,
+      'endVolume': c.endVolume,
+      'endIssue': c.endIssue,
+      'embargo': c.embargo,
+      'coverageDepth': cov_depth,
+      'coverageNote': c.coverageNote,
+      'startDate': startAsDate,
+      'endDate': endAsDate
+    ]
+
+    coverage_item
+  }
+
+  public Boolean existsCoverage(tipp, coverage) {
+    Boolean result = false
+    def mapped_statement = convertCoverageItem(coverage)
+
+    tipp.coverageStatements.each { cs ->
+      boolean matching = true
+
+      mapped_statement.each { k, v ->
+        if (cs[k] != v) {
+          matching = false
+        }
+      }
+
+      if (matching) {
+        result = true
+      }
+    }
+
+    result
+  }
+
+
+  public TitleInstancePackagePlatform updateTippFields(tipp, tippInfo, User user = null, boolean create_coverage = true) {
     componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
-    def cov_list = tippInfo.coverageStatements ?: tippInfo.coverage
 
-    cov_list.each { c ->
-      def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-      def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
-      def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-      def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-      def cov_depth = null
+    if (create_coverage) {
+      def cov_list = tippInfo.coverageStatements ?: tippInfo.coverage
 
-      log.debug("StartDate: ${parsedStart} -> ${startAsDate}, EndDate: ${parsedEnd} -> ${endAsDate}")
-
-      if (c.coverageDepth instanceof String) {
-        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
+      cov_list.each { c ->
+        tipp.addToCoverageStatements(convertCoverageItem(c))
       }
-      else if (c.coverageDepth instanceof Integer) {
-        cov_depth = RefdataValue.get(c.coverageDepth)
-      }
-      else if (c.coverageDepth instanceof Map) {
-        if (c.coverageDepth.id) {
-          cov_depth = RefdataValue.get(c.coverageDepth.id)
-        }
-        else {
-          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
-        }
-      }
-
-      if (!cov_depth) {
-        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
-      }
-
-      def coverage_item = [
-        'startVolume': c.startVolume,
-        'startIssue': c.startIssue,
-        'endVolume': c.endVolume,
-        'endIssue': c.endIssue,
-        'embargo': c.embargo,
-        'coverageDepth': cov_depth,
-        'coverageNote': c.coverageNote,
-        'startDate': startAsDate,
-        'endDate': endAsDate
-      ]
-
-      tipp.addToCoverageStatements(coverage_item)
     }
 
     log.debug("Update simple fields: ${tippInfo}")

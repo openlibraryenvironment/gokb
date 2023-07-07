@@ -37,11 +37,11 @@ class OrgTestSpec extends AbstractAuthSpec {
     if (!http) {
       http = HttpClient.create(new URL(getUrlPath())).toBlocking()
     }
-    def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true)
-    def new_plt_upd = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate").save(flush: true)
     def new_source = Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource").save(flush: true)
     def new_office = Office.findByName("firstTestOffice") ?: new Office(name: "firstTestOffice").save(flush: true)
     def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source, offices:[new_office]).save(flush: true)
+    def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true)
+    def new_plt_upd = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate", provider: patch_org).save(flush: true)
   }
 
   def cleanup() {
@@ -56,6 +56,9 @@ class OrgTestSpec extends AbstractAuthSpec {
     }
     if (Org.findByName("TestOrgPost")) {
         Org.findByName("TestOrgPost")?.refresh().expunge()
+    }
+    if (Org.findByName("TestOrgPatch")) {
+        Org.findByName("TestOrgPatch")?.refresh().expunge()
     }
     if (Org.findByName("TestOrgUpdateNew")) {
       Org.findByName("TestOrgUpdateNew")?.refresh().expunge()
@@ -171,7 +174,7 @@ class OrgTestSpec extends AbstractAuthSpec {
     Map update_record = [
       name             : "TestOrgUpdateNew",
       ids              : [
-        [namespace: "global", value: "test-org-id-val-new"]
+        [namespace: "viaf", value: "4870153184551227100006"]
       ],
       providedPlatforms: [updated_plt.id],
       offices: [
@@ -196,10 +199,11 @@ class OrgTestSpec extends AbstractAuthSpec {
     expect:
 
     resp.body().name == "TestOrgUpdateNew"
-    resp.body()._embedded?.ids?.size() == 1
-    resp.body()._embedded?.providedPlatforms?.size() == 1
-    resp.body()._embedded?.offices.size() == 2
-    resp.body()._embedded?.offices*.function.name.contains("Other")
+    resp.body()._embedded.ids?.size() == 1
+    resp.body()._embedded.providedPlatforms?.size() == 1
+    resp.body()._embedded.providedPlatforms[0].name == updated_plt.name
+    resp.body()._embedded.offices?.size() == 2
+    resp.body()._embedded.offices*.function.name.contains("Other")
   }
 
   void "test source delete"() {
@@ -211,9 +215,6 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     Map update_record = [
       name: "TestOrgUpdateSource",
-      ids: [
-        [namespace: "global", value: "test-org-id-val-new"]
-      ],
       source: null
     ]
 
@@ -230,7 +231,6 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     resp.body().name == "TestOrgUpdateSource"
     resp.body().source == null
-    resp.body()._embedded?.ids?.size() == 1
-//    resp.body()._embedded?.providedPlatforms?.size() == 1
+    resp.body()._embedded?.providedPlatforms?.size() == 1
   }
 }

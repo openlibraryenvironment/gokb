@@ -70,6 +70,7 @@ class FTUpdateService {
         result.providerUuid = kbc.provider?.uuid ?: ""
         result.nominalPlatform = kbc.nominalPlatform ? kbc.nominalPlatform.getLogEntityId() : ""
         result.nominalPlatformName = kbc.nominalPlatform?.name ?: ""
+        result.nominalPlatformUrl = kbc.nominalPlatform?.primaryUrl ?: ""
         result.nominalPlatformUuid = kbc.nominalPlatform?.uuid ?: ""
         result.scope = kbc.scope?.value ?: ""
         result.global = kbc.global?.value ?: ""
@@ -461,6 +462,25 @@ class FTUpdateService {
     running = false
   }
 
+  synchronized def doBackgroundReindex() {
+    log.debug("doFTUpdate")
+    log.debug("Execute IndexUpdateJob starting at ${new Date()}")
+    def esclient = ESWrapperService.getClient()
+    try {
+      updateES(esclient, org.gokb.cred.Package.class, true)
+      updateES(esclient, org.gokb.cred.Org.class, true)
+      updateES(esclient, org.gokb.cred.Platform.class, true)
+      updateES(esclient, org.gokb.cred.JournalInstance.class, true)
+      updateES(esclient, org.gokb.cred.DatabaseInstance.class, true)
+      updateES(esclient, org.gokb.cred.OtherInstance.class, true)
+      updateES(esclient, org.gokb.cred.BookInstance.class, true)
+      updateES(esclient, org.gokb.cred.TitleInstancePackagePlatform.class, true)
+    }
+    catch (Exception e) {
+      log.error("Problem", e)
+    }
+    running = false
+  }
 
   def updateSingleItem(kbc) {
     def idx_record = buildEsRecord(kbc)
@@ -477,7 +497,7 @@ class FTUpdateService {
   }
 
 
-  def updateES(esClient, domain) {
+  def updateES(esClient, domain, boolean reindex = false) {
     log.debug("updateES(${domain}...)")
     cleanUpGorm()
     def count = 0
@@ -486,13 +506,15 @@ class FTUpdateService {
       def latest_ft_record = null
       def highest_timestamp = 0
       def highest_id = 0
+      def activity_type = reindex ? 'ESReindex' : 'ESIndex'
+
       FTControl.withTransaction {
-        latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name, 'ESIndex')
+        latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name, activity_type)
 
         log.debug("result of findByDomain: ${domain} ${latest_ft_record}")
         if (!latest_ft_record) {
-          latest_ft_record = new FTControl(domainClassName: domain.name, activity: 'ESIndex', lastTimestamp: 0, lastId: 0).save(flush: true, failOnError: true)
-          log.debug("Create new FT control record, as none available for ${domain.name}")
+          latest_ft_record = new FTControl(domainClassName: domain.name, activity: activity_type, lastTimestamp: 0, lastId: 0).save(flush: true, failOnError: true)
+          log.debug("Create new ${activity_type} FT control record, as none available for ${domain.name}")
         }
         else {
           highest_timestamp = latest_ft_record.lastTimestamp

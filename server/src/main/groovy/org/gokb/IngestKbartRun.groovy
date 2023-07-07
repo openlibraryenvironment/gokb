@@ -561,6 +561,7 @@ class IngestKbartRun {
 
     def result = [status: null, reviewCreated: false]
     TitleInstancePackagePlatform tipp = null
+    boolean new_coverage = true
 
     def tipp_map = [
       url: the_kbart.title_url?.trim(),
@@ -694,8 +695,13 @@ class IngestKbartRun {
           matched_tipps[tipp.id] = 1
 
           if (result != 'created' && result != 'partial') {
-            TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = :tipp", [tipp: tipp])
-            tipp.refresh()
+            if (tipp.coverageStatements?.size() > 1 || (tipp.coverageStatements?.size() == 1 && !tippService.existsCoverage(tipp, tipp_map.coverageStatements[0]))) {
+              TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = :tipp", [tipp: tipp])
+              tipp.refresh()
+            }
+            else {
+              new_coverage = false
+            }
           }
         }
         else {
@@ -761,7 +767,7 @@ class IngestKbartRun {
     }
 
     if (!dryRun) {
-      tipp = tippService.updateTippFields(tipp, tipp_map, user)
+      tipp = tippService.updateTippFields(tipp, tipp_map, user, new_coverage)
       tipp.refresh()
 
       // log.debug("Values updated, set lastSeen");
@@ -778,7 +784,7 @@ class IngestKbartRun {
       log.debug("TIPP ${tipp.id} info check: ${tipp.name}, ${tipp.url}")
 
       if (tipp.validate()) {
-        if (ingest_systime) {
+        if (ingest_systime && tipp.lastUpdated.getTime() > ingest_systime) {
           log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date} (${tipp.lastSeen} -> ${ingest_systime})")
           tipp.lastSeen = ingest_systime
         }

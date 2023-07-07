@@ -41,8 +41,8 @@ class ComponentController {
       IdentifierNamespace ns = genericOIDService.resolveOID(params.id)
 
       if (ns) {
-        KBComponent.withNewSession { session ->
-          log.debug("fetching results for ${ns} ..")
+        Identifier.withNewSession { session ->
+          log.debug("fetching results for ${ns} (${params.componentType})..")
 
           RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
           RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
@@ -58,8 +58,8 @@ class ComponentController {
             def query = new StringWriter()
             def cqry = new StringWriter()
 
-            query.write('SELECT ti.kbc_id FROM ')
-            cqry.write('SELECT count(ti.kbc_id) FROM ')
+            query.write('SELECT kbc.kbc_id FROM ')
+            cqry.write('SELECT count(kbc.kbc_id) FROM ')
 
             if (params.componentType && knownIdentifiedTypes[params.componentType]) {
               query.write(knownIdentifiedTypes[params.componentType] + ' NATURAL JOIN ')
@@ -69,8 +69,10 @@ class ComponentController {
             query.write(staticClause)
             cqry.write(staticClause)
 
-            query.write(' order by ti.kbc_id limit :limit offset :offset ;')
+            query.write(' order by kbc.kbc_id limit :limit offset :offset ;')
             cqry.write(';')
+
+            log.debug("Fetching count with ${cqry.toString()}")
 
             final singleTitlesCount = session.createSQLQuery(cqry.toString())
               .setParameter('deleted', status_deleted)

@@ -305,6 +305,7 @@ class BootStrap {
                 [
                     value: 'ezb',
                     name: 'EZB-ID',
+                    targetType: targetTypeJournal,
                     pattern: "^\\d+\$",
                     baseUrl: "https://ezb.uni-regensburg.de/detail.phtml?jour_id="
                 ]

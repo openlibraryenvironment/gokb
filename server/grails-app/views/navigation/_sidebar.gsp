@@ -48,8 +48,7 @@
 
             </ul> <!-- /.nav-second-level -->
           </li>
-          <li><g:link controller="welcome"><i class="fa fa-tasks fa-fw"></i> To Do<span class="fa arrow"></span></g:link>
-
+          <li><a href="#"><i class="fa fa-tasks fa-fw"></i> To Do<span class="fa arrow"></span></a>
             <ul class="nav nav-second-level">
               <li><g:link controller="search" action="index"
                       params="[

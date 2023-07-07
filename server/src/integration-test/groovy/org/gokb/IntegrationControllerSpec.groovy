@@ -69,6 +69,7 @@ class IntegrationControllerSpec extends Specification {
     CuratoryGroup.findByName('TestGroup1')?.expunge()
     Org.findByName("American Chemical Society")?.expunge()
     Org.findByName('ACS TestOrg')?.expunge()
+    Org.findByName('TestOrgAcs')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
     ['TestTokenPackageUpdate',
      'American Chemical Society: ACS Legacy Archives: CompleteDates',
@@ -121,7 +122,7 @@ class IntegrationControllerSpec extends Specification {
     Map json_record = [
         "identifiers": [
             [
-                "type" : "global",
+                "type" : "dbpedia",
                 "value": "org-test-id-acs"
             ]
         ],
