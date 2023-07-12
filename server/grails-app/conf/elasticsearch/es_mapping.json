@@ -201,7 +201,7 @@
           "type": "keyword",
           "normalizer": "lowercase"
         },
-        "baseurl": {
+        "baseUrl": {
           "type": "keyword",
           "normalizer": "lowercase"
         }
