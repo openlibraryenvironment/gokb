@@ -367,9 +367,9 @@ class OrgService {
 
         if (!dupes) {
           new Combo(fromComponent: office_obj, toComponent: org, type: OFFICE_ORG, status: STATUS_ACTIVE).save(flush: true)
-          new_offices << office_obj
           result.changed = true
         }
+        new_offices << office_obj
       }
       else {
         result.errors << [message: "Unable to lookup or create office!", baddata: office]
