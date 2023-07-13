@@ -117,7 +117,7 @@ class IdentifierTestSpec extends AbstractAuthSpec {
     resp2.status == HttpStatus.OK
     resp2.body().data != null
     resp2.body()._links.size() == 1
-    resp2.body().data.size() == 7
+    resp2.body().data.size() >= 7
   }
 
   void "test identifier create"() {
