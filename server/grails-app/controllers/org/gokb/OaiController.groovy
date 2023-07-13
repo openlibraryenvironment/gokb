@@ -168,13 +168,13 @@ class OaiController {
         status('deleted')
       }
 
-      if (record.class.name == 'Package') {
+      if (record.class.simpleName == 'Package') {
         if (!record.global || record.global?.value != 'Local') {
-          set('package:nonlocal')
+          set('package:validity:nonlocal')
         }
 
         if (record.global) {
-          set("package:${record.global.value.toLowerCase()}")
+          set("package:validity:${record.global.value.toLowerCase()}")
         }
 
         record.curatoryGroups.each {
