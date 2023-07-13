@@ -199,6 +199,8 @@ environments:
         cache:
             headers:
                 enabled: false
+        logging:
+            config: classpath:logback-development.xml
     test:
         dataSource:
             dbCreate: create-drop
@@ -262,6 +264,8 @@ environments:
                 enabled: false
         javamelody:
             disabled: true
+        logging:
+            config: classpath:logback-test.xml
     production:
         dataSource:
             dbCreate: update
@@ -318,6 +322,8 @@ environments:
                     platforms: gokbplatforms
             centralGroups:
                 JournalInstance: 'Journal Central Curators'
+        logging:
+            config: classpath:logback-prod.xml
 gokb:
     defaultCuratoryGroup: Local
     ftupdate_enabled: true

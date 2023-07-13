@@ -14,7 +14,7 @@ class DecisionSupportController {
        sum(case dsac.value.value when 'Green' then 1 else 0 end),
        sum(case dsac.value.value when 'Red' then 1 else 0 end),
        sum(case dsac.value.value when 'Amber' then 1 else 0 end)
-from DSCriterion as c left outer join c.appliedCriterion as dsac with dsac.appliedTo.id = ?
+from DSCriterion as c left outer join c.appliedCriterion as dsac with dsac.appliedTo.id = :rid
 group by c.id
 order by c.id
 ''';
@@ -88,7 +88,7 @@ order by c.id
     KBComponent.executeQuery("select p " + qry,[q:q], qp).each { row ->
       // Select all the criteria we need
       // log.debug("Process row: ${row.name}");
-      def row_info = DSCriterion.executeQuery(CRITERIA_QUERY,[row.id]);
+      def row_info = DSCriterion.executeQuery(CRITERIA_QUERY,[rid: row.id]);
 
 
       // log.debug("Row info: ${row_info}");
@@ -115,7 +115,7 @@ order by c.id
       // log.debug("result ${thisrow}");
       rowdata.add(thisrow);
     }
-    
+
 
 
     [

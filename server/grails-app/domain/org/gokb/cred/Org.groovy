@@ -346,8 +346,8 @@ class Org extends KBComponent {
   def deprecateDelete(context) {
     log.debug("deprecateDelete");
     def result = [:]
-    Combo.executeUpdate("delete from Combo where toComponent.id = ?", [this.getId()]);
-    Combo.executeUpdate("delete from Combo where fromComponent.id = ?", [this.getId()]);
+    Combo.executeUpdate("delete from Combo where toComponent.id = :oid", [oid: this.getId()]);
+    Combo.executeUpdate("delete from Combo where fromComponent.id = :oid", [oid: this.getId()]);
     result
   }
 }

@@ -652,6 +652,10 @@ where cp.owner = :c
     if (user != null) {
       this.lastUpdatedBy = user
     }
+
+    if (this.isDirty('status') && this.status?.value == 'Deleted') {
+      this.reviewRequests*.status = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
+    }
   }
 
   @Transient

@@ -194,7 +194,7 @@ class ComponentLookupService {
             catch (ValidationException ve) {
               log.debug("Caught validation exception: ${ve.message}")
               if (ve.message.contains('already exists')) {
-                def dupe = Identifier.executeQuery("from Identifier where normname = ? and namespace = ?",[norm_id, namespace])
+                def dupe = Identifier.executeQuery("from Identifier where normname = :nid and namespace = :ns",[nid: norm_id, ns: namespace])
 
                 if (dupe.size() == 1) {
                   identifier = dupe[0]
