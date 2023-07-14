@@ -1,62 +1,73 @@
 package org.gokb
 
-import groovy.util.slurpersupport.NodeChild
+import groovy.xml.XmlSlurper
+import groovy.xml.slurpersupport.NodeChild
 
-import static groovyx.net.http.Method.*
-import groovyx.net.http.*
+import io.micronaut.core.type.Argument
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.BlockingHttpClient
+import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.http.uri.UriBuilder
 
 class EzbAPIService {
   static transactional = false
   def endpoint = 'rzblx1'
   def grailsApplication
 
-  def config = [
-    baseUrl: [
-      rzblx1: "http://rzblx1.uni-regensburg.de/ezeit/searchres.phtml?bibid=HBZ&"
+  BlockingHttpClient http
+
+  static Map CONFIG = [
+    baseUrl:  "http://ezb.ur.de",
+    path: "/ezeit/searchres.phtml",
+    queryByZdbId: "jq_type1=ZD&jq_term1=",
+    queryByIssn: "jq_type1=IS&jq_term1=",
+    qtype: [
+      zdb: "ZD",
+      issn: "IS"
     ],
-    queryByZdbId: [
-      rzblx1: "jq_type1=ZD&jq_term1="
-    ],
-    queryByIssn: [
-      rzblx1: "jq_type1=IS&jq_term1="
-    ],
-    xmloutput: [
-      rzblx1: "1"
-    ],
-    xmlv: [
-      rzblx1: "3"
-    ]
+    xmloutput: "1",
+    xmlv: "3"
   ]
 
   @javax.annotation.PostConstruct
   def init() {
     log.debug("Initialising rest endpoint for EZB service...")
+    http = HttpClient.create(new URL(CONFIG.baseUrl)).toBlocking()
   }
 
   def lookup(String name, def ids) {
     def candidates = []
     ids.each { id ->
-      String queryTerm
+      String type_val
+
       if (id.namespace.value in ['eissn', 'issn']) {
-        queryTerm = config.queryByIssn[endpoint]
+        type_val = CONFIG.qtype.issn
       }
       else if (id.namespace.value == 'zdb'){
-        queryTerm = config.queryByZdbId[endpoint]
+        type_val = CONFIG.qtype.zdb
       }
-      if (queryTerm) {
+      if (type_val) {
         try {
-          String uri = config.baseUrl[endpoint] + queryTerm + id.value +
-              "&hits_per_page=10&xmloutput=${config.xmloutput[endpoint]}&xmlv=${config.xmlv[endpoint]}"
-          new RESTClient(uri).request(GET, ContentType.XML) { request ->
-            response.success = { resp, data ->
-              log.debug("Got " + data.records.record.size() + " for " + id.namespace.value + ": " + id.value)
-              if (!data.children().isEmpty()) {
-                candidates = data.'**'.findAll(){ node -> node.name() == 'journal' }
-              }
-            }
-            response.failure = { resp ->
-              log.debug("Got no results for " + id.namespace.value + " : " + id.value)
-            }
+          URI uri = UriBuilder.of(CONFIG.baseUrl)
+            .path(CONFIG.path)
+            .queryParam('version', CONFIG.version)
+            .queryParam('jq_type1', type_val)
+            .queryParam('xmloutput', CONFIG.xmloutput)
+            .queryParam('xmlv', CONFIG.xmlv)
+            .queryParam('hits_per_page', "10")
+            .queryParam('jq_term1', id.value)
+            .build()
+
+          HttpRequest request = HttpRequest.GET(uri)
+          HttpResponse resp = http.exchange(request, String)
+
+          def data = new XmlSlurper().parseText(resp.body())
+
+          if (data.ezb_alphabetical_list_searchresult?.alphabetical_order?.journals?.journal?.size() > 0) {
+            candidates = data.'**'.findAll(){ node -> node.name() == 'journal' }
           }
         }
         catch ( Exception e ) {

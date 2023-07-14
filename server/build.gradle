@@ -10,7 +10,7 @@ buildscript {
     dependencies {
         classpath "org.grails:grails-gradle-plugin:$grailsGradlePluginVersion"
         classpath "org.grails.plugins:hibernate5:${gormVersion-".RELEASE"}"
-        classpath 'com.bertramlabs.plugins:asset-pipeline-gradle:4.1.0'
+        classpath 'com.bertramlabs.plugins:asset-pipeline-gradle:4.3.0'
         classpath "com.bmuschko:gradle-docker-plugin:6.7.0"
         classpath "com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1"
         classpath "gradle.plugin.com.github.erdi.webdriver-binaries:webdriver-binaries-gradle-plugin:2.7"
@@ -105,31 +105,32 @@ dependencies {
     implementation 'org.grails.plugins:spring-security-ui:4.0.0.M1'
     implementation 'org.grails.plugins:spring-security-rest:3.0.1'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
-    implementation 'com.google.guava:guava:32.0.1-jre'
+    implementation 'com.google.guava:guava:32.1.1-jre'
     implementation 'commons-fileupload:commons-fileupload:1.5'
     implementation 'org.pac4j:pac4j-core:5.7.1'
 
-    implementation 'org.apache.httpcomponents:httpcore:4.4.14'
-    implementation 'commons-io:commons-io:2.11.0'
-    implementation 'org.apache.commons:commons-compress:1.21'
+    implementation 'org.apache.httpcomponents:httpcore:4.4.16'
+    implementation 'commons-io:commons-io:2.13.0'
+    implementation 'org.apache.commons:commons-compress:1.23.0'
     implementation 'commons-validator:commons-validator:1.7'
-    implementation 'com.opencsv:opencsv:5.6'
+    implementation 'com.opencsv:opencsv:5.7.1'
     implementation 'org.codehaus.groovy.modules.http-builder:http-builder:0.7.1'
-    implementation 'com.github.ladutsko:isbn-core:1.1.0'
-    implementation 'joda-time:joda-time:2.10.14'
-    implementation 'org.opensearch:opensearch:2.4.1'
-    implementation 'org.opensearch.client:opensearch-rest-high-level-client:2.4.1'
+    implementation 'com.github.ladutsko:isbn-core:1.2.0'
+    implementation 'joda-time:joda-time:2.12.5'
+    implementation 'org.opensearch:opensearch:2.8.0'
+    implementation 'org.opensearch.client:opensearch-rest-high-level-client:2.8.0'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.1'
     implementation 'org.locationtech.spatial4j:spatial4j:0.8'
-    implementation 'org.slf4j:log4j-over-slf4j:2.0.3'
-    implementation 'org.apache.tika:tika-core:2.4.1'
+    implementation 'org.slf4j:log4j-over-slf4j:2.0.7'
+    implementation 'org.apache.tika:tika-core:2.8.0'
     implementation 'dk.glasius:external-config:3.1.1'
 
-    assets 'com.bertramlabs.plugins:less-asset-pipeline:4.1.0'
+    assets 'com.bertramlabs.plugins:less-asset-pipeline:4.3.0'
 
     implementation "io.micronaut:micronaut-http-client"
     implementation 'io.micronaut.xml:micronaut-jackson-xml:3.2.0'
     implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
-    implementation 'org.postgresql:postgresql:42.5.1'
+    implementation 'org.postgresql:postgresql:42.6.0'
     runtimeOnly "com.h2database:h2"
     runtimeOnly "org.apache.tomcat:tomcat-jdbc"
 

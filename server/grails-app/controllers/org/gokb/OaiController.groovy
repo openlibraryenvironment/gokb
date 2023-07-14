@@ -190,9 +190,10 @@ class OaiController {
 
   def getRecord(result) {
     log.debug("getRecord - ${result}");
+    response.contentType = "text/xml"
+    response.setCharacterEncoding("UTF-8");
 
     try {
-
       def errors = []
       def oid = params.identifier
       def record = null
@@ -225,52 +226,54 @@ class OaiController {
         returnAttrs = false
       }
 
-      def writer = new StringWriter()
-      def xml = new MarkupBuilder(writer)
+      def out = response.outputStream
+
+      out.withWriter { writer ->
+        def xml = new StreamingMarkupBuilder()
 
 
-      def prefixHandler = result.oaiConfig.schemas[params.metadataPrefix]
+        def prefixHandler = result.oaiConfig.schemas[params.metadataPrefix]
 
-      log.debug("Using prefixHandler ${prefixHandler}")
+        log.debug("Using prefixHandler ${prefixHandler}")
 
-      if( !params.metadataPrefix || !prefixHandler ) {
-        errors.add([code:'badArgument', name: 'metadataPrefix', expl: 'Metadata format missing or not supported'])
-        returnAttrs = false
-      }
-
-      log.debug("prefix handler for ${params.metadataPrefix} is ${params.metadataPrefix}");
-
-      xml.'OAI-PMH'('xmlns' : 'http://www.openarchives.org/OAI/2.0/',
-      'xmlns:xsi' : 'http://www.w3.org/2001/XMLSchema-instance',
-      'xsi:schemaLocation' : 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
-        'responseDate'(dateFormatService.formatIsoTimestamp(new Date()) )
-        if (errors) {
-          if (!returnAttrs) {
-            'request'(request_map, request.requestURL)
-          }
-          else {
-            'request'(request.requestURL)
-          }
-
-          errors.each { er ->
-            'error' (code: er.code, parameter: er.name, er.expl)
-          }
+        if( !params.metadataPrefix || !prefixHandler ) {
+          errors.add([code:'badArgument', name: 'metadataPrefix', expl: 'Metadata format missing or not supported'])
+          returnAttrs = false
         }
-        else{
-          'request'(request_map, request.requestURL)
 
-          'GetRecord'() {
-            xml.'record'() {
-              buildHeader(record, xml, result, request)
-              buildMetadata(record, xml, result, params.metadataPrefix, prefixHandler)
+        log.debug("prefix handler for ${params.metadataPrefix} is ${params.metadataPrefix}");
+
+        def resp =  { mkp ->
+          'OAI-PMH'('xmlns':'http://www.openarchives.org/OAI/2.0/',
+          'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
+          'xsi:schemaLocation':'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd') {
+            'responseDate'( dateFormatService.formatIsoTimestamp(new Date()) )
+
+            if(errors) {
+              if (returnAttrs) {
+                'request'(request_map, request.requestURL)
+              }else {
+                'request'(request.requestURL)
+              }
+
+              errors.each { er ->
+                'error' (code: er.code, parameter: er.name, er.expl)
+              }
+            }
+            else {
+              'request'(request_map, request.requestURL)
+              'GetRecord'() {
+                mkp.'record'() {
+                  buildHeader(record, mkp, result, request)
+                  buildMetadata(record, mkp, result, params.metadataPrefix, prefixHandler)
+                }
+              }
             }
           }
         }
+
+        writer << xml.bind(resp)
       }
-
-      log.debug("Created XML, write");
-
-      render(text: writer.toString(), contentType: "text/xml", encoding: "UTF-8")
     }
     catch (java.io.IOException e) {
       log.debug("Request cancelled ..")
