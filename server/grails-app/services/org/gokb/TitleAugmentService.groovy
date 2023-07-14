@@ -41,8 +41,6 @@ class TitleAugmentService {
         def existing_multiple = ReviewRequest.executeQuery("from ReviewRequest as rr where rr.componentToReview = :ti and rr.stdDesc = :type", [ti: titleInstance, type: rr_multiple])
         def candidates = zdbAPIService.lookup(titleInstance.name, titleInstance.ids)
 
-        log.info("Got result $candidates")
-
         if (candidates.size() == 1) {
           if (num_existing_zdb_ids == 0) {
             def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0].id)
@@ -240,7 +238,6 @@ class TitleAugmentService {
           def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
           titleInstance.ids << new_id
           titleInstance.save(flush: true)
-          log.info("Added new EZB-ID ${new_id}.")
         }
         else if (ezbCandidates.size() == 0){
           // no EZB match ==> raise ReviewRequest with type Information

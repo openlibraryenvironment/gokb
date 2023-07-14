@@ -34,7 +34,7 @@ class EzbAPIService {
 
   @javax.annotation.PostConstruct
   def init() {
-    log.debug("Initialising rest endpoint for EZB service...")
+    log.info("Initialising rest endpoint for EZB service...")
     http = HttpClient.create(new URL(CONFIG.baseUrl)).toBlocking()
   }
 
