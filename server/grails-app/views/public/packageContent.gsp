@@ -80,12 +80,12 @@
                 <td>
                   <ul>
                     <g:each in="${t.ids}" var="id">
-                      <li><strong>${id.namespace.value}</strong> : ${id.value}</li>
+                      <li><strong>${id.namespace}</strong> : ${id.value}</li>
                     </g:each>
                   </ul>
                 </td>
                 <td>
-                  ${t.coverageDepth?.value}<br/>${t.coverageNote}
+                  ${t.coverageDepth}<br/>${t.coverageNote}
                 </td>
               </tr>
             </g:each>

@@ -882,34 +882,43 @@ class TippService {
     if (found.invalid) {
       result = true
       def additionalInfo = [invalidIds: found.invalid]
+      def type_ii = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Indentifiers")
+      def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type", [tid: tipp, type: type_ii])[0]
 
-      reviewRequestService.raise(
-          tipp,
-          "Invalid identifiers found",
-          "Check Component Identifiers.".toString(),
-          null,
-          null,
-          (additionalInfo as JSON).toString(),
-          RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Indentifiers"),
-          componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
-      )
+      if (existing_rrs == 0) {
+        reviewRequestService.raise(
+            tipp,
+            "Invalid identifiers found",
+            "Check Component Identifiers.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            type_ii,
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
+        )
+      }
     }
     else if (found.matches.size > 1 && !tipp.title) {
       result = true
-      def additionalInfo = [otherComponents: []]
-      found.matches.each { comp ->
-        additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid, conflicts: comp.conflicts]
+      def type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
+      def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type", [tid: tipp, type: type_atm])[0]
+
+      if (num_existing == 0) {
+        def additionalInfo = [otherComponents: []]
+        found.matches.each { comp ->
+          additionalInfo.otherComponents << [oid: "${comp.object.class.name}:${comp.object.id}", name: comp.object.name, id: comp.object.id, uuid: comp.object.uuid, conflicts: comp.conflicts]
+        }
+        reviewRequestService.raise(
+            tipp,
+            "TIPP matched several titles",
+            "TIPP ${tipp.name} coudn't be linked.".toString(),
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            type_atm,
+            componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
+        )
       }
-      reviewRequestService.raise(
-          tipp,
-          "TIPP matched several titles",
-          "TIPP ${tipp.name} coudn't be linked.".toString(),
-          null,
-          null,
-          (additionalInfo as JSON).toString(),
-          RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches"),
-          componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
-      )
     }
     else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
       found.matches.each { comp ->
@@ -1317,7 +1326,7 @@ class TippService {
       ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
     }
 
-    if (tipp.accessEndDate < new Date()) {
+    if (tipp.accessEndDate && tipp.accessEndDate < new Date()) {
       tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
     }
     else if (date_first_online && date_first_online > LocalDateTime.now()) {

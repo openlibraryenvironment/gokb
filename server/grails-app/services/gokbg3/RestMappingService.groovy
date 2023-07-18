@@ -59,12 +59,13 @@ class RestMappingService {
 
   /**
    *  mapObjectToJson : Maps an domain class object to JSON based on its jsonMapping config.
-   * @param obj : The object to be mapped
+   * @param proxy : The object to be mapped
    * @param params : The map of request parameters
    */
 
-  def mapObjectToJson(obj, params, def user = null) {
+  def mapObjectToJson(proxy, params, def user = null) {
     log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
+    def obj = ClassUtils.deproxy(proxy)
     def result = [:]
     def embed_active = params['_embed']?.split(',') ?: []
     def include_list = params['_include']?.split(',') ?: null
@@ -77,9 +78,9 @@ class RestMappingService {
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
 
-    jsonMap = KBComponent.has(ClassUtils.deproxy(obj), 'jsonMapping') ? obj.jsonMapping : null
+    jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
 
-    if (KBComponent.has(ClassUtils.deproxy(obj), "restPath") && !jsonMap?.ignore?.contains('_links')) {
+    if (KBComponent.has(obj, "restPath") && !jsonMap?.ignore?.contains('_links')) {
       result['_links'] = [:]
       result['_links']['self'] = ['href': base + obj.restPath + "/${obj.id}"]
 

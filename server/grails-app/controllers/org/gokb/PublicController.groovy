@@ -62,7 +62,26 @@ class PublicController {
         def offset = params.offset ? params.int('offset') : 0
 
         result.titleCount = TitleInstancePackagePlatform.executeQuery('select count(tipp.id) '+TIPPS_QRY, [pkg: result.pkgId, ct: tipp_combo_rdv, cs: status_current])[0]
-        result.tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id', [pkg: result.pkgId, ct: tipp_combo_rdv, cs: status_current], [offset: offset, max:10])
+        result.tipps = []
+
+        def tipps = TitleInstancePackagePlatform.executeQuery('select tipp '+TIPPS_QRY+' order by tipp.id', [pkg: result.pkgId, ct: tipp_combo_rdv, cs: status_current], [offset: offset, max:10, readOnly: true])
+
+        tipps.each { t ->
+          Map tobj = [
+            name: t.name,
+            coverageDepth: t.coverageDepth?.value ?: null,
+            ids: []
+          ]
+
+          t.ids.each { i ->
+            def ido = Identifier.get(i.id)
+
+            tobj.ids << [value: ido.value, namespace: IdentifierNamespace.get(ido.namespace.id).value]
+          }
+
+          result.tipps << tobj
+        }
+
         log.debug("Tipp qry done ${result.tipps?.size()}")
       }
     }

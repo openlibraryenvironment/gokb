@@ -535,13 +535,15 @@ class PackageService {
               }
 
               if (inRange) {
-                if (!titlesOne[tipp.title.id]){
-                  titlesOne[tipp.title.id] = [id: tipp.title.id, name: tipp.title.name, tipps: []]
+                def ti = ClassUtils.deproxy(tipp.title)
+
+                if (!titlesOne[ti.id]){
+                  titlesOne[ti.id] = [id: ti.id, name: ti.name, tipps: []]
                   totals.one.titles++
                 }
 
                 totals.one.tipps++
-                titlesOne[tipp.title.id]['tipps'] << restMappingService.mapObjectToJson(tipp, tipp_params)
+                titlesOne[ti.id]['tipps'] << restMappingService.mapObjectToJson(tipp, tipp_params)
               }
               currentOffset++
             }
@@ -594,15 +596,17 @@ class PackageService {
               }
 
               if (inRange) {
-                if (!titlesTwo[tipp.title.id]){
-                  titlesTwo[tipp.title.id] = [id: tipp.title.id, name: tipp.title.name, tipps: []]
+                def ti = ClassUtils.deproxy(tipp.title)
+
+                if (!titlesTwo[ti.id]){
+                  titlesTwo[ti.id] = [id: ti.id, name: ti.name, tipps: []]
                   totals.two.titles++
                 }
 
                 totals.two.tipps++
-                titlesTwo[tipp.title.id]['tipps'] << restMappingService.mapObjectToJson(tipp, tipp_params)
+                titlesTwo[ti.id]['tipps'] << restMappingService.mapObjectToJson(tipp, tipp_params)
 
-                if (!titlesOne[tipp.title.id]) {
+                if (!titlesOne[ti.id]) {
                   if (full) {
                     result['new'] << restMappingService.mapObjectToJson(tipp, tipp_params)
                   }
@@ -1381,25 +1385,26 @@ class PackageService {
               while (tipps.next()) {
                 def tipp_id = tipps.get(0);
                 TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
+                def ti = ClassUtils.deproxy(tipp.title)
 
                 if (tipp.coverageStatements?.size() > 0) {
                   tipp.coverageStatements.each { tcs ->
                     writer.write(
                         sanitize(tipp.getId()) + '\t' +
                             sanitize(tipp.url) + '\t' +
-                            sanitize(tipp.title?.getId()) + '\t' +
-                            sanitize(tipp.name ?: tipp.title?.name) + '\t' +
+                            sanitize(ti?.getId()) + '\t' +
+                            sanitize(tipp.name ?: ti?.name) + '\t' +
                             sanitize(tipp.status.value) + '\t' +
-                            sanitize(tipp.title?.getCurrentPublisher()?.name) + '\t' +
-                            sanitize(tipp.title?.imprint?.name) + '\t' +
-                            sanitize(tipp.title?.publishedFrom) + '\t' +
-                            sanitize(tipp.title?.publishedTo) + '\t' +
-                            sanitize(tipp.title?.medium?.value) + '\t' +
-                            sanitize(tipp.title?.OAStatus?.value) + '\t' +
-                            sanitize(tipp.title?.continuingSeries?.value) + '\t' +
-                            sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title?.getIdentifierValue('ISSN')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title?.getIdentifierValue('eISSN')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title?.getIdentifierValue('ZDB')) + '\t' +
+                            sanitize(ti?.getCurrentPublisher()?.name) + '\t' +
+                            sanitize(ti?.imprint?.name) + '\t' +
+                            sanitize(ti?.publishedFrom) + '\t' +
+                            sanitize(ti?.publishedTo) + '\t' +
+                            sanitize(ti?.medium?.value) + '\t' +
+                            sanitize(ti?.OAStatus?.value) + '\t' +
+                            sanitize(ti?.continuingSeries?.value) + '\t' +
+                            sanitize(tipp.getIdentifierValue('ISSN') ?: ti?.getIdentifierValue('ISSN')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('eISSN') ?: ti?.getIdentifierValue('eISSN')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('ZDB') ?: ti?.getIdentifierValue('ZDB')) + '\t' +
                             sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
                             '\t' +
                             sanitize(tipp.hostPlatform.name) + '\t' +
@@ -1421,9 +1426,9 @@ class PackageService {
                             sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
                             sanitize(tipp.format?.value) + '\t' +
                             sanitize(tipp.paymentType?.value) + '\t' +
-                            sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title?.getIdentifierValue('DOI')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title?.getIdentifierValue('ISBN')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title?.getIdentifierValue('pISBN')) +
+                            sanitize(tipp.getIdentifierValue('DOI') ?: ti?.getIdentifierValue('DOI')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('ISBN') ?: ti?.getIdentifierValue('ISBN')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('pISBN') ?: ti?.getIdentifierValue('pISBN')) +
                             '\n');
                   }
                 }
@@ -1431,19 +1436,19 @@ class PackageService {
                   writer.write(
                       sanitize(tipp.getId()) + '\t' +
                           sanitize(tipp.url) + '\t' +
-                          sanitize(tipp.title?.getId()) + '\t' +
-                          sanitize(tipp.name ?: tipp.title?.name) + '\t' +
+                          sanitize(ti?.getId()) + '\t' +
+                          sanitize(tipp.name ?: ti?.name) + '\t' +
                           sanitize(tipp.status.value) + '\t' +
-                          sanitize(tipp.title?.getCurrentPublisher()?.name) + '\t' +
-                          sanitize(tipp.title?.imprint?.name) + '\t' +
-                          sanitize(tipp.title?.publishedFrom) + '\t' +
-                          sanitize(tipp.title?.publishedTo) + '\t' +
-                          sanitize(tipp.title?.medium?.value) + '\t' +
-                          sanitize(tipp.title?.OAStatus?.value) + '\t' +
-                          sanitize(tipp.title?.continuingSeries?.value) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ISSN') ?: tipp.title?.getIdentifierValue('ISSN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('eISSN') ?: tipp.title?.getIdentifierValue('eISSN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ZDB') ?: tipp.title?.getIdentifierValue('ZDB')) + '\t' +
+                          sanitize(ti?.getCurrentPublisher()?.name) + '\t' +
+                          sanitize(ti?.imprint?.name) + '\t' +
+                          sanitize(ti?.publishedFrom) + '\t' +
+                          sanitize(ti?.publishedTo) + '\t' +
+                          sanitize(ti?.medium?.value) + '\t' +
+                          sanitize(ti?.OAStatus?.value) + '\t' +
+                          sanitize(ti?.continuingSeries?.value) + '\t' +
+                          sanitize(tipp.getIdentifierValue('ISSN') ?: ti?.getIdentifierValue('ISSN')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('eISSN') ?: ti?.getIdentifierValue('eISSN')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('ZDB') ?: ti?.getIdentifierValue('ZDB')) + '\t' +
                           sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
                           '\t' +
                           sanitize(tipp.hostPlatform?.name) + '\t' +
@@ -1465,9 +1470,9 @@ class PackageService {
                           sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
                           sanitize(tipp.format?.value) + '\t' +
                           sanitize(tipp.paymentType?.value) + '\t' +
-                          sanitize(tipp.getIdentifierValue('DOI') ?: tipp.title?.getIdentifierValue('DOI')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ISBN') ?: tipp.title?.getIdentifierValue('ISBN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('pISBN') ?: tipp.title?.getIdentifierValue('pISBN')) +
+                          sanitize(tipp.getIdentifierValue('DOI') ?: ti?.getIdentifierValue('DOI')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('ISBN') ?: ti?.getIdentifierValue('ISBN')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('pISBN') ?: ti?.getIdentifierValue('pISBN')) +
                           '\n')
                 }
 
@@ -1700,31 +1705,33 @@ class PackageService {
   private def kbartRecordsFor (TitleInstancePackagePlatform tipp, ExportType exportType) {
     def recordList = []
     def record = [:]
-    record.publication_title = pick(tipp.name, tipp.title?.name, exportType)
-    record.publication_type = pick(tipp.publicationType, tipp.title?.niceName == 'Book' ? 'Monograph' : 'Serial', exportType)
-    if (pick (tipp.dateFirstInPrint, tipp.title?.hasProperty('dateFirstInPrint'), exportType) != '') {
-      record.print_identifier = pick(tipp.getIdentifierValue('pISBN'), tipp.title?.getIdentifierValue('pISBN'), exportType)
-      record.online_identifier = pick(tipp.getIdentifierValue('ISBN'), tipp.title?.getIdentifierValue('ISBN'), exportType)
+    def ti = ClassUtils.deproxy(tipp.title)
+
+    record.publication_title = pick(tipp.name, ti?.name, exportType)
+    record.publication_type = pick(tipp.publicationType, ti?.niceName == 'Book' ? 'Monograph' : 'Serial', exportType)
+    if (pick (tipp.dateFirstInPrint, ti?.hasProperty('dateFirstInPrint'), exportType) != '') {
+      record.print_identifier = pick(tipp.getIdentifierValue('pISBN'), ti?.getIdentifierValue('pISBN'), exportType)
+      record.online_identifier = pick(tipp.getIdentifierValue('ISBN'), ti?.getIdentifierValue('ISBN'), exportType)
     }
     else{
-      record.print_identifier = pick(tipp.getIdentifierValue('ISSN'), tipp.title?.getIdentifierValue('ISSN'), exportType)
-      record.online_identifier = pick(tipp.getIdentifierValue('eISSN'), tipp.title?.getIdentifierValue('eISSN'), exportType)
+      record.print_identifier = pick(tipp.getIdentifierValue('ISSN'), ti?.getIdentifierValue('ISSN'), exportType)
+      record.online_identifier = pick(tipp.getIdentifierValue('eISSN'), ti?.getIdentifierValue('eISSN'), exportType)
     }
     record.title_url = tipp.url
-    record.first_author = pick(tipp.firstAuthor, tipp.title?.hasProperty('firstAuthor') ? tipp.title.firstAuthor : null, exportType)
-    record.first_editor = pick(tipp.firstEditor, tipp.title?.hasProperty('firstEditor') ? tipp.title.firstEditor : null, exportType)
-    record.date_monograph_published_print = selectDateField(tipp.dateFirstInPrint, tipp.title?.hasProperty('dateFirstInPrint') ? tipp.title.dateFirstInPrint : null, exportType)
-    record.date_monograph_published_online = selectDateField(tipp.dateFirstOnline, tipp.title?.hasProperty('dateFirstOnline') ? tipp.title.dateFirstOnline : null, exportType)
-    record.monograph_volume = pick(tipp.volumeNumber, tipp.title?.hasProperty('volumeNumber') ? tipp.title.volumeNumber : null, exportType)
-    record.monograph_edition = pick(tipp.editionStatement, tipp.title?.hasProperty('editionStatement') ? tipp.title.editionStatement : null, exportType)
+    record.first_author = pick(tipp.firstAuthor, ti?.hasProperty('firstAuthor') ? ti.firstAuthor : null, exportType)
+    record.first_editor = pick(tipp.firstEditor, ti?.hasProperty('firstEditor') ? ti.firstEditor : null, exportType)
+    record.date_monograph_published_print = selectDateField(tipp.dateFirstInPrint, ti?.hasProperty('dateFirstInPrint') ? ti.dateFirstInPrint : null, exportType)
+    record.date_monograph_published_online = selectDateField(tipp.dateFirstOnline, ti?.hasProperty('dateFirstOnline') ? ti.dateFirstOnline : null, exportType)
+    record.monograph_volume = pick(tipp.volumeNumber, ti?.hasProperty('volumeNumber') ? ti.volumeNumber : null, exportType)
+    record.monograph_edition = pick(tipp.editionStatement, ti?.hasProperty('editionStatement') ? ti.editionStatement : null, exportType)
     record.title_id = tipp.importId
-    record.publisher_name = pick(tipp.publisherName, tipp.title?.getCurrentPublisher()?.name, exportType)
+    record.publisher_name = pick(tipp.publisherName, ti?.getCurrentPublisher()?.name, exportType)
     record.preceding_publication_title_id = tipp.precedingPublicationTitleId
     record.parent_publication_title_id = tipp.parentPublicationTitleId
     record.access_type = pick((tipp.paymentType && ['OA','Uncharged'].contains(tipp.paymentType.value) ? 'F' : 'P'), null, exportType)
-    record.zdb_id = pick(tipp.getIdentifierValue('ZDB'), tipp.title?.getIdentifierValue('ZDB'), exportType)
+    record.zdb_id = pick(tipp.getIdentifierValue('ZDB'), ti?.getIdentifierValue('ZDB'), exportType)
     record.gokb_tipp_uid = tipp.uuid
-    record.gokb_title_uid = tipp.title?.uuid
+    record.gokb_title_uid = ti?.uuid
 
     if (tipp.coverageStatements.size() > 0 ){
       // several records
