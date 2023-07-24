@@ -308,6 +308,13 @@ class BootStrap {
                     targetType: targetTypeJournal,
                     pattern: "^\\d+\$",
                     baseUrl: "https://ezb.uni-regensburg.de/detail.phtml?jour_id="
+                ],
+                [
+                    value: 'isni',
+                    name: 'ISNI',
+                    targetType: targetTypeJournal,
+                    pattern: "^\\d{1,16}\$",
+                    baseUrl: "isni.org/isni/0000000121916032"
                 ]
             ]
 
