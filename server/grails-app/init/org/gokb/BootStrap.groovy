@@ -314,7 +314,7 @@ class BootStrap {
                     name: 'ISNI',
                     targetType: targetTypeJournal,
                     pattern: "^\\d{1,16}\$",
-                    baseUrl: "isni.org/isni/0000000121916032"
+                    baseUrl: "https://isni.org/isni/"
                 ]
             ]
 
