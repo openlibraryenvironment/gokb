@@ -45,7 +45,7 @@ class FTUpdateService {
 
 
   def buildEsRecord (kbc) {
-    def result = [:]
+    Map<String, Object> result = [:]
     result._id = "${kbc.class.name}:${kbc.id}"
     result.uuid = kbc.uuid
     result.name = kbc.name
