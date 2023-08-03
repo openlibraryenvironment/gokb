@@ -10,15 +10,15 @@ repositories {
 }
  
 dependencies {
-  compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.6'
-  testCompile 'org.spockframework:spock-core:0.7-groovy-2.0'
-  compile group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.5.0-RC2' 
-  compile group: 'berkeleydb', name: 'je', version: '3.2.76'
+  implementation group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.6'
+  testImplementation 'org.spockframework:spock-core:0.7-groovy-2.0'
+  implementation group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.5.0-RC2'
+  implementation group: 'berkeleydb', name: 'je', version: '3.2.76'
 }
 
 task uberjar(type: Jar) {
-    from files(sourceSets.main.output.classesDir)
-    from configurations.runtime.asFileTree.files.collect { zipTree(it) }
+    from files(sourceSets.main.output.classesDirs)
+    from configurations.runtimeClasspath.asFileTree.files.collect { zipTree(it) }
 
     manifest {
         attributes 'Main-Class': 'org.gokb.client.DiffNotifier'
