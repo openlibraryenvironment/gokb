@@ -237,6 +237,7 @@ class IdentifierController {
       fillTargetMap()
     }
     def result = [_links: [:]]
+    boolean no_isxn = params.boolean('no_isxn') ?: false
     def data = []
     params << [_exclude:"_links"]
     def base = grailsApplication.config.getProperty('serverURL') + "/rest"
@@ -258,10 +259,15 @@ class IdentifierController {
       nss = nss.findAll { it.name.startsWith(params.q.trim()) }
     }
 
+    if (no_isxn) {
+      nss = nss.findAll { it.family != 'isxn' }
+    }
+
     nss.each { ns ->
       data << [
         name:ns.name,
         value:ns.value,
+        targetType: ns.targetType?.value ?: null,
         id: ns.id,
         pattern: ns.pattern,
         family: ns.family,

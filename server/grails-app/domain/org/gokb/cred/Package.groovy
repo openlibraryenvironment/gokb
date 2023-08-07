@@ -160,7 +160,7 @@ class Package extends KBComponent {
 
   static def refdataFind(params) {
     def result = [];
-    def status_deleted = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    def status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     def status_filter = null
 
     if (params.filter1) {
@@ -188,7 +188,7 @@ class Package extends KBComponent {
 
     if (this.id) {
       if (onlyCurrent) {
-        def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+        def refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
         all_titles = TitleInstance.executeQuery('''select distinct title
           from TitleInstance as title,
@@ -222,7 +222,7 @@ class Package extends KBComponent {
 
   @Transient
   public getCurrentTitleCount() {
-    def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current');
+    def refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current');
 
     int result = TitleInstance.executeQuery('''select count(distinct title.id)
       from TitleInstance as title,
@@ -242,7 +242,7 @@ class Package extends KBComponent {
 
   @Transient
   public getCurrentTippCount() {
-    def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+    def refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
 
     int result = Combo.executeQuery("select count(c.id) from Combo as c where c.fromComponent = :pkg and c.type = :ct and c.toComponent.status = :sc"
@@ -252,107 +252,59 @@ class Package extends KBComponent {
   }
 
   @Transient
-  public getReviews(def onlyOpen = true, def onlyCurrent = false, int max = 0, int offset = 0) {
-    def all_rrs = null
-    def refdata_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+  public getReviews(boolean onlyOpen = true, boolean onlyCurrent = false, int max = 0, int offset = 0) {
+    def qry = '''select rr from ReviewRequest as rr,
+            TitleInstance as title,
+            Combo as pkgCombo,
+            Combo as titleCombo,
+            TitleInstancePackagePlatform as tipp
+          where pkgCombo.toComponent=tipp
+            and pkgCombo.fromComponent=:pkg
+            and titleCombo.toComponent=tipp
+            and titleCombo.fromComponent=title
+            and rr.componentToReview = title'''
+
+    def qry_params = [
+      pkg: this
+    ]
 
     if (onlyOpen) {
-
-      log.debug("Looking for more ReviewRequests connected to ${this}")
-
-      def refdata_open = RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Open')
-
-      if (onlyCurrent) {
-        all_rrs = ReviewRequest.executeQuery('''select distinct rr
-          from ReviewRequest as rr,
-            TitleInstance as title,
-            Combo as pkgCombo,
-            Combo as titleCombo,
-            TitleInstancePackagePlatform as tipp
-          where pkgCombo.toComponent=tipp
-            and pkgCombo.fromComponent=:pkg
-            and tipp.status = :stipp
-            and titleCombo.toComponent=tipp
-            and titleCombo.fromComponent=title
-            and rr.componentToReview = title
-            and rr.status = :rs'''
-          , [pkg: this, stipp: refdata_current, rs: refdata_open], [max: max, offset: offset])
-      }
-      else {
-        all_rrs = ReviewRequest.executeQuery('''select distinct rr
-          from ReviewRequest as rr,
-            TitleInstance as title,
-            Combo as pkgCombo,
-            Combo as titleCombo,
-            TitleInstancePackagePlatform as tipp
-          where pkgCombo.toComponent=tipp
-            and pkgCombo.fromComponent=:pkg
-            and titleCombo.toComponent=tipp
-            and titleCombo.fromComponent=title
-            and rr.componentToReview = title
-            and rr.status = :rs'''
-          , [pkg: this, rs: refdata_open], [max: max, offset: offset])
-      }
-    }
-    else {
-      if (onlyCurrent) {
-        all_rrs = ReviewRequest.executeQuery('''select rr
-          from ReviewRequest as rr,
-            TitleInstance as title,
-            Combo as pkgCombo,
-            Combo as titleCombo,
-            TitleInstancePackagePlatform as tipp
-          where pkgCombo.toComponent=tipp
-            and pkgCombo.fromComponent=:pkg
-            and tipp.status = :stipp
-            and titleCombo.toComponent=tipp
-            and titleCombo.fromComponent=title
-            and rr.componentToReview = title'''
-          , [pkg: this, stipp: refdata_current], [max: max, offset: offset])
-      }
-      else {
-        all_rrs = ReviewRequest.executeQuery('''select rr
-          from ReviewRequest as rr,
-            TitleInstance as title,
-            Combo as pkgCombo,
-            Combo as titleCombo,
-            TitleInstancePackagePlatform as tipp
-          where pkgCombo.toComponent=tipp
-            and pkgCombo.fromComponent=:pkg
-            and titleCombo.toComponent=tipp
-            and titleCombo.fromComponent=title
-            and rr.componentToReview = title'''
-          , [pkg: this], [max: max, offset: offset])
-      }
+      def refdata_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
+      qry_params.rs = refdata_open
+      qry = qry + ' and rr.status = :rs'
     }
 
-    return all_rrs;
+    if (onlyCurrent) {
+      def refdata_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+      qry_params.stipp = refdata_current
+      qry = qry + ' and tipp.status = :stipp'
+    }
+
+    def all_rrs = ReviewRequest.executeQuery(qry, qry_params, [max: max, offset: offset])
+
+    log.debug("Got ${all_rrs.size()} indirect reviews")
+
+    return all_rrs
   }
 
-  public void deleteSoft(context) {
-    // Call the delete method on the superClass.
-    super.deleteSoft(context)
-
+  public void deleteSoft() {
     def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    this.status = deleted_status
+    this.save()
+
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
-    def hasTipps = TitleInstancePackagePlatform.executeQuery("select t.id from TitleInstancePackagePlatform as t where t.status != :del and exists (select 1 from Combo where fromComponent.id = :pkg and toComponent.id = t.id)", [del: deleted_status, pkg: this.id], [max: 10]).size() > 0
-    Date now = new Date()
 
-    if (hasTipps) {
-      log.debug("Deleting tipps ..")
-      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :del, t.lastUpdateComment = 'Deleted via Package delete', t.lastUpdated = :now where t.status != :del and exists (select 1 from Combo where fromComponent.id = :pkg and toComponent = t.id)", [del: deleted_status, pkg: this.id, now: now])
-    }
+    setRemainingTippsStatus(deleted_status)
   }
 
 
-  public void retire(context) {
+  public void retire() {
     log.debug("package::retire")
     // Call the delete method on the superClass.
     log.debug("Updating package status to retired")
-    def retired_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Retired')
-    def current_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
-    def expected_status = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Expected')
+    RefdataValue retired_status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
 
     this.status = retired_status
     this.save()
@@ -360,13 +312,50 @@ class Package extends KBComponent {
     // Retire the tipps too as a TIPP should not exist without the associated,
     // package.
 
-    def hasTipps = TitleInstancePackagePlatform.executeQuery("select t.id from TitleInstancePackagePlatform as t where t.status in :sce and exists (select 1 from Combo where fromComponent.id = :pkg and toComponent.id = t.id)", [sce: [expected_status, current_status], pkg: this.id], [max: 10]).size() > 0
-    Date now = new Date()
+    setRemainingTippsStatus(retired_status)
+  }
 
-    if (hasTipps) {
-      log.debug("Retiring tipps ..")
-      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform as t set t.status = :ret, t.lastUpdateComment = 'Retired via Package retire', t.lastUpdated = :now where t.status in :sce and exists (select 1 from Combo where fromComponent.id = :pkg and toComponent.id = t.id)", [ret: retired_status, sce: [expected_status, current_status], pkg: this.id, now: now])
+  public void retireAt(Date date) {
+    log.debug("package::retireAt (${date})")
+    RefdataValue retired_status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+
+    this.status = retired_status
+    this.save()
+
+    setRemainingTippsStatus(retired_status, date)
+  }
+
+  private void setRemainingTippsStatus(new_status, Date date = new Date()) {
+    log.debug("Setting active TIPPs to ${new_status.value} ..")
+    RefdataValue current_status = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue expected_status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+
+    def qry_params = [
+      ret: new_status,
+      sce: [expected_status, current_status],
+      comment: "Status set to ${new_status.value} due to package change!",
+      pkg: this.id,
+      now: now,
+      rdate: date
+    ]
+
+    if (new_status.value == 'Deleted') {
+      qry_params.sce << RefdataCategory.lookup('KBComponent.Status', 'Retired')
     }
+
+    def qry = '''update TitleInstancePackagePlatform as t
+                  set t.status = :ret,
+                  t.lastUpdateComment = :comment,
+                  t.lastUpdated = :now
+                  t.accessEndDate = :rdate
+                  where t.status in :sce
+                  and exists (
+                    select 1 from Combo
+                    where fromComponent.id = :pkg
+                    and toComponent.id = t.id
+                  )'''
+
+    TitleInstancePackagePlatform.executeUpdate(qry, qry_params)
   }
 
 
@@ -422,10 +411,10 @@ class Package extends KBComponent {
 
     def identifier_prefix = "uri://gokb/${grailsApplication.config.getProperty('sysid')}/title/"
 
-    def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps');
-    def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps');
-    def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps');
-    def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted');
+    def refdata_package_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+    def refdata_hosted_tipps = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps')
+    def refdata_ti_tipps = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+    def refdata_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     String tipp_hql = "from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)"
     def tipp_hql_params = [pkg: this, ctype: refdata_package_tipps]
 
@@ -545,16 +534,16 @@ class Package extends KBComponent {
 
   @Transient
   private static getTitleIds(Long title_id) {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def refdata_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids');
+    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = :ti and c.type = :ct and c.toComponent = i and c.status = :cs", [ti: title_id, ct: refdata_ids, cs: status_active], [readOnly: true])
     result
   }
 
   @Transient
   private static getTippIds(Long tipp_id) {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def refdata_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids');
+    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = :tipp and c.type = :ct and c.toComponent = i and c.status = :cs", [tipp: tipp_id, ct: refdata_ids, cs: status_active], [readOnly: true])
     result
   }
@@ -577,7 +566,7 @@ class Package extends KBComponent {
     def result = []
 
     if (this.id) {
-      def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
       // select tipp, accessStartDate, 'Added' from tipps UNION select tipp, accessEndDate, 'Removed' order by date
 
@@ -679,7 +668,7 @@ class Package extends KBComponent {
       }
     }
     if (result.valid) {
-      def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
       def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
 
       def name_candidates = Package.executeQuery("from Package as p where p.normname = :nn and p.status <> :sd", [nn: pkg_normname, sd: status_deleted])

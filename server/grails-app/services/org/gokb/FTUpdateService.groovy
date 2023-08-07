@@ -12,7 +12,6 @@ import org.opensearch.action.index.IndexRequest
 import org.opensearch.client.RequestOptions
 import org.opensearch.common.xcontent.XContentType
 
-@Transactional
 class FTUpdateService {
 
   def ESWrapperService
@@ -44,8 +43,9 @@ class FTUpdateService {
   }
 
 
-  def buildEsRecord (kbc) {
+  def buildEsRecord (proxy) {
     def result = [:]
+    def kbc = KBComponent.deproxy(proxy)
     result._id = "${kbc.class.name}:${kbc.id}"
     result.uuid = kbc.uuid
     result.name = kbc.name
@@ -483,23 +483,27 @@ class FTUpdateService {
           break
         }
 
-        Object r = domain.get(r_id)
-        log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
-        def idx_record = buildEsRecord(r)
+        domain.withNewSession {
+          Object r = domain.get(r_id)
+          log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
 
-        if (idx_record != null) {
-          IndexRequest singleRequest = new IndexRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType.get(idx_record['componentType'])))
-          singleRequest.id(idx_record['_id'].toString())
-          idx_record.remove('_id')
-          singleRequest.source((idx_record as JSON).toString(), XContentType.JSON)
-          bulkRequest.add(singleRequest)
+          def idx_record = buildEsRecord(r)
+
+          if (idx_record != null) {
+            IndexRequest singleRequest = new IndexRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType.get(idx_record['componentType'])))
+            singleRequest.id(idx_record['_id'].toString())
+            idx_record.remove('_id')
+            singleRequest.source((idx_record as JSON).toString(), XContentType.JSON)
+            bulkRequest.add(singleRequest)
+          }
+
+          if (r.lastUpdated?.getTime() > highest_timestamp) {
+            highest_timestamp = r.lastUpdated?.getTime()
+          }
+
+          highest_id = r.id
         }
 
-        if (r.lastUpdated?.getTime() > highest_timestamp) {
-          highest_timestamp = r.lastUpdated?.getTime()
-        }
-
-        highest_id = r.id
         count++
         total++
 

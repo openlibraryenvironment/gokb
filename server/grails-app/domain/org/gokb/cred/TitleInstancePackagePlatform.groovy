@@ -130,10 +130,6 @@ class TitleInstancePackagePlatform extends KBComponent {
       ]
   ]
 
-  static touchOnUpdate = [
-      "pkg"
-  ]
-
   static hasByCombo = [
       pkg         : Package,
       hostPlatform: Platform,

@@ -24,6 +24,7 @@ class TippService {
   def reviewRequestService
   def autoTimestampEventListener
   def validationService
+  def restMappingService
 
   def validateDTO(tipp_dto) {
     def result = [valid: true]
@@ -356,6 +357,8 @@ class TippService {
    * @param reqBody data extracted from JSON
    * @return the updated TIPP
    */
+
+  @Transactional
   public def updateCoverage(tipp, reqBody) {
     def cov_list = reqBody.coverageStatements ?: reqBody.coverage
     def stale_coverage_ids = tipp.coverageStatements.collect { it.id }
@@ -567,6 +570,7 @@ class TippService {
     result
   }
 
+  @Transactional
   def matchTitle(tippId, def groupId = null) {
     def result = [status: 'matched', reviewCreated: false]
 
@@ -735,6 +739,7 @@ class TippService {
     ti
   }
 
+  @Transactional
   def copyTitleData(ConcurrencyManagerService.Job job = null) {
     if (job != null) {
       TitleInstance.withNewSession {
@@ -748,6 +753,7 @@ class TippService {
     }
   }
 
+  @Transactional
   def statusUpdate() {
     def result = [retired: 0, activated: 0]
     log.info("Updating TIPP status via access dates..")
@@ -767,6 +773,7 @@ class TippService {
     result
   }
 
+  @Transactional
   def scanTIPPs(Job job = null) {
     RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
     RefdataValue combo_ids = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
@@ -785,7 +792,7 @@ class TippService {
         index++
 
         if (tipp.title) {
-          tipp.title.ids.each { data ->
+          ti.ids.each { data ->
             if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(data.namespace.value)) {
               if (!tipp.ids*.namespace.contains(data.namespace)) {
                 tipp.ids << data
@@ -1277,6 +1284,13 @@ class TippService {
     result
   }
 
+  @Transactional
+  public void touchPackage(tipp) {
+    def pkg_obj = tipp.pkg
+
+    pkg_obj?.lastSeen = new Date().getTime()
+    pkg_obj?.save(flush:true)
+  }
 
   public TitleInstancePackagePlatform updateTippFields(tipp, tippInfo, User user = null, boolean create_coverage = true) {
     componentUpdateService.updateIdentifiers(tipp, tippInfo.identifiers, user, null, true)
@@ -1351,5 +1365,59 @@ class TippService {
     tipp.save(flush:true)
 
     tipp
+  }
+
+  def updateCombos(obj, reqBody, boolean remove = true) {
+    log.debug("Updating TIPP combos ..")
+    def errors = [:]
+    boolean changed = false
+
+    if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
+      def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
+
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
+
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
+      }
+
+      changed = id_result.changed
+    }
+
+    if (reqBody.title) {
+      def ti = null
+
+      if (reqBody.title instanceof Integer || reqBody.title instanceof Long) {
+        ti = TitleInstance.get(reqBody.title)
+      }
+      else if (reqBody.title instanceof Map && reqBody.title.id) {
+        ti = TitleInstance.get(reqBody.title.id)
+      }
+      else {
+        log.debug("Unknown title format ${reqBody.title?.class.name}")
+      }
+
+      log.debug("TI: ${ti}")
+
+      if (ti != obj.title) {
+        if (ti) {
+          obj.title = ti
+          changed = true
+        }
+        else {
+          errors.title = [[message: "Unable to reference provided reference title!", baddata: reqBody.title, code: 'notFound']]
+        }
+      }
+    }
+    else {
+      log.debug("No title info given!")
+    }
+
+    if (changed) {
+      obj.lastSeen = System.currentTimeMillis()
+      obj.save(flush: true)
+    }
+
+    errors
   }
 }

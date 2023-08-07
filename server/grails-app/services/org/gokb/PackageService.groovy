@@ -8,7 +8,6 @@ import grails.io.IOUtils
 import groovy.util.logging.Slf4j
 import groovy.xml.MarkupBuilder
 import groovy.xml.StreamingMarkupBuilder
-import groovyx.net.http.*
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.RandomStringUtils
 import org.gokb.cred.*
@@ -29,7 +28,6 @@ import java.time.ZoneId
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-import static groovyx.net.http.Method.GET
 import static grails.async.Promises.*
 
 @Slf4j
@@ -1305,6 +1303,7 @@ class PackageService {
     def export_date = dateFormatService.formatDate(new Date())
     String exportFileName = generateExportFileName(pkg, ExportType.TSV)
     String path = exportFilePath()
+    String pkgName = pkg.name
     def activeJobs = concurrencyManagerService.getComponentJobs(pkg.id)
 
     if (activeJobs?.data?.size() == 0) {
@@ -1380,12 +1379,11 @@ class PackageService {
 
             ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
             int ctr = 0
-
-            TitleInstancePackagePlatform.withNewSession { tsession ->
-              while (tipps.next()) {
-                def tipp_id = tipps.get(0);
+            while (tipps.next()) {
+              TitleInstancePackagePlatform.withNewSession { tsession ->
+                def tipp_id = tipps.get(0)
                 TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
-                def ti = ClassUtils.deproxy(tipp.title)
+                def ti = tipp.title ? ClassUtils.deproxy(tipp.title) : null
 
                 if (tipp.coverageStatements?.size() > 0) {
                   tipp.coverageStatements.each { tcs ->
@@ -1402,10 +1400,10 @@ class PackageService {
                             sanitize(ti?.medium?.value) + '\t' +
                             sanitize(ti?.OAStatus?.value) + '\t' +
                             sanitize(ti?.continuingSeries?.value) + '\t' +
-                            sanitize(tipp.getIdentifierValue('ISSN') ?: ti?.getIdentifierValue('ISSN')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('eISSN') ?: ti?.getIdentifierValue('eISSN')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('ZDB') ?: ti?.getIdentifierValue('ZDB')) + '\t' +
-                            sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
+                            sanitize(tipp.getIdentifierValue('issn') ?: ti?.getIdentifierValue('issn')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('eissn') ?: ti?.getIdentifierValue('eissn')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('zdb') ?: ti?.getIdentifierValue('zdb')) + '\t' +
+                            sanitize(pkgName) + '\t' + sanitize(pkg.id) + '\t' +
                             '\t' +
                             sanitize(tipp.hostPlatform.name) + '\t' +
                             sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
@@ -1426,9 +1424,9 @@ class PackageService {
                             sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
                             sanitize(tipp.format?.value) + '\t' +
                             sanitize(tipp.paymentType?.value) + '\t' +
-                            sanitize(tipp.getIdentifierValue('DOI') ?: ti?.getIdentifierValue('DOI')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('ISBN') ?: ti?.getIdentifierValue('ISBN')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('pISBN') ?: ti?.getIdentifierValue('pISBN')) +
+                            sanitize(tipp.getIdentifierValue('doi') ?: ti?.getIdentifierValue('doi')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('isbn') ?: ti?.getIdentifierValue('isbn')) + '\t' +
+                            sanitize(tipp.getIdentifierValue('pisbn') ?: ti?.getIdentifierValue('pisbn')) +
                             '\n');
                   }
                 }
@@ -1446,9 +1444,9 @@ class PackageService {
                           sanitize(ti?.medium?.value) + '\t' +
                           sanitize(ti?.OAStatus?.value) + '\t' +
                           sanitize(ti?.continuingSeries?.value) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ISSN') ?: ti?.getIdentifierValue('ISSN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('eISSN') ?: ti?.getIdentifierValue('eISSN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ZDB') ?: ti?.getIdentifierValue('ZDB')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('issn') ?: ti?.getIdentifierValue('issn')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('eissn') ?: ti?.getIdentifierValue('eissn')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('zdb') ?: ti?.getIdentifierValue('zdb')) + '\t' +
                           sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
                           '\t' +
                           sanitize(tipp.hostPlatform?.name) + '\t' +
@@ -1470,9 +1468,9 @@ class PackageService {
                           sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
                           sanitize(tipp.format?.value) + '\t' +
                           sanitize(tipp.paymentType?.value) + '\t' +
-                          sanitize(tipp.getIdentifierValue('DOI') ?: ti?.getIdentifierValue('DOI')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('ISBN') ?: ti?.getIdentifierValue('ISBN')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('pISBN') ?: ti?.getIdentifierValue('pISBN')) +
+                          sanitize(tipp.getIdentifierValue('doi') ?: ti?.getIdentifierValue('doi')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('isbn') ?: ti?.getIdentifierValue('isbn')) + '\t' +
+                          sanitize(tipp.getIdentifierValue('pisbn') ?: ti?.getIdentifierValue('pisbn')) +
                           '\n')
                 }
 
@@ -1480,11 +1478,11 @@ class PackageService {
                   tsession.flush()
                   tsession.clear()
                 }
-                ctr++
+              }
+              ctr++
 
-                if (Thread.currentThread().isInterrupted()) {
-                  break
-                }
+              if (Thread.currentThread().isInterrupted()) {
+                break
               }
             }
             tipps.close()

@@ -6,8 +6,10 @@ import grails.converters.JSON
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 
-import static groovyx.net.http.Method.*
-import groovyx.net.http.*
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 
 import org.gokb.cred.*
 
@@ -22,12 +24,14 @@ class EzbCollectionService {
   def packageSourceUpdateService
   def TSVIngestionService
 
-  static ArrayList activeTypes = [
+  static ArrayList ACTIVE_TYPES = [
     'collections_from_national_license_packages',
     'collections_from_alliance_license_packages',
     'collections_from_consortia_packages',
     'collections_from_national_consortia_packages'
   ]
+
+  static String ARCHIVED_TYPE = 'collections_no_longer_available'
 
   def startUpdate(User user = null) {
     def result = [result: 'OK']
@@ -64,33 +68,42 @@ class EzbCollectionService {
 
   private def fetchUpdatedLists (job) {
     def result = [result: 'OK', report: [:]]
+    def baseUrl = grailsApplication.config.getProperty('gokb.ezbOpenCollections.url')
 
-    if (grailsApplication.config.gokb.ezbOpenCollections?.url) {
-      def baseUrl = grailsApplication.config.gokb.ezbOpenCollections.url
+    if (baseUrl) {
       def allCollections = [:]
+      def archivedCollections = [:]
       boolean cancelled = false
-
-      def client = new RESTClient(baseUrl)
       job.startTime = new Date()
 
-      client.request(GET, ContentType.JSON) {
-        response.success = { resp, data ->
-          log.debug("Got EZB collection list")
-          data.collections?.each { type, items ->
-            log.debug("Mapping ${type} with ${items.size()} items")
-            if (type in activeTypes) {
-              log.debug("Added items for active type")
-              allCollections[type] = items
-            }
-            else {
-              log.debug("Skipped inactive type..")
-            }
+      try {
+        def request = HttpRequest.GET("/collections/v1/")
+          .header('User-Agent', "GOKb KBART bulk import")
+          .header('Accept', 'application/json')
+
+        log.error("Headers: ${request.remoteAddress}")
+
+        def resp = HttpClient.create(new URL(baseUrl)).toBlocking().retrieve(request, Map.class)
+
+        resp.collections.each { type, items ->
+          log.debug("Mapping ${type} with ${items.size()} items")
+          if (type in ACTIVE_TYPES) {
+            log.debug("Added items for active type")
+            allCollections[type] = items
+          }
+          else if (type == ARCHIVED_TYPE) {
+            archivedCollections = items
+          }
+          else {
+            log.debug("Skipped inactive type..")
           }
         }
-        response.failure = { resp, data ->
-          log.error("Got status ${resp.status} .. ${data}")
-          return 'SKIPPED_EZB_API_ERROR'
-        }
+      }
+      catch (Exception e) {
+        log.error("Unable to fetch public collections!", e)
+        cancelled = true
+        result.result = 'ERROR'
+        result.message = 'Unable to fetch collection info!'
       }
 
       // Local backup for testing
@@ -102,7 +115,7 @@ class EzbCollectionService {
 
       // data.collections?.each { type, items ->
       //   log.debug("Mapping ${type} with ${items.size()} items")
-      //   if (type in activeTypes) {
+      //   if (type in ACTIVE_TYPES) {
       //     log.debug("Added items for active type")
       //     allCollections[type] = items
       //   }
@@ -125,7 +138,9 @@ class EzbCollectionService {
           errors: 0,
           success: 0,
           skippedList: [],
-          validationErrors: [:]
+          validationErrors: [:],
+          matchingFailed: [],
+          sourceError: []
         ]
 
         if (!cancelled) {
@@ -137,15 +152,16 @@ class EzbCollectionService {
 
             Package.withNewSession { session ->
               type_results.total++
-              def pkgName = "${item.ezb_collection_id}: ${item.ezb_collection_name}"
+              def pkgName = buildPackageName(item)
               log.debug("Processing ${type} ${item.ezb_collection_name}")
-
-              CuratoryGroup curator = CuratoryGroup.findByName(grailsApplication.config.gokb.ezbAugment.rrCurators)
+              RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+              CuratoryGroup curator = CuratoryGroup.findByName(grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators'))
               Platform platform = item.ezb_collection_platform ? Platform.findByUuid(item.ezb_collection_platform) : null
               IdentifierNamespace ezb_ns = IdentifierNamespace.findByValue('ezb')
               Org provider = item.ezb_collection_provider ? Org.findByUuid(item.ezb_collection_provider) : null
               boolean skipped = false
               Source source = null
+              Package obj = null
 
               if (item.ezb_collection_curatory_group) {
                 def local_cg = CuratoryGroup.findByUuid(item.ezb_collection_curatory_group)
@@ -158,22 +174,13 @@ class EzbCollectionService {
               if (curator && provider && platform) {
                 Identifier collection_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb-collection-id', item.ezb_collection_id)
 
-                if (item.ezb_package_type_name != 'Konsortialpaket') {
-                  pkgName += ": ${item.ezb_package_type_name}"
-                }
-                else if (item.ezb_owner.trim()) {
-                  pkgName += ": ${item.ezb_owner}"
-                }
-
-                Package obj = Package.findByNormname(KBComponent.generateNormname(pkgName))
+                obj = Package.findByNameAndStatus(pkgName, status_current)
 
                 if (!obj) {
-                  def candidates = Package.executeQuery('''from Package as p
-                                                          where exists (select 1 from Combo where fromComponent = p and toComponent = :cg)
-                                                          and exists (select 1 from Combo where fromComponent = p and toComponent = :cid)''', [cg: curator, cid: collection_id])
+                  def candidates = findIdCandidates(collection_id, curator)
 
                   if (candidates.size() == 1) {
-                    obj = candidates[0]
+                    result = candidates[0]
                     log.debug("Found package ${obj} via id ${collection_id} and curatoryGroup ${curator}")
                   }
                   else if (candidates.size() > 1) {
@@ -181,8 +188,11 @@ class EzbCollectionService {
                     skipped = true
                   }
                 }
+                else {
+                  log.debug("Found package ${obj} by name")
+                }
 
-                if (!obj) {
+                if (!skipped && !obj) {
                   log.debug("Creating new Package ..")
 
                   try {
@@ -194,7 +204,7 @@ class EzbCollectionService {
                     type_results.errors++
                   }
                 }
-                else {
+                else if (!skipped) {
                   log.debug("Handling package ${obj.name}")
                   type_results.updated++
                 }
@@ -311,15 +321,21 @@ class EzbCollectionService {
                     type_results.unchanged++
                   }
                 }
+                else if (!obj) {
+                  log.warn("Unable to reference package!")
+                  type_results.skipped++
+                  type_results.errors++
+                  type_results.matchingFailed << item.ezb_collection_id
+                }
                 else if (!source) {
                   log.debug("No source object created.. skip")
-                }
-                else if (obj) {
-                  log.warn("Matched package is older than the EZB release date.. Skipping!")
                   type_results.skipped++
+                  type_results.errors++
+                  type_results.sourceError << item.ezb_collection_id
                 }
                 else {
-                  log.warn("Unable to reference package!")
+                  log.warn("Matched package is older than the EZB release date.. Skipping!")
+                  type_results.skipped++
                 }
               }
               else if (!curator) {
@@ -352,6 +368,45 @@ class EzbCollectionService {
         result.report[type] = type_results
       }
 
+      // Cleaning up newly archived collections
+      archivedCollections.each { item ->
+        log.debug("Looking for archived packages to retire ..")
+        Package.withNewSession {
+          def pkgName = buildPackageName(info)
+          RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+          def obj = Package.findByNameAndStatus(pkgName, status_current)
+          CuratoryGroup curator = CuratoryGroup.findByName(grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators'))
+
+          if (item.ezb_collection_curatory_group) {
+            def local_cg = CuratoryGroup.findByUuid(item.ezb_collection_curatory_group)
+
+            if (local_cg) {
+              curator = local_cg
+            }
+          }
+
+          if (!obj) {
+            Identifier collection_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb-collection-id', item.ezb_collection_id)
+
+            def candidates = findIdCandidates(collection_id, curator)
+
+            if (candidates.size() == 1) {
+              result = candidates[0]
+              log.debug("Found package ${obj} via id ${collection_id} and curatoryGroup ${curator}")
+            }
+            else if (candidates.size() > 1) {
+              log.warn("Found ${candidates} as possible package candidates!")
+            }
+          }
+
+          if (obj) {
+            def date_changed = item.ezb_collection_deactivated_date.substring(0, 10) + ' 00:00:00'
+
+            obj.retireAt(dateFormatService.parseTimestamp(date_changed))
+          }
+        }
+      }
+
       result.result = 'FINISHED'
       job.endTime = new Date()
     }
@@ -375,6 +430,40 @@ class EzbCollectionService {
 
       def jr = new JobResult(job_map).save(flush: true, failOnError: true)
     }
+
+    result
+  }
+
+  private String buildPackageName(item) {
+    String result = "${item.ezb_collection_id}: ${item.ezb_collection_name}"
+
+    if (item.ezb_package_type_name != 'Konsortialpaket') {
+      result += ": ${item.ezb_package_type_name}"
+    }
+    else if (item.ezb_owner.trim()) {
+      result += ": ${item.ezb_owner}"
+    }
+
+    result
+  }
+
+  private def findIdCandidates(cid, curator) {
+    def result = null
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    def qry = '''from Package as p
+                  where
+                  status = :sc
+                  and exists (
+                    select 1 from Combo
+                    where fromComponent = p
+                    and toComponent = :cg
+                  )
+                  and exists (
+                    select 1 from Combo
+                    where fromComponent = p
+                    and toComponent = :cid)'''
+
+    result = Package.executeQuery(qry, [cg: curator, cid: cid, sc: status_current])
 
     result
   }

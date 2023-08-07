@@ -25,6 +25,8 @@ class LanguagesService{
    * provided in the ISO-639-2 map specified by the referenced languages microservice. See
    * https://github.com/hbz/languages-microservice#get-the-whole-iso-639-2-list for details.
    */
+
+  @Transactional
   public void initialize(){
     if (grailsApplication.config.getProperty('gokb.languagesUrl')) {
       log.debug("Fetching current list for ")
