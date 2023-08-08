@@ -17,6 +17,7 @@ class CleanupService {
   def reviewRequestService
   def componentLookupService
   def validationService
+  def autoTimestampEventListener
 
   def tidyMissnamedPublishers () {
 
@@ -618,42 +619,50 @@ class CleanupService {
     def ctr = 0
     def errors = 0
 
-    TitleInstancePackagePlatform.withNewSession {
-      def tipp_crit = TitleInstancePackagePlatform.createCriteria()
-      def tipps = tipp_crit.list () {
-        isEmpty('coverageStatements')
-        or {
-          isNotNull('startDate')
-          isNotNull('startVolume')
-          isNotNull('endDate')
-          isNotNull('endVolume')
-          isNotNull('embargo')
+    autoTimestampEventListener.withoutLastUpdated(TitleInstancePackagePlatform) {
+      TitleInstancePackagePlatform.withNewSession {
+        def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+        def tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
+            where status != :sd
+            and not exists (
+              select 1 from TIPPCoverageStatement
+              where owner = tipp
+            )''',
+            [sd: status_deleted])
+
+        for (t in tipps) {
+          if ( Thread.currentThread().isInterrupted() ) {
+            log.debug("Job cancelling ..")
+            j.endTime = new Date()
+            break;
+          }
+
+          try {
+            t.addToCoverageStatements(
+              startDate: t.startDate,
+              startVolume: t.startVolume,
+              startIssue: t.startIssue,
+              endDate: t.endDate,
+              endVolume: t.endVolume,
+              endIssue: t.endIssue,
+              coverageDepth: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', t.coverageDepth?.value ?: 'Fulltext'),
+              coverageNote: t.coverageNote,
+              embargo: t.embargo
+            )
+
+            t.save(flush:true, failOnError:true)
+          }
+          catch (Exception e) {
+            log.error("Error while creating coverage statement", e)
+            errors++
+          }
+
+          if (ctr % 50 == 0) {
+            cleanUpGorm()
+          }
+
+          j.setProgress(ctr++, tipps.size())
         }
-      }
-
-      for (t in tipps) {
-
-        if ( Thread.currentThread().isInterrupted() ) {
-          log.debug("Job cancelling ..")
-          j.endTime = new Date()
-          break;
-        }
-
-        try {
-          t.addToCoverageStatements(startDate: t.startDate, startVolume: t.startVolume, startIssue: t.startIssue, endDate: t.endDate, endVolume: t.endVolume, endIssue: t.endIssue, coverageDepth: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', t.coverageDepth.value),coverageNote: t.coverageNote, embargo: t.embargo)
-
-          t.save(flush:true, failOnError:true);
-        }
-        catch (Exception e) {
-          log.error("Error while creating coverage statement", e)
-          errors++
-        }
-
-        if (ctr % 50 == 0) {
-          cleanUpGorm()
-        }
-
-        j.setProgress(ctr++, tipps.size())
       }
     }
     log.debug("Done");

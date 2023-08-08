@@ -397,7 +397,6 @@ class PackageService {
     results
   }
 
-  @Transactional
   public def generatePackageTypes(Job j = null, def pkg_id = null) {
     log.debug("Generating missing package content types.")
     def result = [book: 0, db: 0, journal: 0, mixed: 0, errors: 0]
@@ -468,7 +467,6 @@ class PackageService {
     }
   }
 
-  @Transactional
   def compareLists(listOne, listTwo, def full = true, Date date = null, Job j = null) {
     def result = [:]
     def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')

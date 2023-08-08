@@ -515,14 +515,21 @@ class TippService {
     def tippIDs = []
 
     try {
-      tippIDs = TitleInstancePackagePlatform.executeQuery(
-        'select tipp.id from TitleInstancePackagePlatform as tipp where exists (' +
-            'from Combo as c1 where c1.fromComponent.id=:pkg and c1.toComponent=tipp) ' +
-            'and not exists (from Combo as cmb where cmb.toComponent=tipp and cmb.type=:ctt)',
-        [
+      tippIDs = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
+          where exists (
+            from Combo as c1
+            where c1.fromComponent.id = :pkg
+            and c1.toComponent = tipp
+          )
+          and not exists (
+            from Combo as cmb
+            where cmb.toComponent = tipp
+            and cmb.type = :ctt
+          )''',
+          [
             pkg : pkgId,
             ctt: RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
-        ]
+          ]
       )
 
       total = tippIDs.size()
@@ -1129,24 +1136,28 @@ class TippService {
 
       if (titleId) {
         tipps = TitleInstancePackagePlatform.executeQuery('''select tipp from TitleInstancePackagePlatform as tipp
-            where exists (select 1 from Combo
+            where exists (
+              select 1 from Combo
               where fromComponent.id = :pkg
               and toComponent = tipp
               and type = :typ1
             )
-            and exists (select 1 from Combo
+            and exists (
+              select 1 from Combo
               where fromComponent.id = :plt
               and toComponent = tipp
               and type = :typ2
             )
             and tipp.importId = :tid
             and tipp.status = :tStatus''',
-            [pkg   : pkgInfo.id,
-            typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
-            plt    : tippInfo.hostPlatform.id,
-            typ2   : RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps'),
-            tid    : titleId,
-            tStatus: status_current]
+            [
+              pkg   : pkgInfo.id,
+              typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
+              plt    : tippInfo.hostPlatform.id,
+              typ2   : RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps'),
+              tid    : titleId,
+              tStatus: status_current
+            ]
         )
       }
 
