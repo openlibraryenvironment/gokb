@@ -13,23 +13,13 @@
 
   <logger name="org.gokb.DomainClassExtender" level="WARN"/>
   <logger name="org.gokb.ClassExaminationService" level="WARN"/>
-  <logger name="org.gokb.IntegrationController" level="DEBUG"/>
   <logger name="org.gokb.CrossReferenceService" level="ERROR"/>
-  <logger name="org.gokb.CrossRefPkgRun" level="DEBUG"/>
-  <logger name="org.gokb.UpdatePkgTippsRun" level="DEBUG"/>
-  <logger name="org.gokb.PackageService" level="DEBUG"/>
-  <logger name="org.gokb.TippService" level="DEBUG"/>
-  <logger name="org.gokb.CleanupService" level="DEBUG"/>
   <logger name="org.gokb.ComponentLookupService" level="INFO"/>
   <logger name="org.gokb.ComponentStatisticService" level="INFO"/>
   <logger name="org.gokb.ComponentUpdateService" level="INFO"/>
   <logger name="org.gokb.TitleLookupService" level="INFO"/>
-  <logger name="org.gokb.TSVIngestionService" level="DEBUG"/>
   <logger name="org.gokb.SearchController" level="INFO"/>
   <logger name="org.gokb.ResourceController" level="ERROR"/>
-  <logger name="org.gokb.AutoUpdatePackagesJob" level="DEBUG"/>
-  <logger name="org.gokb.AugmentJob" level="DEBUG"/>
-  <logger name="org.gokb.TippMatchingJob" level="DEBUG"/>
   <logger name="org.gokb.FTUpdateService" level="ERROR"/>
   <logger name="org.gokb.ESUpdateJob" level="ERROR"/>
   <logger name="org.gokb.cred" level="ERROR"/>

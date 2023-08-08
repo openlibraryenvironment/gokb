@@ -762,19 +762,57 @@ class TippService {
 
   @Transactional
   def statusUpdate() {
-    def result = [retired: 0, activated: 0]
     log.info("Updating TIPP status via access dates..")
+    def result = [result: 'OK', retired: 0, activated: 0]
     RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
     RefdataValue status_retired = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_RETIRED)
     RefdataValue status_expected = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_EXPECTED)
 
-    String update_retire_str = "update TitleInstancePackagePlatform tipp set tipp.status = :retired, tipp.lastUpdated = :today where tipp.status = :current and accessEndDate < :today"
-    String update_current_str = "update TitleInstancePackagePlatform tipp set tipp.status = :current, tipp.lastUpdated = :today where tipp.status = :expected and accessStartDate <= :today"
+    def update_retire_str = '''from TitleInstancePackagePlatform tipp
+                                where tipp.status = :current
+                                and accessEndDate < :today'''
+    def update_current_str = '''from TitleInstancePackagePlatform tipp
+                                where tipp.status = :expected
+                                and accessStartDate <= :today'''
 
-    result.retired = TitleInstancePackagePlatform.executeUpdate(update_retire_str, [retired: status_retired, current: status_current, today: new Date()])
+    def to_retire = TitleInstancePackagePlatform.executeQuery(update_retire_str, [current: status_current, today: new Date()])
+    def to_activate = TitleInstancePackagePlatform.executeQuery(update_current_str, [expected: status_expected, today: new Date()])
+
+    for (tipp in to_retire) {
+      tipp.status = status_retired
+      tipp.save()
+
+      result.retired++
+
+      touchPackage(tipp)
+
+      if (Thread.currentThread().isInterrupted()) {
+        log.info("Cancelling TIPP matching job ..")
+        result.result = 'CANCELLED'
+        more = false
+        break
+      }
+    }
+
+    if (result.result != 'CANCELLED') {
+      for (tipp in to_activate) {
+        tipp.status = status_retired
+        tipp.save()
+
+        result.activated++
+
+        touchPackage(tipp)
+
+        if (Thread.currentThread().isInterrupted()) {
+          log.info("Cancelling TIPP matching job ..")
+          result.result = 'CANCELLED'
+          more = false
+          break
+        }
+      }
+    }
+
     log.info("Retired ${result.retired} TIPPs.")
-
-    result.activated = TitleInstancePackagePlatform.executeUpdate(update_current_str, [expected: status_expected, current: status_current, today: new Date()])
     log.info("Activated ${result.activated} TIPPs.")
 
     result

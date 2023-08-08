@@ -417,7 +417,7 @@ class TitleAugmentService {
       log.error("Error while processing ZDB history event:", e)
     }
 
-    if (titleInstance.name != info.title) {
+    if (titleInstance.name.toLowerCase() != info.title.toLowerCase()) {
       log.debug("Updating title name ${titleInstance.name} -> ${info.title}")
       def old_title = titleInstance.name
       titleInstance.name = info.title
