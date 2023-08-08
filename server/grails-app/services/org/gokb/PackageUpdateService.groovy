@@ -162,7 +162,7 @@ class PackageUpdateService {
           }
         }
 
-        def tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp_dto, RequestContextUtils.getLocale(request))
+        def tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp_dto, java.util.Locale.ENGLISH)
 
         if (ti_errors?.size > 0 || !tipp_validation.valid) {
           if (!errors.tipps) {

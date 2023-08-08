@@ -16,8 +16,6 @@ import io.micronaut.http.client.multipart.MultipartBody
 import io.micronaut.http.uri.UriBuilder
 
 import org.gokb.cred.*
-import org.gokb.cred.RefdataCategory
-import org.gokb.cred.Source
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ClassPathResource
 import org.springframework.core.io.Resource
@@ -63,6 +61,7 @@ class PackageTestSpec extends AbstractAuthSpec {
         defaultDataFormat: kbart).save(flush: true)
 
     Package testPackage = Package.findByName("TestPack")
+
     if (!testPackage) {
       testPackage = new Package(name: "TestPack", source: testSource).save(flush: true)
       testPackage.nominalPlatform = testPlt
@@ -81,6 +80,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     partialErrorPackage.save(flush: true)
 
     JournalInstance testTitle = JournalInstance.findByName("PackTestTitle")
+
     if (!testTitle) {
       testTitle = new JournalInstance(name: "PackTestTitle").save(flush: true)
       testTitle.ids.add(serial_issn)
@@ -89,6 +89,7 @@ class PackageTestSpec extends AbstractAuthSpec {
     }
 
     def test_book = BookInstance.findByName('PackTestBook')
+
     if (!test_book) {
       test_book = new BookInstance(name: 'PackTestBook').save(flush: true)
       test_book.ids.add(book_doi)
