@@ -3,11 +3,15 @@ package org.gokb
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
+import grails.gorm.transactions.*
+
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 
-import static groovyx.net.http.Method.*
-import groovyx.net.http.*
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.client.HttpClient
 
 import org.gokb.cred.*
 
@@ -39,6 +43,7 @@ class BulkPackageImportService {
     "package_changed_date": [required: false, validate: 'checkTimestamp']
   ]
 
+  @Transactional
   def upsertConfig (reqBody, user) {
     def result = [result: 'OK']
     def validation = validateConfig(reqBody)
@@ -200,23 +205,13 @@ class BulkPackageImportService {
   }
 
   private def fetchRemoteConfig(url) {
-    def client = new RESTClient(url)
+    try {
+      def resp = HttpClient.create(new URL(url)).toBlocking().retrieve(HttpRequest.GET("/"), Map.class)
 
-    client.request(GET, ContentType.JSON) {
-      response.success = { resp, data ->
-        log.debug("Got bulk collection list")
-
-        if (data.collections) {
-          return data
-        }
-        else {
-          return null
-        }
-      }
-      response.failure = { resp, data ->
-        log.error("Got remote config request status ${resp.status} .. ${data}")
-        return null
-      }
+      return resp
+    }
+    catch (Exception e) {
+      return null
     }
   }
 
@@ -255,6 +250,7 @@ class BulkPackageImportService {
     errors
   }
 
+  @Transactional
   def startUpdate(listInfo, dryRun, async, User user = null) {
     def result = [result: 'OK']
     def job_rdv = RefdataCategory.lookup('Job.Type', 'BulkPackageIngest')

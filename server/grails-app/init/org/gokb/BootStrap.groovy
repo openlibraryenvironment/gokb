@@ -16,6 +16,7 @@ import org.gokb.AugmentEzbJob
 import org.gokb.AugmentZdbJob
 import org.gokb.AutoUpdatePackagesJob
 import org.gokb.TippMatchingJob
+import org.gokb.TippAccessStatusUpdateJob
 
 import javax.servlet.http.HttpServletRequest
 
@@ -371,6 +372,7 @@ class BootStrap {
                 AugmentEzbJob.schedule(grailsApplication.config.getProperty('gokb.ezbAugment.cron'))
                 AutoUpdatePackagesJob.schedule(grailsApplication.config.getProperty('gokb.packageUpdate.cron'))
                 TippMatchingJob.schedule(grailsApplication.config.getProperty('gokb.tippMatching.cron'))
+                TippAccessStatusUpdateJob.schedule(grailsApplication.config.getProperty('gokb.tippAccessStatusUpdate.cron'))
             }
         }
 

@@ -1,7 +1,9 @@
 import com.k_int.ConcurrencyManagerService.Job
 
-import groovyx.net.http.*
+import grails.gorm.transactions.*
 
+import java.net.http.*
+import java.net.http.HttpResponse.BodyHandlers
 import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.ZoneId
@@ -19,6 +21,15 @@ class PackageSourceUpdateService {
   static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
   static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/
 
+  static HttpClient client
+
+  @javax.annotation.PostConstruct
+  def init() {
+    log.info("Initialising source update service...")
+    client = HttpClient.newBuilder().build()
+  }
+
+  @Transactional
   def updateFromSource(Package p, def user = null, Job job = null, CuratoryGroup activeGroup = null, boolean dryRun = false) {
     log.debug("updateFromSource ${p.name}")
     def result = [result: 'OK']
@@ -166,6 +177,7 @@ class PackageSourceUpdateService {
         if (file_info.file_name) {
           if ((file_info.file_name?.endsWith('.tsv') || file_info.file_name?.endsWith('.txt')) &&
               (file_info.content_mime_type?.startsWith("text/plain") ||
+              file_info.content_mime_type?.startsWith("text/csv") ||
               file_info.content_mime_type?.startsWith("text/tab-separated-values") ||
               file_info.content_mime_type == 'application/octet-stream')
           ) {
@@ -317,7 +329,7 @@ class PackageSourceUpdateService {
             result.result = 'ERROR'
             result.messageCode = 'kbart.errors.url.mimeType'
             result.message = "KBART URL returned a wrong content type!"
-            log.debug("KBART url ${src_url} returned MIME type ${file_info.content_mime_type}")
+            log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
           }
         }
         else {
@@ -340,53 +352,39 @@ class PackageSourceUpdateService {
 
   def fetchKbartFile(File tmp_file, URL src_url) {
     def result = [content_mime_type: null, file_name: null]
-    HttpURLConnection connection
+    HttpRequest request = HttpRequest.newBuilder()
+      .uri(src_url.toURI())
+      .header("User-Agent", "GOKb KBART Updater")
+      .build()
 
-    try {
-      connection = (HttpURLConnection) src_url.openConnection()
-      connection.addRequestProperty("User-Agent", "GOKb KBART Update")
-      connection.setInstanceFollowRedirects(true)
+    HttpResponse<InputStream> response = client.send(request, BodyHandlers.ofInputStream())
+    HttpHeaders headers = response.headers()
+    result.content_mime_type = headers.firstValue('Content-Type').isPresent() ? headers.firstValue('Content-Type').get() : null
+
+    if (response.statusCode() >= 400) {
+      log.warn("KBART fetch status: ${result.status}")
     }
-    catch (IOException e) {
-        e.printStackTrace()
-    }
-    connection.connect()
-    result.status = connection.getResponseCode()
-    log.debug("Fetching ${src_url}")
-    log.debug("HEADERS: ${connection.getHeaderFields()}")
-
-    if (result.status == HttpURLConnection.HTTP_OK) {
-      result.content_mime_type = connection.getContentType()
-
-      if (result.content_mime_type?.startsWith('text/html')) {
-        log.warn("Got HTML result at KBART URL ${src_url}!")
-        result.accessError = true
-      }
-      else {
-        log.debug("${result.content_mime_type} ${connection.getHeaderFields()}")
-        def file_name = connection.getHeaderField("Content-Disposition")
-
-        if (file_name) {
-          file_name = file_name.split('filename=')[1]
-        } else if (result.content_mime_type == 'text/plain') (
-          file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
-        )
-
-        if (file_name?.trim()) {
-          result.file_name = file_name.replaceAll(/\"/, '')
-          InputStream content = connection.getInputStream()
-          FileUtils.copyInputStreamToFile(content, tmp_file)
-          content.close()
-          log.debug("Wrote ${tmp_file.length()}")
-        }
-      }
-    }
-    else if (result.status != HttpURLConnection.HTTP_NOT_FOUND) {
-      log.debug("KBART fetch status: ${result.status}")
-      log.debug("${connection.getContent()}")
+    else if (result.content_mime_type.startsWith('text/html')) {
+      log.warn("Got HTML result at KBART URL ${src_url}!")
+      result.accessError = true
     }
     else {
-      log.debug("KBART fetch status: ${result.status}")
+      log.debug("${result.content_mime_type} ${headers.map()}")
+      def file_name = headers.firstValue('Content-Disposition').isPresent() ? headers.firstValue('Content-Disposition').get() : null
+
+      if (file_name) {
+        file_name = file_name.split('filename=')[1]
+      } else if (result.content_mime_type == 'text/plain') (
+        file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
+      )
+
+      if (file_name?.trim()) {
+        result.file_name = file_name.replaceAll(/\"/, '')
+        InputStream content = response.body()
+        FileUtils.copyInputStreamToFile(content, tmp_file)
+        content.close()
+        log.debug("Wrote ${tmp_file.length()}")
+      }
     }
 
     result

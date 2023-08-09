@@ -73,13 +73,15 @@ class PublicController {
             ids: []
           ]
 
-          t.ids.each { i ->
-            def ido = Identifier.get(i.id)
+          Identifier.withNewSession {
+            t.ids.each { i ->
+              def ido = Identifier.get(i.id)
 
-            tobj.ids << [value: ido.value, namespace: IdentifierNamespace.get(ido.namespace.id).value]
+              tobj.ids << [value: ido.value, namespace: IdentifierNamespace.get(ido.namespace.id).value]
+            }
+
+            result.tipps << tobj
           }
-
-          result.tipps << tobj
         }
 
         log.debug("Tipp qry done ${result.tipps?.size()}")

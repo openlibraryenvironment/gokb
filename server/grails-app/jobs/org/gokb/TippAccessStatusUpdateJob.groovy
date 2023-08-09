@@ -14,8 +14,7 @@ class TippAccessStatusUpdateJob {
   static concurrent = false
 
   static triggers = {
-    // Cron timer.
-    cron name: 'TippAccessStatusUpdateTrigger', cronExpression: "0 0 1 * * ?"
+    // See Bootstrap.groovy
   }
 
   def tippService

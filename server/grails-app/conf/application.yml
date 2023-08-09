@@ -172,6 +172,9 @@ environments:
             tippMatching:
                 cron: "0 0 4 * * ? *"
                 enabled: true
+            tippAccessStatusUpdate:
+                cron: "0 0 1 * * ? *"
+                enabled: true
             zdbAugment:
                 enabled: false
                 rrCurators: ZDB
@@ -232,6 +235,9 @@ environments:
                 enabled: false
             tippMatching:
                 cron: "0 0 4 * * ? *"
+                enabled: false
+            tippAccessStatusUpdate:
+                cron: "0 0 1 * * ? *"
                 enabled: false
             zdbAugment:
                 enabled: false
@@ -298,6 +304,9 @@ environments:
                 enabled: true
             tippMatching:
                 cron: "0 0 4 * * ? *"
+                enabled: true
+            tippAccessStatusUpdate:
+                cron: "0 0 1 * * ? *"
                 enabled: true
             zdbAugment:
                 enabled: false

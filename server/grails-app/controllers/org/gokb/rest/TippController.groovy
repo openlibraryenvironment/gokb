@@ -127,7 +127,7 @@ class TippController {
 
           if (obj?.validate()) {
             response.status = 201
-            errors << updateCombos(obj, reqBody)
+            errors << tippService.updateCombos(obj, reqBody)
 
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
@@ -226,7 +226,7 @@ class TippController {
             }
           }
 
-          errors << updateCombos(obj, reqBody)
+          errors << tippService.updateCombos(obj, reqBody)
 
           if (obj?.validate()) {
             if (reqBody.coverageStatements != null) {
@@ -235,6 +235,7 @@ class TippController {
 
             log.debug("No errors.. saving")
             obj = obj.merge(flush: true)
+            tippService.touchPackage(obj)
           }
           else {
             result.result = 'ERROR'
@@ -270,61 +271,6 @@ class TippController {
       result.error = errors
     }
     render result as JSON
-  }
-
-  @Transactional
-  private def updateCombos(obj, reqBody, boolean remove = true) {
-    log.debug("Updating TIPP combos ..")
-    def errors = [:]
-    boolean changed = false
-
-    if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
-      def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
-
-      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
-
-      if (id_result.errors.size() > 0) {
-        errors.ids = id_result.errors
-      }
-
-      changed = id_result.changed
-    }
-
-    if (reqBody.title) {
-      def ti = null
-
-      if (reqBody.title instanceof Integer || reqBody.title instanceof Long) {
-        ti = TitleInstance.get(reqBody.title)
-      }
-      else if (reqBody.title instanceof Map && reqBody.title.id) {
-        ti = TitleInstance.get(reqBody.title.id)
-      }
-      else {
-        log.debug("Unknown title format ${reqBody.title?.class.name}")
-      }
-
-      log.debug("TI: ${ti}")
-
-      if (ti != obj.title) {
-        if (ti) {
-          obj.title = ti
-          changed = true
-        }
-        else {
-          errors.title = [[message: "Unable to reference provided reference title!", baddata: reqBody.title, code: 'notFound']]
-        }
-      }
-    }
-    else {
-      log.debug("No title info given!")
-    }
-
-    if (changed) {
-      obj.lastSeen = System.currentTimeMillis()
-      obj.save()
-    }
-
-    errors
   }
 
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])

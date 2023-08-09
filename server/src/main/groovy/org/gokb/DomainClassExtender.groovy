@@ -325,6 +325,8 @@ class DomainClassExtender {
               }
             }
 
+            combos = combos.collect { ClassUtils.deproxy(it) }
+
             // Create our new list.
             result = new ComboPersistedList (
                 (thisComponent),
@@ -353,6 +355,8 @@ class DomainClassExtender {
                 property("toComponent")
               }
             }
+
+            combos = combos.collect { ClassUtils.deproxy(it) }
 
             // Create our new list.
             result = new ComboPersistedList (

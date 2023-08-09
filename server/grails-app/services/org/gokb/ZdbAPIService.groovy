@@ -2,7 +2,6 @@ package org.gokb
 
 import groovy.xml.XmlSlurper
 
-import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -50,8 +49,7 @@ class ZdbAPIService {
             .queryParam('query', (id.namespace.value == 'zdb' ? CONFIG.zdbTerm : CONFIG.issTerm) + id.value + CONFIG.onlineOnly)
             .build()
 
-          HttpRequest request = HttpRequest.GET(uri)
-          HttpResponse resp = http.exchange(request, String)
+          HttpResponse resp = http.exchange(HttpRequest.GET(uri), String)
 
           if (resp.status == HttpStatus.OK) {
             def data = new XmlSlurper().parseText(resp.body())

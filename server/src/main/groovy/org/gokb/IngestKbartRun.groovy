@@ -199,6 +199,7 @@ class IngestKbartRun {
           Package.withNewSession {
             def p = Package.get(pid)
             p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
+            p.lastSeen = new Date().getTime()
             p.save(flush: true)
             new Combo(fromComponent: p, toComponent: datafile, type: RefdataCategory.lookup('Combo.Type','KBComponent.FileAttachments')).save(flush: true, failOnError: true)
           }
@@ -696,8 +697,13 @@ class IngestKbartRun {
 
           if (result != 'created' && result != 'partial') {
             if (tipp.coverageStatements?.size() > 1 || (tipp.coverageStatements?.size() == 1 && !tippService.existsCoverage(tipp, tipp_map.coverageStatements[0]))) {
-              TIPPCoverageStatement.executeUpdate("delete from TIPPCoverageStatement where owner = :tipp", [tipp: tipp])
-              tipp.refresh()
+              def tcs_ids = tipp.coverageStatements*.id
+
+              tcs_ids.each {
+                def tcs_obj = TIPPCoverageStatement.get(it)
+                tipp.removeFromCoverageStatements(tcs_obj)
+              }
+              tipp.save()
             }
             else {
               new_coverage = false

@@ -23,6 +23,7 @@ class TitleLookupService {
     log.debug("Init");
   }
 
+  @Transactional
   private Map class_one_match(def ids, ti_class, def fullsync = false) {
 
     // Get the class 1 identifier namespaces.
@@ -476,6 +477,7 @@ class TitleLookupService {
   private final findLock = new Object()
 
   @Synchronized("findLock")
+  @Transactional
   private def findOrCreateTitle(Map metadata,
                                 def user = null,
                                 def project = null,

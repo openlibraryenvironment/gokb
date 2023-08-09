@@ -121,19 +121,20 @@ class RestMappingService {
             if (user?.isAdmin() || p.type != User) {
               if (obj[p.name]) {
                 def label = selectJsonLabel(obj[p.name])
+                def assoc_obj = ClassUtils.deproxy(obj[p.name])
 
                 result[p.name] = [
                     'name': label,
-                    'type': obj[p.name].niceName,
-                    'id'  : obj[p.name].id
+                    'type': assoc_obj.niceName,
+                    'id'  : assoc_obj.id
                 ]
 
                 if (p.type == IdentifierNamespace) {
-                  result[p.name]['value'] = obj[p.name].value
+                  result[p.name]['value'] = assoc_obj.value
                 }
 
                 if (embed_active.contains(p.name)) {
-                  result['_embedded'][p.name] = getEmbeddedJson(obj[p.name], user)
+                  result['_embedded'][p.name] = getEmbeddedJson(assoc_obj, user)
                 }
               }
               else {
@@ -208,7 +209,7 @@ class RestMappingService {
               result[cp] = null
             }
             else {
-              cval = reverse ? combo[0].fromComponent : combo[0].toComponent
+              cval = reverse ? ClassUtils.deproxy(combo[0].fromComponent) : ClassUtils.deproxy(combo[0].toComponent)
               result[cp] = ['id': cval.id, 'name': cval.name, 'type': cval.niceName, 'uuid': cval.uuid]
             }
           }
@@ -248,6 +249,7 @@ class RestMappingService {
     else if (obj.class == ReviewRequest && embed_active.contains('allocatedGroups')) {
       result.allocatedGroups = []
       def inProgress = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'In Progress')
+
       obj.allocatedGroups?.each {
         if (it.status == inProgress){
           result.allocatedGroups << [name: it.group.name, id: it.group.id]
@@ -308,7 +310,7 @@ class RestMappingService {
         }
       }
     }
-    obj
+    obj.save()
   }
 
   @Transactional
