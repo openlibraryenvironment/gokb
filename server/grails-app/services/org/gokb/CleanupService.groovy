@@ -9,7 +9,6 @@ import org.opensearch.client.RequestOptions
 import org.opensearch.client.Requests
 import org.gokb.cred.*
 
-@Transactional
 class CleanupService {
   def sessionFactory
   def ESWrapperService
@@ -104,7 +103,6 @@ class CleanupService {
     }
   }
 
-  @Transactional
   private def expungeByIds ( ids, Job j = null ) {
     def result = [report: []]
     def esclient = ESWrapperService.getClient()
@@ -613,7 +611,6 @@ class CleanupService {
     result
   }
 
-  @Transactional
   def addMissingCoverageObjects(Job j = null) {
     log.debug("Creating missing coverage statements..")
     def ctr = 0
@@ -622,7 +619,7 @@ class CleanupService {
     autoTimestampEventListener.withoutLastUpdated(TitleInstancePackagePlatform) {
       TitleInstancePackagePlatform.withNewSession {
         def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-        def tipps = TitleInstancePackagePlatform.executeQuery('''from TitleInstancePackagePlatform as tipp
+        def tippIds = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
             where status != :sd
             and not exists (
               select 1 from TIPPCoverageStatement
@@ -630,38 +627,45 @@ class CleanupService {
             )''',
             [sd: status_deleted])
 
-        for (t in tipps) {
+        int total_count = tippIds.size()
+
+        while (tippIds.size() > 0) {
+          def batch = tippIds.take(50)
+          tippIds = tippIds.drop(50)
+
+          for (tid in tippIds) {
+            def tobj = TitleInstancePackagePlatform.get(tid)
+
+            try {
+              tobj.addToCoverageStatements(
+                startDate: tobj.startDate,
+                startVolume: tobj.startVolume,
+                startIssue: tobj.startIssue,
+                endDate: tobj.endDate,
+                endVolume: tobj.endVolume,
+                endIssue: tobj.endIssue,
+                coverageDepth: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', tobj.coverageDepth?.value ?: 'Fulltext'),
+                coverageNote: tobj.coverageNote,
+                embargo: tobj.embargo
+              )
+
+              tobj.save(flush:true, failOnError:true)
+            }
+            catch (Exception e) {
+              log.error("Error while creating coverage statement", e)
+              errors++
+            }
+
+            j.setProgress(ctr++, total_count)
+          }
+
           if ( Thread.currentThread().isInterrupted() ) {
             log.debug("Job cancelling ..")
             j.endTime = new Date()
             break;
           }
 
-          try {
-            t.addToCoverageStatements(
-              startDate: t.startDate,
-              startVolume: t.startVolume,
-              startIssue: t.startIssue,
-              endDate: t.endDate,
-              endVolume: t.endVolume,
-              endIssue: t.endIssue,
-              coverageDepth: RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', t.coverageDepth?.value ?: 'Fulltext'),
-              coverageNote: t.coverageNote,
-              embargo: t.embargo
-            )
-
-            t.save(flush:true, failOnError:true)
-          }
-          catch (Exception e) {
-            log.error("Error while creating coverage statement", e)
-            errors++
-          }
-
-          if (ctr % 50 == 0) {
-            cleanUpGorm()
-          }
-
-          j.setProgress(ctr++, tipps.size())
+          cleanUpGorm()
         }
       }
     }

@@ -25,9 +25,9 @@ class AutoUpdatePackagesJob {
         '''select p.id from Package p
            where p.source is not null and
            p.source.automaticUpdates = true
-           and p.status != ?
+           and p.status != :sd
            and (p.source.lastRun is null or p.source.lastRun < current_date)''',
-           [status_deleted])
+           [sd: status_deleted])
 
       for (pid in updPacks) {
         Package p = Package.findById(pid)
