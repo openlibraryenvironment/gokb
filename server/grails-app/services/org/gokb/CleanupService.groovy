@@ -633,7 +633,7 @@ class CleanupService {
           def batch = tippIds.take(50)
           tippIds = tippIds.drop(50)
 
-          for (tid in tippIds) {
+          for (tid in batch) {
             def tobj = TitleInstancePackagePlatform.get(tid)
 
             try {
