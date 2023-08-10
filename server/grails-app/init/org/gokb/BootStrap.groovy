@@ -280,7 +280,7 @@ class BootStrap {
                     name: 'ISNI',
                     targetType: targetTypeOrg,
                     pattern: "^\\d{15}[0-9Xx]\$",
-                    baseUrl: "http://isni-url.oclc.nl/isni/"
+                    baseUrl: "https://isni.org/isni/"
                 ],
                 [
                     value: 'viaf',
