@@ -796,7 +796,7 @@ class TippService {
 
     if (result.result != 'CANCELLED') {
       for (tipp in to_activate) {
-        tipp.status = status_retired
+        tipp.status = status_current
         tipp.save()
 
         result.activated++
