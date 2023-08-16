@@ -592,14 +592,16 @@ class RestMappingService {
           def dupe = Combo.executeQuery("from Combo where type = :ct and fromComponent = :fc and toComponent = :tc", [ct: combo_id_type, fc: obj, tc: i])
 
           if (dupe.size() == 0) {
-            def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true)
+            obj.ids << i
+            obj.save(flush: true)
             result.changed = true
           }
           else if (dupe.size() == 1) {
             if (dupe[0].status == combo_deleted) {
               log.debug("Matched ID combo was marked as deleted!")
               dupe[0].delete(flush: true)
-              def new_combo = new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true)
+              obj.ids << i
+              obj.save(flush: true)
               result.changed = true
             }
             else {
@@ -672,50 +674,54 @@ class RestMappingService {
     log.debug("Update curatory Groups ${cgs}")
     Set new_cgs = []
     def result = [changed: false, errors: []]
-    def current_cgs = obj.getCombosByPropertyName('curatoryGroups')
-    RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', obj.getComboTypeValue('curatoryGroups'))
 
-    cgs?.each { cg ->
-      def cg_obj = null
+    CuratoryGroup.withTransaction {
+      def current_cgs = obj.getCombosByPropertyName('curatoryGroups')
+      RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', obj.getComboTypeValue('curatoryGroups'))
 
-      if (cg instanceof String) {
-        cg_obj = CuratoryGroup.findByNameIlike(cg)
-      }
-      else if (cg instanceof Integer) {
-        cg_obj = CuratoryGroup.get(cg)
-      }
-      else if (cg instanceof Map) {
-        cg_obj = CuratoryGroup.get(cg.id)
-      }
+      cgs?.each { cg ->
+        def cg_obj = null
 
-      if (cg_obj) {
-        new_cgs << cg_obj
-      }
-      else {
-        result.errors << [message: "Unable to lookup curatory group!", baddata: cg]
-      }
-    }
+        if (cg instanceof String) {
+          cg_obj = CuratoryGroup.findByNameIlike(cg)
+        }
+        else if (cg instanceof Integer) {
+          cg_obj = CuratoryGroup.get(cg)
+        }
+        else if (cg instanceof Map) {
+          cg_obj = CuratoryGroup.get(cg.id)
+        }
 
-    if (result.errors.size() == 0) {
-      new_cgs.each { c ->
-        if (!obj.curatoryGroups.contains(c)) {
-          def new_combo = new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush: true)
-          result.changed = true
+        if (cg_obj) {
+          new_cgs << cg_obj
         }
         else {
-          log.debug("Existing cg ${c}..")
+          result.errors << [message: "Unable to lookup curatory group!", baddata: cg]
         }
       }
 
-      if (remove) {
-        Iterator items = current_cgs.iterator();
-        Object element;
-        while (items.hasNext()) {
-          element = items.next();
-          if (!new_cgs.contains(element.toComponent)) {
-            // Remove.
-            element.delete()
+      if (result.errors.size() == 0) {
+        new_cgs.each { c ->
+          if (!obj.curatoryGroups.contains(c)) {
+            obj.curatoryGroups << c
+            obj.save(flush: true)
             result.changed = true
+          }
+          else {
+            log.debug("Existing cg ${c}..")
+          }
+        }
+
+        if (remove) {
+          Iterator items = current_cgs.iterator();
+          Object element;
+          while (items.hasNext()) {
+            element = items.next();
+            if (!new_cgs.contains(element.toComponent)) {
+              // Remove.
+              element.delete()
+              result.changed = true
+            }
           }
         }
       }
@@ -724,6 +730,7 @@ class RestMappingService {
     result
   }
 
+  @Transactional
   public def updateVariantNames(obj, vals, boolean remove = true) {
     log.debug("Update Variants ${vals} ..")
     def result = [changed: false, errors: []]
@@ -733,48 +740,38 @@ class RestMappingService {
     def toRemove = []
 
     try {
-      vals?.each {
-        def newVariant = null
+      KBComponentVariantName.withTransaction {
+        vals?.each {
+          def newVariant = null
 
-        if (it instanceof String) {
-          if (it.trim()) {
-            def nvn = GOKbTextUtils.normaliseString(it)
-            def dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj)
+          if (it instanceof String) {
+            if (it.trim()) {
+              def nvn = GOKbTextUtils.normaliseString(it)
+              def dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj)
 
-            if (dupes) {
-              log.debug("Not adding duplicate variant")
-            }
-            else {
-              newVariant = obj.ensureVariantName(it)
-
-              if (newVariant) {
-                log.debug("Added variant ${newVariant}")
-                changed = true
-                remaining << newVariant
+              if (dupes) {
+                log.debug("Not adding duplicate variant")
               }
               else {
-                log.debug("Could not add variant ${it}!")
-                result.errors << [message: "Could not add variant ${it} since it is already a variant for another component.", code: 'inUse', baddata: it]
+                newVariant = obj.ensureVariantName(it)
+
+                if (newVariant) {
+                  log.debug("Added variant ${newVariant}")
+                  changed = true
+                  remaining << newVariant
+                }
+                else {
+                  log.debug("Could not add variant ${it}!")
+                  result.errors << [message: "Could not add variant ${it} since it is already a variant for another component.", code: 'inUse', baddata: it]
+                }
               }
             }
+            else {
+              log.debug("Ignoring empty variant")
+            }
           }
-          else {
-            log.debug("Ignoring empty variant")
-          }
-        }
-        else if (it instanceof Integer) {
-          newVariant = KBComponentVariantName.get(it)
-
-          if (newVariant && newVariant.owner == obj) {
-            remaining << newVariant
-          }
-          else {
-            notFound << it
-          }
-        }
-        else if (it instanceof Map) {
-          if (it.id && it.id instanceof Integer) {
-            newVariant = KBComponentVariantName.get(it.id)
+          else if (it instanceof Integer) {
+            newVariant = KBComponentVariantName.get(it)
 
             if (newVariant && newVariant.owner == obj) {
               remaining << newVariant
@@ -783,89 +780,101 @@ class RestMappingService {
               notFound << it
             }
           }
-          else if (it.variantName) {
-            def nvn = GOKbTextUtils.normaliseString(it.variantName)
-            def dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj)
+          else if (it instanceof Map) {
+            if (it.id && it.id instanceof Integer) {
+              newVariant = KBComponentVariantName.get(it.id)
 
-            if (dupes) {
-              log.debug("Not adding duplicate variant")
-
-              if (!remaining.contains(dupes))
-                remaining << dupes
-            }
-            else {
-              newVariant = obj.ensureVariantName(it.variantName)
-
-              log.debug("Ensured variant: ${newVariant}")
-
-              if (newVariant) {
-                changed = true
-
-                if (it.locale) {
-                  newVariant = updateAssoc(newVariant, 'locale', it.locale, RefdataCategory.findByDesc(KBComponent.RD_LANGUAGE))
-                }
-                else {
-                  newVariant.locale = null
-                }
-
-                if (it.variantType) {
-                  newVariant = updateAssoc(newVariant, 'variantType', it.variantType)
-                }
-                else {
-                  newVariant.variantType = null
-                }
-
-                if (!newVariant.hasErrors()) {
-                  newVariant.save(flush:true)
-                }
-                else {
-                  log.error("Unable to set details for variant: ${newVariant.errors}")
-                }
-
-                log.debug("${newVariant.variantName} (${newVariant.locale})")
-
+              if (newVariant && newVariant.owner == obj) {
                 remaining << newVariant
               }
               else {
-                log.debug("Could not add variant ${it}!")
-                result.errors << [message: "Could not add variant ${it.variantName} since it is already a variant for another component.", code: 'inUse', baddata: it]
+                notFound << it
               }
             }
-          }
-          else {
-            log.debug("Unable to process map ${it}!")
-          }
-        }
-      }
+            else if (it.variantName) {
+              def nvn = GOKbTextUtils.normaliseString(it.variantName)
+              def dupes = KBComponentVariantName.findByNormVariantNameAndOwner(nvn, obj)
 
-      if (notFound.size() == 0) {
-        if (!result.errors && remove) {
-          obj.variantNames.each { vn ->
-            if (!remaining.contains(vn)) {
-              toRemove.add(vn.id)
-              changed = true
+              if (dupes) {
+                log.debug("Not adding duplicate variant")
+
+                if (!remaining.contains(dupes))
+                  remaining << dupes
+              }
+              else {
+                newVariant = obj.ensureVariantName(it.variantName)
+
+                log.debug("Ensured variant: ${newVariant}")
+
+                if (newVariant) {
+                  changed = true
+
+                  if (it.locale) {
+                    newVariant = updateAssoc(newVariant, 'locale', it.locale, RefdataCategory.findByDesc(KBComponent.RD_LANGUAGE))
+                  }
+                  else {
+                    newVariant.locale = null
+                  }
+
+                  if (it.variantType) {
+                    newVariant = updateAssoc(newVariant, 'variantType', it.variantType)
+                  }
+                  else {
+                    newVariant.variantType = null
+                  }
+
+                  if (!newVariant.hasErrors()) {
+                    newVariant.save(flush:true)
+                  }
+                  else {
+                    log.error("Unable to set details for variant: ${newVariant.errors}")
+                  }
+
+                  log.debug("${newVariant.variantName} (${newVariant.locale})")
+
+                  remaining << newVariant
+                }
+                else {
+                  log.debug("Could not add variant ${it}!")
+                  result.errors << [message: "Could not add variant ${it.variantName} since it is already a variant for another component.", code: 'inUse', baddata: it]
+                }
+              }
+            }
+            else {
+              log.debug("Unable to process map ${it}!")
             }
           }
+        }
 
-          toRemove.each {
-            obj.removeFromVariantNames(KBComponentVariantName.get(it))
+        if (notFound.size() == 0) {
+          if (!result.errors && remove) {
+            obj.variantNames.each { vn ->
+              if (!remaining.contains(vn)) {
+                toRemove.add(vn.id)
+                changed = true
+              }
+            }
+
+            toRemove.each {
+              obj.removeFromVariantNames(KBComponentVariantName.get(it))
+            }
+
+            log.debug("New List has ${obj.variantNames.size()} items!")
           }
-
-          log.debug("New List has ${obj.variantNames.size()} items!")
+          else {
+            log.debug("Not removing: (remove: ${remove} - errors: ${obj.errors})")
+          }
         }
         else {
-          log.debug("Not removing: (remove: ${remove} - errors: ${obj.errors})")
+          log.debug("Unable to look up variants ..")
+          notFound.each {
+            result.errors << [message: "Could not add variant ${it} since it is already a variant for another component.", code: 'inUse', baddata: it]
+          }
         }
-      }
-      else {
-        log.debug("Unable to look up variants ..")
-        notFound.each {
-          result.errors << [message: "Could not add variant ${it} since it is already a variant for another component.", code: 'inUse', baddata: it]
-        }
-      }
 
-      if (changed) {
-        obj.lastSeen = System.currentTimeMillis()
+        if (changed) {
+          obj.lastSeen = System.currentTimeMillis()
+        }
       }
     }
     catch (Exception e) {
@@ -875,56 +884,59 @@ class RestMappingService {
     result
   }
 
+  @Transactional
   def updatePrices(obj, prices, boolean remove = true) {
     def result = [changed: false, errors: []]
     def existing_prices_ids = obj.prices?.collect { it.id }
     def new_prices = []
 
     try {
-      prices?.each { price ->
-        if (price.price || price.amount) {
-          boolean valid = true
-          LocalDateTime parsedStart = GOKbTextUtils.completeDateString(price.startDate)
-          LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(price.endDate, false)
-          Date startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-          Date endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-          def type_val = price.type ?: price.priceType
+      ComponentPrice.withTransaction {
+        prices?.each { price ->
+          if (price.price || price.amount) {
+            boolean valid = true
+            LocalDateTime parsedStart = GOKbTextUtils.completeDateString(price.startDate)
+            LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(price.endDate, false)
+            Date startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+            Date endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+            def type_val = price.type ?: price.priceType
 
-          if (type_val instanceof Map) {
-            type_val = type_val.name ?: type.value
-          }
-
-          if (parsedStart && parsedEnd && parsedEnd < parsedStart) {
-            valid = false
-            result.errors << [message: "Price end date must be after its start date!", code: 500, baddata: price]
-          }
-
-          if (valid) {
-            def item = obj.setPrice(type_val,
-                "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
-                startAsDate,
-                endAsDate)
-
-            if (item) {
-              new_prices << item
-              result.changed = true
+            if (type_val instanceof Map) {
+              type_val = type_val.name ?: type.value
             }
-            else if (price.id) {
-              new_prices << ComponentPrice.get(price.id)
+
+            if (parsedStart && parsedEnd && parsedEnd < parsedStart) {
+              valid = false
+              result.errors << [message: "Price end date must be after its start date!", code: 500, baddata: price]
             }
+
+            if (valid) {
+              def item = obj.setPrice(type_val,
+                  "${price.amount ?: price.price} ${String.isInstance(price.currency) ? price.currency : price.currency.name}",
+                  startAsDate,
+                  endAsDate)
+
+              if (item) {
+                new_prices << item
+                result.changed = true
+              }
+              else if (price.id) {
+                new_prices << ComponentPrice.get(price.id)
+              }
+            }
+          }
+          else {
+            result.errors << [message: "Skipping invalid price!", code: 500, baddata: price]
           }
         }
-        else {
-          result.errors << [message: "Skipping invalid price!", code: 500, baddata: price]
-        }
-      }
 
-      if (remove == true) {
-        existing_prices_ids.each { ep ->
-          if (!new_prices.findAll { it.id == ep }) {
-            ComponentPrice cp_to_delete = ComponentPrice.get(ep)
-            obj.removeFromPrices(cp_to_delete)
-            cp_to_delete.delete()
+        if (remove == true) {
+          existing_prices_ids.each { ep ->
+            if (!new_prices.findAll { it.id == ep }) {
+              ComponentPrice cp_to_delete = ComponentPrice.get(ep)
+              obj.removeFromPrices(cp_to_delete)
+              cp_to_delete.delete()
+            }
           }
         }
       }
@@ -947,62 +959,66 @@ class RestMappingService {
   @Transactional
   public def updatePublisherList(obj, new_pubs, boolean remove = true) {
     def result = [changed: false, errors: []]
-    def publisher_combos = obj.getCombosByPropertyName('publisher')
-    def combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
 
-    String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
-    String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
-    def pubs_to_add = []
+    TitleInstance.withTransaction {
+      def publisher_combos = obj.getCombosByPropertyName('publisher')
+      def combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
 
-    new_pubs.each { pub ->
-      if (!pubs_to_add.findAll { it.id == pub }) {
-        def pub_obj = Org.get(pub)
+      String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
+      String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+      def pubs_to_add = []
 
-        if (pub_obj) {
-          pubs_to_add << Org.get(pub)
-        }
-        else {
-          result.errors << [message: "Unable to reference publisher with ID ${new_pubs}!", baddata: pub]
-        }
-      }
-      else {
-        log.warn("Duplicate for incoming publisher ${pub}!")
-      }
-    }
+      new_pubs.each { pub ->
+        if (!pubs_to_add.findAll { it.id == pub }) {
+          def pub_obj = Org.get(pub)
 
-    if (!result.errors) {
-      pubs_to_add.each { publisher ->
-        boolean found = false
-        for (int i = 0; !found && i < publisher_combos.size(); i++) {
-          Combo pc = publisher_combos[i]
-          def idMatch = pc."${propName}".id == publisher.id
-
-          if (idMatch) {
-            found = true
+          if (pub_obj) {
+            pubs_to_add << Org.get(pub)
+          }
+          else {
+            result.errors << [message: "Unable to reference publisher with ID ${new_pubs}!", baddata: pub]
           }
         }
-
-        if (!found) {
-          def new_combo = new Combo(fromComponent: obj, toComponent: publisher, type: combo_type).save(flush: true)
-          result.changed = true
-        }
         else {
-          log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
+          log.warn("Duplicate for incoming publisher ${pub}!")
         }
       }
-    }
 
-    if (remove && !result.errors) {
-      Iterator items = publisher_combos.iterator()
-      Object element
+      if (!result.errors) {
+        pubs_to_add.each { publisher ->
+          boolean found = false
+          for (int i = 0; !found && i < publisher_combos.size(); i++) {
+            Combo pc = publisher_combos[i]
+            def idMatch = pc."${propName}".id == publisher.id
 
-      while (items.hasNext()) {
-        element = items.next()
+            if (idMatch) {
+              found = true
+            }
+          }
 
-        if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
-          // Remove.
-          element.delete()
-          result.changed = true
+          if (!found) {
+            obj.publisher << publisher
+            obj.save(flush: true)
+            result.changed = true
+          }
+          else {
+            log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
+          }
+        }
+      }
+
+      if (remove && !result.errors) {
+        Iterator items = publisher_combos.iterator()
+        Object element
+
+        while (items.hasNext()) {
+          element = items.next()
+
+          if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
+            // Remove.
+            element.delete()
+            result.changed = true
+          }
         }
       }
     }

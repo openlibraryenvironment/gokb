@@ -28,6 +28,7 @@ class IntegrationController {
   def reviewRequestService
   def sessionFactory
   def packageService
+  def platformService
   def messageService
   def titleHistoryService
   def crossReferenceService
@@ -45,7 +46,7 @@ class IntegrationController {
     log.debug("assertJsonldPlatform ${name}/${normname}");
     if (located_entries.size() == 0) {
       log.debug("No platform with normname ${normname} - create");
-      def new_platform = new org.gokb.cred.Platform(name: name, normname: normname).save()
+      def new_platform = new Platform(name: name, normname: normname).save()
       result.message = "Added new platform"
     }
     else {
@@ -1067,7 +1068,7 @@ class IntegrationController {
       }
 
       try {
-        def p = Platform.upsertDTO(platformJson)
+        def p = platformService.upsertDTO(platformJson)
 
         if (p) {
           log.debug("created or looked up platform ${p}!")

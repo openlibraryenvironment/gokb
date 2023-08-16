@@ -32,7 +32,7 @@ import org.gokb.cred.*
 
 import com.k_int.ClassUtils
 
-@Log4j
+@Slf4j
 class DomainClassExtender {
 
   public static RefdataValue getComboStatusActive() {
@@ -325,8 +325,6 @@ class DomainClassExtender {
               }
             }
 
-            combos = combos.collect { ClassUtils.deproxy(it) }
-
             // Create our new list.
             result = new ComboPersistedList (
                 (thisComponent),
@@ -355,8 +353,6 @@ class DomainClassExtender {
                 property("toComponent")
               }
             }
-
-            combos = combos.collect { ClassUtils.deproxy(it) }
 
             // Create our new list.
             result = new ComboPersistedList (

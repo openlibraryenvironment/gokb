@@ -164,7 +164,7 @@ class OrgController {
             errors.variantNames = variant_result.errors
           }
 
-          errors << updateCombos(obj, reqBody)
+          errors << orgService.updateCombos(obj, reqBody)
         }
         else {
           errors << messageService.processValidationErrors(obj.errors, request.locale)
@@ -235,7 +235,7 @@ class OrgController {
           errors.variantNames = variant_result.errors
         }
 
-        errors << updateCombos(obj, reqBody, remove)
+        errors << orgService.updateCombos(obj, reqBody, remove)
 
         if (obj.validate()) {
           if (errors.size() == 0) {
@@ -280,61 +280,6 @@ class OrgController {
     }
 
     render result as JSON
-  }
-
-  private def updateCombos(obj, reqBody, boolean remove = true) {
-    log.debug("Updating org combos ..")
-    def errors = [:]
-    def changed = false
-
-    if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
-      def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
-
-      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
-
-      changed |= id_result.changed
-
-      if (id_result.errors.size() > 0) {
-        errors.ids = id_result.errors
-      }
-    }
-
-    if (reqBody.providedPlatforms instanceof Collection) {
-      def plts = reqBody.providedPlatforms
-
-      def plts_result = orgService.updatePlatforms(obj, plts, remove)
-
-      changed |= plts_result.changed
-
-      if (plts_result.errors.size() > 0) {
-        errors.providedPlatforms = plts_result.errors
-      }
-    }
-
-    if (reqBody.curatoryGroups instanceof Collection) {
-      def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
-
-      changed |= cg_result.changed
-
-      if (cg_result.errors.size() > 0) {
-        errors['curatoryGroups'] = cg_result.errors
-      }
-    }
-
-    if (reqBody.offices instanceof Collection) {
-      def office_result = orgService.updateOffices(obj, reqBody.offices, remove)
-      changed |= office_result.changed
-
-      if (office_result.errors.size() > 0) {
-        errors['offices'] = office_result.errors
-      }
-    }
-
-    if (changed) {
-      obj.lastSeen = System.currentTimeMillis()
-    }
-    log.debug("After update: ${obj}")
-    errors
   }
 
   @Secured(value = ["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])

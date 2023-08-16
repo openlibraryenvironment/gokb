@@ -39,6 +39,7 @@ class PackageService {
   def concurrencyManagerService
   def grailsApplication
   def dateFormatService
+  def platformService
 
   private static final String[] KBART_FIELDS = ['publication_title',
      'print_identifier',
@@ -996,7 +997,7 @@ class PackageService {
         }
 
         if (!np && platformDTO.name) {
-          np = Platform.upsertDTO(platformDTO)
+          np = platformService.upsertDTO(platformDTO)
         }
 
         if (np) {
@@ -1377,8 +1378,9 @@ class PackageService {
 
             ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
             int ctr = 0
-            while (tipps.next()) {
-              TitleInstancePackagePlatform.withNewSession { tsession ->
+
+            TitleInstancePackagePlatform.withNewSession { tsession ->
+              while (tipps.next()) {
                 def tipp_id = tipps.get(0)
                 TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
                 def ti = tipp.title ? ClassUtils.deproxy(tipp.title) : null
@@ -1386,101 +1388,101 @@ class PackageService {
                 if (tipp.coverageStatements?.size() > 0) {
                   tipp.coverageStatements.each { tcs ->
                     writer.write(
-                        sanitize(tipp.getId()) + '\t' +
-                            sanitize(tipp.url) + '\t' +
-                            sanitize(ti?.getId()) + '\t' +
-                            sanitize(tipp.name ?: ti?.name) + '\t' +
-                            sanitize(tipp.status.value) + '\t' +
-                            sanitize(ti?.getCurrentPublisher()?.name) + '\t' +
-                            sanitize(ti?.imprint?.name) + '\t' +
-                            sanitize(ti?.publishedFrom) + '\t' +
-                            sanitize(ti?.publishedTo) + '\t' +
-                            sanitize(ti?.medium?.value) + '\t' +
-                            sanitize(ti?.OAStatus?.value) + '\t' +
-                            sanitize(ti?.continuingSeries?.value) + '\t' +
-                            sanitize(tipp.getIdentifierValue('issn') ?: ti?.getIdentifierValue('issn')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('eissn') ?: ti?.getIdentifierValue('eissn')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('zdb') ?: ti?.getIdentifierValue('zdb')) + '\t' +
-                            sanitize(pkgName) + '\t' + sanitize(pkg.id) + '\t' +
-                            '\t' +
-                            sanitize(tipp.hostPlatform.name) + '\t' +
-                            sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
-                            sanitize(tipp.hostPlatform.getId()) + '\t' +
-                            '\t' +
-                            sanitize(tipp.editStatus?.value) + '\t' +
-                            sanitize(tipp.accessStartDate) + '\t' +
-                            sanitize(tipp.accessEndDate) + '\t' +
-                            sanitize(tcs.startDate) + '\t' +
-                            sanitize(tcs.startVolume) + '\t' +
-                            sanitize(tcs.startIssue) + '\t' +
-                            sanitize(tcs.endDate) + '\t' +
-                            sanitize(tcs.endVolume) + '\t' +
-                            sanitize(tcs.endIssue) + '\t' +
-                            sanitize(tcs.embargo) + '\t' +
-                            sanitize(tcs.coverageDepth) + '\t' +
-                            sanitize(tcs.coverageNote) + '\t' +
-                            sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
-                            sanitize(tipp.format?.value) + '\t' +
-                            sanitize(tipp.paymentType?.value) + '\t' +
-                            sanitize(tipp.getIdentifierValue('doi') ?: ti?.getIdentifierValue('doi')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('isbn') ?: ti?.getIdentifierValue('isbn')) + '\t' +
-                            sanitize(tipp.getIdentifierValue('pisbn') ?: ti?.getIdentifierValue('pisbn')) +
-                            '\n');
+                      sanitize(tipp.getId()) + '\t' +
+                      sanitize(tipp.url) + '\t' +
+                      sanitize(ti?.getId()) + '\t' +
+                      sanitize(tipp.name ?: ti?.name) + '\t' +
+                      sanitize(tipp.status.value) + '\t' +
+                      sanitize(ti?.getCurrentPublisher()?.name) + '\t' +
+                      sanitize(ti?.imprint?.name) + '\t' +
+                      sanitize(ti?.publishedFrom) + '\t' +
+                      sanitize(ti?.publishedTo) + '\t' +
+                      sanitize(ti?.medium?.value) + '\t' +
+                      sanitize(ti?.OAStatus?.value) + '\t' +
+                      sanitize(ti?.continuingSeries?.value) + '\t' +
+                      sanitize(tipp.getIdentifierValue('issn') ?: ti?.getIdentifierValue('issn')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('eissn') ?: ti?.getIdentifierValue('eissn')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('zdb') ?: ti?.getIdentifierValue('zdb')) + '\t' +
+                      sanitize(pkgName) + '\t' + sanitize(pkg.id) + '\t' +
+                      '\t' +
+                      sanitize(tipp.hostPlatform.name) + '\t' +
+                      sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                      sanitize(tipp.hostPlatform.getId()) + '\t' +
+                      '\t' +
+                      sanitize(tipp.editStatus?.value) + '\t' +
+                      sanitize(tipp.accessStartDate) + '\t' +
+                      sanitize(tipp.accessEndDate) + '\t' +
+                      sanitize(tcs.startDate) + '\t' +
+                      sanitize(tcs.startVolume) + '\t' +
+                      sanitize(tcs.startIssue) + '\t' +
+                      sanitize(tcs.endDate) + '\t' +
+                      sanitize(tcs.endVolume) + '\t' +
+                      sanitize(tcs.endIssue) + '\t' +
+                      sanitize(tcs.embargo) + '\t' +
+                      sanitize(tcs.coverageDepth) + '\t' +
+                      sanitize(tcs.coverageNote) + '\t' +
+                      sanitize(tipp.hostPlatform.primaryUrl) + '\t' +
+                      sanitize(tipp.format?.value) + '\t' +
+                      sanitize(tipp.paymentType?.value) + '\t' +
+                      sanitize(tipp.getIdentifierValue('doi') ?: ti?.getIdentifierValue('doi')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('isbn') ?: ti?.getIdentifierValue('isbn')) + '\t' +
+                      sanitize(tipp.getIdentifierValue('pisbn') ?: ti?.getIdentifierValue('pisbn')) +
+                      '\n');
                   }
                 }
                 else {
                   writer.write(
-                      sanitize(tipp.getId()) + '\t' +
-                          sanitize(tipp.url) + '\t' +
-                          sanitize(ti?.getId()) + '\t' +
-                          sanitize(tipp.name ?: ti?.name) + '\t' +
-                          sanitize(tipp.status.value) + '\t' +
-                          sanitize(ti?.getCurrentPublisher()?.name) + '\t' +
-                          sanitize(ti?.imprint?.name) + '\t' +
-                          sanitize(ti?.publishedFrom) + '\t' +
-                          sanitize(ti?.publishedTo) + '\t' +
-                          sanitize(ti?.medium?.value) + '\t' +
-                          sanitize(ti?.OAStatus?.value) + '\t' +
-                          sanitize(ti?.continuingSeries?.value) + '\t' +
-                          sanitize(tipp.getIdentifierValue('issn') ?: ti?.getIdentifierValue('issn')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('eissn') ?: ti?.getIdentifierValue('eissn')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('zdb') ?: ti?.getIdentifierValue('zdb')) + '\t' +
-                          sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
-                          '\t' +
-                          sanitize(tipp.hostPlatform?.name) + '\t' +
-                          sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
-                          sanitize(tipp.hostPlatform?.getId()) + '\t' +
-                          '\t' +
-                          sanitize(tipp.editStatus?.value) + '\t' +
-                          sanitize(tipp.accessStartDate) + '\t' +
-                          sanitize(tipp.accessEndDate) + '\t' +
-                          sanitize(tipp.startDate) + '\t' +
-                          sanitize(tipp.startVolume) + '\t' +
-                          sanitize(tipp.startIssue) + '\t' +
-                          sanitize(tipp.endDate) + '\t' +
-                          sanitize(tipp.endVolume) + '\t' +
-                          sanitize(tipp.endIssue) + '\t' +
-                          sanitize(tipp.embargo) + '\t' +
-                          sanitize(tipp.coverageDepth) + '\t' +
-                          sanitize(tipp.coverageNote) + '\t' +
-                          sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
-                          sanitize(tipp.format?.value) + '\t' +
-                          sanitize(tipp.paymentType?.value) + '\t' +
-                          sanitize(tipp.getIdentifierValue('doi') ?: ti?.getIdentifierValue('doi')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('isbn') ?: ti?.getIdentifierValue('isbn')) + '\t' +
-                          sanitize(tipp.getIdentifierValue('pisbn') ?: ti?.getIdentifierValue('pisbn')) +
-                          '\n')
+                    sanitize(tipp.getId()) + '\t' +
+                    sanitize(tipp.url) + '\t' +
+                    sanitize(ti?.getId()) + '\t' +
+                    sanitize(tipp.name ?: ti?.name) + '\t' +
+                    sanitize(tipp.status.value) + '\t' +
+                    sanitize(ti?.getCurrentPublisher()?.name) + '\t' +
+                    sanitize(ti?.imprint?.name) + '\t' +
+                    sanitize(ti?.publishedFrom) + '\t' +
+                    sanitize(ti?.publishedTo) + '\t' +
+                    sanitize(ti?.medium?.value) + '\t' +
+                    sanitize(ti?.OAStatus?.value) + '\t' +
+                    sanitize(ti?.continuingSeries?.value) + '\t' +
+                    sanitize(tipp.getIdentifierValue('issn') ?: ti?.getIdentifierValue('issn')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('eissn') ?: ti?.getIdentifierValue('eissn')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('zdb') ?: ti?.getIdentifierValue('zdb')) + '\t' +
+                    sanitize(pkg.name) + '\t' + sanitize(pkg.getId()) + '\t' +
+                    '\t' +
+                    sanitize(tipp.hostPlatform?.name) + '\t' +
+                    sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
+                    sanitize(tipp.hostPlatform?.getId()) + '\t' +
+                    '\t' +
+                    sanitize(tipp.editStatus?.value) + '\t' +
+                    sanitize(tipp.accessStartDate) + '\t' +
+                    sanitize(tipp.accessEndDate) + '\t' +
+                    sanitize(tipp.startDate) + '\t' +
+                    sanitize(tipp.startVolume) + '\t' +
+                    sanitize(tipp.startIssue) + '\t' +
+                    sanitize(tipp.endDate) + '\t' +
+                    sanitize(tipp.endVolume) + '\t' +
+                    sanitize(tipp.endIssue) + '\t' +
+                    sanitize(tipp.embargo) + '\t' +
+                    sanitize(tipp.coverageDepth) + '\t' +
+                    sanitize(tipp.coverageNote) + '\t' +
+                    sanitize(tipp.hostPlatform?.primaryUrl) + '\t' +
+                    sanitize(tipp.format?.value) + '\t' +
+                    sanitize(tipp.paymentType?.value) + '\t' +
+                    sanitize(tipp.getIdentifierValue('doi') ?: ti?.getIdentifierValue('doi')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('isbn') ?: ti?.getIdentifierValue('isbn')) + '\t' +
+                    sanitize(tipp.getIdentifierValue('pisbn') ?: ti?.getIdentifierValue('pisbn')) +
+                    '\n')
                 }
 
+                ctr++
+
+                if (Thread.currentThread().isInterrupted()) {
+                  break
+                }
                 if (ctr % 50 == 0) {
                   tsession.flush()
                   tsession.clear()
                 }
-              }
-              ctr++
-
-              if (Thread.currentThread().isInterrupted()) {
-                break
               }
             }
             tipps.close()

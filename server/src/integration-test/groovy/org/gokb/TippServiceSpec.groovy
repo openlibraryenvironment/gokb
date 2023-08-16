@@ -36,8 +36,17 @@ class TippServiceSpec extends Specification {
 
   @Autowired
   TippService tippService
+
+  @Autowired
+  TippUpsertService tippUpsertService
+
+  @Autowired
   DateFormatService dateFormatService
+
+  @Autowired
   SessionFactory sessionFactory
+
+  @Autowired
   ConcurrencyManagerService concurrencyManagerService
 
   IdentifierNamespace issn_ns
@@ -107,7 +116,7 @@ class TippServiceSpec extends Specification {
     ]
 
     when:
-    def tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
+    def tipp = tippUpsertService.upsertDTO(tmap)
     sleep(100)
     def result = tippService.matchTitle(tipp.id)
 
@@ -156,7 +165,7 @@ class TippServiceSpec extends Specification {
     ]
 
     when:
-    def tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
+    def tipp = tippUpsertService.upsertDTO(tmap)
     tippService.matchTitle(tipp.id)
 
     then:
@@ -190,7 +199,7 @@ class TippServiceSpec extends Specification {
     ]
 
     when:
-    def tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
+    def tipp = tippUpsertService.upsertDTO(tmap)
     tipp.ids.add(my_isbn)
     tipp.save(flush: true)
 
@@ -217,7 +226,7 @@ class TippServiceSpec extends Specification {
     ]
 
     when:
-    def tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
+    def tipp = tippUpsertService.upsertDTO(tmap)
     tipp.ids.addAll([issn, eissn])
     tipp.save(flush: true)
 
@@ -248,7 +257,7 @@ class TippServiceSpec extends Specification {
     ]
 
     when:
-    def tipp = TitleInstancePackagePlatform.upsertDTO(tmap)
+    def tipp = tippUpsertService.upsertDTO(tmap)
     tipp.ids.addAll([issn, eissn])
     tipp.save(flush: true)
 
@@ -270,11 +279,11 @@ class TippServiceSpec extends Specification {
     def updIsbn = new Identifier(value: '9783631725290', namespace: IdentifierNamespace.findByValue('isbn')).save(flush: true)
     updBook.ids.add(updIsbn)
     updBook.save(flush: true)
-    def tBook = TitleInstancePackagePlatform.tiplAwareCreate([name: "TippService Book 1", pkg: updPack, hostPlatform: updPlt, url: 'http://tippservicebook.com/test'])
+    def tBook = tippUpsertService.tiplAwareCreate([name: "TippService Book 1", pkg: updPack, hostPlatform: updPlt, url: 'http://tippservicebook.com/test'])
     tBook.ids.add(updIsbn)
     tBook.publicationType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Monograph')
     tBook.save(flush: true)
-    def tJournal = TitleInstancePackagePlatform.tiplAwareCreate([name: "TippService Update Journal", pkg: updPack, hostPlatform: updPlt, url: 'http://tippservicejournal.com/test'])
+    def tJournal = tippUpsertService.tiplAwareCreate([name: "TippService Update Journal", pkg: updPack, hostPlatform: updPlt, url: 'http://tippservicejournal.com/test'])
     Identifier issn = new Identifier(namespace: IdentifierNamespace.findByValue('eissn'), value: '2209-7643')
     tJournal.ids.add(issn)
     tJournal.publicationType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Serial')

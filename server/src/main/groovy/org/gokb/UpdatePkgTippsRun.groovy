@@ -33,6 +33,8 @@ class UpdatePkgTippsRun {
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
   static ESSearchService esSearchService = Holders.grailsApplication.mainContext.getBean('ESSearchService')
   static TippService tippService = Holders.grailsApplication.mainContext.getBean('tippService')
+  static PlatformService platformService = Holders.grailsApplication.mainContext.getBean('platformService')
+  static TippUpsertService tippUpsertService = Holders.grailsApplication.mainContext.getBean('tippUpsertService')
   static DateFormatService dateFormatService = Holders.grailsApplication.mainContext.getBean('dateFormatService')
 
   static LOCK = new Object()
@@ -444,7 +446,7 @@ class UpdatePkgTippsRun {
           pltError.putAll(valid_plt.errors)
         }
         try {
-          pl = Platform.upsertDTO(tippPlt, user)
+          pl = platformService.upsertDTO(tippPlt, user)
           if (pl) {
             pltCache[tippPlt.name] = pl
             Platform.withTransaction {
@@ -541,7 +543,7 @@ class UpdatePkgTippsRun {
               importId: tippJson.titleId
             ]
 
-            tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
+            tipp = tippUpsertService.tiplAwareCreate(tipp_fields)
 
             if (match_result.failed_matches?.size() > 0) {
               log.debug("Created TIPP ${tipp} with URL ${tipp?.url}, needs review ..")

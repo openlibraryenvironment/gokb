@@ -103,6 +103,7 @@ class CleanupService {
     }
   }
 
+  @Transactional
   private def expungeByIds ( ids, Job j = null ) {
     def result = [report: []]
     def esclient = ESWrapperService.getClient()
@@ -141,7 +142,6 @@ class CleanupService {
     result
   }
 
-  @Transactional
   def deleteOrphanedTipps(Job j = null) {
     log.debug("Expunging TIPPs with missing links")
 
@@ -155,7 +155,6 @@ class CleanupService {
     return new Date()
   }
 
-  @Transactional
   def expungeRejectedComponents(Job j = null) {
 
     log.debug("Process rejected candidates")
@@ -183,55 +182,56 @@ class CleanupService {
     def delete_candidates = Platform.executeQuery('from Platform as plt where plt.primaryUrl IS NULL and plt.status <> :sd', [sd: status_deleted])
 
     delete_candidates.each { ptr ->
-      def repl_crit = Platform.createCriteria()
-      def orig_plt = repl_crit.list () {
-        isNotNull('primaryUrl')
-        eq ('name', ptr.name)
-        eq ('status', status_current)
-      }
-
-      if ( orig_plt?.size() == 1 ) {
-        log.debug("Found replacement platform for ${ptr}")
-        def new_plt = orig_plt[0]
-
-        def old_from_combos = Combo.executeQuery("from Combo where fromComponent = :op", [op: ptr])
-        def old_to_combos = Combo.executeQuery("from Combo where toComponent = :op", [op: ptr])
-
-        old_from_combos.each { oc ->
-          def existing_new = Combo.executeQuery("from Combo where type = :ct and fromComponent = :plt and toComponent = :op",[ct: oc.type, plt: new_plt, op: oc.toComponent])
-
-          if (existing_new?.size() == 0 && oc.toComponent != new_plt) {
-            oc.fromComponent = new_plt
-            oc.save(flush:true)
-          }
-          else {
-            log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
-            oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-            oc.save(flush:true)
-          }
+      Platform.withNewTransaction {
+        def repl_crit = Platform.createCriteria()
+        def orig_plt = repl_crit.list () {
+          isNotNull('primaryUrl')
+          eq ('name', ptr.name)
+          eq ('status', status_current)
         }
 
-        old_to_combos.each { oc ->
-          def existing_new = Combo.executeQuery("from Combo where type = :ct and toComponent = :plt and fromComponent = :cc",[ct: oc.type, plt: new_plt, cc: oc.fromComponent])
+        if ( orig_plt?.size() == 1 ) {
+          log.debug("Found replacement platform for ${ptr}")
+          def new_plt = orig_plt[0]
 
-          if (existing_new?.size() == 0 && oc.fromComponent != new_plt) {
-            oc.toComponent = new_plt
-            oc.save(flush:true)
+          def old_from_combos = Combo.executeQuery("from Combo where fromComponent = :op", [op: ptr])
+          def old_to_combos = Combo.executeQuery("from Combo where toComponent = :op", [op: ptr])
+
+          old_from_combos.each { oc ->
+            def existing_new = Combo.executeQuery("from Combo where type = :ct and fromComponent = :plt and toComponent = :op",[ct: oc.type, plt: new_plt, op: oc.toComponent])
+
+            if (existing_new?.size() == 0 && oc.toComponent != new_plt) {
+              oc.fromComponent = new_plt
+              oc.save(flush:true)
+            }
+            else {
+              log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
+              oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+              oc.save(flush:true)
+            }
           }
-          else {
-            log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
-            oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-            oc.save(flush:true)
+
+          old_to_combos.each { oc ->
+            def existing_new = Combo.executeQuery("from Combo where type = :ct and toComponent = :plt and fromComponent = :cc",[ct: oc.type, plt: new_plt, cc: oc.fromComponent])
+
+            if (existing_new?.size() == 0 && oc.fromComponent != new_plt) {
+              oc.toComponent = new_plt
+              oc.save(flush:true)
+            }
+            else {
+              log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
+              oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+              oc.save(flush:true)
+            }
           }
+
+          ptr.name = "${ptr.name} DELETED"
+          ptr.deleteSoft()
         }
-
-        ptr.name = "${ptr.name} DELETED"
-        ptr.deleteSoft()
+        else {
+          log.debug("Could not find a valid replacement for platform ${ptr}")
+        }
       }
-      else {
-        log.debug("Could not find a valid replacement for platform ${ptr}")
-      }
-
     }
     j.endTime = new Date();
   }
@@ -241,6 +241,7 @@ class CleanupService {
     log.debug("GOKb missing uuid check..")
     def ctr = 0
     def skipped = []
+
     KBComponent.withNewSession {
       KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.id is not null and kbc.uuid is null").each { kbc_id ->
         try {
@@ -282,83 +283,82 @@ class CleanupService {
 
     def ctr = 0
     def new_tipl = 0
-    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-    def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def combo_tipp = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
-    def combo_tipl = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipls')
 
-    try {
+    TitleInstancePackagePlatform.withNewSession {
+      def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
+      def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+      def combo_tipp = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
+      def combo_tipl = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipls')
 
-      log.debug("Getting count..")
-      def count = TitleInstancePackagePlatform.executeQuery("select count(tipp.id) from TitleInstancePackagePlatform as tipp where tipp.status != :sd",[sd: status_deleted])[0]
-      def tipp_crit = new DetachedCriteria(TitleInstancePackagePlatform).build{
-        ne('status', status_deleted)
-      }
-      log.debug("Got criteria..")
+      try {
 
-      def batchsize = 50
-      def offset = 0
-
-      while (offset < count) {
-
-        if ( Thread.currentThread().isInterrupted() ) {
-          log.debug("Job cancelling ..")
-          j.endTime = new Date()
-          break;
+        log.debug("Getting count..")
+        def count = TitleInstancePackagePlatform.executeQuery("select count(tipp.id) from TitleInstancePackagePlatform as tipp where tipp.status != :sd",[sd: status_deleted])[0]
+        def tipp_crit = new DetachedCriteria(TitleInstancePackagePlatform).build{
+          ne('status', status_deleted)
         }
+        log.debug("Got criteria..")
 
-        def tipps = tipp_crit.list (max: batchsize, offset: offset) {}
+        def batchsize = 50
+        def offset = 0
 
-        for (tipp in tipps) {
+        while (offset < count) {
 
-          def tipls = checkForTipl(tipp.title?:null, tipp.hostPlatform, tipp.url)
-          def final_tipl = null
-
-          if ( tipls?.size() == 0 ) {
-            final_tipl = new TitleInstancePlatform(url:tipp.url).save()
-
-            def plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTitles')
-            def plt_combo = new Combo(toComponent:final_tipl, fromComponent:tipp.hostPlatform, type:plt_combo_type, status:combo_status_active).save();
-
-            def ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipls')
-            def ti_combo = new Combo(toComponent:final_tipl, fromComponent:tipp.title, type:ti_combo_type, status:combo_status_active).save();
-
-            new_tipl++
+          if ( Thread.currentThread().isInterrupted() ) {
+            log.debug("Job cancelling ..")
+            j.endTime = new Date()
+            break;
           }
-          else if ( tipls?.size() == 1 ) {
-            final_tipl = tipls[0]
 
-            if (tipp.url && final_tipl.url != tipp.url) {
-              final_tipl.url = tipp.url
+          def tipps = tipp_crit.list (max: batchsize, offset: offset) {}
+
+          for (tipp in tipps) {
+
+            def tipls = checkForTipl(tipp.title?:null, tipp.hostPlatform, tipp.url)
+            def final_tipl = null
+
+            if ( tipls?.size() == 0 ) {
+              final_tipl = new TitleInstancePlatform(url:tipp.url).save(flush: true)
+              final_tipl.tiplHostPlatform = tipp.hostPlatform
+              final_tipl.tiplTitle = tipp.title
+              final_tipl.save(flush: true)
+
+              new_tipl++
+            }
+            else if ( tipls?.size() == 1 ) {
+              final_tipl = tipls[0]
+
+              if (tipp.url && final_tipl.url != tipp.url) {
+                final_tipl.url = tipp.url
+              }
+
+            }
+            else {
+              log.debug("Found more than one TIPL for ${tipp.title?:tipp} on ${tipp.hostPlatform}!")
             }
 
+            log.debug("TIPL ${final_tipl}")
+            j.setProgress(ctr, count)
+            ctr++
           }
-          else {
-            log.debug("Found more than one TIPL for ${tipp.title?:tipp} on ${tipp.hostPlatform}!")
-          }
-
-          log.debug("TIPL ${final_tipl}")
-          j.setProgress(ctr, count)
-          ctr++
+          offset += batchsize
+          log.debug("ensureTipls :: Processed ${ctr} TIPPs")
+          Thread.yield()
+          cleanUpGorm()
         }
-        offset += batchsize
-        log.debug("ensureTipls :: Processed ${ctr} TIPPs")
-        Thread.yield()
-        cleanUpGorm()
+
+        j.message("Finished checking for missing TIPLs, with ${new_tipl} newly created.".toString())
+        j.setProgress(100)
+
       }
-
-      j.message("Finished checking for missing TIPLs, with ${new_tipl} newly created.".toString())
-      j.setProgress(100)
-
+      catch ( Exception e ) {
+        log.error("Problem with ensure TIPLs",e)
+        j.message("There was an error ensuring TIPLs.. check logs for info.".toString())
+      }
+      finally {
+        log.debug("ensureTipls finished (${ctr} TIPPs)");
+      }
     }
-    catch ( Exception e ) {
-      log.error("Problem with ensure TIPLs",e)
-      j.message("There was an error ensuring TIPLs.. check logs for info.".toString())
-    }
-    finally {
-      log.debug("ensureTipls finished (${ctr} TIPPs)");
-    }
-
     j.endTime = new Date()
   }
 

@@ -10,7 +10,9 @@ class PackageUpdateService {
   def componentUpdateService
   def messageService
   def restMappingService
+  def titleAugmentService
   def titleLookupService
+  def tippUpsertService
 
   @Transactional
   def updateCombos(obj, reqBody, boolean remove = true, user) {
@@ -138,7 +140,7 @@ class PackageUpdateService {
         if (tipp_dto.title && tipp_dto.title instanceof Map) {
           if (!tipp_dto.title.id) {
             try {
-              def ti = TitleInstance.upsertDTO(titleLookupService, tipp_dto.title, user)
+              def ti = titleAugmentService.upsertDTO(titleLookupService, tipp_dto.title, user)
 
               if (ti) {
                 tipp_dto.title = ti.id
@@ -178,7 +180,7 @@ class PackageUpdateService {
           }
         }
         else {
-          def upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tipp_dto, user)
+          def upserted_tipp = tippUpsertService.upsertDTO(tipp_dto, user)
 
           if (upserted_tipp) {
             if (errors.size() == 0) {

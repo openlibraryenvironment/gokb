@@ -182,25 +182,4 @@ class BookInstance extends TitleInstance {
     }
     result
   }
-
-  public boolean addMonographFields(JSONObject titleObj) {
-    def book_changed = false
-
-    ["editionDifferentiator",
-     "editionStatement", "volumeNumber",
-     "summaryOfContent", "firstAuthor",
-     "firstEditor"].each { stringPropertyName ->
-      if (titleObj[stringPropertyName] && titleObj[stringPropertyName].toString().trim().length() > 0) {
-        book_changed |= ClassUtils.setStringIfDifferent(this, stringPropertyName, titleObj[stringPropertyName])
-      }
-    }
-
-    def dfip = GOKbTextUtils.completeDateString(titleObj.dateFirstInPrint)
-    book_changed |= ClassUtils.setDateIfPresent(dfip, this, 'dateFirstInPrint')
-
-    def dfo = GOKbTextUtils.completeDateString(titleObj.dateFirstOnline, false)
-    book_changed |= ClassUtils.setDateIfPresent(dfo, this, 'dateFirstOnline')
-
-    book_changed
-  }
 }

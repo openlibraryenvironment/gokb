@@ -109,8 +109,8 @@ class PackageTestSpec extends AbstractAuthSpec {
       test_tipp1.hostPlatform = testPlt
       test_tipp1.save(flush: true)
 
-      new Combo(fromComponent: test_tipp1, toComponent: serial_issn, type: combo_ids).save(flush: true)
-      new Combo(fromComponent: test_tipp1, toComponent: serial_eissn, type: combo_ids).save(flush: true)
+      test_tipp1.ids.addAll([serial_issn, serial_eissn])
+      test_tipp1.save(flush: true)
     }
 
     if (!TitleInstancePackagePlatform.findByName('TestPackBookTIPP')) {

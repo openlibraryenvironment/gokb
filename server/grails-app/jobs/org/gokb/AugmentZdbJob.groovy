@@ -25,7 +25,25 @@ class AugmentZdbJob implements InterruptableJob {
     // see Bootstrap.groovy
   }
 
-  static final String query = "from JournalInstance as ti where ti.status = :current and (ti.dateCreated > :lastRun or (not exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace = :ns) and exists (Select ci from Combo as ci where ci.type = :ctype and ci.fromComponent = ti and ci.toComponent.namespace IN :issns)))"
+  static final String query = '''from JournalInstance as ti
+                              where ti.status = :current
+                              and (
+                                ti.dateCreated > :lastRun
+                                or (
+                                  not exists (
+                                    Select ci from Combo as ci
+                                    where ci.type = :ctype
+                                    and ci.fromComponent = ti
+                                    and ci.toComponent.namespace = :ns
+                                  )
+                                  and exists (
+                                    Select ci from Combo as ci
+                                    where ci.type = :ctype
+                                    and ci.fromComponent = ti
+                                    and ci.toComponent.namespace IN (:issns)
+                                  )
+                                )
+                              )'''
 
   public void execute(JobExecutionContext context) {
     if (grailsApplication.config.getProperty('gokb.zdbAugment.enabled', Boolean.class)) {
@@ -45,35 +63,40 @@ class AugmentZdbJob implements InterruptableJob {
         issnNs << IdentifierNamespace.findByValue('issn')
         issnNs << IdentifierNamespace.findByValue('eissn')
         int offset = 0
-        int batchSize = 50
         Instant start = Instant.now()
         ZonedDateTime zdt = ZonedDateTime.ofInstant(start, ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS)
         Date startDate = Date.from(zdt.toInstant())
 
-        def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(), [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs, lastRun: startDate])[0]
+        def qry_params = [
+          current: status_current,
+          ctype: idComboType,
+          ns: zdbNs,
+          issns: issnNs,
+          lastRun: startDate
+        ]
 
-        while (offset < count_journals_without_zdb_id) {
-          def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(), [current: status_current, ctype: idComboType, ns: zdbNs, issns: issnNs, lastRun: startDate], [offset: offset, max: batchSize])
+        def count_journals_without_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${query}".toString(), qry_params)[0]
+        def journals_without_zdb_id = JournalInstance.executeQuery("select ti.id ${query}".toString(), qry_params)
 
-          log.debug("Processing ${count_journals_without_zdb_id}")
+        log.debug("Processing ${count_journals_without_zdb_id}")
 
-          for (ti_id in journals_without_zdb_id) {
-            def ti = TitleInstance.get(ti_id)
-            log.debug("Attempting augment on ${ti.id} ${ti.name}")
-            def result = titleAugmentService.augmentZdb(ti)
+        for (ti_id in journals_without_zdb_id) {
+          def ti = TitleInstance.get(ti_id)
+          log.debug("Attempting augment on ${ti.id} ${ti.name}")
+          def result = titleAugmentService.augmentZdb(ti)
+          offset++
 
-            if (interrupted || Thread.currentThread().isInterrupted()) {
-              break
-            }
+          if (offset % 50 == 0) {
+            cleanUpGorm()
           }
-          cleanUpGorm()
-          offset += batchSize
+
           dataMap.progress = "${Math.floor(offset.div(count_journals_without_zdb_id) * 100)}%".toString()
 
           if (interrupted || Thread.currentThread().isInterrupted()) {
             break
           }
         }
+
         log.info("Finished ZDB augment job, augmenting ${count_journals_without_zdb_id} Journals.")
         dataMap.remove('progress')
         interrupted = false

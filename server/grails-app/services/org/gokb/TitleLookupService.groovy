@@ -1129,7 +1129,7 @@ class TitleLookupService {
               if (propName == "toComponent") {
                 combo = new Combo(
                   type: (type),
-                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                  status: pub_to_add.status ? RefdataCategory.lookup(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
                   startDate: pub_add_sd,
                   endDate: pub_add_ed,
                   toComponent: publisher,
@@ -1138,7 +1138,7 @@ class TitleLookupService {
               } else {
                 combo = new Combo(
                   type: (type),
-                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                  status: pub_to_add.status ? RefdataCategory.lookup(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
                   startDate: pub_add_sd,
                   endDate: pub_add_ed,
                   fromComponent: publisher,

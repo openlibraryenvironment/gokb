@@ -1,6 +1,5 @@
 package gokbg3
 
-import grails.gorm.transactions.Transactional
 import org.apache.commons.lang3.time.FastDateFormat
 
 import java.text.DateFormat
@@ -11,7 +10,7 @@ import java.text.SimpleDateFormat
  * Collecting the Dateformatters which are scattered all over the application into one central entity that might be
  * updated to java.time later on.
  */
-@Transactional
+
 class DateFormatService {
   private static Format DATE_FORMAT = new FastDateFormat("yyyy-MM-dd", TimeZone.getDefault(), Locale.getDefault())
   private static Format TIMESTAMP_FORMAT = new FastDateFormat("yyyy-MM-dd HH:mm:ss", TimeZone.getDefault(), Locale.getDefault())
