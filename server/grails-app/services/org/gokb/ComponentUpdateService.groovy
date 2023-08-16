@@ -203,8 +203,8 @@ class ComponentUpdateService {
           // Only add if we have the group already in the system.
           if (group){
             log.debug("Adding group ${name}..")
-            new Combo(fromComponent: component, toComponent: group, type: combo_type_cg, status: combo_active)
-                .save(flush: true, failOnError: true)
+            component.curatoryGroups << group
+            component.save(flush: true, failOnError: true)
             hasChanged = true
             groups << [id: group.id, name: group.name]
           }
@@ -252,7 +252,8 @@ class ComponentUpdateService {
 
             if (duplicate.size() == 0) {
               log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
-              def new_id = new Combo(fromComponent: component, toComponent: canonical_identifier, status: combo_active, type: combo_type_id).save(flush: true, failOnError: true)
+              component.ids << canonical_identifier
+              component.save(flush: true)
               hasChanged = true
             } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")

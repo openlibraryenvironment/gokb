@@ -29,6 +29,7 @@ class IngestKbartRun {
   static ValidationService validationService = Holders.grailsApplication.mainContext.getBean('validationService')
   static def concurrencyManagerService = Holders.grailsApplication.mainContext.getBean('concurrencyManagerService')
   static TippService tippService = Holders.grailsApplication.mainContext.getBean('tippService')
+  static TippUpsertService tippUpsertService = Holders.grailsApplication.mainContext.getBean('tippUpsertService')
   static DateFormatService dateFormatService = Holders.grailsApplication.mainContext.getBean('dateFormatService')
 
   boolean addOnly
@@ -200,8 +201,8 @@ class IngestKbartRun {
             def p = Package.get(pid)
             p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
             p.lastSeen = new Date().getTime()
+            p.fileAttachments << datafile
             p.save(flush: true)
-            new Combo(fromComponent: p, toComponent: datafile, type: RefdataCategory.lookup('Combo.Type','KBComponent.FileAttachments')).save(flush: true, failOnError: true)
           }
         }
 
@@ -271,7 +272,7 @@ class IngestKbartRun {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
           if (!dryRun && result.result != 'CANCELLED') {
             try {
-              TitleInstancePackagePlatform.withNewSession {
+              TitleInstancePackagePlatform.withTransaction {
                 // Find all tipps in this package which have a lastSeen before the ingest date
                 def retire_pars = [
                   pkgid: pkg.id,
@@ -323,27 +324,25 @@ class IngestKbartRun {
 
         if (!dryRun) {
           try {
-            Package.withNewSession {
+            Package.withTransaction {
               Package p = Package.get(pid)
 
               def update_agent = User.findByUsername('IngestAgent')
               // insertBenchmark updateBenchmark
-              Package.withTransaction {
-                if ( p.insertBenchmark == null )
-                  p.insertBenchmark = processing_elapsed
+              if ( p.insertBenchmark == null )
+                p.insertBenchmark = processing_elapsed
 
-                p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
-                p.lastUpdatedBy = update_agent
-                p.updateBenchmark = processing_elapsed
-                p.save(flush: true, failOnError: true)
-              }
+              p.lastUpdateComment = "KBART ingest of file:${datafile.name}[${datafile.id}] completed in ${processing_elapsed}ms, avg per row=${average_milliseconds_per_row}, avg per hour=${average_per_hour}"
+              p.lastUpdatedBy = update_agent
+              p.updateBenchmark = processing_elapsed
+              p.save(flush: true, failOnError: true)
             }
 
             def matching_job = concurrencyManagerService.createJob { mjob ->
               tippService.matchPackage(pid, mjob)
             }
 
-            RefdataCategory.withNewSession {
+            Package.withTransaction {
               Package p = Package.get(pid)
               matching_job.description = "Package Title Matching".toString()
               matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
@@ -656,7 +655,7 @@ class IngestKbartRun {
             importId: the_kbart.title_id?.trim()
           ]
 
-          tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
+          tipp = tippUpsertService.tiplAwareCreate(tipp_fields)
 
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
 
@@ -753,7 +752,7 @@ class IngestKbartRun {
             importId: the_kbart.title_id
           ]
 
-          tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
+          tipp = tippUpsertService.tiplAwareCreate(tipp_fields)
         }
 
         if (tipp_map.importId) {

@@ -9,6 +9,7 @@ import org.hibernate.SessionFactory
 class OrgService {
   def platformService
   def FTUpdateService
+  def restMappingService
 
   def restLookup(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}");
@@ -120,7 +121,6 @@ class OrgService {
     result
   }
 
-  @Transactional
   def upsert(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}")
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
@@ -205,7 +205,65 @@ class OrgService {
     result
   }
 
-  @Transactional
+  /*
+  * Trigger updates for all incoming combo infos
+  */
+
+  def updateCombos(obj, reqBody, boolean remove = true) {
+    log.debug("Updating org combos ..")
+    def errors = [:]
+    def changed = false
+
+    if (reqBody.ids instanceof Collection || reqBody.identifiers instanceof Collection) {
+      def id_list = reqBody.ids instanceof Collection ? reqBody.ids : reqBody.identifiers
+
+      def id_result = restMappingService.updateIdentifiers(obj, id_list, remove)
+
+      changed |= id_result.changed
+
+      if (id_result.errors.size() > 0) {
+        errors.ids = id_result.errors
+      }
+    }
+
+    if (reqBody.providedPlatforms instanceof Collection) {
+      def plts = reqBody.providedPlatforms
+
+      def plts_result = updatePlatforms(obj, plts, remove)
+
+      changed |= plts_result.changed
+
+      if (plts_result.errors.size() > 0) {
+        errors.providedPlatforms = plts_result.errors
+      }
+    }
+
+    if (reqBody.curatoryGroups instanceof Collection) {
+      def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
+
+      changed |= cg_result.changed
+
+      if (cg_result.errors.size() > 0) {
+        errors['curatoryGroups'] = cg_result.errors
+      }
+    }
+
+    if (reqBody.offices instanceof Collection) {
+      def office_result = updateOffices(obj, reqBody.offices, remove)
+      changed |= office_result.changed
+
+      if (office_result.errors.size() > 0) {
+        errors['offices'] = office_result.errors
+      }
+    }
+
+    if (changed) {
+      obj.lastSeen = System.currentTimeMillis()
+    }
+    log.debug("After update: ${obj}")
+    errors
+  }
+
   def updatePlatforms(obj, plts, boolean remove = true) {
     def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
     def removed_plts = obj.providedPlatforms*.id
@@ -230,7 +288,7 @@ class OrgService {
           log.debug("Result of platform lookup: ${lookup}")
 
           if (lookup.to_create) {
-            plt_obj = Platform.upsertDTO(plt)
+            plt_obj = platformService.upsertDTO(plt)
           }
           else if (lookup.matches.size() == 1) {
             lookup.matches?.each { mid, info ->
@@ -310,14 +368,13 @@ class OrgService {
     result
   }
 
-  @Transactional
   public def updateOffices(Org org, offices, boolean remove = true) {
     log.debug("Update offices ${offices}")
     RefdataValue OFFICE_ORG = RefdataCategory.lookup(Combo.RD_TYPE, 'Office.Org')
     RefdataValue STATUS_ACTIVE = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
     def function_rdc = RefdataCategory.findByLabel(Office.RD_FUNCTION)
-    def old_combos = org.getCombosByPropertyName('offices')
+    def old_list = org.offices
     def new_offices = []
     def result = [changed: false, errors: []]
 
@@ -366,7 +423,8 @@ class OrgService {
         def dupes = Combo.executeQuery("from Combo where fromComponent = :off and toComponent = :org", [off: office_obj, org: org])
 
         if (!dupes) {
-          new Combo(fromComponent: office_obj, toComponent: org, type: OFFICE_ORG, status: STATUS_ACTIVE).save(flush: true)
+          org.offices << office_obj
+          org.save(flush: true)
           result.changed = true
         }
         new_offices << office_obj
@@ -377,14 +435,14 @@ class OrgService {
     }
 
     if (remove) {
-      Iterator items = old_combos.iterator();
-      List removedCombos = []
+      Iterator items = old_list.iterator();
+      List removedOffices = []
       Object element;
       while (items.hasNext()) {
         element = items.next();
-        if (!new_offices.contains(element.fromComponent)) {
+        if (!new_offices.contains(element)) {
           // Remove.
-          element.delete()
+          element.expunge()
           result.changed = true
         }
       }

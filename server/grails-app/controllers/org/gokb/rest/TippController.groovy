@@ -32,6 +32,7 @@ class TippController {
   def componentLookupService
   def componentUpdateService
   def tippService
+  def tippUpsertService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -123,7 +124,7 @@ class TippController {
         def tipp_validation = tippService.validateDTO(reqBody)
 
         if (tipp_validation.valid) {
-          def obj = TitleInstancePackagePlatform.upsertDTO(reqBody, user)
+          def obj = tippUpsertService.upsertDTO(reqBody, user)
 
           if (obj?.validate()) {
             response.status = 201

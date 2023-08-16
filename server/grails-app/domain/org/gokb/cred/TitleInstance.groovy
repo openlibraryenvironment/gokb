@@ -209,56 +209,6 @@ class TitleInstance extends KBComponent {
     result
   }
 
-  /**
-   * Close off any existing publisher relationships and add a new one for this publiser
-   */
-  def changePublisher(new_publisher, boolean null_start = false) {
-
-    if (new_publisher != null) {
-
-      def current_publisher = getCurrentPublisher()
-      def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-
-      if ((current_publisher != null) && (current_publisher.id == new_publisher.id)) {
-        // no change... leave it be
-        return false
-      }
-      else {
-        def publisher_combos = getCombosByPropertyName('publisher')
-        publisher_combos.each { pc ->
-          if (pc.endDate == null) {
-            pc.endDate = new Date();
-          }
-        }
-
-        // Now create a new Combo
-        RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue('publisher'))
-        Combo combo = new Combo(
-          type: (type),
-          status: combo_active,
-          startDate: (null_start ? null : new Date())
-        )
-
-        // Depending on where the combo is defined we need to add a combo.
-        if (isComboReverse('publisher')) {
-          combo.fromComponent = new_publisher
-          addToIncomingCombos(combo)
-        }
-        else {
-          combo.toComponent = new_publisher
-          addToOutgoingCombos(combo)
-        }
-        combo.save(flush:true)
-        //this.publisher.add(new_publisher)
-        this.save(flush:true)
-        return true
-      }
-    }
-
-    // Returning false if we get here implies the publisher has not been changed.
-    return false
-  }
-
 
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
@@ -774,57 +724,6 @@ class TitleInstance extends KBComponent {
     }
 
     return null
-  }
-
-  @Transient
-  static TitleInstance upsertDTO(titleLookupService, titleDTO, user = null, fullsync = false) {
-    def result = null;
-    def type = null
-
-    if (titleDTO.type) {
-      switch (titleDTO.type.toLowerCase()) {
-        case "serial":
-        case "journal":
-          type = "org.gokb.cred.JournalInstance"
-          break;
-        case "monograph":
-        case "book":
-          type = "org.gokb.cred.BookInstance"
-          break;
-        case "database":
-          type = "org.gokb.cred.DatabaseInstance"
-          break;
-        case "other":
-          type = "org.gokb.cred.OtherInstance"
-          break;
-        default:
-          log.warn("Missing type for title!")
-          break;
-      }
-    }
-
-    if (type) {
-      result = titleLookupService.findOrCreate(titleDTO.name,
-        titleDTO.publisher,
-        titleDTO.identifiers,
-        user,
-        null,
-        type,
-        titleDTO.uuid,
-        fullsync
-      )
-      if (titleDTO.medium) {
-        result.medium = determineMediumRef(titleDTO)
-      }
-
-      def ti_language = titleDTO.language ? RefdataCategory.lookup('KBComponent.Language', titleDTO.language) : null
-      if (ti_language){
-        result.language = ti_language
-      }
-
-      log.debug("Result of upsertDTO: ${result}");
-    }
-    result;
   }
 
   // This is called by the titleLookupService::remapTitleInstance method but NOTE:: this is done

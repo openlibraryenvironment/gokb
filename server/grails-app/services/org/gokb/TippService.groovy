@@ -8,8 +8,6 @@ import grails.converters.JSON
 import grails.gorm.transactions.*
 
 import org.gokb.cred.*
-import org.gokb.rest.TippController
-import org.grails.web.json.JSONObject
 
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -391,7 +389,7 @@ class TippService {
           changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, idMatch, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
           cs_match = true
-          stale_coverage_ids.removeAll(idMatch.id)
+          stale_coverage_ids.removeAll { it == idMatch.id }
         }
         else {
           log.debug("No ID match for statement!")
@@ -437,7 +435,7 @@ class TippService {
               changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
               changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
-              stale_coverage_ids.removeAll(tcs.id)
+              stale_coverage_ids.removeAll { it == tcs.id }
             }
             else {
               log.debug("No Match ..")
@@ -669,12 +667,13 @@ class TippService {
         }
 
         if (ti) {
+          tipp.title = ti
+          tipp.save(flush: true)
+
           if (result.status == 'matched') {
             titleAugmentService.addIdentifiers(tipp_ids, ti)
             titleAugmentService.addPublisher(tipp.publisherName, ti)
           }
-
-          new Combo(fromComponent: ti, toComponent: tipp, type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')).save(flush: true)
 
           log.debug("linked TIPP $tipp with TitleInstance $ti")
         }
@@ -734,13 +733,14 @@ class TippService {
 
     if (title_class_name == 'org.gokb.cred.BookInstance') {
       log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
-      title_changed |= ti.addMonographFields(new JSONObject([//editionNumber        : null,
-                                                              //editionDifferentiator: null,
-                                                              editionStatement: tipp.editionStatement,
-                                                              volumeNumber    : tipp.volumeNumber,
-                                                              //summaryOfContent     : null,
-                                                              firstAuthor     : tipp.firstAuthor,
-                                                              firstEditor     : tipp.firstEditor]))
+      def mono_string_info = [
+        editionStatement: tipp.editionStatement,
+        volumeNumber    : tipp.volumeNumber,
+        firstAuthor     : tipp.firstAuthor,
+        firstEditor     : tipp.firstEditor
+      ]
+
+      title_changed |= titleAugmentService.editMonographFields(ti, mono_string_info)
     }
     ti.save(flush: true)
     ti
@@ -760,7 +760,6 @@ class TippService {
     }
   }
 
-  @Transactional
   def statusUpdate() {
     log.info("Updating TIPP status via access dates..")
     def result = [result: 'OK', retired: 0, activated: 0]
@@ -1335,7 +1334,7 @@ class TippService {
 
   @Transactional
   public void touchPackage(tipp) {
-    def pkg_obj = tipp.pkg
+    def pkg_obj = KBComponent.deproxy(tipp.pkg)
 
     pkg_obj?.lastSeen = new Date().getTime()
     pkg_obj?.save(flush:true)

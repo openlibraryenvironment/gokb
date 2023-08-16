@@ -359,32 +359,32 @@ class PackageSourceUpdateService {
 
     HttpResponse<InputStream> response = client.send(request, BodyHandlers.ofInputStream())
     HttpHeaders headers = response.headers()
+    def file_name = headers.firstValue('Content-Disposition').isPresent() ? headers.firstValue('Content-Disposition').get() : null
+
+    if (file_name) {
+      file_name = file_name.split('filename=')[1]
+    }
+
     result.content_mime_type = headers.firstValue('Content-Type').isPresent() ? headers.firstValue('Content-Type').get() : null
 
     if (response.statusCode() >= 400) {
       log.warn("KBART fetch status: ${result.status}")
     }
-    else if (result.content_mime_type.startsWith('text/html')) {
+    else if (!file_name && result.content_mime_type == 'text/plain') {
+      file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
+    }
+    else if (!file_name && result.content_mime_type.startsWith('text/html')) {
       log.warn("Got HTML result at KBART URL ${src_url}!")
       result.accessError = true
     }
-    else {
+
+    if (file_name?.trim()) {
       log.debug("${result.content_mime_type} ${headers.map()}")
-      def file_name = headers.firstValue('Content-Disposition').isPresent() ? headers.firstValue('Content-Disposition').get() : null
-
-      if (file_name) {
-        file_name = file_name.split('filename=')[1]
-      } else if (result.content_mime_type == 'text/plain') (
-        file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
-      )
-
-      if (file_name?.trim()) {
-        result.file_name = file_name.replaceAll(/\"/, '')
-        InputStream content = response.body()
-        FileUtils.copyInputStreamToFile(content, tmp_file)
-        content.close()
-        log.debug("Wrote ${tmp_file.length()}")
-      }
+      result.file_name = file_name.replaceAll(/\"/, '')
+      InputStream content = response.body()
+      FileUtils.copyInputStreamToFile(content, tmp_file)
+      content.close()
+      log.debug("Wrote ${tmp_file.length()}")
     }
 
     result

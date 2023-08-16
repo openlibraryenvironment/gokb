@@ -8,8 +8,8 @@
     </encoder>
   </appender>
 
-  <logger name="com.k_int" level="INFO"/>
-  <logger name="org.gokb" level="INFO"/>
+  <logger name="com.k_int" level="DEBUG"/>
+  <logger name="org.gokb" level="DEBUG"/>
 
   <logger name="org.gokb.DomainClassExtender" level="WARN"/>
   <logger name="org.gokb.ClassExaminationService" level="WARN"/>
@@ -25,6 +25,7 @@
   <logger name="org.gokb.ComponentUpdateService" level="INFO"/>
   <logger name="org.gokb.TitleLookupService" level="INFO"/>
   <logger name="org.gokb.TSVIngestionService" level="DEBUG"/>
+  <logger name="org.gokb.ZdbApiService" level="DEBUG"/>
   <logger name="org.gokb.SearchController" level="INFO"/>
   <logger name="org.gokb.ResourceController" level="ERROR"/>
   <logger name="org.gokb.AutoUpdatePackagesJob" level="DEBUG"/>

@@ -42,6 +42,7 @@ class PackageController {
   def titleLookupService
   def TSVIngestionService
   def packageUpdateService
+  def tippUpsertService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
@@ -579,7 +580,7 @@ class PackageController {
             def tipp_validation = TitleInstancePackagePlatform.validateDTO(tipp, RequestContextUtils.getLocale(request))
 
             if (tipp_validation.valid) {
-              def tipp_obj = TitleInstancePackagePlatform.upsertDTO(tipp, user)
+              def tipp_obj = tippUpsertService.upsertDTO(tipp, user)
 
               if (!tipp_obj) {
                 errors.add(['code': 400, 'message': "TIPP could not be created!", baddata: tipp, idx: idx])

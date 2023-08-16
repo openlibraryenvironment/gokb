@@ -22,6 +22,7 @@ class WorkflowController{
   def packageService
   def dateFormatService
   def concurrencyManagerService
+  def titleAugmentService
 
   def actionConfig = [
       'method::deleteSoft'     : [actionType: 'simple'],
@@ -1075,8 +1076,7 @@ class WorkflowController{
     activity_data.title_ids.each{ title_id ->
       log.debug("Process title_id ${title_id} and change publisher to ${publisher}")
       def title = TitleInstance.get(title_id)
-      title.changePublisher(publisher)
-      title.save(flush: true)
+      titleAugmentService.changePublisher(title, publisher)
     }
 
     // Step two : Process TIPP adjustments

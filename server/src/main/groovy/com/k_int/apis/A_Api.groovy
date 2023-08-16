@@ -1,6 +1,6 @@
 package com.k_int.apis
 
-import groovy.util.logging.Log4j
+import groovy.util.logging.*
 
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
@@ -27,7 +27,7 @@ import org.springframework.context.ApplicationContext
  *
  * i.e. public myMethod(T instance, String foo) would add the method myMethod(String foo) to the target.
  */
-@Log4j
+@Slf4j
 abstract class A_Api <T> {
 
   protected static final Set<String> EXCLUDES = AbstractGormApi.EXCLUDES + [

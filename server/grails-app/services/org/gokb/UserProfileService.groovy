@@ -173,6 +173,8 @@ class UserProfileService {
             user.curatoryGroups.addAll(curGroups)
             user.curatoryGroups.retainAll(curGroups)
           }
+        } else if (field == 'defaultPageSize' && value && value instanceof Integer) {
+          user[field] = Long.valueOf(value)
         } else {
           user[field] = value
         }

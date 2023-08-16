@@ -21,7 +21,10 @@ class CrossRefPkgRun {
   static SpringSecurityService springSecurityService = Holders.grailsApplication.mainContext.getBean('springSecurityService')
   static ComponentUpdateService componentUpdateService = Holders.grailsApplication.mainContext.getBean('componentUpdateService')
   static TitleLookupService titleLookupService = Holders.grailsApplication.mainContext.getBean('titleLookupService')
+  static TitleAugmentService titleAugmentService = Holders.grailsApplication.mainContext.getBean('titleAugmentService')
   static TitleHistoryService titleHistoryService = Holders.grailsApplication.mainContext.getBean('titleHistoryService')
+  static TippUpsertService tippUpsertService = Holders.grailsApplication.mainContext.getBean('tippUpsertService')
+  static PlatformService platformService = Holders.grailsApplication.mainContext.getBean('platformService')
   static ReviewRequestService reviewRequestService = Holders.grailsApplication.mainContext.getBean('reviewRequestService')
   static ComponentLookupService componentLookupService = Holders.grailsApplication.mainContext.getBean('componentLookupService')
   static CleanupService cleanupService = Holders.grailsApplication.mainContext.getBean('cleanupService')
@@ -474,7 +477,14 @@ class CrossRefPkgRun {
 
         if (title_class_name == 'org.gokb.cred.BookInstance') {
           log.debug("Adding Monograph fields for ${ti.class.name}: ${ti}")
-          title_changed |= ti.addMonographFields(titleObj)
+          def mono_string_info = [
+            editionStatement: titleObj.editionStatement,
+            volumeNumber    : titleObj.volumeNumber,
+            firstAuthor     : titleObj.firstAuthor,
+            firstEditor     : titleObj.firstEditor
+          ]
+
+          title_changed |= titleAugmentService.editMonographFields(ti, mono_string_info)
         }
 
         if (title_changed) {
@@ -539,7 +549,7 @@ class CrossRefPkgRun {
           pltError.putAll(valid_plt.errors)
         }
         try {
-          pl = Platform.upsertDTO(tippPlt, user)
+          pl = platformService.upsertDTO(tippPlt, user)
           if (pl) {
             pltCache[tippPlt.name] = pl
             pl.merge(flush: true)
@@ -581,7 +591,7 @@ class CrossRefPkgRun {
       log.debug("upsert TIPP ${tippJson.name ?: tippJson.title.name}")
       def upserted_tipp = null
       try {
-        upserted_tipp = TitleInstancePackagePlatform.upsertDTO(tippJson, user)
+        upserted_tipp = tippUpsertService.upsertDTO(tippJson, user)
         log.debug("Upserted TIPP ${upserted_tipp} with URL ${upserted_tipp?.url}")
         upserted_tipp.merge(flush: true)
         componentUpdateService.ensureCoreData(upserted_tipp, tippJson, fullsync, user)

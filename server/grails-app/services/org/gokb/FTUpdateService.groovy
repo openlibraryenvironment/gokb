@@ -3,7 +3,6 @@ package org.gokb
 import com.k_int.ESSearchService
 import com.k_int.ClassUtils
 import grails.converters.JSON
-import grails.gorm.transactions.Transactional
 import org.gokb.cred.*
 import org.opensearch.action.bulk.BulkItemResponse
 import org.opensearch.action.bulk.BulkRequest
@@ -441,11 +440,10 @@ class FTUpdateService {
     }
   }
 
-
   def updateES(esClient, domain, boolean reindex = false) {
     log.debug("updateES(${domain}...)")
-    cleanUpGorm()
     def count = 0
+
     try {
       log.debug("updateES - ${domain.name}")
       def latest_ft_record = null
@@ -453,7 +451,7 @@ class FTUpdateService {
       def highest_id = 0
       def activity_type = reindex ? 'ESReindex' : 'ESIndex'
 
-      FTControl.withTransaction {
+      domain.withNewSession { dsession ->
         latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name, activity_type)
 
         log.debug("result of findByDomain: ${domain} ${latest_ft_record}")
@@ -465,25 +463,24 @@ class FTUpdateService {
           highest_timestamp = latest_ft_record.lastTimestamp
           log.debug("Got existing ftcontrol record for ${domain.name} max timestamp is ${highest_timestamp} which is ${new Date(highest_timestamp)}")
         }
-      }
-      log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}")
+        log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}")
 
-      def total = 0
-      Date from = new Date(latest_ft_record.lastTimestamp)
-      def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ", [ts: from], [readonly: true])[0]
-      log.debug("Will process ${countq} records")
-      def q = domain.executeQuery("select o.id from " + domain.name + " as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id", [ts: from], [readonly: true])
-      log.debug("Query completed.. processing rows...")
+        def total = 0
+        Date from = new Date(latest_ft_record.lastTimestamp)
+        def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ", [ts: from], [readonly: true])[0]
+        log.debug("Will process ${countq} records")
+        def q = domain.executeQuery("select o.id from " + domain.name + " as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id", [ts: from], [readonly: true])
+        log.debug("Query completed.. processing rows...")
 
-      BulkRequest bulkRequest = new BulkRequest()
-      for (r_id in q) {
-        if (Thread.currentThread().isInterrupted()) {
-          log.warn("Job cancelling ..")
-          running = false
-          break
-        }
+        BulkRequest bulkRequest = new BulkRequest()
 
-        domain.withNewSession {
+        for (r_id in q) {
+          if (Thread.currentThread().isInterrupted()) {
+            log.warn("Job cancelling ..")
+            running = false
+            break
+          }
+
           Object r = domain.get(r_id)
           log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
 
@@ -502,26 +499,30 @@ class FTUpdateService {
           }
 
           highest_id = r.id
-        }
 
-        count++
-        total++
+          count++
+          total++
 
-        if (count > 250) {
-          count = 0
-          log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
-          BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
-
-          if (bulkResponse.hasFailures()) {
-            logBulkFailures(bulkResponse)
-            log.error("Bulk Update had errors, skipping domain ${domain}!")
-            break
+          if (count % 50 == 0) {
+            dsession.flush()
+            dsession.clear()
           }
 
-          log.debug("... BulkResponse: ${bulkResponse}")
+          if (count > 250) {
+            count = 0
+            log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
+            BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
 
-          FTControl.withTransaction {
+            if (bulkResponse.hasFailures()) {
+              logBulkFailures(bulkResponse)
+              log.error("Bulk Update had errors, skipping domain ${domain}!")
+              break
+            }
+
+            log.debug("... BulkResponse: ${bulkResponse}")
+
             latest_ft_record = FTControl.get(latest_ft_record.id)
+
             if (latest_ft_record) {
               latest_ft_record.lastTimestamp = highest_timestamp
               latest_ft_record.lastId = highest_id
@@ -531,25 +532,23 @@ class FTUpdateService {
               log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update")
             }
           }
-          cleanUpGorm()
         }
-      }
-      if (count > 0) {
-        BulkResponse bulkFinalResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
-        log.debug("... final BulkResponse: ${bulkFinalResponse}")
-        logBulkFailures(bulkFinalResponse)
-      }
-      // update timestamp
-      if (total > 0) {
-        FTControl.withTransaction {
+        if (count > 0) {
+          BulkResponse bulkFinalResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
+          log.debug("... final BulkResponse: ${bulkFinalResponse}")
+          logBulkFailures(bulkFinalResponse)
+        }
+
+        // update timestamp
+        if (total > 0) {
           latest_ft_record = FTControl.get(latest_ft_record.id)
           latest_ft_record.lastTimestamp = highest_timestamp
           latest_ft_record.lastId = highest_id
           latest_ft_record.save(flush: true, failOnError: true)
         }
+
+        log.debug("... final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
       }
-      cleanUpGorm()
-      log.debug("... final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
     }
     catch (Exception e) {
       log.error("Problem with FT index", e)

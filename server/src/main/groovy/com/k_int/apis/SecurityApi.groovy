@@ -1,6 +1,6 @@
 package com.k_int.apis
 
-import groovy.util.logging.Log4j
+import groovy.util.logging.Slf4j
 
 import grails.plugin.springsecurity.SpringSecurityUtils
 import org.gokb.cred.KBDomainInfo
@@ -23,7 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder as SECCH
  * <p>Also adds the following in both a static and none static context:</p>
  * @author Steve Osguthorpe <steve.osguthorpe@k-int.com>
  */
-@Log4j
+@Slf4j
 class SecurityApi <T> extends A_Api<T> {
 
   private SecurityApi () {}

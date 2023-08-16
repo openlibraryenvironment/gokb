@@ -20,7 +20,7 @@
   <logger name="org.gokb.TitleLookupService" level="INFO"/>
   <logger name="org.gokb.SearchController" level="INFO"/>
   <logger name="org.gokb.ResourceController" level="ERROR"/>
-  <logger name="org.gokb.FTUpdateService" level="ERROR"/>
+  <logger name="org.gokb.FTUpdateService" level="DEBUG"/>
   <logger name="org.gokb.ESUpdateJob" level="ERROR"/>
   <logger name="org.gokb.cred" level="ERROR"/>
   <logger name="org.gokb.cred.BookInstance" level="ERROR"/>
