@@ -23,7 +23,6 @@ class TitleAugmentService {
 
   def augmentZdb(titleInstance) {
     log.debug("Augment ZDB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
-    RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
     RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
     RefdataValue status_active = RefdataCategory.lookup("Combo.Status", "Active")
     def group_name = grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators')
