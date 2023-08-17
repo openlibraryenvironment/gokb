@@ -23,6 +23,7 @@ class TitleAugmentService {
 
   def augmentZdb(titleInstance) {
     log.debug("Augment ZDB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
+    RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
     RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
     RefdataValue status_active = RefdataCategory.lookup("Combo.Status", "Active")
     def group_name = grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators')
@@ -39,13 +40,14 @@ class TitleAugmentService {
 
     if (titleInstance.niceName == 'Journal') {
       RefdataValue rr_in_use = RefdataCategory.lookup('ReviewRequest.StdDesc', 'ZDB Title Overlap')
-      RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
-      RefdataValue status_closed = RefdataCategory.lookup("ReviewRequest.Status", "Closed")
+      RefdataValue rr_status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+      RefdataValue rr_status_closed = RefdataCategory.lookup("ReviewRequest.Status", "Closed")
+      RefdataValue rr_status_deleted = RefdataCategory.lookup("ReviewRequest.Status", "Deleted")
       def existing_inuse = ReviewRequest.executeQuery('''from ReviewRequest as rr
                                                       where rr.componentToReview = :ti
                                                       and rr.stdDesc = :type
                                                       and rr.status = :status''',
-                                                      [ti: titleInstance, type: rr_in_use, status: status_open])
+                                                      [ti: titleInstance, type: rr_in_use, status: rr_status_open])
 
       if (existing_inuse.size() == 0 && num_existing_zdb_ids <= 1) {
         RefdataValue rr_no_results = RefdataCategory.lookup('ReviewRequest.StdDesc', 'No ZDB Results')
@@ -54,12 +56,14 @@ class TitleAugmentService {
 
         def existing_noresults = ReviewRequest.executeQuery('''from ReviewRequest as rr
                                                             where rr.componentToReview = :ti
-                                                            and rr.stdDesc = :type''',
-                                                            [ti: titleInstance, type: rr_no_results])
+                                                            and rr.stdDesc = :type
+                                                            and rr.status != :sd ''',
+                                                            [ti: titleInstance, type: rr_no_results, sd: rr_status_deleted])
         def existing_multiple = ReviewRequest.executeQuery('''from ReviewRequest as rr
                                                             where rr.componentToReview = :ti
-                                                            and rr.stdDesc = :type''',
-                                                            [ti: titleInstance, type: rr_multiple])
+                                                            and rr.stdDesc = :type
+                                                            and rr.status != :sd ''',
+                                                            [ti: titleInstance, type: rr_multiple, sd: rr_status_deleted])
         def ids = Identifier.executeQuery('''from Identifier as ido
                                           where exists (
                                             select 1 from Combo
@@ -120,12 +124,12 @@ class TitleAugmentService {
               }
 
               existing_noresults.each {
-                it.status = status_closed
+                it.status = rr_status_closed
                 it.save()
               }
 
               existing_multiple.each {
-                it.status = status_closed
+                it.status = rr_status_closed
                 it.save()
               }
             }
@@ -138,7 +142,7 @@ class TitleAugmentService {
         }
         else if (candidates.size() == 0){
           if (existing_noresults.size() == 0 && ids.findAll { it.namespace.value == 'issn' || it.namespace.value == 'eissn' || it.namespace.value == 'zdb' }.size() > 0) {
-            log.debug("No ZDB result for ids of title ${titleInstance} (${titleInstance.ids.collect { it.value }})")
+            log.debug("No ZDB result for ids of title ${titleInstance} (${ids.collect { ido -> ido.value }})")
 
             reviewRequestService.raise(
               titleInstance,
@@ -205,12 +209,12 @@ class TitleAugmentService {
                 }
 
                 existing_noresults.each {
-                  it.status = status_closed
+                  it.status = rr_status_closed
                   it.save()
                 }
 
                 existing_multiple.each {
-                  it.status = status_closed
+                  it.status = rr_status_closed
                   it.save()
                 }
               }
@@ -242,8 +246,9 @@ class TitleAugmentService {
         RefdataValue rr_merged = RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'Merged ZDB titles')
         def existing_review = ReviewRequest.executeQuery('''from ReviewRequest as rr
                                                           where rr.componentToReview = :ti
-                                                          and rr.stdDesc = :type''',
-                                                          [ti: titleInstance, type: rr_merged])
+                                                          and rr.stdDesc = :type
+                                                          and rr.status != :sd ''',
+                                                          [ti: titleInstance, type: rr_merged, sd: rr_status_deleted])
 
         if (!existing_review) {
           reviewRequestService.raise(
