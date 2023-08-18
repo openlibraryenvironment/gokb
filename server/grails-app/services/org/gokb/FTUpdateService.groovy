@@ -2,6 +2,7 @@ package org.gokb
 
 import com.k_int.ESSearchService
 import com.k_int.ClassUtils
+import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.*
@@ -28,15 +29,17 @@ class FTUpdateService {
    * is responsible for ensuring only 1 FT index task runs at a time. It's a simple mutex.
    * see https://async.grails.org/latest/guide/index.html
    */
-  def updateFTIndexes() {
+  def updateFTIndexes(Job j = null) {
     log.debug("updateFTIndexes")
     if (running == false) {
+      if (j) j.message("Starting..")
       running = true
-      doFTUpdate()
+      doFTUpdate(j)
       log.debug("FTUpdate done.")
       return new Date()
     }
     else {
+      if (j) j.message("Already running.. skip")
       log.error("FTUpdate already running")
       return "Job cancelled – FTUpdate was already running!"
     }
@@ -241,7 +244,8 @@ class FTUpdateService {
         break
       case TitleInstancePackagePlatform:
         result.updater = 'tipp'
-        def ti = kbc.title ? ClassUtils.deproxy(kbc.title) : null
+        TitleInstance ti = kbc.title ? TitleInstance.get(kbc.title.id) : null
+
         result.name = kbc.name ?: (ti.name ?: null)
 
         result.curatoryGroups = []
@@ -387,19 +391,19 @@ class FTUpdateService {
   }
 
 
-  synchronized def doFTUpdate() {
+  synchronized def doFTUpdate(j) {
     log.debug("doFTUpdate")
     log.debug("Execute IndexUpdateJob starting at ${new Date()}")
     def esclient = ESWrapperService.getClient()
     try {
-      updateES(esclient, Package.class)
-      updateES(esclient, Org.class)
-      updateES(esclient, Platform.class)
-      updateES(esclient, JournalInstance.class)
-      updateES(esclient, DatabaseInstance.class)
-      updateES(esclient, OtherInstance.class)
-      updateES(esclient, BookInstance.class)
-      updateES(esclient, TitleInstancePackagePlatform.class)
+      updateES(esclient, Package.class, j)
+      updateES(esclient, Org.class, j)
+      updateES(esclient, Platform.class, j)
+      updateES(esclient, JournalInstance.class, j)
+      updateES(esclient, DatabaseInstance.class, j)
+      updateES(esclient, OtherInstance.class, j)
+      updateES(esclient, BookInstance.class, j)
+      updateES(esclient, TitleInstancePackagePlatform.class, j)
     }
     catch (Exception e) {
       log.error("Problem", e)
@@ -407,19 +411,19 @@ class FTUpdateService {
     running = false
   }
 
-  synchronized def doBackgroundReindex() {
+  synchronized def doBackgroundReindex(j) {
     log.debug("doFTUpdate")
     log.debug("Execute IndexUpdateJob starting at ${new Date()}")
     def esclient = ESWrapperService.getClient()
     try {
-      updateES(esclient, Package.class, true)
-      updateES(esclient, Org.class, true)
-      updateES(esclient, Platform.class, true)
-      updateES(esclient, JournalInstance.class, true)
-      updateES(esclient, DatabaseInstance.class, true)
-      updateES(esclient, OtherInstance.class, true)
-      updateES(esclient, BookInstance.class, true)
-      updateES(esclient, TitleInstancePackagePlatform.class, true)
+      updateES(esclient, Package.class, j, true)
+      updateES(esclient, Org.class, j, true)
+      updateES(esclient, Platform.class, j, true)
+      updateES(esclient, JournalInstance.class, j, true)
+      updateES(esclient, DatabaseInstance.class, j, true)
+      updateES(esclient, OtherInstance.class, j, true)
+      updateES(esclient, BookInstance.class, j, true)
+      updateES(esclient, TitleInstancePackagePlatform.class, j, true)
     }
     catch (Exception e) {
       log.error("Problem", e)
@@ -442,18 +446,18 @@ class FTUpdateService {
   }
 
 
-  def updateES(esClient, domain, boolean reindex = false) {
+  def updateES(esClient, domain, job, boolean reindex = false) {
     log.debug("updateES(${domain}...)")
-    cleanUpGorm()
     def count = 0
-    try {
-      log.debug("updateES - ${domain.name}")
-      def latest_ft_record = null
-      def highest_timestamp = 0
-      def highest_id = 0
-      def activity_type = reindex ? 'ESReindex' : 'ESIndex'
 
-      FTControl.withTransaction {
+    domain.withNewSession {
+      try {
+        log.debug("updateES - ${domain.name}")
+        def latest_ft_record = null
+        def highest_timestamp = 0
+        def highest_id = 0
+        def activity_type = reindex ? 'ESReindex' : 'ESIndex'
+
         latest_ft_record = FTControl.findByDomainClassNameAndActivity(domain.name, activity_type)
 
         log.debug("result of findByDomain: ${domain} ${latest_ft_record}")
@@ -465,18 +469,20 @@ class FTUpdateService {
           highest_timestamp = latest_ft_record.lastTimestamp
           log.debug("Got existing ftcontrol record for ${domain.name} max timestamp is ${highest_timestamp} which is ${new Date(highest_timestamp)}")
         }
-      }
-      log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}")
 
-      def total = 0
-      Date from = new Date(latest_ft_record.lastTimestamp)
-      def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ", [ts: from], [readonly: true])[0]
-      log.debug("Will process ${countq} records")
-      def q = domain.executeQuery("select o.id from " + domain.name + " as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id", [ts: from], [readonly: true])
-      log.debug("Query completed.. processing rows...")
-      BulkRequest bulkRequest = new BulkRequest()
+        log.debug("updateES ${domain.name} since ${latest_ft_record.lastTimestamp}")
 
-      domain.withNewSession {
+        def total = 0
+        Date from = new Date(latest_ft_record.lastTimestamp)
+        def countq = domain.executeQuery("select count(o.id) from " + domain.name + " as o where (( o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) ", [ts: from], [readonly: true])[0]
+
+        if (job) job.message("Indexing start for ${countq} ${domain.simpleName} ..".toString())
+
+        log.debug("Will process ${countq} records")
+        def q = domain.executeQuery("select o.id from " + domain.name + " as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id", [ts: from], [readonly: true])
+        log.debug("Query completed.. processing rows...")
+        BulkRequest bulkRequest = new BulkRequest()
+
         for (r_id in q) {
           if (Thread.currentThread().isInterrupted()) {
             log.warn("Job cancelling ..")
@@ -519,41 +525,38 @@ class FTUpdateService {
 
             log.debug("... BulkResponse: ${bulkResponse}")
 
-            FTControl.withTransaction {
-              latest_ft_record = FTControl.get(latest_ft_record.id)
-              if (latest_ft_record) {
-                latest_ft_record.lastTimestamp = highest_timestamp
-                latest_ft_record.lastId = highest_id
-                latest_ft_record.save(flush: true, failOnError: true)
-              }
-              else {
-                log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update")
-              }
+            if (latest_ft_record) {
+              latest_ft_record.lastTimestamp = highest_timestamp
+              latest_ft_record.lastId = highest_id
+              latest_ft_record.save(flush: true, failOnError: true)
             }
+            else {
+              log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update")
+            }
+
             cleanUpGorm()
           }
         }
-      }
 
-      if (count > 0) {
-        BulkResponse bulkFinalResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
-        log.debug("... final BulkResponse: ${bulkFinalResponse}")
-        logBulkFailures(bulkFinalResponse)
-      }
-      // update timestamp
-      if (total > 0) {
-        FTControl.withTransaction {
-          latest_ft_record = FTControl.get(latest_ft_record.id)
+        if (count > 0) {
+          BulkResponse bulkFinalResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
+          log.debug("... final BulkResponse: ${bulkFinalResponse}")
+          logBulkFailures(bulkFinalResponse)
+        }
+        // update timestamp
+        if (total > 0) {
           latest_ft_record.lastTimestamp = highest_timestamp
           latest_ft_record.lastId = highest_id
           latest_ft_record.save(flush: true, failOnError: true)
         }
+
+        if (job) job.message("Indexing finished for ${countq} ${domain.simpleName}.".toString())
+
+        log.debug("... final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
       }
-      cleanUpGorm()
-      log.debug("... final:: Processed ${total} out of ${countq} records for ${domain.name}. Max TS seen ${highest_timestamp} highest id with that TS: ${highest_id}")
-    }
-    catch (Exception e) {
-      log.error("Problem with FT index", e)
+      catch (Exception e) {
+        log.error("Problem with FT index", e)
+      }
     }
   }
 
@@ -578,16 +581,18 @@ class FTUpdateService {
   }
 
 
-  def clearDownAndInit() {
+  def clearDownAndInit(Job j = null) {
     if (running == false) {
       log.debug("Remove existing FTControl ..")
+
       FTControl.withTransaction {
         def res = FTControl.executeUpdate("delete FTControl c")
         log.debug("Result: ${res}")
       }
-      updateFTIndexes()
+      updateFTIndexes(j)
     }
     else {
+      if (j) j.message("Already running, skip..")
       log.error("FTUpdate already running")
       return "Job cancelled – FTUpdate was already running!"
     }
