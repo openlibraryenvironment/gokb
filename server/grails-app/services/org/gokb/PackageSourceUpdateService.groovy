@@ -21,12 +21,9 @@ class PackageSourceUpdateService {
   static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
   static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/
 
-  static HttpClient client
-
   @javax.annotation.PostConstruct
   def init() {
     log.info("Initialising source update service...")
-    client = HttpClient.newBuilder().build()
   }
 
   @Transactional
@@ -352,6 +349,7 @@ class PackageSourceUpdateService {
 
   def fetchKbartFile(File tmp_file, URL src_url) {
     def result = [content_mime_type: null, file_name: null]
+    HttpClient client = HttpClient.newBuilder().build()
     HttpRequest request = HttpRequest.newBuilder()
       .uri(src_url.toURI())
       .header("User-Agent", "GOKb KBART Updater")

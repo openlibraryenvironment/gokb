@@ -53,7 +53,7 @@ class FTUpdateService {
     result.status = kbc.status?.value ?: ""
     result.identifiers = []
     kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
-      Identifier id_obj = ClassUtils.deproxy(idc.toComponent)
+      Identifier id_obj = Identifier.get(idc.toComponent.id)
       result.identifiers.add([namespace    : id_obj.namespace.value,
                               value        : id_obj.value,
                               namespaceName: id_obj.namespace.name ?: "",
@@ -474,16 +474,16 @@ class FTUpdateService {
       log.debug("Will process ${countq} records")
       def q = domain.executeQuery("select o.id from " + domain.name + " as o where ((o.lastUpdated > :ts ) OR ( o.dateCreated > :ts )) order by o.lastUpdated, o.id", [ts: from], [readonly: true])
       log.debug("Query completed.. processing rows...")
-
       BulkRequest bulkRequest = new BulkRequest()
-      for (r_id in q) {
-        if (Thread.currentThread().isInterrupted()) {
-          log.warn("Job cancelling ..")
-          running = false
-          break
-        }
 
-        domain.withNewSession {
+      domain.withNewSession {
+        for (r_id in q) {
+          if (Thread.currentThread().isInterrupted()) {
+            log.warn("Job cancelling ..")
+            running = false
+            break
+          }
+
           Object r = domain.get(r_id)
           log.debug("${r.id} ${domain.name} -- (rects)${r.lastUpdated} > (from)${from}")
 
@@ -502,38 +502,39 @@ class FTUpdateService {
           }
 
           highest_id = r.id
-        }
 
-        count++
-        total++
+          count++
+          total++
 
-        if (count > 250) {
-          count = 0
-          log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
-          BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
+          if (count > 250) {
+            count = 0
+            log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
+            BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
 
-          if (bulkResponse.hasFailures()) {
-            logBulkFailures(bulkResponse)
-            log.error("Bulk Update had errors, skipping domain ${domain}!")
-            break
-          }
-
-          log.debug("... BulkResponse: ${bulkResponse}")
-
-          FTControl.withTransaction {
-            latest_ft_record = FTControl.get(latest_ft_record.id)
-            if (latest_ft_record) {
-              latest_ft_record.lastTimestamp = highest_timestamp
-              latest_ft_record.lastId = highest_id
-              latest_ft_record.save(flush: true, failOnError: true)
+            if (bulkResponse.hasFailures()) {
+              logBulkFailures(bulkResponse)
+              log.error("Bulk Update had errors, skipping domain ${domain}!")
+              break
             }
-            else {
-              log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update")
+
+            log.debug("... BulkResponse: ${bulkResponse}")
+
+            FTControl.withTransaction {
+              latest_ft_record = FTControl.get(latest_ft_record.id)
+              if (latest_ft_record) {
+                latest_ft_record.lastTimestamp = highest_timestamp
+                latest_ft_record.lastId = highest_id
+                latest_ft_record.save(flush: true, failOnError: true)
+              }
+              else {
+                log.error("Unable to locate free text control record with ID ${latest_ft_record.id}. Possibe parallel FT update")
+              }
             }
+            cleanUpGorm()
           }
-          cleanUpGorm()
         }
       }
+
       if (count > 0) {
         BulkResponse bulkFinalResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)
         log.debug("... final BulkResponse: ${bulkFinalResponse}")

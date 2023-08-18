@@ -1377,11 +1377,12 @@ class PackageService {
 
             ScrollableResults tipps = query.scroll(ScrollMode.FORWARD_ONLY)
             int ctr = 0
-            while (tipps.next()) {
-              TitleInstancePackagePlatform.withNewSession { tsession ->
+
+            TitleInstancePackagePlatform.withNewSession { tsession ->
+              while (tipps.next()) {
                 def tipp_id = tipps.get(0)
                 TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
-                def ti = tipp.title ? ClassUtils.deproxy(tipp.title) : null
+                def ti = tipp.title ? TitleInstance.get(tipp.title.id) : null
 
                 if (tipp.coverageStatements?.size() > 0) {
                   tipp.coverageStatements.each { tcs ->
@@ -1472,15 +1473,16 @@ class PackageService {
                           '\n')
                 }
 
+                ctr++
+
+                if (Thread.currentThread().isInterrupted()) {
+                  break
+                }
+
                 if (ctr % 50 == 0) {
                   tsession.flush()
                   tsession.clear()
                 }
-              }
-              ctr++
-
-              if (Thread.currentThread().isInterrupted()) {
-                break
               }
             }
             tipps.close()

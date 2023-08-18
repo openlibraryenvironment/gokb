@@ -62,13 +62,13 @@ class ZdbAPIService {
 
                 if (zdb_info) {
                   log.debug("Found ID candidate ${zdb_info.id}")
-                  if (id.namespace.value == 'eissn' && !candidate_ids.direct.find { it.id == zdb_info.id }) {
+                  if (id.namespace.value == 'eissn' && zdb_info.direct.contains(id.value) && !candidate_ids.direct.find { it.id == zdb_info.id }) {
                     candidate_ids.direct.add(zdb_info)
                   }
-                  else if (!candidate_ids.parallel.find { it.id == zdb_info.id }) {
+                  else if (id.namespace.value == 'issn' && zdb_info.parallel.contains(id.value) && !candidate_ids.parallel.find { it.id == zdb_info.id }) {
                     candidate_ids.parallel.add(zdb_info)
                   }
-                  else if (id.namespace.value == 'zdb') {
+                  else if (id.namespace.value == 'zdb' && zdb_info == id.value) {
                     candidate_ids.matched.add(zdb_info)
                   }
                 }
@@ -92,6 +92,7 @@ class ZdbAPIService {
         }
       }
     }
+
     if (candidate_ids.matched.size() > 0) {
       return candidate_ids.matched
     }
