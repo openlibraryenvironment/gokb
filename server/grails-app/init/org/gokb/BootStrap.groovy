@@ -155,6 +155,7 @@ class BootStrap {
                 def kbc = KBComponent.get(kbc_id)
                 log.debug("Repair component with no normalised name.. ${kbc.class.name} ${kbc.id} ${kbc.name}")
                 kbc.generateNormname()
+                kbc.shortcode = kbc.generateShortCode(kbc.name)
                 kbc.save(flush: true, failOnError: true)
                 ctr++
             }

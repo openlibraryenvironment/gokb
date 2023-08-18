@@ -246,8 +246,6 @@ class FTUpdateService {
         result.updater = 'tipp'
         TitleInstance ti = kbc.title ? TitleInstance.get(kbc.title.id) : null
 
-        result.name = kbc.name ?: (ti.name ?: null)
-
         result.curatoryGroups = []
         kbc.pkg?.curatoryGroups?.each { cg ->
           result.curatoryGroups.add(cg.name)
