@@ -35,32 +35,29 @@ class EzbCollectionService {
 
   def startUpdate(User user = null) {
     def result = [result: 'OK']
+    def running_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest'))
 
-    RefdataCategory.withNewSession {
-      def running_jobs = concurrencyManagerService.getActiveJobsForType(RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest'))
-
-      if (running_jobs.size() == 0) {
-          log.debug("Creating new job..")
-          Job new_job = concurrencyManagerService.createJob { ljob ->
-            fetchUpdatedLists(ljob)
-          }
-
-          if (user) {
-            new_job.ownerId = user.id
-          }
-
-          new_job.description = "EZB open collections harvesting ${user ? '(manual)' : ''}"
-          new_job.type = RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest')
-          new_job.startOrQueue()
-
-          if (!user) {
-            result = new_job.get()
-          }
+    if (running_jobs.size() == 0) {
+      log.debug("Creating new job..")
+      Job new_job = concurrencyManagerService.createJob { ljob ->
+        fetchUpdatedLists(ljob)
       }
-      else {
-        log.debug("Job is already running!")
-        result.result = 'SKIPPED_ALREADY_RUNNING'
+
+      if (user) {
+        new_job.ownerId = user.id
       }
+
+      new_job.description = "EZB open collections harvesting ${user ? '(manual)' : ''}"
+      new_job.type = RefdataCategory.lookup('Job.Type', 'EZBCollectionIngest')
+      new_job.startOrQueue()
+
+      if (!user) {
+        result = new_job.get()
+      }
+    }
+    else {
+      log.debug("Job is already running!")
+      result.result = 'SKIPPED_ALREADY_RUNNING'
     }
 
     result
@@ -218,17 +215,17 @@ class EzbCollectionService {
 
                   obj.nominalPlatform = platform
                   obj.provider = provider
-                  obj.save()
+                  obj.save(flush: true)
 
                   if (!obj.ids.contains(collection_id)) {
-                    obj.ids << collection_id
+                    obj.ids.add(collection_id)
                   }
 
                   if (!obj.curatoryGroups.contains(curator)) {
-                    obj.curatoryGroups << curator
+                    obj.curatoryGroups.add(curator)
                   }
 
-                  obj.save()
+                  obj.save(flush: true)
 
                   source = obj.source
 
@@ -252,7 +249,7 @@ class EzbCollectionService {
                     }
 
                     if (source) {
-                      source.curatoryGroups << curator
+                      source.curatoryGroups.add(curator)
                       source.save()
 
                       obj.source = source
@@ -372,7 +369,7 @@ class EzbCollectionService {
       archivedCollections.each { item ->
         log.debug("Looking for archived packages to retire ..")
         Package.withNewSession {
-          def pkgName = buildPackageName(info)
+          def pkgName = buildPackageName(item)
           RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
           def obj = Package.findByNameAndStatus(pkgName, status_current)
           CuratoryGroup curator = CuratoryGroup.findByName(grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators'))
@@ -415,7 +412,7 @@ class EzbCollectionService {
       result.result = 'SKIPPED_NO_API_URL'
     }
 
-    JobResult.withNewSession {
+    JobResult.withNewTransaction {
       def job_map = [
           uuid        : (job.uuid),
           description : (job.description),

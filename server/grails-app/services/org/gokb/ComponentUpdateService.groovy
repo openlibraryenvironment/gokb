@@ -16,6 +16,9 @@ import org.gokb.rest.RefdataController
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
 import org.grails.web.json.JSONObject
+import org.opensearch.action.delete.DeleteRequest
+import org.opensearch.client.RequestOptions
+import org.opensearch.client.Requests
 
 @Transactional
 class ComponentUpdateService {
@@ -25,6 +28,7 @@ class ComponentUpdateService {
   def restMappingService
   def classExaminationService
   def sessionFactory
+  def ESSearchService
 
   private final Object findLock = new Object()
 
@@ -430,6 +434,57 @@ class ComponentUpdateService {
     catch (Exception e) {
       e.printStackTrace()
       result.error = e
+    }
+    result
+  }
+
+  @Transactional
+  def expungeComponent(KBComponent obj) {
+    log.debug("Component expunge");
+    def result = [success: true, deleteType: obj.class.name, deleteId: obj.id, esDelete: false]
+    def class_simple_name = obj.class.simpleName
+    def oid = "${obj.class.name}:${obj.id}"
+
+    obj.class.withTransaction {
+      Combo.executeUpdate("delete from Combo as c where c.fromComponent=:component or c.toComponent=:component", [component: obj])
+      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component=:component", [component: obj])
+      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner=:component", [component: obj])
+
+      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant = :component", [component: obj])
+
+      events_to_delete.each {
+        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = :event", [event: it])
+        ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
+      }
+  //     ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this]);
+      if (obj.class == CuratoryGroup) {
+        AllocatedReviewGroup.removeAll(obj)
+
+        obj.users*.id.each { user_id ->
+          User.get(user_id).removeFromCuratoryGroups(obj).save()
+        }
+      }
+      else {
+        ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview=:component)", [component: obj])
+
+        ReviewRequest.executeQuery("select id from ReviewRequest where componentToReview=:component", [component: obj]).each {
+          reviewRequestService.expungeReview(ReviewRequest.findById(it))
+        }
+      }
+
+      ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component=:component", [component: obj])
+      ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component", [component: obj])
+      ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component=:component", [component: obj])
+      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf=:component", [component: obj])
+      KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: obj])
+      result.result = obj.delete(failOnError: true)
+
+      if (ESSearchService.indicesPerType[class_simple_name]){
+        DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType[class_simple_name]), oid)
+        def es_response = esclient.delete(req, RequestOptions.DEFAULT)
+        log.debug("${es_response}")
+        result.esDelete = true
+      }
     }
     result
   }

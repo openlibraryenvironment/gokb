@@ -143,16 +143,16 @@ class TitleAugmentService {
           if (existing_noresults.size() == 0 && ids.findAll { it.namespace.value == 'issn' || it.namespace.value == 'eissn' || it.namespace.value == 'zdb' }.size() > 0) {
             log.debug("No ZDB result for ids of title ${titleInstance} (${ids.collect { ido -> ido.value }})")
 
-            reviewRequestService.raise(
-              titleInstance,
-              "Check for reference ID",
-              "No ZDB matches for linked IDs",
-              null,
-              null,
-              null,
-              rr_no_results,
-              editorialGroup
-            )
+            // reviewRequestService.raise(
+            //   titleInstance,
+            //   "Check for reference ID",
+            //   "No ZDB matches for linked IDs",
+            //   null,
+            //   null,
+            //   null,
+            //   rr_no_results,
+            //   editorialGroup
+            // )
           }
         }
         else {

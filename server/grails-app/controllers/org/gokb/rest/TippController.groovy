@@ -29,6 +29,7 @@ class TippController {
   def FTUpdateService
   def messageService
   def restMappingService
+  def cleanupService
   def componentLookupService
   def componentUpdateService
   def tippService
@@ -137,7 +138,7 @@ class TippController {
             result.message = "There have been validation errors while creating the object!"
             response.status = 400
             errors = messageService.processValidationErrors(obj.errors, request.locale)
-            obj?.expunge()
+            componentUpdateService.expungeComponent(obj)
           }
         }
         else {

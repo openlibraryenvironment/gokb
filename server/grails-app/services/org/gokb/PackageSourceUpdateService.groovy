@@ -5,6 +5,7 @@ import grails.gorm.transactions.*
 import java.net.http.*
 import java.net.http.HttpResponse.BodyHandlers
 import java.security.MessageDigest
+import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.regex.Pattern
@@ -21,12 +22,9 @@ class PackageSourceUpdateService {
   static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
   static Pattern VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN = ~/([12][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01]))\.(tsv|txt)$/
 
-  static HttpClient client
-
   @javax.annotation.PostConstruct
   def init() {
     log.info("Initialising source update service...")
-    client = HttpClient.newBuilder().build()
   }
 
   @Transactional
@@ -49,22 +47,25 @@ class PackageSourceUpdateService {
   private def startSourceUpdate(pkg, user, job, activeGroup, dryRun) {
     log.debug("Source update start..")
     def result = [result: 'OK']
-    def platform_url
+    def platform_url = pkg.nominalPlatform ? Platform.get(pkg.nominalPlatform.id)?.primaryUrl : null
     Boolean async = (user ? true : false)
-    Source pkg_source
-    CuratoryGroup preferred_group
-    IdentifierNamespace title_ns
+    Source pkg_source = pkg.source ? Source.get(pkg.source.id) : null
+    CuratoryGroup preferred_group = activeGroup
+    Org package_provider = pkg.provider ? Org.get(pkg.provider.id) : null
+
+    if (!activeGroup && pkg.curatoryGroups?.size() > 0) {
+      preferred_group = CuratoryGroup.get(pkg.curatoryGroups[0].id)
+    }
+
+    IdentifierNamespace title_ns = pkg_source?.targetNamespace
+
+    if (!title_ns && package_provider) {
+      title_ns = package_provider.titleNamespace
+    }
+
     DataFile datafile = null
     def skipInvalid = false
     Boolean deleteMissing = false
-
-    Package.withNewSession {
-      Package p = Package.get(pkg.id)
-      platform_url = p.nominalPlatform.primaryUrl
-      pkg_source = p.source
-      preferred_group = activeGroup ?: (p.curatoryGroups?.size() > 0 ? CuratoryGroup.deproxy(p.curatoryGroups[0]) : null)
-      title_ns = pkg_source?.targetNamespace ?: (p.provider?.titleNamespace ?: null)
-    }
 
     if (job && !job.startTime) {
       job.startTime = new Date()
@@ -122,11 +123,8 @@ class PackageSourceUpdateService {
         File tmp_file = TSVIngestionService.createTempFile(deposit_token)
         def lastRunLocal = pkg_source.lastRun ? pkg_source.lastRun.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
 
-        Source.withNewSession {
-          Source src = Source.get(pkg_source.id)
-          src.lastRun = new Date()
-          src.save(flush: true)
-        }
+        pkg_source.lastRun = new Date()
+        pkg_source.save(flush: true)
 
         if (!extracted_date || !lastRunLocal || extracted_date > lastRunLocal) {
           log.debug("Request initial URL..")
@@ -205,33 +203,31 @@ class PackageSourceUpdateService {
               String encoding = detector.getDetectedCharset()
 
               if (encoding in ['UTF-8', 'US-ASCII']) {
-                DataFile.withNewSession {
-                  datafile = DataFile.findByMd5(file_info.md5sumHex)
+                datafile = DataFile.findByMd5(file_info.md5sumHex)
 
-                  if (!datafile) {
-                    log.debug("Create new datafile")
-                    datafile = new DataFile(
-                                            guid: deposit_token,
-                                            md5: file_info.md5sumHex,
-                                            uploadName: file_info.file_name,
-                                            name: file_info.file_name,
-                                            filesize: total_size,
-                                            encoding: encoding,
-                                            uploadMimeType: file_info.content_mime_type).save()
-                    datafile.fileData = tmp_file.getBytes()
-                    datafile.save(failOnError:true,flush:true)
-                    log.debug("Saved new datafile : ${datafile.id}")
-                  }
-                  else {
-                    log.debug("Found existing datafile ${datafile}")
+                if (!datafile) {
+                  log.debug("Create new datafile")
+                  datafile = new DataFile(
+                                          guid: deposit_token,
+                                          md5: file_info.md5sumHex,
+                                          uploadName: file_info.file_name,
+                                          name: file_info.file_name,
+                                          filesize: total_size,
+                                          encoding: encoding,
+                                          uploadMimeType: file_info.content_mime_type).save()
+                  datafile.fileData = tmp_file.getBytes()
+                  datafile.save(failOnError:true,flush:true)
+                  log.debug("Saved new datafile : ${datafile.id}")
+                }
+                else {
+                  log.debug("Found existing datafile ${datafile}")
 
-                    if (!hasFileChanged(pkg.id, datafile.id)) {
-                      log.debug("Datafile was already the last import for this package!")
-                      result.result = 'SKIPPED'
-                      result.message = 'Skipped repeated import of the same file for this package.'
-                      result.messageCode = 'kbart.transmission.skipped.sameFile'
-                      return result
-                    }
+                  if (!hasFileChanged(pkg.id, datafile.id)) {
+                    log.debug("Datafile was already the last import for this package!")
+                    result.result = 'SKIPPED'
+                    result.message = 'Skipped repeated import of the same file for this package.'
+                    result.messageCode = 'kbart.transmission.skipped.sameFile'
+                    return result
                   }
                 }
               }
@@ -265,7 +261,7 @@ class PackageSourceUpdateService {
                   log.info("There were issues with the automated job (valid: ${result.validation?.valid}, reviews: ${result.report?.reviews}, matching reviews: ${result.matchingJob?.reviews}), keeping listStatus in progress..")
                 }
                 else if (!async && !dryRun) {
-                  Package.withNewSession {
+                  Package.withNewTransaction {
                     def pack = Package.get(pkg.id)
                     pack.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
                     pack.save(flush: true)
@@ -295,7 +291,7 @@ class PackageSourceUpdateService {
                   update_job.ownerId = user.id
                 }
 
-                Package.withNewSession {
+                Package.withNewTransaction {
                   Package p = Package.get(pkg.id)
                   update_job.description = "KBART REST ingest (${p.name})".toString()
                   update_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
@@ -303,13 +299,14 @@ class PackageSourceUpdateService {
                   update_job.message("Starting upsert for Package ${p.name}".toString())
                   update_job.startOrQueue()
                 }
+
                 result.job_result = update_job.get()
 
                 if (result.job_result?.validation?.valid == false || result.job_result?.report?.reviews > 0 || (!async && result.job_result?.matchingJob?.reviews > 0)) {
                   log.info("There were issues with the automated job (valid: ${result.job_result?.validation?.valid}, reviews: ${result.job_result?.report?.reviews}, matching reviews: ${result.job_result?.matchingJob?.reviews}), keeping listStatus in progress..")
                 }
                 else if (!async && !dryRun) {
-                  Package.withNewSession {
+                  Package.withNewTransaction {
                     Package p = Package.get(pkg.id)
                     p.refresh()
                     p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
@@ -352,6 +349,7 @@ class PackageSourceUpdateService {
 
   def fetchKbartFile(File tmp_file, URL src_url) {
     def result = [content_mime_type: null, file_name: null]
+    HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build()
     HttpRequest request = HttpRequest.newBuilder()
       .uri(src_url.toURI())
       .header("User-Agent", "GOKb KBART Updater")

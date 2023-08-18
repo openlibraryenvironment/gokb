@@ -181,12 +181,11 @@ class IngestKbartRun {
 
         int old_tipp_count = 0
 
-        TitleInstancePackagePlatform.withNewSession {
-          old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
-                                'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                                'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
-                              [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
-        }
+        old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
+                              'from TitleInstancePackagePlatform as tipp, Combo as c '+
+                              'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
+                            [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
+
 
         result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0,  previous: old_tipp_count]
 
@@ -197,12 +196,14 @@ class IngestKbartRun {
         long startTime = System.currentTimeMillis()
 
         if (!dryRun) {
-          Package.withNewSession {
+          Package.withNewTransaction {
+            RefdataValue combo_fa_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
             def p = Package.get(pid)
             p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
             p.lastSeen = new Date().getTime()
-            p.fileAttachments << datafile
             p.save(flush: true)
+
+            new Combo(fromComponent: p, toComponent: datafile, type: combo_fa_type).save(flush: true)
           }
         }
 
@@ -272,7 +273,7 @@ class IngestKbartRun {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
           if (!dryRun && result.result != 'CANCELLED') {
             try {
-              TitleInstancePackagePlatform.withTransaction {
+              TitleInstancePackagePlatform.withNewTransaction {
                 // Find all tipps in this package which have a lastSeen before the ingest date
                 def retire_pars = [
                   pkgid: pkg.id,
@@ -324,7 +325,7 @@ class IngestKbartRun {
 
         if (!dryRun) {
           try {
-            Package.withTransaction {
+            Package.withNewTransaction {
               Package p = Package.get(pid)
 
               def update_agent = User.findByUsername('IngestAgent')
@@ -342,7 +343,7 @@ class IngestKbartRun {
               tippService.matchPackage(pid, mjob)
             }
 
-            Package.withTransaction {
+            Package.withNewTransaction {
               Package p = Package.get(pid)
               matching_job.description = "Package Title Matching".toString()
               matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
@@ -390,7 +391,7 @@ class IngestKbartRun {
       job.setProgress(100)
       job.endTime = new Date()
 
-      JobResult.withNewSession {
+      JobResult.withNewTransaction {
         def result_object = JobResult.findByUuid(job.uuid)
 
         if (result.titleMatch) {
@@ -435,7 +436,7 @@ class IngestKbartRun {
     log.debug("TSVINgestionService:writeToDB -- package id is ${pkg.id}")
     def result = [status: null, reviewCreated: false]
 
-    TitleInstancePackagePlatform.withNewSession {
+    TitleInstancePackagePlatform.withNewTransaction {
       //first we need a platform:
       def platform = null
 
@@ -532,6 +533,7 @@ class IngestKbartRun {
         result.status = 'invalid'
       }
     }
+
     result
   }
 
@@ -702,7 +704,7 @@ class IngestKbartRun {
                 def tcs_obj = TIPPCoverageStatement.get(it)
                 tipp.removeFromCoverageStatements(tcs_obj)
               }
-              tipp.save()
+              tipp.save(flush: true)
             }
             else {
               new_coverage = false
@@ -827,26 +829,24 @@ class IngestKbartRun {
     def result
     def orig_host = host
 
-    Platform.withNewSession {
-      if (host.startsWith("www.")){
-        host = host.substring(4)
-      }
+    if (host.startsWith("www.")){
+      host = host.substring(4)
+    }
 
-      def plt_params = ['host': "%" + host + "%", sc: RefdataCategory.lookup('KBComponent.Status', 'Deleted')]
-      def platforms = Platform.executeQuery("select p from Platform as p where status != :sc and (p.primaryUrl like :host or p.name = :host)", plt_params, [readonly: false])
+    def plt_params = ['host': "%" + host + "%", sc: RefdataCategory.lookup('KBComponent.Status', 'Deleted')]
+    def platforms = Platform.executeQuery("select p from Platform as p where status != :sc and (p.primaryUrl like :host or p.name = :host)", plt_params, [readonly: false])
 
-      switch (platforms.size()) {
-        case 0:
-          log.debug("Unable to reference TIPP URL against existing platforms!")
-        case 1:
-          //found a match
-          result = platforms[0]
-          log.debug("match platform found: ${result}")
-          break
-        default:
-          log.debug("found multiple platforms when looking for ${host}")
+    switch (platforms.size()) {
+      case 0:
+        log.debug("Unable to reference TIPP URL against existing platforms!")
+      case 1:
+        //found a match
+        result = platforms[0]
+        log.debug("match platform found: ${result}")
         break
-      }
+      default:
+        log.debug("found multiple platforms when looking for ${host}")
+      break
     }
 
     result
@@ -962,89 +962,86 @@ class IngestKbartRun {
 
   def checkTitleMatchRow(the_kbart, rownum, ingest_cfg) {
     def row_specific_cfg = getRowSpecificCfg(ingest_cfg, the_kbart)
+    def identifiers = []
 
-    TitleInstance.withNewSession {
-      def identifiers = []
+    if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
+      identifiers << [type: row_specific_cfg.identifierMap.online_identifier, value: the_kbart.online_identifier.trim()]
 
-      if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
-        identifiers << [type: row_specific_cfg.identifierMap.online_identifier, value: the_kbart.online_identifier.trim()]
+    if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
+      identifiers << [type: row_specific_cfg.identifierMap.print_identifier, value: the_kbart.print_identifier.trim()]
 
-      if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
-        identifiers << [type: row_specific_cfg.identifierMap.print_identifier, value: the_kbart.print_identifier.trim()]
+    if (the_kbart.zdb_id && the_kbart.zdb_id.trim()) {
+      identifiers << [type: 'zdb', value: the_kbart.zdb_id.trim()]
+    }
 
-      if (the_kbart.zdb_id && the_kbart.zdb_id.trim()) {
-        identifiers << [type: 'zdb', value: the_kbart.zdb_id.trim()]
+    if (the_kbart.title_id && the_kbart.title_id.trim()) {
+      log.debug("title_id ${the_kbart.title_id}")
+
+      if (ingest_cfg.providerIdentifierNamespace) {
+        identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
       }
+    }
 
-      if (the_kbart.title_id && the_kbart.title_id.trim()) {
-        log.debug("title_id ${the_kbart.title_id}")
+    if (the_kbart.doi_identifier && the_kbart.doi_identifier.trim() && !identifiers.findAll { it.type == 'doi'}) {
+      identifiers << [type: 'doi', value: the_kbart.doi_identifier.trim()]
+    }
 
-        if (ingest_cfg.providerIdentifierNamespace) {
-          identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
-        }
-      }
+    log.debug("TitleMatch title:${the_kbart.publication_title} identifiers:${identifiers}")
 
-      if (the_kbart.doi_identifier && the_kbart.doi_identifier.trim() && !identifiers.findAll { it.type == 'doi'}) {
-        identifiers << [type: 'doi', value: the_kbart.doi_identifier.trim()]
-      }
+    if (identifiers.size() > 0) {
+      def title_lookup_result = titleLookupService.find(
+          the_kbart.publication_title,
+          the_kbart.publisher_name,
+          identifiers,
+          TitleInstance.determineTitleClass(the_kbart.publication_type)
+      )
 
-      log.debug("TitleMatch title:${the_kbart.publication_title} identifiers:${identifiers}")
+      boolean hasConflicts = false
+      boolean partial = false
+      def matchConflicts = []
 
-      if (identifiers.size() > 0) {
-        def title_lookup_result = titleLookupService.find(
-            the_kbart.publication_title,
-            the_kbart.publisher_name,
-            identifiers,
-            TitleInstance.determineTitleClass(the_kbart.publication_type)
-        )
+      title_lookup_result.matches.each { trm ->
+        if (trm.conflicts.size() > 0) {
+          partial = true
 
-        boolean hasConflicts = false
-        boolean partial = false
-        def matchConflicts = []
+          def match = [
+            id: trm.object.id,
+            name: trm.object.name,
+            conflicts: trm.conflicts
+          ]
+          matchConflicts << match
 
-        title_lookup_result.matches.each { trm ->
-          if (trm.conflicts.size() > 0) {
-            partial = true
-
-            def match = [
-              id: trm.object.id,
-              name: trm.object.name,
-              conflicts: trm.conflicts
-            ]
-            matchConflicts << match
-
-            if (trm.warnings.contains('duplicate')) {
-              hasConflicts = true
-            }
+          if (trm.warnings.contains('duplicate')) {
+            hasConflicts = true
           }
         }
+      }
 
-        if (matchConflicts) {
-          titleMatchConflicts << [row: rownum, matches: matchConflicts]
-        }
+      if (matchConflicts) {
+        titleMatchConflicts << [row: rownum, matches: matchConflicts]
+      }
 
-        if (hasConflicts) {
-          titleMatchResult.conflicts++
-        }
+      if (hasConflicts) {
+        titleMatchResult.conflicts++
+      }
 
-        if (title_lookup_result.to_create) {
-          titleMatchResult.created++
+      if (title_lookup_result.to_create) {
+        titleMatchResult.created++
 
-          if (partial) {
-            titleMatchResult.matches.partial++
-          }
-        }
-        else if (partial) {
+        if (partial) {
           titleMatchResult.matches.partial++
         }
-        else {
-          titleMatchResult.matches.full++
-        }
+      }
+      else if (partial) {
+        titleMatchResult.matches.partial++
       }
       else {
-        log.warn("[${the_kbart.publication_title}] No identifiers.")
-        titleMatchResult.noid++
+        titleMatchResult.matches.full++
       }
+    }
+    else {
+      log.warn("[${the_kbart.publication_title}] No identifiers.")
+      titleMatchResult.noid++
     }
   }
 
