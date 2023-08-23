@@ -335,7 +335,7 @@ class Package extends KBComponent {
       sce: [expected_status, current_status],
       comment: "Status set to ${new_status.value} due to package change!",
       pkg: this.id,
-      now: now,
+      now: new Date(),
       rdate: date
     ]
 

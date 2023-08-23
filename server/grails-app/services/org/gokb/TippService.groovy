@@ -391,7 +391,7 @@ class TippService {
           changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, idMatch, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
           cs_match = true
-          stale_coverage_ids.removeAll(idMatch.id)
+          stale_coverage_ids.removeAll { it == idMatch.id }
         }
         else {
           log.debug("No ID match for statement!")
@@ -437,7 +437,7 @@ class TippService {
               changed |= com.k_int.ClassUtils.updateDateField(parsedEnd, tcs, 'endDate')
               changed |= com.k_int.ClassUtils.setRefdataIfPresent(c.coverageDepth, tipp, 'coverageDepth', 'TIPPCoverageStatement.CoverageDepth')
 
-              stale_coverage_ids.removeAll(tcs.id)
+              stale_coverage_ids.removeAll { it == tcs.id }
             }
             else {
               log.debug("No Match ..")
@@ -1335,7 +1335,7 @@ class TippService {
 
   @Transactional
   public void touchPackage(tipp) {
-    def pkg_obj = tipp.pkg
+    def pkg_obj = KBComponent.deproxy(tipp.pkg)
 
     pkg_obj?.lastSeen = new Date().getTime()
     pkg_obj?.save(flush:true)
