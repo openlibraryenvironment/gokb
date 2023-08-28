@@ -1015,18 +1015,22 @@ class TitleInstancePackagePlatform extends KBComponent {
             'listVerifiedDate'(listVerifiedDate ? DateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
             'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
             if (provider) {
-              builder.'provider'([id: provider?.id, uuid: provider?.uuid]) {
-                'name'(provider?.name)
-                'mission'(provider?.mission?.value)
+              def prov = KBComponent.deproxy(provider)
+
+              builder.'provider'([id: prov.id, uuid: prov.uuid]) {
+                'name'(prov.name)
+                'mission'(prov.mission?.value)
               }
             }
             else {
               builder.'provider'()
             }
             if (nominalPlatform) {
-              builder.'nominalPlatform'([id: nominalPlatform?.id, uuid: nominalPlatform?.uuid]) {
-                'name'(nominalPlatform.name?.trim())
-                'primaryUrl'(nominalPlatform.primaryUrl?.trim())
+              def pkg_plt = KBComponent.deproxy(nominalPlatform)
+
+              builder.'nominalPlatform'([id: pkg_plt.id, uuid: pkg_plt.uuid]) {
+                'name'(pkg_plt.name?.trim())
+                'primaryUrl'(pkg_plt.primaryUrl?.trim())
               }
             }
             else {

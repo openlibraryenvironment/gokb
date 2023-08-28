@@ -866,7 +866,7 @@ class DomainClassExtender {
           }
 
           // Add to the cache.
-          comboPropertyCache().put("${propertyName}".toString(), value)
+          // comboPropertyCache().put("${propertyName}".toString(), value)
 
           // We should also completely clear the target cache too.
           //TODO Maybe we could be more selective about what we remove from the cache,
