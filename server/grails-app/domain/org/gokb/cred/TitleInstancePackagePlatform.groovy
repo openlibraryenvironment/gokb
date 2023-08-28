@@ -958,8 +958,8 @@ class TitleInstancePackagePlatform extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
-    def linked_pkg = getPkg()
-    def ti = getTitle()
+    def linked_pkg = KBComponent.deproxy(getPkg())
+    def ti = KBComponent.deproxy(getTitle())
 
     builder.'gokb'(attr) {
       builder.'tipp'([id: (id), uuid: (uuid)]) {
