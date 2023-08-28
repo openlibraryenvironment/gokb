@@ -108,8 +108,7 @@ class TitleAugmentService {
             }
             else if (new_id) {
               log.debug("Adding new ZDB-ID ${new_id}")
-              titleInstance.ids << new_id
-              titleInstance.save(flush: true)
+              new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true)
 
               titleInstance.tipps.each {
                 def tobj = TitleInstancePackagePlatform.get(it.id)

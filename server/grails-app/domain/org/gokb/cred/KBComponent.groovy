@@ -660,7 +660,10 @@ where cp.owner = :c
     // As ids are combo controlled it should be enough just to call find here.
     // This will return only the first match and stop looking afterwards.
     // Null returned if no match.
-    ids?.find { KBComponent.deproxy(it).namespace.value.toLowerCase() == idtype.toLowerCase() }?.value
+
+    def candidates = Identifier.executeQuery("from Identifier as ido where exists (select 1 from Combo where toComponent = ido and fromComponent = :kbc)", [kbc: this])
+
+    candidates.find { it.namespace.value.toLowerCase() == idtype.toLowerCase() }?.value
   }
 
   @Transient

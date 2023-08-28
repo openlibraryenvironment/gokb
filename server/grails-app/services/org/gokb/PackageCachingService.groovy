@@ -216,20 +216,21 @@ class PackageCachingService {
                             'lastChangedExternal'(tipp.lastChangedExternal ? dateFormatService.formatDate(tipp.lastChangedExternal) : null)
                             'publicationType'(tipp.publicationType?.value)
                             if (tipp.title) {
-                              'title'('id': tipp.title.id, 'uuid': tipp.title.uuid) {
-                                'name'(tipp.title.name?.trim())
-                                'type'(getTitleClass(tipp.title.id))
-                                'status'(tipp.title.status?.value)
-                                if (getTitleClass(tipp.title.id) == 'BookInstance') {
-                                  'dateFirstInPrint'(tipp.title.dateFirstInPrint ? dateFormatService.formatDate(tipp.title.dateFirstInPrint) : null)
-                                  'dateFirstOnline'(tipp.title.dateFirstOnline ? dateFormatService.formatDate(tipp.title.dateFirstOnline) : null)
-                                  'editionStatement'(tipp.title.editionStatement)
-                                  'volumeNumber'(tipp.title.volumeNumber)
-                                  'firstAuthor'(tipp.title.firstAuthor)
-                                  'firstEditor'(tipp.title.firstEditor)
+                              def ti_obj = KBComponent.deproxy(tipp.title)
+                              'title'('id': ti_obj.id, 'uuid': ti_obj.uuid) {
+                                'name'(ti_obj.name?.trim())
+                                'type'(getTitleClass(ti_obj.id))
+                                'status'(ti_obj.status?.value)
+                                if (getTitleClass(ti_obj.id) == 'BookInstance') {
+                                  'dateFirstInPrint'(ti_obj.dateFirstInPrint ? dateFormatService.formatDate(ti_obj.dateFirstInPrint) : null)
+                                  'dateFirstOnline'(ti_obj.dateFirstOnline ? dateFormatService.formatDate(ti_obj.dateFirstOnline) : null)
+                                  'editionStatement'(ti_obj.editionStatement)
+                                  'volumeNumber'(ti_obj.volumeNumber)
+                                  'firstAuthor'(ti_obj.firstAuthor)
+                                  'firstEditor'(ti_obj.firstEditor)
                                 }
                                 'identifiers' {
-                                  getComponentIds(tipp.title.id).each { tid ->
+                                  getComponentIds(ti_obj.id).each { tid ->
                                     'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
                                   }
                                 }
