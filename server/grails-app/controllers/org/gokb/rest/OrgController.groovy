@@ -206,11 +206,10 @@ class OrgController {
     }
 
     if (obj && reqBody) {
-      obj.lock()
       def editable = obj.isEditable()
 
       if (editable && obj.respondsTo('curatoryGroups') && obj.curatoryGroups?.size() > 0) {
-        def cur = user.curatoryGroups?.id.intersect(obj.curatoryGroups?.id)
+        def cur = user.curatoryGroups*.id.intersect(obj.curatoryGroups*.id)
 
         if (!cur) {
           editable = false
