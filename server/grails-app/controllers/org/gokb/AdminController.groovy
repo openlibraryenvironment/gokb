@@ -89,45 +89,6 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
-  def copyUploadedFile(inputfile, deposit_token) {
-
-    def baseUploadDir = grailsApplication.config.getProperty('baseUploadDir') ?: '.'
-
-    log.debug("copyUploadedFile...");
-    def sub1 = deposit_token.substring(0, 2);
-    def sub2 = deposit_token.substring(2, 4);
-    validateUploadDir("${baseUploadDir}");
-    validateUploadDir("${baseUploadDir}/${sub1}");
-    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}");
-    def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
-    def temp_file = new File(temp_file_name)
-
-    OutputStream outStream = null;
-    ByteArrayOutputStream byteOutStream = null;
-    try {
-      outStream = new FileOutputStream(temp_file);
-      byteOutStream = new ByteArrayOutputStream();
-      // writing bytes in to byte output stream
-      byteOutStream.write(inputfile); //data
-      byteOutStream.writeTo(outStream);
-    } catch (IOException e) {
-      e.printStackTrace();
-    } finally {
-      outStream.close();
-    }
-    log.debug("Created temp_file ${temp_file.size()}")
-
-    temp_file
-  }
-
-  private def validateUploadDir(path) {
-    File f = new File(path);
-    if (!f.exists()) {
-      log.debug("Creating upload directory path")
-      f.mkdirs();
-    }
-  }
-
   def updateTextIndexes() {
     log.debug("Call to update Elasticsearch indices");
 

@@ -110,7 +110,8 @@ class FTUpdateService {
         result.curatoryGroups = []
 
         kbc.curatoryGroups?.each { cg ->
-          result.curatoryGroups.add(cg.name)
+          def cgobj = CuratoryGroup.get(cg.id)
+          result.curatoryGroups.add(cgobj.name)
         }
 
         break
@@ -135,16 +136,18 @@ class FTUpdateService {
         result.curatoryGroups = []
 
         kbc.curatoryGroups?.each { cg ->
-          result.curatoryGroups.add(cg.name)
+          def cgobj = CuratoryGroup.get(cg.id)
+          result.curatoryGroups.add(cgobj.name)
         }
 
         result.platforms = []
 
         kbc.providedPlatforms?.each { plt ->
+          def pobj = Platform.get(plt.id)
           def platform = [:]
-          platform.uuid = plt.uuid ?: ""
-          platform.url = plt.primaryUrl ?: ""
-          platform.name = plt.name ?: ""
+          platform.uuid = pobj.uuid ?: ""
+          platform.url = pobj.primaryUrl ?: ""
+          platform.name = pobj.name ?: ""
           result.platforms.add(platform)
         }
 
@@ -160,7 +163,8 @@ class FTUpdateService {
         result.curatoryGroups = []
 
         kbc.curatoryGroups?.each { cg ->
-          result.curatoryGroups.add(cg.name)
+          def cgobj = CuratoryGroup.get(cg.id)
+          result.curatoryGroups.add(cgobj.name)
         }
 
         result.altname = []
@@ -245,10 +249,13 @@ class FTUpdateService {
       case TitleInstancePackagePlatform:
         result.updater = 'tipp'
         TitleInstance ti = kbc.title ? TitleInstance.get(kbc.title.id) : null
+        Package pkg = Package.get(kbc.pkg.id)
 
         result.curatoryGroups = []
-        kbc.pkg?.curatoryGroups?.each { cg ->
-          result.curatoryGroups.add(cg.name)
+
+        pkg?.curatoryGroups?.each { cg ->
+          def cgobj = CuratoryGroup.get(cg.id)
+          result.curatoryGroups.add(cgobj.name)
         }
         result.titleType = ti?.niceName ?: 'Unknown'
         result.url = kbc.url

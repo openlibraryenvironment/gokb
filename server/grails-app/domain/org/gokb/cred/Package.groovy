@@ -346,7 +346,7 @@ class Package extends KBComponent {
     def qry = '''update TitleInstancePackagePlatform as t
                   set t.status = :ret,
                   t.lastUpdateComment = :comment,
-                  t.lastUpdated = :now
+                  t.lastUpdated = :now,
                   t.accessEndDate = :rdate
                   where t.status in :sce
                   and exists (

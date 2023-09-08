@@ -14,29 +14,37 @@ class TSVIngestionService {
   def grailsApplication
   def sessionFactory
 
-  def updatePackage(Package pkg,
-                    DataFile datafile,
+  def updatePackage(def pkgId,
+                    def dfId,
                     IdentifierNamespace title_id_ns,
                     boolean async,
                     boolean incremental,
-                    def request_user,
-                    def active_group,
+                    def userId,
+                    def groupId,
                     boolean dry_run,
                     boolean skip_invalid,
                     boolean cleanup,
                     Job job = null) {
 
-    IngestKbartRun myRun = new IngestKbartRun(pkg,
-                                              datafile,
-                                              title_id_ns,
-                                              async,
-                                              incremental,
-                                              request_user,
-                                              active_group,
-                                              dry_run,
-                                              skip_invalid,
-                                              cleanup)
-    return myRun.start(job)
+    Package.withNewSession {
+      Package pkg = Package.get(pkgId)
+      DataFile datafile = DataFile.get(dfId)
+      User request_user = User.get(userId)
+      IdentifierNamespace idns = title_id_ns ? IdentifierNamespace.get(title_id_ns) : null
+      CuratoryGroup active_group = CuratoryGroup.get(groupId)
+
+      IngestKbartRun myRun = new IngestKbartRun(pkg,
+                                                datafile,
+                                                idns,
+                                                async,
+                                                incremental,
+                                                request_user,
+                                                active_group,
+                                                dry_run,
+                                                skip_invalid,
+                                                cleanup)
+      return myRun.start(job)
+    }
   }
 
   def analyseFile(temp_file) {
@@ -77,28 +85,20 @@ class TSVIngestionService {
     result
   }
 
-  def copyUploadedFile(inputfile, deposit_token) {
+  def handleTempFile(deposit_token, def inputfile = null) {
     def baseUploadDir = grailsApplication.config.getProperty('baseUploadDir') ?: '/tmp/gokb/ingest'
-    log.debug("copyUploadedFile...")
+    log.debug("handleTempFile...")
     def sub1 = deposit_token.substring(0,2)
     def sub2 = deposit_token.substring(2,4)
     validateUploadDir("${baseUploadDir}/${sub1}/${sub2}")
     def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}"
     def temp_file = new File(temp_file_name)
 
-    // Copy the upload file to a temporary space
-    inputfile.transferTo(temp_file);
-
-    temp_file
-  }
-
-  def createTempFile(deposit_token) {
-    def baseUploadDir = grailsApplication.config.getProperty('baseUploadDir') ?: '/tmp/gokb/ingest'
-    def sub1 = deposit_token.substring(0,2)
-    def sub2 = deposit_token.substring(2,4)
-    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}")
-    def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}"
-    def temp_file = new File(temp_file_name)
+    if (inputfile) {
+      log.debug("Copying uploaded file ..")
+      // Copy the upload file to a temporary space
+      inputfile.transferTo(temp_file);
+    }
 
     temp_file
   }
