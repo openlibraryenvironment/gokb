@@ -32,7 +32,7 @@ class PackageUpdateService {
       }
     }
 
-    if (reqBody.curatoryGroups) {
+    if (reqBody.curatoryGroups instanceof Collection) {
       def cg_result = restMappingService.updateCuratoryGroups(obj, reqBody.curatoryGroups, remove)
 
       changed |= cg_result.changed

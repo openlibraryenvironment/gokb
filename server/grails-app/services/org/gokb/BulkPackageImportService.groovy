@@ -329,17 +329,41 @@ class BulkPackageImportService {
               cancelled = true
             }
 
+            boolean skip = false
+            def pkgInfo = [:]
+            def curator_id = null
+            def title_ns_id = null
+            def source_id = null
+            def pkg_result = [:]
+
             Package.withNewSession { session ->
               type_results.total++
-              CuratoryGroup curator = (item.package_curatory_group || type.package_curatory_group) ? CuratoryGroup.findByNameIlike(item.package_curatory_group ?: type.package_curatory_group) : null
+              CuratoryGroup curator
+
+              if (item.package_curatory_group || type.package_curatory_group) {
+                curator = CuratoryGroup.findByNameIlike(item.package_curatory_group ?: type.package_curatory_group)
+
+                if (!curator) {
+                  curator = CuratoryGroup.findByUuid(item.package_curatory_group ?: type.package_curatory_group)
+                }
+              }
+
+              if (curator) {
+                curator_id = curator.id
+              }
+
               Platform platform = (item.package_nominal_platform || type.package_nominal_platform) ? Platform.findByUuid(item.package_nominal_platform ?: type.package_nominal_platform) : null
               IdentifierNamespace title_id_ns = (item.title_id_namespace || type.title_id_namespace) ? IdentifierNamespace.findByValue(item.title_id_namespace ?: type.title_id_namespace) : null
               Org provider = (item.package_provider || type.package_provider) ? Org.findByUuid(item.package_provider ?: type.package_provider) : null
-              Identifier collection_id = ((item.package_id_namespace || type.package_id_namespace) && item.package_id) ? componentLookupService.lookupOrCreateCanonicalIdentifier((item.package_id_namespace ?: type.package_id_namespace), item.package_id) : null
-              boolean skip = false
+              Identifier collection_id
+
+              if ((item.package_id_namespace || type.package_id_namespace) && item.package_id) {
+                collection_id = componentLookupService.lookupOrCreateCanonicalIdentifier((item.package_id_namespace ?: type.package_id_namespace), item.package_id)
+              }
+
               Source source = null
 
-              def pkg_result = [
+              pkg_result = [
                 id: collection_id?.value,
                 name: item.package_name,
                 result: 'OK',
@@ -356,14 +380,6 @@ class BulkPackageImportService {
                     messageCode: "import.bulk.error.curator.permissions"
                   ]
                 ]
-              }
-
-              if (item.package_curatory_group || type.package_curatory_group) {
-                def local_cg = CuratoryGroup.findByUuid(item.package_curatory_group ?: type.package_curatory_group)
-
-                if (local_cg) {
-                  curator = local_cg
-                }
               }
 
               if (!skip && curator && provider && platform) {
@@ -433,8 +449,6 @@ class BulkPackageImportService {
                   }
 
                   if (obj) {
-                    pkg_result.gokb_uuid = obj.uuid
-
                     if (!obj.contentType && (item.content_type || type.content_type)) {
                       obj.contentType = RefdataCategory.lookup('Package.ContentType', item.content_type ?: type.content_type)
                     }
@@ -446,6 +460,9 @@ class BulkPackageImportService {
                     obj.nominalPlatform = platform
                     obj.provider = provider
                     obj.save()
+
+                    pkg_result.gokb_uuid = obj.uuid
+                    pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
 
                     if (collection_id && !obj.ids.contains(collection_id)) {
                       obj.ids << collection_id
@@ -504,73 +521,6 @@ class BulkPackageImportService {
                       source.save()
                     }
                   }
-
-                  if (obj && source) {
-                    def deposit_token = java.util.UUID.randomUUID().toString()
-                    File tmp_file = TSVIngestionService.createTempFile(deposit_token)
-                    def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.package_titlelist))
-                    def pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
-                    RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
-
-                    def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
-                                                              where c.type = :ct
-                                                              and c.fromComponent.id = :pkg
-                                                              order by c.dateCreated desc''', [ct: type_fa, pkg: obj.id])
-
-                    def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
-
-                    if (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex) {
-                      obj.refresh()
-                      log.debug("Creating new import job ..")
-
-                      try {
-                        Job pkg_job = concurrencyManagerService.createJob { pjob ->
-                          packageSourceUpdateService.updateFromSource(obj, null, pjob, curator, dryRun)
-                        }
-
-                        pkg_job.groupId = curator?.id
-                        pkg_job.description = "BulkConfig KBART Source ingest (${obj.name})".toString()
-                        pkg_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
-                        pkg_job.linkedItem = pkgInfo
-                        pkg_job.message("Starting upsert for Package ${obj.name}".toString())
-                        pkg_job.startOrQueue()
-                        def job_result = pkg_job.get()
-
-                        log.debug("Finished job with result: ${job_result?.result}")
-
-                        pkg_result.validation = job_result?.validation
-
-                        if (job_result?.result == 'ERROR') {
-                          pkg_result.result = 'ERROR'
-                          type_results.errors++
-                        }
-                        else {
-                          type_results.success++
-                        }
-                      }
-                      catch (Exception e) {
-                        log.error("Exception creating source update job!", e)
-                        pkg_result.result = 'ERROR'
-                        pkg_result.errors.processing = [
-                          [
-                            message: "There was an error processing the package import!",
-                            messageCode: "import.bulk.error.generic.label"
-                          ]
-                        ]
-                        type_results.errors++
-                      }
-                    }
-                    else {
-                      log.debug("Skipping unchanged Package file ${obj.name}.")
-                      type_results.unchanged++
-                    }
-                  }
-                  else if (!source) {
-                    log.debug("No source object created.. skip")
-                  }
-                  else {
-                    log.warn("Unable to reference package!")
-                  }
                 }
               }
               else if (!curator) {
@@ -610,8 +560,64 @@ class BulkPackageImportService {
                   ]
                 }
               }
-              type_results.report << pkg_result
             }
+
+            if (!skip && pkgInfo.id && source_id) {
+              if (hasChangedFile(pkgInfo.id, item)) {
+                log.debug("Creating new import job ..")
+
+                try {
+                  Job pkg_job = concurrencyManagerService.createJob { pjob ->
+                    packageSourceUpdateService.updateFromSource(pkgInfo.id, null, pjob, curator_id, dryRun)
+                  }
+
+                  Package.withNewSession {
+                    pkg_job.groupId = curator_id
+                    pkg_job.description = "BulkConfig KBART Source ingest (${pkgInfo.name})".toString()
+                    pkg_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+                    pkg_job.linkedItem = pkgInfo
+                    pkg_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
+                    pkg_job.startOrQueue()
+                    def job_result = pkg_job.get()
+
+                    log.debug("Finished job with result: ${job_result?.result}")
+
+                    pkg_result.validation = job_result?.validation
+
+                    if (job_result?.result == 'ERROR') {
+                      pkg_result.result = 'ERROR'
+                      type_results.errors++
+                    }
+                    else {
+                      type_results.success++
+                    }
+                  }
+                }
+                catch (Exception e) {
+                  log.error("Exception creating source update job!", e)
+                  pkg_result.result = 'ERROR'
+                  pkg_result.errors.processing = [
+                    [
+                      message: "There was an error processing the package import!",
+                      messageCode: "import.bulk.error.generic.label"
+                    ]
+                  ]
+                  type_results.errors++
+                }
+              }
+              else {
+                log.debug("Skipping unchanged Package file ${obj.name}.")
+                type_results.unchanged++
+              }
+            }
+            else if (!source_id) {
+              log.debug("No source object created.. skip")
+            }
+            else {
+              log.warn("Unable to reference package!")
+            }
+
+            type_results.report << pkg_result
           }
         }
         else {
@@ -647,5 +653,28 @@ class BulkPackageImportService {
     }
 
     result
+  }
+
+  private boolean hasChangedFile(pid, item) {
+    Package.withNewSession {
+      boolean result = false
+      def deposit_token = java.util.UUID.randomUUID().toString()
+      File tmp_file = TSVIngestionService.handleTempFile(deposit_token)
+      def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.package_titlelist))
+      RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+
+      def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
+                                                where c.type = :ct
+                                                and c.fromComponent.id = :pkg
+                                                order by c.dateCreated desc''', [ct: type_fa, pkg: pid])
+
+      def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
+
+      if (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex) {
+        result = true
+      }
+
+      result
+    }
   }
 }

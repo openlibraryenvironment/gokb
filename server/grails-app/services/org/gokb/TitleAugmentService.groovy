@@ -60,28 +60,27 @@ class TitleAugmentService {
                                                             [ti: titleInstance, type: rr_no_results, sd: rr_status_deleted])
         def existing_multiple = ReviewRequest.executeQuery('''from ReviewRequest as rr
                                                             where rr.componentToReview = :ti
-                                                            and rr.stdDesc = :type
-                                                            and rr.status != :sd ''',
-                                                            [ti: titleInstance, type: rr_multiple, sd: rr_status_deleted])
+                                                            and rr.stdDesc = :type''',
+                                                            [ti: titleInstance, type: rr_multiple])
+
         def ids = Identifier.executeQuery('''from Identifier as ido
                                           where exists (
                                             select 1 from Combo
-                                            where toComponent = ido
-                                            and fromComponent = :tio
-                                            and status = :sa)''',
-                                            [tio: titleInstance, sa: status_active])
+                                            where fromComponent = :ti
+                                            and toComponent = ido
+                                            and status = :sca
+                                          )''', [ti: titleInstance, sca: status_active])
 
         def candidates = zdbAPIService.lookup(titleInstance.name, ids)
-
-        log.debug("Lookup returned $candidates")
 
         if (candidates.size() == 1) {
           if (num_existing_zdb_ids == 0) {
             def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', candidates[0].id)
             def conflicts = Combo.executeQuery('''from Combo as c
-                                                where c.fromComponent IN (
-                                                  select ti from TitleInstance as ti
+                                                where exists (
+                                                  select ti from JournalInstance as ti
                                                   where ti.status != :deleted
+                                                  and ti.id = c.fromComponent.id
                                                 )
                                                 and c.fromComponent != :tic
                                                 and c.toComponent = :idc
@@ -89,9 +88,10 @@ class TitleAugmentService {
                                                 [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
 
             if (conflicts.size() > 0) {
-              log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${new_id.identifiedComponents}")
+              log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${conflicts*.fromComponent}")
+
               if (conflicts.size() == 1) {
-                setNewTitleInfo(conflicts[0].fromComponent, candidates[0])
+                setNewTitleInfo(JournalInstance.get(conflicts[0].fromComponent.id), candidates[0])
               }
 
               def additionalInfo = [
@@ -111,11 +111,10 @@ class TitleAugmentService {
             }
             else if (new_id) {
               log.debug("Adding new ZDB-ID ${new_id}")
-              titleInstance.ids << new_id
-              titleInstance.save(flush: true)
+              new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true)
 
               titleInstance.tipps.each {
-                def tobj = KBComponent.deproxy(it)
+                def tobj = TitleInstancePackagePlatform.get(it.id)
                 tobj.lastSeen = new Date().getTime()
                 tobj.save()
 
@@ -140,19 +139,21 @@ class TitleAugmentService {
           setNewTitleInfo(titleInstance, candidates[0])
         }
         else if (candidates.size() == 0){
-          if (existing_noresults.size() == 0 && ids.findAll { it.namespace.value == 'issn' || it.namespace.value == 'eissn' || it.namespace.value == 'zdb' }.size() > 0) {
-            log.debug("No ZDB result for ids of title ${titleInstance} (${ids.collect { ido -> ido.value }})")
+          if (existing_noresults.size() > 0 && ids.findAll { it.namespace.value == 'issn' || it.namespace.value == 'eissn' || it.namespace.value == 'zdb' }.size() > 0) {
+            log.debug("No ZDB result for ids of title ${titleInstance} (${ids.collect { it.value }})")
 
-            reviewRequestService.raise(
-              titleInstance,
-              "Check for reference ID",
-              "No ZDB matches for linked IDs",
-              null,
-              null,
-              null,
-              rr_no_results,
-              editorialGroup
-            )
+            // if (titleInstance.reviewRequests.findAll { it.stdDesc == rr_no_results}.size() == 0) {
+            //   reviewRequestService.raise(
+            //     titleInstance,
+            //     "Check for reference ID",
+            //     "No ZDB matches for linked IDs",
+            //     null,
+            //     null,
+            //     null,
+            //     rr_no_results,
+            //     editorialGroup
+            //   )
+            // }
           }
         }
         else {
@@ -169,9 +170,10 @@ class TitleAugmentService {
           if (name_candidates.size() == 1) {
             Identifier new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('zdb', name_candidates[0].id)
             def conflicts = Combo.executeQuery('''from Combo as c
-                                                where c.fromComponent IN (
+                                                where exists (
                                                   select ti from JournalInstance as ti
                                                   where ti.status != :deleted
+                                                  and ti.id = c.fromComponent.id
                                                 )
                                                 and c.fromComponent != :tic
                                                 and c.toComponent = :idc
@@ -179,10 +181,14 @@ class TitleAugmentService {
                                                 [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
 
             if (conflicts.size() > 0) {
-              log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${new_id.identifiedComponents}")
+              log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${conflicts*.fromComponent}")
+
+              if (conflicts.size() == 1) {
+                setNewTitleInfo(JournalInstance.get(conflicts[0].fromComponent), name_candidates[0])
+              }
 
               def additionalInfo = [
-                otherComponents: new_id.identifiedComponents.collect { [id: it.id, name: it.name, oid: it.logEntityId, uuid: it.uuid] }
+                otherComponents: conflicts.collect { [id: it.id, name: it.name, oid: it.logEntityId, uuid: it.uuid] }
               ]
 
               reviewRequestService.raise(

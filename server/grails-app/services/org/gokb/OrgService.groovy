@@ -370,8 +370,8 @@ class OrgService {
 
   public def updateOffices(Org org, offices, boolean remove = true) {
     log.debug("Update offices ${offices}")
-    RefdataValue OFFICE_ORG = RefdataCategory.lookup(Combo.RD_TYPE, 'Office.Org')
-    RefdataValue STATUS_ACTIVE = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    RefdataValue type_office = RefdataCategory.lookup(Combo.RD_TYPE, 'Office.Org')
+    RefdataValue status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
     def function_rdc = RefdataCategory.findByLabel(Office.RD_FUNCTION)
     def old_list = org.offices
@@ -425,6 +425,7 @@ class OrgService {
         if (!dupes) {
           org.offices << office_obj
           org.save(flush: true)
+
           result.changed = true
         }
         new_offices << office_obj

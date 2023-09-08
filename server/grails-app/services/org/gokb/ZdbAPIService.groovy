@@ -65,10 +65,10 @@ class ZdbAPIService {
                   if (id.namespace.value == 'eissn' && zdb_info.direct.contains(id.value) && !candidate_ids.direct.find { it.id == zdb_info.id }) {
                     candidate_ids.direct.add(zdb_info)
                   }
-                  else if (!candidate_ids.parallel.find { it.id == zdb_info.id } && zdb_info.parallel.contains(id.value)) {
+                  else if (id.namespace.value == 'issn' && zdb_info.parallel.contains(id.value) && !candidate_ids.parallel.find { it.id == zdb_info.id }) {
                     candidate_ids.parallel.add(zdb_info)
                   }
-                  else if (id.namespace.value == 'zdb' && zdb_info.id == id.value) {
+                  else if (id.namespace.value == 'zdb' && zdb_info == id.value) {
                     candidate_ids.matched.add(zdb_info)
                   }
                   else {
@@ -98,6 +98,7 @@ class ZdbAPIService {
         log.debug("Skipping value for namespace ${id.namespace.value}!")
       }
     }
+
     if (candidate_ids.matched.size() > 0) {
       return candidate_ids.matched
     }

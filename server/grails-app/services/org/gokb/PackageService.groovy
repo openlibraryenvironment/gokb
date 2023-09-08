@@ -1383,7 +1383,7 @@ class PackageService {
               while (tipps.next()) {
                 def tipp_id = tipps.get(0)
                 TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
-                def ti = tipp.title ? ClassUtils.deproxy(tipp.title) : null
+                def ti = tipp.title ? TitleInstance.get(tipp.title.id) : null
 
                 if (tipp.coverageStatements?.size() > 0) {
                   tipp.coverageStatements.each { tcs ->
@@ -1479,6 +1479,7 @@ class PackageService {
                 if (Thread.currentThread().isInterrupted()) {
                   break
                 }
+
                 if (ctr % 50 == 0) {
                   tsession.flush()
                   tsession.clear()
