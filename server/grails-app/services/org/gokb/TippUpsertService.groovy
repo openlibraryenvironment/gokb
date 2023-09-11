@@ -21,6 +21,7 @@ class TippUpsertService {
    * Create a new TIPP being mindful of the need to create TIPLs
    */
 
+
   public TitleInstancePackagePlatform tiplAwareCreate(tipp_fields = [:]) {
     def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
     def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
@@ -34,11 +35,15 @@ class TippUpsertService {
 
     if (result) {
 
-      result.hostPlatform = tipp_fields.hostPlatform
-      result.pkg = tipp_fields.pkg
+      RefdataValue pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
+      new Combo(toComponent: result, fromComponent: tipp_fields.pkg, type: pkg_combo_type).save(flush: true, failOnError: true)
+
+      RefdataValue plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
+      new Combo(toComponent: result, fromComponent: tipp_fields.hostPlatform, type: plt_combo_type).save(flush: true, failOnError: true)
 
       if (tipp_fields.title) {
-        result.title = tipp_fields.title
+        RefdataValue ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
+        new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
 
         TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
       }

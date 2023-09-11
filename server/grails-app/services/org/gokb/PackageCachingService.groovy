@@ -13,6 +13,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 import org.apache.commons.io.FileUtils
+import org.gokb.DomainClassExtender
 import org.gokb.cred.*
 import org.springframework.util.FileCopyUtils
 
@@ -94,15 +95,15 @@ class PackageCachingService {
 
               def fileWriter = new BufferedWriter(new FileWriter(tmpFile, true))
 
-              def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps');
-              def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps');
-              def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps');
-              def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted');
+              def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
+              def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
+              def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
+              def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
               String tipp_hql = "from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)"
               def tipp_hql_params = [pkg: item, ctype: refdata_package_tipps]
               def tipps_count = item.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
               def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-              def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+              def status_active = DomainClassExtender.comboStatusActive
               def pkg_ids = Identifier.executeQuery('''select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i,
                                                         Combo as c where c.fromComponent = :pid
                                                         and c.type = :ct
@@ -345,7 +346,7 @@ class PackageCachingService {
 
   private def getComponentIds(Long tipp_id) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def status_active = DomainClassExtender.comboStatusActive
     def result = Identifier.executeQuery('''select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i,
                                             Combo as c
                                             where c.fromComponent.id = :tid

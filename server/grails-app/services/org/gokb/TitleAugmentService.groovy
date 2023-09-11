@@ -3,6 +3,7 @@ package org.gokb
 import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import java.time.ZoneId
+import org.gokb.DomainClassExtender
 import org.gokb.cred.*
 import org.gokb.GOKbTextUtils
 import grails.gorm.transactions.*
@@ -24,7 +25,7 @@ class TitleAugmentService {
   def augmentZdb(titleInstance) {
     log.debug("Augment ZDB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
     RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
-    RefdataValue status_active = RefdataCategory.lookup("Combo.Status", "Active")
+    RefdataValue status_active = DomainClassExtender.comboStatusActive
     def group_name = grailsApplication.config.getProperty('gokb.zdbAugment.rrCurators')
     CuratoryGroup editorialGroup = group_name ? (CuratoryGroup.findByNameIlike(group_name) ?: new CuratoryGroup(name: group_name).save(flush: true)) : null
     int num_existing_zdb_ids = Combo.executeQuery('''select count(*) from Combo
@@ -372,79 +373,76 @@ class TitleAugmentService {
     }
   }
 
-  @Transactional
   private void setNewTitleInfo(ti, info) {
-    TitleInstance.withTransaction {
-      def titleInstance = KBComponent.deproxy(ti)
+    def titleInstance = KBComponent.deproxy(ti)
 
-      if (!titleInstance.publishedFrom && info.publishedFrom) {
-        log.debug("Adding new start journal start date ..")
-        com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedFrom), titleInstance, 'publishedFrom')
-      }
-      if (!titleInstance.publishedTo && info.publishedTo) {
-        log.debug("Adding new start journal end date ..")
-        com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedTo), titleInstance, 'publishedTo')
-      }
-
-      if (!titleInstance.currentPublisher && info.publisher) {
-        RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
-        def pub_obj = Org.findByNameAndStatusNot(info.publisher, status_deleted)
-
-        if (!pub_obj) {
-          def variant_normname = GOKbTextUtils.normaliseString(info.publisher)
-          def var_candidates = Org.executeQuery('''select distinct p from Org as p
-                                                join p.variantNames as v
-                                                where v.normVariantName = :nvn
-                                                and p.status <> :sd''',
-                                                [nvn: variant_normname, sd: status_deleted])
-
-          if (var_candidates.size() == 1) {
-            pub_obj = var_candidates[0]
-          }
-        }
-
-        if (pub_obj) {
-          def publisher_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
-          titleInstance.publisher << pub_obj
-        }
-      }
-
-      try {
-        info.history.each { he ->
-          if (validationService.checkZdbId(he.zdbId)) {
-            def candidates = Identifier.findByValueIlikeAndNamespace(he.zdbId, IdentifierNamespace.findByValue('zdb'))?.getActiveIdentifiedComponents('JournalInstance')
-
-            if (candidates?.size() == 1 && candidates[0] != titleInstance) {
-              def parsedLocal = he.prev ? GOKbTextUtils.completeDateString(info.publishedFrom) : GOKbTextUtils.completeDateString(he.publishedFrom ?: info.publishedTo)
-              Date event_date = null
-
-              if (parsedLocal) {
-                event_date = Date.from(parsedLocal.atZone(ZoneId.systemDefault()).toInstant())
-              }
-
-              titleHistoryService.addDirectEvent((he.prev ? candidates[0] : titleInstance), (he.prev ? titleInstance : candidates[0]), event_date)
-            } else {
-              log.debug("No usable candidates in ${candidates}..")
-            }
-          }
-          else {
-            log.debug("Skipping item with illegal ID value ${he.zdbId}!")
-          }
-        }
-      }
-      catch (Exception e) {
-        log.error("Error while processing ZDB history event:", e)
-      }
-
-      if (titleInstance.name.toLowerCase() != info.title.toLowerCase()) {
-        log.debug("Updating title name ${titleInstance.name} -> ${info.title}")
-        def old_title = titleInstance.name
-        titleInstance.name = info.title
-        addVariantName(old_title, titleInstance)
-      }
-
-      titleInstance.save(flush: true)
+    if (!titleInstance.publishedFrom && info.publishedFrom) {
+      log.debug("Adding new start journal start date ..")
+      com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedFrom), titleInstance, 'publishedFrom')
     }
+    if (!titleInstance.publishedTo && info.publishedTo) {
+      log.debug("Adding new start journal end date ..")
+      com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedTo), titleInstance, 'publishedTo')
+    }
+
+    if (!titleInstance.currentPublisher && info.publisher) {
+      RefdataValue status_deleted = RefdataCategory.lookup("KBComponent.Status", "Deleted")
+      def pub_obj = Org.findByNameAndStatusNot(info.publisher, status_deleted)
+
+      if (!pub_obj) {
+        def variant_normname = GOKbTextUtils.normaliseString(info.publisher)
+        def var_candidates = Org.executeQuery('''select distinct p from Org as p
+                                              join p.variantNames as v
+                                              where v.normVariantName = :nvn
+                                              and p.status <> :sd''',
+                                              [nvn: variant_normname, sd: status_deleted])
+
+        if (var_candidates.size() == 1) {
+          pub_obj = var_candidates[0]
+        }
+      }
+
+      if (pub_obj) {
+        def publisher_combo = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
+        titleInstance.publisher << pub_obj
+      }
+    }
+
+    try {
+      info.history.each { he ->
+        if (validationService.checkZdbId(he.zdbId)) {
+          def candidates = Identifier.findByValueIlikeAndNamespace(he.zdbId, IdentifierNamespace.findByValue('zdb'))?.getActiveIdentifiedComponents('JournalInstance')
+
+          if (candidates?.size() == 1 && candidates[0] != titleInstance) {
+            def parsedLocal = he.prev ? GOKbTextUtils.completeDateString(info.publishedFrom) : GOKbTextUtils.completeDateString(he.publishedFrom ?: info.publishedTo)
+            Date event_date = null
+
+            if (parsedLocal) {
+              event_date = Date.from(parsedLocal.atZone(ZoneId.systemDefault()).toInstant())
+            }
+
+            titleHistoryService.addDirectEvent((he.prev ? candidates[0] : titleInstance), (he.prev ? titleInstance : candidates[0]), event_date)
+          } else {
+            log.debug("No usable candidates in ${candidates}..")
+          }
+        }
+        else {
+          log.debug("Skipping item with illegal ID value ${he.zdbId}!")
+        }
+      }
+    }
+    catch (Exception e) {
+      log.error("Error while processing ZDB history event:", e)
+    }
+
+    if (titleInstance.name.toLowerCase() != info.title.toLowerCase()) {
+      log.debug("Updating title name ${titleInstance.name} -> ${info.title}")
+      def old_title = titleInstance.name
+      titleInstance.name = info.title
+      addVariantName(old_title, titleInstance)
+    }
+
+    titleInstance.save(flush: true)
   }
 
   public boolean editMonographFields(ti, updatedInfo) {
@@ -471,7 +469,7 @@ class TitleAugmentService {
 
   def syncZdbInfo(Job j = null) {
     RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-    RefdataValue combo_active = RefdataCategory.lookup("Combo.Status", "Active")
+    RefdataValue combo_active = DomainClassExtender.comboStatusActive
     RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
     IdentifierNamespace zdbNs = IdentifierNamespace.findByValue('zdb')
     int offset = 0
@@ -667,7 +665,7 @@ class TitleAugmentService {
     if (new_publisher != null) {
 
       def current_publisher = ti.currentPublisher
-      def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+      def combo_active = DomainClassExtender.comboStatusActive
 
       if ((current_publisher != null) && (current_publisher.id == new_publisher.id)) {
         // no change... leave it be

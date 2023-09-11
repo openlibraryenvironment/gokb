@@ -68,7 +68,7 @@ class Combo {
   def afterInsert() {
     if (this.status == null) {
       log.debug("Setting default combo status ..")
-      setStatus(DomainClassExtender.getComboStatusActive())
+      setStatus(DomainClassExtender.comboStatusActive)
       save()
     }
     else {

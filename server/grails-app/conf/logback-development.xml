@@ -18,6 +18,7 @@
   <logger name="org.gokb.ComponentStatisticService" level="INFO"/>
   <logger name="org.gokb.ComponentUpdateService" level="INFO"/>
   <logger name="org.gokb.TitleLookupService" level="INFO"/>
+  <logger name="org.gokb.PackageSourceUpdateService" level="DEBUG"/>
   <logger name="org.gokb.SearchController" level="INFO"/>
   <logger name="org.gokb.ResourceController" level="ERROR"/>
   <logger name="org.gokb.FTUpdateService" level="INFO"/>

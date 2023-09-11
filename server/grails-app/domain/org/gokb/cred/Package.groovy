@@ -3,6 +3,7 @@ package org.gokb.cred
 import com.k_int.ClassUtils
 import grails.gorm.transactions.Transactional
 import org.gokb.GOKbTextUtils
+import org.gokb.DomainClassExtender
 
 import javax.persistence.Transient
 import groovy.util.logging.*
@@ -535,7 +536,7 @@ class Package extends KBComponent {
   @Transient
   private static getTitleIds(Long title_id) {
     def refdata_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def status_active = DomainClassExtender.comboStatusActive
     def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = :ti and c.type = :ct and c.toComponent = i and c.status = :cs", [ti: title_id, ct: refdata_ids, cs: status_active], [readOnly: true])
     result
   }
@@ -543,7 +544,7 @@ class Package extends KBComponent {
   @Transient
   private static getTippIds(Long tipp_id) {
     def refdata_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def status_active = DomainClassExtender.comboStatusActive
     def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = :tipp and c.type = :ct and c.toComponent = i and c.status = :cs", [tipp: tipp_id, ct: refdata_ids, cs: status_active], [readOnly: true])
     result
   }

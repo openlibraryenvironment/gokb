@@ -32,7 +32,7 @@ class PackageSourceUpdateService {
   def updateFromSource(Long pkgId, def user = null, Job job = null, Long activeGroupId = null, boolean dryRun = false) {
     log.debug("updateFromSource ${p.name}")
     def result = [result: 'OK']
-    def activeJobs = concurrencyManagerService.getComponentJobs(p.id)
+    def activeJobs = concurrencyManagerService.getComponentJobs(pkgId)
 
     if (job || activeJobs?.data?.size() == 0) {
       log.debug("UpdateFromSource started")
@@ -50,9 +50,9 @@ class PackageSourceUpdateService {
     def result = [result: 'OK']
     def platform_url
     Boolean async = (user ? true : false)
-    def preferred_group = null
+    def preferred_group
     def title_ns
-    Long datafile_id = null
+    Long datafile_id
     def skipInvalid = false
     Boolean deleteMissing = false
     def pkgInfo = [:]
@@ -206,7 +206,7 @@ class PackageSourceUpdateService {
                   DataFile datafile = DataFile.findByMd5(file_info.md5sumHex)
 
                   if (!datafile) {
-                    log.debug("Create new datafile")
+                    log.warn("Create new datafile")
                     datafile = new DataFile(
                                             guid: deposit_token,
                                             md5: file_info.md5sumHex,
@@ -228,8 +228,11 @@ class PackageSourceUpdateService {
                       result.result = 'SKIPPED'
                       result.message = 'Skipped repeated import of the same file for this package.'
                       result.messageCode = 'kbart.transmission.skipped.sameFile'
+
                       return result
                     }
+
+                    datafile_id = datafile.id
                   }
                 }
                 else {
@@ -237,11 +240,12 @@ class PackageSourceUpdateService {
                   result.result = 'ERROR'
                   result.messageCode = 'kbart.errors.url.charset'
                   result.message = "KBART is not UTF-8!"
+
                   return result
                 }
               } catch (IOException e) {
                   // handle exception
-                  e.printStackTrace()
+                 log.error("Failed DataFile handling", e)
               }
             }
             else {
@@ -249,6 +253,8 @@ class PackageSourceUpdateService {
               result.messageCode = 'kbart.errors.url.mimeType'
               result.message = "KBART URL returned a wrong content type!"
               log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+
+              return result
             }
           }
           else {
@@ -256,6 +262,8 @@ class PackageSourceUpdateService {
             result.messageCode = 'kbart.transmission.skipped.noFile'
             result.result = 'SKIPPED'
             log.debug("KBART url ${src_url} returned MIME type ${file_info.content_mime_type}")
+
+            return result
           }
         }
         // else if (src_url.getProtocol() in ['ftp', 'sftp']) {
@@ -263,6 +271,8 @@ class PackageSourceUpdateService {
           result.result = 'ERROR'
           result.messageCode = 'kbart.errors.url.protocol'
           result.message = "KBART URL has an unsupported protocol!"
+
+          return result
         }
       }
       else {
@@ -324,17 +334,17 @@ class PackageSourceUpdateService {
         }
 
         if (preferred_group) {
-          update_job.groupId = preferred_group.id
+          update_job.groupId = preferred_group
         }
 
         if (user) {
           update_job.ownerId = user.id
         }
 
-        update_job.description = "KBART REST ingest (${p.name})".toString()
+        update_job.description = "KBART REST ingest (${pkgInfo.name})".toString()
         update_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
         update_job.linkedItem = pkgInfo
-        update_job.message("Starting upsert for Package ${p.name}".toString())
+        update_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
         update_job.startOrQueue()
 
         try {

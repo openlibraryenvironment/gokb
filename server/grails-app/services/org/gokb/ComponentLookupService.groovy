@@ -11,6 +11,7 @@ import groovy.util.logging.*
 
 import groovyx.net.http.URIBuilder
 
+import org.gokb.DomainClassExtender
 import org.gokb.cred.*
 import org.gokb.ValidationService
 import org.grails.datastore.mapping.model.*
@@ -182,9 +183,7 @@ class ComponentLookupService {
             log.debug("Creating new Identifier ${namespace}:${value} ..")
 
             try {
-              Identifier.withTransaction {
-                identifier = new Identifier(namespace: namespace, value: final_val, normname: norm_id).save(flush:true, failOnError:true)
-              }
+              identifier = new Identifier(namespace: namespace, value: final_val, normname: norm_id).save(flush:true, failOnError:true)
             }
             catch (org.springframework.orm.hibernate5.HibernateOptimisticLockingFailureException lfe) {
               log.error("Locking failure", lfe)
@@ -271,7 +270,7 @@ class ComponentLookupService {
             comboFilterStr += "${c}_combo.type = :${c}type AND "
             qryParams["${c}type"] = RefdataCategory.lookupOrCreate ( "Combo.Type", cls.getComboTypeValueFor(cls, c))
             comboFilterStr += "${c}_combo.status = :${c}status "
-            qryParams["${c}status"] = RefdataCategory.lookup("Combo.Status", "Active")
+            qryParams["${c}status"] = DomainClassExtender.comboStatusActive
 
             def validLong = []
             def validStr = []

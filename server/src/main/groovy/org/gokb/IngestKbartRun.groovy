@@ -29,7 +29,6 @@ class IngestKbartRun {
   static ValidationService validationService = Holders.grailsApplication.mainContext.getBean('validationService')
   static def concurrencyManagerService = Holders.grailsApplication.mainContext.getBean('concurrencyManagerService')
   static TippService tippService = Holders.grailsApplication.mainContext.getBean('tippService')
-  static TippUpsertService tippUpsertService = Holders.grailsApplication.mainContext.getBean('tippUpsertService')
   static DateFormatService dateFormatService = Holders.grailsApplication.mainContext.getBean('dateFormatService')
 
   boolean addOnly
@@ -196,8 +195,7 @@ class IngestKbartRun {
             def p = Package.get(pid)
             p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
             p.lastSeen = new Date().getTime()
-            p.fileAttachments << datafile
-            p.save(flush: true)
+            new Combo(fromComponent: p, toComponent: datafile, type: RefdataCategory.lookup('Combo.Type','KBComponent.FileAttachments')).save(flush: true, failOnError: true)
           }
         }
 
@@ -267,7 +265,7 @@ class IngestKbartRun {
           log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
           if (!dryRun && result.result != 'CANCELLED') {
             try {
-              TitleInstancePackagePlatform.withTransaction {
+              TitleInstancePackagePlatform.withNewSession {
                 // Find all tipps in this package which have a lastSeen before the ingest date
                 RefdataValue new_status = RefdataCategory.lookup('KBComponent.Status', (isCleanup ? 'Deleted' : 'Retired'))
 
@@ -337,7 +335,7 @@ class IngestKbartRun {
 
         if (!dryRun) {
           try {
-            Package.withTransaction {
+            Package.withNewSession {
               Package p = Package.get(pid)
 
               def update_agent = User.findByUsername('IngestAgent')
@@ -667,7 +665,7 @@ class IngestKbartRun {
             importId: the_kbart.title_id?.trim()
           ]
 
-          tipp = tippUpsertService.tiplAwareCreate(tipp_fields)
+          tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
 
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
 
@@ -764,7 +762,7 @@ class IngestKbartRun {
             importId: the_kbart.title_id
           ]
 
-          tipp = tippUpsertService.tiplAwareCreate(tipp_fields)
+          tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
         }
 
         if (tipp_map.importId) {

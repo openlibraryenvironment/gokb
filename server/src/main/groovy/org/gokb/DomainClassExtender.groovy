@@ -36,7 +36,7 @@ import com.k_int.ClassUtils
 class DomainClassExtender {
 
   public static RefdataValue getComboStatusActive() {
-    RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
   }
 
   private static addComboPropertyCache = { GrailsClass domainClass ->
@@ -246,13 +246,14 @@ class DomainClassExtender {
       log.debug("getComboMapFor called on ${delegate} with args ${[forClass,mapName]}")
 
       // Return from cache if present.
-      String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:${mapName}"
-      log.debug("Checking cache for ${cacheKey}...")
-      def value = DomainClassExtender.comboMappingCache[cacheKey]
-      if (value != null) {
-        log.debug("\t...found, returning ${value}")
-        return value
-      }
+      def value = null
+      // String cacheKey = "${GrailsNameUtils.getShortName(forClass)}:${mapName}"
+      // log.debug("Checking cache for ${cacheKey}...")
+      // def value = DomainClassExtender.comboMappingCache[cacheKey]
+      // if (value != null) {
+      //   log.debug("\t...found, returning ${value}")
+      //   return value
+      // }
 
       log.debug("\t...Not found, looking up.")
       try {
@@ -265,7 +266,7 @@ class DomainClassExtender {
       if (value == null) value = [:]
 
       // Cache it.
-      DomainClassExtender.comboMappingCache[cacheKey] = value
+      // DomainClassExtender.comboMappingCache[cacheKey] = value
 
       // Return the value.
       log.debug("${value} found.")

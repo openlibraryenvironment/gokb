@@ -7,6 +7,7 @@ import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import grails.gorm.transactions.*
 
+import org.gokb.DomainClassExtender
 import org.gokb.cred.*
 
 import java.time.LocalDate
@@ -667,8 +668,7 @@ class TippService {
         }
 
         if (ti) {
-          tipp.title = ti
-          tipp.save(flush: true)
+          new Combo(fromComponent: ti, toComponent: tipp, type: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')).save(flush: true)
 
           if (result.status == 'matched') {
             titleAugmentService.addIdentifiers(tipp_ids, ti)
@@ -837,9 +837,11 @@ class TippService {
 
         if (tipp.title) {
           ti.ids.each { data ->
-            if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(data.namespace.value)) {
-              if (!tipp.ids*.namespace.contains(data.namespace)) {
-                tipp.ids << data
+            Identifier idobj = Identifier.get(data.id)
+
+            if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(idobj.namespace.value)) {
+              if (!tipp.ids*.namespace.contains(idobj.namespace)) {
+                new Combo(fromComponent: tipp, toComponent: idobj, type: combo_ids).save(flush: true, failOnError: true)
                 log.debug("added ID $data in TIPP $tipp")
               }
             }
@@ -1090,7 +1092,7 @@ class TippService {
       monograph: ['isbn', 'doi', 'pisbn']
     ]
     def typeString = tippInfo.publicationType ?: tippInfo.type
-    def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def combo_active = DomainClassExtender.comboStatusActive
 
     def result = [full_matches: [], failed_matches: []]
 

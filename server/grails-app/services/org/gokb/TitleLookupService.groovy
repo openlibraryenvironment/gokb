@@ -226,7 +226,7 @@ class TitleLookupService {
     def result = [to_create: false, matches: [], conflicts: [], invalid: []]
     TitleInstance the_title = null
     Class ti_class = Class.forName(newTitleClassName)
-    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def status_active = DomainClassExtender.comboStatusActive
     Set<String> class_one_ids = grailsApplication.config.getProperty('identifiers.class_ones', Set<String>)
 
     // Lookup any class 1 identifier matches
@@ -489,7 +489,7 @@ class TitleLookupService {
     TitleInstance the_title = null
     Class ti_class = Class.forName(newTitleClassName)
     Set<String> class_one_ids = grailsApplication.config.getProperty('identifiers.class_ones', Set<String>)
-    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def status_active = DomainClassExtender.comboStatusActive
     def rr_map = [:]
     def title_created = false
 
@@ -1462,10 +1462,15 @@ class TitleLookupService {
   def getComponentsForIdentifier(identifier) {
 
     def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    def status_active = RefdataCategory.lookup('Combo.Status', 'Active')
+    def status_active = DomainClassExtender.comboStatusActive
     def combo_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
     // was identifier.identifiedComponents
-    KBComponent.executeQuery("select DISTINCT c.fromComponent from Combo as c where c.toComponent = :id and c.type = :tp and c.fromComponent.status <> :del and c.status = :act", [id: identifier, tp: combo_type, del: status_deleted, act: status_active]);
+    KBComponent.executeQuery('''select DISTINCT c.fromComponent from Combo as c
+                                where c.toComponent = :id
+                                and c.type = :tp
+                                and c.fromComponent.status <> :del
+                                and c.status = :act''',
+                                [id: identifier, tp: combo_type, del: status_deleted, act: status_active])
   }
 
   def compareIdentifierMaps(ids_one, ids_two) {

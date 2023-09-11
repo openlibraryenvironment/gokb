@@ -195,7 +195,6 @@ class ComponentUpdateService {
       def groups = component.curatoryGroups.collect{ [id: it.id, name: it.name] }
 
       RefdataValue combo_type_cg = RefdataCategory.lookup('Combo.Type', component.getComboTypeValue('curatoryGroups'))
-      RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
 
       data.curatoryGroups?.each{ String name ->
         if (!groups.find{ it.name.toLowerCase() == name.toLowerCase() }){
@@ -203,8 +202,7 @@ class ComponentUpdateService {
           // Only add if we have the group already in the system.
           if (group){
             log.debug("Adding group ${name}..")
-            component.curatoryGroups << group
-            component.save(flush: true, failOnError: true)
+            new Combo(fromComponent: component, toComponent: group, type: combo_type_cg).save(flush: true, failOnError: true)
             hasChanged = true
             groups << [id: group.id, name: group.name]
           }
@@ -235,7 +233,6 @@ class ComponentUpdateService {
   def updateIdentifiers(component, new_ids, User user = null, CuratoryGroup group = null, boolean remove = false) {
     boolean hasChanged = false
     Set<String> existing_ids = component.ids.collect { "${it.namespace?.value}|${Identifier.normalizeIdentifier(it.value)}".toString() }
-    RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
     RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
@@ -252,8 +249,7 @@ class ComponentUpdateService {
 
             if (duplicate.size() == 0) {
               log.debug("adding identifier(${namespace_val},${ci.value})(${canonical_identifier.id})")
-              component.ids << canonical_identifier
-              component.save(flush: true)
+              new Combo(fromComponent: component, toComponent: canonical_identifier, type: combo_type_id).save(flush: true, failOnError: true)
               hasChanged = true
             } else if (duplicate.size() == 1 && duplicate[0].status == combo_deleted) {
               log.debug("Found a deleted identifier combo for ${canonical_identifier.value} -> ${component}")

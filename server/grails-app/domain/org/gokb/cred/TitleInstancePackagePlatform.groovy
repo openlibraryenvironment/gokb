@@ -4,6 +4,7 @@ import gokbg3.DateFormatService
 
 import javax.persistence.Transient
 
+import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 import groovy.util.logging.*
 
@@ -304,6 +305,39 @@ class TitleInstancePackagePlatform extends KBComponent {
           result.add(component)
         }
       }
+    }
+
+    result
+  }
+
+  public static TitleInstancePackagePlatform tiplAwareCreate(tipp_fields = [:]) {
+    def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
+    def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
+    def tipp_language = tipp_fields.language ? RefdataCategory.lookup('KBComponent.Language', tipp_fields.language) : null
+    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid,
+                                                  status: tipp_status,
+                                                  editStatus: tipp_editstatus,
+                                                  name: tipp_fields.name,
+                                                  language: tipp_language,
+                                                  url: tipp_fields.url).save(failOnError: true, flush:true)
+
+    if (result) {
+
+      RefdataValue pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
+      new Combo(toComponent: result, fromComponent: tipp_fields.pkg, type: pkg_combo_type).save(flush: true, failOnError: true)
+
+      RefdataValue plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
+      new Combo(toComponent: result, fromComponent: tipp_fields.hostPlatform, type: plt_combo_type).save(flush: true, failOnError: true)
+
+      if (tipp_fields.title) {
+        RefdataValue ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
+        new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
+
+        TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
+      }
+    }
+    else {
+      log.error("TIPP creation failed!")
     }
 
     result
@@ -690,7 +724,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
     if (title) {
       def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-      def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+      def status_active = DomainClassExtender.comboStatusActive
       result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = :ti and c.type = :ct and c.toComponent = i and c.status = :cs", [ti: title, ct: refdata_ids, cs: status_active], [readOnly: true])
     }
     result
@@ -699,7 +733,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   @Transient
   public getPackageIds() {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def status_active = DomainClassExtender.comboStatusActive
     def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = :pkg and c.type = :ct and c.toComponent = i and c.status = :cs", [pkg: pkg, ct: refdata_ids, cs: status_active], [readOnly: true])
     result
   }

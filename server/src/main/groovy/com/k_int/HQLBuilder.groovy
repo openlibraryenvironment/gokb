@@ -1,6 +1,7 @@
 package com.k_int
 
 import groovy.util.logging.*
+import org.gokb.DomainClassExtender
 import org.gokb.cred.*;
 import grails.util.GrailsClassUtils
 import groovy.util.logging.Slf4j
@@ -45,14 +46,14 @@ public class HQLBuilder {
    *
    *
    */
-  public static def build(grailsApplication, 
-                          qbetemplate, 
+  public static def build(grailsApplication,
+                          qbetemplate,
                           params,
-                          result, 
-                          target_class, 
+                          result,
+                          target_class,
                           genericOIDService,
                           returnObjectsOrRows='objects') {
-    // select o from Clazz as o where 
+    // select o from Clazz as o where
 
     // log.debug("build ${params}");
 
@@ -68,9 +69,9 @@ public class HQLBuilder {
       // log.debug("Adding query global: ${global_prop_def}");
       // create a contextTree so we can process the filter just like something added to the query tree
       // Is this global user selectable
-      
+
       def interpretedValue = interpretGlobalValue(grailsApplication,global_prop_def)
-      
+
       if( interpretedValue ) {
         if ( global_prop_def.qparam != null) {  // Yes
           if ( params[global_prop_def.qparam] == null ) { // If it's not be set
@@ -137,8 +138,8 @@ public class HQLBuilder {
     }
 
     // Many SQL variants freak out if you order by on a count(*) query, so only order by for the actual fetch
-    if ( hql_builder_context.containsKey('sort' ) && 
-         ( hql_builder_context.get('sort') != null ) && 
+    if ( hql_builder_context.containsKey('sort' ) &&
+         ( hql_builder_context.get('sort') != null ) &&
          ( hql_builder_context.get('sort').length() > 0 ) ) {
       log.debug("Setting sort order to ${hql_builder_context.sort}");
       fetch_hql += " order by o.${hql_builder_context.sort} ${hql_builder_context.order}";
@@ -198,7 +199,7 @@ public class HQLBuilder {
     log.debug("combo props for ${the_class} are: ${allProps}")
 
     if ( proppath.size() > 1 ) {
-      
+
       def head = proppath.remove(0)
       def newscope = parent_scope+'_'+head
       if ( hql_builder_context.declared_scopes.containsKey(newscope) ) {
@@ -207,7 +208,7 @@ public class HQLBuilder {
       }
       else {
         // log.debug("Intermediate establish scope - ${head} :: ${proppath}");
-        // We're looking at an intermediate property which needs to add some bind scopes. The property can be a simple 
+        // We're looking at an intermediate property which needs to add some bind scopes. The property can be a simple
         // standard association, or it could be a virtual (Combo) property which will need multiple joins.
 
         // 1. Determine if this is a combo property
@@ -220,10 +221,10 @@ public class HQLBuilder {
           // Now process
         }
         else {
-          
+
           // Target class can be looked up in standard way.
           target_class = GrailsClassUtils.getPropertyType(the_class, head)
-          
+
           // Standard association, just make a bind variable..
           establishScope(hql_builder_context, parent_scope, head, newscope)
           processQryContextType(hql_builder_context,crit, proppath, newscope, target_class)
@@ -237,7 +238,7 @@ public class HQLBuilder {
       if ( target_class ) {
         log.debug("Combo property.....");
         def component_scope_name = createComboScope(the_class, proppath[0], hql_builder_context, parent_scope)
-        // Finally, because the leaf of the query path is a combo property, we must be being asked to match on an 
+        // Finally, because the leaf of the query path is a combo property, we must be being asked to match on an
         // object.
         addQueryClauseFor(crit,hql_builder_context,component_scope_name)
       }
@@ -266,7 +267,7 @@ public class HQLBuilder {
       hql_builder_context.query_clauses.add("${combo_scope_name}.type = :${combo_type_bindvar}");
       hql_builder_context.query_clauses.add("${combo_scope_name}.status = :${combo_status_bindvar}");
       hql_builder_context.bindvars[combo_type_bindvar] = RefdataCategory.lookupOrCreate ( "Combo.Type", the_class.getComboTypeValueFor (the_class, propname))
-      hql_builder_context.bindvars[combo_status_bindvar] = RefdataCategory.lookup("Combo.Status", "Active")
+      hql_builder_context.bindvars[combo_status_bindvar] = DomainClassExtender.comboStatusActive
     }
 
     def component_scope_name = propname
@@ -282,7 +283,7 @@ public class HQLBuilder {
 
   static def establishScope(hql_builder_context, parent_scope, property_to_join, newscope_name) {
     // log.debug("Establish scope ${newscope_name} as a child of ${parent_scope} property ${property_to_join}");
-    hql_builder_context.declared_scopes[newscope_name] = "${parent_scope}.${property_to_join} as ${newscope_name}" 
+    hql_builder_context.declared_scopes[newscope_name] = "${parent_scope}.${property_to_join} as ${newscope_name}"
   }
 
   static def addQueryClauseFor(crit, hql_builder_context, scoped_property) {
@@ -342,7 +343,7 @@ public class HQLBuilder {
     hql_builder_context.declared_scopes.each { scope_name,ds ->
       sw.write(" join ${ds}\n");
     }
-    
+
     if ( hql_builder_context.query_clauses.size() > 0 ) {
       sw.write(" where");
       boolean conjunction=false
@@ -351,7 +352,7 @@ public class HQLBuilder {
           // output and on second and subsequent clauses
           sw.write(" AND");
         }
-        else {  
+        else {
           conjunction=true
         }
         sw.write(" ");
@@ -384,7 +385,7 @@ public class HQLBuilder {
     def result=null;
     if ( prop.cat && prop.cat.size() > 0) {
       def rdc = RefdataCategory.findByDesc(prop.cat)
-      
+
       if ( rdc ) {
         result = RefdataValue.findByOwnerAndValue(rdc, prop.value)
       }else{

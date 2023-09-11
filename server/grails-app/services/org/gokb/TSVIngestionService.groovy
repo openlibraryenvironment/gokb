@@ -16,7 +16,7 @@ class TSVIngestionService {
 
   def updatePackage(def pkgId,
                     def dfId,
-                    IdentifierNamespace title_id_ns,
+                    def title_id_ns,
                     boolean async,
                     boolean incremental,
                     def userId,

@@ -7,6 +7,7 @@ import javax.persistence.Transient
 
 import org.grails.datastore.mapping.model.PersistentEntity
 import org.grails.datastore.mapping.model.PersistentProperty
+import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 
 import java.time.LocalDate
@@ -1372,7 +1373,7 @@ where cp.owner = :c
   @Transient
   def addCoreGOKbXmlFields(builder, attr) {
     def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    def status_active = DomainClassExtender.comboStatusActive
     def cids = Identifier.executeQuery("select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = :comp and c.type = :ct and c.toComponent = i and c.status = :cs", [comp: this, ct: refdata_ids, cs: status_active], [readOnly: true])
     String cName = this.class.name
 

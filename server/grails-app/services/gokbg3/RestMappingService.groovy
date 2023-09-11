@@ -510,7 +510,6 @@ class RestMappingService {
   public def updateIdentifiers(obj, ids, boolean remove = true) {
     log.debug("updating ids ${ids}")
     def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
     def id_combos = obj.getCombosByPropertyNameAndStatus('ids', 'Active')
     def result = [changed: false, errors: []]
@@ -592,16 +591,14 @@ class RestMappingService {
           def dupe = Combo.executeQuery("from Combo where type = :ct and fromComponent = :fc and toComponent = :tc", [ct: combo_id_type, fc: obj, tc: i])
 
           if (dupe.size() == 0) {
-            obj.ids << i
-            obj.save(flush: true)
+            new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true, failOnError: true)
             result.changed = true
           }
           else if (dupe.size() == 1) {
             if (dupe[0].status == combo_deleted) {
               log.debug("Matched ID combo was marked as deleted!")
               dupe[0].delete(flush: true)
-              obj.ids << i
-              obj.save(flush: true)
+              new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true, failOnError: true)
               result.changed = true
             }
             else {
@@ -703,8 +700,7 @@ class RestMappingService {
       if (result.errors.size() == 0) {
         new_cgs.each { c ->
           if (!obj.curatoryGroups.contains(c)) {
-            obj.curatoryGroups << c
-            obj.save(flush: true)
+            new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush: true, failOnError: true)
             result.changed = true
           }
           else {
