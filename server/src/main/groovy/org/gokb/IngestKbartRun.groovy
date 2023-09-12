@@ -799,9 +799,12 @@ class IngestKbartRun {
       log.debug("TIPP ${tipp.id} info check: ${tipp.name}, ${tipp.url}")
 
       if (tipp.validate()) {
-        if (ingest_systime && (tipp.lastUpdated.getTime() >= ingest_systime || tipp.dateCreated.getTime() >= ingest_systime)) {
+        if (ingest_systime) {
           log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date} (${tipp.lastSeen} -> ${ingest_systime})")
-          tipp.lastSeen = ingest_systime
+          tippService.updateLastSeen(tipp, ingest_systime)
+        }
+        else {
+          log.debug("Skipping unchanged")
         }
 
         tipp.save(flush: true)

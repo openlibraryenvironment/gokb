@@ -250,7 +250,7 @@ class EzbCollectionService {
 
                   pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
 
-                  sourceResult = ensurePackageSource(pkg, item)
+                  sourceResult = ensurePackageSource(obj, item)
 
                   log.debug("Existing package since: ${obj?.dateCreated} - EZB start ${dateFormatService.parseTimestamp(item.ezb_collection_released_date)}")
                 }
@@ -470,8 +470,8 @@ class EzbCollectionService {
         source.curatoryGroups << curator
         source.save()
 
-        obj.source = source
-        obj.save(flush: true)
+        pkg.source = source
+        pkg.save(flush: true)
       }
     }
 

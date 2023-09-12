@@ -206,7 +206,7 @@ class PackageSourceUpdateService {
                   DataFile datafile = DataFile.findByMd5(file_info.md5sumHex)
 
                   if (!datafile) {
-                    log.warn("Create new datafile")
+                    log.validationErrors("Create new datafile")
                     datafile = new DataFile(
                                             guid: deposit_token,
                                             md5: file_info.md5sumHex,
@@ -236,7 +236,7 @@ class PackageSourceUpdateService {
                   }
                 }
                 else {
-                  log.debug("Illegal charset ${encoding} found..")
+                  log.error("Illegal charset ${encoding} found..")
                   result.result = 'ERROR'
                   result.messageCode = 'kbart.errors.url.charset'
                   result.message = "KBART is not UTF-8!"
@@ -299,7 +299,7 @@ class PackageSourceUpdateService {
                                                     deleteMissing,
                                                     job)
 
-        if (result.validation?.valid == false || result.report?.reviews > 0 || (!async && result.matchingJob?.reviews > 0)) {
+        if (hasOpenIssues(pid, async, result)) {
           log.info("There were issues with the automated job (valid: ${result.validation?.valid}, reviews: ${result.report?.reviews}, matching reviews: ${result.matchingJob?.reviews}), keeping listStatus in progress..")
         }
         else if (!async && !dryRun) {
@@ -354,7 +354,7 @@ class PackageSourceUpdateService {
           log.error("Package import threw an exception!", e)
         }
 
-        if (result.job_result?.validation?.valid == false || result.job_result?.report?.reviews > 0 || (!async && result.job_result?.matchingJob?.reviews > 0)) {
+        if (hasOpenIssues(pid, async, result.job_result)) {
           log.info("There were issues with the automated job (valid: ${result.job_result?.validation?.valid}, reviews: ${result.job_result?.report?.reviews}, matching reviews: ${result.job_result?.matchingJob?.reviews}), keeping listStatus in progress..")
         }
         else if (!async && !dryRun) {
@@ -370,7 +370,7 @@ class PackageSourceUpdateService {
         }
       }
     }
-    else {
+    else if (result.result != 'SKIPPED') {
       log.debug("Unable to reference DataFile")
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.url.unknown'
@@ -421,12 +421,48 @@ class PackageSourceUpdateService {
     result
   }
 
+  public Boolean hasOpenIssues(pid, async, jobResult) {
+    boolean result = false
+
+    if (jobResult.validation?.valid == false || jobResult.report?.reviews > 0 || (!async && jobResult.matchingJob?.reviews > 0)) {
+      result = true
+    }
+    else if (hasOpenTippReviews(pid)) {
+      result = true
+    }
+
+    result
+  }
+
+  public Boolean hasOpenTippReviews(pid) {
+    RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+    RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
+
+    def qry = '''select count(*) from ReviewRequest as rr
+                  where rr.componentToReview in (
+                    select t from TitleInstancePackagePlatform as t
+                    where exists (
+                      select 1 from Combo
+                      where fromComponent.id = :pid
+                      and toComponent = t
+                      and type = :ct
+                    )
+                  )
+                  and rr.status = :so'''
+
+    def total = ReviewRequest.executeQuery(qry, [pid: pid, ct: combo_tipps])[0]
+
+    return total > 0
+  }
+
   public Boolean hasFileChanged(pkgId, datafileId) {
     RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
+
     def ordered_combos = Combo.executeQuery('''select c.toComponent.id from Combo as c
                                               where c.type = :ct
                                               and c.fromComponent.id = :pkg
-                                              order by c.dateCreated desc''', [ct: type_fa, pkg: pkgId])
+                                              order by c.dateCreated desc''',
+                                              [ct: type_fa, pkg: pkgId])
 
     return (ordered_combos.size() == 0 || ordered_combos[0] != datafileId)
   }

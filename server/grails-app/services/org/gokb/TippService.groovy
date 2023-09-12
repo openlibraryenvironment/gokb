@@ -1153,6 +1153,13 @@ class TippService {
     result
   }
 
+  public void updateLastSeen(tipp, Long systime) {
+    autoTimestampEventListener.withoutLastUpdated {
+      tipp.lastSeen = systime
+      tipp.save(flush: true)
+    }
+  }
+
   def restLookup(tippInfo) {
     def result = [:]
     def tipps = []
