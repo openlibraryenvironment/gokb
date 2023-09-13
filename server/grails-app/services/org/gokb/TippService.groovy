@@ -1225,6 +1225,9 @@ class TippService {
 
     if (pkgInfo?.id && tippInfo.hostPlatform?.id) {
       RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+      RefdataValue status_expected = RefdataCategory.lookup("KBComponent.Status", "Expected")
+      def status_valid = [status_current, status_expected]
+
       // remap JSON Identifiers to [type: value]
       def jsonIdMap = [:]
       tippInfo.identifiers.each { jsonId ->
@@ -1252,14 +1255,14 @@ class TippService {
               and type = :typ2
             )
             and tipp.importId = :tid
-            and tipp.status = :tStatus''',
+            and tipp.status IN (:tStatus)''',
             [
               pkg   : pkgInfo.id,
               typ1   : RefdataCategory.lookup(Combo.RD_TYPE, 'Package.Tipps'),
               plt    : tippInfo.hostPlatform.id,
               typ2   : RefdataCategory.lookup(Combo.RD_TYPE, 'Platform.HostedTipps'),
               tid    : titleId,
-              tStatus: status_current
+              tStatus: status_valid
             ]
         )
       }
@@ -1278,7 +1281,7 @@ class TippService {
                   if (TitleInstancePackagePlatform.isInstance(it)
                       && !tipps.contains(it)
                       && it.pkg?.id == pkgInfo.id
-                      && it.status == status_current
+                      && status_valid.contains(it.status)
                       && it.hostPlatform?.id == tippInfo.hostPlatform.id
                       && (!titleId || !it.importId)) {
                     tipps.add(it)
@@ -1304,7 +1307,7 @@ class TippService {
                   if (TitleInstancePackagePlatform.isInstance(it)
                       && !tipps.contains(it)
                       && it.pkg?.id == pkgInfo.id
-                      && it.status == status_current
+                      && status_valid.contains(it.status)
                       && it.hostPlatform?.id == tippInfo.hostPlatform.id
                       && (!titleId || !it.importId)) {
                     tipps.add(it)
