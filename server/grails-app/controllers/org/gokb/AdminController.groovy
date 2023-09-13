@@ -283,6 +283,22 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def triggerTippMatching() {
+    log.debug("copy Identifiers")
+    Job j = concurrencyManagerService.createJob { Job j ->
+      tippService.matchUnlinkedTipps(j)
+    }.startOrQueue()
+
+    log.debug("started data transfer task")
+
+    j.description = "TIPP: match unlinked tipps"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'TIPPLinking')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
+
   def copyTitleData() {
     log.debug("copy Identifiers")
     Job j = concurrencyManagerService.createJob { Job j ->

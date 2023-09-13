@@ -504,6 +504,63 @@ class TippService {
     tipp
   }
 
+  def matchUnlinkedTipps(def job = null) {
+    def startTime = LocalDateTime.now()
+    def count = 0
+    def result = [matched: 0, created: 0, unmatched: 0, reviews: 0]
+
+    TitleInstancePackagePlatform.withNewSession { session ->
+      def tippIDs = TitleInstancePackagePlatform.executeQuery(
+          "select id from TitleInstancePackagePlatform tipp where status != :sdel and not exists (select c from Combo as c where c.type = :ctype and c.toComponent = tipp)",
+          [sdel : RefdataCategory.lookup('KBComponent.Status', 'Deleted'),
+          ctype: RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')])
+
+      result.total = tippIDs.size()
+      log.info("${result.total} detached TIPPs to check")
+
+      for (Long tippID : tippIDs) {
+        log.debug("begin tipp")
+        count++
+        TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippID)
+        // ignore Tipp if RR.Date > Tipp.Date
+        if (tipp) {
+          def status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+          def rr_type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
+          def rrList = ReviewRequest.findAllByComponentToReviewAndStatusAndStdDesc(tipp, status_open, rr_type_atm)
+
+          if (rrList.size() == 0) {
+            log.debug("match tipp $tipp")
+            def tipp_pkg = Package.get(tipp.pkg.id)
+            def groupId = tipp_pkg.curatoryGroups?.size() > 0 ? tipp_pkg.curatoryGroups[0].id : null
+            def match_result = matchTitle(tipp.id, groupId)
+
+            result[match_result.status]++
+
+            if(match_result.reviewCreated) {
+              result.reviews++
+            }
+          }
+          else {
+            log.debug("tipp $tipp has ${rrList.size()} recent Review Requests and is ignored.")
+          }
+          log.debug("end tipp")
+        }
+
+        if (count % 50 == 0) {
+          session.flush()
+          session.clear()
+          j.setProgress(count, result.total)
+        }
+
+        if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
+          break
+        }
+      }
+    }
+
+    result
+  }
+
   @Transactional
   def matchPackage(pkgId, def job = null) {
     log.debug("Matching titles for package ${pkgId}")
@@ -697,7 +754,7 @@ class TippService {
       }
       else {
         log.warn("Unable to determine Title class to match!")
-        result.status = 'unmatched'
+        result.status = 'error'
         result
       }
     }
@@ -1023,7 +1080,7 @@ class TippService {
             componentLookupService.findCuratoryGroupOfInterest(tipp.title, null, activeCg)
           )
         }
-        else if (mismatches.size() > 0 && !found.to_create) {
+        else if (!result && mismatches.size() > 0 && !found.to_create) {
           log.debug("Creating RR on tipp for id conflicts ${mismatches}")
 
           result = true

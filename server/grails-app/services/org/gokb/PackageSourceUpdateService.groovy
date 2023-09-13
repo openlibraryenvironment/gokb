@@ -206,7 +206,7 @@ class PackageSourceUpdateService {
                   DataFile datafile = DataFile.findByMd5(file_info.md5sumHex)
 
                   if (!datafile) {
-                    log.validationErrors("Create new datafile")
+                    log.debug("Create new datafile")
                     datafile = new DataFile(
                                             guid: deposit_token,
                                             md5: file_info.md5sumHex,
@@ -435,24 +435,26 @@ class PackageSourceUpdateService {
   }
 
   public Boolean hasOpenTippReviews(pid) {
-    RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
-    RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
+    ReviewRequest.withNewSession {
+      RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+      RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
 
-    def qry = '''select count(*) from ReviewRequest as rr
-                  where rr.componentToReview in (
-                    select t from TitleInstancePackagePlatform as t
-                    where exists (
-                      select 1 from Combo
-                      where fromComponent.id = :pid
-                      and toComponent = t
-                      and type = :ct
+      def qry = '''select count(*) from ReviewRequest as rr
+                    where rr.componentToReview in (
+                      select t from TitleInstancePackagePlatform as t
+                      where exists (
+                        select 1 from Combo
+                        where fromComponent.id = :pid
+                        and toComponent = t
+                        and type = :ct
+                      )
                     )
-                  )
-                  and rr.status = :so'''
+                    and rr.status = :so'''
 
-    def total = ReviewRequest.executeQuery(qry, [pid: pid, ct: combo_tipps])[0]
+      def total = ReviewRequest.executeQuery(qry, [pid: pid, ct: combo_tipps, so: status_open])[0]
 
-    return total > 0
+      return total > 0
+    }
   }
 
   public Boolean hasFileChanged(pkgId, datafileId) {

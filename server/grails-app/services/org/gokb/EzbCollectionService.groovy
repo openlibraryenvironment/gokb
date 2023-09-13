@@ -153,6 +153,7 @@ class EzbCollectionService {
             boolean skipped = false
             boolean sourceResult = false
             def pkgInfo = [:]
+            Date pkgCreated
             def cid = null
 
             Package.withNewSession { session ->
@@ -243,11 +244,12 @@ class EzbCollectionService {
                   }
 
                   if (!obj.curatoryGroups.contains(curator)) {
-                    obj.curatoryGroups << curator
+                    obj.curatoryGroups.retainAll([curator])
                   }
 
                   obj.save()
 
+                  pkgCreated = obj.dateCreated
                   pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
 
                   sourceResult = ensurePackageSource(obj, item)
@@ -276,7 +278,7 @@ class EzbCollectionService {
               }
             }
 
-            if (!skipped && obj && sourceResult && obj.dateCreated > dateFormatService.parseTimestamp(item.ezb_collection_released_date)) {
+            if (!skipped && pkgInfo.id && sourceResult && pkgCreated > dateFormatService.parseTimestamp(item.ezb_collection_released_date)) {
               if (hasChangedFile(pkgInfo.id, item)) {
                 log.debug("Creating new import job ..")
                 try {
@@ -284,12 +286,15 @@ class EzbCollectionService {
                     packageSourceUpdateService.updateFromSource(pkgInfo.id, null, pjob, cid)
                   }
 
-                  pkg_job.groupId = curator?.id
-                  pkg_job.description = "EZB KBART Source ingest (${pkgInfo.name})".toString()
-                  pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
-                  pkg_job.linkedItem = pkgInfo
-                  pkg_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
-                  pkg_job.startOrQueue()
+                  RefdataCategory.withNewSession {
+                    pkg_job.groupId = cid
+                    pkg_job.description = "EZB KBART Source ingest (${pkgInfo.name})".toString()
+                    pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+                    pkg_job.linkedItem = pkgInfo
+                    pkg_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
+                    pkg_job.startOrQueue()
+                  }
+
                   def job_result = pkg_job.get()
 
                   log.debug("Finished job with result: ${job_result}")
@@ -310,7 +315,7 @@ class EzbCollectionService {
                 }
               }
               else {
-                log.debug("Skipping unchanged Package file ${obj.name}.")
+                log.debug("Skipping unchanged Package file ${pkgInfo.name}.")
                 type_results.unchanged++
               }
             }
@@ -318,13 +323,13 @@ class EzbCollectionService {
               type_results.skipped++
               type_results.skippedList << item.ezb_collection_id
             }
-            else if (!obj) {
+            else if (!pkgInfo) {
               log.warn("Unable to reference package!")
               type_results.skipped++
               type_results.errors++
               type_results.matchingFailed << item.ezb_collection_id
             }
-            else if (!source) {
+            else if (!sourceResult) {
               log.debug("No source object created.. skip")
               type_results.skipped++
               type_results.errors++
@@ -345,11 +350,12 @@ class EzbCollectionService {
       }
 
       // Cleaning up newly archived collections
-      result.report[ARCHIVED_TYPE] = [matchedOtherCg: [], skipped: 0]
+      result.report[ARCHIVED_TYPE] = [matchedOtherCg: [], skipped: 0, retired: 0, total: 0]
       log.debug("Looking for archived packages to retire ..")
 
       Package.withNewSession {
         archivedCollections.each { item ->
+          result.report[ARCHIVED_TYPE].total++
           def pkgName = buildPackageName(item)
           RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
           def obj = Package.findByNameAndStatus(pkgName, status_current)
@@ -389,6 +395,8 @@ class EzbCollectionService {
             def date_changed = item.ezb_collection_deactivated_date.substring(0, 10) + ' 00:00:00'
 
             obj.retireAt(dateFormatService.parseTimestamp(date_changed))
+
+            result.report[ARCHIVED_TYPE].retired++
           }
         }
       }
@@ -431,7 +439,7 @@ class EzbCollectionService {
       def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
                                                 where c.type = :ct
                                                 and c.fromComponent.id = :pkg
-                                                order by c.dateCreated desc''', [ct: type_fa, pkg: obj.id])
+                                                order by c.dateCreated desc''', [ct: type_fa, pkg: pid])
 
       def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
 
