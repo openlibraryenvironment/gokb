@@ -185,6 +185,7 @@ class EzbCollectionService {
                 if (obj && obj.status != status_current) {
                   log.debug("Matched package is not current, skipping update..")
                   skipped = true
+                  type_results.skipped++
                 }
 
                 if (!obj) {
@@ -195,6 +196,7 @@ class EzbCollectionService {
 
                     if (other_cg_candidates.size() > 0) {
                       skipped = true
+                      type_results.skipped++
                       type_results.matchedOtherCg << item.ezb_collection_id
                     }
                   }
@@ -205,6 +207,7 @@ class EzbCollectionService {
                   else if (candidates.size() > 1) {
                     log.warn("Found ${candidates} as possible package candidates!")
                     skipped = true
+                    type_results.skipped++
                   }
                 }
                 else if (!skipped) {
@@ -255,6 +258,10 @@ class EzbCollectionService {
                   sourceResult = ensurePackageSource(obj, item)
 
                   log.debug("Existing package since: ${obj?.dateCreated} - EZB start ${dateFormatService.parseTimestamp(item.ezb_collection_released_date)}")
+                }
+                else if (!obj) {
+                  log.warn("Unable to reference package!")
+                  type_results.matchingFailed << item.ezb_collection_id
                 }
               }
               else if (!curator) {
@@ -320,18 +327,13 @@ class EzbCollectionService {
               }
             }
             else if (skipped) {
-              type_results.skipped++
-              type_results.skippedList << item.ezb_collection_id
+              log.debug("Skipped..")
             }
             else if (!pkgInfo) {
-              log.warn("Unable to reference package!")
-              type_results.skipped++
-              type_results.errors++
-              type_results.matchingFailed << item.ezb_collection_id
+              log.debug("Unable to reference package!")
             }
             else if (!sourceResult) {
               log.debug("No source object created.. skip")
-              type_results.skipped++
               type_results.errors++
               type_results.sourceError << item.ezb_collection_id
             }
