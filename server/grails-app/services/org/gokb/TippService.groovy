@@ -1388,7 +1388,8 @@ class TippService {
       boolean matching = true
 
       mapped_statement.each { k, v ->
-        if (cs[k] != v) {
+        if (cs[k] != (v ?: null)) {
+          log.debug("Found differring $k .. $v <> ${cs[k]}!")
           matching = false
         }
       }
@@ -1418,6 +1419,8 @@ class TippService {
       cov_list.each { c ->
         tipp.addToCoverageStatements(convertCoverageItem(c))
       }
+
+      tipp.save(flush: true)
     }
 
     log.debug("Update simple fields: ${tippInfo}")

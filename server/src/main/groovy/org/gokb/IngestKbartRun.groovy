@@ -714,7 +714,7 @@ class IngestKbartRun {
               }
               tipp.save()
             }
-            else {
+            else if (tipp.coverageStatements?.size() > 0) {
               new_coverage = false
             }
           }
