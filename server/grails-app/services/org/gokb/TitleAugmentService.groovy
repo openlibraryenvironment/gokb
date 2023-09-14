@@ -185,7 +185,7 @@ class TitleAugmentService {
               log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${conflicts*.fromComponent}")
 
               if (conflicts.size() == 1) {
-                setNewTitleInfo(JournalInstance.get(conflicts[0].fromComponent), name_candidates[0])
+                setNewTitleInfo(JournalInstance.get(conflicts[0].fromComponent.id), name_candidates[0])
               }
 
               def additionalInfo = [
