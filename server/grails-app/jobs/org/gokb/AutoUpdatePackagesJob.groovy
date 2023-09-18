@@ -32,14 +32,14 @@ class AutoUpdatePackagesJob {
       for (pid in updPacks) {
         Package p = Package.findById(pid)
 
-        if (p.source.needsUpdate() == true) {
-          def result = packageSourceUpdateService.updateFromSource(p)
+        if (p.source?.needsUpdate() == true) {
+          def result = packageSourceUpdateService.updateFromSource(p.id)
           log.debug("Result of update: ${result}")
 
           sleep(5000)
         }
         else {
-          log.debug("Skip package ${p.name} -> ${p.source.lastRun} ${p.source.needsUpdate()}")
+          log.debug("Skip package ${p.name} -> ${p.source?.lastRun} ${p.source?.needsUpdate()}")
         }
 
         def session = sessionFactory.currentSession

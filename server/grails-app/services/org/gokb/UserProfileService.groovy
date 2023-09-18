@@ -10,8 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired
 @Transactional
 class UserProfileService {
 
-  @Autowired
-  GrailsApplication grailsApplication
+  def grailsApplication
+  def passwordEncoder
 
   def delete(User user_to_delete) {
     def result = [:]
@@ -68,14 +68,29 @@ class UserProfileService {
     def immutables = ['id', 'username', 'last_alert_check']
     def adminAttributes = [
       'roleIds',
-      'password',
       'curatoryGroupIds',
       'enabled',
       'accountExpired',
       'accountLocked',
       'passwordExpired',
-      'last_alert_check'
+      'last_alert_check',
     ]
+
+    if (data.password && data.new_password) {
+      if (user == adminUser && passwordEncoder.matches(data.password, user.password)) {
+        boolean success = changePass(user, data.new_password)
+
+        if (!success) {
+          errors << ['new_password': [message: "New password is not valid!", code: 'validation.passwordLength']]
+        }
+      }
+      else if (user == adminUser) {
+        errors << ['password': [message: "Old password is not valid!", code: 'validation.password.noMatch']]
+      }
+    }
+
+    data.remove('password')
+    data.remove('new_password')
 
     if (!adminUser.isAdmin() && user != adminUser) {
       errors << [user: [message: "user $adminUser.username is not allowed to change properties of user $user.username",
@@ -106,6 +121,23 @@ class UserProfileService {
       data.roleIds = []
     data.roleIds << roleUser.id
     return modifyUser(user, data)
+  }
+
+  private boolean changePass(User user, String newpass) {
+    boolean result = true
+
+    int minLength = grailsApplication.config.getProperty('grails.plugin.springsecurity.ui.password.minLength', Integer)
+    int maxLength = grailsApplication.config.getProperty('grails.plugin.springsecurity.ui.password.maxLength', Integer)
+
+    if (newpass.length() >= minLength && newpass.length() <= maxLength) {
+      user.password = newpass
+      user.save(flush: true)
+    }
+    else {
+      result = false
+    }
+
+    result
   }
 
   def modifyUser(User user, Map data) {

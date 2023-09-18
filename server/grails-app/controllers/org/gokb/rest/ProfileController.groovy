@@ -65,8 +65,7 @@ class ProfileController {
     Map result = [:]
     User user = User.get(springSecurityService.principal.id)
     def reqData = request.JSON
-    reqData.remove('new_password')
-    reqData.remove('password')
+
     result = userProfileService.update(user, reqData, params, user)
     render result as JSON
   }

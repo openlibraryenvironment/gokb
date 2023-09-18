@@ -140,7 +140,7 @@ class TitleAugmentService {
           setNewTitleInfo(titleInstance, candidates[0])
         }
         else if (candidates.size() == 0){
-          if (existing_noresults.size() > 0 && ids.findAll { it.namespace.value == 'issn' || it.namespace.value == 'eissn' || it.namespace.value == 'zdb' }.size() > 0) {
+          if (existing_noresults.size() == 0 && ids.findAll { it.namespace.value == 'issn' || it.namespace.value == 'eissn' || it.namespace.value == 'zdb' }.size() > 0) {
             log.debug("No ZDB result for ids of title ${titleInstance} (${ids.collect { it.value }})")
 
             // if (titleInstance.reviewRequests.findAll { it.stdDesc == rr_no_results}.size() == 0) {
