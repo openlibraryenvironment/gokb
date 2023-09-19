@@ -68,7 +68,7 @@ class ZdbAPIService {
                   else if (id.namespace.value == 'issn' && zdb_info.parallel.contains(id.value) && !candidate_ids.parallel.find { it.id == zdb_info.id }) {
                     candidate_ids.parallel.add(zdb_info)
                   }
-                  else if (id.namespace.value == 'zdb' && zdb_info == id.value) {
+                  else if (id.namespace.value == 'zdb' && zdb_info.id == id.value) {
                     candidate_ids.matched.add(zdb_info)
                   }
                   else {

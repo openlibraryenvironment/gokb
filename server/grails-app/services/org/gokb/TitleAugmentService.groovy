@@ -189,7 +189,7 @@ class TitleAugmentService {
               }
 
               def additionalInfo = [
-                otherComponents: conflicts.collect { [id: it.id, name: it.name, oid: it.logEntityId, uuid: it.uuid] }
+                otherComponents: conflicts.collect { [id: it.fromComponent.id, name: it.fromComponent.name, oid: it.fromComponent.logEntityId, uuid: it.fromComponent.uuid] }
               ]
 
               reviewRequestService.raise(
