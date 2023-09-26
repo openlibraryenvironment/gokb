@@ -899,10 +899,14 @@ class CleanupService {
       RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Identifier")
       RefdataValue combo_ids = RefdataCategory.lookup('Combo.Type', "KBComponent.Ids")
       int offset = 0
+      int batchSize = 50
       int total = Identifier.executeQuery("select count(i.id) from Identifier as i where exists (select 1 from Combo where toComponent = i)")[0]
+      j.message("Processing $total identifiers..")
+
+      Long highest_id = null
 
       while (more) {
-        def batch = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where toComponent = i)", [max: 50, offset: offset])
+        def batch = Identifier.executeQuery("from Identifier as i where id > :hid and exists (select 1 from Combo where toComponent = i) order by id", [max: batchSize, hid: highest_id])
 
         batch.each { idc ->
           def isValid = validationService.checkIdForNamespace(idc.value, idc.namespace)
@@ -911,12 +915,13 @@ class CleanupService {
             result.occurrences++
             idc.identifiedComponents.each { kbc ->
               if (!result.components[kbc.id]) {
-                result.components[kbc.id] = [name: kbc.name, uuid: kbc.uuid, invalid: []]
+                result.components[kbc.id] = [name: kbc.name, uuid: kbc.uuid, type: kbc.niceName , invalid: []]
               }
 
               result.components[kbc.id].invalid << [value: idc.value, namespace: idc.namespace.value]
             }
           }
+          highest_id = idc.id
         }
 
         offset += batch.size()

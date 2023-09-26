@@ -98,7 +98,8 @@ dependencies {
         exclude module: 'spring-boot-cli'
     }
 
-    // implementation 'org.grails.plugins:grails-melody-plugin:1.80.0'
+    implementation 'org.grails.plugins:grails-melody-plugin:1.80.0'
+    implementation 'net.bull.javamelody:javamelody-core:1.95.0'
 
     implementation 'org.grails.plugins:spring-security-core:5.1.1'
     implementation 'org.grails.plugins:spring-security-acl:4.0.0.M2'

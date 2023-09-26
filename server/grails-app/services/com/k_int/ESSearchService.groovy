@@ -50,6 +50,10 @@ class ESSearchService{
           "contentType",
           "status"
       ],
+      namespace: [
+          "titleNamespace",
+          "packageNamespace"
+      ],
       simpleMap: [
           "role": "roles"
       ],
@@ -350,7 +354,6 @@ class ESSearchService{
     }
     refdataQuery.minimumShouldMatch(1)
     query.must(refdataQuery)
-    return
   }
 
 
@@ -368,6 +371,23 @@ class ESSearchService{
     refdataQuery.should(QueryBuilders.termQuery(field, value))
   }
 
+  private void addNamespaceQuery(query, errors, field, value) {
+    String nsval = null
+
+    try {
+      nsval = IdentifierNamespace.get(Long.valueOf(value))?.value
+    }
+    catch (Exception e) {
+    }
+
+    if (value == 'null') {
+      nsval = ""
+    }
+
+    if (nsval != null) {
+      query.must(QueryBuilders.termQuery(field, nsval))
+    }
+  }
 
   private void addIdentifierQuery(query, errors, qpars) {
     def id_params = [:]
@@ -865,6 +885,9 @@ class ESSearchService{
       }
       else if (requestMapping.refdata?.contains(k)) {
         addRefdataQuery(exactQuery, errors, k, v)
+      }
+      else if (requestMapping.namespace?.contains(k)) {
+        addNamespaceQuery(exactQuery, errors, k, v)
       }
       else if (k.contains('platform') || k.contains('Platform')){
 

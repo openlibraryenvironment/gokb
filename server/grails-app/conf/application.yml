@@ -269,7 +269,7 @@ environments:
             headers:
                 enabled: false
         javamelody:
-            disabled: true
+            enabled: false
         logging:
             config: classpath:logback-test.xml
     production:

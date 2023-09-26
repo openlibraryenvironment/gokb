@@ -1147,6 +1147,8 @@ class BootStrap {
         RefdataCategory.lookupOrCreate(CuratoryGroup.RDC_ORGA_TYPE, 'Library').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(CuratoryGroup.RDC_ORGA_TYPE, 'Provider').save(flush: true, failOnError: true)
 
+        RefdataCategory.lookupOrCreate('Subject.Scheme', 'DDC').save(flush: true, failOnError: true)
+
         lookupOrCreateCuratoryGroupTypes()
 
         // Can be activated on local development instances.
