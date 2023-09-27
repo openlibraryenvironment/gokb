@@ -507,7 +507,7 @@ class TippService {
   def matchUnlinkedTipps(def job = null) {
     def startTime = LocalDateTime.now()
     def count = 0
-    def result = [matched: 0, created: 0, unmatched: 0, reviews: 0]
+    def result = [matched: 0, created: 0, unmatched: 0, reviews: 0, error: 0]
 
     TitleInstancePackagePlatform.withNewSession { session ->
       def tippIDs = TitleInstancePackagePlatform.executeQuery(
@@ -549,7 +549,7 @@ class TippService {
         if (count % 50 == 0) {
           session.flush()
           session.clear()
-          j.setProgress(count, result.total)
+          job?.setProgress(count, result.total)
         }
 
         if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
@@ -753,7 +753,7 @@ class TippService {
         result
       }
       else {
-        log.warn("Unable to determine Title class to match!")
+        log.warn("Unable to determine Title class to match for $tipp!")
         result.status = 'error'
         result
       }

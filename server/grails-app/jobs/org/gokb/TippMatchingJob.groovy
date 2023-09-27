@@ -27,7 +27,6 @@ class TippMatchingJob {
 
     if (!activeJobs) {
       def result = tippService.matchUnlinkedTipps()
-      log.info("end matching Job after ${(LocalDateTime.now().minusNanos(startTime.getNano())).second} sec with ${result}")
     }
     else {
       log.info("Skipping title matching Job due to active import jobs ..")
