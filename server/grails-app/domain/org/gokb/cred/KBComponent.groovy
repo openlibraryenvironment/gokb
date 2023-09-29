@@ -637,19 +637,27 @@ where cp.owner = :c
 
   def beforeUpdate() {
     log.debug("beforeUpdate for ${this}")
-    if (name) {
+    def review_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
+    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    if (this.name) {
       if (!shortcode) {
-        this.shortcode = generateShortcode(name);
+        this.shortcode = generateShortcode(this.name);
       }
       generateNormname();
       generateComponentHash()
     }
 
-    if (!uuid) {
+    if (!this.uuid) {
       generateUuid()
     }
 
+    if (this.isDirty('status') && this.status == deleted_status) {
+      this.reviewRequests*.status = review_closed
+    }
+
     def user = springSecurityService?.currentUser
+
     if (user != null) {
       this.lastUpdatedBy = user
     }
