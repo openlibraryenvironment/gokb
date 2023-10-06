@@ -6,7 +6,7 @@ import com.opencsv.CSVReader
 import com.opencsv.CSVReaderBuilder
 import com.opencsv.CSVParser
 import com.opencsv.CSVParserBuilder
-
+import grails.validation.ValidationException
 import org.apache.commons.io.ByteOrderMark
 import org.apache.commons.io.input.BOMInputStream
 import org.apache.commons.validator.routines.ISSNValidator
@@ -156,6 +156,7 @@ class ValidationService {
     ],
     access_type: [
       mandatory: true,
+      strictOnly: true,
       validator: [
         name: "checkAccessType",
         args: []
@@ -174,7 +175,7 @@ class ValidationService {
     ]
   ]
 
-  static int NUM_MANDATORY_COLS = 5
+  static final String[] MANDATORY_COLS = ['publication_type', 'print_identifier', 'online_identifier', 'title_url', 'publication_type']
 
   static ISSNValidator ISSN_VAL = new ISSNValidator()
 
@@ -238,7 +239,7 @@ class ValidationService {
           addOrIncreaseTypedCount(result, 'columnCount', 'errors')
           result.valid = false
         }
-        else if (nl.size() >= NUM_MANDATORY_COLS) {
+        else if (nl.size() >= MANDATORY_COLS.size()) {
           result.rows.total++
 
           def row_result = checkRow(nl, rowCount, col_positions, titleIdNamespace, strict)
@@ -358,7 +359,7 @@ class ValidationService {
       }
 
       if (KNOWN_COLUMNS[key]) {
-        if (KNOWN_COLUMNS[key].mandatory && !trimmed_val) {
+        if (KNOWN_COLUMNS[key].mandatory && !trimmed_val && (strict || !KNOWN_COLUMNS[key].strictOnly)) {
           result.errors[key] = [
             message: "Missing value in mandatory column '${key}'",
             messageCode: "kbart.errors.missingVal",
@@ -734,7 +735,7 @@ class ValidationService {
         test_obj = type_class.newInstance(name: cleaned_val)
         test_obj.validate()
 
-      } catch (grails.validation.ValidationException ve) {
+      } catch (ValidationException ve) {
         ve.errors.fieldErrors?.each {
           if (it.code == 'notUnique') {
             result.result = 'ERROR'
