@@ -1219,7 +1219,7 @@ class PackageService {
           if (out.isFile())
             return
 
-          def tmpFile = new File("/tmp/gokb/${exportFileName}")
+          def tmpFile = new File("${grailsApplication.config.getProperty('gokb.baseTempDirectory')}${exportFileName}")
 
           if (tmpFile.isFile()) {
             tmpFile.delete()
@@ -1313,7 +1313,7 @@ class PackageService {
           if (out.isFile())
             return
 
-          def tmpFile = new File("/tmp/gokb/${exportFileName}")
+          def tmpFile = new File("${grailsApplication.config.getProperty('gokb.baseTempDirectory')}${exportFileName}")
 
           if (tmpFile.isFile()) {
             tmpFile.delete()

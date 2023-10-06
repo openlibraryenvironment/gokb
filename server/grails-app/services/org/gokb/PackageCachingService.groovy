@@ -50,7 +50,7 @@ class PackageCachingService {
     def attr = [:]
     File dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
     boolean cancelled = false
-    File tempDir = new File('/tmp/gokb/')
+    File tempDir = new File(grailsApplication.config.getProperty('gokb.baseTempDirectory'))
     job?.startTime = new Date()
 
     Package.withNewSession { session ->

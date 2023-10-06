@@ -600,7 +600,6 @@ class IngestKbartRun {
       dateFirstInPrint: the_kbart.date_monograph_published_print?.trim(),
       dateFirstOnline: the_kbart.date_monograph_published_online?.trim(),
       firstEditor: the_kbart.first_editor?.trim(),
-      url: the_kbart.title_url?.trim(),
       subjectArea: the_kbart.subject_area?.trim() ?: (the_kbart.subject?.trim() ?: the_kbart.primary_subject?.trim()),
       series: (the_kbart.monograph_parent_collection_title ?: the_kbart.series?.trim()),
       language: the_kbart.language?.trim(),
@@ -704,7 +703,7 @@ class IngestKbartRun {
         if (!matched_tipps[tipp.id]) {
           matched_tipps[tipp.id] = 1
 
-          if (result != 'created' && result != 'partial') {
+          if (result.status != 'created' && result.status != 'partial') {
             if (tipp.coverageStatements?.size() > 1 || (tipp.coverageStatements?.size() == 1 && !tippService.existsCoverage(tipp, tipp_map.coverageStatements[0]))) {
               def tcs_ids = tipp.coverageStatements*.id
 

@@ -155,7 +155,7 @@ class ValidationService {
       mandatory: false
     ],
     access_type: [
-      mandatory: false,
+      mandatory: true,
       validator: [
         name: "checkAccessType",
         args: []
