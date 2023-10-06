@@ -170,19 +170,19 @@ class OaiController {
 
       if (record.class.simpleName == 'Package') {
         if (!record.global || record.global?.value != 'Local') {
-          set('package:validity:nonlocal')
+          builder.'set' ("package:validity:nonlocal")
         }
 
         if (record.global) {
-          set("package:validity:${record.global.value.toLowerCase()}")
+          builder.'set' ("package:validity:${record.global.value.toLowerCase()}")
         }
 
         record.curatoryGroups.each {
-          set("package:curator:${it.id}${record.global?.value == 'Local' ? ':local' : ''}")
+          builder.'set' ("package:curator:${it.id}${record.global?.value == 'Local' ? ':local' : ''}")
         }
 
         if (record.contentType) {
-          set("package:content:${record.contentType.value.toLowerCase()}")
+          builder.'set' ("package:content:${record.contentType.value.toLowerCase()}")
         }
       }
     }
@@ -1011,44 +1011,44 @@ class OaiController {
         'request'('verb':'ListSets', request.requestURL)
 
         'ListSets'() {
-          'set'() {
+          mkp.'set' () {
             'setSpec'('package')
             'setName'('Package')
           }
-          'set'() {
+          mkp.'set' () {
             'setSpec'('package:validity')
             'setName'('Package Validity range')
           }
-          'set'() {
+          mkp.'set' () {
             'setSpec'("package:validity:nonlocal")
             'setName'("Package validity range is not 'Local'")
           }
           RefdataCategory.lookup('Package.Global').each { rdv ->
-            'set'() {
+            mkp.'set' () {
               'setSpec'("package:validity:${rdv.value.toLowerCase()}")
               'setName'("Package validity range ${rdv.value}")
             }
           }
-          'set'() {
+          mkp.'set' () {
             'setSpec'('package:content')
             'setName'('Package content type')
           }
           RefdataCategory.lookup('Package.ContentType').each { rdv ->
-            'set'() {
+            mkp.'set' () {
               'setSpec'("package:content:${rdv.value.toLowerCase()}")
               'setName'("Package content type ${rdv.value}")
             }
           }
-          'set'() {
+          mkp.'set' () {
             'setSpec'('package:curator')
             'setName'('Package curator')
           }
           CuratoryGroup.list().each { cg ->
-            'set'() {
+            mkp.'set' () {
               'setSpec'("package:curator:${cg.id}")
               'setName'("Package curated by '${cg.name}'")
             }
-            'set'() {
+            mkp.'set' () {
               'setSpec'("package:curator:${cg.id}:local")
               'setName'("Local Package curated by '${cg.name}'")
             }
