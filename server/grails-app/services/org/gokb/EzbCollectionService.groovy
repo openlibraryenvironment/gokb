@@ -527,7 +527,10 @@ class EzbCollectionService {
   private static String buildPackageName(item) {
     String result = "${item.ezb_collection_id}: ${item.ezb_collection_name}"
 
-    if (item.ezb_package_type_name != 'Konsortialpaket') {
+    if (item.ezb_package_type_name == 'Aggregatorpaket') {
+      log.debug("No type suffix for aggregator packages ..")
+    }
+    else if (item.ezb_package_type_name != 'Konsortialpaket') {
       result += ": ${item.ezb_package_type_name}"
     }
     else if (item.ezb_owner.trim()) {
