@@ -290,7 +290,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Override
   @Transient
-  static TitleInstancePackagePlatform[] lookupAllByIO(String idtype, String idvalue) {
+  static def lookupAllByIO(String idtype, String idvalue) {
     def result = []
     def normid = Identifier.normalizeIdentifier(idvalue)
     def namespace = IdentifierNamespace.findByValueIlike(idtype)
@@ -598,6 +598,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       builder.'tipp'([id: (id), uuid: (uuid)]) {
 
         addCoreGOKbXmlFields(builder, attr)
+
         builder.'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
         builder.'format'(format?.value)
         builder.'type'(titleClass)
@@ -623,8 +624,8 @@ class TitleInstancePackagePlatform extends KBComponent {
             builder.'type'(titleClass)
             builder.'status'(ti.status?.value)
             builder.'identifiers' {
-              titleIds.each { tid ->
-                builder.'identifier'([namespace: tid[0], namespaceName: tid[3], value: tid[1], type: tid[2]])
+              ti.activeIdInfo.each { tid ->
+                builder.'identifier'(tid)
               }
             }
           }
@@ -636,23 +637,23 @@ class TitleInstancePackagePlatform extends KBComponent {
           linked_pkg.with {
             addCoreGOKbXmlFields(builder, attr)
 
-            'scope'(scope?.value)
-            'listStatus'(listStatus?.value)
-            'breakable'(breakable?.value)
-            'consistent'(consistent?.value)
-            'fixed'(fixed?.value)
-            'paymentType'(paymentType?.value)
-            'global'(global?.value)
-            'globalNote'(globalNote)
-            'contentType'(contentType?.value)
-            'listVerifiedDate'(listVerifiedDate ? DateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
-            'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
+            builder.'scope'(scope?.value)
+            builder.'listStatus'(listStatus?.value)
+            builder.'breakable'(breakable?.value)
+            builder.'consistent'(consistent?.value)
+            builder.'fixed'(fixed?.value)
+            builder.'paymentType'(paymentType?.value)
+            builder.'global'(global?.value)
+            builder.'globalNote'(globalNote)
+            builder.'contentType'(contentType?.value)
+            builder.'listVerifiedDate'(listVerifiedDate ? DateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
+            builder.'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
             if (provider) {
               def prov = KBComponent.deproxy(provider)
 
               builder.'provider'([id: prov.id, uuid: prov.uuid]) {
-                'name'(prov.name)
-                'mission'(prov.mission?.value)
+                builder.'name'(prov.name)
+                builder.'mission'(prov.mission?.value)
               }
             }
             else {
@@ -662,8 +663,8 @@ class TitleInstancePackagePlatform extends KBComponent {
               def pkg_plt = KBComponent.deproxy(nominalPlatform)
 
               builder.'nominalPlatform'([id: pkg_plt.id, uuid: pkg_plt.uuid]) {
-                'name'(pkg_plt.name?.trim())
-                'primaryUrl'(pkg_plt.primaryUrl?.trim())
+                builder.'name'(pkg_plt.name?.trim())
+                builder.'primaryUrl'(pkg_plt.primaryUrl?.trim())
               }
             }
             else {
@@ -719,32 +720,12 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   @Transient
-  public getTitleIds() {
-    def result = []
-
-    if (title) {
-      def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-      def status_active = DomainClassExtender.comboStatusActive
-      result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = :ti and c.type = :ct and c.toComponent = i and c.status = :cs", [ti: title, ct: refdata_ids, cs: status_active], [readOnly: true])
-    }
-    result
-  }
-
-  @Transient
-  public getPackageIds() {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-    def status_active = DomainClassExtender.comboStatusActive
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = :pkg and c.type = :ct and c.toComponent = i and c.status = :cs", [pkg: pkg, ct: refdata_ids, cs: status_active], [readOnly: true])
-    result
-  }
-
-  @Transient
   public getTitleClass() {
-    def result = title ? KBComponent.get(title.id)?.class.getSimpleName() : (publicationType?.value ?: null)
+    def result = title ? KBComponent.get(title.id)?.class?.getSimpleName() : (publicationType?.value ?: null)
     result
   }
 
-  public static RefdataValue determineMediumRef(def mediumType) {
+  static RefdataValue determineMediumRef(def mediumType) {
     if (mediumType instanceof String) {
       def rdv = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, mediumType)
 
@@ -770,7 +751,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     return null
   }
 
-  public static RefdataValue determinePubTypeRef(def someType) {
+  static RefdataValue determinePubTypeRef(def someType) {
     if (someType instanceof String) {
       RefdataValue pubType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, someType)
 

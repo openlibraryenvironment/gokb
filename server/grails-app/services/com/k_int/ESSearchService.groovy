@@ -41,7 +41,9 @@ class ESSearchService{
           "id",
           "uuid",
           "importId",
-          "primaryUrl"
+          "primaryUrl",
+          "editionStatement",
+          "volumeNumber"
       ],
       refdata: [
           "listStatus",
@@ -87,7 +89,11 @@ class ESSearchService{
       ],
       dates: [
           "changedSince",
-          "changedBefore"
+          "changedBefore",
+          "publishedFrom",
+          "publishedTo",
+          "dateFirstInPrint",
+          "dateFirstOnline"
       ],
       ignore: [
           "controller",

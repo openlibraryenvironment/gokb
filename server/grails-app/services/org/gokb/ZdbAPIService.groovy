@@ -7,7 +7,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.BlockingHttpClient
-import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.http.client.exceptions.HttpClientException
 import io.micronaut.http.uri.UriBuilder
 
 class ZdbAPIService {
@@ -85,8 +85,8 @@ class ZdbAPIService {
             }
           }
         }
-        catch (HttpClientResponseException e) {
-          log.error("Error fetching ZDB record for '$id' (status $e.status.code)!", e)
+        catch (HttpClientException e) {
+          log.error("Error fetching ZDB record for '$id' ($e.message)!")
           break
         }
         catch ( Exception e ) {

@@ -109,7 +109,7 @@ class PackageController {
       if (obj) {
         result = restMappingService.mapObjectToJson(obj, params, user)
 
-        result['_tippCount'] = obj.currentTippCount
+        result['_tippCount'] = obj.getTippCountForStatus('Current')
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
       }
       else {

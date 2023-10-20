@@ -162,7 +162,7 @@ class OaiController {
       }
 
       uuid(record.uuid)
-      datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? record.lastCachedDate : record.lastUpdated))
+      datestamp(dateFormatService.formatIsoTimestamp(cachedPackageResponse ? record.lastCachedDate : (record.lastUpdated ?: record.dateCreated)))
 
       if (record.status == status_deleted) {
         status('deleted')

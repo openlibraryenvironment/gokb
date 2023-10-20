@@ -378,11 +378,11 @@ class TitleAugmentService {
 
     if (!titleInstance.publishedFrom && info.publishedFrom) {
       log.debug("Adding new start journal start date ..")
-      com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedFrom), titleInstance, 'publishedFrom')
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedFrom), titleInstance, 'publishedFrom')
     }
     if (!titleInstance.publishedTo && info.publishedTo) {
       log.debug("Adding new start journal end date ..")
-      com.k_int.ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedTo), titleInstance, 'publishedTo')
+      ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(info.publishedTo, false), titleInstance, 'publishedTo')
     }
 
     if (!titleInstance.currentPublisher && info.publisher) {

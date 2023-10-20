@@ -1042,7 +1042,7 @@ class RestMappingService {
   }
 
   public def updateDateField(obj, prop, val) {
-    if (val == null) {
+    if (val == null || !val.trim()) {
       obj[prop] = null
     }
     else if (val.trim()) {
