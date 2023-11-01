@@ -2,24 +2,10 @@ package org.gokb
 
 import grails.converters.*
 import grails.gorm.transactions.*
-import org.springframework.security.acls.model.NotFoundException
 import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
 import org.springframework.web.multipart.MultipartHttpServletRequest
-import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
-import java.security.MessageDigest
-import grails.converters.JSON
-import grails.core.GrailsClass
-import groovyx.net.http.URIBuilder
-
-import org.grails.datastore.mapping.model.*
-import org.grails.datastore.mapping.model.types.*
-
-import org.hibernate.ScrollMode
-import org.hibernate.ScrollableResults
-import org.hibernate.type.*
-import org.hibernate.Hibernate
 
 @Transactional(readOnly = true)
 class PackagesController {
@@ -30,10 +16,6 @@ class PackagesController {
   def concurrencyManagerService
   def TSVIngestionService
   def packageService
-  def ESWrapperService
-  def ESSearchService
-  def sessionFactory
-  def messageService
 
   public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id = :pkg and c.toComponent = tipp  and c.type.value = :ct order by tipp.id';
 

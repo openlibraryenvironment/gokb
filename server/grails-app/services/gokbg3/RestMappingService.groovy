@@ -12,13 +12,13 @@ import org.grails.datastore.mapping.model.types.*
 
 import grails.gorm.transactions.Transactional
 
+import io.micronaut.http.uri.UriBuilder
+
 class RestMappingService {
   def grailsApplication
-  def genericOIDService
   def classExaminationService
   def componentLookupService
   def componentUpdateService
-  def messageSource
   def messageService
   def dateFormatService
 
@@ -1023,9 +1023,10 @@ class RestMappingService {
   }
 
   public def updateLongField(obj, prop, val) {
-    log.debug("Set simple prop ${prop} = ${val} (as Long)");
+    log.debug("Set simple prop ${prop} = ${val} (as Long)")
+
     try {
-      obj[prop] = Long.parseLong(val);
+      obj[prop] = Long.parseLong(val)
     }
     catch (Exception e) {
       obj.errors.reject(
@@ -1062,7 +1063,7 @@ class RestMappingService {
             'typeMismatch.java.util.Date'
         )
       }
-      log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))");
+      log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))")
     }
     obj
   }
@@ -1103,5 +1104,50 @@ class RestMappingService {
     def pars = ['nested': true]
     log.debug("Embedded object ${obj}")
     mapObjectToJson(obj, pars, user)
+  }
+
+  /**
+   *  buildUrlString : Build an URL string for paginating index requests
+   * @param context : REST path for the requested component type
+   * @param type : Pagination type ('next', 'prev', null)
+   * @param offset : Offset of the initial request
+   * @param max : Number of results to return
+   * @param params : Initial request parameters
+   */
+
+  String buildUrlString(context, type, offset , max, params) {
+    URL serverUrl = grailsApplication.config.getProperty('serverURL') ? new URL(grailsApplication.config.getProperty('serverURL')) : null
+    String path = "/rest" + "${context}"
+
+    UriBuilder selfLink = UriBuilder.of(serverUrl.toURI())
+        .path(path)
+
+    params.each { p, vals ->
+      log.debug("handling param ${p}: ${vals}")
+      if (vals instanceof String[]) {
+        vals.each { val ->
+          if (val?.trim()) {
+            log.debug("Val: ${val} -- ${val.class.name}")
+            selfLink.queryParam(p, val)
+          }
+        }
+        log.debug("${selfLink.toString()}")
+      }
+      else if (vals instanceof String && !['id','controller', 'action', 'componentType', 'offset'].contains(p)) {
+        selfLink.queryParam(p, vals)
+      }
+    }
+
+    if (type == 'prev') {
+      selfLink.queryParam('offset', "${(offset - max) > 0 ? offset - max : 0}")
+    }
+
+    if (type == 'next') {
+      selfLink.queryParam('offset', "${offset + max}")
+    }
+
+    selfLink.build()
+
+    return selfLink.toString()
   }
 }

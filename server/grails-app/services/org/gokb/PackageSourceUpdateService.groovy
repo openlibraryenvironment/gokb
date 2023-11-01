@@ -1,3 +1,5 @@
+package org.gokb
+
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.gorm.transactions.*
@@ -37,6 +39,10 @@ class PackageSourceUpdateService {
     if (job || activeJobs?.data?.size() == 0) {
       log.debug("UpdateFromSource started")
       result = startSourceUpdate(pkgId, user, job, activeGroupId, dryRun)
+
+      if (job && !job.endTime) {
+        job.endTime = new Date()
+      }
     }
     else {
       log.error("update skipped - already running")
@@ -341,7 +347,7 @@ class PackageSourceUpdateService {
           update_job.ownerId = user.id
         }
 
-        update_job.description = "KBART REST ingest (${pkgInfo.name})".toString()
+        update_job.description = "KBART Source ingest (${pkgInfo.name})".toString()
         update_job.type = dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
         update_job.linkedItem = pkgInfo
         update_job.message("Starting upsert for Package ${pkgInfo.name}".toString())

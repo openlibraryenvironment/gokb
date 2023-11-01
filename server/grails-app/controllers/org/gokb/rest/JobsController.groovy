@@ -4,11 +4,9 @@ import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
-import grails.gorm.transactions.Transactional
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.JobResult
 import org.gokb.cred.KBComponent
-import org.gokb.cred.Role
 import org.gokb.cred.User
 import grails.plugin.springsecurity.annotation.Secured
 import java.util.concurrent.CancellationException
@@ -25,12 +23,9 @@ class JobsController {
     def result = [:]
     def max = params.limit ? params.int('limit') : 10
     def offset = params.offset ? params.int('offset') : 0
-    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
-    def sort = params._sort ?: null
-    def order = params._order ?: null
     User user = User.get(springSecurityService.principal.id)
     def showFinished = params.boolean('showFinished') ?: false
-    def errors = [:]
+
     if (params.keySet().intersect(['user', 'curatoryGroup', 'linkedItem']).size() == 1) {
       // by user
       if (params.user) {
@@ -268,7 +263,7 @@ class JobsController {
     if (job && !onlyArchived) {
       log.debug("${job}")
 
-      if (user.superUserStatus || (job.ownerId && job.ownerId == user.id) || job.linkedItem) {
+      if (user.isAdmin() || (job.ownerId && job.ownerId.toLong() == user.id) || job.linkedItem) {
         result.description = job.description
         result.type = job.type ? [id: job.type.id, name: job.type.value, value: job.type.value] : null
         result.startTime = job.startTime
@@ -301,7 +296,7 @@ class JobsController {
       }
     }
     else if (onlyArchived && jobResult) {
-      if (user.superUserStatus || (jobResult.ownerId && jobResult.ownerId == user.id) || (jobResult.groupId && user.curatoryGroups.find { it.id == jobResult.groupId })) {
+      if (user.isAdmin() || jobResult.linkedItemId) {
         def linkedComponent = jobResult.linkedItemId ? KBComponent.get(jobResult.linkedItemId) : null
 
         result.uuid = jobResult.uuid

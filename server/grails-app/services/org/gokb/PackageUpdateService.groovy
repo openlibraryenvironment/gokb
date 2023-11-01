@@ -1,3 +1,5 @@
+package org.gokb
+
 import grails.gorm.transactions.Transactional
 
 import groovy.util.logging.Slf4j

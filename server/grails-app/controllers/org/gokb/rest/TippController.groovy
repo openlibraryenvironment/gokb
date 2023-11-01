@@ -1,22 +1,13 @@
 package org.gokb.rest
 
 import grails.converters.*
-import grails.core.GrailsClass
 import grails.gorm.transactions.*
 import grails.plugin.springsecurity.annotation.Secured
 
-import groovyx.net.http.URIBuilder
-import org.springframework.web.servlet.support.RequestContextUtils
-
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.ZoneId
 
 import org.gokb.cred.*
-import org.gokb.GOKbTextUtils
-import org.grails.datastore.mapping.model.*
-import org.grails.datastore.mapping.model.types.*
 
 @Transactional(readOnly = true)
 class TippController {
