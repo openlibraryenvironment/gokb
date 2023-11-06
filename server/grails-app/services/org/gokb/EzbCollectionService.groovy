@@ -540,10 +540,11 @@ class EzbCollectionService {
     result
   }
 
-  private static Package[] findIdCandidates(collection_id, curator) {
+  private Package[] findIdCandidates(collection_id, curator) {
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue combo_active = RefdataCategory.lookup('Combo.Status', 'Active')
     RefdataValue local_status = RefdataCategory.lookup('Package.Global', 'Local')
-    def qry_pars = [clId: collection_id, sc: status_current, local: local_status]
+    def qry_pars = [clId: collection_id, sc: status_current, ca: combo_active, local: local_status]
     def qry = '''from Package as p
         where
         status = :sc
@@ -551,6 +552,7 @@ class EzbCollectionService {
         and exists (
           select 1 from Combo
           where fromComponent = p
+          and status = :ca
           and toComponent = :clId)'''
 
     if (curator) {
