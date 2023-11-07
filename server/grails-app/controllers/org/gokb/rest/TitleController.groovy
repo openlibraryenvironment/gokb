@@ -872,6 +872,8 @@ class TitleController {
 
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
+
+        componentUpdateService.closeConnectedReviews(obj)
       }
       else {
         result.result = 'ERROR'

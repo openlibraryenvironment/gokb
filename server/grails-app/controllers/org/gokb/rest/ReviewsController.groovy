@@ -87,8 +87,6 @@ class ReviewsController {
     def obj = ReviewRequest.get(genericOIDService.oidToId(params.id))
 
     if (obj && reqBody) {
-      obj.lock()
-
       def curator = componentUpdateService.isUserCurator(obj, user)
 
       if (curator || user.isAdmin()) {

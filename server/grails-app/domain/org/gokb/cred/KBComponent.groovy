@@ -652,10 +652,6 @@ where cp.owner = :c
       generateUuid()
     }
 
-    if (this.isDirty('status') && this.status == deleted_status) {
-      this.reviewRequests*.status = review_closed
-    }
-
     def user = springSecurityService?.currentUser
 
     if (user != null) {

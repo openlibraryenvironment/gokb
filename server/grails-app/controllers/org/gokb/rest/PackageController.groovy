@@ -372,9 +372,12 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
+
         if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
           FTUpdateService.updateSingleItem(obj)
         }
+
+        componentUpdateService.closeConnectedReviews(obj)
       }
       else {
         result.result = 'ERROR'

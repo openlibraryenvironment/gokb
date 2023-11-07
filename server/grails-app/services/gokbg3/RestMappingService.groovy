@@ -640,6 +640,8 @@ class RestMappingService {
   public def updateStatus(obj, val) {
     if (val == 'Deleted') {
       obj.deleteSoft()
+
+      componentUpdateService.closeConnectedReviews(obj)
     }
     else if (val == 'Retired') {
       obj.retire()

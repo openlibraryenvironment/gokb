@@ -85,8 +85,9 @@ class TitleAugmentService {
                                                 )
                                                 and c.fromComponent != :tic
                                                 and c.toComponent = :idc
+                                                and c.status = :cstatus
                                                 and c.type = :ctype''',
-                                                [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType])
+                                                [deleted: status_deleted, tic: titleInstance, idc: new_id, ctype: idComboType, cstatus: status_active])
 
             if (conflicts.size() > 0) {
               log.debug("Matched ZDB-ID ${new_id.namespace.value}:${new_id.value} is already connected to other instances: ${conflicts*.fromComponent}")

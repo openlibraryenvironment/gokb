@@ -366,10 +366,15 @@ class PackageSourceUpdateService {
         else if (!async && !dryRun) {
           log.debug("Setting new listStatus to checked ..")
 
-          Package.withNewTransaction {
-            Package ptc = Package.findById(pid)
-            ptc.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
-            ptc.save(flush: true)
+          try {
+            Package.withNewSession {
+              Package ptc = Package.findById(pid)
+              ptc.listStatus = RefdataCategory.lookup('Package.ListStatus', 'Checked')
+              ptc.save(flush: true)
+            }
+          }
+          catch (Exception e) {
+            log.error("Unable to check list status!", e)
           }
 
           log.debug("Set package list status to checked!")

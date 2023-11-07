@@ -430,6 +430,19 @@ class ComponentUpdateService {
     result
   }
 
+  void closeConnectedReviews(obj) {
+    if (KBComponent.assignableFrom(obj.deproxy())) {
+      obj.reviewRequests.each {
+        ReviewRequest rr = ReviewRequest.get(it.id)
+
+        if (rr.status.value != 'Closed') {
+          rr.status = RefdataCategory.lookup("ReviewRequest.Status", 'Closed')
+          rr.save(flush: true)
+        }
+      }
+    }
+  }
+
   def cleanUpGorm() {
     log.debug("Clean up GORM");
     def session = sessionFactory.currentSession
