@@ -14,12 +14,15 @@ import io.micronaut.http.uri.UriBuilder
 
 import org.gokb.cred.BookInstance
 import org.gokb.cred.Combo
+import org.gokb.cred.ComponentSubject
 import org.gokb.cred.DatabaseInstance
 import org.gokb.cred.Identifier
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.JournalInstance
 import org.gokb.cred.Org
 import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
+import org.gokb.cred.Subject
 import org.gokb.TitleLookupService
 import org.springframework.web.client.RestTemplate
 
@@ -54,6 +57,16 @@ class TitleTestSpec extends AbstractAuthSpec {
     if (!JournalInstance.findByName("TestJournal")) {
       def test_ti = new JournalInstance(name: "TestJournal").save(flush:true)
       def id_combo = new Combo(fromComponent: test_ti, toComponent: old_id, type: RefdataCategory.lookup('Combo.Type','KBComponent.Ids')).save(flush:true)
+      RefdataValue ddc_schema = RefdataCategory.lookup('Subject.Scheme', 'DDC')
+      def ddc_test = Subject.findBySchemeAndHeading(ddc_schema, '001')
+
+      if (!ddc_test) {
+        ddc_test = new Subject(scheme: ddc_schema, heading: '001').save(flush:true)
+      }
+
+      if (!ComponentSubject.findByComponentAndSubject(test_ti, ddc_test)) {
+        new ComponentSubject(component: test_ti, subject: ddc_test).save(flush: true)
+      }
     }
 
     def test_prev = JournalInstance.findByName("TestPrevJournal") ?: new JournalInstance(name: "TestPrevJournal").save(flush:true)
@@ -128,6 +141,10 @@ class TitleTestSpec extends AbstractAuthSpec {
         [namespace: issn_ns.id, value: "3344-5540"],
         [namespace: "zdb", value: "1483109-0"]
       ],
+      subjects: [
+        [scheme: 'DDC', heading: '001'],
+        [scheme: 'DDC', heading: '101']
+      ],
       publisher: publisher.id
     ]
 
@@ -146,6 +163,7 @@ class TitleTestSpec extends AbstractAuthSpec {
     expect:
     resp.body()._embedded?.ids?.size() == 3
     resp.body()._embedded?.publisher?.size() == 1
+    resp.body()._embedded?.subjects?.size() == 2
   }
 
   void "test add title history event"() {

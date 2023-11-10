@@ -182,8 +182,12 @@
       "search_analyzer" : "custom_chars_analyzer",
       "copy_to" : "suggest",
       "fields" : {
-        "name" : { "type" : "text" },
-        "altname" : { "type" : "text" }
+        "name" : {
+          "type" : "text"
+        },
+        "altname" : {
+          "type" : "text"
+        }
       }
     },
     "identifiers" : {
@@ -207,11 +211,28 @@
         }
       }
     },
+    "subjects": {
+      "type": "nested",
+      "properties": {
+        "scheme": {
+          "type": "keyword",
+          "normalizer": "lowercase"
+        },
+        "heading": {
+          "type": "keyword",
+          "normalizer": "lowercase"
+        }
+      }
+    },
     "source" : {
       "type" : "nested",
       "properties": {
-        "frequency": { "type": "keyword"},
-        "url": { "type": "keyword"}
+        "frequency": {
+          "type": "keyword"
+        },
+        "url": {
+          "type": "keyword"
+        }
       }
     },
     "sortname" : {

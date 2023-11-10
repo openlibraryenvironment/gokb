@@ -247,15 +247,6 @@ class ComponentLookupService {
             boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
             log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
 
-            if (incoming) {
-              comboJoinStr += " join p.incomingCombos as ${c}_combo"
-              comboJoinStr += " join ${c}_combo.fromComponent as ${c}"
-            }
-            else {
-              comboJoinStr += " join p.outgoingCombos as ${c}_combo"
-              comboJoinStr += " join ${c}_combo.toComponent as ${c}"
-            }
-
             if (first) {
               comboFilterStr += " WHERE "
               first = false
@@ -264,9 +255,11 @@ class ComponentLookupService {
               comboFilterStr += " AND "
             }
 
-            comboFilterStr += "${c}_combo.type = :${c}type AND "
-            qryParams["${c}type"] = RefdataCategory.lookupOrCreate ( "Combo.Type", cls.getComboTypeValueFor(cls, c))
-            comboFilterStr += "${c}_combo.status = :${c}status "
+            comboFilterStr += "EXISTS (SELECT 1 FROM Combo WHERE ${incoming ? 'toComponent' : 'fromComponent'} = p"
+
+            comboFilterStr += " AND type = :${c}type AND "
+            qryParams["${c}type"] = RefdataCategory.lookupOrCreate ("Combo.Type", cls.getComboTypeValueFor(cls, c))
+            comboFilterStr += "status = :${c}status "
             qryParams["${c}status"] = DomainClassExtender.comboStatusActive
 
             def validLong = []
@@ -298,30 +291,31 @@ class ComponentLookupService {
                 paramStr += " AND ("
 
                 if (c != 'ids' && validLong.size() > 0) {
-                  paramStr += "${c}.id IN :${c}"
+                  paramStr += "toComponent.id IN :${c}"
                   qryParams["${c}"] = validLong
                 }
+
                 if (validStr.size() > 0) {
                   if (c != 'ids' && validLong.size() > 0) {
                     paramStr += " OR "
                   }
-                  paramStr += "${c}.uuid IN :${c}_str OR "
+                  paramStr += "${incoming ? 'fromComponent' : 'toComponent'}.uuid IN :${c}_str OR "
 
                   if (c == 'ids') {
-                    paramStr += "lower(${c}.normname) IN :${c}_str"
+                    paramStr += "lower(${incoming ? 'fromComponent' : 'toComponent'}.normname) IN :${c}_str"
                   }
                   else {
-                    paramStr += "lower(${c}.name) IN :${c}_str"
+                    paramStr += "lower(${incoming ? 'fromComponent' : 'toComponent'}.name) IN :${c}_str"
                   }
                   qryParams["${c}_str"] = validStr
                 }
-                paramStr += ")"
+                paramStr += "))"
                 comboFilterStr += paramStr
               }
             }
             else {
-              sortField = "${c}.name"
-              sort = " order by ${c}.name ${order ?: ''}"
+              sortField = "${incoming ? 'fromComponent' : 'toComponent'}.name"
+              sort = " order by ${incoming ? 'fromComponent' : 'toComponent'}.name ${order ?: ''}"
             }
           }
         }
@@ -410,55 +404,99 @@ class ComponentLookupService {
             }
           }
 
-          boolean pkg_qry = false
+          if (p instanceof ManyToOne || p instanceof OneToOne) {
+            boolean pkg_qry = false
 
-          if (validLong.size() == 1 && p.name == 'componentToReview') {
-            def ctr = KBComponent.get(validLong[0])
-            def ctr_ids = [ctr.id]
+            if (validLong.size() == 1 && p.name == 'componentToReview') {
+              def ctr = KBComponent.get(validLong[0])
+              def ctr_ids = [ctr.id]
 
-            if (ctr?.class == Package) {
-              def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :ctr and toComponent = tipp)",[ctr: ctr])
+              if (ctr?.class == Package) {
+                def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :ctr and toComponent = tipp)",[ctr: ctr])
 
-              if (params.titlereviews) {
-                if (tipp_ids.size() > 0) {
-                  def ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN (:tippids))", [tippids: tipp_ids])
+                if (params.titlereviews) {
+                  if (tipp_ids.size() > 0) {
+                    def ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN (:tippids))", [tippids: tipp_ids])
 
-                  ctr_ids.addAll(ti_ids)
+                    ctr_ids.addAll(ti_ids)
+                  }
                 }
-              }
-              else {
-                ctr_ids.addAll(tipp_ids)
-              }
+                else {
+                  ctr_ids.addAll(tipp_ids)
+                }
 
-              qryParams['ctrids'] = ctr_ids
-              paramStr += "(p.componentToReview.id IN :ctrids)"
-              log.debug("${qryParams['ctrids'].size()}")
-              pkg_qry = true
+                qryParams['ctrids'] = ctr_ids
+                paramStr += "(p.componentToReview.id IN :ctrids)"
+                log.debug("${qryParams['ctrids'].size()}")
+                pkg_qry = true
+              }
             }
-          }
 
-          if (!pkg_qry && (validLong.size() > 0 || validStr.size() > 0)) {
-            paramStr += "("
-            if (validLong.size() > 0) {
-              paramStr += "p.${p.name}.id IN :${p.name}"
-              qryParams[p.name] = validLong
-            }
-            if (validStr.size() > 0) {
+            if (!pkg_qry && (validLong.size() > 0 || validStr.size() > 0)) {
+              paramStr += "("
               if (validLong.size() > 0) {
-                paramStr += " OR "
+                paramStr += "p.${p.name}.id IN :${p.name}"
+                qryParams[p.name] = validLong
               }
+              if (validStr.size() > 0) {
+                if (validLong.size() > 0) {
+                  paramStr += " OR "
+                }
 
-              paramStr += "p.${p.name}.${selectPreferredLabelProp(p.type)} IN :${p.name}_str"
+                paramStr += "p.${p.name}.${selectPreferredLabelProp(p.type)} IN :${p.name}_str"
 
-              if (p.type.hasProperty('uuid')) {
-                paramStr += " OR p.${p.name}.uuid IN :${p.name}_str"
+                if (p.type.hasProperty('uuid')) {
+                  paramStr += " OR p.${p.name}.uuid IN :${p.name}_str"
+                }
+                qryParams["${p.name}_str"] = validStr
               }
-              qryParams["${p.name}_str"] = validStr
+              paramStr += ")"
             }
-            paramStr += ")"
+            else if (!pkg_qry) {
+              addParam = false
+            }
           }
-          else if (!pkg_qry) {
-            addParam = false
+          else {
+            if (p.name == 'subjects') {
+              int idx = 0
+              def subject_pars = validLong + validStr
+
+              subject_pars.each {
+                def sub_obj = null
+
+                if (it instanceof String && it.contains(';')) {
+                  RefdataValue scheme = RefdataCategory.lookup('Subject.Scheme', it.split(';')[0])
+
+                  if (scheme) {
+                    sub_obj = Subject.findBySchemeAndHeading(scheme, it.split(';')[1])
+                  }
+                }
+                else {
+                  try {
+                    sub_obj = Subject.get(it)
+                  }
+                  catch (java.lang.NumberFormatException nfe) {
+                    log.debug("Received illegal value '${it}' for subjects filter!")
+                  }
+                }
+
+
+                if (sub_obj) {
+                  if (first) {
+                    hqlQry += " WHERE "
+                    first = false
+                  }
+                  else {
+                    hqlQry += " AND "
+                  }
+
+                  hqlQry += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject = :subject${idx})"
+                  qryParams["subject${idx}"] = sub_obj
+                }
+
+                idx++
+              }
+            }
           }
         }
         else if (p.type == Long) {
@@ -568,7 +606,7 @@ class ComponentLookupService {
     log.debug("Final qry: ${hqlFinal}")
 
     def hqlTotal = cls.executeQuery(hqlCount, qryParams,[:])[0]
-    def hqlResult = cls.executeQuery(hqlFinal, qryParams, [max: max, offset: offset])
+    def hqlResult = cls.executeQuery(hqlFinal, qryParams, [max: max, offset: offset, readOnly: true])
 
     result.data = []
 

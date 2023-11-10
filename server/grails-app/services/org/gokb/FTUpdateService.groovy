@@ -65,6 +65,13 @@ class FTUpdateService {
     result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
     result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
 
+    result.subjects = []
+
+    kbc.subjects.each { cs ->
+      Subject subj = Subject.get(cs.subject.id)
+      result.subjects << [scheme: subj.scheme.value, heading: subj.notation]
+    }
+
     switch (kbc.class) {
       case Package:
         result.contentType = kbc.contentType?.value ?: ""

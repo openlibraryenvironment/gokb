@@ -64,7 +64,8 @@ class TitleInstance extends KBComponent {
     'defaultEmbeds': [
       'ids',
       'variantNames',
-      'publisher'
+      'publisher',
+      'subjects'
     ]
   ]
 

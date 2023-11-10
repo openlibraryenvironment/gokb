@@ -30,6 +30,21 @@ class Subject extends KBComponent {
 	heading(nullable:true, blank:false)
   }
 
+  static jsonMapping = [
+    'ignore'      : [
+      'lastUpdatedBy',
+      'dateCreated',
+      'editStatus',
+      'name',
+      'status',
+      'lastUpdated',
+      'description',
+      'language',
+      'source',
+      '_links'
+    ]
+  ]
+
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
    *  objects implementing this method can be easily located and listed / selected
