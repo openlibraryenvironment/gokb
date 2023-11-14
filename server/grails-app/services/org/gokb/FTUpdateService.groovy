@@ -69,7 +69,7 @@ class FTUpdateService {
 
     kbc.subjects.each { cs ->
       Subject subj = Subject.get(cs.subject.id)
-      result.subjects << [scheme: subj.scheme.value, heading: subj.notation]
+      result.subjects << [scheme: subj.scheme.value, heading: subj.heading]
     }
 
     switch (kbc.class) {

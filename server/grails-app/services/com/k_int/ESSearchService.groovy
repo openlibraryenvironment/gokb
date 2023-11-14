@@ -73,7 +73,9 @@ class ESSearchService{
           "altname",
           "q",
           "qfields",
-          "qsName"
+          "qsName",
+          "subjects",
+          "subject"
       ],
       linked: [
           provider: "provider",
@@ -425,6 +427,31 @@ class ESSearchService{
     }
   }
 
+  private void addSubjectQuery(query, errors, qpars) {
+    def subject_params = [:]
+    def val = null
+
+    if (qpars.subject) {
+      val = qpars.subject
+    }
+    else if (qpars.subjects) {
+      val = qpars.ids
+    }
+
+    if ( val?.trim() ) {
+      if (val.contains(';')) {
+        subject_params['subjects.scheme'] = val.split(';')[0]
+        subject_params['subjects.heading'] = sanitizeParam(val.split(';')[1])
+      }
+      else{
+        subject_params['subjects.heading'] = val
+      }
+
+      log.debug("Query ids for ${subject_params}")
+      query.must(QueryBuilders.nestedQuery("subjects", addIdQueries(subject_params), ScoreMode.Max))
+    }
+  }
+
   private void processNameFields(query, errors, qpars) {
     if (qpars.label) {
       def sanitized_param = sanitizeParam(qpars.label)
@@ -727,6 +754,7 @@ class ESSearchService{
       processNameFields(exactQuery, errors, params)
       processGenericFields(exactQuery, errors, params)
       addIdentifierQuery(exactQuery, errors, params)
+      addSubjectQuery(exactQuery, errors, params)
       specifyQueryWithParams(params, exactQuery, errors, unknown_fields)
 
       if(unknown_fields.size() > 0){

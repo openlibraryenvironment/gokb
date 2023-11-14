@@ -21,6 +21,7 @@ class RestMappingService {
   def componentUpdateService
   def messageService
   def dateFormatService
+  def validationService
 
   def defaultIgnore = [
       'bucketHash',
@@ -983,8 +984,8 @@ class RestMappingService {
                 if (subject.scheme.id) {
                   scheme = RefdataValue.get(subject.scheme.id)
                 }
-                else if (subject.scheme.heading) {
-                  scheme = RefdataCategory.lookup("Subject.Scheme", subject.scheme.heading)
+                else if (subject.scheme.value) {
+                  scheme = RefdataCategory.lookup("Subject.Scheme", subject.scheme.value)
                 }
               }
               else if (subject.scheme instanceof String) {
@@ -995,7 +996,14 @@ class RestMappingService {
               }
 
               if (scheme) {
-                sub_obj = Subject.findBySchemeAndHeading(scheme, subject.heading) ?: new Subject(scheme: scheme, heading: subject.heading).save(flush: true)
+                def validation_result = validationService.checkSubject(scheme, subject.heading)
+
+                if (validation_result.result == 'ERROR') {
+                  result.errors = result.errors + validation_result.errors
+                }
+                else {
+                  sub_obj = Subject.findBySchemeAndHeading(scheme, subject.heading) ?: new Subject(scheme: scheme, heading: subject.heading).save(flush: true)
+                }
               }
               else {
                 result.errors << [message: "Unable to reference scheme of subject!", code: 404, baddata: subject]

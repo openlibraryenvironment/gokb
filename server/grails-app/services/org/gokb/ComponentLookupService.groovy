@@ -255,7 +255,7 @@ class ComponentLookupService {
               comboFilterStr += " AND "
             }
 
-            comboFilterStr += "EXISTS (SELECT 1 FROM Combo WHERE ${incoming ? 'toComponent' : 'fromComponent'} = p"
+            comboFilterStr += "EXISTS (SELECT ${c}combo FROM Combo as ${c}combo WHERE ${incoming ? 'toComponent' : 'fromComponent'} = p"
 
             comboFilterStr += " AND type = :${c}type AND "
             qryParams["${c}type"] = RefdataCategory.lookupOrCreate ("Combo.Type", cls.getComboTypeValueFor(cls, c))
@@ -291,7 +291,7 @@ class ComponentLookupService {
                 paramStr += " AND ("
 
                 if (c != 'ids' && validLong.size() > 0) {
-                  paramStr += "toComponent.id IN :${c}"
+                  paramStr += "${incoming ? 'fromComponent' : 'toComponent'}.id IN :${c}"
                   qryParams["${c}"] = validLong
                 }
 

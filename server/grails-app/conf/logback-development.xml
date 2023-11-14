@@ -14,7 +14,7 @@
   <logger name="org.gokb.DomainClassExtender" level="WARN"/>
   <logger name="org.gokb.ClassExaminationService" level="WARN"/>
   <logger name="org.gokb.CrossReferenceService" level="ERROR"/>
-  <logger name="org.gokb.ComponentLookupService" level="INFO"/>
+  <logger name="org.gokb.ComponentLookupService" level="DEBUG"/>
   <logger name="org.gokb.ComponentStatisticService" level="INFO"/>
   <logger name="org.gokb.ComponentUpdateService" level="INFO"/>
   <logger name="org.gokb.TitleLookupService" level="INFO"/>
