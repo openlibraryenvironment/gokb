@@ -885,7 +885,19 @@ class ValidationService {
 
     if (scheme.owner == scheme_category) {
       if (scheme.value == 'DDC') {
-        result = checkDDCNotation(value)
+        def notation_result = checkDDCNotation(value)
+
+        if (notation_result.result == 'ERROR') {
+          result = notation_result
+          result.baddata = [
+            scheme: [
+              id: scheme.id,
+              value: scheme.value,
+              type: 'RefdataValue'
+            ],
+            heading: value
+          ]
+        }
       }
     }
     else {
@@ -929,7 +941,7 @@ class ValidationService {
       result.errors = [
         [
           message: "Deep DDC notations like '${notation}' are not supported.",
-          messageCode: "validation.subject.ddc.notationFormat",
+          messageCode: "component.subject.ddc.error.longNotation",
           value: notation
         ]
       ]
@@ -938,7 +950,7 @@ class ValidationService {
       result.result = 'ERROR'
       result.errors = [
         message: "Value '${notation}' is not a valid DDC notation.",
-        messageCode: "validation.subject.ddc.longNotation",
+        messageCode: "component.subject.ddc.error.notationFormat",
         value: notation
       ]
     }
