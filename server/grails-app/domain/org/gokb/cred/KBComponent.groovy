@@ -7,6 +7,7 @@ import javax.persistence.Transient
 
 import org.grails.datastore.mapping.model.PersistentEntity
 import org.grails.datastore.mapping.model.PersistentProperty
+import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 
 import java.time.LocalDate
@@ -502,7 +503,7 @@ where cp.owner = :c
   }
 
   @Transient
-  static KBComponent[] lookupAllByIO(String idtype, String idvalue) {
+  static def lookupAllByIO(String idtype, String idvalue) {
     def result = []
     def normid = Identifier.normalizeIdentifier(idvalue)
     def namespace = IdentifierNamespace.findByValueIlike(idtype)
@@ -636,19 +637,23 @@ where cp.owner = :c
 
   def beforeUpdate() {
     log.debug("beforeUpdate for ${this}")
-    if (name) {
+    def review_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
+    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+
+    if (this.name) {
       if (!shortcode) {
-        this.shortcode = generateShortcode(name);
+        this.shortcode = generateShortcode(this.name);
       }
       generateNormname();
       generateComponentHash()
     }
 
-    if (!uuid) {
+    if (!this.uuid) {
       generateUuid()
     }
 
     def user = springSecurityService?.currentUser
+
     if (user != null) {
       this.lastUpdatedBy = user
     }
@@ -660,7 +665,10 @@ where cp.owner = :c
     // As ids are combo controlled it should be enough just to call find here.
     // This will return only the first match and stop looking afterwards.
     // Null returned if no match.
-    ids?.find { KBComponent.deproxy(it).namespace.value.toLowerCase() == idtype.toLowerCase() }?.value
+
+    def candidates = Identifier.executeQuery("from Identifier as ido where exists (select 1 from Combo where toComponent = ido and fromComponent = :kbc)", [kbc: this])
+
+    candidates.find { it.namespace.value.toLowerCase() == idtype.toLowerCase() }?.value
   }
 
   @Transient
@@ -1368,12 +1376,10 @@ where cp.owner = :c
 
   @Transient
   def addCoreGOKbXmlFields(builder, attr) {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def cids = Identifier.executeQuery("select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = :comp and c.type = :ct and c.toComponent = i and c.status = :cs", [comp: this, ct: refdata_ids, cs: status_active], [readOnly: true])
+    def active_ids = this.activeIdInfo
     String cName = this.class.name
 
-    // Singel props.
+    // Single props.
     builder.'name'(name)
     builder.'status'(status?.value)
     builder.'editStatus'(editStatus?.value)
@@ -1382,8 +1388,8 @@ where cp.owner = :c
 
     // Identifiers
     builder.'identifiers' {
-      cids?.each { tid ->
-        builder.'identifier'('namespace': tid[0], 'namespaceName': tid[1], 'value': tid[2], 'type': tid[3])
+      active_ids?.each { tid ->
+        builder.'identifier'(tid)
       }
       if (grailsApplication.config.getProperty('serverUrl') || grailsApplication.config.getProperty('baseUrl')) {
         builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl') ?: grailsApplication.config.getProperty('baseUrl')}/resource/show/${cName}:${id}")
@@ -1519,9 +1525,28 @@ where cp.owner = :c
     result
   }
 
+
+
+  @Transient
+  def getActiveIdInfo() {
+    RefdataValue refdata_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+    RefdataValue status_active = DomainClassExtender.comboStatusActive
+    def info_list = Identifier.executeQuery('''select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i,
+                                            Combo as c
+                                            where c.fromComponent.id = :tid
+                                            and c.type = :ct
+                                            and c.toComponent = i
+                                            and c.status = :cs''',
+            [tid: this.id, ct: refdata_ids, cs: status_active],
+            [readOnly: true])
+    def result = info_list.collect { [namespace: it[0], namespaceName: it[1], value: it[2], type: it[3]] }
+
+    result
+  }
+
   @Transient
   public userAvailableActions() {
-    def user = springSecurityService.currentUser
+    User user = springSecurityService.currentUser
     def allActions = []
     def result = []
 

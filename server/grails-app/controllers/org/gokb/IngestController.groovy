@@ -89,7 +89,7 @@ class IngestController {
         def upload_mime_type = request.getFile("submissionFile")?.contentType
         def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
         def deposit_token = java.util.UUID.randomUUID().toString()
-        def temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token)
+        def temp_file = TSVIngestionService.handleTempFile(deposit_token, request.getFile("submissionFile"))
         def info = analyse(temp_file);
 
         log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
@@ -137,12 +137,12 @@ class IngestController {
         Job background_job = concurrencyManagerService.createJob { Job job ->
           // Create a new session to run the ingest.
           try {
-            TSVIngestionService.updatePackage(pkg,
-                    new_datafile,
-                    result.ip.providerNamespace,
+            TSVIngestionService.updatePackage(pkg.id,
+                    new_datafile.id,
+                    result.ip.providerNamespace.id,
                     true,
                     false,
-                    user,
+                    user.id,
                     null,
                     false,
                     false,
@@ -167,32 +167,6 @@ class IngestController {
     }
 
     result
-  }
-
-
-  def copyUploadedFile(inputfile, deposit_token) {
-    def baseUploadDir = grailsApplication.config.getProperty('baseUploadDir') ?: '.'
-    log.debug("copyUploadedFile...");
-    def sub1 = deposit_token.substring(0,2);
-    def sub2 = deposit_token.substring(2,4);
-    validateUploadDir("${baseUploadDir}");
-    validateUploadDir("${baseUploadDir}/${sub1}");
-    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}");
-    def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
-    def temp_file = new File(temp_file_name);
-
-    // Copy the upload file to a temporary space
-    inputfile.transferTo(temp_file);
-
-    temp_file
-  }
-
-  private def validateUploadDir(path) {
-    File f = new File(path);
-    if ( ! f.exists() ) {
-      log.debug("Creating upload directory path")
-      f.mkdirs();
-    }
   }
 
   def analyse(temp_file) {

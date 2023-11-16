@@ -1,26 +1,16 @@
 package org.gokb.rest
 
-import com.k_int.ClassUtils
-import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.*
-import grails.core.GrailsClass
 import grails.gorm.transactions.*
 import grails.plugin.springsecurity.annotation.Secured
 
-import groovyx.net.http.URIBuilder
-
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 import org.apache.commons.lang.RandomStringUtils
-import org.gokb.GOKbTextUtils
 import org.gokb.cred.*
-import org.grails.datastore.mapping.model.*
-import org.grails.datastore.mapping.model.types.*
 import org.springframework.web.servlet.support.RequestContextUtils
 
 @Transactional(readOnly = true)
@@ -39,7 +29,6 @@ class PackageController {
   def componentUpdateService
   def concurrencyManagerService
   def FTUpdateService
-  def titleLookupService
   def TSVIngestionService
   def packageUpdateService
   def tippUpsertService
@@ -109,7 +98,7 @@ class PackageController {
       if (obj) {
         result = restMappingService.mapObjectToJson(obj, params, user)
 
-        result['_tippCount'] = obj.currentTippCount
+        result['_tippCount'] = obj.getTippCountForStatus('Current')
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
       }
       else {
@@ -383,9 +372,12 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
+
         if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
           FTUpdateService.updateSingleItem(obj)
         }
+
+        componentUpdateService.closeConnectedReviews(obj)
       }
       else {
         result.result = 'ERROR'
@@ -633,23 +625,64 @@ class PackageController {
     log.debug("Form post")
     def result = ['result': 'OK']
     Package pkg = Package.get(params.id)
-    def user = User.get(springSecurityService.principal.id)
 
-    if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
+    if (!pkg) {
+      response.status = 404
+      result.result = 'ERROR'
+      result.message = "Unable to reference package!"
+
+      render result as JSON
+    }
+
+
+    def pkgInfo = [:]
+    def user = User.get(springSecurityService.principal.id)
+    def active_group_id = null
+    def title_ns_id = null
+
+    if (params.int('activeGroup')) {
+      CuratoryGroup active_group = CuratoryGroup.get(params.int('activeGroup'))
+
+      if (!active_group) {
+        response.status = 404
+        result.result = 'ERROR'
+        result.message = "Unable to reference active curatory group!"
+
+        render result as JSON
+      }
+      else {
+        active_group_id = active_group.id
+      }
+    }
+
+    if (params.int('titleIdNamespace')) {
+      IdentifierNamespace title_ns = IdentifierNamespace.get(params.int('titleIdNamespace'))
+
+      if (!title_ns) {
+        response.status = 404
+        result.result = 'ERROR'
+        result.message = "Unable to reference active title id namespace!"
+
+        render result as JSON
+      }
+      else {
+        title_ns_id = title_ns.id
+      }
+    }
+
+    if (componentUpdateService.isUserCurator(pkg, user)) {
+      pkgInfo = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
       DataFile datafile = null
       def upload_mime_type = request.getFile("submissionFile")?.contentType
       def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
       def deposit_token = java.util.UUID.randomUUID().toString()
-      def temp_file = TSVIngestionService.copyUploadedFile(request.getFile("submissionFile"), deposit_token)
-      CuratoryGroup active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
-      IdentifierNamespace title_ns = params.int('titleIdNamespace') ? IdentifierNamespace.get(params.int('titleIdNamespace')) : null
+      def temp_file = TSVIngestionService.handleTempFile(deposit_token, request.getFile("submissionFile"))
+
       Boolean add_only = params.boolean('addOnly') ?: false
       Boolean dry_run = params.boolean('dryRun') ?: false
       Boolean skip_invalid = params.boolean('skipInvalid') ?: false
       Boolean delete_missing = params.boolean('deleteMissing') ?: false
       def info = TSVIngestionService.analyseFile(temp_file)
-      def platform_url = pkg.nominalPlatform?.primaryUrl ?: null
-      def pkg_source = pkg.source
       Boolean async = params.async ? params.boolean('async') : true
 
       log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
@@ -675,27 +708,27 @@ class PackageController {
 
       if (datafile) {
         Job background_job = concurrencyManagerService.createJob { Job job ->
-          TSVIngestionService.updatePackage(pkg,
-                                            datafile,
-                                            title_ns,
+          TSVIngestionService.updatePackage(pkg.id,
+                                            datafile.id,
+                                            title_ns_id,
                                             async,
                                             add_only,
-                                            user,
-                                            active_group,
+                                            user.id,
+                                            active_group_id,
                                             dry_run,
                                             skip_invalid,
                                             delete_missing,
                                             job)
         }
 
-        if (active_group) {
-          background_job.groupId = active_group.id
+        if (active_group_id) {
+          background_job.groupId = active_group_id
         }
         background_job.ownerId = user.id
-        background_job.description = "KBART REST ingest (${pkg.name})".toString()
+        background_job.description = "KBART REST ingest (${pkgInfo.name})".toString()
         background_job.type = RefdataCategory.lookup('Job.Type', (dry_run ? 'KBARTIngestDryRun' : 'KBARTIngest'))
-        background_job.linkedItem = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
-        background_job.message("Starting upsert for Package ${pkg.name}".toString())
+        background_job.linkedItem = pkgInfo
+        background_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
         background_job.startOrQueue()
         background_job.startTime = new Date()
 
@@ -713,11 +746,6 @@ class PackageController {
         result.message = "There has been an error processing the KBART file!"
       }
     }
-    else if (!pkg) {
-      response.status = 404
-      result.result = 'ERROR'
-      result.message = "Unable to reference package!"
-    }
     else {
       result.result = 'ERROR'
       response.status = 403
@@ -727,7 +755,6 @@ class PackageController {
     render result as JSON
   }
 
-  @Transactional
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   def triggerSourceUpdate() {
     def result = ['result': 'OK']
@@ -739,7 +766,7 @@ class PackageController {
 
     if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
-        packageSourceUpdateService.updateFromSource(pkg, user, job, active_group, dry_run)
+        packageSourceUpdateService.updateFromSource(pkg.id, user.id, job, active_group.id, dry_run)
       }
 
       background_job.groupId = active_group?.id ?: (componentLookupService.findCuratoryGroupOfInterest(pkg, user)?.id ?: null)

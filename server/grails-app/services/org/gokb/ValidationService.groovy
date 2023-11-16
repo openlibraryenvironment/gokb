@@ -6,7 +6,7 @@ import com.opencsv.CSVReader
 import com.opencsv.CSVReaderBuilder
 import com.opencsv.CSVParser
 import com.opencsv.CSVParserBuilder
-
+import grails.validation.ValidationException
 import org.apache.commons.io.ByteOrderMark
 import org.apache.commons.io.input.BOMInputStream
 import org.apache.commons.validator.routines.ISSNValidator
@@ -22,177 +22,205 @@ class ValidationService {
 
   static final Map KNOWN_COLUMNS = [
     publication_title: [
-      mandatory: true,
-      validator: [
-        name: "checkTitleString",
-        args: []
-      ]
+        mandatory: true,
+        validator: [
+            name: "checkTitleString",
+            args: []
+        ]
     ],
     print_identifier: [
-      mandatory: false,
-      discriminator: "publication_type",
-      namespaces: [
-        'Serial': 'issn',
-        'Monograph': 'isbn'
-      ],
-      validator: [
-        name: "checkKbartIdentifier",
-        args: ["_colName", "publication_type"]
-      ]
+        mandatory: false,
+        discriminator: "publication_type",
+        maxLength: 255,
+        namespaces: [
+            'Serial': 'issn',
+            'Monograph': 'isbn'
+        ],
+        validator: [
+            name: "checkKbartIdentifier",
+            args: ["_colName", "publication_type"]
+        ]
     ],
     online_identifier: [
-      mandatory: false,
-      discriminator: "publication_type",
-      namespaces: [
-        'Serial': 'eissn',
-        'Monograph': 'pisbn'
-      ],
-      validator: [
-        name: "checkKbartIdentifier",
-        args: ["_colName", "publication_type"]
-      ]
+        mandatory: false,
+        discriminator: "publication_type",
+        maxLength: 255,
+        namespaces: [
+            'Serial': 'eissn',
+            'Monograph': 'pisbn'
+        ],
+        validator: [
+            name: "checkKbartIdentifier",
+            args: ["_colName", "publication_type"]
+        ]
     ],
     date_first_issue_online: [
-      mandatory: false,
-      pubType: "Serial",
-      validator: [
-        name: "checkDate",
-        args: []
-      ]
+        mandatory: false,
+        pubType: "Serial",
+        validator: [
+            name: "checkDate",
+            args: []
+        ]
     ],
     num_first_vol_online: [
-      mandatory: false,
-      pubType: "Serial"
+        mandatory: false,
+        maxLength: 255,
+        pubType: "Serial"
     ],
     num_first_issue_online: [
-      mandatory: false,
-      pubType: "Serial"
+        mandatory: false,
+        maxLength: 255,
+        pubType: "Serial"
     ],
     date_last_issue_online: [
-      mandatory: false,
-      pubType: "Serial",
-      validator: [
-        name: "checkDate",
-        args: []
-      ]
+        mandatory: false,
+        pubType: "Serial",
+        validator: [
+            name: "checkDate",
+            args: []
+        ]
     ],
     num_last_vol_online: [
-      mandatory: false,
-      pubType: "Serial",
+        mandatory: false,
+        maxLength: 255,
+        pubType: "Serial",
     ],
     num_last_issue_online: [
-      mandatory: false,
-      pubType: "Serial"
+        mandatory: false,
+        maxLength: 255,
+        pubType: "Serial"
     ],
     title_url: [
-      mandatory: true,
-      validator: [
-        name: "checkUrl",
-        args: []
-      ]
+        mandatory: true,
+        maxLength: 1023,
+        validator: [
+            name: "checkUrl",
+            args: []
+        ]
     ],
     first_author: [
-      mandatory: false
+        mandatory: false,
+        maxLength: 255
     ],
     title_id: [
-      mandatory: false
+        mandatory: false,
+        maxLength: 255
     ],
     embargo_info: [
-      mandatory: false,
-      validator: [
-        name: "checkEmbargoCode",
-        args: []
-      ]
+        mandatory: false,
+        maxLength: 255,
+        validator: [
+            name: "checkEmbargoCode",
+            args: []
+        ]
     ],
     coverage_depth: [
-      mandatory: false,
-      validator: [
-        name: "checkCoverageDepth",
-        args: []
-      ]
+        mandatory: false,
+        validator: [
+            name: "checkCoverageDepth",
+            args: []
+        ]
     ],
     notes: [
-      mandatory: false
+        mandatory: false
     ],
     publisher_name: [
-      mandatory: false
+        mandatory: false,
+        maxLength: 255
     ],
     publication_type: [
-      mandatory: true
+        mandatory: true
     ],
     date_monograph_published_print: [
-      mandatory: false,
-      pubType: "Monograph",
-      validator: [
-        name: "checkDate",
-        args: []
-      ]
+        mandatory: false,
+        pubType: "Monograph",
+        validator: [
+            name: "checkDate",
+            args: []
+        ]
     ],
     date_monograph_published_online: [
-      mandatory: false,
-      pubType: "Monograph",
-      validator: [
-        name: "checkDate",
-        args: []
-      ]
+        mandatory: false,
+        pubType: "Monograph",
+        validator: [
+            name: "checkDate",
+            args: []
+        ]
     ],
     monograph_volume: [
-      mandatory: false,
-      pubType: "Monograph"
+        mandatory: false,
+        maxLength: 255,
+        pubType: "Monograph"
     ],
     monograph_edition: [
-      mandatory: false,
-      pubType: "Monograph"
+        mandatory: false,
+        maxLength: 255,
+        pubType: "Monograph"
     ],
     first_editor: [
-      mandatory: false,
-      pubType: "Monograph"
+        mandatory: false,
+        maxLength: 255,
+        pubType: "Monograph"
     ],
     parent_publication_title_id: [
-      mandatory: false
+        mandatory: false,
+        maxLength: 255
     ],
     preceding_publication_title_id: [
-      mandatory: false
+        mandatory: false,
+        maxLength: 255
     ],
     access_type: [
-      mandatory: false,
-      validator: [
-        name: "checkAccessType",
-        args: []
-      ]
+        mandatory: true,
+        strictOnly: true,
+        validator: [
+            name: "checkAccessType",
+            args: []
+        ]
     ],
     zdb_id: [
-      mandatory: false,
-      pubType: "Serial",
-      namespaces: [
-        'Serial': 'zdb',
-      ],
-      validator: [
-        name: "checkKbartIdentifier",
-        args: ["_colName", "publication_type"]
-      ]
+        mandatory: false,
+        pubType: "Serial",
+        namespaces: [
+            'Serial': 'zdb',
+        ],
+        validator: [
+            name: "checkKbartIdentifier",
+            args: ["_colName", "publication_type"]
+        ]
     ]
   ]
 
-  static int NUM_MANDATORY_COLS = 5
+  static final String[] MANDATORY_COLS = [
+      'publication_title',
+      'print_identifier',
+      'online_identifier',
+      'title_url',
+      'publication_type'
+  ]
 
   static ISSNValidator ISSN_VAL = new ISSNValidator()
 
   def generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null, boolean strict = false) {
     def result = [
-      valid: true,
-      message: "",
-      rows: [total: 0, error: 0, warning: 0, skipped: 0],
-      errors: [
-        missingColumns: [],
-        rows: [:],
-        type: [:]
-      ],
-      warnings: [
-        missingColumns: [],
-        rows: [:],
-        type: [:]
-      ]
+        valid: true,
+        message: "",
+        rows: [
+            total: 0,
+            error: 0,
+            warning: 0,
+            skipped: 0
+        ],
+        errors: [
+            missingColumns: [],
+            rows: [:],
+            type: [:]
+        ],
+        warnings: [
+            missingColumns: [],
+            rows: [:],
+            type: [:]
+        ]
     ]
 
     CSVReader csv = initReader(kbart)
@@ -209,7 +237,7 @@ class ValidationService {
     }
 
     KNOWN_COLUMNS.each { colName, info ->
-      if (info.mandatory && !header.contains(colName)) {
+      if (info.mandatory && !header.contains(colName) && (!info.strictOnly || strict)) {
         result.errors.missingColumns.add(colName)
         result.valid = false
       }
@@ -229,16 +257,16 @@ class ValidationService {
           result.rows.total++
           result.rows.error++
           result.errors.rows["${rowCount}"] = [
-            columnsCount: [
-              message: "Inconsistent column count (${nl.size()} <> ${header.size()})!",
-              messageCode: "kbart.errors.tabsCountRow",
-              args: [nl.size(), header.size()]
-            ]
+              columnsCount: [
+                  message: "Inconsistent column count (${nl.size()} <> ${header.size()})!",
+                  messageCode: "kbart.errors.tabsCountRow",
+                  args: [nl.size(), header.size()]
+              ]
           ]
           addOrIncreaseTypedCount(result, 'columnCount', 'errors')
           result.valid = false
         }
-        else if (nl.size() >= NUM_MANDATORY_COLS) {
+        else if (nl.size() >= MANDATORY_COLS.size()) {
           result.rows.total++
 
           def row_result = checkRow(nl, rowCount, col_positions, titleIdNamespace, strict)
@@ -271,8 +299,8 @@ class ValidationService {
           }
 
           result.warnings.rows["${rowCount}"]["shortRow"] = [
-            message: "Skipped short/empty row!",
-            messageCode: "kbart.errors.shortRow"
+              message: "Skipped short/empty row!",
+              messageCode: "kbart.errors.shortRow"
           ]
         }
 
@@ -307,17 +335,17 @@ class ValidationService {
 
     CSVReader csv = new CSVReaderBuilder(
         new BufferedReader(
-          new InputStreamReader(
-            new BOMInputStream(
-              the_data,
-              ByteOrderMark.UTF_16LE,
-              ByteOrderMark.UTF_16BE,
-              ByteOrderMark.UTF_32LE,
-              ByteOrderMark.UTF_32BE,
-              ByteOrderMark.UTF_8
-            ),
-            'UTF-8'
-          )
+            new InputStreamReader(
+                new BOMInputStream(
+                    the_data,
+                    ByteOrderMark.UTF_16LE,
+                    ByteOrderMark.UTF_16BE,
+                    ByteOrderMark.UTF_32LE,
+                    ByteOrderMark.UTF_32BE,
+                    ByteOrderMark.UTF_8
+                ),
+                'UTF-8'
+            )
         )
     ).withCSVParser(parser)
     .build()
@@ -334,42 +362,55 @@ class ValidationService {
     for (key in col_positions.keySet()) {
       def trimmed_val = nl[col_positions[key]].trim()
 
-      if (trimmed_val?.length() > 1023) {
-        result.errors["longVals"] = [
-          message: "Unexpectedly long value in row -- Probably miscoded quote in line.",
-          messageCode: "kbart.errors.longValsFile",
-          args: []
-        ]
+      if (!hasValidLength(trimmed_val, key)) {
+        if (strict) {
+          result.warnings[key] = [
+              message    : "The value '${trimmed_val}' is unusually long for this column.",
+              messageCode: "kbart.errors.longVal",
+              args       : [trimmed_val]
+          ]
+        } else {
+          result.errors[key] = [
+              message    : "The value '${trimmed_val}' is unusually long for this column.",
+              messageCode: "kbart.errors.longVal",
+              args       : [trimmed_val]
+          ]
+        }
       }
 
       if (trimmed_val?.contains('�') && !result.errors["replacementChars"]) {
         result.errors["replacementChars"] = [
-          message: "Value contains UTF-8 replacement characters!",
-          messageCode: "kbart.errors.replacementCharsRow",
-          args: []
+            message: "Value contains UTF-8 replacement characters!",
+            messageCode: "kbart.errors.replacementCharsRow",
+            args: []
         ]
       }
-      else if (trimmed_val?.contains('¶') || trimmed_val?.contains('¦') || trimmed_val?.contains('¤') || trimmed_val ==~ /\p{Cc}/ || trimmed_val?.contains('Ãƒ')) {
+      else if (trimmed_val?.contains('¶') ||
+          trimmed_val?.contains('¦') ||
+          trimmed_val?.contains('¤') ||
+          trimmed_val ==~ /\p{Cc}/ ||
+          trimmed_val?.contains('Ãƒ')
+      ) {
         result.warnings[key] = [
-          message: "Value '${trimmed_val}' contains unusual characters.",
-          messageCode: "kbart.errors.unusualCharsVal",
-          args: [trimmed_val]
+            message: "Value '${trimmed_val}' contains unusual characters.",
+            messageCode: "kbart.errors.unusualCharsVal",
+            args: [trimmed_val]
         ]
       }
 
       if (KNOWN_COLUMNS[key]) {
-        if (KNOWN_COLUMNS[key].mandatory && !trimmed_val) {
+        if (KNOWN_COLUMNS[key].mandatory && !trimmed_val && (strict || !KNOWN_COLUMNS[key].strictOnly)) {
           result.errors[key] = [
-            message: "Missing value in mandatory column '${key}'",
-            messageCode: "kbart.errors.missingVal",
-            args: [key]
+              message: "Missing value in mandatory column '${key}'",
+              messageCode: "kbart.errors.missingVal",
+              args: [key]
           ]
         }
         else if (key == 'title_id' && !trimmed_val) {
           result.warnings[key] = [
-            message: "This line does not contain a value for the common title id!",
-            messageCode: "kbart.errors.noTitleId",
-            args: []
+              message: "This line does not contain a value for the common title id!",
+              messageCode: "kbart.errors.noTitleId",
+              args: []
           ]
         }
         else if (key == 'title_id' && titleIdNamespace) {
@@ -377,9 +418,9 @@ class ValidationService {
 
           if (!field_valid_result) {
             result.errors[key] = [
-              message: "Identifier value '${trimmed_val}' in column 'title_id' is not valid!",
-              messageCode: "kbart.errors.illegalVal",
-              args: [trimmed_val]
+                message: "Identifier value '${trimmed_val}' in column 'title_id' is not valid!",
+                messageCode: "kbart.errors.illegalVal",
+                args: [trimmed_val]
             ]
           }
         }
@@ -392,16 +433,16 @@ class ValidationService {
 
           if (!field_valid_result || (strict && field_valid_result != trimmed_val && key != 'publication_title')) {
             result.errors[key] = [
-              message: "Value '${trimmed_val}' is not valid!",
-              messageCode: "kbart.errors.illegalVal",
-              args: [trimmed_val]
+                message: "Value '${trimmed_val}' is not valid!",
+                messageCode: "kbart.errors.illegalVal",
+                args: [trimmed_val]
             ]
           }
           else if (field_valid_result != trimmed_val && key != 'publication_title') {
             result.warnings[key] = [
-              message: "Value '${trimmed_val}' will be automatically replaced by'${field_valid_result}'!",
-              messageCode: "kbart.errors.correctedVal",
-              args: [trimmed_val, field_valid_result]
+                message: "Value '${trimmed_val}' will be automatically replaced by'${field_valid_result}'!",
+                messageCode: "kbart.errors.correctedVal",
+                args: [trimmed_val, field_valid_result]
             ]
           }
         }
@@ -410,52 +451,71 @@ class ValidationService {
 
     if (pubTypeVal && (!pubType || (strict && pubType != 'Serial' && pubType != 'Monograph'))) {
       result.errors["publication_type"] = [
-        message: "Publication type '${pubTypeVal}' is not valid!",
-        messageCode: "kbart.errors.illegalType",
-        args: [pubTypeVal]
+          message: "Publication type '${pubTypeVal}' is not valid!",
+          messageCode: "kbart.errors.illegalType",
+          args: [pubTypeVal]
       ]
     }
 
     if (!col_positions['online_identifier'] && !col_positions['print_identifier']) {
       if (!col_positions['title_id']) {
         result.errors["noIds"] = [
-          message: "This row contains no usable identifiers!",
-          messageCode: "kbart.errors.noIds",
-          args: []
+            message: "This row contains no usable identifiers!",
+            messageCode: "kbart.errors.noIds",
+            args: []
         ]
       }
       else if (!strict && !titleIdNamespace && (pubType != 'Serial' || !col_positions['zdb_id'])) {
         result.errors["noIds"] = [
-          message: "This row contains no usable identifiers and will not be processed!",
-          messageCode: "kbart.errors.noIds",
-          args: []
+            message: "This row contains no usable identifiers and will not be processed!",
+            messageCode: "kbart.errors.noIds",
+            args: []
         ]
       }
       else {
         result.warnings["noIds"] = [
-          message: "This row contains neither a 'print_identifier', nor an 'online identifier'!",
-          messageCode: "kbart.errors.noAuthIds",
-          args: []
+            message: "This row contains neither a 'print_identifier', nor an 'online identifier'!",
+            messageCode: "kbart.errors.noAuthIds",
+            args: []
         ]
       }
     }
 
     if (col_positions['date_first_issue_online'] && col_positions['date_last_issue_online']) {
-      def date_order = checkDatePair(nl[col_positions['date_first_issue_online']], nl[col_positions['date_last_issue_online']])
+      def date_order = checkDatePair(
+          nl[col_positions['date_first_issue_online']],
+          nl[col_positions['date_last_issue_online']])
 
       if (date_order == 'error') {
         result.errors['date_last_issue_online'] = [
-          message: "The end date must be after the start date.",
-          messageCode: "validation.dateRange",
-          args: []
+            message: "The end date must be after the start date.",
+            messageCode: "validation.dateRange",
+            args: []
         ]
       }
     }
 
-    def coverageCheck = checkCoverageRange(col_positions['num_first_vol_online'], col_positions['num_first_issue_online'], col_positions['num_last_vol_online'], col_positions['num_last_issue_online'])
+    def coverageCheck = checkCoverageRange(col_positions['num_first_vol_online'],
+        col_positions['num_first_issue_online'],
+        col_positions['num_last_vol_online'],
+        col_positions['num_last_issue_online'])
 
     if (!coverageCheck.valid) {
       result.errors << coverageCheck.errors
+    }
+
+    result
+  }
+
+  boolean hasValidLength(String trimmed_val, String column) {
+    boolean result = true
+
+    if (trimmed_val?.length() > 1023 ||
+        (KNOWN_COLUMNS[column] &&
+         KNOWN_COLUMNS[column].maxLength &&
+         trimmed_val.length() > KNOWN_COLUMNS[column].maxLength)
+    ) {
+      result = false
     }
 
     result
@@ -468,34 +528,58 @@ class ValidationService {
   def checkCoverageRange(startVolume, startIssue, endVolume, endIssue) {
     def result = [valid: true, errors: []]
 
-    if ((startVolume instanceof Integer || startVolume?.isInteger()) && (endVolume instanceof Integer || endVolume?.isInteger())) {
+    if ((startVolume instanceof Integer || startVolume?.isInteger()) &&
+        (endVolume instanceof Integer || endVolume?.isInteger())
+    ) {
       if (startVolume > endVolume) {
         result.valid = false
-        result.errors << ['num_first_vol_online': [message: "The start volume is greater than the end volume!", messageCode: "validation.volumeRange"]]
+        result.errors << [
+            'num_first_vol_online': [
+                message: "The start volume is greater than the end volume!",
+                messageCode: "validation.volumeRange"
+            ]
+        ]
       }
       else if (startVolume as int == endVolume as int) {
-        if ((startIssue instanceof Integer || startIssue?.isInteger()) && (endIssue instanceof Integer || endIssue?.isInteger())) {
+        if ((startIssue instanceof Integer || startIssue?.isInteger()) &&
+            (endIssue instanceof Integer || endIssue?.isInteger())
+        ) {
           if (startIssue > endIssue) {
             result.valid = false
-            result.errors << ['num_first_issue_online': [message: "The start issue for is greater than the last issue!", messageCode: "validation.issueRange"]]
+            result.errors << [
+                'num_first_issue_online': [
+                    message: "The start issue for is greater than the last issue!",
+                    messageCode: "validation.issueRange"
+                ]
+            ]
           }
         }
       }
       else if (!startIssue && endIssue) {
         result.valid = false
-        result.errors << ['num_last_issue_online': [message: "Coverage has a last issue but no first issue!", messageCode: "validation.missingStartIssue"]]
+        result.errors << [
+            'num_last_issue_online': [
+                message: "Coverage has a last issue but no first issue!",
+                messageCode: "validation.missingStartIssue"
+            ]
+        ]
       }
     }
     else if (!startVolume && endVolume) {
       result.valid = false
-      result.errors << ['num_last_vol_online': [message: "Coverage has a last volume but no first volume!", messageCode: "validation.missingStartVolume"]]
+      result.errors << [
+          'num_last_vol_online': [
+              message: "Coverage has a last volume but no first volume!",
+              messageCode: "validation.missingStartVolume"
+          ]
+      ]
     }
 
     result
   }
 
   def checkPubType(String value) {
-    def result = null
+    String result
 
     RefdataValue.withNewSession {
       RefdataValue resolvedType = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', value.trim())
@@ -509,20 +593,21 @@ class ValidationService {
   }
 
   def checkAccessType(String value) {
-    def final_val = null
+    String final_val
 
-    if (value in ['P', 'p']) {
-      final_val = 'P'
-    }
-    else if (value in ['F', 'f']) {
+    if (value in ['F', 'f']) {
       final_val = 'F'
     }
+    else {
+      final_val = 'P'
+    }
+
     final_val
   }
 
   def checkCoverageDepth(String value) {
-    def result = null
-    def final_val = value
+    String result
+    String final_val = value
 
     if (value?.toLowerCase()?.trim() in ['full text', 'volltext']) {
       final_val = 'fulltext'
@@ -611,7 +696,9 @@ class ValidationService {
       }
       checkDigit %= 11
 
-      if (checkDigit == 10 && parts[1] in ['x', 'X'] || (parts[1] in ['0','1', '2', '3', '4', '5', '6', '7', '8', '9'] && checkDigit == Integer.valueOf(parts[1]))) {
+      if (checkDigit == 10 && parts[1] in ['x', 'X'] ||
+          (parts[1] in ['0','1', '2', '3', '4', '5', '6', '7', '8', '9'] && checkDigit == Integer.valueOf(parts[1]))
+      ) {
         result = zdbId
       }
     }
@@ -718,7 +805,13 @@ class ValidationService {
     }
     else {
       result.result = 'ERROR'
-      result.errors = [[message: 'Unknown component type!', messageCode: 'validation.unknownType', value: componentType]]
+      result.errors = [
+        [
+          message: 'Unknown component type!',
+          messageCode: 'validation.unknownType',
+          value: componentType
+        ]
+      ]
 
       return result
     }
@@ -734,11 +827,17 @@ class ValidationService {
         test_obj = type_class.newInstance(name: cleaned_val)
         test_obj.validate()
 
-      } catch (grails.validation.ValidationException ve) {
+      } catch (ValidationException ve) {
         ve.errors.fieldErrors?.each {
           if (it.code == 'notUnique') {
             result.result = 'ERROR'
-            result.errors = [[message: 'A component with this name already exists!', messageCode: 'validation.nameNotUnique', value: value]]
+            result.errors = [
+              [
+                message: 'A component with this name already exists!',
+                messageCode: 'validation.nameNotUnique',
+                value: value
+              ]
+            ]
           }
         }
       }
@@ -747,7 +846,13 @@ class ValidationService {
     }
     else {
       result.result = 'ERROR'
-      result.errors = [[message: 'Please provide a name!', messageCode: 'validation.missingName', value: value]]
+      result.errors = [
+        [
+          message: 'Please provide a name!',
+          messageCode: 'validation.missingName',
+          value: value
+        ]
+      ]
     }
 
     result

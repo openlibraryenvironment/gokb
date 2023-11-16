@@ -12,13 +12,13 @@ import org.grails.datastore.mapping.model.types.*
 
 import grails.gorm.transactions.Transactional
 
+import io.micronaut.http.uri.UriBuilder
+
 class RestMappingService {
   def grailsApplication
-  def genericOIDService
   def classExaminationService
   def componentLookupService
   def componentUpdateService
-  def messageSource
   def messageService
   def dateFormatService
 
@@ -510,7 +510,6 @@ class RestMappingService {
   public def updateIdentifiers(obj, ids, boolean remove = true) {
     log.debug("updating ids ${ids}")
     def combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-    def combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
     def combo_id_type = RefdataCategory.lookup(Combo.RD_TYPE, "KBComponent.Ids")
     def id_combos = obj.getCombosByPropertyNameAndStatus('ids', 'Active')
     def result = [changed: false, errors: []]
@@ -592,16 +591,14 @@ class RestMappingService {
           def dupe = Combo.executeQuery("from Combo where type = :ct and fromComponent = :fc and toComponent = :tc", [ct: combo_id_type, fc: obj, tc: i])
 
           if (dupe.size() == 0) {
-            obj.ids << i
-            obj.save(flush: true)
+            new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true, failOnError: true)
             result.changed = true
           }
           else if (dupe.size() == 1) {
             if (dupe[0].status == combo_deleted) {
               log.debug("Matched ID combo was marked as deleted!")
               dupe[0].delete(flush: true)
-              obj.ids << i
-              obj.save(flush: true)
+              new Combo(fromComponent: obj, toComponent: i, type: combo_id_type).save(flush: true, failOnError: true)
               result.changed = true
             }
             else {
@@ -643,6 +640,8 @@ class RestMappingService {
   public def updateStatus(obj, val) {
     if (val == 'Deleted') {
       obj.deleteSoft()
+
+      componentUpdateService.closeConnectedReviews(obj)
     }
     else if (val == 'Retired') {
       obj.retire()
@@ -703,8 +702,7 @@ class RestMappingService {
       if (result.errors.size() == 0) {
         new_cgs.each { c ->
           if (!obj.curatoryGroups.contains(c)) {
-            obj.curatoryGroups << c
-            obj.save(flush: true)
+            new Combo(fromComponent: obj, toComponent: c, type: combo_type).save(flush: true, failOnError: true)
             result.changed = true
           }
           else {
@@ -1027,9 +1025,10 @@ class RestMappingService {
   }
 
   public def updateLongField(obj, prop, val) {
-    log.debug("Set simple prop ${prop} = ${val} (as Long)");
+    log.debug("Set simple prop ${prop} = ${val} (as Long)")
+
     try {
-      obj[prop] = Long.parseLong(val);
+      obj[prop] = Long.parseLong(val)
     }
     catch (Exception e) {
       obj.errors.reject(
@@ -1046,7 +1045,7 @@ class RestMappingService {
   }
 
   public def updateDateField(obj, prop, val) {
-    if (val == null) {
+    if (val == null || !val.trim()) {
       obj[prop] = null
     }
     else if (val.trim()) {
@@ -1066,7 +1065,7 @@ class RestMappingService {
             'typeMismatch.java.util.Date'
         )
       }
-      log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))");
+      log.debug("Set simple prop ${prop} = ${val} (as date ${dateObj}))")
     }
     obj
   }
@@ -1107,5 +1106,50 @@ class RestMappingService {
     def pars = ['nested': true]
     log.debug("Embedded object ${obj}")
     mapObjectToJson(obj, pars, user)
+  }
+
+  /**
+   *  buildUrlString : Build an URL string for paginating index requests
+   * @param context : REST path for the requested component type
+   * @param type : Pagination type ('next', 'prev', null)
+   * @param offset : Offset of the initial request
+   * @param max : Number of results to return
+   * @param params : Initial request parameters
+   */
+
+  String buildUrlString(context, type, offset , max, params) {
+    URL serverUrl = grailsApplication.config.getProperty('serverURL') ? new URL(grailsApplication.config.getProperty('serverURL')) : null
+    String path = "/rest" + "${context}"
+
+    UriBuilder selfLink = UriBuilder.of(serverUrl.toURI())
+        .path(path)
+
+    params.each { p, vals ->
+      log.debug("handling param ${p}: ${vals}")
+      if (vals instanceof String[]) {
+        vals.each { val ->
+          if (val?.trim()) {
+            log.debug("Val: ${val} -- ${val.class.name}")
+            selfLink.queryParam(p, val)
+          }
+        }
+        log.debug("${selfLink.toString()}")
+      }
+      else if (vals instanceof String && !['id','controller', 'action', 'componentType', 'offset'].contains(p)) {
+        selfLink.queryParam(p, vals)
+      }
+    }
+
+    if (type == 'prev') {
+      selfLink.queryParam('offset', "${(offset - max) > 0 ? offset - max : 0}")
+    }
+
+    if (type == 'next') {
+      selfLink.queryParam('offset', "${offset + max}")
+    }
+
+    selfLink.build()
+
+    return selfLink.toString()
   }
 }

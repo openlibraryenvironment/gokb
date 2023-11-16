@@ -33,12 +33,14 @@ class AugmentZdbJob implements InterruptableJob {
                                   not exists (
                                     Select ci from Combo as ci
                                     where ci.type = :ctype
+                                    and ci.status = :cstatus
                                     and ci.fromComponent = ti
                                     and ci.toComponent.namespace = :ns
                                   )
                                   and exists (
                                     Select ci from Combo as ci
                                     where ci.type = :ctype
+                                    and ci.status = :cstatus
                                     and ci.fromComponent = ti
                                     and ci.toComponent.namespace IN (:issns)
                                   )
@@ -58,6 +60,7 @@ class AugmentZdbJob implements InterruptableJob {
         log.info("Starting ZDB augment job.")
         def status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
         def idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+        def combo_active = RefdataCategory.lookup("Combo.Status", "Active")
         def zdbNs = IdentifierNamespace.findByValue('zdb')
         def issnNs = []
         issnNs << IdentifierNamespace.findByValue('issn')
@@ -70,6 +73,7 @@ class AugmentZdbJob implements InterruptableJob {
         def qry_params = [
           current: status_current,
           ctype: idComboType,
+          cstatus: combo_active,
           ns: zdbNs,
           issns: issnNs,
           lastRun: startDate

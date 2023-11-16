@@ -9,7 +9,7 @@ class Subject extends KBComponent {
 
   static manyByCombo = [
 	]
-  
+
   static hasByCombo = [
 
   ]
@@ -29,7 +29,7 @@ class Subject extends KBComponent {
 	scheme(nullable:true, blank:false)
 	heading(nullable:true, blank:false)
   }
-  
+
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
    *  objects implementing this method can be easily located and listed / selected

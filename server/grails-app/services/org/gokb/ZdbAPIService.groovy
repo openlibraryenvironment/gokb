@@ -7,7 +7,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.BlockingHttpClient
-import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.http.client.exceptions.HttpClientException
 import io.micronaut.http.uri.UriBuilder
 
 class ZdbAPIService {
@@ -65,7 +65,7 @@ class ZdbAPIService {
                   if (id.namespace.value == 'eissn' && zdb_info.direct.contains(id.value) && !candidate_ids.direct.find { it.id == zdb_info.id }) {
                     candidate_ids.direct.add(zdb_info)
                   }
-                  else if (!candidate_ids.parallel.find { it.id == zdb_info.id } && zdb_info.parallel.contains(id.value)) {
+                  else if (id.namespace.value == 'issn' && zdb_info.parallel.contains(id.value) && !candidate_ids.parallel.find { it.id == zdb_info.id }) {
                     candidate_ids.parallel.add(zdb_info)
                   }
                   else if (id.namespace.value == 'zdb' && zdb_info.id == id.value) {
@@ -85,8 +85,8 @@ class ZdbAPIService {
             }
           }
         }
-        catch (HttpClientResponseException e) {
-          log.error("Error fetching ZDB record for '$id' (status $e.status.code)!", e)
+        catch (HttpClientException e) {
+          log.error("Error fetching ZDB record for '$id' ($e.message)!")
           break
         }
         catch ( Exception e ) {
@@ -98,6 +98,7 @@ class ZdbAPIService {
         log.debug("Skipping value for namespace ${id.namespace.value}!")
       }
     }
+
     if (candidate_ids.matched.size() > 0) {
       return candidate_ids.matched
     }

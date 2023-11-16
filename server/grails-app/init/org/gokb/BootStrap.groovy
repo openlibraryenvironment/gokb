@@ -155,6 +155,7 @@ class BootStrap {
                 def kbc = KBComponent.get(kbc_id)
                 log.debug("Repair component with no normalised name.. ${kbc.class.name} ${kbc.id} ${kbc.name}")
                 kbc.generateNormname()
+                kbc.shortcode = kbc.generateShortcode(kbc.name)
                 kbc.save(flush: true, failOnError: true)
                 ctr++
             }
@@ -180,7 +181,7 @@ class BootStrap {
 
             log.info("Fix missing Combo status")
 
-            def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+            def status_active = RefdataCategory.lookupOrCreate('Combo.Status', 'Active')
             int num_c = Combo.executeUpdate("update Combo set status = :sa where status is null", [sa: status_active])
             log.debug("${num_c} combos updated")
 
@@ -1145,6 +1146,8 @@ class BootStrap {
 
         RefdataCategory.lookupOrCreate(CuratoryGroup.RDC_ORGA_TYPE, 'Library').save(flush: true, failOnError: true)
         RefdataCategory.lookupOrCreate(CuratoryGroup.RDC_ORGA_TYPE, 'Provider').save(flush: true, failOnError: true)
+
+        RefdataCategory.lookupOrCreate('Subject.Scheme', 'DDC').save(flush: true, failOnError: true)
 
         lookupOrCreateCuratoryGroupTypes()
 

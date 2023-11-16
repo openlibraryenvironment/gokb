@@ -4,6 +4,7 @@
 .settings
 eclipse
 .vscode
+.idea
 stacktrace.log
 target
 /plugins

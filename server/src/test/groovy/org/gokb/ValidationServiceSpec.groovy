@@ -28,17 +28,17 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
 
   void "test checkAccessType with exact match"() {
     expect:
-      service.checkAccessType("P") == 'P'
+      service.checkAccessType("F") == 'F'
   }
 
   void "test checkAccessType with previously interpreted match"() {
     expect:
-      service.checkAccessType("Paid") == null
+      service.checkAccessType("Free") == 'P'
   }
 
   void "test checkAccessType with invalid value"() {
     expect:
-      service.checkAccessType("Test") == null
+      service.checkAccessType("Test") == 'P'
   }
 
   void "test checkTitleString with exact match"() {
@@ -129,5 +129,17 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
   void "test checkDates with invalid form"() {
     expect:
       service.checkDate("10 Aug 2020") == null
+  }
+
+  void "test reject long value in first_author column"() {
+    given:
+      String long_string = ""
+
+      for (int i; i <= 260; i++) {
+        long_string += "a"
+      }
+
+    expect:
+      !service.hasValidLength(long_string, "first_author")
   }
 }

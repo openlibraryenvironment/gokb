@@ -7,6 +7,7 @@ import grails.gorm.transactions.Transactional
 import org.opensearch.action.delete.DeleteRequest
 import org.opensearch.client.RequestOptions
 import org.opensearch.client.Requests
+import org.gokb.DomainClassExtender
 import org.gokb.cred.*
 
 class CleanupService {
@@ -297,7 +298,6 @@ class CleanupService {
 
     TitleInstancePackagePlatform.withNewSession {
       def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-      def combo_status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
       def combo_tipp = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipps')
       def combo_tipl = RefdataCategory.lookup(Combo.RD_TYPE, 'TitleInstance.Tipls')
 
@@ -566,7 +566,7 @@ class CleanupService {
       boolean more = true
       int batch = 50
       def type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
-      def combo_active = RefdataCategory.lookup('Combo.Status', 'Active')
+      def combo_active = DomainClassExtender.comboStatusActive
       def combo_deleted = RefdataCategory.lookup('Combo.Status', 'Deleted')
       def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
       def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -913,10 +913,14 @@ class CleanupService {
       RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Identifier")
       RefdataValue combo_ids = RefdataCategory.lookup('Combo.Type', "KBComponent.Ids")
       int offset = 0
+      int batchSize = 50
       int total = Identifier.executeQuery("select count(i.id) from Identifier as i where exists (select 1 from Combo where toComponent = i)")[0]
+      j.message("Processing $total identifiers..")
+
+      Long highest_id = null
 
       while (more) {
-        def batch = Identifier.executeQuery("from Identifier as i where exists (select 1 from Combo where toComponent = i)", [max: 50, offset: offset])
+        def batch = Identifier.executeQuery("from Identifier as i where id > :hid and exists (select 1 from Combo where toComponent = i) order by id", [max: batchSize, hid: highest_id])
 
         batch.each { idc ->
           def isValid = validationService.checkIdForNamespace(idc.value, idc.namespace)
@@ -925,12 +929,13 @@ class CleanupService {
             result.occurrences++
             idc.identifiedComponents.each { kbc ->
               if (!result.components[kbc.id]) {
-                result.components[kbc.id] = [name: kbc.name, uuid: kbc.uuid, invalid: []]
+                result.components[kbc.id] = [name: kbc.name, uuid: kbc.uuid, type: kbc.niceName , invalid: []]
               }
 
               result.components[kbc.id].invalid << [value: idc.value, namespace: idc.namespace.value]
             }
           }
+          highest_id = idc.id
         }
 
         offset += batch.size()

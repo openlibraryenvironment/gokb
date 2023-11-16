@@ -3,6 +3,7 @@ package org.gokb.cred
 import com.k_int.ClassUtils
 import grails.gorm.transactions.Transactional
 import org.gokb.GOKbTextUtils
+import org.gokb.DomainClassExtender
 
 import javax.persistence.Transient
 import groovy.util.logging.*
@@ -252,6 +253,17 @@ class Package extends KBComponent {
   }
 
   @Transient
+  public int getTippCountForStatus(status) {
+    def refdata_status = RefdataCategory.lookup('KBComponent.Status', status)
+    def combo_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+
+    int result = Combo.executeQuery("select count(c.id) from Combo as c where c.fromComponent = :pkg and c.type = :ct and c.toComponent.status = :sc"
+            , [pkg: this, ct: combo_tipps, sc: refdata_status])[0]
+
+    result
+  }
+
+  @Transient
   public getReviews(boolean onlyOpen = true, boolean onlyCurrent = false, int max = 0, int offset = 0) {
     def qry = '''select rr from ReviewRequest as rr,
             TitleInstance as title,
@@ -335,7 +347,7 @@ class Package extends KBComponent {
       sce: [expected_status, current_status],
       comment: "Status set to ${new_status.value} due to package change!",
       pkg: this.id,
-      now: now,
+      now: new Date(),
       rdate: date
     ]
 
@@ -346,7 +358,7 @@ class Package extends KBComponent {
     def qry = '''update TitleInstancePackagePlatform as t
                   set t.status = :ret,
                   t.lastUpdateComment = :comment,
-                  t.lastUpdated = :now
+                  t.lastUpdated = :now,
                   t.accessEndDate = :rdate
                   where t.status in :sce
                   and exists (
@@ -412,8 +424,6 @@ class Package extends KBComponent {
     def identifier_prefix = "uri://gokb/${grailsApplication.config.getProperty('sysid')}/title/"
 
     def refdata_package_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
-    def refdata_hosted_tipps = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps')
-    def refdata_ti_tipps = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
     def refdata_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
     String tipp_hql = "from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)"
     def tipp_hql_params = [pkg: this, ctype: refdata_package_tipps]
@@ -426,30 +436,30 @@ class Package extends KBComponent {
       builder.'package'(['id': (id), 'uuid': (uuid)]) {
         addCoreGOKbXmlFields(builder, attr)
 
-        'scope'(scope?.value)
-        'listStatus'(listStatus?.value)
-        'breakable'(breakable?.value)
-        'consistent'(consistent?.value)
-        'fixed'(fixed?.value)
-        'paymentType'(paymentType?.value)
-        'global'(global?.value)
-        'globalNote'(globalNote)
-        'contentType'(contentType?.value)
+        builder.'scope'(scope?.value)
+        builder.'listStatus'(listStatus?.value)
+        builder.'breakable'(breakable?.value)
+        builder.'consistent'(consistent?.value)
+        builder.'fixed'(fixed?.value)
+        builder.'paymentType'(paymentType?.value)
+        builder.'global'(global?.value)
+        builder.'globalNote'(globalNote)
+        builder.'contentType'(contentType?.value)
 
         if (nominalPlatform) {
           builder.'nominalPlatform'([id: nominalPlatform.id, uuid: nominalPlatform.uuid]) {
-            'primaryUrl'(nominalPlatform.primaryUrl)
-            'name'(nominalPlatform.name)
+            builder.'primaryUrl'(nominalPlatform.primaryUrl)
+            builder.'name'(nominalPlatform.name)
           }
         }
 
         if (provider) {
           builder.'nominalProvider'([id: provider.id, uuid: provider.uuid]) {
-            'name'(provider.name)
+            builder.'name'(provider.name)
           }
         }
 
-        'listVerifiedDate'(listVerifiedDate ? dateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
+        builder.'listVerifiedDate'(listVerifiedDate ? dateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
 
         builder.'curatoryGroups' {
           curatoryGroups.each { cg ->
@@ -459,15 +469,15 @@ class Package extends KBComponent {
           }
         }
 
-        'dateCreated'(dateFormatService.formatIsoTimestamp(dateCreated))
+        builder.'dateCreated'(dateFormatService.formatIsoTimestamp(dateCreated))
         'TIPPs'(count: tipps_count) {
           int offset = 0
           while (offset < tipps_count) {
             log.debug("Fetching TIPPs batch ${offset}/${tipps_count}")
-            def tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
+            TitleInstancePackagePlatform[] tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
             log.debug("fetch complete ..")
             offset += 50
-            tipps.each { tipp ->
+            tipps.each { TitleInstancePackagePlatform tipp ->
               builder.'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
                 builder.'status'(tipp.status?.value)
                 builder.'name'(tipp.name)
@@ -480,13 +490,15 @@ class Package extends KBComponent {
                 builder.'medium'(tipp.format?.value)
                 builder.'publicationType'(tipp.publicationType?.value)
                 if (tipp.title) {
-                  builder.'title'(['id': tipp.title.id, 'uuid': tipp.title.uuid]) {
-                    builder.'name'(tipp.title.name?.trim())
-                    builder.'type'(getTitleClass(tipp.title.id))
-                    builder.'status'(tipp.title.status?.value)
+                  def title = TitleInstance.deproxy(tipp.title)
+
+                  builder.'title'(['id': title.id, 'uuid': title.uuid]) {
+                    builder.'name'(title.name?.trim())
+                    builder.'type'(getTitleClass(title.id))
+                    builder.'status'(title.status?.value)
                     builder.'identifiers' {
-                      getTitleIds(tipp.title.id).each { tid ->
-                        builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                      title.activeIdInfo.each { tid ->
+                        builder.'identifier'(tid)
                       }
                     }
                   }
@@ -495,15 +507,18 @@ class Package extends KBComponent {
                   builder.'title'()
                 }
                 builder.'identifiers' {
-                  getTippIds(tipp.id).each { tid ->
-                    builder.'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                  tipp.activeIdInfo.each { tid ->
+                    builder.'identifier'(tid)
                   }
                 }
                 'platform'([id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid]) {
                   'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
                   'name'(tipp.hostPlatform.name?.trim())
                 }
-                'access'(start: tipp.accessStartDate ? dateFormatService.formatIsoTimestamp(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatIsoTimestamp(tipp.accessEndDate) : null)
+                'access'(
+                  start: tipp.accessStartDate ? dateFormatService.formatIsoTimestamp(tipp.accessStartDate) : null,
+                  end: tipp.accessEndDate ? dateFormatService.formatIsoTimestamp(tipp.accessEndDate) : null
+                )
                 def cov_statements = getCoverageStatements(tipp.id)
                 if (cov_statements?.size() > 0) {
                   cov_statements.each { tcs ->
@@ -530,22 +545,6 @@ class Package extends KBComponent {
     }
 
     log.debug("toGoKBXml complete...")
-  }
-
-  @Transient
-  private static getTitleIds(Long title_id) {
-    def refdata_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = :ti and c.type = :ct and c.toComponent = i and c.status = :cs", [ti: title_id, ct: refdata_ids, cs: status_active], [readOnly: true])
-    result
-  }
-
-  @Transient
-  private static getTippIds(Long tipp_id) {
-    def refdata_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent.id = :tipp and c.type = :ct and c.toComponent = i and c.status = :cs", [tipp: tipp_id, ct: refdata_ids, cs: status_active], [readOnly: true])
-    result
   }
 
   @Transient

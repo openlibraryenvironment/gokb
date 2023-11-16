@@ -269,7 +269,7 @@ environments:
             headers:
                 enabled: false
         javamelody:
-            disabled: true
+            enabled: false
         logging:
             config: classpath:logback-test.xml
     production:
@@ -340,6 +340,7 @@ gokb:
         active: false
         otherVoters: false
     costInfo: false
+    baseTempDirectory: '/tmp/gokb/'
     tsvExportTempDirectory: '/tmp/gokb/export'
     packageXmlCacheDirectory: '/tmp/gokb/oai/'
 

@@ -13,6 +13,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 import org.apache.commons.io.FileUtils
+import org.gokb.DomainClassExtender
 import org.gokb.cred.*
 import org.springframework.util.FileCopyUtils
 
@@ -49,7 +50,7 @@ class PackageCachingService {
     def attr = [:]
     File dir = new File(grailsApplication.config.getProperty('gokb.packageXmlCacheDirectory'))
     boolean cancelled = false
-    File tempDir = new File('/tmp/gokb/')
+    File tempDir = new File(grailsApplication.config.getProperty('gokb.baseTempDirectory'))
     job?.startTime = new Date()
 
     Package.withNewSession { session ->
@@ -94,22 +95,16 @@ class PackageCachingService {
 
               def fileWriter = new BufferedWriter(new FileWriter(tmpFile, true))
 
-              def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps');
-              def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps');
-              def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps');
-              def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted');
+              def refdata_package_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
+              def refdata_hosted_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
+              def refdata_ti_tipps = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
+              def refdata_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
               String tipp_hql = "from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :pkg and toComponent = tipp and type = :ctype)"
               def tipp_hql_params = [pkg: item, ctype: refdata_package_tipps]
               def tipps_count = item.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
               def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-              def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-              def pkg_ids = Identifier.executeQuery('''select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i,
-                                                        Combo as c where c.fromComponent = :pid
-                                                        and c.type = :ct
-                                                        and c.toComponent = i
-                                                        and c.status = :cs''',
-                                                        [pid: item, ct: refdata_ids, cs: status_active],
-                                                        [readOnly: true])
+              def status_active = DomainClassExtender.comboStatusActive
+              def pkg_ids = item.activeIdInfo
               String cName = item.class.name
 
               log.info("Starting package caching for ${item.name} with ${tipps_count} TIPPs..")
@@ -190,11 +185,14 @@ class PackageCachingService {
                     'dateCreated'(dateFormatService.formatIsoTimestamp(item.dateCreated))
                     'TIPPs'(count: tipps_count) {
                       int offset = 0
+
                       while (offset < tipps_count) {
                         log.debug("Fetching TIPPs batch ${offset}/${tipps_count}")
                         def tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
                         log.debug("fetch complete ..")
+
                         offset += 50
+
                         tipps.each { tipp ->
                           'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
                             'status'(tipp.status?.value)
@@ -215,22 +213,24 @@ class PackageCachingService {
                             'precedingPublicationTitleId'(tipp.precedingPublicationTitleId)
                             'lastChangedExternal'(tipp.lastChangedExternal ? dateFormatService.formatDate(tipp.lastChangedExternal) : null)
                             'publicationType'(tipp.publicationType?.value)
+
                             if (tipp.title) {
-                              'title'('id': tipp.title.id, 'uuid': tipp.title.uuid) {
-                                'name'(tipp.title.name?.trim())
-                                'type'(getTitleClass(tipp.title.id))
-                                'status'(tipp.title.status?.value)
-                                if (getTitleClass(tipp.title.id) == 'BookInstance') {
-                                  'dateFirstInPrint'(tipp.title.dateFirstInPrint ? dateFormatService.formatDate(tipp.title.dateFirstInPrint) : null)
-                                  'dateFirstOnline'(tipp.title.dateFirstOnline ? dateFormatService.formatDate(tipp.title.dateFirstOnline) : null)
-                                  'editionStatement'(tipp.title.editionStatement)
-                                  'volumeNumber'(tipp.title.volumeNumber)
-                                  'firstAuthor'(tipp.title.firstAuthor)
-                                  'firstEditor'(tipp.title.firstEditor)
+                              def ti_obj = KBComponent.deproxy(tipp.title)
+                              'title'('id': ti_obj.id, 'uuid': ti_obj.uuid) {
+                                'name'(ti_obj.name?.trim())
+                                'type'(getTitleClass(ti_obj.id))
+                                'status'(ti_obj.status?.value)
+                                if (getTitleClass(ti_obj.id) == 'BookInstance') {
+                                  'dateFirstInPrint'(ti_obj.dateFirstInPrint ? dateFormatService.formatDate(ti_obj.dateFirstInPrint) : null)
+                                  'dateFirstOnline'(ti_obj.dateFirstOnline ? dateFormatService.formatDate(ti_obj.dateFirstOnline) : null)
+                                  'editionStatement'(ti_obj.editionStatement)
+                                  'volumeNumber'(ti_obj.volumeNumber)
+                                  'firstAuthor'(ti_obj.firstAuthor)
+                                  'firstEditor'(ti_obj.firstEditor)
                                 }
                                 'identifiers' {
-                                  getComponentIds(tipp.title.id).each { tid ->
-                                    'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                                  ti_obj.activeIdInfo.each { tid ->
+                                    'identifier'(tid)
                                   }
                                 }
                               }
@@ -239,16 +239,20 @@ class PackageCachingService {
                               'title'()
                             }
                             'identifiers' {
-                              getComponentIds(tipp.id).each { tid ->
-                                'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                              tipp.activeIdInfo.each { tid ->
+                                'identifier'(tid)
                               }
                             }
                             'platform'(id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid) {
                               'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
                               'name'(tipp.hostPlatform.name?.trim())
                             }
-                            'access'(start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null)
+                            'access'(
+                              start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null,
+                              end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null
+                            )
                             def cov_statements = getCoverageStatements(tipp.id)
+
                             if (cov_statements?.size() > 0) {
                               cov_statements.each { tcs ->
                                 'coverage'(
@@ -339,20 +343,6 @@ class PackageCachingService {
     }
     job?.endTime = new Date()
 
-    result
-  }
-
-  private def getComponentIds(Long tipp_id) {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery('''select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i,
-                                            Combo as c
-                                            where c.fromComponent.id = :tid
-                                            and c.type = :ct
-                                            and c.toComponent = i
-                                            and c.status = :cs''',
-                                            [tid: tipp_id, ct: refdata_ids, cs: status_active],
-                                            [readOnly: true])
     result
   }
 

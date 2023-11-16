@@ -675,7 +675,7 @@ class IntegrationController {
     // Identifiers
     log.debug("Identifier processing ${data.identifiers}")
     Set<String> ids = component.ids.collect { "${it.namespace?.value}|${it.value}".toString() }
-    RefdataValue combo_active = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    RefdataValue combo_active = DomainClassExtender.comboStatusActive
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
     RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
@@ -1458,6 +1458,7 @@ class IntegrationController {
       publisher_combos.addAll(ti.getCombosByPropertyName('publisher'))
       String propName = ti.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
       String tiPropName = ti.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+      RefdataValue combo_active = DomainClassExtender.comboStatusActive
 
       // Go through each Org.
       for (def pub_to_add : publishers) {
@@ -1521,7 +1522,7 @@ class IntegrationController {
             if (propName == "toComponent") {
               combo = new Combo(
                   type: (type),
-                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : combo_active,
                   startDate: pub_add_sd,
                   endDate: pub_add_ed,
                   toComponent: publisher,
@@ -1531,7 +1532,7 @@ class IntegrationController {
             else {
               combo = new Combo(
                   type: (type),
-                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : DomainClassExtender.getComboStatusActive(),
+                  status: pub_to_add.status ? RefdataCategory.lookupOrCreate(Combo.RD_STATUS, pub_to_add.status) : combo_active,
                   startDate: pub_add_sd,
                   endDate: pub_add_ed,
                   fromComponent: publisher,

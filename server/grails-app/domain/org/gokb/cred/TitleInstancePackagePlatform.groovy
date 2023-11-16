@@ -4,6 +4,7 @@ import gokbg3.DateFormatService
 
 import javax.persistence.Transient
 
+import org.gokb.DomainClassExtender
 import org.gokb.GOKbTextUtils
 import groovy.util.logging.*
 
@@ -289,7 +290,7 @@ class TitleInstancePackagePlatform extends KBComponent {
 
   @Override
   @Transient
-  static TitleInstancePackagePlatform[] lookupAllByIO(String idtype, String idvalue) {
+  static def lookupAllByIO(String idtype, String idvalue) {
     def result = []
     def normid = Identifier.normalizeIdentifier(idvalue)
     def namespace = IdentifierNamespace.findByValueIlike(idtype)
@@ -304,6 +305,39 @@ class TitleInstancePackagePlatform extends KBComponent {
           result.add(component)
         }
       }
+    }
+
+    result
+  }
+
+  public static TitleInstancePackagePlatform tiplAwareCreate(tipp_fields = [:]) {
+    def tipp_status = tipp_fields.status ? RefdataCategory.lookup('KBComponent.Status', tipp_fields.status) : null
+    def tipp_editstatus = tipp_fields.editStatus ? RefdataCategory.lookup('KBComponent.EditStatus', tipp_fields.editStatus) : null
+    def tipp_language = tipp_fields.language ? RefdataCategory.lookup('KBComponent.Language', tipp_fields.language) : null
+    def result = new TitleInstancePackagePlatform(uuid: tipp_fields.uuid,
+                                                  status: tipp_status,
+                                                  editStatus: tipp_editstatus,
+                                                  name: tipp_fields.name,
+                                                  language: tipp_language,
+                                                  url: tipp_fields.url).save(failOnError: true, flush:true)
+
+    if (result) {
+
+      RefdataValue pkg_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Package.Tipps')
+      new Combo(toComponent: result, fromComponent: tipp_fields.pkg, type: pkg_combo_type).save(flush: true, failOnError: true)
+
+      RefdataValue plt_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'Platform.HostedTipps')
+      new Combo(toComponent: result, fromComponent: tipp_fields.hostPlatform, type: plt_combo_type).save(flush: true, failOnError: true)
+
+      if (tipp_fields.title) {
+        RefdataValue ti_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'TitleInstance.Tipps')
+        new Combo(toComponent: result, fromComponent: tipp_fields.title, type: ti_combo_type).save(flush: true, failOnError: true)
+
+        TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url)
+      }
+    }
+    else {
+      log.error("TIPP creation failed!")
     }
 
     result
@@ -557,13 +591,14 @@ class TitleInstancePackagePlatform extends KBComponent {
    */
   @Transient
   def toGoKBXml(builder, attr) {
-    def linked_pkg = getPkg()
-    def ti = getTitle()
+    def linked_pkg = KBComponent.deproxy(getPkg())
+    def ti = KBComponent.deproxy(getTitle())
 
     builder.'gokb'(attr) {
       builder.'tipp'([id: (id), uuid: (uuid)]) {
 
         addCoreGOKbXmlFields(builder, attr)
+
         builder.'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
         builder.'format'(format?.value)
         builder.'type'(titleClass)
@@ -589,8 +624,8 @@ class TitleInstancePackagePlatform extends KBComponent {
             builder.'type'(titleClass)
             builder.'status'(ti.status?.value)
             builder.'identifiers' {
-              titleIds.each { tid ->
-                builder.'identifier'([namespace: tid[0], namespaceName: tid[3], value: tid[1], type: tid[2]])
+              ti.activeIdInfo.each { tid ->
+                builder.'identifier'(tid)
               }
             }
           }
@@ -602,30 +637,34 @@ class TitleInstancePackagePlatform extends KBComponent {
           linked_pkg.with {
             addCoreGOKbXmlFields(builder, attr)
 
-            'scope'(scope?.value)
-            'listStatus'(listStatus?.value)
-            'breakable'(breakable?.value)
-            'consistent'(consistent?.value)
-            'fixed'(fixed?.value)
-            'paymentType'(paymentType?.value)
-            'global'(global?.value)
-            'globalNote'(globalNote)
-            'contentType'(contentType?.value)
-            'listVerifiedDate'(listVerifiedDate ? DateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
-            'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
+            builder.'scope'(scope?.value)
+            builder.'listStatus'(listStatus?.value)
+            builder.'breakable'(breakable?.value)
+            builder.'consistent'(consistent?.value)
+            builder.'fixed'(fixed?.value)
+            builder.'paymentType'(paymentType?.value)
+            builder.'global'(global?.value)
+            builder.'globalNote'(globalNote)
+            builder.'contentType'(contentType?.value)
+            builder.'listVerifiedDate'(listVerifiedDate ? DateFormatService.formatIsoTimestamp(listVerifiedDate) : null)
+            builder.'lastUpdated'(lastUpdated ? DateFormatService.formatIsoTimestamp(lastUpdated) : null)
             if (provider) {
-              builder.'provider'([id: provider?.id, uuid: provider?.uuid]) {
-                'name'(provider?.name)
-                'mission'(provider?.mission?.value)
+              def prov = KBComponent.deproxy(provider)
+
+              builder.'provider'([id: prov.id, uuid: prov.uuid]) {
+                builder.'name'(prov.name)
+                builder.'mission'(prov.mission?.value)
               }
             }
             else {
               builder.'provider'()
             }
             if (nominalPlatform) {
-              builder.'nominalPlatform'([id: nominalPlatform?.id, uuid: nominalPlatform?.uuid]) {
-                'name'(nominalPlatform.name?.trim())
-                'primaryUrl'(nominalPlatform.primaryUrl?.trim())
+              def pkg_plt = KBComponent.deproxy(nominalPlatform)
+
+              builder.'nominalPlatform'([id: pkg_plt.id, uuid: pkg_plt.uuid]) {
+                builder.'name'(pkg_plt.name?.trim())
+                builder.'primaryUrl'(pkg_plt.primaryUrl?.trim())
               }
             }
             else {
@@ -681,32 +720,12 @@ class TitleInstancePackagePlatform extends KBComponent {
   }
 
   @Transient
-  public getTitleIds() {
-    def result = []
-
-    if (title) {
-      def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-      def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-      result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = :ti and c.type = :ct and c.toComponent = i and c.status = :cs", [ti: title, ct: refdata_ids, cs: status_active], [readOnly: true])
-    }
-    result
-  }
-
-  @Transient
-  public getPackageIds() {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-    def status_active = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
-    def result = Identifier.executeQuery("select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i, Combo as c where c.fromComponent = :pkg and c.type = :ct and c.toComponent = i and c.status = :cs", [pkg: pkg, ct: refdata_ids, cs: status_active], [readOnly: true])
-    result
-  }
-
-  @Transient
   public getTitleClass() {
-    def result = title ? KBComponent.get(title.id)?.class.getSimpleName() : (publicationType?.value ?: null)
+    def result = title ? KBComponent.get(title.id)?.class?.getSimpleName() : (publicationType?.value ?: null)
     result
   }
 
-  public static RefdataValue determineMediumRef(def mediumType) {
+  static RefdataValue determineMediumRef(def mediumType) {
     if (mediumType instanceof String) {
       def rdv = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, mediumType)
 
@@ -732,7 +751,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     return null
   }
 
-  public static RefdataValue determinePubTypeRef(def someType) {
+  static RefdataValue determinePubTypeRef(def someType) {
     if (someType instanceof String) {
       RefdataValue pubType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, someType)
 

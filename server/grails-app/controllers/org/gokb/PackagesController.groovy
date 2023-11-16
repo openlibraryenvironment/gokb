@@ -2,24 +2,10 @@ package org.gokb
 
 import grails.converters.*
 import grails.gorm.transactions.*
-import org.springframework.security.acls.model.NotFoundException
 import org.springframework.security.access.annotation.Secured;
 import org.gokb.cred.*
 import org.springframework.web.multipart.MultipartHttpServletRequest
-import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
-import java.security.MessageDigest
-import grails.converters.JSON
-import grails.core.GrailsClass
-import groovyx.net.http.URIBuilder
-
-import org.grails.datastore.mapping.model.*
-import org.grails.datastore.mapping.model.types.*
-
-import org.hibernate.ScrollMode
-import org.hibernate.ScrollableResults
-import org.hibernate.type.*
-import org.hibernate.Hibernate
 
 @Transactional(readOnly = true)
 class PackagesController {
@@ -30,10 +16,6 @@ class PackagesController {
   def concurrencyManagerService
   def TSVIngestionService
   def packageService
-  def ESWrapperService
-  def ESSearchService
-  def sessionFactory
-  def messageService
 
   public static String TIPPS_QRY = 'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent.id = :pkg and c.toComponent = tipp  and c.type.value = :ct order by tipp.id';
 
@@ -137,13 +119,13 @@ class PackagesController {
           params.fmt &&
           params.source) {
 
-          def deposit_token = java.util.UUID.randomUUID().toString();
-          def temp_file = copyUploadedFile(request.getFile("content"), deposit_token);
+          def deposit_token = java.util.UUID.randomUUID().toString()
+          def temp_file = TSVIngestionService.handleTempFile(deposit_token, request.getFile("content"))
           log.debug("Got file content")
           def format_rdv = RefdataCategory.lookupOrCreate('ingest.filetype', params.fmt).save()
           def pkg = params.pkg
           def platformUrl = params.platformUrl
-          def source = Source.findByName(params.source) ?: new Source(name: params.source).save(flush: true, failOnError: true);
+          def source = Source.findByName(params.source) ?: new Source(name: params.source).save(flush: true, failOnError: true)
           def providerName = params.providerName
           def providerObj = Org.findByName(providerName) ?: null
           def providerIdentifierNamespace = IdentifierNamespace.findByValue(params.providerIdentifierNamespace)
@@ -172,9 +154,9 @@ class PackagesController {
   def deposit() {
     def result = [:]
     log.debug("deposit::${params}")
-    def jobid = null;
+    def jobid = null
 
-    Job background_job = null;
+    Job background_job = null
     User user = springSecurityService.currentUser
 
     if (request.method == 'POST') {
@@ -198,14 +180,14 @@ class PackagesController {
             params.fmt &&
             params.source) {
 
-            def deposit_token = java.util.UUID.randomUUID().toString();
-            def temp_file = copyUploadedFile(request.getFile("content"), deposit_token);
+            def deposit_token = java.util.UUID.randomUUID().toString()
+            def temp_file = TSVIngestionService.handleTempFile(deposit_token, request.getFile("content"))
             log.debug("Got file content")
             def format_rdv = RefdataCategory.lookupOrCreate('ingest.filetype', params.fmt).save()
             def pkg = params.pkg
             def platformUrl = params.platformUrl
             // def source = params.source
-            def source = Source.findByName(params.source) ?: new Source(name: params.source).save(flush: true, failOnError: true);
+            def source = Source.findByName(params.source) ?: new Source(name: params.source).save(flush: true, failOnError: true)
             def providerName = params.providerName
             def providerObj = Org.findByName(providerName) ?: null
             def providerIdentifierNamespace = IdentifierNamespace.findByValue(params.providerIdentifierNamespace)
@@ -214,23 +196,24 @@ class PackagesController {
               providerIdentifierNamespace = providerObj?.titleNamespace
             }
 
-            def info = analyse(temp_file);
+            def info = TSVIngestionService.analyseFile(temp_file)
 
-            log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5");
-            def existing_file = DataFile.findByMd5(info.md5sumHex);
+            log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
+            def existing_file = DataFile.findByMd5(info.md5sumHex)
 
             if (existing_file != null) {
               log.debug("Found a match !")
               if (params.reprocess == 'Y') {
-                log.debug("Located existing file, reprocess=Y, continuing");
+                log.debug("Located existing file, reprocess=Y, continuing")
                 new_datafile_id = existing_file.getId()
               } else {
                 // redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
-                result.message = "Datafile already present with internal id org.gokb.cred.DataFile:${existing_file.getId()}";
+                result.message = "Datafile already present with internal id org.gokb.cred.DataFile:${existing_file.getId()}"
                 return
               }
             } else {
-              log.debug("Create new datafile");
+              log.debug("Create new datafile")
+
               DataFile.withNewTransaction {
                 def new_datafile = new DataFile(
                   guid: deposit_token,
@@ -244,7 +227,7 @@ class PackagesController {
                 new_datafile.save(flush: true, failOnError: true)
 
 
-                log.debug("Saved new datafile : ${new_datafile.getId()}");
+                log.debug("Saved new datafile : ${new_datafile.getId()}")
                 new_datafile_id = new_datafile.getId()
               }
             }
@@ -265,13 +248,13 @@ class PackagesController {
                 additional_params[k] = v;
               }
             }
-            log.debug("Additional params will be ${additional_params}");
+            log.debug("Additional params will be ${additional_params}")
 
             background_job = concurrencyManagerService.createJob { Job job ->
-              def job_result = null;
+              def job_result = null
               // Create a new session to run the ingest.
               try {
-                log.debug("Launching ingest");
+                log.debug("Launching ingest")
 
                 job_result = TSVIngestionService.ingest2(format_rdv,
                   pkg,
@@ -294,8 +277,8 @@ class PackagesController {
                 log.debug("Async Data insert complete")
               }
 
-              log.debug("Got job result: ${job_result}");
-              return job_result;
+              log.debug("Got job result: ${job_result}")
+              return job_result
             }
 
             background_job.description = "Deposit datafile ${upload_filename}(as ${params.fmt} from ${source} ) and create/update package ${pkg}"
@@ -303,21 +286,21 @@ class PackagesController {
             background_job.ownerId = user.id
             background_job.startOrQueue()
             jobid = background_job.uuid
-            log.debug("Background job started");
+            log.debug("Background job started")
           } else {
-            log.error("Missing parameters :: ${params}");
+            log.error("Missing parameters :: ${params}")
           }
         } else {
-          log.error("Not multipart");
+          log.error("Not multipart")
         }
       }
     } else {
-      log.debug("Get");
+      log.debug("Get")
     }
 
 
     if (params.synchronous == 'Y') {
-      log.debug("Waiting for job to complete");
+      log.debug("Waiting for job to complete")
       result.jobResult = background_job.get()
     }
 
@@ -326,55 +309,6 @@ class PackagesController {
       json { render result as JSON }
       xml { render result as XML }
     }
-  }
-
-  def copyUploadedFile(inputfile, deposit_token) {
-    def baseUploadDir = grailsApplication.config.getProperty('project_dir', String, '.')
-    log.debug("copyUploadedFile...");
-    def sub1 = deposit_token.substring(0, 2);
-    def sub2 = deposit_token.substring(2, 4);
-    validateUploadDir("${baseUploadDir}");
-    validateUploadDir("${baseUploadDir}/${sub1}");
-    validateUploadDir("${baseUploadDir}/${sub1}/${sub2}");
-    def temp_file_name = "${baseUploadDir}/${sub1}/${sub2}/${deposit_token}";
-    def temp_file = new File(temp_file_name);
-
-    // Copy the upload file to a temporary space
-    inputfile.transferTo(temp_file);
-
-    temp_file
-  }
-
-  private def validateUploadDir(path) {
-    File f = new File(path);
-    if (!f.exists()) {
-      log.debug("Creating upload directory path")
-      f.mkdirs();
-    }
-  }
-
-  def analyse(temp_file) {
-
-    def result = [:]
-    result.filesize = 0;
-
-    log.debug("analyze...");
-
-    // Create a checksum for the file..
-    MessageDigest md5_digest = MessageDigest.getInstance("MD5");
-    InputStream md5_is = new FileInputStream(temp_file);
-    byte[] md5_buffer = new byte[8192];
-    int md5_read = 0;
-    while ((md5_read = md5_is.read(md5_buffer)) >= 0) {
-      md5_digest.update(md5_buffer, 0, md5_read);
-      result.filesize += md5_read
-    }
-    md5_is.close();
-    byte[] md5sum = md5_digest.digest();
-    result.md5sumHex = new BigInteger(1, md5sum).toString(16);
-
-    log.debug("MD5 is ${result.md5sumHex}");
-    result
   }
 
   @Transactional(readOnly = true)

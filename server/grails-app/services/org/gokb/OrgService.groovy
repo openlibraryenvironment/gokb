@@ -377,8 +377,8 @@ class OrgService {
   @Transactional
   public def updateOffices(Org org, offices, boolean remove = true) {
     log.debug("Update offices ${offices}")
-    RefdataValue OFFICE_ORG = RefdataCategory.lookup(Combo.RD_TYPE, 'Office.Org')
-    RefdataValue STATUS_ACTIVE = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_ACTIVE)
+    RefdataValue type_office = RefdataCategory.lookup(Combo.RD_TYPE, 'Office.Org')
+    RefdataValue status_active = DomainClassExtender.comboStatusActive
     def language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
     def function_rdc = RefdataCategory.findByLabel(Office.RD_FUNCTION)
     def old_ids = org.offices.collect { it.id }
@@ -433,6 +433,7 @@ class OrgService {
         if (!old_ids.contains(office_obj.id)) {
           org.offices.add(office_obj)
           org.save(flush: true)
+
           result.changed = true
         }
         new_offices << office_obj

@@ -266,15 +266,10 @@ class TitleInstance extends KBComponent {
   def toGoKBXml(builder, attr) {
 
     try {
-      def tids = this.ids ?: []
       def tipps = getTipps()
-      def theIssuer = getIssuer()
-      // def thePublisher = getPublisher()
+      Org theIssuer = getIssuer()
       def publisher_combos = getCombosByPropertyName('publisher')
       def people_combos = this.people ?: []
-
-      // def identifiers = Combo.executeQuery('select c.toComponent from Combo as c where c.fromComponent=:t and c.type.value :idtype and c.status.value != :d',
-      //                                      [t:this,idtype:'KBComponent.ids',d:'Deleted'])
 
       def history = getTitleHistory()
 
@@ -313,7 +308,7 @@ class TitleInstance extends KBComponent {
               }
 
               if (pub_org) {
-                def org_ids = pub_org.ids ?: []
+                def org_ids = pub_org.activeIdInfo
 
                 builder."publisher"(['id': pub_org.id, 'uuid': pub_org.uuid]) {
                   "name"(pub_org.name)
@@ -328,7 +323,7 @@ class TitleInstance extends KBComponent {
                   }
                   builder."identifiers" {
                     org_ids?.each { org_id ->
-                      builder.'identifier'('namespace': org_id?.namespace?.value, 'namespaceName': org_id?.namespace?.name, 'value': org_id?.value)
+                      builder.'identifier'(org_id)
                     }
                     if (grailsApplication.config.getProperty('serverUrl')) {
                       builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl')}/resource/show/org.gokb.cred.Org:${pub_org?.id}")
@@ -349,17 +344,17 @@ class TitleInstance extends KBComponent {
             builder.history() {
               history.each { he ->
                 builder.historyEvent(['id': he.id]) {
-                  "date"(he.date ? DateFormatService.formatDate(he.date) : null)
+                  builder."date"(he.date ? DateFormatService.formatDate(he.date) : null)
                   he.from.each { hti ->
                     if (hti) {
-                      "from" {
-                        title(hti.name)
-                        uuid(hti.uuid)
-                        status(hti.status.value)
-                        internalId(hti.id)
-                        "identifiers" {
-                          hti.ids?.each { tid ->
-                            builder.'identifier'('namespace': tid.namespace?.value, 'namespaceName': tid.namespace?.name, 'value': tid.value, 'datatype': tid.namespace.datatype?.value)
+                      builder."from" {
+                        builder.'title'(hti.name)
+                        builder.'uuid'(hti.uuid)
+                        builder.'status'(hti.status.value)
+                        builder.'internalId'(hti.id)
+                        builder."identifiers" {
+                          hti.activeIdInfo.each { tid ->
+                            builder.'identifier'(tid)
                           }
                           if (grailsApplication.config.getProperty('serverUrl')) {
                             builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl')}/resource/show/${hti.class.name}:${hti.id}")
@@ -371,13 +366,13 @@ class TitleInstance extends KBComponent {
                   he.to.each { hti ->
                     if (hti) {
                       "to" {
-                        title(hti.name)
-                        uuid(hti.uuid)
-                        status(hti.status.value)
-                        internalId(hti.id)
-                        "identifiers" {
-                          hti.ids?.each { tid ->
-                            builder.'identifier'('namespace': tid.namespace?.value, 'namespaceName': tid.namespace?.name, 'value': tid.value, 'datatype': tid.namespace.datatype?.value)
+                        builder.'title'(hti.name)
+                        builder.'uuid'(hti.uuid)
+                        builder.'status'(hti.status.value)
+                        builder.'internalId'(hti.id)
+                        builder."identifiers" {
+                          hti.activeIdInfo.each { tid ->
+                            builder.'identifier'(tid)
                           }
                           if (grailsApplication.config.getProperty('serverUrl')) {
                             builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl')}/resource/show/${hti.class.name}:${hti.id}")
@@ -395,7 +390,7 @@ class TitleInstance extends KBComponent {
             tipps?.each { tipp ->
               builder.'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
 
-                status(tipp.status.value)
+                builder.'status'(tipp.status.value)
 
                 def pkg = tipp.pkg
                 builder.'package'(['id': pkg?.id, 'uuid': pkg?.uuid]) {
@@ -407,8 +402,12 @@ class TitleInstance extends KBComponent {
                   builder.'name'(platform?.name)
                 }
 
+                builder.'accessStartDate'(tipp.accessStartDate ? DateFormatService.formatDate(tipp.accessStartDate) : null)
+                builder.'accessEndDate'(tipp.accessEndDate ? DateFormatService.formatDate(tipp.accessEndDate) : null)
+
                 builder.'subjectArea'(tipp.subjectArea?.trim())
                 builder.'series'(tipp.series?.trim())
+
                 if (tipp.prices && tipp.prices.size() > 0) {
                   builder.'prices'() {
                     tipp.prices.each { price ->
@@ -422,6 +421,12 @@ class TitleInstance extends KBComponent {
                         }
                       }
                     }
+                  }
+                }
+
+                builder."identifiers" {
+                  tipp.activeIdInfo.each { tid ->
+                    builder.'identifier'(tid)
                   }
                 }
 
@@ -442,7 +447,6 @@ class TitleInstance extends KBComponent {
                   }
                 }
                 else {
-
                   builder.'coverage'(
                     startDate: (tipp.startDate ? DateFormatService.formatDate(tipp.startDate) : null),
                     startVolume: tipp.startVolume,

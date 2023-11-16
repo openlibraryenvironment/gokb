@@ -71,28 +71,18 @@ class IntegrationControllerSpec extends Specification {
     Org.findByName('ACS TestOrg')?.expunge()
     Org.findByName('TestOrgAcs')?.expunge()
     Platform.findByName('ACS Publications')?.expunge()
-    ['TestTokenPackageUpdate',
-     'American Chemical Society: ACS Legacy Archives: CompleteDates',
-     'TestTokenPackage',
-     'American Chemical Society: ACS Legacy Archives: UpdateListStatus'].each {
-      Package.findByName(it)?.expunge()
-    }
     UpdateToken.findByValue('TestUpdateToken')?.delete()
-    TitleInstance.findAllByName("Acta cytologica")?.each { title ->
-      title.expunge()
-    }
-    TitleInstance.findAllByName("TestJournal_Dates")?.each { title ->
-      title.expunge()
-    }
-    TitleInstancePackagePlatform.findAllByName("Journal of agricultural and food chemistry")?.each { title ->
-      title.expunge()
-    }
-    def combo_plt = RefdataCategory.lookup('Combo.Type', 'Platform.HostedTipps')
 
-    TitleInstancePackagePlatform.executeQuery("from TitleInstancePackagePlatform as t where not exists (select 1 from Combo where toComponent = t and type = :ct)", [ct: combo_plt])?.each { title ->
+    TitleInstancePackagePlatform.list().each { title ->
       title.expunge()
     }
-    Identifier.findByValue('2256676-4')?.expunge()
+    TitleInstance.list().each { title ->
+      title.expunge()
+    }
+
+    Package.list().each {
+      it.expunge()
+    }
   }
 
   void "Test assertGroup"() {
