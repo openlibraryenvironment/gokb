@@ -33,7 +33,7 @@ class PackageSourceUpdateService {
   }
 
   def updateFromSource(Long pkgId, def user = null, Job job = null, Long activeGroupId = null, boolean dryRun = false) {
-    log.debug("updateFromSource ${p.name}")
+    log.debug("updateFromSource ${pkgId}")
     def result = [result: 'OK']
     def activeJobs = concurrencyManagerService.getComponentJobs(pkgId)
 
@@ -55,7 +55,6 @@ class PackageSourceUpdateService {
   private def startSourceUpdate(pid, user, job, activeGroupId, dryRun) {
     log.debug("Source update start..")
     def result = [result: 'OK']
-    def platform_url = pkg.nominalPlatform ? Platform.get(pkg.nominalPlatform.id)?.primaryUrl : null
     Boolean async = (user ? true : false)
     def preferred_group
     def title_ns
@@ -69,7 +68,6 @@ class PackageSourceUpdateService {
       pkgInfo = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
       Platform pkg_plt = p.nominalPlatform ? Platform.get(p.nominalPlatform.id) : null
       Org pkg_prov = p.provider ? Org.get(p.provider.id) : null
-      platform_url = pkg_plt.primaryUrl
       Source pkg_source = p.source
       preferred_group = activeGroupId ?: (p.curatoryGroups?.size() > 0 ? p.curatoryGroups[0].id : null)
       title_ns = pkg_source?.targetNamespace?.id ?: (pkg_prov?.titleNamespace?.id ?: null)

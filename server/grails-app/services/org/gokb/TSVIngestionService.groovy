@@ -25,7 +25,6 @@ class TSVIngestionService {
                     boolean skip_invalid,
                     boolean cleanup,
                     Job job = null) {
-    def session = null
 
     Package.withNewSession {
       Package pkg = Package.get(pkgId)
