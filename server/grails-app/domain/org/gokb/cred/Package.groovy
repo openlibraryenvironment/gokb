@@ -341,7 +341,7 @@ class Package extends KBComponent {
     log.debug("Setting active TIPPs to ${new_status.value} ..")
     RefdataValue current_status = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue expected_status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-    RefdataValue rr_current = RefdataCategory.lookup('ReviewRequest.Status', 'Current')
+    RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
     RefdataValue rr_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
     RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
 
@@ -375,20 +375,17 @@ class Package extends KBComponent {
     def rr_qry = '''update ReviewRequest as rr
                     set rr.status = :closed,
                     rr.lastUpdated = :now
-                    where rr.status = :current
-                    and (
-                      exists (
-                        select 1 from Combo
-                        where fromComponent.id = :pkg
-                        and toComponent = rr.componentToReview
-                        and type = :ctype
-                      )
-                      or tt.componentToReview.id = :pkg
+                    where rr.status = :open
+                    and exists (
+                      select 1 from Combo
+                      where fromComponent.id = :pkg
+                      and toComponent.id = rr.componentToReview.id
+                      and type = :ctype
                     )'''
 
     def params_rr = [
       closed: rr_closed,
-      current: rr_current,
+      open: rr_open,
       pkg: this.id,
       ctype: combo_type,
       now: new Date()
