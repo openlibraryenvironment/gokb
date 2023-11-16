@@ -7,16 +7,8 @@ import grails.gorm.transactions.Transactional
 import groovy.transform.Synchronized
 
 import org.gokb.cred.*
-<<<<<<< HEAD
-import org.gokb.rest.RefdataController
-import org.grails.datastore.mapping.model.*
-import org.grails.datastore.mapping.model.types.*
-import org.grails.web.json.JSONObject
 import org.opensearch.action.delete.DeleteRequest
 import org.opensearch.client.RequestOptions
-import org.opensearch.client.Requests
-=======
->>>>>>> g5_master
 
 @Transactional
 class ComponentUpdateService {
@@ -441,7 +433,6 @@ class ComponentUpdateService {
     result
   }
 
-<<<<<<< HEAD
   @Transactional
   def expungeComponent(KBComponent obj) {
     log.debug("Component expunge");
@@ -460,7 +451,7 @@ class ComponentUpdateService {
         ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = :event", [event: it])
         ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
       }
-  //     ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.participant = :component",[component:this]);
+
       if (obj.class == CuratoryGroup) {
         AllocatedReviewGroup.removeAll(obj)
 
@@ -491,7 +482,8 @@ class ComponentUpdateService {
       }
     }
     result
-=======
+  }
+
   void closeConnectedReviews(obj) {
     if (KBComponent.assignableFrom(obj.deproxy())) {
       obj.reviewRequests.each {
@@ -503,7 +495,6 @@ class ComponentUpdateService {
         }
       }
     }
->>>>>>> g5_master
   }
 
   def cleanUpGorm() {
