@@ -56,6 +56,16 @@ class OrgController {
     if (result.result == 'ERROR') {
       response.status = (result.status ?: 500)
     }
+    else {
+      result.data?.each { obj ->
+        def countPkgsParams = [:]
+        countPkgsParams.componentType = "Package"
+        countPkgsParams.provider = obj.uuid
+        countPkgsParams.status = "Current"
+        countPkgsParams.max = 1
+        obj['_providedPackages'] = ESSearchService.find(countPkgsParams)?._pagination?.total ?: 0
+      }
+    }
 
     render result as JSON
   }
