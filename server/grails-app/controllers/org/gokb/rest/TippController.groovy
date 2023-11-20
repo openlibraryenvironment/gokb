@@ -1,22 +1,13 @@
 package org.gokb.rest
 
 import grails.converters.*
-import grails.core.GrailsClass
 import grails.gorm.transactions.*
 import grails.plugin.springsecurity.annotation.Secured
 
-import groovyx.net.http.URIBuilder
-import org.springframework.web.servlet.support.RequestContextUtils
-
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.ZoneId
 
 import org.gokb.cred.*
-import org.gokb.GOKbTextUtils
-import org.grails.datastore.mapping.model.*
-import org.grails.datastore.mapping.model.types.*
 
 @Transactional(readOnly = true)
 class TippController {
@@ -31,6 +22,7 @@ class TippController {
   def restMappingService
   def componentLookupService
   def componentUpdateService
+  def concurrencyManagerService
   def tippService
   def tippUpsertService
 
@@ -186,74 +178,85 @@ class TippController {
       def curator = obj.pkg.curatoryGroups?.size() > 0 ? user.curatoryGroups?.id.intersect(obj.pkg.curatoryGroups?.id) : true
 
       if (curator || user.isAdmin()) {
-        reqBody.id = reqBody.id?:params.id // storing the TIPP ID in the JSON data for later use in upsertDTO
-        def tipp_validation = tippService.validateDTO(reqBody)
+        def active_pkg_jobs = concurrencyManagerService.getComponentJobs(obj.pkg.id)
 
-        if (tipp_validation.valid) {
-          if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
-            response.status = 409
-            result.message = message(code: "default.update.errors.message")
-            render result as JSON
-          }
+        if (active_pkg_jobs?.data?.size() == 0) {
+          reqBody.id = reqBody.id ?: params.id // storing the TIPP ID in the JSON data for later use in upsertDTO
+          def tipp_validation = tippService.validateDTO(reqBody)
 
-          if (reqBody.status?.name == 'Retired' && obj.status != RefdataValue.get(reqBody.status.id)) {
-            set_access_end = true
-          }
-
-          def jsonMap = obj.jsonMapping
-
-          obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
-
-          if (set_access_end) {
-            log.debug("Setting accessEndDate for newly retired TIPP ..")
-            obj.accessEndDate = new Date()
-          }
-
-          if (reqBody.variantNames != null) {
-            log.debug("Updating variantNames ..")
-            def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
-
-            if (variant_result.errors.size() > 0) {
-              errors.variantNames = variant_result.errors
-            }
-          }
-
-          if (reqBody.prices != null) {
-            log.debug("Updating prices ..")
-            def prices_result = restMappingService.updatePrices(obj, reqBody.prices, remove)
-
-            if (prices_result.errors.size() > 0) {
-              errors.prices = prices_result.errors
-            }
-          }
-
-          errors << tippService.updateCombos(obj, reqBody)
-
-          if (obj?.validate()) {
-            if (reqBody.coverageStatements != null) {
-              obj = tippService.updateCoverage(obj, reqBody)
+          if (tipp_validation.valid) {
+            if (reqBody.version && obj.version > Long.valueOf(reqBody.version)) {
+              response.status = 409
+              result.message = message(code: "default.update.errors.message")
+              render result as JSON
             }
 
-            log.debug("No errors.. saving")
-            obj = obj.merge(flush: true)
-            tippService.touchPackage(obj)
+            if (reqBody.status?.name == 'Retired' && obj.status != RefdataValue.get(reqBody.status.id)) {
+              set_access_end = true
+            }
+
+            def jsonMap = obj.jsonMapping
+
+            obj = restMappingService.updateObject(obj, obj.jsonMapping, reqBody)
+
+            if (set_access_end) {
+              log.debug("Setting accessEndDate for newly retired TIPP ..")
+              obj.accessEndDate = new Date()
+            }
+
+            if (reqBody.variantNames != null) {
+              log.debug("Updating variantNames ..")
+              def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames, remove)
+
+              if (variant_result.errors.size() > 0) {
+                errors.variantNames = variant_result.errors
+              }
+            }
+
+            if (reqBody.prices != null) {
+              log.debug("Updating prices ..")
+              def prices_result = restMappingService.updatePrices(obj, reqBody.prices, remove)
+
+              if (prices_result.errors.size() > 0) {
+                errors.prices = prices_result.errors
+              }
+            }
+
+            errors << tippService.updateCombos(obj, reqBody)
+
+            if (obj?.validate()) {
+              if (reqBody.coverageStatements != null) {
+                obj = tippService.updateCoverage(obj, reqBody)
+              }
+
+              log.debug("No errors.. saving")
+              obj = obj.merge(flush: true)
+              tippService.touchPackage(obj)
+            }
+            else {
+              result.result = 'ERROR'
+              response.status = 400
+              errors = messageService.processValidationErrors(obj.errors, request.locale)
+            }
+
+            if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
+              FTUpdateService.updateSingleItem(obj)
+            }
+
+            result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
             result.result = 'ERROR'
             response.status = 400
-            errors = messageService.processValidationErrors(obj.errors, request.locale)
+            result.message = "There have been validation errors!"
+            errors = tipp_validation.errors
           }
-          if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-            FTUpdateService.updateSingleItem(obj)
-          }
-
-          result = restMappingService.mapObjectToJson(obj, params, user)
         }
         else {
           result.result = 'ERROR'
-          response.status = 400
-          result.message = "There have been validation errors!"
-          errors = tipp_validation.errors
+          response.status = 409
+          result.message = "Please wait for any package imports to finish before manually updating the title."
+          result.messageCode = "error.update.tipp.runningImport"
         }
       }
       else {
@@ -286,6 +289,8 @@ class TippController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
+
+        componentUpdateService.closeConnectedReviews(obj)
       }
       else {
         result.result = 'ERROR'

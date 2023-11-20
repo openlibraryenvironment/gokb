@@ -46,6 +46,15 @@ class BulkImportSpec extends Specification {
   }
 
   def cleanup() {
+    Platform.findByName('TestBulkPlt')?.expunge()
+    Org.findByName('TestBulkOrg')?.expunge()
+    TitleInstancePackagePlatform.list().each {
+      it.expunge()
+    }
+    TitleInstance.list().each {
+      it.expunge()
+    }
+    Package.findByName('BulkTestPkgOne')?.expunge()
   }
 
   void "Test create new bulk config"() {

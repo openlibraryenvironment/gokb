@@ -1,8 +1,8 @@
 package com.k_int
 
-import groovyx.net.http.HTTPBuilder
-import groovyx.net.http.Method
-import groovyx.net.http.URIBuilder
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.uri.UriBuilder
 
 import org.apache.lucene.search.join.ScoreMode
 import org.opensearch.action.search.*
@@ -10,7 +10,6 @@ import org.opensearch.client.*
 import org.opensearch.index.query.*
 import org.opensearch.search.aggregations.AggregationBuilders
 import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder
-import org.opensearch.search.SearchHit
 import org.opensearch.search.SearchHits
 import org.opensearch.search.builder.SearchSourceBuilder
 import org.opensearch.search.sort.*
@@ -35,13 +34,16 @@ class ESSearchService{
   def grailsApplication
   def genericOIDService
   def classExaminationService
+  def restMappingService
 
   def requestMapping = [
       generic: [
           "id",
           "uuid",
           "importId",
-          "primaryUrl"
+          "primaryUrl",
+          "editionStatement",
+          "volumeNumber"
       ],
       refdata: [
           "listStatus",
@@ -87,7 +89,11 @@ class ESSearchService{
       ],
       dates: [
           "changedSince",
-          "changedBefore"
+          "changedBefore",
+          "publishedFrom",
+          "publishedTo",
+          "dateFirstInPrint",
+          "dateFirstOnline"
       ],
       ignore: [
           "controller",
@@ -115,7 +121,6 @@ class ESSearchService{
       "Package" : "packages",
       "Platform" : "platforms"
   ]
-
 
   def search(params){
     search(params,reversemap)
@@ -317,7 +322,10 @@ class ESSearchService{
   }
 
   private String sanitizeParam(String param) {
-    return param.replaceAll(":", "\\\\:").replaceAll("/", "\\\\/").replaceAll("[()]", " ")
+    return param.replaceAll(":", "\\\\:")
+        .replaceAll("/", "\\\\/")
+        .replaceAll(/[()]/, " ")
+        .replaceAll(/[\[\]]/, "")
   }
 
   private String escapeQueryString(String param) {
@@ -1107,8 +1115,6 @@ class ESSearchService{
    */
 
   private def convertEsLinks(es_result, params, component_endpoint) {
-    def base = grailsApplication.config.serverURL + "/rest" + "${component_endpoint}"
-
     es_result['_links'] = [:]
     es_result['data'] = es_result.records
     es_result.remove('records')
@@ -1119,53 +1125,17 @@ class ESSearchService{
         total: es_result.count
     ]
 
-    def selfLink = new URIBuilder(base)
-    selfLink.addQueryParams(params)
+    params.es = 'true'
 
-    params.each { p, vals ->
-      log.debug("handling param ${p}: ${vals}")
-      if (vals instanceof String[]) {
-        selfLink.removeQueryParam(p)
-        vals.each { val ->
-          if (val?.trim()) {
-            log.debug("Val: ${val} -- ${val.class.name}")
-            selfLink.addQueryParam(p, val)
-          }
-        }
-        log.debug("${selfLink.toString()}")
-      }
-    }
-    if(params.controller) {
-      selfLink.removeQueryParam('controller')
-    }
-    if (params.action) {
-      selfLink.removeQueryParam('action')
-    }
-    if (params.componentType) {
-      selfLink.removeQueryParam('componentType')
-    }
-    es_result['_links']['self'] = [href: selfLink.toString()]
+    es_result['_links']['self'] = [href: restMappingService.buildUrlString(component_endpoint, null, es_result.offset, es_result.max, params)]
 
     if (es_result.count > es_result.offset+es_result.max) {
-      def nextLink = selfLink
-
-      if(nextLink.query.offset){
-        nextLink.removeQueryParam('offset')
-      }
-
-      nextLink.addQueryParam('offset', "${es_result.offset + es_result.max}")
-      es_result['_links']['next'] = ['href': (nextLink.toString())]
+      es_result['_links']['next'] = ['href': restMappingService.buildUrlString(component_endpoint, 'next', es_result.offset, es_result.max, params)]
     }
     if (es_result.offset > 0) {
-      def prevLink = selfLink
-
-      if(prevLink.query.offset){
-        prevLink.removeQueryParam('offset')
-      }
-
-      prevLink.addQueryParam('offset', "${(es_result.offset - es_result.max) > 0 ? es_result.offset - es_result.max : 0}")
-      es_result['_links']['prev'] = ['href': prevLink.toString()]
+      es_result['_links']['prev'] = ['href': restMappingService.buildUrlString(component_endpoint, 'prev', es_result.offset, es_result.max, params)]
     }
+
     es_result.remove("offset")
     es_result.remove("max")
     es_result.remove("count")
@@ -1299,25 +1269,27 @@ class ESSearchService{
     if (!params || !params.q){
       return null
     }
-    int port = grailsApplication.config.searchApi.port
-    def indices = grailsApplication?.config?.gokb?.es?.indices?.values()
-    String host = grailsApplication?.config?.gokb?.es?.host
+    int port = grailsApplication.config.getProperty('searchApi.port', Integer, 9200)
+    def indices = grailsApplication.config.getProperty('gokb.es.indices', Map).values()
+    String host = grailsApplication.config.getProperty('gokb.es.host')
     String url = "http://${host}:${port}/${indices.join(',')}/_search?q=${params.q}"
+
     if (params.size){
       url = url + "&size=${params.size}"
     }
-    HTTPBuilder httpBuilder = new HTTPBuilder(url)
-    httpBuilder.request(Method.GET){ req ->
-      response.success = { resp, html ->
-        return html
-      }
-      response.failure = { resp ->
-        return [
-            'error': "Could not process Elasticsearch request.",
-            'status': resp.statusLine,
-            'message': resp.message
-        ]
-      }
+
+    def http = HttpClient.create(new URL(host))
+    def resp = http.retrieve(HttpRequest.GET(url))
+
+    if (resp.status.code == 200) {
+      return resp.body
+    }
+    else {
+      return [
+          'error': "Unable to process search request.",
+          'status': resp.statusLine,
+          'message': resp.message
+      ]
     }
   }
 }

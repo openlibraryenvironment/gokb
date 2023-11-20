@@ -30,6 +30,10 @@ class OrgTestSpec extends AbstractAuthSpec {
 
   BlockingHttpClient http
 
+  Platform test_org_plt
+  Platform test_org_plt_update
+  Org test_org
+
   def setupSpec() {
   }
 
@@ -37,39 +41,28 @@ class OrgTestSpec extends AbstractAuthSpec {
     if (!http) {
       http = HttpClient.create(new URL(getUrlPath())).toBlocking()
     }
-    def new_source = Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource").save(flush: true)
-    def new_office = Office.findByName("firstTestOffice") ?: new Office(name: "firstTestOffice").save(flush: true)
-    def patch_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source, offices:[new_office]).save(flush: true)
-    def new_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true)
-    def new_plt_upd = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate", provider: patch_org).save(flush: true)
+
+    Source new_source = Source.findByName("TestOrgPatchSource") ?: new Source(name: "TestOrgPatchSource").save(flush: true)
+    Office new_office = Office.findByName("firstTestOffice") ?: new Office(name: "firstTestOffice").save(flush: true)
+    test_org = Org.findByName("TestOrgPatch") ?: new Org(name: "TestOrgPatch", source: new_source, offices:[new_office]).save(flush: true)
+    test_org_plt = Platform.findByName("TestOrgPlt") ?: new Platform(name: "TestOrgPlt").save(flush: true)
+    test_org_plt_update = Platform.findByName("TestOrgPltUpdate") ?: new Platform(name: "TestOrgPltUpdate", provider: test_org).save(flush: true)
   }
 
   def cleanup() {
-    if (Platform.findByName("TestOrgPlt")) {
-      Platform.findByName("TestOrgPlt")?.refresh().expunge()
-    }
-    if (Platform.findByName("TestOrgPltUpdate")) {
-      Platform.findByName("TestOrgPltUpdate")?.refresh().expunge()
-    }
     Office.list().each {
       it.expunge()
     }
-    if (Org.findByName("TestOrgPost")) {
-        Org.findByName("TestOrgPost")?.refresh().expunge()
-    }
-    if (Org.findByName("TestOrgPatch")) {
-        Org.findByName("TestOrgPatch")?.refresh().expunge()
-    }
-    if (Org.findByName("TestOrgUpdateNew")) {
-      Org.findByName("TestOrgUpdateNew")?.refresh().expunge()
-    }
-    if (Org.findByName("TestOrgUpdateSource")) {
-      Org.findByName("TestOrgUpdateSource")?.refresh().expunge()
 
-      if (Source.findByName("TestOrgPatchSource")) {
-        Source.findByName("TestOrgPatchSource")?.refresh().expunge()
-      }
+    Platform.list().each {
+      it.expunge()
     }
+
+    Org.list().each {
+      it.expunge()
+    }
+
+    Source.findByName("TestOrgPatchSource")?.expunge()
   }
 
   void "test /rest/orgs without token"() {
@@ -168,15 +161,13 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     def urlPath = getUrlPath()
     String accessToken = getAccessToken()
-    def updated_plt = Platform.findByName("TestOrgPltUpdate")
-    def id = Org.findByName("TestOrgPatch")?.id
 
     Map update_record = [
       name             : "TestOrgUpdateNew",
       ids              : [
         [namespace: "viaf", value: "4870153184551227100006"]
       ],
-      providedPlatforms: [updated_plt.id],
+      providedPlatforms: [test_org_plt.id],
       offices: [
         [name: "2ndTestOffice1", function:"Technical Support"],
         [name: "2ndTestOffice2", function:"other"]
@@ -185,7 +176,7 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     when:
     URI uri = UriBuilder.of(urlPath)
-      .path("/rest/orgs/$id")
+      .path("/rest/orgs/$test_org.id")
       .queryParam('_embed', 'providedPlatforms,ids,offices')
       .build()
 
@@ -201,7 +192,7 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.body().name == "TestOrgUpdateNew"
     resp.body()._embedded.ids?.size() == 1
     resp.body()._embedded.providedPlatforms?.size() == 1
-    resp.body()._embedded.providedPlatforms[0].name == updated_plt.name
+    resp.body()._embedded.providedPlatforms[0].name == test_org_plt.name
     resp.body()._embedded.offices?.size() == 2
     resp.body()._embedded.offices*.function.name.contains("Other")
   }
@@ -211,7 +202,6 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     def urlPath = getUrlPath()
     String accessToken = getAccessToken()
-    def id = Org.findByName("TestOrgPatch")?.id
 
     Map update_record = [
       name: "TestOrgUpdateSource",
@@ -220,7 +210,7 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     when:
 
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/orgs/$id", update_record)
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/orgs/$test_org.id", update_record)
       .bearerAuth(accessToken)
     HttpResponse resp = http.exchange(request, Map)
     then:

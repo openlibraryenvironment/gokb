@@ -9,14 +9,11 @@ import grails.validation.ValidationException
 import groovy.transform.Synchronized
 import groovy.util.logging.*
 
-import groovyx.net.http.URIBuilder
+import io.micronaut.http.uri.UriBuilder
 
-import org.gokb.DomainClassExtender
 import org.gokb.cred.*
-import org.gokb.ValidationService
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
-import org.grails.web.json.JSONObject
 
 @Slf4j
 class ComponentLookupService {
@@ -647,70 +644,20 @@ class ComponentLookupService {
     }
 
     log.debug("Identified endpoint: ${endpoint}")
-    def base = grailsApplication.config.getProperty('serverURL') + "/rest" + "${context ?: endpoint}"
 
     result['_links'] = [:]
-
-    def selfLink = new URIBuilder(base)
-
-    if (selfLink) {
-      selfLink.addQueryParams(params)
-      params.each { p, vals ->
-        log.debug("handling param ${p}: ${vals}")
-        if (vals instanceof String[]) {
-          selfLink.removeQueryParam(p)
-          vals.each { val ->
-            if (val.trim()) {
-              log.debug("Val: ${val} -- ${val.class.name}")
-              selfLink.addQueryParam(p, val)
-            }
-          }
-          log.debug("${selfLink.toString()}")
-        }
-        else if (!p.trim()) {
-          selfLink.removeQueryParam(p)
-        }
-      }
-      if(params.id) {
-        selfLink.removeQueryParam('id')
-      }
-      if(params.controller) {
-        selfLink.removeQueryParam('controller')
-      }
-      if (params.action) {
-        selfLink.removeQueryParam('action')
-      }
-      if (params.componentType) {
-        selfLink.removeQueryParam('componentType')
-      }
-    }
-    else {
-      selfLink = new URIBuilder(grailsApplication.config.serverURL + "/rest")
-    }
-    result['_links']['self'] = [href: selfLink.toString()]
+    result['_links']['self'] = [href: restMappingService.buildUrlString(endpoint, null, offset, max, params)]
 
 
     if (total > offset+max) {
-      def nextLink = selfLink
-      if(nextLink.query.offset){
-        nextLink.removeQueryParam('offset')
-      }
-      nextLink.addQueryParam('offset', "${offset + max}")
-      result['_links']['next'] = ['href': (nextLink.toString())]
+      result['_links']['next'] = [href: restMappingService.buildUrlString(endpoint, 'next', offset, max, params)]
     }
     if (offset > 0) {
-      def prevLink = selfLink
-
-      if(prevLink.query.offset){
-        prevLink.removeQueryParam('offset')
-      }
-      prevLink.addQueryParam('offset', "${(offset - max) > 0 ? offset - max : 0}")
-      result['_links']['prev'] = ['href': prevLink.toString()]
+      result['_links']['prev'] = [href: restMappingService.buildUrlString(endpoint, 'prev', offset, max, params)]
     }
 
     return result
   }
-
 
   CuratoryGroup findCuratoryGroupOfInterest(KBComponent component, User user = null, def activeGroup = null){
     CuratoryGroup activeCuratoryGroup = null

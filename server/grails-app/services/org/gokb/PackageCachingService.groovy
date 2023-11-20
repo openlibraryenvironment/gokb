@@ -104,13 +104,7 @@ class PackageCachingService {
               def tipps_count = item.status != refdata_deleted ? TitleInstancePackagePlatform.executeQuery("select count(tipp.id) " + tipp_hql, tipp_hql_params, [readOnly: true])[0] : 0
               def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
               def status_active = DomainClassExtender.comboStatusActive
-              def pkg_ids = Identifier.executeQuery('''select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i,
-                                                        Combo as c where c.fromComponent = :pid
-                                                        and c.type = :ct
-                                                        and c.toComponent = i
-                                                        and c.status = :cs''',
-                                                        [pid: item, ct: refdata_ids, cs: status_active],
-                                                        [readOnly: true])
+              def pkg_ids = item.activeIdInfo
               String cName = item.class.name
 
               log.info("Starting package caching for ${item.name} with ${tipps_count} TIPPs..")
@@ -191,11 +185,14 @@ class PackageCachingService {
                     'dateCreated'(dateFormatService.formatIsoTimestamp(item.dateCreated))
                     'TIPPs'(count: tipps_count) {
                       int offset = 0
+
                       while (offset < tipps_count) {
                         log.debug("Fetching TIPPs batch ${offset}/${tipps_count}")
                         def tipps = TitleInstancePackagePlatform.executeQuery(tipp_hql + " order by tipp.id", tipp_hql_params, [readOnly: true, max: 50, offset: offset])
                         log.debug("fetch complete ..")
+
                         offset += 50
+
                         tipps.each { tipp ->
                           'TIPP'(['id': tipp.id, 'uuid': tipp.uuid]) {
                             'status'(tipp.status?.value)
@@ -216,6 +213,7 @@ class PackageCachingService {
                             'precedingPublicationTitleId'(tipp.precedingPublicationTitleId)
                             'lastChangedExternal'(tipp.lastChangedExternal ? dateFormatService.formatDate(tipp.lastChangedExternal) : null)
                             'publicationType'(tipp.publicationType?.value)
+
                             if (tipp.title) {
                               def ti_obj = KBComponent.deproxy(tipp.title)
                               'title'('id': ti_obj.id, 'uuid': ti_obj.uuid) {
@@ -231,8 +229,8 @@ class PackageCachingService {
                                   'firstEditor'(ti_obj.firstEditor)
                                 }
                                 'identifiers' {
-                                  getComponentIds(ti_obj.id).each { tid ->
-                                    'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                                  ti_obj.activeIdInfo.each { tid ->
+                                    'identifier'(tid)
                                   }
                                 }
                               }
@@ -241,16 +239,20 @@ class PackageCachingService {
                               'title'()
                             }
                             'identifiers' {
-                              getComponentIds(tipp.id).each { tid ->
-                                'identifier'('namespace': tid[0], 'namespaceName': tid[3], 'value': tid[1], 'type': tid[2])
+                              tipp.activeIdInfo.each { tid ->
+                                'identifier'(tid)
                               }
                             }
                             'platform'(id: tipp.hostPlatform.id, 'uuid': tipp.hostPlatform.uuid) {
                               'primaryUrl'(tipp.hostPlatform.primaryUrl?.trim())
                               'name'(tipp.hostPlatform.name?.trim())
                             }
-                            'access'(start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null, end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null)
+                            'access'(
+                              start: tipp.accessStartDate ? dateFormatService.formatDate(tipp.accessStartDate) : null,
+                              end: tipp.accessEndDate ? dateFormatService.formatDate(tipp.accessEndDate) : null
+                            )
                             def cov_statements = getCoverageStatements(tipp.id)
+
                             if (cov_statements?.size() > 0) {
                               cov_statements.each { tcs ->
                                 'coverage'(
@@ -341,20 +343,6 @@ class PackageCachingService {
     }
     job?.endTime = new Date()
 
-    result
-  }
-
-  private def getComponentIds(Long tipp_id) {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids');
-    def status_active = DomainClassExtender.comboStatusActive
-    def result = Identifier.executeQuery('''select i.namespace.value, i.value, i.namespace.family, i.namespace.name from Identifier as i,
-                                            Combo as c
-                                            where c.fromComponent.id = :tid
-                                            and c.type = :ct
-                                            and c.toComponent = i
-                                            and c.status = :cs''',
-                                            [tid: tipp_id, ct: refdata_ids, cs: status_active],
-                                            [readOnly: true])
     result
   }
 

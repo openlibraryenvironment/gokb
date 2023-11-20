@@ -880,7 +880,7 @@ class TippService {
     RefdataValue combo_ids = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
     String tipp_crit = 'select t.id from TitleInstancePackagePlatform as t where t.status != :status and (t.name is null or not exists (select 1 from Combo where fromComponent = t and type = :idc))'
 
-    autoTimestampEventListener.withoutLastUpdated {
+    autoTimestampEventListener.withoutLastUpdated (TitleInstancePackagePlatform) {
       int index = 0
       boolean cancelled = false
       def tippIDs = TitleInstancePackagePlatform.executeQuery(tipp_crit, [status: status_deleted, idc: combo_ids])
@@ -1211,10 +1211,7 @@ class TippService {
   }
 
   public void updateLastSeen(tipp, Long systime) {
-    autoTimestampEventListener.withoutLastUpdated {
-      tipp.lastSeen = systime
-      tipp.save(flush: true)
-    }
+    TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set lastSeen = :ts where id = :tid", [ts: systime, tid: tipp.id])
   }
 
   def restLookup(tippInfo) {

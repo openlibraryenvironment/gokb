@@ -320,12 +320,16 @@ class Org extends KBComponent {
 
         if (provides) {
           'providedPackages' {
-            provides.each { pkg ->
+            provides.each { pp ->
+              Package pkg = Package.deproxy(pp)
+
               builder.'package'(['id': pkg.id, 'uuid': pkg.uuid]) {
                 builder.'name'(pkg.name)
+                builder.'contentType'(pkg.contentType?.value)
+                builder.'global'(pkg.global?.value)
                 builder.'identifiers' {
-                  pkg.ids?.each { tid ->
-                    builder.'identifier'(['namespace': tid.namespace?.value, 'namespaceName': tid.namespace?.name, 'value': tid.value, 'datatype': tid.namespace.datatype?.value])
+                  pkg.activeIdInfo.each { tid ->
+                    builder.'identifier'(tid)
                   }
                 }
                 builder.'curatoryGroups' {

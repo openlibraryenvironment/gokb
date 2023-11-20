@@ -503,7 +503,7 @@ where cp.owner = :c
   }
 
   @Transient
-  static KBComponent[] lookupAllByIO(String idtype, String idvalue) {
+  static def lookupAllByIO(String idtype, String idvalue) {
     def result = []
     def normid = Identifier.normalizeIdentifier(idvalue)
     def namespace = IdentifierNamespace.findByValueIlike(idtype)
@@ -650,10 +650,6 @@ where cp.owner = :c
 
     if (!this.uuid) {
       generateUuid()
-    }
-
-    if (this.isDirty('status') && this.status == deleted_status) {
-      this.reviewRequests*.status = review_closed
     }
 
     def user = springSecurityService?.currentUser
@@ -1380,12 +1376,10 @@ where cp.owner = :c
 
   @Transient
   def addCoreGOKbXmlFields(builder, attr) {
-    def refdata_ids = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-    def status_active = DomainClassExtender.comboStatusActive
-    def cids = Identifier.executeQuery("select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i, Combo as c where c.fromComponent = :comp and c.type = :ct and c.toComponent = i and c.status = :cs", [comp: this, ct: refdata_ids, cs: status_active], [readOnly: true])
+    def active_ids = this.activeIdInfo
     String cName = this.class.name
 
-    // Singel props.
+    // Single props.
     builder.'name'(name)
     builder.'status'(status?.value)
     builder.'editStatus'(editStatus?.value)
@@ -1394,8 +1388,8 @@ where cp.owner = :c
 
     // Identifiers
     builder.'identifiers' {
-      cids?.each { tid ->
-        builder.'identifier'('namespace': tid[0], 'namespaceName': tid[1], 'value': tid[2], 'type': tid[3])
+      active_ids?.each { tid ->
+        builder.'identifier'(tid)
       }
       if (grailsApplication.config.getProperty('serverUrl') || grailsApplication.config.getProperty('baseUrl')) {
         builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl') ?: grailsApplication.config.getProperty('baseUrl')}/resource/show/${cName}:${id}")
@@ -1531,9 +1525,28 @@ where cp.owner = :c
     result
   }
 
+
+
+  @Transient
+  def getActiveIdInfo() {
+    RefdataValue refdata_ids = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
+    RefdataValue status_active = DomainClassExtender.comboStatusActive
+    def info_list = Identifier.executeQuery('''select i.namespace.value, i.namespace.name, i.value, i.namespace.family from Identifier as i,
+                                            Combo as c
+                                            where c.fromComponent.id = :tid
+                                            and c.type = :ct
+                                            and c.toComponent = i
+                                            and c.status = :cs''',
+            [tid: this.id, ct: refdata_ids, cs: status_active],
+            [readOnly: true])
+    def result = info_list.collect { [namespace: it[0], namespaceName: it[1], value: it[2], type: it[3]] }
+
+    result
+  }
+
   @Transient
   public userAvailableActions() {
-    def user = springSecurityService.currentUser
+    User user = springSecurityService.currentUser
     def allActions = []
     def result = []
 

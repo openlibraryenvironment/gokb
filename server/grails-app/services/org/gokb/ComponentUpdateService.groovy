@@ -2,20 +2,11 @@ package org.gokb
 
 import com.k_int.ClassUtils
 
-import gokbg3.DateFormatService
-
-import grails.converters.JSON
 import grails.gorm.transactions.Transactional
-import grails.util.GrailsNameUtils
-import groovyx.net.http.URIBuilder
 
 import groovy.transform.Synchronized
 
 import org.gokb.cred.*
-import org.gokb.rest.RefdataController
-import org.grails.datastore.mapping.model.*
-import org.grails.datastore.mapping.model.types.*
-import org.grails.web.json.JSONObject
 
 @Transactional
 class ComponentUpdateService {
@@ -23,7 +14,6 @@ class ComponentUpdateService {
   def reviewRequestService
   def dateFormatService
   def restMappingService
-  def classExaminationService
   def sessionFactory
 
   private final Object findLock = new Object()
@@ -232,7 +222,13 @@ class ComponentUpdateService {
 
   def updateIdentifiers(component, new_ids, User user = null, CuratoryGroup group = null, boolean remove = false) {
     boolean hasChanged = false
-    Set<String> existing_ids = component.ids.collect { "${it.namespace?.value}|${Identifier.normalizeIdentifier(it.value)}".toString() }
+    def existing_ids = []
+
+    component.ids.each {
+      Identifier ido = Identifier.get(it.id)
+      existing_ids << "${ido.namespace?.value}|${Identifier.normalizeIdentifier(ido.value)}".toString()
+    }
+
     RefdataValue combo_deleted = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
     RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
@@ -283,12 +279,16 @@ class ComponentUpdateService {
     if (remove) {
       log.debug("Cleaning up deprecated IDs ..")
       component.ids.each { ci ->
-        if (!new_ids.collect { "${it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString() }.contains("${ci.namespace?.value}|${Identifier.normalizeIdentifier(ci.value)}".toString())) {
-          def ctr = Combo.executeQuery("from Combo as c where c.toComponent = :ci and c.fromComponent = :comp", [ci: ci, comp: component])
+        Identifier ido = Identifier.get(ci.id)
+        String ido_testkey = "${ido.namespace?.value}|${Identifier.normalizeIdentifier(ido.value)}".toString()
+        def new_id_short = new_ids.collect { "${it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString() }
+
+        if (!new_id_short.contains(ido_testkey)) {
+          def ctr = Combo.executeQuery("select id from Combo as c where c.toComponent = :ci and c.fromComponent = :comp", [ci: ido, comp: component])
 
           if (ctr.size() == 1) {
-            log.debug("Removing stale ID ${ci} from ${component}")
-            ctr[0].delete()
+            log.debug("Removing stale ID ${ido} from ${component}")
+            Combo.get(ctr[0]).delete()
             hasChanged = true
           }
         }
@@ -428,6 +428,19 @@ class ComponentUpdateService {
       result.error = e
     }
     result
+  }
+
+  void closeConnectedReviews(obj) {
+    if (KBComponent.assignableFrom(obj.deproxy())) {
+      obj.reviewRequests.each {
+        ReviewRequest rr = ReviewRequest.get(it.id)
+
+        if (rr.status.value != 'Closed') {
+          rr.status = RefdataCategory.lookup("ReviewRequest.Status", 'Closed')
+          rr.save(flush: true)
+        }
+      }
+    }
   }
 
   def cleanUpGorm() {

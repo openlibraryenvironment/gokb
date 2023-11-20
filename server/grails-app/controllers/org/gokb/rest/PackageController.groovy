@@ -1,26 +1,16 @@
 package org.gokb.rest
 
-import com.k_int.ClassUtils
-import com.k_int.ConcurrencyManagerService
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.*
-import grails.core.GrailsClass
 import grails.gorm.transactions.*
 import grails.plugin.springsecurity.annotation.Secured
 
-import groovyx.net.http.URIBuilder
-
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 import org.apache.commons.lang.RandomStringUtils
-import org.gokb.GOKbTextUtils
 import org.gokb.cred.*
-import org.grails.datastore.mapping.model.*
-import org.grails.datastore.mapping.model.types.*
 import org.springframework.web.servlet.support.RequestContextUtils
 
 @Transactional(readOnly = true)
@@ -39,7 +29,6 @@ class PackageController {
   def componentUpdateService
   def concurrencyManagerService
   def FTUpdateService
-  def titleLookupService
   def TSVIngestionService
   def packageUpdateService
   def tippUpsertService
@@ -109,7 +98,7 @@ class PackageController {
       if (obj) {
         result = restMappingService.mapObjectToJson(obj, params, user)
 
-        result['_tippCount'] = obj.currentTippCount
+        result['_tippCount'] = obj.getTippCountForStatus('Current')
         // result['_linkedOpenRequests'] = obj.getReviews(true,true).size()
       }
       else {
@@ -383,9 +372,12 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
+
         if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
           FTUpdateService.updateSingleItem(obj)
         }
+
+        componentUpdateService.closeConnectedReviews(obj)
       }
       else {
         result.result = 'ERROR'
