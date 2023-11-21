@@ -32,7 +32,7 @@ class PackageSourceUpdateService {
   }
 
   def updateFromSource(Long pkgId, def user = null, Job job = null, Long activeGroupId = null, boolean dryRun = false) {
-    log.debug("updateFromSource ${p.name}")
+    log.debug("updateFromSource ${pkgId}")
     def result = [result: 'OK']
     def activeJobs = concurrencyManagerService.getComponentJobs(pkgId)
 

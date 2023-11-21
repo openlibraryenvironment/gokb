@@ -37,12 +37,16 @@ class ReviewRequestService {
           AllocatedReviewGroup.create(cg, req, true)
         }
       }
-      else if (forComponent.class == TitleInstancePackagePlatform && forComponent.pkg?.curatoryGroups?.size() > 0) {
-        log.debug("Using TIPP pkg groups ..")
-        forComponent.pkg?.curatoryGroups?.each { gr ->
-          CuratoryGroup cg = CuratoryGroup.get(gr.id)
-          log.debug("Allocating TIPP Pkg Group ${gr} to review ${req}")
-          AllocatedReviewGroup.create(cg, req, true)
+      else if (forComponent.class == TitleInstancePackagePlatform) {
+        Package.withSession {
+          Package pkg = Package.get(forComponent.pkg.id)
+          log.debug("Using TIPP pkg groups ..")
+
+          pkg?.curatoryGroups?.each { gr ->
+            CuratoryGroup cg = CuratoryGroup.get(gr.id)
+            log.debug("Allocating TIPP Pkg Group ${gr} to review ${req}")
+            AllocatedReviewGroup.create(cg, req, true)
+          }
         }
       }
       else if (raisedBy) {

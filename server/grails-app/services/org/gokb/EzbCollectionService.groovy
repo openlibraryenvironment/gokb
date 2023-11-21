@@ -176,7 +176,7 @@ class EzbCollectionService {
 
               curator_id = ezb_curator.id
 
-              if (curator && provider && platform && ezbSource) {
+              if (curator_id && provider && platform && ezbSource) {
                 Identifier collection_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb-collection-id', item.ezb_collection_id)
 
                 obj = Package.findByNameAndStatus(pkgName, status_current)
@@ -286,11 +286,11 @@ class EzbCollectionService {
                 }
               }
               else {
-                log.debug("Skipping package due to missing info! Provider: ${provider}, Platform: ${platform}, Curator: ${curator}")
+                log.debug("Skipping package due to missing info! Provider: ${provider}, Platform: ${platform}, Curator: ${curator_id}")
                 type_results.skipped++
                 type_results.skippedList << item.ezb_collection_id
 
-                if (!curator)
+                if (!curator_id)
                   type_results.noCurator++
 
                 if (!provider) {
@@ -312,7 +312,7 @@ class EzbCollectionService {
                   }
 
                   RefdataCategory.withNewSession {
-                    pkg_job.groupId = cid
+                    pkg_job.groupId = curator_id
                     pkg_job.description = "EZB KBART Source ingest (${pkgInfo.name})".toString()
                     pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
                     pkg_job.linkedItem = pkgInfo
