@@ -191,7 +191,8 @@ class IngestKbartRun {
         long startTime = System.currentTimeMillis()
 
         if (!dryRun) {
-          Package.withNewSession {
+          Package.withNewTransaction {
+            RefdataValue combo_fa_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
             def p = Package.get(pid)
             p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
             p.lastSeen = new Date().getTime()
@@ -401,7 +402,7 @@ class IngestKbartRun {
       job.setProgress(100)
       job.endTime = new Date()
 
-      JobResult.withNewSession {
+      JobResult.withNewTransaction {
         def result_object = JobResult.findByUuid(job.uuid)
 
         if (result.titleMatch) {
@@ -711,7 +712,7 @@ class IngestKbartRun {
                 def tcs_obj = TIPPCoverageStatement.get(it)
                 tipp.removeFromCoverageStatements(tcs_obj)
               }
-              tipp.save()
+              tipp.save(flush: true)
             }
             else if (tipp.coverageStatements?.size() > 0) {
               new_coverage = false

@@ -9,6 +9,7 @@ import groovy.util.logging.Slf4j
 import java.net.http.*
 import java.net.http.HttpResponse.BodyHandlers
 import java.security.MessageDigest
+import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.regex.Pattern
@@ -54,7 +55,6 @@ class PackageSourceUpdateService {
   private def startSourceUpdate(pid, user, job, activeGroupId, dryRun) {
     log.debug("Source update start..")
     def result = [result: 'OK']
-    def platform_url
     Boolean async = (user ? true : false)
     def preferred_group
     def title_ns
@@ -68,7 +68,6 @@ class PackageSourceUpdateService {
       pkgInfo = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
       Platform pkg_plt = p.nominalPlatform ? Platform.get(p.nominalPlatform.id) : null
       Org pkg_prov = p.provider ? Org.get(p.provider.id) : null
-      platform_url = pkg_plt.primaryUrl
       Source pkg_source = p.source
       preferred_group = activeGroupId ?: (p.curatoryGroups?.size() > 0 ? p.curatoryGroups[0].id : null)
       title_ns = pkg_source?.targetNamespace?.id ?: (pkg_prov?.titleNamespace?.id ?: null)
@@ -393,7 +392,7 @@ class PackageSourceUpdateService {
 
   def fetchKbartFile(File tmp_file, URL src_url) {
     def result = [content_mime_type: null, file_name: null]
-    HttpClient client = HttpClient.newBuilder().build()
+    HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build()
     HttpRequest request = HttpRequest.newBuilder()
       .uri(src_url.toURI())
       .header("User-Agent", "GOKb KBART Updater")

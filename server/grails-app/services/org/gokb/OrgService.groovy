@@ -1,5 +1,7 @@
 package org.gokb
 
+import com.k_int.ClassUtils
+
 import grails.gorm.transactions.Transactional
 
 import org.gokb.cred.*
@@ -10,6 +12,7 @@ class OrgService {
   def platformService
   def FTUpdateService
   def restMappingService
+  def componentUpdateService
 
   def restLookup(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}");
@@ -121,6 +124,7 @@ class OrgService {
     result
   }
 
+  @Transactional
   def upsert(orgDTO, def user = null) {
     log.info("Upsert org with header ${orgDTO}")
     def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
@@ -209,6 +213,7 @@ class OrgService {
   * Trigger updates for all incoming combo infos
   */
 
+  @Transactional
   def updateCombos(obj, reqBody, boolean remove = true) {
     log.debug("Updating org combos ..")
     def errors = [:]
@@ -264,6 +269,7 @@ class OrgService {
     errors
   }
 
+  @Transactional
   def updatePlatforms(obj, plts, boolean remove = true) {
     def plt_combo_type = RefdataCategory.lookup('Combo.Type', 'Platform.Provider')
     def removed_plts = obj.providedPlatforms*.id
@@ -368,15 +374,17 @@ class OrgService {
     result
   }
 
+  @Transactional
   public def updateOffices(Org org, offices, boolean remove = true) {
     log.debug("Update offices ${offices}")
     RefdataValue type_office = RefdataCategory.lookup(Combo.RD_TYPE, 'Office.Org')
     RefdataValue status_active = DomainClassExtender.comboStatusActive
     def language_rdc = RefdataCategory.findByLabel(KBComponent.RD_LANGUAGE)
     def function_rdc = RefdataCategory.findByLabel(Office.RD_FUNCTION)
-    def old_list = org.offices
+    def old_ids = org.offices.collect { it.id }
     def new_offices = []
     def result = [changed: false, errors: []]
+    boolean created = false
 
     offices.each { office ->
       def office_obj = null
@@ -415,15 +423,15 @@ class OrgService {
           }
 
           office_obj = new Office(office).save(flush: true)
+          created = true
         }
       }
 
       if (office_obj) {
         // create combo to connect org & office
-        def dupes = Combo.executeQuery("from Combo where fromComponent = :off and toComponent = :org", [off: office_obj, org: org])
 
-        if (!dupes) {
-          org.offices << office_obj
+        if (!old_ids.contains(office_obj.id)) {
+          org.offices.add(office_obj)
           org.save(flush: true)
 
           result.changed = true
@@ -436,15 +444,10 @@ class OrgService {
     }
 
     if (remove) {
-      Iterator items = old_list.iterator();
-      List removedOffices = []
-      Object element;
-      while (items.hasNext()) {
-        element = items.next();
-        if (!new_offices.contains(element)) {
-          // Remove.
-          element.expunge()
-          result.changed = true
+      old_ids.each { old_office_id ->
+        if (!new_offices*.id.contains(old_office_id)) {
+          log.debug("Removing stale office entry..")
+          componentUpdateService.expungeComponent(Office.get(old_office_id))
         }
       }
     }

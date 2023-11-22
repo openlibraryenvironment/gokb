@@ -31,6 +31,7 @@ class ReviewRequestService {
       }
       else if (KBComponent.has(forComponent, 'curatoryGroups')) {
         log.debug("Using Component groups for ${forComponent} -> ${forComponent.class?.name}..")
+
         forComponent.curatoryGroups?.each { gr ->
           CuratoryGroup cg = CuratoryGroup.get(gr.id)
           log.debug("Allocating Package Group ${gr} to review ${req}")
@@ -64,7 +65,6 @@ class ReviewRequestService {
     req
   }
 
-
   AllocatedReviewGroup escalate(AllocatedReviewGroup arg, CuratoryGroup cg){
     arg.status = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
     AllocatedReviewGroup result = AllocatedReviewGroup.findByGroupAndReview(cg, arg.review) ?:
@@ -75,4 +75,12 @@ class ReviewRequestService {
     result
   }
 
+
+  def expungeReview(obj) {
+    ReviewRequest.withTransaction {
+      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog where rr = :rr",[rr: obj])
+      AllocatedReviewGroup.removeAll(obj)
+      obj.delete(failOnError: true)
+    }
+  }
 }
