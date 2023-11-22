@@ -435,7 +435,7 @@ class ESSearchService{
       val = qpars.subject
     }
     else if (qpars.subjects) {
-      val = qpars.ids
+      val = qpars.subjects
     }
 
     if ( val?.trim() ) {
