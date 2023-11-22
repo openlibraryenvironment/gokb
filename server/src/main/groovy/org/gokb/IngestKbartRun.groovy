@@ -191,7 +191,8 @@ class IngestKbartRun {
         long startTime = System.currentTimeMillis()
 
         if (!dryRun) {
-          Package.withNewSession {
+          Package.withNewTransaction {
+            RefdataValue combo_fa_type = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
             def p = Package.get(pid)
             p.listStatus = RefdataCategory.lookup('Package.ListStatus', 'In Progress')
             p.lastSeen = new Date().getTime()
@@ -401,7 +402,7 @@ class IngestKbartRun {
       job.setProgress(100)
       job.endTime = new Date()
 
-      JobResult.withNewSession {
+      JobResult.withNewTransaction {
         def result_object = JobResult.findByUuid(job.uuid)
 
         if (result.titleMatch) {
@@ -711,7 +712,7 @@ class IngestKbartRun {
                 def tcs_obj = TIPPCoverageStatement.get(it)
                 tipp.removeFromCoverageStatements(tcs_obj)
               }
-              tipp.save()
+              tipp.save(flush: true)
             }
             else if (tipp.coverageStatements?.size() > 0) {
               new_coverage = false
@@ -972,89 +973,86 @@ class IngestKbartRun {
 
   def checkTitleMatchRow(the_kbart, rownum, ingest_cfg) {
     def row_specific_cfg = getRowSpecificCfg(ingest_cfg, the_kbart)
+    def identifiers = []
 
-    TitleInstance.withNewSession {
-      def identifiers = []
+    if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
+      identifiers << [type: row_specific_cfg.identifierMap.online_identifier, value: the_kbart.online_identifier.trim()]
 
-      if (the_kbart.online_identifier && the_kbart.online_identifier.trim())
-        identifiers << [type: row_specific_cfg.identifierMap.online_identifier, value: the_kbart.online_identifier.trim()]
+    if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
+      identifiers << [type: row_specific_cfg.identifierMap.print_identifier, value: the_kbart.print_identifier.trim()]
 
-      if (the_kbart.print_identifier && the_kbart.print_identifier.trim())
-        identifiers << [type: row_specific_cfg.identifierMap.print_identifier, value: the_kbart.print_identifier.trim()]
+    if (the_kbart.zdb_id && the_kbart.zdb_id.trim()) {
+      identifiers << [type: 'zdb', value: the_kbart.zdb_id.trim()]
+    }
 
-      if (the_kbart.zdb_id && the_kbart.zdb_id.trim()) {
-        identifiers << [type: 'zdb', value: the_kbart.zdb_id.trim()]
+    if (the_kbart.title_id && the_kbart.title_id.trim()) {
+      log.debug("title_id ${the_kbart.title_id}")
+
+      if (ingest_cfg.providerIdentifierNamespace) {
+        identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
       }
+    }
 
-      if (the_kbart.title_id && the_kbart.title_id.trim()) {
-        log.debug("title_id ${the_kbart.title_id}")
+    if (the_kbart.doi_identifier && the_kbart.doi_identifier.trim() && !identifiers.findAll { it.type == 'doi'}) {
+      identifiers << [type: 'doi', value: the_kbart.doi_identifier.trim()]
+    }
 
-        if (ingest_cfg.providerIdentifierNamespace) {
-          identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
-        }
-      }
+    log.debug("TitleMatch title:${the_kbart.publication_title} identifiers:${identifiers}")
 
-      if (the_kbart.doi_identifier && the_kbart.doi_identifier.trim() && !identifiers.findAll { it.type == 'doi'}) {
-        identifiers << [type: 'doi', value: the_kbart.doi_identifier.trim()]
-      }
+    if (identifiers.size() > 0) {
+      def title_lookup_result = titleLookupService.find(
+          the_kbart.publication_title,
+          the_kbart.publisher_name,
+          identifiers,
+          TitleInstance.determineTitleClass(the_kbart.publication_type)
+      )
 
-      log.debug("TitleMatch title:${the_kbart.publication_title} identifiers:${identifiers}")
+      boolean hasConflicts = false
+      boolean partial = false
+      def matchConflicts = []
 
-      if (identifiers.size() > 0) {
-        def title_lookup_result = titleLookupService.find(
-            the_kbart.publication_title,
-            the_kbart.publisher_name,
-            identifiers,
-            TitleInstance.determineTitleClass(the_kbart.publication_type)
-        )
+      title_lookup_result.matches.each { trm ->
+        if (trm.conflicts.size() > 0) {
+          partial = true
 
-        boolean hasConflicts = false
-        boolean partial = false
-        def matchConflicts = []
+          def match = [
+            id: trm.object.id,
+            name: trm.object.name,
+            conflicts: trm.conflicts
+          ]
+          matchConflicts << match
 
-        title_lookup_result.matches.each { trm ->
-          if (trm.conflicts.size() > 0) {
-            partial = true
-
-            def match = [
-              id: trm.object.id,
-              name: trm.object.name,
-              conflicts: trm.conflicts
-            ]
-            matchConflicts << match
-
-            if (trm.warnings.contains('duplicate')) {
-              hasConflicts = true
-            }
+          if (trm.warnings.contains('duplicate')) {
+            hasConflicts = true
           }
         }
+      }
 
-        if (matchConflicts) {
-          titleMatchConflicts << [row: rownum, matches: matchConflicts]
-        }
+      if (matchConflicts) {
+        titleMatchConflicts << [row: rownum, matches: matchConflicts]
+      }
 
-        if (hasConflicts) {
-          titleMatchResult.conflicts++
-        }
+      if (hasConflicts) {
+        titleMatchResult.conflicts++
+      }
 
-        if (title_lookup_result.to_create) {
-          titleMatchResult.created++
+      if (title_lookup_result.to_create) {
+        titleMatchResult.created++
 
-          if (partial) {
-            titleMatchResult.matches.partial++
-          }
-        }
-        else if (partial) {
+        if (partial) {
           titleMatchResult.matches.partial++
         }
-        else {
-          titleMatchResult.matches.full++
-        }
+      }
+      else if (partial) {
+        titleMatchResult.matches.partial++
       }
       else {
-        log.warn("[${the_kbart.publication_title}] No identifiers.")
-        titleMatchResult.noid++
+        titleMatchResult.matches.full++
       }
+    }
+    else {
+      log.warn("[${the_kbart.publication_title}] No identifiers.")
+      titleMatchResult.noid++
     }
   }
 

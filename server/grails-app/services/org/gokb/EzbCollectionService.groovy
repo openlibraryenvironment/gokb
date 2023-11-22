@@ -240,17 +240,13 @@ class EzbCollectionService {
 
                   obj.nominalPlatform = platform
                   obj.provider = provider
-                  obj.save()
+                  obj.save(flush: true)
 
                   if (!obj.ids.contains(collection_id)) {
-                    obj.ids << collection_id
+                    obj.ids.add(collection_id)
                   }
 
-                  if (!obj.curatoryGroups.contains(curator)) {
-                    obj.curatoryGroups.retainAll([curator])
-                  }
-
-                  obj.save()
+                  obj.save(flush: true)
 
                   pkgCreated = obj.dateCreated
                   pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
@@ -411,7 +407,7 @@ class EzbCollectionService {
       result.result = 'SKIPPED_NO_API_URL'
     }
 
-    JobResult.withNewSession {
+    JobResult.withNewTransaction {
       def job_map = [
           uuid        : (job.uuid),
           description : (job.description),

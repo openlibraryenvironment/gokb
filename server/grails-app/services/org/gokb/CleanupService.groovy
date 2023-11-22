@@ -16,6 +16,7 @@ class CleanupService {
   def grailsApplication
   def reviewRequestService
   def componentLookupService
+  def componentUpdateService
   def validationService
   def autoTimestampEventListener
 
@@ -122,15 +123,17 @@ class CleanupService {
         KBComponent.withNewTransaction {
           log.debug("Expunging ${component_id}")
           def component = KBComponent.get(component_id)
-          def c_id = "${component.class.name}:${component.id}"
-          def expunge_result = component.expunge()
-          log.debug("${expunge_result}")
-          if (ESSearchService.indicesPerType[component.class.getSimpleName()]){
-            DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType[component.class.getSimpleName()], c_id))
-            def es_response = esclient.delete(req, RequestOptions.DEFAULT)
-            log.debug("${es_response}")
+
+          if (component) {
+            def expunge_result = componentUpdateService.expungeComponent(component)
+            log.debug("${expunge_result}")
+
+
+            result.report.add(expunge_result)
           }
-          result.report.add(expunge_result)
+          else {
+            log.error("ExpungeByIds: Unable to reference component $component_id!")
+          }
         }
         j?.setProgress(idx, ids.size())
       }
@@ -139,6 +142,7 @@ class CleanupService {
         j?.message("Problem expunging component with id ${component_id}".toString())
       }
     }
+
     j?.message("Finished deleting ${idx} components.")
     result
   }
@@ -146,91 +150,98 @@ class CleanupService {
   def deleteOrphanedTipps(Job j = null) {
     log.debug("Expunging TIPPs with missing links")
 
-    def delete_candidates = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where not exists (from Combo as c where c.toComponent = tipp AND c.type.value = 'TitleInstance.Tipps')")
+    TitleInstancePackagePlatform.withNewSession {
+      def delete_candidates = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where not exists (from Combo as c where c.toComponent = tipp AND c.type.value = 'TitleInstance.Tipps')")
 
-    log.debug("Found ${delete_candidates.size()} erroneous TIPPs..")
+      log.debug("Found ${delete_candidates.size()} erroneous TIPPs..")
 
-    def result = expungeByIds(delete_candidates, j)
+      def result = expungeByIds(delete_candidates, j)
 
-    log.debug("Done")
+      log.debug("Done")
+
+    }
     return new Date()
   }
 
   def expungeRejectedComponents(Job j = null) {
+    def result = null
 
     log.debug("Process rejected candidates")
+    TitleInstancePackagePlatform.withNewSession {
+      RefdataValue status_rejected = RefdataCategory.lookup('KBComponent.EditStatus', 'Rejected')
+      RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
-    def status_rejected = RefdataCategory.lookup('KBComponent.EditStatus', 'Rejected')
-    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+      def delete_candidates = KBComponent.executeQuery('select kbc.id from KBComponent as kbc where kbc.editStatus=:rejectedStatus and kbc.status=:deletedStatus',[rejectedStatus: status_rejected, deletedStatus: status_deleted])
 
-    def delete_candidates = KBComponent.executeQuery('select kbc.id from KBComponent as kbc where kbc.editStatus=:rejectedStatus and kbc.status=:deletedStatus',[rejectedStatus: status_rejected, deletedStatus: status_deleted])
+      result = expungeByIds(delete_candidates, j)
 
-    def result = expungeByIds(delete_candidates, j)
+      log.debug("Done")
+      j.endTime = new Date()
+    }
 
-    log.debug("Done")
-    j.endTime = new Date()
-
-    return result
+    result
   }
 
   @Transactional
   def deleteNoUrlPlatforms(Job j = null) {
     log.debug("Delete platforms without URL")
 
-    def status_deleted = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Deleted')
-    def status_current = RefdataCategory.lookupOrCreate('KBComponent.Status', 'Current')
+    Platform.withNewSession {
+      RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+      RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
-    def delete_candidates = Platform.executeQuery('from Platform as plt where plt.primaryUrl IS NULL and plt.status <> :sd', [sd: status_deleted])
+      def delete_candidates = Platform.executeQuery('from Platform as plt where plt.primaryUrl IS NULL and plt.status <> :sd', [sd: status_deleted])
 
-    delete_candidates.each { ptr ->
-      Platform.withNewTransaction {
-        def repl_crit = Platform.createCriteria()
-        def orig_plt = repl_crit.list () {
-          isNotNull('primaryUrl')
-          eq ('name', ptr.name)
-          eq ('status', status_current)
-        }
-
-        if ( orig_plt?.size() == 1 ) {
-          log.debug("Found replacement platform for ${ptr}")
-          def new_plt = orig_plt[0]
-
-          def old_from_combos = Combo.executeQuery("from Combo where fromComponent = :op", [op: ptr])
-          def old_to_combos = Combo.executeQuery("from Combo where toComponent = :op", [op: ptr])
-
-          old_from_combos.each { oc ->
-            def existing_new = Combo.executeQuery("from Combo where type = :ct and fromComponent = :plt and toComponent = :op",[ct: oc.type, plt: new_plt, op: oc.toComponent])
-
-            if (existing_new?.size() == 0 && oc.toComponent != new_plt) {
-              oc.fromComponent = new_plt
-              oc.save(flush:true)
-            }
-            else {
-              log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
-              oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-              oc.save(flush:true)
-            }
+      delete_candidates.each { ptr ->
+        Platform.withNewTransaction {
+          def repl_crit = Platform.createCriteria()
+          def orig_plt = repl_crit.list () {
+            isNotNull('primaryUrl')
+            eq ('name', ptr.name)
+            eq ('status', status_current)
           }
 
-          old_to_combos.each { oc ->
-            def existing_new = Combo.executeQuery("from Combo where type = :ct and toComponent = :plt and fromComponent = :cc",[ct: oc.type, plt: new_plt, cc: oc.fromComponent])
+          if ( orig_plt?.size() == 1 ) {
+            log.debug("Found replacement platform for ${ptr}")
+            def new_plt = orig_plt[0]
 
-            if (existing_new?.size() == 0 && oc.fromComponent != new_plt) {
-              oc.toComponent = new_plt
-              oc.save(flush:true)
+            def old_from_combos = Combo.executeQuery("from Combo where fromComponent = :op", [op: ptr])
+            def old_to_combos = Combo.executeQuery("from Combo where toComponent = :op", [op: ptr])
+
+            old_from_combos.each { oc ->
+              def existing_new = Combo.executeQuery("from Combo where type = :ct and fromComponent = :plt and toComponent = :op",[ct: oc.type, plt: new_plt, op: oc.toComponent])
+
+              if (existing_new?.size() == 0 && oc.toComponent != new_plt) {
+                oc.fromComponent = new_plt
+                oc.save(flush:true)
+              }
+              else {
+                log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
+                oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+                oc.save(flush:true)
+              }
             }
-            else {
-              log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
-              oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
-              oc.save(flush:true)
+
+            old_to_combos.each { oc ->
+              def existing_new = Combo.executeQuery("from Combo where type = :ct and toComponent = :plt and fromComponent = :cc",[ct: oc.type, plt: new_plt, cc: oc.fromComponent])
+
+              if (existing_new?.size() == 0 && oc.fromComponent != new_plt) {
+                oc.toComponent = new_plt
+                oc.save(flush:true)
+              }
+              else {
+                log.debug("New Combo already exists, or would link item to itself.. deleting instead!")
+                oc.status = RefdataCategory.lookup(Combo.RD_STATUS, Combo.STATUS_DELETED)
+                oc.save(flush:true)
+              }
             }
+
+            ptr.name = "${ptr.name} DELETED"
+            ptr.deleteSoft()
           }
-
-          ptr.name = "${ptr.name} DELETED"
-          ptr.deleteSoft()
-        }
-        else {
-          log.debug("Could not find a valid replacement for platform ${ptr}")
+          else {
+            log.debug("Could not find a valid replacement for platform ${ptr}")
+          }
         }
       }
     }
@@ -362,7 +373,6 @@ class CleanupService {
     j.endTime = new Date()
   }
 
-  @Transactional
   private def checkForTipl(title, platform, url) {
     if ( ( title != null ) && ( platform != null ) && ( url?.trim()?.length() > 0 ) ) {
       def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
@@ -380,7 +390,6 @@ class CleanupService {
     }
   }
 
-  @Transactional
   def housekeeping(Job j = null) {
     log.debug("Housekeeping")
     Identifier.withNewSession {
@@ -800,46 +809,49 @@ class CleanupService {
     esclient = ESWrapperService.getClient()
     def remaining = components
 
-    while (remaining.size() > 0){
-      def batch = remaining.take(50)
-      remaining = remaining.drop(50)
+    KBComponent.withNewTransaction {
+      while (remaining.size() > 0){
+        def batch = remaining.take(50)
+        remaining = remaining.drop(50)
 
-      Combo.executeUpdate("delete from Combo as c where c.fromComponent.id IN (:component) or c.toComponent.id IN (:component)", [component: batch])
-      ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)", [component: batch])
-      KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)", [component: batch])
-      KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)", [component: batch])
+        Combo.executeUpdate("delete from Combo as c where c.fromComponent.id IN (:component) or c.toComponent.id IN (:component)", [component: batch])
+        ComponentWatch.executeUpdate("delete from ComponentWatch as cw where cw.component.id IN (:component)", [component: batch])
+        KBComponentAdditionalProperty.executeUpdate("delete from KBComponentAdditionalProperty as c where c.fromComponent.id IN (:component)", [component: batch])
+        KBComponentVariantName.executeUpdate("delete from KBComponentVariantName as c where c.owner.id IN (:component)", [component: batch])
 
-      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))", [component: batch])
-      def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant.id IN (:component)", [component: batch])
+        ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog as c where c.rr in ( select r from ReviewRequest as r where r.componentToReview.id IN (:component))", [component: batch])
+        def events_to_delete = ComponentHistoryEventParticipant.executeQuery("select c.event from ComponentHistoryEventParticipant as c where c.participant.id IN (:component)", [component: batch])
 
-      events_to_delete.each {
-        ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = :event", [event: it])
-        ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
-      }
-
-      ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)", [component: batch])
-      ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)", [component: batch])
-      ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)", [component: batch])
-      ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)", [component: batch])
-      KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)", [component: batch])
-      ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
-
-      batch.each {
-        def kbc = KBComponent.get(it)
-        def oid = "${kbc.class.name}:${it}"
-
-        if (ESSearchService.indicesPerType[kbc.class.getSimpleName()]){
-          DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType[component.class.getSimpleName()], oid))
-          def es_response = esclient.delete(req, RequestOptions.DEFAULT)
+        events_to_delete.each {
+          ComponentHistoryEventParticipant.executeUpdate("delete from ComponentHistoryEventParticipant as c where c.event = :event", [event: it])
+          ComponentHistoryEvent.executeUpdate("delete from ComponentHistoryEvent as c where c.id = :event", [event: it.id])
         }
-      }
 
-      result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)", [component: batch])
-      j?.setProgress(result.num_expunged, result.num_requested)
+        ReviewRequest.executeUpdate("delete from ReviewRequest as c where c.componentToReview.id IN (:component)", [component: batch])
+        ComponentPerson.executeUpdate("delete from ComponentPerson as c where c.component.id IN (:component)", [component: batch])
+        ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component.id IN (:component)", [component: batch])
+        ComponentIngestionSource.executeUpdate("delete from ComponentIngestionSource as c where c.component.id IN (:component)", [component: batch])
+        KBComponent.executeUpdate("update KBComponent set duplicateOf = NULL where duplicateOf.id IN (:component)", [component: batch])
+        ComponentPrice.executeUpdate("delete from ComponentPrice as cp where cp.owner.id IN (:component)", [component: batch])
 
-      if (Thread.currentThread().isInterrupted()){
-        log.debug("Job cancelling ..")
-        break
+        batch.each {
+          def kbc = KBComponent.get(it)
+          def class_simple_name = kbc.class.getSimpleName()
+          def oid = "${kbc.class.name}:${it}"
+
+          if (ESSearchService.indicesPerType[class_simple_name]){
+            DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType[class_simple_name]), oid)
+            def es_response = esclient.delete(req, RequestOptions.DEFAULT)
+          }
+        }
+
+        result.num_expunged += KBComponent.executeUpdate("delete KBComponent as c where c.id IN (:component)", [component: batch])
+        j?.setProgress(result.num_expunged, result.num_requested)
+
+        if (Thread.currentThread().isInterrupted()){
+          log.debug("Job cancelling ..")
+          break
+        }
       }
     }
     result
@@ -849,6 +861,7 @@ class CleanupService {
     log.debug("Checking for corrupted component names")
     boolean more = true
     int offset = 0
+
     TitleInstance.withNewSession { tsession ->
       RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Name")
       RefdataValue status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
@@ -894,6 +907,7 @@ class CleanupService {
   def markInvalidIdentifiers(Job j = null) {
     log.debug("Checking for invalid identifiers")
     def result = [occurrences: 0, components: [:]]
+
     Identifier.withNewSession { tsession ->
       boolean more = true
       RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Identifier")
