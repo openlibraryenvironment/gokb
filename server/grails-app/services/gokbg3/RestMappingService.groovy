@@ -975,7 +975,7 @@ class RestMappingService {
           }
           else if (subject instanceof Map) {
             if (subject.id) {
-              sub_obj = Subject.get(subject)
+              sub_obj = Subject.get(subject.id)
             }
             else if (subject.heading && subject.scheme) {
               RefdataValue scheme
