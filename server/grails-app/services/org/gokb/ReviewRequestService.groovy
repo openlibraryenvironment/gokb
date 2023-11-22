@@ -31,15 +31,18 @@ class ReviewRequestService {
       }
       else if (KBComponent.has(forComponent, 'curatoryGroups')) {
         log.debug("Using Component groups for ${forComponent} -> ${forComponent.class?.name}..")
+
         forComponent.curatoryGroups?.each { gr ->
           CuratoryGroup cg = CuratoryGroup.get(gr.id)
           log.debug("Allocating Package Group ${gr} to review ${req}")
           AllocatedReviewGroup.create(cg, req, true)
         }
       }
-      else if (forComponent.class == TitleInstancePackagePlatform && forComponent.pkg?.curatoryGroups?.size() > 0) {
+      else if (forComponent.class == TitleInstancePackagePlatform) {
+        def pkg = Package.get(forComponent.pkg.id)
         log.debug("Using TIPP pkg groups ..")
-        forComponent.pkg?.curatoryGroups?.each { gr ->
+
+        pkg?.curatoryGroups?.each { gr ->
           CuratoryGroup cg = CuratoryGroup.get(gr.id)
           log.debug("Allocating TIPP Pkg Group ${gr} to review ${req}")
           AllocatedReviewGroup.create(cg, req, true)
@@ -60,7 +63,6 @@ class ReviewRequestService {
     req
   }
 
-
   AllocatedReviewGroup escalate(AllocatedReviewGroup arg, CuratoryGroup cg){
     arg.status = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
     AllocatedReviewGroup result = AllocatedReviewGroup.findByGroupAndReview(cg, arg.review) ?:
@@ -71,4 +73,12 @@ class ReviewRequestService {
     result
   }
 
+
+  def expungeReview(obj) {
+    ReviewRequest.withTransaction {
+      ReviewRequestAllocationLog.executeUpdate("delete from ReviewRequestAllocationLog where rr = :rr",[rr: obj])
+      AllocatedReviewGroup.removeAll(obj)
+      obj.delete(failOnError: true)
+    }
+  }
 }
