@@ -456,46 +456,48 @@ class ComponentLookupService {
               addParam = false
             }
           }
-          else {
-            if (p.name == 'subjects') {
-              int idx = 0
-              def subject_pars = validLong + validStr
+          else if (p.name == 'subjects') {
+            log.debug("Handling Subjects ..")
+            int idx = 0
+            def subject_pars = validLong + validStr
 
-              subject_pars.each {
-                def sub_obj = null
+            subject_pars.each {
+              RefdataValue scheme
+              def sub_obj = null
 
-                if (it instanceof String && it.contains(';')) {
-                  RefdataValue scheme = RefdataCategory.lookup('Subject.Scheme', it.split(';')[0])
+              if (it instanceof String && it.contains(';')) {
+                scheme = RefdataCategory.lookup('Subject.Scheme', it.split(';')[0])
 
-                  if (scheme) {
-                    sub_obj = Subject.findBySchemeAndHeading(scheme, it.split(';')[1])
-                  }
+                if (scheme) {
+                  sub_obj = Subject.findBySchemeAndHeading(scheme, it.split(';')[1])
                 }
-                else {
-                  try {
-                    sub_obj = Subject.get(it)
-                  }
-                  catch (java.lang.NumberFormatException nfe) {
-                    log.debug("Received illegal value '${it}' for subjects filter!")
-                  }
-                }
-
-
-                if (sub_obj) {
-                  if (first) {
-                    hqlQry += " WHERE "
-                    first = false
-                  }
-                  else {
-                    hqlQry += " AND "
-                  }
-
-                  hqlQry += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject = :subject${idx})"
-                  qryParams["subject${idx}"] = sub_obj
-                }
-
-                idx++
               }
+              else {
+                try {
+                  sub_obj = Subject.get(it)
+                }
+                catch (java.lang.NumberFormatException nfe) {
+                  log.debug("Received illegal value '${it}' for subjects filter!")
+                }
+              }
+
+
+              if (sub_obj) {
+                if (idx > 0) {
+                  paramStr += " AND "
+                }
+
+                paramStr += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject = :subject${idx})"
+                qryParams["subject${idx}"] = sub_obj
+              }
+              else if (scheme) {
+                qryParams["subjectScheme${idx}"] = scheme
+                qryParams["subjectHeading${idx}"] = it.split(';')[1]
+                paramStr += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject.scheme = :subjectScheme${idx} AND subject.heading = :subjectHeading${idx})"
+              }
+
+
+              idx++
             }
           }
         }
