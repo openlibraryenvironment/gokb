@@ -299,6 +299,8 @@ class TippService {
   }
 
   public static RefdataValue determineMediumRef(def mediumType) {
+    RefdataCategory rdc = RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)
+
     if (mediumType instanceof String) {
       def rdv = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_MEDIUM, mediumType)
 
@@ -309,14 +311,14 @@ class TippService {
     else if (mediumType instanceof Integer) {
       def rdv = RefdataValue.get(mediumType)
 
-      if (rdv && rdv.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)) {
+      if (rdv && rdc) {
         return rdv
       }
     }
     else if (mediumType instanceof Map && mediumType.id) {
       def rdv = RefdataValue.get(mediumType.id)
 
-      if (rdv && rdv.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_MEDIUM)) {
+      if (rdv && rdc) {
         return rdv
       }
     }
@@ -325,6 +327,8 @@ class TippService {
   }
 
   public static RefdataValue determinePubTypeRef(def someType) {
+    RefdataCategory rdc = RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE)
+
     if (someType instanceof String) {
       RefdataValue pubType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, someType)
 
@@ -335,14 +339,14 @@ class TippService {
     else if (someType instanceof Integer) {
       RefdataValue pubType = RefdataValue.get(someType)
 
-      if (pubType && pubType.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE)) {
+      if (pubType && pubType.owner == rdc) {
         return pubType
       }
     }
     else if (someType instanceof Map && someType.id) {
       RefdataValue pubType = RefdataValue.get(someType.id)
 
-      if (pubType && pubType.owner == RefdataCategory.findByLabel(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE)) {
+      if (pubType && pubType.owner == rdc) {
         return pubType
       }
     }
