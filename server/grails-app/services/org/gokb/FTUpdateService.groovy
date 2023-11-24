@@ -322,6 +322,15 @@ class FTUpdateService {
           result.tippTitleName = ti.name
           result.tippTitleUuid = ti.uuid
           result.tippTitleMedium = ti.medium?.value
+          result.titleIdentifiers = []
+
+          ti.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+            Identifier id_obj = Identifier.get(idc.toComponent.id)
+            result.titleIdentifiers.add([namespace    : id_obj.namespace.value,
+                                    value        : id_obj.value,
+                                    namespaceName: id_obj.namespace.name ?: "",
+                                    baseUrl      : id_obj.namespace.baseUrl ?: ""])
+          }
 
           ti.titleHistory?.each { he ->
             if (he.date) {
