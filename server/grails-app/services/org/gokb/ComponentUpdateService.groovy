@@ -485,7 +485,7 @@ class ComponentUpdateService {
   }
 
   void closeConnectedReviews(obj) {
-    if (KBComponent.assignableFrom(obj.deproxy())) {
+    if (KBComponent.isAssignableFrom(ClassUtils.deproxy(obj).class)) {
       obj.reviewRequests.each {
         ReviewRequest rr = ReviewRequest.get(it.id)
 
