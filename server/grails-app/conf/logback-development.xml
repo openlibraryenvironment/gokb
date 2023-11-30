@@ -1,0 +1,38 @@
+<configuration>
+  <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter" />
+  <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter" />
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wex</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="com.k_int" level="INFO"/>
+  <logger name="org.gokb" level="DEBUG"/>
+
+  <logger name="org.gokb.DomainClassExtender" level="WARN"/>
+  <logger name="org.gokb.ClassExaminationService" level="WARN"/>
+  <logger name="org.gokb.CrossReferenceService" level="ERROR"/>
+  <logger name="org.gokb.ComponentLookupService" level="INFO"/>
+  <logger name="org.gokb.ComponentStatisticService" level="INFO"/>
+  <logger name="org.gokb.ComponentUpdateService" level="INFO"/>
+  <logger name="org.gokb.TitleLookupService" level="INFO"/>
+  <logger name="org.gokb.PackageSourceUpdateService" level="DEBUG"/>
+  <logger name="org.gokb.SearchController" level="INFO"/>
+  <logger name="org.gokb.ResourceController" level="ERROR"/>
+  <logger name="org.gokb.FTUpdateService" level="INFO"/>
+  <logger name="org.gokb.ESUpdateJob" level="ERROR"/>
+  <logger name="org.gokb.cred" level="ERROR"/>
+  <logger name="org.gokb.cred.BookInstance" level="ERROR"/>
+  <logger name="org.gokb.cred.JournalInstance" level="ERROR"/>
+  <logger name="org.gokb.cred.RefdataCategory" level="ERROR"/>
+  <logger name="org.gokb.cred.Package" level="DEBUG"/>
+  <logger name="org.gokb.cred.TitleInstancePackagePlatform" level="DEBUG"/>
+  <logger name="org.gokb.UserDetailsInterceptor" level="ERROR"/>
+  <logger name="org.gokb.PreferencesInterceptor" level="ERROR"/>
+
+  <root level="error">
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>

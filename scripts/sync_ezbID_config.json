@@ -1,5 +1,5 @@
 {
+	"base" : "https://gokb.org",
 	"path" : "/gokb",
-	"port" : "8080",
 	"maximumLines" : ""
 }

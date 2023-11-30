@@ -4,6 +4,7 @@
 .settings
 eclipse
 .vscode
+.idea
 stacktrace.log
 target
 /plugins
@@ -20,5 +21,5 @@ server/gokb/logs/
 /openrefine
 *.class
 /*.zip
-application-development.yaml
-application-test.yaml
+application-development.yaml*
+application-test.yaml*
