@@ -182,7 +182,7 @@ class EzbCollectionService {
                 obj = Package.findByNameAndStatus(pkgName, status_current)
 
                 if (!obj) {
-                  def candidates = findIdCandidates(collection_id, curator)
+                  def candidates = findIdCandidates(collection_id, curator_id)
 
                   if (candidates.size() == 0) {
                     def other_cg_candidates = findIdCandidates(collection_id, null)
@@ -391,7 +391,7 @@ class EzbCollectionService {
 
           if (!obj) {
             Identifier collection_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb-collection-id', item.ezb_collection_id)
-            def candidates = findIdCandidates(collection_id, curator)
+            def candidates = findIdCandidates(collection_id, curator.id)
 
             if (candidates.size() == 0) {
               def other_cg_candidates = findIdCandidates(collection_id, null)
@@ -508,12 +508,14 @@ class EzbCollectionService {
       }
 
       if (source) {
-        source.automaticUpdates = false
-        source.save()
-
         pkg.source = source
         pkg.save(flush: true)
       }
+    }
+
+    if (source && source.automaticUpdates) {
+      source.automaticUpdates = false
+      source.save()
     }
 
     if (source && source.url != item.ezb_collection_titlelist) {
@@ -540,7 +542,7 @@ class EzbCollectionService {
     result
   }
 
-  private Package[] findIdCandidates(collection_id, curator) {
+  private Package[] findIdCandidates(collection_id, curator_id) {
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue combo_active = RefdataCategory.lookup('Combo.Status', 'Active')
     RefdataValue local_status = RefdataCategory.lookup('Package.Global', 'Local')
@@ -555,12 +557,12 @@ class EzbCollectionService {
           and status = :ca
           and toComponent = :clId)'''
 
-    if (curator) {
-      qry_pars.curator = curator
+    if (curator_id) {
+      qry_pars.curator = curator_id
       qry += ''' and exists (
               select 1 from Combo
               where fromComponent = p
-              and toComponent = :curator)'''
+              and toComponent.id = :curator)'''
     }
 
     def result = Package.executeQuery(qry, qry_pars)

@@ -662,9 +662,13 @@ class TippService {
 
       if (!pubType && my_ids.find { it.type == 'issn' || it.type == 'eissn' }) {
         pubType = 'Serial'
+        tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, pubType)
+        tipp.save(flush: true)
       }
       else if (!pubType && my_ids.find { it.type == 'isbn' || it.type == 'isbn' }) {
         pubType = 'Monograph'
+        tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, pubType)
+        tipp.save(flush: true)
       }
 
       def title_class_name = TitleInstance.determineTitleClass(pubType)
@@ -999,7 +1003,7 @@ class TippService {
       def type_ii = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Indentifiers")
       def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type", [tid: tipp, type: type_ii])[0]
 
-      if (existing_rrs == 0) {
+      if (num_existing == 0) {
         reviewRequestService.raise(
             tipp,
             "Invalid identifiers found",
