@@ -1165,7 +1165,8 @@ class TippService {
     tippInfo.identifiers.each { jsonId ->
       jsonIdMap[jsonId.type] = jsonId.value
     }
-    if (jsonIdMap.size() == 0) {
+
+    if (jsonIdMap.size() == 0 && tippInfo.title) {
       tippInfo.title.identifiers.each { jsonId ->
         jsonIdMap[jsonId.type] = jsonId.value
       }

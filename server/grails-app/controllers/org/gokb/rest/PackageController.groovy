@@ -624,7 +624,11 @@ class PackageController {
   def ingestKbart() {
     log.debug("Form post")
     def result = ['result': 'OK']
-    Package pkg = Package.get(params.id)
+    Package pkg = Package.findByUuid(params.id)
+
+    if (!pkg) {
+      pkg = Package.findById(genericOIDService.oidToId(params.id))
+    }
 
     if (!pkg) {
       response.status = 404
