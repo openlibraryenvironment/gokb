@@ -194,17 +194,17 @@ class EzbCollectionService {
                 }
               }
               else {
-                log.debug("Skipping unchanged Package file ${pkgInfo.name}.")
+                log.debug("Skipping unchanged Package file ${collection_result.pkgInfo.name}.")
                 type_results.unchanged++
               }
             }
-            else if (skipped) {
+            else if (collection_result.skipped) {
               log.debug("Skipped..")
             }
-            else if (!pkgInfo) {
+            else if (!collection_result.pkgInfo) {
               log.debug("Unable to reference package!")
             }
-            else if (!sourceResult) {
+            else if (!collection_result.sourceResult) {
               log.debug("No source object created.. skip")
               type_results.errors++
               type_results.sourceError << item.ezb_collection_id
