@@ -17,6 +17,7 @@ import java.time.ZoneId
 class TippService {
   def componentUpdateService
   def componentLookupService
+  def grailsApplication
   def titleLookupService
   def titleAugmentService
   def sessionFactory
@@ -24,6 +25,7 @@ class TippService {
   def autoTimestampEventListener
   def validationService
   def restMappingService
+  def FTUpdateService
 
   def validateDTO(tipp_dto) {
     def result = [valid: true]
@@ -1416,6 +1418,10 @@ class TippService {
 
     pkg_obj?.lastSeen = new Date().getTime()
     pkg_obj?.save(flush:true)
+
+    if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
+      FTUpdateService.updateSingleItem(pkg_obj)
+    }
   }
 
   public TitleInstancePackagePlatform updateTippFields(tipp, tippInfo, User user = null, boolean create_coverage = true) {
