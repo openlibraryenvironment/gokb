@@ -411,7 +411,7 @@ class PackageSourceUpdateService {
     if (response.statusCode() >= 400) {
       log.warn("KBART fetch status: ${result.status}")
     }
-    else if (!file_name && result.content_mime_type == 'text/plain') {
+    else if (!file_name && result.content_mime_type.startsWith('text/plain')) {
       file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
     }
     else if (!file_name && result.content_mime_type.startsWith('text/html')) {

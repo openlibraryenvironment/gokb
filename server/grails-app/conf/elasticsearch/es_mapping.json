@@ -173,6 +173,32 @@
           "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
         }
       }
+    },
+    {
+      "linkedItemIdentifiers": {
+        "match": "*Identifiers",
+        "mapping": {
+          "type": "nested",
+          "properties": {
+            "namespace": {
+              "type":"keyword",
+              "normalizer": "lowercase"
+            },
+            "namespaceName": {
+              "type": "keyword",
+              "normalizer": "lowercase"
+            },
+            "value": {
+              "type": "keyword",
+              "normalizer": "lowercase"
+            },
+            "baseUrl": {
+              "type": "keyword",
+              "normalizer": "lowercase"
+            }
+          }
+        }
+      }
     }
   ],
   "properties" : {

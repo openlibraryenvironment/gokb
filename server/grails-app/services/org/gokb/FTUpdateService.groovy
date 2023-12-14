@@ -49,17 +49,23 @@ class FTUpdateService {
     def result = [:]
     def kbc = KBComponent.deproxy(proxy)
     result._id = "${kbc.class.name}:${kbc.id}"
+    result.id = kbc.id
     result.uuid = kbc.uuid
     result.name = kbc.name
     result.sortname = kbc.name
+    result.shortcode = kbc.shortcode
     result.status = kbc.status?.value ?: ""
     result.identifiers = []
     kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
       Identifier id_obj = Identifier.get(idc.toComponent.id)
-      result.identifiers.add([namespace    : id_obj.namespace.value,
-                              value        : id_obj.value,
-                              namespaceName: id_obj.namespace.name ?: "",
-                              baseUrl      : id_obj.namespace.baseUrl ?: ""])
+
+      result.identifiers.add([
+        namespace    : id_obj.namespace.value,
+        value        : id_obj.value,
+        namespaceName: id_obj.namespace.name ?: "",
+        baseUrl      : id_obj.namespace.baseUrl ?: "",
+        type         : id_obj.family ?: ""
+      ])
     }
     result.componentType = kbc.class.simpleName
     result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
@@ -81,6 +87,7 @@ class FTUpdateService {
         result.editStatus = kbc.editStatus?.value ?: ""
         result.scope = kbc.scope?.value ?: ""
         result.global = kbc.global?.value ?: ""
+        result.globalNote = kbc.globalNote
 
         result.altname = []
         kbc.variantNames.each { vn ->
@@ -329,6 +336,19 @@ class FTUpdateService {
           result.tippTitleName = ti.name
           result.tippTitleUuid = ti.uuid
           result.tippTitleMedium = ti.medium?.value
+          result.titleIdentifiers = []
+
+          ti.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+            Identifier id_obj = Identifier.get(idc.toComponent.id)
+
+            result.titleIdentifiers.add([
+              namespace    : id_obj.namespace.value,
+              value        : id_obj.value,
+              namespaceName: id_obj.namespace.name ?: "",
+              baseUrl      : id_obj.namespace.baseUrl ?: "",
+              type         : id_obj.family ?: ""
+            ])
+          }
 
           ti.titleHistory?.each { he ->
             if (he.date) {

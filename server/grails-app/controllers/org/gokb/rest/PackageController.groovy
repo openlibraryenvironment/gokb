@@ -639,7 +639,7 @@ class PackageController {
     Package pkg = Package.findByUuid(params.id)
 
     if (!pkg) {
-      pkg = Package.get(genericOIDService.oidToId(params.id))
+      pkg = Package.findById(genericOIDService.oidToId(params.id))
     }
 
     if (!pkg) {
