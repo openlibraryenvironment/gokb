@@ -97,7 +97,6 @@
     <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
     <g:if test="${d.id != null}">
       <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size() ?: '0'}</span> </a></li>
-
       <g:if test="${ d.isEditable() }">
         <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
       </g:if>
@@ -109,6 +108,7 @@
           class="badge badge-warning">
             ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size() ?: '0'}
         </span></a></li>
+      <li><a href="#subjects" data-toggle="tab">Subjects <span class="badge badge-warning"> ${d.subjects?.size() ?: '0'} </span></a></li>
       <li><a href="#availability" data-toggle="tab">Availability <span
           class="badge badge-warning">
             ${d.tipps?.size() ?: '0'}
@@ -125,6 +125,8 @@
     </g:if>
     <g:else>
       <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Alternate Names </span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">Subjects</span></li>
       <g:if test="${ d.isEditable() }">
         <li class="disabled" title="${message(code:'component.create.idMissing.label')}"><span class="nav-tab-disabled">Add to Title History </span></li>
       </g:if>
@@ -165,6 +167,8 @@
     </div>
 
     <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
+
+    <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
 
     <div class="tab-pane" id="history">
       <g:if test="${d.id != null}">
