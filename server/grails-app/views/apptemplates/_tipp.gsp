@@ -387,6 +387,8 @@
 
     </div>
 
+    <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
+
     <g:if test="${d.isEditable()}">
         <div class="tab-pane" id="addprops">
             <g:render template="/apptemplates/addprops"
@@ -427,4 +429,3 @@
 </div>
 <g:render template="/apptemplates/componentStatus"
           model="${[d: displayobj, rd: refdata_properties, dtype: 'KBComponent']}"/>
-

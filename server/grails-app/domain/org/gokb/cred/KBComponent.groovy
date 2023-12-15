@@ -1425,6 +1425,12 @@ where cp.owner = :c
       }
     }
 
+    builder.'subjects' {
+      subjects*.subject.each { subj ->
+        builder.'subject'(scheme: subj.scheme.value, name: subj.name, heading: subj.heading)
+      }
+    }
+
     if (source) {
       builder.'source' {
         source.with {

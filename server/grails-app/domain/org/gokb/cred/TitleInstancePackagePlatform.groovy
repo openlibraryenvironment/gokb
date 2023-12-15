@@ -127,7 +127,8 @@ class TitleInstancePackagePlatform extends KBComponent {
       ],
       'defaultEmbeds': [
           'coverageStatements',
-          'prices'
+          'prices',
+          'subjects'
       ]
   ]
 

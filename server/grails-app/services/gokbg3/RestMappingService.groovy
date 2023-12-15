@@ -21,6 +21,7 @@ class RestMappingService {
   def componentUpdateService
   def messageService
   def dateFormatService
+  def validationService
 
   def defaultIgnore = [
       'bucketHash',
@@ -28,11 +29,12 @@ class RestMappingService {
       'normname',
       'people',
       'lastSeen',
+      'provenance',
+      'reference',
       'updateBenchmark',
       'systemComponent',
       'insertBenchmark',
       'componentHash',
-      'subjects',
       'lastUpdateComment',
       'duplicateOf',
       'componentDiscriminator',
@@ -64,8 +66,8 @@ class RestMappingService {
    */
 
   def mapObjectToJson(proxy, params, def user = null) {
-    log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
-    def obj = ClassUtils.deproxy(proxy)
+    log.debug("mapObjectToJson: ${proxy.class.name} -- ${params}")
+    def obj = ClassUtils.deproxy(proxy).refresh()
     def result = [:]
     def embed_active = params['_embed']?.split(',') ?: []
     def include_list = params['_include']?.split(',') ?: null
@@ -109,6 +111,7 @@ class RestMappingService {
     }
     if (embed_active.size() > 0) {
       result['_embedded'] = [:]
+      log.debug("Embeds: ${embed_active}")
     }
 
     result['id'] = obj.id
@@ -144,10 +147,20 @@ class RestMappingService {
           }
           else {
             if ((embed_active.contains(p.name) && (user?.isAdmin() || p.type != User)) || (!nested && p.name == 'reviewRequests' && user?.editorStatus)) {
+              log.debug("Handling embeds for ${p.name}: ${obj[p.name]}")
               result['_embedded'][p.name] = []
 
-              obj[p.name].each {
-                result['_embedded'][p.name] << getEmbeddedJson(it, user)
+              obj[p.name].each { ao ->
+                def assoc_obj = ClassUtils.deproxy(ao)
+
+                if (assoc_obj instanceof ComponentSubject) {
+                  assoc_obj = assoc_obj.subject
+                  log.debug("Using subject ${assoc_obj} for embed mapping ..")
+                }
+
+                result['_embedded'][p.name] << getEmbeddedJson(assoc_obj, user)
+
+                log.debug("${result['_embedded'][p.name]}")
               }
             }
           }
@@ -286,7 +299,7 @@ class RestMappingService {
           }
           else {
             // Add to collection
-            log.debug("Skip generic handling of collections}")
+            log.debug("Skip generic handling of collections ..")
           }
         }
         else {
@@ -856,8 +869,6 @@ class RestMappingService {
             toRemove.each {
               obj.removeFromVariantNames(KBComponentVariantName.get(it))
             }
-
-            log.debug("New List has ${obj.variantNames.size()} items!")
           }
           else {
             log.debug("Not removing: (remove: ${remove} - errors: ${obj.errors})")
@@ -946,6 +957,100 @@ class RestMappingService {
 
     result
   }
+
+  @Transactional
+  def updateSubjects(obj, subjects, boolean remove = true) {
+    log.debug("Update subjects ${subjects}")
+    def result = [changed: false, errors: []]
+    def existing_subjects_ids = obj.subjects?.collect { it.id }
+    def new_subjects = []
+
+    try {
+      ComponentSubject.withTransaction {
+        subjects?.each { subject ->
+          Subject sub_obj
+
+          if (subject instanceof Integer) {
+            sub_obj = Subject.get(subject)
+          }
+          else if (subject instanceof Map) {
+            if (subject.id) {
+              sub_obj = Subject.get(subject.id)
+            }
+            else if (subject.heading && subject.scheme) {
+              RefdataValue scheme
+
+              if (subject.scheme instanceof Map) {
+                if (subject.scheme.id) {
+                  scheme = RefdataValue.get(subject.scheme.id)
+                }
+                else if (subject.scheme.value) {
+                  scheme = RefdataCategory.lookup("Subject.Scheme", subject.scheme.value)
+                }
+              }
+              else if (subject.scheme instanceof String) {
+                scheme = RefdataCategory.lookup("Subject.Scheme", subject.scheme)
+              }
+              else if (subject.scheme instanceof Integer) {
+                scheme = RefdataValue.get(subject.scheme)
+              }
+
+              if (scheme) {
+                def validation_result = validationService.checkSubject(scheme, subject.heading)
+
+                if (validation_result.result == 'ERROR') {
+                  result.errors = result.errors + validation_result.errors
+                }
+                else {
+                  sub_obj = Subject.findBySchemeAndHeading(scheme, subject.heading) ?: new Subject(scheme: scheme, heading: subject.heading).save(flush: true)
+                }
+              }
+              else {
+                result.errors << [message: "Unable to reference scheme of subject!", code: 404, baddata: subject]
+              }
+            }
+          }
+
+          if (sub_obj) {
+            ComponentSubject subject_link = ComponentSubject.findByComponentAndSubject(obj, sub_obj)
+
+            if (subject_link) {
+              log.debug("Matched existing component subject link ..")
+            }
+            else {
+              log.debug("Creating new component subject link ..")
+              subject_link = new ComponentSubject(component: obj, subject: sub_obj).save(flush: true)
+              result.changed = true
+            }
+
+            new_subjects << subject_link.id
+          }
+          else {
+            result.errors << [message: "Unable to reference subject!", code: 404, baddata: subject]
+          }
+        }
+
+        if (remove == true) {
+          existing_subjects_ids.each { ep ->
+            if (!new_subjects.findAll { it == ep }) {
+              ComponentSubject cp_to_delete = ComponentSubject.get(ep)
+              log.debug("Removing stale subject link ${cp_to_delete}")
+              obj.removeFromSubjects(cp_to_delete)
+              cp_to_delete.delete()
+              result.changed = true
+            }
+          }
+        }
+      }
+    }
+    catch (Exception e) {
+      log.error("Unable to process subjects:", e)
+      result.errors << [message: "Unable to process subjects!", code: 500, baddata: subjects]
+    }
+
+    result
+  }
+
 
   /**
    *  updatePublisher : Updates the list of publishers linked to a TitleInstance.

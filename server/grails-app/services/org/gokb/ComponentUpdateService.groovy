@@ -367,18 +367,18 @@ class ComponentUpdateService {
 
   public boolean isUserCurator(obj, user) {
     boolean curator = user.adminStatus
-    def curated_component = KBComponent.has(obj, 'curatoryGroups') ? obj : (obj.class == TitleInstancePackagePlatform ? obj.pkg : null)
+    def curated_component = KBComponent.has(obj, 'curatoryGroups') ? obj : (obj?.class == TitleInstancePackagePlatform ? obj.pkg : null)
 
     if (curated_component) {
-      if (curated_component.curatoryGroups.size() == 0 || curated_component.curatoryGroups.id.intersect(user.curatoryGroups?.id)) {
+      if (curated_component.curatoryGroups.size() == 0 || curated_component.curatoryGroups*.id.intersect(user.curatoryGroups*.id)) {
         curator = true
       }
     }
-    else if (obj.class == ReviewRequest) {
+    else if (obj?.class == ReviewRequest) {
       if (obj.allocatedTo == user) {
         curator = true
       }
-      else if (obj.allocatedGroups?.group.id.intersect(user.curatoryGroups?.id)) {
+      else if (obj.allocatedGroups*.group.id.intersect(user.curatoryGroups*.id)) {
         curator = true
       }
       else if (!obj.allocatedGroups && user.contributorStatus) {

@@ -193,9 +193,17 @@ class ZdbAPIService {
       }
     }
 
-    result.history = []
+    result.history = extractHistory(rec.global.'*'.findAll { it.@id == '039E' })
 
-    rec.global.'*'.findAll { it.@id == '039E' }.each { lf ->
+    result.ddc = extractDDC(rec.global.'*'.find { it.@id == '045U' })
+
+    result
+  }
+
+  private def extractHistory(fields) {
+    def history = []
+
+    fields.each { lf ->
       def item = [:]
 
       lf.'*'.each { subfield ->
@@ -228,7 +236,21 @@ class ZdbAPIService {
       }
 
       if (item) {
-        result.history.add(item)
+        history.add(item)
+      }
+    }
+
+    history
+  }
+
+  private def extractDDC(field) {
+    def result = []
+
+    field.'*'.findAll {it.@id == 'e'}.each { sf ->
+      def notation = sf.text()?.trim()
+
+      if (notation) {
+        result.add(notation)
       }
     }
 

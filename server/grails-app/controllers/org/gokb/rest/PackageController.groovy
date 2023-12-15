@@ -188,6 +188,12 @@ class PackageController {
                 errors.variantNames = variant_result.errors
               }
 
+              def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
+
+              if (subject_result.errors.size() > 0) {
+                errors.subjects = subject_result.errors
+              }
+
               String charset = (('a'..'z') + ('0'..'9')).join()
               def updateToken = RandomStringUtils.random(255, charset.toCharArray())
               update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
@@ -297,6 +303,12 @@ class PackageController {
 
         if (variant_result.errors.size() > 0) {
           errors.variantNames = variant_result.errors
+        }
+
+        def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
+
+        if (subject_result.errors.size() > 0) {
+          errors.subjects = subject_result.errors
         }
 
         errors << packageUpdateService.updateCombos(obj, reqBody, remove, user)
@@ -638,7 +650,6 @@ class PackageController {
       render result as JSON
     }
 
-
     def pkgInfo = [:]
     def user = User.get(springSecurityService.principal.id)
     def active_group_id = null
@@ -696,13 +707,14 @@ class PackageController {
         log.debug("Create new datafile")
         DataFile.withNewTransaction {
           datafile = new DataFile(
-                                          guid:deposit_token,
-                                          md5:info.md5sumHex,
-                                          uploadName:upload_filename,
-                                          name:upload_filename,
-                                          filesize:info.filesize,
-                                          encoding:info.encoding,
-                                          uploadMimeType:upload_mime_type).save()
+            guid:deposit_token,
+            md5:info.md5sumHex,
+            uploadName:upload_filename,
+            name:upload_filename,
+            filesize:info.filesize,
+            encoding:info.encoding,
+            uploadMimeType:upload_mime_type
+          ).save()
 
           datafile.fileData = temp_file.getBytes()
           datafile.save(failOnError:true,flush:true)
@@ -713,16 +725,17 @@ class PackageController {
       if (datafile) {
         Job background_job = concurrencyManagerService.createJob { Job job ->
           TSVIngestionService.updatePackage(pkg.id,
-                                            datafile.id,
-                                            title_ns_id,
-                                            async,
-                                            add_only,
-                                            user.id,
-                                            active_group_id,
-                                            dry_run,
-                                            skip_invalid,
-                                            delete_missing,
-                                            job)
+            datafile.id,
+            title_ns_id,
+            async,
+            add_only,
+            user.id,
+            active_group_id,
+            dry_run,
+            skip_invalid,
+            delete_missing,
+            job
+          )
         }
 
         if (active_group_id) {

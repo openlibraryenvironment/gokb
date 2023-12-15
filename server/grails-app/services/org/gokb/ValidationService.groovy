@@ -188,6 +188,13 @@ class ValidationService {
             name: "checkKbartIdentifier",
             args: ["_colName", "publication_type"]
         ]
+    ],
+    ddc: [
+        mandatory: false,
+        validator: [
+          name: "checkDDCList",
+          args: []
+        ]
     ]
   ]
 
@@ -197,6 +204,12 @@ class ValidationService {
       'online_identifier',
       'title_url',
       'publication_type'
+  ]
+
+  static final String[] PROPRIETARY_COLS = [
+      'zdb_id',
+      'ddc',
+      'series'
   ]
 
   static ISSNValidator ISSN_VAL = new ISSNValidator()
@@ -241,7 +254,7 @@ class ValidationService {
         result.errors.missingColumns.add(colName)
         result.valid = false
       }
-      else if (!header.contains(colName) && colName != 'zdb_id') {
+      else if (!header.contains(colName) && !PROPRIETARY_COLS.contains(colName)) {
         result.warnings.missingColumns.add(colName)
       }
     }
@@ -431,7 +444,15 @@ class ValidationService {
           def final_args = [trimmed_val] + KNOWN_COLUMNS[key].validator.args?.collect { it == "_colName" ? key : nl[col_positions[it]] }
           def field_valid_result = "${KNOWN_COLUMNS[key].validator.name}"(*final_args)
 
-          if (!field_valid_result || (strict && field_valid_result != trimmed_val && key != 'publication_title')) {
+          if (field_valid_result instanceof Map) {
+            if (field_valid_result.result == 'ERROR') {
+              result.errors[key] = field_valid_result.errors
+            }
+            else if (field_valid_result.result == 'WARNING') {
+              result.warnings[key] = field_valid_result.warnings
+            }
+          }
+          else if (!field_valid_result || (strict && field_valid_result != trimmed_val && key != 'publication_title')) {
             result.errors[key] = [
                 message: "Value '${trimmed_val}' is not valid!",
                 messageCode: "kbart.errors.illegalVal",
@@ -852,6 +873,85 @@ class ValidationService {
           messageCode: 'validation.missingName',
           value: value
         ]
+      ]
+    }
+
+    result
+  }
+
+  def checkSubject(RefdataValue scheme, String value) {
+    def result = [result: 'OK']
+    RefdataCategory scheme_category = RefdataCategory.findByDesc('Subject.Scheme')
+
+    if (scheme.owner == scheme_category) {
+      if (scheme.value == 'DDC') {
+        def notation_result = checkDDCNotation(value)
+
+        if (notation_result.result == 'ERROR') {
+          result = notation_result
+          result.baddata = [
+            scheme: [
+              id: scheme.id,
+              value: scheme.value,
+              type: 'RefdataValue'
+            ],
+            heading: value
+          ]
+        }
+      }
+    }
+    else {
+      result.result = 'ERROR'
+      result.errors = [
+        [
+          message: "Unable to reference subject scheme.",
+          messageCode: "validation.subject.scheme.notFound",
+          value: scheme
+        ]
+      ]
+    }
+  }
+
+  def checkDDCList(String value) {
+    def result = [result: 'OK']
+    def notations = value?.trim()?.split(';') ?: []
+
+    if (notations.size() > 0) {
+      notations.each {
+        def validation_result = checkDDCNotation(it)
+
+        if (validation_result.result == 'ERROR') {
+          result.result = 'ERROR'
+          result.errors = result.errors ? result.errors + validation_result.errors : validation_result.errors
+        }
+      }
+    }
+
+    result
+  }
+
+  def checkDDCNotation(String notation) {
+    def result = [result: 'OK']
+
+    if (notation ==~ /^\d{3}$/) {
+      log.debug("Valid DDC notation!")
+    }
+    else if (notation ==~ /^\d{3}.\d*$/) {
+      result.result = 'ERROR'
+      result.errors = [
+        [
+          message: "Deep DDC notations like '${notation}' are not supported.",
+          messageCode: "component.subject.ddc.error.longNotation",
+          value: notation
+        ]
+      ]
+    }
+    else {
+      result.result = 'ERROR'
+      result.errors = [
+        message: "Value '${notation}' is not a valid DDC notation.",
+        messageCode: "component.subject.ddc.error.notationFormat",
+        value: notation
       ]
     }
 

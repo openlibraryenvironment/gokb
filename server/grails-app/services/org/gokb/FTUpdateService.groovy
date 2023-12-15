@@ -64,12 +64,19 @@ class FTUpdateService {
         value        : id_obj.value,
         namespaceName: id_obj.namespace.name ?: "",
         baseUrl      : id_obj.namespace.baseUrl ?: "",
-        type         : id_obj.family ?: ""
+        type         : id_obj.namespace.family ?: ""
       ])
     }
     result.componentType = kbc.class.simpleName
     result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
     result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
+
+    result.subjects = []
+
+    kbc.subjects.each { cs ->
+      Subject subj = Subject.get(cs.subject.id)
+      result.subjects << [scheme: subj.scheme.value, heading: subj.heading]
+    }
 
     switch (kbc.class) {
       case Package:
@@ -339,7 +346,7 @@ class FTUpdateService {
               value        : id_obj.value,
               namespaceName: id_obj.namespace.name ?: "",
               baseUrl      : id_obj.namespace.baseUrl ?: "",
-              type         : id_obj.family ?: ""
+              type         : id_obj.namespace.family ?: ""
             ])
           }
 

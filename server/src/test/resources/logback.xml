@@ -40,6 +40,7 @@
   <logger name="org.gokb.cred.TitleInstancePackagePlatform" level="DEBUG"/>
   <logger name="org.gokb.UserDetailsInterceptor" level="ERROR"/>
   <logger name="org.gokb.PreferencesInterceptor" level="ERROR"/>
+  <logger name="gokbg3.RestMappingService" level="DEBUG"/>
 
   <root level="error">
     <appender-ref ref="STDOUT" />

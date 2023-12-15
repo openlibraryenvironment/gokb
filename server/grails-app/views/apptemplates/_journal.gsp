@@ -109,7 +109,6 @@
     <g:if test="${d.id}">
       <li><a href="#altnames" data-toggle="tab">Alternate Names <span
           class="badge badge-warning">${d.variantNames?.size() ?: '0'}</span></a></li>
-
       <g:if test="${d.isEditable()}">
         <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
       </g:if>
@@ -120,6 +119,8 @@
           class="badge badge-warning">
         ${d.getCombosByPropertyNameAndStatus('publisher', params.publisher_status)?.size() ?: '0'}
       </span></a></li>
+      <li><a href="#subjects" data-toggle="tab">Subjects <span
+          class="badge badge-warning">${d.subjects?.size() ?: '0'}</span></a></li>
       <li><a href="#availability" data-toggle="tab">Package Availability <span
           class="badge badge-warning">
         ${d?.tipps?.findAll { it.status?.value == 'Current' }?.size() ?: '0'}
@@ -150,6 +151,8 @@
       <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
           class="nav-tab-disabled">Publishers</span></li>
       <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
+          class="nav-tab-disabled">Subjects</span></li>
+      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
           class="nav-tab-disabled">Package Availability</span></li>
       <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
           class="nav-tab-disabled">Platforms</span></li>
@@ -157,12 +160,6 @@
           class="nav-tab-disabled">Custom Fields</span></li>
       <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
           class="nav-tab-disabled">Review Tasks</span></li>
-      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
-          class="nav-tab-disabled">Subject Group</span></li>
-      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
-          class="nav-tab-disabled">Series</span></li>
-      <li class="disabled" title="${message(code: 'component.create.idMissing.label')}"><span
-          class="nav-tab-disabled">List Price</span></li>
     </g:else>
 
   </ul>
@@ -203,6 +200,8 @@
     </div>
 
     <g:render template="/tabTemplates/showVariantnames" model="${[d: displayobj, showActions: true]}"/>
+
+    <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
 
     <div class="tab-pane" id="history">
       <g:if test="${d.id != null}">

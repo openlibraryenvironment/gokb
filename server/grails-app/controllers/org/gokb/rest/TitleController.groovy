@@ -232,6 +232,12 @@ class TitleController {
               errors.variantNames = variant_result.errors
             }
 
+            def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
+
+            if (subject_result.errors.size() > 0) {
+              errors.subjects = subject_result.errors
+            }
+
             errors << updateCombos(obj, reqBody)
 
             result = restMappingService.mapObjectToJson(obj, params, user)
@@ -781,6 +787,12 @@ class TitleController {
 
           if (variant_result.errors.size() > 0) {
             errors.variantNames = variant_result.errors
+          }
+
+          def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
+
+          if (subject_result.errors.size() > 0) {
+            errors.subjects = subject_result.errors
           }
 
           errors << updateCombos(obj, reqBody, remove)
