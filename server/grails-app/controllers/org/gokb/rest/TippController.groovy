@@ -17,7 +17,6 @@ class TippController {
   def genericOIDService
   def springSecurityService
   def ESSearchService
-  def FTUpdateService
   def messageService
   def restMappingService
   def cleanupService
@@ -251,10 +250,6 @@ class TippController {
               result.result = 'ERROR'
               response.status = 400
               errors = messageService.processValidationErrors(obj.errors, request.locale)
-            }
-
-            if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-              FTUpdateService.updateSingleItem(obj)
             }
 
             result = restMappingService.mapObjectToJson(obj, params, user)

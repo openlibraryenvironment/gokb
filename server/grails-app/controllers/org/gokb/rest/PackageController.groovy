@@ -28,7 +28,6 @@ class PackageController {
   def componentLookupService
   def componentUpdateService
   def concurrencyManagerService
-  def FTUpdateService
   def TSVIngestionService
   def packageUpdateService
   def tippUpsertService
@@ -230,9 +229,6 @@ class PackageController {
             response.status = 400
             errors << messageService.processValidationErrors(obj.errors, request_locale)
           }
-          if (obj?.id != null && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-            FTUpdateService.updateSingleItem(obj)
-          }
         }
       }
       else {
@@ -346,9 +342,6 @@ class PackageController {
           response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request_locale)
         }
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
       }
       else {
         result.result = 'ERROR'
@@ -384,10 +377,6 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
-
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
 
         componentUpdateService.closeConnectedReviews(obj)
       }
@@ -426,9 +415,6 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
       }
       else {
         result.result = 'ERROR'
