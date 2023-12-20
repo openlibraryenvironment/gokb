@@ -652,9 +652,9 @@ class ESSearchService{
       else {
         result.result = 'ERROR'
         result.message = 'Maximum scrollSize is 10000!'
-      }
 
-      return result
+        return result
+      }
     }
 
     result.result = "OK"
