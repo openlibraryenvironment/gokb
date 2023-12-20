@@ -903,7 +903,7 @@ class TippService {
         index++
 
         if (tipp.title) {
-          ti.ids.each { data ->
+          tipp.title.ids.each { data ->
             Identifier idobj = Identifier.get(data.id)
 
             if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(idobj.namespace.value)) {
