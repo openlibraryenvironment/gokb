@@ -1551,6 +1551,19 @@ where cp.owner = :c
   }
 
   @Transient
+  def getActiveSubjectsInfo() {
+    def info_list = Identifier.executeQuery('''select sub.scheme.value, sub.heading, sub.name from ComponentSubject as cs,
+                                            Subject as sub
+                                            where cs.component.id = :tid
+                                            and sub = cs.subject''',
+            [tid: this.id],
+            [readOnly: true])
+    def result = info_list.collect { [scheme: it[0], heading: it[1], name: it[2]] }
+
+    result
+  }
+
+  @Transient
   public userAvailableActions() {
     User user = springSecurityService.currentUser
     def allActions = []

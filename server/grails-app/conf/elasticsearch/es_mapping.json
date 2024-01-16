@@ -199,6 +199,27 @@
           }
         }
       }
+    },
+    {
+      "linkedItemSubjects": {
+        "match": "*Subjects",
+        "mapping": {
+          "type": "nested",
+          "properties": {
+            "scheme": {
+              "type":"keyword",
+              "normalizer": "lowercase"
+            },
+            "heading": {
+              "type": "keyword",
+              "normalizer": "lowercase"
+            },
+            "name": {
+              "type": "text"
+            }
+          }
+        }
+      }
     }
   ],
   "properties" : {
@@ -247,6 +268,9 @@
         "heading": {
           "type": "keyword",
           "normalizer": "lowercase"
+        },
+        "name": {
+          "type": "text"
         }
       }
     },

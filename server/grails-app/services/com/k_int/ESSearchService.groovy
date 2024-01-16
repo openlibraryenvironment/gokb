@@ -909,8 +909,12 @@ class ESSearchService{
         else {
           if (k == 'id' && params.int('id')) {
             final_val = KBComponent.get(params.int('id'))?.getLogEntityId()
+            exactQuery.must(QueryBuilders.termQuery('_id', final_val))
           }
-          exactQuery.must(QueryBuilders.termQuery(k, final_val))
+          else {
+            exactQuery.must(QueryBuilders.termQuery(k, final_val))
+          }
+
         }
       }
       else if (requestMapping.simpleMap?.containsKey(k)){

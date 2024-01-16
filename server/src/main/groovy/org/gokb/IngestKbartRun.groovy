@@ -897,10 +897,10 @@ class IngestKbartRun {
       if (key && key.length() > 0) {
         if ((int)key.toCharArray()[0] == 65279) {
           def corrected_key = key.getAt(1..key.length() - 1)
-          result[corrected_key] = row_data[col_positions[key]]
+          result[corrected_key] = row_data[col_positions[key]].trim()
         } else {
           if (col_positions[key] != null && col_positions[key] < row_data.length) {
-            result[key] = row_data[col_positions[key]]
+            result[key] = row_data[col_positions[key]].trim()
           }
           else {
             log.error("Column references value not present in col ${col_positions[key]}!")

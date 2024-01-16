@@ -138,6 +138,13 @@ class PackageCachingService {
                       }
                     }
 
+                    // Subjects
+                    'subjects' {
+                      item.activeSubjectsInfo.each { asi ->
+                        'subject'(asi)
+                      }
+                    }
+
                     'scope'(item.scope?.value)
                     'listStatus'(item.listStatus?.value)
                     'breakable'(item.breakable?.value)
@@ -233,6 +240,11 @@ class PackageCachingService {
                                     'identifier'(tid)
                                   }
                                 }
+                                'subjects' {
+                                  ti_obj.activeSubjectsInfo.each { asi ->
+                                    'subject'(asi)
+                                  }
+                                }
                               }
                             }
                             else {
@@ -268,6 +280,13 @@ class PackageCachingService {
                                 )
                               }
                             }
+
+                            'subjects' {
+                              tipp.activeSubjectsInfo.each { asi ->
+                                'subject'(asi)
+                              }
+                            }
+
                             'url'(tipp.url ?: "")
                           }
                         }

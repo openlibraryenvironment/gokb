@@ -1160,6 +1160,7 @@ class TippService {
     ]
     def typeString = tippInfo.publicationType ?: tippInfo.type
     def combo_active = DomainClassExtender.comboStatusActive
+    def full_matches = []
 
     def result = [full_matches: [], failed_matches: []]
 
@@ -1214,7 +1215,15 @@ class TippService {
       }
       else {
         log.debug("Full match for ${ctipp}")
-        result.full_matches << ctipp
+        full_matches << ctipp
+      }
+    }
+
+    if (full_matches.size() > 1) {
+      full_matches.each { fm ->
+        if (existsCoverage(fm, tippInfo.coverageStatements[0])) {
+          result.full_matches << fm
+        }
       }
     }
 

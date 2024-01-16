@@ -73,9 +73,8 @@ class FTUpdateService {
 
     result.subjects = []
 
-    kbc.subjects.each { cs ->
-      Subject subj = Subject.get(cs.subject.id)
-      result.subjects << [scheme: subj.scheme.value, heading: subj.heading]
+    kbc.activeSubjectsInfo.each { asi ->
+      result.subjects << asi
     }
 
     switch (kbc.class) {
@@ -337,6 +336,7 @@ class FTUpdateService {
           result.tippTitleUuid = ti.uuid
           result.tippTitleMedium = ti.medium?.value
           result.titleIdentifiers = []
+          result.titleSubjects = []
 
           ti.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
             Identifier id_obj = Identifier.get(idc.toComponent.id)
@@ -348,6 +348,10 @@ class FTUpdateService {
               baseUrl      : id_obj.namespace.baseUrl ?: "",
               type         : id_obj.namespace.family ?: ""
             ])
+          }
+
+          ti.activeSubjectsInfo.each { asi ->
+            result.titleSubjects << asi
           }
 
           ti.titleHistory?.each { he ->
