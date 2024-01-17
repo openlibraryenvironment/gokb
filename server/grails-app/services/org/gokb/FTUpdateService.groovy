@@ -483,24 +483,28 @@ class FTUpdateService {
   }
 
   synchronized packagesUpdate(j) {
+    packagesRunning = true
     def esclient = ESWrapperService.getClient()
     updateES(esclient, Package.class, j)
     packagesRunning = false
   }
 
   synchronized orgsUpdate(j) {
+    orgsRunning = true
     def esclient = ESWrapperService.getClient()
     updateES(esclient, Org.class, j)
     orgsRunning = false
   }
 
   synchronized platformsUpdate(j) {
+    platformsRunning = true
     def esclient = ESWrapperService.getClient()
     updateES(esclient, Platform.class, j)
     platformsRunning = false
   }
 
   synchronized titlesUpdate(j) {
+    titlesRunning = true
     def esclient = ESWrapperService.getClient()
     updateES(esclient, JournalInstance.class, j)
     updateES(esclient, DatabaseInstance.class, j)
@@ -510,6 +514,7 @@ class FTUpdateService {
   }
 
   synchronized tippsUpdate(j) {
+    tippsRunning = true
     def esclient = ESWrapperService.getClient()
     updateES(esclient, TitleInstancePackagePlatform.class, j)
     tippsRunning = false
