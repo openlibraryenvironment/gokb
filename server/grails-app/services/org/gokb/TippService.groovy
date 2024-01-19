@@ -1219,11 +1219,21 @@ class TippService {
       }
     }
 
-    if (full_matches.size() > 1) {
+    if (full_matches.size == 1) {
+      result.full_matches = full_matches
+    }
+    else if (full_matches.size() > 1) {
+      boolean coverage_match = false
+
       full_matches.each { fm ->
         if (existsCoverage(fm, tippInfo.coverageStatements[0])) {
           result.full_matches << fm
+          coverage_match = true
         }
+      }
+
+      if (!coverage_match) {
+        result.full_matches = full_matches
       }
     }
 

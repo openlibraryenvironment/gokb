@@ -917,7 +917,7 @@ class CleanupService {
       int total = Identifier.executeQuery("select count(i.id) from Identifier as i where exists (select 1 from Combo where toComponent = i)")[0]
       j.message("Processing $total identifiers..")
 
-      Long highest_id = null
+      Long highest_id = 0
 
       while (more) {
         def batch = Identifier.executeQuery("from Identifier as i where id > :hid and exists (select 1 from Combo where toComponent = i) order by id", [max: batchSize, hid: highest_id])

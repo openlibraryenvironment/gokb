@@ -430,10 +430,12 @@ class ValidationService {
           def field_valid_result = checkIdForNamespace(trimmed_val, titleIdNamespace)
 
           if (!field_valid_result) {
+            def nslabel = (titleIdNamespace.name ?: titleIdNamespace.value)
+
             result.errors[key] = [
-                message: "Identifier value '${trimmed_val}' in column 'title_id' is not valid!",
-                messageCode: "kbart.errors.illegalVal",
-                args: [trimmed_val]
+                message: "Identifier value '${trimmed_val}' for namespace '$nslabel' is not valid!",
+                messageCode: "kbart.errors.illegalValForNamespace",
+                args: [trimmed_val, nslabel]
             ]
           }
         }
