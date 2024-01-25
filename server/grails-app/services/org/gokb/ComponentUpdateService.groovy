@@ -17,7 +17,7 @@ class ComponentUpdateService {
   def dateFormatService
   def restMappingService
   def sessionFactory
-  def ESSearchService
+  def ESWrapperService
 
   private final Object findLock = new Object()
 
@@ -474,8 +474,8 @@ class ComponentUpdateService {
       KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: obj])
       result.result = obj.delete(failOnError: true)
 
-      if (ESSearchService.indicesPerType[class_simple_name]){
-        DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType[class_simple_name]), oid)
+      if (ESWrapperService.indicesPerType[class_simple_name]){
+        DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[class_simple_name]), oid)
         def es_response = esclient.delete(req, RequestOptions.DEFAULT)
         log.debug("${es_response}")
         result.esDelete = true
