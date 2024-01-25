@@ -17,7 +17,6 @@ class TitleController {
   def genericOIDService
   def springSecurityService
   def ESSearchService
-  def FTUpdateService
   def messageService
   def restMappingService
   def titleLookupService
@@ -246,10 +245,6 @@ class TitleController {
           else {
             result.result = 'ERROR'
             errors << messageService.processValidationErrors(obj.errors, request.locale)
-          }
-
-          if (obj?.id != null && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-            FTUpdateService.updateSingleItem(obj)
           }
         }
         else {
@@ -811,9 +806,6 @@ class TitleController {
           response.status = 400
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
         }
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
       }
       else {
         result.result = 'ERROR'
@@ -1073,16 +1065,7 @@ class TitleController {
 
           titleHistoryService.transferEvents(obj, target)
 
-
-          if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-            FTUpdateService.updateSingleItem(target)
-          }
-
           obj.deleteSoft()
-
-          if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-            FTUpdateService.updateSingleItem(obj)
-          }
         }
         else {
           result.result = 'ERROR'
