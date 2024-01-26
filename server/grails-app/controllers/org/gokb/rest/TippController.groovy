@@ -17,7 +17,6 @@ class TippController {
   def genericOIDService
   def springSecurityService
   def ESSearchService
-  def FTUpdateService
   def messageService
   def restMappingService
   def cleanupService
@@ -121,6 +120,13 @@ class TippController {
 
           if (obj?.validate()) {
             response.status = 201
+
+            def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
+
+            if (subject_result.errors.size() > 0) {
+              errors.subjects = subject_result.errors
+            }
+
             errors << tippService.updateCombos(obj, reqBody)
 
             result = restMappingService.mapObjectToJson(obj, params, user)
@@ -214,6 +220,12 @@ class TippController {
               }
             }
 
+            def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
+
+            if (subject_result.errors.size() > 0) {
+              errors.subjects = subject_result.errors
+            }
+
             if (reqBody.prices != null) {
               log.debug("Updating prices ..")
               def prices_result = restMappingService.updatePrices(obj, reqBody.prices, remove)
@@ -238,10 +250,6 @@ class TippController {
               result.result = 'ERROR'
               response.status = 400
               errors = messageService.processValidationErrors(obj.errors, request.locale)
-            }
-
-            if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-              FTUpdateService.updateSingleItem(obj)
             }
 
             result = restMappingService.mapObjectToJson(obj, params, user)

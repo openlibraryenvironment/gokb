@@ -1,7 +1,6 @@
 package org.gokb
 
 import com.k_int.ConcurrencyManagerService.Job
-import com.k_int.ESSearchService
 import grails.gorm.DetachedCriteria
 import grails.gorm.transactions.Transactional
 import org.opensearch.action.delete.DeleteRequest
@@ -839,8 +838,8 @@ class CleanupService {
           def class_simple_name = kbc.class.getSimpleName()
           def oid = "${kbc.class.name}:${it}"
 
-          if (ESSearchService.indicesPerType[class_simple_name]){
-            DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType[class_simple_name]), oid)
+          if (ESWrapperService.indicesPerType[class_simple_name]){
+            DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[class_simple_name]), oid)
             def es_response = esclient.delete(req, RequestOptions.DEFAULT)
           }
         }
@@ -917,7 +916,7 @@ class CleanupService {
       int total = Identifier.executeQuery("select count(i.id) from Identifier as i where exists (select 1 from Combo where toComponent = i)")[0]
       j.message("Processing $total identifiers..")
 
-      Long highest_id = null
+      Long highest_id = 0
 
       while (more) {
         def batch = Identifier.executeQuery("from Identifier as i where id > :hid and exists (select 1 from Combo where toComponent = i) order by id", [max: batchSize, hid: highest_id])

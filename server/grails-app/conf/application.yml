@@ -260,6 +260,9 @@ environments:
                     platforms: gokbplatformstest
             centralGroups:
                 JournalInstance: 'Journal Central Curators'
+            ezbOpenCollections:
+                enabled: false
+                url: https://ezb-api.ur.de/collections/v1/
         grails:
             mail:
                 port: 3025

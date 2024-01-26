@@ -1,5 +1,6 @@
 package org.gokb
 
+import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService.Job
 
 import grails.converters.JSON
@@ -149,174 +150,27 @@ class EzbCollectionService {
               cancelled = true
             }
 
-            boolean skipped = false
-            boolean sourceResult = false
-            def pkgInfo = [:]
-            Date pkgCreated
-            def curator_id = null
+            def collection_result = processCollectionEntry(item, type_results)
 
-            Package.withNewSession { session ->
-              type_results.total++
-              def pkgName = buildPackageName(item)
-              log.debug("Processing ${type} ${item.ezb_collection_name}")
-              RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-              CuratoryGroup ezb_curator = CuratoryGroup.findByName(grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators'))
-              Platform platform = item.ezb_collection_platform ? Platform.findByUuid(item.ezb_collection_platform) : null
-              Org provider = item.ezb_collection_provider ? Org.findByUuid(item.ezb_collection_provider) : null
-              Boolean ezbSource = (item.ezb_collection_source == 'EZB')
-              Package obj
-
-              if (item.ezb_collection_curatory_group) {
-                def local_cg = CuratoryGroup.findByUuid(item.ezb_collection_curatory_group)
-
-                if (local_cg) {
-                  ezb_curator = local_cg
-                }
-              }
-
-              curator_id = ezb_curator.id
-
-              if (curator_id && provider && platform && ezbSource) {
-                Identifier collection_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb-collection-id', item.ezb_collection_id)
-
-                obj = Package.findByNameAndStatus(pkgName, status_current)
-
-                if (!obj) {
-                  def candidates = findIdCandidates(collection_id, curator)
-
-                  if (candidates.size() == 0) {
-                    def other_cg_candidates = findIdCandidates(collection_id, null)
-
-                    if (other_cg_candidates.size() == 1) {
-                      if (hasEzbUrl(other_cg_candidates[0])) {
-                        log.debug("Matched existing package of other curatory group with ezb update url!")
-                        obj = candidates[0]
-                      }
-                      else {
-                        skipped = true
-                        type_results.skipped++
-                        type_results.matchedOtherCg << item.ezb_collection_id
-                      }
-                    }
-                    else if (other_cg_candidates.size() > 1) {
-                      skipped = true
-                      type_results.skipped++
-                      type_results.matchedOtherCg << item.ezb_collection_id
-                    }
-                  }
-                  else if (candidates.size() == 1) {
-                    obj = candidates[0]
-                    log.debug("Found package ${obj} via id ${collection_id} and curatoryGroup ${ezb_curator}")
-                  }
-                  else if (candidates.size() > 1) {
-                    log.warn("Found ${candidates} as possible package candidates!")
-                    skipped = true
-                    type_results.skipped++
-                  }
-                }
-
-                if (!hasEzbUrl(obj)) {
-                  log.debug("Matched package has a conflicting source url..")
-                  skipped = true
-                  type_results.skipped++
-                }
-
-                if (!skipped && !obj) {
-                  log.debug("Creating new Package ..")
-
-                  try {
-                    obj = new Package(name: pkgName).save(flush: true, failOnError: true)
-
-                    obj.curatoryGroups << ezb_curator
-
-                    type_results.created++
-                  }
-                  catch (Exception e) {
-                    log.debug("Errors creating new package!", e)
-                    type_results.errors++
-                  }
-                }
-                else if (!skipped) {
-                  log.debug("Handling package ${obj.name}")
-                  type_results.updated++
-                }
-
-                if (obj && !skipped) {
-                  if (!obj.contentType) {
-                    obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Journal')
-                  }
-
-                  String validity = 'Consortium'
-
-                  if (type == 'collections_from_aggregator_packages') {
-                    validity = 'Global'
-                    obj.scope = RefdataCategory.lookup('Package.Scope', 'Aggregator')
-                  }
-
-                  obj.global = RefdataCategory.lookup('Package.Global', validity)
-
-                  obj.nominalPlatform = platform
-                  obj.provider = provider
-                  obj.save(flush: true)
-
-                  if (!obj.ids.contains(collection_id)) {
-                    obj.ids.add(collection_id)
-                  }
-
-                  if (obj.name != pkgName) {
-                    obj.name = pkgName
-                  }
-
-                  obj.save(flush: true)
-
-                  pkgCreated = obj.dateCreated
-                  pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
-
-                  CuratoryGroup primary_curator = obj.curatoryGroups[0]
-
-                  curator_id = primary_curator.id
-
-                  sourceResult = ensurePackageSource(obj, primary_curator, item)
-
-                  log.debug("Existing package since: ${obj?.dateCreated} - EZB start ${dateFormatService.parseTimestamp(item.ezb_collection_released_date)}")
-                }
-                else if (!obj) {
-                  log.warn("Unable to reference package!")
-                  type_results.matchingFailed << item.ezb_collection_id
-                }
-              }
-              else {
-                log.debug("Skipping package due to missing info! Provider: ${provider}, Platform: ${platform}, Curator: ${curator_id}")
-                type_results.skipped++
-                type_results.skippedList << item.ezb_collection_id
-
-                if (!curator_id)
-                  type_results.noCurator++
-
-                if (!provider) {
-                  type_results.noProvider++
-                }
-
-                if (!platform) {
-                  type_results.noPlatform++
-                }
-              }
-            }
-
-            if (!skipped && pkgInfo.id && sourceResult && pkgCreated && pkgCreated > dateFormatService.parseTimestamp(item.ezb_collection_released_date)) {
-              if (hasChangedFile(pkgInfo.id, item)) {
+            if (!collection_result.skipped &&
+                collection_result.pkgInfo.id &&
+                collection_result.sourceResult &&
+                collection_result.pkgCreated &&
+                collection_result.pkgCreated > dateFormatService.parseTimestamp(item.ezb_collection_released_date)
+            ) {
+              if (hasChangedFile(collection_result.pkgInfo.id, item)) {
                 log.debug("Creating new import job ..")
                 try {
                   Job pkg_job = concurrencyManagerService.createJob { pjob ->
-                    packageSourceUpdateService.updateFromSource(pkgInfo.id, null, pjob, curator_id)
+                    packageSourceUpdateService.updateFromSource(collection_result.pkgInfo.id, null, pjob, collection_result.curator_id)
                   }
 
                   RefdataCategory.withNewSession {
-                    pkg_job.groupId = curator_id
-                    pkg_job.description = "EZB KBART Source ingest (${pkgInfo.name})".toString()
+                    pkg_job.groupId = collection_result.curator_id
+                    pkg_job.description = "EZB KBART Source ingest (${collection_result.pkgInfo.name})".toString()
                     pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
-                    pkg_job.linkedItem = pkgInfo
-                    pkg_job.message("Starting upsert for Package ${pkgInfo.name}".toString())
+                    pkg_job.linkedItem = collection_result.pkgInfo
+                    pkg_job.message("Starting upsert for Package ${collection_result.pkgInfo.name}".toString())
                     pkg_job.startOrQueue()
                   }
 
@@ -340,17 +194,17 @@ class EzbCollectionService {
                 }
               }
               else {
-                log.debug("Skipping unchanged Package file ${pkgInfo.name}.")
+                log.debug("Skipping unchanged Package file ${collection_result.pkgInfo.name}.")
                 type_results.unchanged++
               }
             }
-            else if (skipped) {
+            else if (collection_result.skipped) {
               log.debug("Skipped..")
             }
-            else if (!pkgInfo) {
+            else if (!collection_result.pkgInfo) {
               log.debug("Unable to reference package!")
             }
-            else if (!sourceResult) {
+            else if (!collection_result.sourceResult) {
               log.debug("No source object created.. skip")
               type_results.errors++
               type_results.sourceError << item.ezb_collection_id
@@ -391,7 +245,7 @@ class EzbCollectionService {
 
           if (!obj) {
             Identifier collection_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb-collection-id', item.ezb_collection_id)
-            def candidates = findIdCandidates(collection_id, curator)
+            def candidates = findIdCandidates(collection_id, curator.id)
 
             if (candidates.size() == 0) {
               def other_cg_candidates = findIdCandidates(collection_id, null)
@@ -448,9 +302,172 @@ class EzbCollectionService {
     result
   }
 
-  private static boolean hasEzbUrl(Package pkg) {
+  private def processCollectionEntry(item, type_results) {
+    def result = [
+      skipped: false,
+      sourceResult: false,
+      pkgInfo: [:],
+      pkgCreated: null,
+      curator_id: null
+    ]
+
+    Package.withNewSession { session ->
+      type_results.total++
+      def pkgName = buildPackageName(item)
+      log.debug("Processing ${item.ezb_package_type_name} ${item.ezb_collection_name}")
+      String ezbCuratorName = grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')
+      RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+      CuratoryGroup ezb_curator = CuratoryGroup.findByName(ezbCuratorName) ?: new CuratoryGroup(name: ezbCuratorName).save(flush: true)
+      Platform platform = item.ezb_collection_platform ? Platform.findByUuid(item.ezb_collection_platform) : null
+      Org provider = item.ezb_collection_provider ? Org.findByUuid(item.ezb_collection_provider) : null
+      Boolean ezbSource = (item.ezb_collection_source == 'EZB')
+      Package obj
+
+      if (item.ezb_collection_curatory_group) {
+        def local_cg = CuratoryGroup.findByUuid(item.ezb_collection_curatory_group)
+
+        if (local_cg) {
+          ezb_curator = local_cg
+        }
+      }
+
+      result.curator_id = ezb_curator.id
+
+      if (result.curator_id && provider && platform && ezbSource) {
+        Identifier collection_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb-collection-id', item.ezb_collection_id)
+
+        obj = Package.findByNameAndStatus(pkgName, status_current)
+
+        if (!obj) {
+          def candidates = findIdCandidates(collection_id, result.curator_id)
+
+          if (candidates.size() == 0) {
+            def other_cg_candidates = findIdCandidates(collection_id, null)
+
+            log.debug("Found ${other_cg_candidates} -> ${other_cg_candidates.size()}")
+
+            if (other_cg_candidates.size() == 1) {
+              if (hasEzbUrl(other_cg_candidates[0])) {
+                log.debug("Matched existing package of other curatory group with ezb update url!")
+                obj = candidates[0]
+              }
+              else {
+                result.skipped = true
+                type_results.skipped++
+                type_results.matchedOtherCg << item.ezb_collection_id
+              }
+            }
+            else if (other_cg_candidates.size() > 1) {
+              result.skipped = true
+              type_results.skipped++
+              type_results.matchedOtherCg << item.ezb_collection_id
+            }
+          }
+          else if (candidates.size() == 1) {
+            obj = candidates[0]
+            log.debug("Found package ${obj} via id ${collection_id} and curatoryGroup ${ezb_curator}")
+          }
+          else if (candidates.size() > 1) {
+            log.warn("Found ${candidates} as possible package candidates!")
+            result.skipped = true
+            type_results.skipped++
+          }
+        }
+
+        if (obj && !hasEzbUrl(obj)) {
+          log.debug("Matched package has a conflicting source url..")
+          result.skipped = true
+          type_results.skipped++
+        }
+
+        if (!result.skipped && !obj) {
+          log.debug("Creating new Package ..")
+
+          try {
+            obj = new Package(name: pkgName).save(flush: true, failOnError: true)
+
+            obj.curatoryGroups << ezb_curator
+
+            type_results.created++
+          }
+          catch (Exception e) {
+            log.debug("Errors creating new package!", e)
+            type_results.errors++
+          }
+        }
+        else if (!result.skipped) {
+          log.debug("Handling package ${obj.name}")
+          type_results.updated++
+        }
+
+        if (obj && !result.skipped) {
+          if (!obj.contentType) {
+            obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Journal')
+          }
+
+          String validity = 'Consortium'
+
+          if (item.ezb_package_type_name == 'Aggregatorpaket') {
+            validity = 'Global'
+            obj.scope = RefdataCategory.lookup('Package.Scope', 'Aggregator')
+          }
+
+          obj.global = RefdataCategory.lookup('Package.Global', validity)
+
+          obj.nominalPlatform = platform
+          obj.provider = provider
+          obj.save(flush: true)
+
+          if (!obj.ids.contains(collection_id)) {
+            obj.ids.add(collection_id)
+          }
+
+          if (obj.name != pkgName) {
+            obj.name = pkgName
+          }
+
+          obj.save(flush: true)
+
+          result.pkgCreated = obj.dateCreated
+          result.pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
+
+          CuratoryGroup primary_curator = obj.curatoryGroups[0]
+
+          result.curator_id = primary_curator.id
+
+          result.sourceResult = ensurePackageSource(obj, primary_curator, item)
+
+          log.debug("Existing package since: ${obj?.dateCreated} - EZB start ${dateFormatService.parseTimestamp(item.ezb_collection_released_date)}")
+        }
+        else if (!obj) {
+          log.warn("Unable to reference package!")
+          type_results.matchingFailed << item.ezb_collection_id
+        }
+      }
+      else {
+        log.debug("Skipping package due to missing info! Provider: ${provider}, Platform: ${platform}, Curator: ${result.curator_id}")
+        type_results.skipped++
+        type_results.skippedList << item.ezb_collection_id
+
+        if (!result.curator_id)
+          type_results.noCurator++
+
+        if (!provider) {
+          type_results.noProvider++
+        }
+
+        if (!platform) {
+          type_results.noPlatform++
+        }
+      }
+    }
+
+    result
+  }
+
+  private boolean hasEzbUrl(pkg) {
     boolean result = false
-    String src_url = pkg.source?.url ?: null
+    String src_url = ClassUtils.deproxy(pkg).source?.url ?: null
 
     if (src_url?.startsWith('https://ezb.uni-regensburg') || src_url?.startsWith( 'https://ezb.ur.de')) {
       result = true
@@ -508,12 +525,14 @@ class EzbCollectionService {
       }
 
       if (source) {
-        source.automaticUpdates = false
-        source.save()
-
         pkg.source = source
         pkg.save(flush: true)
       }
+    }
+
+    if (source && source.automaticUpdates) {
+      source.automaticUpdates = false
+      source.save()
     }
 
     if (source && source.url != item.ezb_collection_titlelist) {
@@ -540,7 +559,7 @@ class EzbCollectionService {
     result
   }
 
-  private Package[] findIdCandidates(collection_id, curator) {
+  private def findIdCandidates(collection_id, curator_id) {
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue combo_active = RefdataCategory.lookup('Combo.Status', 'Active')
     RefdataValue local_status = RefdataCategory.lookup('Package.Global', 'Local')
@@ -555,12 +574,12 @@ class EzbCollectionService {
           and status = :ca
           and toComponent = :clId)'''
 
-    if (curator) {
-      qry_pars.curator = curator
+    if (curator_id) {
+      qry_pars.curator = curator_id
       qry += ''' and exists (
               select 1 from Combo
               where fromComponent = p
-              and toComponent = :curator)'''
+              and toComponent.id = :curator)'''
     }
 
     def result = Package.executeQuery(qry, qry_pars)

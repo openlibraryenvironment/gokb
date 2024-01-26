@@ -17,7 +17,7 @@ class ComponentUpdateService {
   def dateFormatService
   def restMappingService
   def sessionFactory
-  def ESSearchService
+  def ESWrapperService
 
   private final Object findLock = new Object()
 
@@ -367,18 +367,18 @@ class ComponentUpdateService {
 
   public boolean isUserCurator(obj, user) {
     boolean curator = user.adminStatus
-    def curated_component = KBComponent.has(obj, 'curatoryGroups') ? obj : (obj.class == TitleInstancePackagePlatform ? obj.pkg : null)
+    def curated_component = KBComponent.has(obj, 'curatoryGroups') ? obj : (obj?.class == TitleInstancePackagePlatform ? obj.pkg : null)
 
     if (curated_component) {
-      if (curated_component.curatoryGroups.size() == 0 || curated_component.curatoryGroups.id.intersect(user.curatoryGroups?.id)) {
+      if (curated_component.curatoryGroups.size() == 0 || curated_component.curatoryGroups*.id.intersect(user.curatoryGroups*.id)) {
         curator = true
       }
     }
-    else if (obj.class == ReviewRequest) {
+    else if (obj?.class == ReviewRequest) {
       if (obj.allocatedTo == user) {
         curator = true
       }
-      else if (obj.allocatedGroups?.group.id.intersect(user.curatoryGroups?.id)) {
+      else if (obj.allocatedGroups*.group.id.intersect(user.curatoryGroups*.id)) {
         curator = true
       }
       else if (!obj.allocatedGroups && user.contributorStatus) {
@@ -474,8 +474,8 @@ class ComponentUpdateService {
       KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: obj])
       result.result = obj.delete(failOnError: true)
 
-      if (ESSearchService.indicesPerType[class_simple_name]){
-        DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType[class_simple_name]), oid)
+      if (ESWrapperService.indicesPerType[class_simple_name]){
+        DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[class_simple_name]), oid)
         def es_response = esclient.delete(req, RequestOptions.DEFAULT)
         log.debug("${es_response}")
         result.esDelete = true

@@ -155,7 +155,8 @@ class Package extends KBComponent {
     'defaultEmbeds': [
       'ids',
       'variantNames',
-      'curatoryGroups'
+      'curatoryGroups',
+      'subjects'
     ]
   ]
 

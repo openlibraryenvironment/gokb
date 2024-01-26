@@ -69,6 +69,7 @@ class TitleAugmentServiceSpec extends Specification {
     titleOne.ids.size() == 3
     titleOne.name != 'TitleAugmentTestTitleOne'
     titleOne.publishedFrom != null
+    titleOne.subjects.size() == 2
   }
 
   void "test zdb augment history linking"() {

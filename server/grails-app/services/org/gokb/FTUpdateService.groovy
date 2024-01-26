@@ -19,8 +19,11 @@ class FTUpdateService {
   def dateFormatService
   def grailsApplication
 
-  public static boolean running = false
-
+  public static boolean packagesRunning = false
+  public static boolean orgsRunning = false
+  public static boolean platformsRunning = false
+  public static boolean titlesRunning = false
+  public static boolean tippsRunning = false
 
   /**
    * Update ES.
@@ -30,18 +33,17 @@ class FTUpdateService {
    */
   def updateFTIndexes(Job j = null) {
     log.debug("updateFTIndexes")
-    if (running == false) {
-      if (j) j.message("Starting..")
-      running = true
-      doFTUpdate(j)
-      log.debug("FTUpdate done.")
-      return new Date()
+
+    ['packages','orgs','platforms','titles', 'tipps'].each { indexType ->
+      if (this."${indexType}Running" == false) {
+        this."${indexType}Update"(j)
+      } else {
+        if (j) j.message("Indexing for $indexType is already running.. skip")
+        log.debug("Skipping indexing for $indexType .. already running!")
+      }
     }
-    else {
-      if (j) j.message("Already running.. skip")
-      log.error("FTUpdate already running")
-      return "Job cancelled – FTUpdate was already running!"
-    }
+
+    return new Date()
   }
 
 
@@ -49,21 +51,33 @@ class FTUpdateService {
     def result = [:]
     def kbc = KBComponent.deproxy(proxy)
     result._id = "${kbc.class.name}:${kbc.id}"
+    result.id = kbc.id
     result.uuid = kbc.uuid
     result.name = kbc.name
     result.sortname = kbc.name
+    result.shortcode = kbc.shortcode
     result.status = kbc.status?.value ?: ""
     result.identifiers = []
     kbc.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
       Identifier id_obj = Identifier.get(idc.toComponent.id)
-      result.identifiers.add([namespace    : id_obj.namespace.value,
-                              value        : id_obj.value,
-                              namespaceName: id_obj.namespace.name ?: "",
-                              baseUrl      : id_obj.namespace.baseUrl ?: ""])
+
+      result.identifiers.add([
+        namespace    : id_obj.namespace.value,
+        value        : id_obj.value,
+        namespaceName: id_obj.namespace.name ?: "",
+        baseUrl      : id_obj.namespace.baseUrl ?: "",
+        type         : id_obj.namespace.family ?: ""
+      ])
     }
     result.componentType = kbc.class.simpleName
     result.dateCreated = dateFormatService.formatIsoTimestamp(kbc.dateCreated)
     result.lastUpdatedDisplay = dateFormatService.formatIsoTimestamp(kbc.lastUpdated ?: kbc.dateCreated)
+
+    result.subjects = []
+
+    kbc.activeSubjectsInfo.each { asi ->
+      result.subjects << asi
+    }
 
     switch (kbc.class) {
       case Package:
@@ -74,6 +88,7 @@ class FTUpdateService {
         result.editStatus = kbc.editStatus?.value ?: ""
         result.scope = kbc.scope?.value ?: ""
         result.global = kbc.global?.value ?: ""
+        result.globalNote = kbc.globalNote
 
         result.altname = []
         kbc.variantNames.each { vn ->
@@ -322,6 +337,24 @@ class FTUpdateService {
           result.tippTitleName = ti.name
           result.tippTitleUuid = ti.uuid
           result.tippTitleMedium = ti.medium?.value
+          result.titleIdentifiers = []
+          result.titleSubjects = []
+
+          ti.getCombosByPropertyNameAndStatus('ids', 'Active').each { idc ->
+            Identifier id_obj = Identifier.get(idc.toComponent.id)
+
+            result.titleIdentifiers.add([
+              namespace    : id_obj.namespace.value,
+              value        : id_obj.value,
+              namespaceName: id_obj.namespace.name ?: "",
+              baseUrl      : id_obj.namespace.baseUrl ?: "",
+              type         : id_obj.namespace.family ?: ""
+            ])
+          }
+
+          ti.activeSubjectsInfo.each { asi ->
+            result.titleSubjects << asi
+          }
 
           ti.titleHistory?.each { he ->
             if (he.date) {
@@ -394,31 +427,11 @@ class FTUpdateService {
     result
   }
 
-
-  synchronized def doFTUpdate(j) {
+  def doBackgroundReindex(j) {
     log.debug("doFTUpdate")
     log.debug("Execute IndexUpdateJob starting at ${new Date()}")
     def esclient = ESWrapperService.getClient()
-    try {
-      updateES(esclient, Package.class, j)
-      updateES(esclient, Org.class, j)
-      updateES(esclient, Platform.class, j)
-      updateES(esclient, JournalInstance.class, j)
-      updateES(esclient, DatabaseInstance.class, j)
-      updateES(esclient, OtherInstance.class, j)
-      updateES(esclient, BookInstance.class, j)
-      updateES(esclient, TitleInstancePackagePlatform.class, j)
-    }
-    catch (Exception e) {
-      log.error("Problem", e)
-    }
-    running = false
-  }
 
-  synchronized def doBackgroundReindex(j) {
-    log.debug("doFTUpdate")
-    log.debug("Execute IndexUpdateJob starting at ${new Date()}")
-    def esclient = ESWrapperService.getClient()
     try {
       updateES(esclient, Package.class, j, true)
       updateES(esclient, Org.class, j, true)
@@ -432,12 +445,13 @@ class FTUpdateService {
     catch (Exception e) {
       log.error("Problem", e)
     }
-    running = false
+
+    return new Date()
   }
 
   def updateSingleItem(kbc) {
     def idx_record = buildEsRecord(kbc)
-    def es_index = grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType.get(idx_record['componentType']))
+    def es_index = grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType.get(idx_record['componentType']))
 
     if (idx_record != null) {
       def recid = idx_record['_id'].toString()
@@ -449,9 +463,67 @@ class FTUpdateService {
     }
   }
 
+  def triggerUpdateForClass(cls, Job j = null) {
+    log.debug("triggerUpdateForClass")
+    def indexType = ESWrapperService.indicesPerType[cls.simpleName]
+
+    if (this."${indexType}Running" == false) {
+      this."${indexType}Running" = true
+      this."${indexType}Update"(j)
+      log.debug("FTUpdate done.")
+
+      return new Date()
+    }
+    else {
+      if (j) j.message("Indexing for $indexType is already running.. skip")
+      log.error("FTUpdate for index $indexType already running")
+
+      return "Job cancelled – FTUpdate for index $indexType was already running!"
+    }
+  }
+
+  synchronized packagesUpdate(j) {
+    packagesRunning = true
+    def esclient = ESWrapperService.getClient()
+    updateES(esclient, Package.class, j)
+    packagesRunning = false
+  }
+
+  synchronized orgsUpdate(j) {
+    orgsRunning = true
+    def esclient = ESWrapperService.getClient()
+    updateES(esclient, Org.class, j)
+    orgsRunning = false
+  }
+
+  synchronized platformsUpdate(j) {
+    platformsRunning = true
+    def esclient = ESWrapperService.getClient()
+    updateES(esclient, Platform.class, j)
+    platformsRunning = false
+  }
+
+  synchronized titlesUpdate(j) {
+    titlesRunning = true
+    def esclient = ESWrapperService.getClient()
+    updateES(esclient, JournalInstance.class, j)
+    updateES(esclient, DatabaseInstance.class, j)
+    updateES(esclient, OtherInstance.class, j)
+    updateES(esclient, BookInstance.class, j)
+    titlesRunning = false
+  }
+
+  synchronized tippsUpdate(j) {
+    tippsRunning = true
+    def esclient = ESWrapperService.getClient()
+    updateES(esclient, TitleInstancePackagePlatform.class, j)
+    tippsRunning = false
+  }
 
   def updateES(esClient, domain, job, boolean reindex = false) {
     log.debug("updateES(${domain}...)")
+    def indexType = ESWrapperService.indicesPerType[domain.name]
+    def indexName = grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType.get(domain.simpleName))
     def count = 0
 
     domain.withNewSession {
@@ -490,7 +562,6 @@ class FTUpdateService {
         for (r_id in q) {
           if (Thread.currentThread().isInterrupted()) {
             log.warn("Job cancelling ..")
-            running = false
             break
           }
 
@@ -500,7 +571,7 @@ class FTUpdateService {
           def idx_record = buildEsRecord(r)
 
           if (idx_record != null) {
-            IndexRequest singleRequest = new IndexRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType.get(idx_record['componentType'])))
+            IndexRequest singleRequest = new IndexRequest(indexName)
             singleRequest.id(idx_record['_id'].toString())
             idx_record.remove('_id')
             singleRequest.source((idx_record as JSON).toString(), XContentType.JSON)
@@ -585,7 +656,12 @@ class FTUpdateService {
 
 
   def clearDownAndInit(Job j = null) {
-    if (running == false) {
+    if (packagesRunning == false &&
+        orgsRunning == false &&
+        platformsRunning == false &&
+        titlesRunning == false &&
+        tippsRunning == false
+    ) {
       log.debug("Remove existing FTControl ..")
 
       FTControl.withTransaction {

@@ -17,6 +17,7 @@ import java.time.ZoneId
 class TippService {
   def componentUpdateService
   def componentLookupService
+  def grailsApplication
   def titleLookupService
   def titleAugmentService
   def sessionFactory
@@ -24,6 +25,7 @@ class TippService {
   def autoTimestampEventListener
   def validationService
   def restMappingService
+  def FTUpdateService
 
   def validateDTO(tipp_dto) {
     def result = [valid: true]
@@ -662,9 +664,13 @@ class TippService {
 
       if (!pubType && my_ids.find { it.type == 'issn' || it.type == 'eissn' }) {
         pubType = 'Serial'
+        tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, pubType)
+        tipp.save(flush: true)
       }
       else if (!pubType && my_ids.find { it.type == 'isbn' || it.type == 'isbn' }) {
         pubType = 'Monograph'
+        tipp.publicationType = RefdataCategory.lookup(TitleInstancePackagePlatform.RD_PUBLICATION_TYPE, pubType)
+        tipp.save(flush: true)
       }
 
       def title_class_name = TitleInstance.determineTitleClass(pubType)
@@ -897,7 +903,7 @@ class TippService {
         index++
 
         if (tipp.title) {
-          ti.ids.each { data ->
+          tipp.title.ids.each { data ->
             Identifier idobj = Identifier.get(data.id)
 
             if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(idobj.namespace.value)) {
@@ -999,7 +1005,7 @@ class TippService {
       def type_ii = RefdataCategory.lookup("ReviewRequest.StdDesc", "Invalid Indentifiers")
       def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type", [tid: tipp, type: type_ii])[0]
 
-      if (existing_rrs == 0) {
+      if (num_existing == 0) {
         reviewRequestService.raise(
             tipp,
             "Invalid identifiers found",
@@ -1154,6 +1160,7 @@ class TippService {
     ]
     def typeString = tippInfo.publicationType ?: tippInfo.type
     def combo_active = DomainClassExtender.comboStatusActive
+    def full_matches = []
 
     def result = [full_matches: [], failed_matches: []]
 
@@ -1161,7 +1168,8 @@ class TippService {
     tippInfo.identifiers.each { jsonId ->
       jsonIdMap[jsonId.type] = jsonId.value
     }
-    if (jsonIdMap.size() == 0) {
+
+    if (jsonIdMap.size() == 0 && tippInfo.title) {
       tippInfo.title.identifiers.each { jsonId ->
         jsonIdMap[jsonId.type] = jsonId.value
       }
@@ -1207,7 +1215,25 @@ class TippService {
       }
       else {
         log.debug("Full match for ${ctipp}")
-        result.full_matches << ctipp
+        full_matches << ctipp
+      }
+    }
+
+    if (full_matches.size == 1) {
+      result.full_matches = full_matches
+    }
+    else if (full_matches.size() > 1) {
+      boolean coverage_match = false
+
+      full_matches.each { fm ->
+        if (existsCoverage(fm, tippInfo.coverageStatements[0])) {
+          result.full_matches << fm
+          coverage_match = true
+        }
+      }
+
+      if (!coverage_match) {
+        result.full_matches = full_matches
       }
     }
 
@@ -1234,11 +1260,13 @@ class TippService {
       tippInfo.identifiers.each { jsonId ->
         jsonIdMap[jsonId.type] = jsonId.value
       }
-      if (jsonIdMap.size() == 0) {
+
+      if (jsonIdMap.size() == 0 && tippInfo.title) {
         tippInfo.title.identifiers.each { jsonId ->
           jsonIdMap[jsonId.type] = jsonId.value
         }
       }
+
       def titleId = tippInfo.titleId ?: tippInfo.importId
 
       if (titleId) {

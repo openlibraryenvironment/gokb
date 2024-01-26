@@ -436,6 +436,31 @@ class TitleAugmentService {
       log.error("Error while processing ZDB history event:", e)
     }
 
+    RefdataValue scheme_ddc = RefdataCategory.lookup("Subject.Scheme", "ddc")
+
+    info.ddc.each { notation ->
+      if (notation ==~ /^\d{3}$/) {
+        Subject subject = Subject.findBySchemeAndHeading(scheme_ddc, notation)
+
+        if (!subject) {
+          log.debug("Creating new subject for ${scheme_ddc} : $notation ..")
+          subject = new Subject(scheme: scheme_ddc, heading: notation).save(flush: true)
+        }
+
+        ComponentSubject existing_link = ComponentSubject.findByComponentAndSubject(titleInstance, subject)
+
+        if (!existing_link) {
+          log.debug("Linking subject ${scheme_ddc} : $notation ..")
+          new ComponentSubject(component:titleInstance, subject: subject).save(flush: true)
+        } else {
+          log.debug("Subject is already linked!")
+        }
+      }
+      else {
+        log.debug("ZDB augment :: Skipping linkage from ${titleInstance} to detailed DDC notation ${notation}!")
+      }
+    }
+
     if (titleInstance.name.toLowerCase() != info.title.toLowerCase()) {
       log.debug("Updating title name ${titleInstance.name} -> ${info.title}")
       def old_title = titleInstance.name

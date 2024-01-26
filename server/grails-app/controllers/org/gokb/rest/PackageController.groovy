@@ -28,7 +28,6 @@ class PackageController {
   def componentLookupService
   def componentUpdateService
   def concurrencyManagerService
-  def FTUpdateService
   def TSVIngestionService
   def packageUpdateService
   def tippUpsertService
@@ -188,6 +187,12 @@ class PackageController {
                 errors.variantNames = variant_result.errors
               }
 
+              def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
+
+              if (subject_result.errors.size() > 0) {
+                errors.subjects = subject_result.errors
+              }
+
               String charset = (('a'..'z') + ('0'..'9')).join()
               def updateToken = RandomStringUtils.random(255, charset.toCharArray())
               update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
@@ -223,9 +228,6 @@ class PackageController {
             obj.discard()
             response.status = 400
             errors << messageService.processValidationErrors(obj.errors, request_locale)
-          }
-          if (obj?.id != null && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-            FTUpdateService.updateSingleItem(obj)
           }
         }
       }
@@ -299,6 +301,12 @@ class PackageController {
           errors.variantNames = variant_result.errors
         }
 
+        def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
+
+        if (subject_result.errors.size() > 0) {
+          errors.subjects = subject_result.errors
+        }
+
         errors << packageUpdateService.updateCombos(obj, reqBody, remove, user)
 
         if (obj.validate()) {
@@ -333,9 +341,6 @@ class PackageController {
           result.result = 'ERROR'
           response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request_locale)
-        }
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
         }
       }
       else {
@@ -372,10 +377,6 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
-
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
 
         componentUpdateService.closeConnectedReviews(obj)
       }
@@ -414,9 +415,6 @@ class PackageController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
       }
       else {
         result.result = 'ERROR'
@@ -624,7 +622,11 @@ class PackageController {
   def ingestKbart() {
     log.debug("Form post")
     def result = ['result': 'OK']
-    Package pkg = Package.get(params.id)
+    Package pkg = Package.findByUuid(params.id)
+
+    if (!pkg) {
+      pkg = Package.findById(genericOIDService.oidToId(params.id))
+    }
 
     if (!pkg) {
       response.status = 404
@@ -633,7 +635,6 @@ class PackageController {
 
       render result as JSON
     }
-
 
     def pkgInfo = [:]
     def user = User.get(springSecurityService.principal.id)
@@ -692,13 +693,14 @@ class PackageController {
         log.debug("Create new datafile")
         DataFile.withNewTransaction {
           datafile = new DataFile(
-                                          guid:deposit_token,
-                                          md5:info.md5sumHex,
-                                          uploadName:upload_filename,
-                                          name:upload_filename,
-                                          filesize:info.filesize,
-                                          encoding:info.encoding,
-                                          uploadMimeType:upload_mime_type).save()
+            guid:deposit_token,
+            md5:info.md5sumHex,
+            uploadName:upload_filename,
+            name:upload_filename,
+            filesize:info.filesize,
+            encoding:info.encoding,
+            uploadMimeType:upload_mime_type
+          ).save()
 
           datafile.fileData = temp_file.getBytes()
           datafile.save(failOnError:true,flush:true)
@@ -709,16 +711,17 @@ class PackageController {
       if (datafile) {
         Job background_job = concurrencyManagerService.createJob { Job job ->
           TSVIngestionService.updatePackage(pkg.id,
-                                            datafile.id,
-                                            title_ns_id,
-                                            async,
-                                            add_only,
-                                            user.id,
-                                            active_group_id,
-                                            dry_run,
-                                            skip_invalid,
-                                            delete_missing,
-                                            job)
+            datafile.id,
+            title_ns_id,
+            async,
+            add_only,
+            user.id,
+            active_group_id,
+            dry_run,
+            skip_invalid,
+            delete_missing,
+            job
+          )
         }
 
         if (active_group_id) {
