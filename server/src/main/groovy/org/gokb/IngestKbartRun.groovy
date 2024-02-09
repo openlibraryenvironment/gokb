@@ -137,11 +137,11 @@ class IngestKbartRun {
       boolean valid_encoding = true
 
       if (!(datafile.encoding in ['UTF-8', 'US-ASCII'])) {
-        log.debug("Illegal charset ${encoding} found..")
+        log.debug("Illegal charset ${datafile.encoding} found..")
         valid_encoding = false
         result.result = 'ERROR'
         result.messageCode = 'kbart.errors.url.charset'
-        result.messages.add("File has illegal charset ${encoding}!")
+        result.messages.add("File has illegal charset ${datafile.encoding}!")
       }
 
       log.debug("Set progress")

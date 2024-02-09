@@ -22,6 +22,7 @@ import org.mozilla.universalchardet.UniversalDetector
 class PackageSourceUpdateService {
   def concurrencyManagerService
   def TSVIngestionService
+  def validationService
 
   static Pattern DATE_PLACEHOLDER_PATTERN = ~/[0-9]{4}-[0-9]{2}-[0-9]{2}/
   static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
@@ -77,29 +78,17 @@ class PackageSourceUpdateService {
       }
 
       if (pkg_source?.url) {
-        def src_url = null
-        def dynamic_date = false
+        URL src_url = null
+        Boolean dynamic_date = false
+        def valid_url_string = validationService.checkUrl(pkg_source?.url)
         LocalDate extracted_date
         skipInvalid = pkg_source.skipInvalid ?: false
         def file_info = [:]
 
-        try {
-          src_url = new URL(pkg_source.url)
-        }
-        catch (Exception e) {
-          log.debug("Invalid source URL!")
-          result.result = 'ERROR'
-          result.messageCode = 'kbart.errors.url.invalid'
-          result.message = "Provided URL is not valid!"
-
-          return result
-        }
-
-        if (src_url) {
-          def existing_string = src_url.toString()
+        if (valid_url_string) {
           String local_date_string = LocalDate.now().toString()
 
-          if (existing_string =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
+          if (valid_url_string =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
             log.debug("URL contains date placeholder ..")
             src_url = new URL(existing_string.replace('{YYYY-MM-DD}', local_date_string))
             dynamic_date = true
@@ -117,8 +106,8 @@ class PackageSourceUpdateService {
         else {
           log.debug("No source URL!")
           result.result = 'ERROR'
-          result.messageCode = 'kbart.errors.url.missing'
-          result.message = "Package source does not have an URL!"
+          result.messageCode = 'kbart.errors.url.invalid'
+          result.message = "Package source URL is invalid!"
 
           return result
         }
@@ -136,6 +125,13 @@ class PackageSourceUpdateService {
             file_info = fetchKbartFile(tmp_file, src_url)
           }
 
+          if (file_info.connectError) {
+            result.result = 'ERROR'
+            result.messageCode = 'kbart.errors.url.connection'
+            result.message = "There was an error trying to fetch KBART via URL!"
+
+            return result
+          }
           if (file_info.accessError) {
             result.result = 'ERROR'
             result.messageCode = 'kbart.errors.url.html'
@@ -398,34 +394,40 @@ class PackageSourceUpdateService {
       .header("User-Agent", "GOKb KBART Updater")
       .build()
 
-    HttpResponse<InputStream> response = client.send(request, BodyHandlers.ofInputStream())
-    HttpHeaders headers = response.headers()
-    def file_name = headers.firstValue('Content-Disposition').isPresent() ? headers.firstValue('Content-Disposition').get() : null
+    try {
+      HttpResponse<InputStream> response = client.send(request, BodyHandlers.ofInputStream())
+      HttpHeaders headers = response.headers()
+      def file_name = headers.firstValue('Content-Disposition').isPresent() ? headers.firstValue('Content-Disposition').get() : null
 
-    if (file_name) {
-      file_name = file_name.split('filename=')[1]
-    }
+      if (file_name) {
+        file_name = file_name.split('filename=')[1]
+      }
 
-    result.content_mime_type = headers.firstValue('Content-Type').isPresent() ? headers.firstValue('Content-Type').get() : null
+      result.content_mime_type = headers.firstValue('Content-Type').isPresent() ? headers.firstValue('Content-Type').get() : null
 
-    if (response.statusCode() >= 400) {
-      log.warn("KBART fetch status: ${result.status}")
-    }
-    else if (!file_name && result.content_mime_type.startsWith('text/plain')) {
-      file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
-    }
-    else if (!file_name && result.content_mime_type.startsWith('text/html')) {
-      log.warn("Got HTML result at KBART URL ${src_url}!")
-      result.accessError = true
-    }
+      if (response.statusCode() >= 400) {
+        log.debug("KBART fetch status: ${response.statusCode()}")
+      }
+      else if (!file_name && result.content_mime_type?.startsWith('text/plain')) {
+        file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
+      }
+      else if (!file_name && result.content_mime_type?.startsWith('text/html')) {
+        log.warn("Got HTML result at KBART URL ${src_url}!")
+        result.accessError = true
+      }
 
-    if (file_name?.trim()) {
-      log.debug("${result.content_mime_type} ${headers.map()}")
-      result.file_name = file_name.replaceAll(/\"/, '')
-      InputStream content = response.body()
-      FileUtils.copyInputStreamToFile(content, tmp_file)
-      content.close()
-      log.debug("Wrote ${tmp_file.length()}")
+      if (file_name?.trim()) {
+        log.debug("${result.content_mime_type} ${headers.map()}")
+        result.file_name = file_name.replaceAll(/\"/, '')
+        InputStream content = response.body()
+        FileUtils.copyInputStreamToFile(content, tmp_file)
+        content.close()
+        log.debug("Wrote ${tmp_file.length()}")
+      }
+    }
+    catch (Exception e) {
+      result.connectError = true
+      log.error("failed fetching file via ${src_url}", e)
     }
 
     result

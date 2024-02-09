@@ -210,10 +210,7 @@ class TitleAugmentService {
                 titleInstance.ids << new_id
                 titleInstance.save(flush: true)
 
-                titleInstance.tipps.each {
-                  it.lastSeen = new Date().getTime()
-                  it.save()
-                }
+                touchTitleTipps(titleInstance)
 
                 existing_noresults.each {
                   it.status = rr_status_closed
@@ -276,6 +273,29 @@ class TitleAugmentService {
     }
   }
 
+  public void touchTitleTipps (ti, boolean onlyCurrent = true) {
+    Date current_ts = new Date()
+    RefdataValue combo_title = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+
+    def qry_params = [now: current_ts, ct: combo_title, title: ti]
+    def qry_string = '''update TitleInstancePackagePlatform as tipp
+        set lastUpdated = :now
+        where exists (
+          select 1 from Combo
+          where type = :ct
+          and fromComponent = :title
+          and toComponent = tipp
+        )'''
+
+    if (onlyCurrent) {
+      qry_string += ' and status = :sc'
+      qry_params.sc = status_current
+    }
+
+    TitleInstancePackagePlatform.executeUpdate(qry_string, qry_params)
+  }
+
   def augmentEzb(titleInstance) {
     log.debug("Augment EZB - TitleInstance: ${titleInstance.niceName} - ${titleInstance.class?.name}")
     def group_name = grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')
@@ -334,6 +354,8 @@ class TitleAugmentService {
             def new_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb', ezbId)
             titleInstance.ids << new_id
             titleInstance.save(flush: true)
+
+            touchTitleTipps(titleInstance)
             log.debug("Adding new EZB-ID ${new_id}")
           }
           else if (nameCandidates.size() == 0) {
