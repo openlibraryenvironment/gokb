@@ -1542,25 +1542,30 @@ class PackageService {
           file = new File(path + fileName)
         }
         else {
-          while (!file.isFile()) {
-            sleep(500)
-          }
+          def caching_result = packageCachingService.cacheSinglePackage(pkg.id, true)
 
-          file = new File(path + fileName)
+          if (caching_result == 'OK') {
+            file = new File(path + fileName)
+          }
+          else {
+            response.status = 404
+          }
         }
       }
 
-      InputStream inFile = new FileInputStream(file)
+      if (file.isFile()) {
+        InputStream inFile = new FileInputStream(file)
 
-      response.setContentType('text/tab-separated-values')
-      response.setHeader("Content-Disposition", "attachment; filename=\"${fileName.substring(0, fileName.length() - 13)}.tsv\"")
-      response.setHeader("Content-Encoding", "UTF-8")
-      response.setContentLength(file.bytes.length)
+        response.setContentType('text/tab-separated-values')
+        response.setHeader("Content-Disposition", "attachment; filename=\"${fileName.substring(0, fileName.length() - 13)}.tsv\"")
+        response.setHeader("Content-Encoding", "UTF-8")
+        response.setContentLength(file.bytes.length)
 
-      def out = response.outputStream
-      IOUtils.copy(inFile, out)
-      inFile.close()
-      out.close()
+        def out = response.outputStream
+        IOUtils.copy(inFile, out)
+        inFile.close()
+        out.close()
+      }
     }
     catch (Exception e) {
       log.error("Problem with sending export", e)
@@ -1571,10 +1576,13 @@ class PackageService {
     def pathPrefix = UUID.randomUUID().toString()
     String path = exportFilePath()
     File tempDir = new File(path + "/" + pathPrefix)
+    boolean hasErrors = false
     tempDir.mkdir()
     // step one: collect data files in temp directory
     packs.each { pkg ->
       String fileName = generateExportFileName(pkg, type)
+      boolean fileErrors = false
+
       try {
         File src = new File(path + fileName)
 
@@ -1592,49 +1600,61 @@ class PackageService {
             src = new File(path + fileName)
           }
           else {
-            while (!file.isFile()) {
-              sleep(500)
-            }
+            def caching_result = packageCachingService.cacheSinglePackage(pkg.id, true)
 
-            src = new File(exportFilePath() + fileName)
+            if (caching_result == 'OK') {
+              src = new File(exportFilePath() + fileName)
+            }
+            else {
+              hasErrors = true
+              fileErrors = true
+            }
           }
         }
-        File dest = new File("${path}/${pathPrefix}/${fileName.substring(0, fileName.length() - 13)}.tsv")
-        FileCopyUtils.copy(src, dest)
+
+        if (!fileErrors) {
+          File dest = new File("${path}/${pathPrefix}/${fileName.substring(0, fileName.length() - 13)}.tsv")
+          FileCopyUtils.copy(src, dest)
+        }
       } catch (IOException iox) {
         log.error("Problem while collecting data", iox)
       }
     }
 
     // step two: zip data
-    def zipFileName = exportFilePath() + "gokbExport_${pathPrefix}.zip"
-    ZipOutputStream zipFile = new ZipOutputStream(new FileOutputStream(zipFileName))
-    new File("${exportFilePath()}/$pathPrefix").eachFile() { file ->
-      //check if file
-      if (file.isFile()) {
-        zipFile.putNextEntry(new ZipEntry(file.name))
-        def buffer = new byte[file.size()]
-        file.withInputStream {
-          zipFile.write(buffer, 0, it.read(buffer))
+    if (!hasErrors) {
+      def zipFileName = exportFilePath() + "gokbExport_${pathPrefix}.zip"
+      ZipOutputStream zipFile = new ZipOutputStream(new FileOutputStream(zipFileName))
+      new File("${exportFilePath()}/$pathPrefix").eachFile() { file ->
+        //check if file
+        if (file.isFile()) {
+          zipFile.putNextEntry(new ZipEntry(file.name))
+          def buffer = new byte[file.size()]
+          file.withInputStream {
+            zipFile.write(buffer, 0, it.read(buffer))
+          }
+          zipFile.closeEntry()
         }
-        zipFile.closeEntry()
       }
+      zipFile.close()
+
+      // step three: copy the zipfile into the response
+      File file = new File(zipFileName)
+      response.setContentType('application/octet-stream');
+      response.setHeader("Content-Disposition", "attachment; filename=\"gokbExport.zip\"")
+      response.setHeader("Content-Description", "File Transfer")
+      response.setHeader("Content-Transfer-Encoding", "binary")
+      response.setContentLength(file.length())
+
+      InputStream input = new FileInputStream(file)
+      OutputStream output = response.outputStream
+      IOUtils.copy(input, output)
+      output.close()
+      input.close()
     }
-    zipFile.close()
-
-    // step three: copy the zipfile into the response
-    File file = new File(zipFileName)
-    response.setContentType('application/octet-stream');
-    response.setHeader("Content-Disposition", "attachment; filename=\"gokbExport.zip\"")
-    response.setHeader("Content-Description", "File Transfer")
-    response.setHeader("Content-Transfer-Encoding", "binary")
-    response.setContentLength(file.length())
-
-    InputStream input = new FileInputStream(file)
-    OutputStream output = response.outputStream
-    IOUtils.copy(input, output)
-    output.close()
-    input.close()
+    else {
+      response.status = 404
+    }
   }
 
   static String urlStringToFileString(String url){
