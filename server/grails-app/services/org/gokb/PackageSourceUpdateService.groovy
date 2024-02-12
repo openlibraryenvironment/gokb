@@ -230,6 +230,8 @@ class PackageSourceUpdateService {
                       result.message = 'Skipped repeated import of the same file for this package.'
                       result.messageCode = 'kbart.transmission.skipped.sameFile'
 
+                      tmp_file.delete()
+
                       return result
                     }
 
@@ -241,6 +243,8 @@ class PackageSourceUpdateService {
                   result.result = 'ERROR'
                   result.messageCode = 'kbart.errors.url.charset'
                   result.message = "KBART is not UTF-8!"
+
+                  tmp_file.delete()
 
                   return result
                 }
@@ -254,6 +258,8 @@ class PackageSourceUpdateService {
               result.messageCode = 'kbart.errors.url.mimeType'
               result.message = "KBART URL returned a wrong content type!"
               log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+
+              tmp_file.delete()
 
               return result
             }
