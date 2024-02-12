@@ -132,13 +132,23 @@ class PackageSourceUpdateService {
 
             return result
           }
+
           if (file_info.accessError) {
             result.result = 'ERROR'
             result.messageCode = 'kbart.errors.url.html'
             result.message = "URL returned HTML, indicating provider configuration issues!"
 
             return result
-          } else if (file_info.status == 403) {
+          }
+          else if (file_info.mimeTypeError) {
+            result.result = 'ERROR'
+            result.messageCode = 'kbart.errors.url.mimeType'
+            result.message = "KBART URL returned a wrong content type!"
+            log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+
+            return result
+          }
+          else if (file_info.status == 403) {
             log.debug("URL request failed!")
             result.result = 'ERROR'
             result.messageCode = 'kbart.errors.url.denied'
@@ -149,6 +159,7 @@ class PackageSourceUpdateService {
 
           if (!file_info.file_name && (dynamic_date || extracted_date)) {
             LocalDate active_date = LocalDate.now()
+            boolean skipLookupByDate = false
             src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
             log.debug("Fetching dated URL for today..")
             file_info = fetchKbartFile(tmp_file, src_url)
@@ -162,106 +173,102 @@ class PackageSourceUpdateService {
             }
 
             // Check all days of this month
-            while (active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
+            while (!skipLookupByDate && active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
               active_date = active_date.minusDays(1)
               src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
               log.debug("Fetching dated URL for date ${active_date}")
               sleep(500)
               file_info = fetchKbartFile(tmp_file, src_url)
+
+              if (file_info.mimeTypeError) {
+                skipLookupByDate = true
+              }
             }
+          }
+
+          if (file_info.mimeTypeError) {
+            result.result = 'ERROR'
+            result.messageCode = 'kbart.errors.url.mimeType'
+            result.message = "KBART URL returned a wrong content type!"
+            log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+
+            return result
           }
 
           log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
           if (file_info.file_name) {
-            if ((file_info.file_name?.endsWith('.tsv') || file_info.file_name?.endsWith('.txt')) &&
-                (file_info.content_mime_type?.startsWith("text/plain") ||
-                file_info.content_mime_type?.startsWith("text/csv") ||
-                file_info.content_mime_type?.startsWith("text/tab-separated-values") ||
-                file_info.content_mime_type == 'application/octet-stream')
-            ) {
-              try {
-                MessageDigest md5_digest = MessageDigest.getInstance("MD5")
-                UniversalDetector detector = new UniversalDetector()
-                FileInputStream fis = new FileInputStream(tmp_file)
-                BufferedInputStream inputStream = new BufferedInputStream(fis)
-                int total_size = 0
-                byte[] dataBuffer = new byte[4096]
-                int bytesRead
+            try {
+              MessageDigest md5_digest = MessageDigest.getInstance("MD5")
+              UniversalDetector detector = new UniversalDetector()
+              FileInputStream fis = new FileInputStream(tmp_file)
+              BufferedInputStream inputStream = new BufferedInputStream(fis)
+              int total_size = 0
+              byte[] dataBuffer = new byte[4096]
+              int bytesRead
 
-                while ((bytesRead = inputStream.read(dataBuffer, 0, 4096)) != -1) {
-                  md5_digest.update(dataBuffer, 0, bytesRead)
-                  detector.handleData(dataBuffer, 0, bytesRead)
-                  total_size += bytesRead
-                }
+              while ((bytesRead = inputStream.read(dataBuffer, 0, 4096)) != -1) {
+                md5_digest.update(dataBuffer, 0, bytesRead)
+                detector.handleData(dataBuffer, 0, bytesRead)
+                total_size += bytesRead
+              }
 
-                log.debug("Read $total_size bytes..")
+              log.debug("Read $total_size bytes..")
 
-                detector.dataEnd()
-                byte[] md5sum = md5_digest.digest()
-                file_info.md5sumHex = new BigInteger(1, md5sum).toString(16)
+              detector.dataEnd()
+              byte[] md5sum = md5_digest.digest()
+              file_info.md5sumHex = new BigInteger(1, md5sum).toString(16)
 
-                String encoding = detector.getDetectedCharset()
+              String encoding = detector.getDetectedCharset()
 
-                if (encoding in ['UTF-8', 'US-ASCII']) {
-                  DataFile datafile = DataFile.findByMd5(file_info.md5sumHex)
+              if (encoding in ['UTF-8', 'US-ASCII']) {
+                DataFile datafile = DataFile.findByMd5(file_info.md5sumHex)
 
-                  if (!datafile) {
-                    log.debug("Create new datafile")
-                    datafile = new DataFile(
-                                            guid: deposit_token,
-                                            md5: file_info.md5sumHex,
-                                            uploadName: file_info.file_name,
-                                            name: file_info.file_name,
-                                            filesize: total_size,
-                                            encoding: encoding,
-                                            uploadMimeType: file_info.content_mime_type).save()
-                    datafile.fileData = tmp_file.getBytes()
-                    datafile.save(failOnError:true,flush:true)
-                    log.debug("Saved new datafile : ${datafile.id}")
-                    datafile_id = datafile.id
-                  }
-                  else {
-                    log.debug("Found existing datafile ${datafile}")
-
-                    if (!hasFileChanged(pid, datafile.id)) {
-                      log.debug("Datafile was already the last import for this package!")
-                      result.result = 'SKIPPED'
-                      result.message = 'Skipped repeated import of the same file for this package.'
-                      result.messageCode = 'kbart.transmission.skipped.sameFile'
-
-                      tmp_file.delete()
-
-                      return result
-                    }
-
-                    datafile_id = datafile.id
-                  }
+                if (!datafile) {
+                  log.debug("Create new datafile")
+                  datafile = new DataFile(
+                                          guid: deposit_token,
+                                          md5: file_info.md5sumHex,
+                                          uploadName: file_info.file_name,
+                                          name: file_info.file_name,
+                                          filesize: total_size,
+                                          encoding: encoding,
+                                          uploadMimeType: file_info.content_mime_type).save()
+                  datafile.fileData = tmp_file.getBytes()
+                  datafile.save(failOnError:true,flush:true)
+                  log.debug("Saved new datafile : ${datafile.id}")
+                  datafile_id = datafile.id
                 }
                 else {
-                  log.error("Illegal charset ${encoding} found..")
-                  result.result = 'ERROR'
-                  result.messageCode = 'kbart.errors.url.charset'
-                  result.message = "KBART is not UTF-8!"
+                  log.debug("Found existing datafile ${datafile}")
 
-                  tmp_file.delete()
+                  if (!hasFileChanged(pid, datafile.id)) {
+                    log.debug("Datafile was already the last import for this package!")
+                    result.result = 'SKIPPED'
+                    result.message = 'Skipped repeated import of the same file for this package.'
+                    result.messageCode = 'kbart.transmission.skipped.sameFile'
 
-                  return result
+                    tmp_file.delete()
+
+                    return result
+                  }
+
+                  datafile_id = datafile.id
                 }
-              } catch (IOException e) {
-                  // handle exception
-                 log.error("Failed DataFile handling", e)
               }
-            }
-            else {
-              result.result = 'ERROR'
-              result.messageCode = 'kbart.errors.url.mimeType'
-              result.message = "KBART URL returned a wrong content type!"
-              log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+              else {
+                log.error("Illegal charset ${encoding} found..")
+                result.result = 'ERROR'
+                result.messageCode = 'kbart.errors.url.charset'
+                result.message = "KBART is not UTF-8!"
 
-              tmp_file.delete()
+                tmp_file.delete()
 
-              return result
+                return result
+              }
+            } catch (IOException e) {
+                // handle exception
+                log.error("Failed DataFile handling", e)
             }
           }
           else {
@@ -423,12 +430,24 @@ class PackageSourceUpdateService {
       }
 
       if (file_name?.trim()) {
-        log.debug("${result.content_mime_type} ${headers.map()}")
-        result.file_name = file_name.replaceAll(/\"/, '')
-        InputStream content = response.body()
-        FileUtils.copyInputStreamToFile(content, tmp_file)
-        content.close()
-        log.debug("Wrote ${tmp_file.length()}")
+        file_name.replaceAll(/\"/, '')
+
+        if ((file_name?.trim()?.endsWith('.tsv') || file_name?.trim()?.endsWith('.txt')) &&
+            (result.content_mime_type?.startsWith("text/plain") ||
+            result.content_mime_type?.startsWith("text/csv") ||
+            result.content_mime_type?.startsWith("text/tab-separated-values") ||
+            result.content_mime_type == 'application/octet-stream')) {
+          log.debug("${result.content_mime_type} ${headers.map()}")
+          result.file_name = file_name
+          InputStream content = response.body()
+          FileUtils.copyInputStreamToFile(content, tmp_file)
+          content.close()
+          log.debug("Wrote ${tmp_file.length()}")
+        }
+        else {
+          result.mimeTypeError = true
+          response.body().close()
+        }
       }
     }
     catch (Exception e) {
