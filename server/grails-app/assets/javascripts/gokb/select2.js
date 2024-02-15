@@ -320,7 +320,7 @@ the specific language governing permissions and limitations under the Apache Lic
     function syncCssClasses(dest, src, adapter) {
         var classes, replacements = [], adapted;
 
-        classes = dest.attr("class").trim();
+        classes = dest.attr("class")?.trim();
 
         if (classes) {
             classes = '' + classes; // for IE which returns object
@@ -332,7 +332,7 @@ the specific language governing permissions and limitations under the Apache Lic
             });
         }
 
-        classes = src.attr("class").trim();
+        classes = src.attr("class")?.trim();
 
         if (classes) {
             classes = '' + classes; // for IE which returns object
