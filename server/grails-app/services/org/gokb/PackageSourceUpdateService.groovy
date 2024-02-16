@@ -8,6 +8,7 @@ import groovy.util.logging.Slf4j
 
 import java.net.http.*
 import java.net.http.HttpResponse.BodyHandlers
+import java.net.http.HttpRequest.BodyPublishers
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.LocalDate
@@ -16,6 +17,7 @@ import java.util.regex.Pattern
 
 import org.gokb.cred.*
 import org.apache.commons.io.FileUtils
+import org.apache.commons.io.input.BoundedInputStream
 import org.mozilla.universalchardet.UniversalDetector
 
 @Slf4j
@@ -33,14 +35,14 @@ class PackageSourceUpdateService {
     log.info("Initialising source update service...")
   }
 
-  def updateFromSource(Long pkgId, def user = null, Job job = null, Long activeGroupId = null, boolean dryRun = false) {
+  def updateFromSource(Long pkgId, def user = null, Job job = null, Long activeGroupId = null, boolean dryRun = false, boolean restrictSize = true) {
     log.debug("updateFromSource ${pkgId}")
     def result = [result: 'OK']
     def activeJobs = concurrencyManagerService.getComponentJobs(pkgId)
 
     if (job || activeJobs?.data?.size() == 0) {
       log.debug("UpdateFromSource started")
-      result = startSourceUpdate(pkgId, user, job, activeGroupId, dryRun)
+      result = startSourceUpdate(pkgId, user, job, activeGroupId, dryRun, restrictSize)
 
       if (job && !job.endTime) {
         job.endTime = new Date()
@@ -53,7 +55,7 @@ class PackageSourceUpdateService {
     result
   }
 
-  private def startSourceUpdate(pid, user, job, activeGroupId, dryRun) {
+  private def startSourceUpdate(pid, user, job, activeGroupId, dryRun, restrictSize) {
     log.debug("Source update start..")
     def result = [result: 'OK']
     Boolean async = (user ? true : false)
@@ -90,17 +92,19 @@ class PackageSourceUpdateService {
 
           if (valid_url_string =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
             log.debug("URL contains date placeholder ..")
-            src_url = new URL(existing_string.replace('{YYYY-MM-DD}', local_date_string))
+            src_url = new URL(valid_url_string.replace('{YYYY-MM-DD}', local_date_string))
             dynamic_date = true
           }
           else {
-            def date_pattern_match = (existing_string =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
+            def date_pattern_match = (valid_url_string =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
 
             if (date_pattern_match && date_pattern_match[0].size() > 0) {
               String matched_date_string = date_pattern_match[0][1]
               log.debug("${matched_date_string}")
               extracted_date = LocalDate.parse(matched_date_string)
             }
+
+            src_url = new URL(valid_url_string)
           }
         }
         else {
@@ -122,13 +126,21 @@ class PackageSourceUpdateService {
 
           if (!extracted_date || !lastRunLocal || extracted_date > lastRunLocal) {
             log.debug("Request initial URL..")
-            file_info = fetchKbartFile(tmp_file, src_url)
+            file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
           }
 
           if (file_info.connectError) {
             result.result = 'ERROR'
             result.messageCode = 'kbart.errors.url.connection'
             result.message = "There was an error trying to fetch KBART via URL!"
+
+            return result
+          }
+
+          if (file_info.fileSizeError) {
+            result.result = 'ERROR'
+            result.messageCode = 'kbart.errors.url.fileSize'
+            result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
 
             return result
           }
@@ -162,14 +174,14 @@ class PackageSourceUpdateService {
             boolean skipLookupByDate = false
             src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
             log.debug("Fetching dated URL for today..")
-            file_info = fetchKbartFile(tmp_file, src_url)
+            file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
             // Look at first of this month
             if (!file_info.file_name) {
               sleep(500)
               log.debug("Fetching first of the month..")
               def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
-              file_info = fetchKbartFile(tmp_file, som_date_url)
+              file_info = fetchKbartFile(tmp_file, som_date_url, restrictSize)
             }
 
             // Check all days of this month
@@ -178,7 +190,7 @@ class PackageSourceUpdateService {
               src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
               log.debug("Fetching dated URL for date ${active_date}")
               sleep(500)
-              file_info = fetchKbartFile(tmp_file, src_url)
+              file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
 
               if (file_info.mimeTypeError) {
                 skipLookupByDate = true
@@ -285,6 +297,7 @@ class PackageSourceUpdateService {
           result.result = 'ERROR'
           result.messageCode = 'kbart.errors.url.protocol'
           result.message = "KBART URL has an unsupported protocol!"
+          log.debug("Unsupported protocol for URL ${src_url}")
 
           return result
         }
@@ -399,17 +412,45 @@ class PackageSourceUpdateService {
     result
   }
 
-  def fetchKbartFile(File tmp_file, URL src_url) {
+  def fetchKbartFile(File tmp_file, URL src_url, boolean restrictSize = true) {
     def result = [content_mime_type: null, file_name: null]
     HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build()
-    HttpRequest request = HttpRequest.newBuilder()
-      .uri(src_url.toURI())
-      .header("User-Agent", "GOKb KBART Updater")
-      .build()
+    Long max_length = 20971520L // 1024 * 1024 * 20
 
     try {
+      HttpRequest head_request = HttpRequest.newBuilder()
+        .uri(src_url.toURI())
+        .header("User-Agent", "GOKb KBART Updater")
+        .method('HEAD', BodyPublishers.noBody())
+        .build()
+
+      def head_response = client.send(head_request, BodyHandlers.discarding())
+
+      if (head_response?.statusCode() == 405) {
+        log.debug("Unable to send HEAD request ..")
+      }
+      else if (head_response?.statusCode()) {
+        HttpHeaders test_headers = head_response.headers()
+
+        log.debug("Got HEAD result headers: ${test_headers}")
+
+        // reject files bigger than 20 MB
+        if (restrictSize && test_headers.firstValue('Content-Length').isPresent() && test_headers.firstValue('Content-Length').get() > max_length) {
+          result.fileSizeError = true
+          return result
+        }
+      }
+
+      HttpRequest request = HttpRequest.newBuilder()
+              .uri(src_url.toURI())
+              .header("User-Agent", "GOKb KBART Updater")
+              .build()
+
       HttpResponse<InputStream> response = client.send(request, BodyHandlers.ofInputStream())
       HttpHeaders headers = response.headers()
+
+      log.debug("Got HEAD result headers: ${headers}")
+
       def file_name = headers.firstValue('Content-Disposition').isPresent() ? headers.firstValue('Content-Disposition').get() : null
 
       if (file_name) {
@@ -427,10 +468,11 @@ class PackageSourceUpdateService {
       else if (!file_name && result.content_mime_type?.startsWith('text/html')) {
         log.warn("Got HTML result at KBART URL ${src_url}!")
         result.accessError = true
+        return result
       }
 
       if (file_name?.trim()) {
-        file_name.replaceAll(/\"/, '')
+        file_name = file_name.replaceAll(/\"/, '')
 
         if ((file_name?.trim()?.endsWith('.tsv') || file_name?.trim()?.endsWith('.txt')) &&
             (result.content_mime_type?.startsWith("text/plain") ||
@@ -439,10 +481,14 @@ class PackageSourceUpdateService {
             result.content_mime_type == 'application/octet-stream')) {
           log.debug("${result.content_mime_type} ${headers.map()}")
           result.file_name = file_name
-          InputStream content = response.body()
+          def content = restrictSize ? new BoundedInputStream(response.body(), max_length) : response.body()
           FileUtils.copyInputStreamToFile(content, tmp_file)
-          content.close()
           log.debug("Wrote ${tmp_file.length()}")
+
+          if (restrictSize && tmp_file.length() >= max_length) {
+            result.fileSizeError = true
+            tmp_file.delete()
+          }
         }
         else {
           result.mimeTypeError = true
