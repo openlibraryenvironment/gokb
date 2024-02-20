@@ -142,4 +142,24 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
     expect:
       !service.hasValidLength(long_string, "first_author")
   }
+
+  void "test checkUrl with invalid protocol"() {
+    expect:
+      service.checkUrl('htp://test.com') == null
+  }
+
+  void "test checkUrl with invalid tld"() {
+    expect:
+      service.checkUrl('http://test.localhost') == null
+  }
+
+  void "test checkUrl with valid date wildcard"() {
+    expect:
+      service.checkUrl('https://test.com/kbart/provider_Global_TestPackage_{YYYY-MM-DD}.txt') != null
+  }
+
+  void "test checkUrl with ignored date wildcard"() {
+    expect:
+      service.checkUrl('https://test.com/kbart/provider_Global_TestPackage_{YYYY-MM-DD}.txt', false) == null
+  }
 }

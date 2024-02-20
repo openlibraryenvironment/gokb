@@ -335,6 +335,7 @@ class EzbCollectionService {
 
       if (result.curator_id && provider && platform && ezbSource) {
         Identifier collection_id = componentLookupService.lookupOrCreateCanonicalIdentifier('ezb-collection-id', item.ezb_collection_id)
+        Identifier zdb_sigel = item.zdb_product_id?.trim() ? componentLookupService.lookupOrCreateCanonicalIdentifier('isil', item.zdb_product_id) : null
 
         obj = Package.findByNameAndStatus(pkgName, status_current)
 
@@ -420,6 +421,10 @@ class EzbCollectionService {
 
           if (!obj.ids.contains(collection_id)) {
             obj.ids.add(collection_id)
+          }
+
+          if (zdb_sigel && !obj.ids.contains(zdb_sigel)) {
+            obj.ids.add(zdb_sigel)
           }
 
           if (obj.name != pkgName) {

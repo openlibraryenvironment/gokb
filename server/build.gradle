@@ -101,7 +101,7 @@ dependencies {
     implementation 'org.grails.plugins:grails-melody-plugin:1.80.0'
     implementation 'net.bull.javamelody:javamelody-core:1.95.0'
 
-    implementation 'org.grails.plugins:spring-security-core:6.0.3'
+    implementation 'org.grails.plugins:spring-security-core:6.1.1'
     implementation 'org.grails.plugins:spring-security-acl:4.0.0.M2'
     implementation 'org.grails.plugins:spring-security-ui:4.0.0.M1'
     implementation 'org.grails.plugins:spring-security-rest:3.0.1'

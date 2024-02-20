@@ -7,6 +7,8 @@ import grails.converters.JSON
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.JobResult
 import org.gokb.cred.KBComponent
+import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
 import org.gokb.cred.User
 import grails.plugin.springsecurity.annotation.Secured
 import java.util.concurrent.CancellationException
@@ -186,8 +188,33 @@ class JobsController {
     else if (user.superUserStatus) {
       if (params.archived == "true") {
         result.data = []
-        def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr")[0]
-        def jobs = JobResult.executeQuery("from JobResult as jr order by jr.startTime desc", [], [max: max, offset: offset])
+        int hqlTotal
+        JobResult[] jobs
+
+        if (params.int('type')) {
+          RefdataValue rdv_type = RefdataValue.get(params.int('type'))
+
+          if (rdv_type) {
+            if (rdv_type.owner = RefdataCategory.lookup('Job.Type')) {
+              hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr where type = :jt", [jt: rdv_type])[0]
+              jobs = JobResult.executeQuery("from JobResult as jr where type = :jt order by jr.startTime desc", [jt: rdv_type], [max: max, offset: offset])
+            }
+            else {
+              result.result = 'ERROR'
+              response.status = 400
+              result.message = 'Reference value ${params.type} is not a job type!'
+            }
+          }
+          else {
+            result.result = 'ERROR'
+            response.status = 400
+            result.message = 'Unable to reference job type via ID ${params.type}!'
+          }
+        }
+        else {
+          hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr")[0]
+          jobs = JobResult.executeQuery("from JobResult as jr order by jr.startTime desc", [], [max: max, offset: offset])
+        }
 
         jobs.each { JobResult j ->
           def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
@@ -212,35 +239,28 @@ class JobsController {
         ]
       }
       else {
-        def rawJobs = concurrencyManagerService.getJobs()
-        def selected = []
+        if (params.int('type')) {
+          RefdataValue rdv_type = RefdataValue.get(params.int('type'))
 
-        rawJobs.each { k, v ->
-          selected << [
-              id         : v.uuid,
-              progress   : v.progress,
-              messages   : v.messages,
-              description: v.description,
-              type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
-              begun      : v.begun,
-              startTime  : v.startTime,
-              linkedItem : v.linkedItem,
-              endTime    : v.endTime,
-              cancelled  : v?.isCancelled()
-          ]
+          if (rdv_type) {
+            if (rdv_type.owner = RefdataCategory.lookup('Job.Type')) {
+              result = concurrencyManagerService.getJobsForType(rdv_type, max, offset, showFinished)
+            }
+            else {
+              result.result = 'ERROR'
+              response.status = 400
+              result.message = 'Reference value ${params.type} is not a job type!'
+            }
+          }
+          else {
+            result.result = 'ERROR'
+            response.status = 400
+            result.message = 'Unable to reference job type via ID ${params.type}!'
+          }
         }
-
-        if (offset > 0) {
-          selected = selected.drop(offset)
+        else {
+          result
         }
-
-        result.data = selected.take(max)
-
-        result._pagination = [
-            offset: offset,
-            limit : max,
-            total : selected.size()
-        ]
       }
     }
     else {
