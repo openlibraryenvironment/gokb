@@ -282,6 +282,9 @@ class PackageSourceUpdateService {
                 // handle exception
                 log.error("Failed DataFile handling", e)
             }
+
+
+            tmp_file.delete()
           }
           else {
             result.message = "No KBART found for provided URL!"
@@ -327,7 +330,7 @@ class PackageSourceUpdateService {
                                                     job)
 
         if (hasOpenIssues(pid, async, result)) {
-          log.info("There were issues with the automated job (valid: ${result.validation?.valid}, reviews: ${result.report?.reviews}, matching reviews: ${result.matchingJob?.reviews}), keeping listStatus in progress..")
+          log.info("There were issues with the automated job (valid: ${result.validation?.valid}, reviews: ${result.report?.reviews}${!async ? ', matching reviews: '  + result.matchingJob?.reviews : ''}), keeping listStatus in progress..")
         }
         else if (!async && !dryRun) {
           log.debug("Setting new listStatus to checked ..")
@@ -382,7 +385,7 @@ class PackageSourceUpdateService {
         }
 
         if (hasOpenIssues(pid, async, result.job_result)) {
-          log.info("There were issues with the automated job (valid: ${result.job_result?.validation?.valid}, reviews: ${result.job_result?.report?.reviews}, matching reviews: ${result.job_result?.matchingJob?.reviews}), keeping listStatus in progress..")
+          log.info("There were issues with the automated job (valid: ${result.job_result?.validation?.valid}, reviews: ${result.job_result?.report?.reviews}${!async ? ', matching reviews: '  + result.matchingJob?.reviews : ''}), keeping listStatus in progress..")
         }
         else if (!async && !dryRun) {
           log.debug("Setting new listStatus to checked ..")
