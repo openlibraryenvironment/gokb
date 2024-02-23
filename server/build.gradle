@@ -93,7 +93,6 @@ dependencies {
     implementation 'net.sf.ehcache:ehcache:2.10.9.2'
     implementation "org.grails.plugins:gsp"
     implementation "org.grails.plugins:mail:3.0.0"
-    // implementation 'org.grails.plugins:greenmail:2.0.0.RC2'
     implementation 'org.grails.plugins:database-migration:4.1.0', {
         exclude module: 'spring-boot-cli'
     }
@@ -135,6 +134,7 @@ dependencies {
     runtimeOnly "com.h2database:h2"
     runtimeOnly "org.apache.tomcat:tomcat-jdbc"
 
+    testImplementation 'io.github.gpc:greenmail:5.0.0'
     testImplementation "org.springframework.boot:spring-boot-starter-tomcat"
     testImplementation "org.grails:grails-gorm-testing-support"
     testImplementation "org.grails:grails-web-testing-support"
