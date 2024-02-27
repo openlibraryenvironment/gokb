@@ -434,11 +434,12 @@ class PackageSourceUpdateService {
       }
       else if (head_response?.statusCode()) {
         HttpHeaders test_headers = head_response.headers()
+        Long content_length = test_headers.firstValue('Content-Length').isPresent() ? Long.valueOf(test_headers.firstValue('Content-Length').get()) : null
 
         log.debug("Got HEAD result headers: ${test_headers}")
 
         // reject files bigger than 20 MB
-        if (restrictSize && test_headers.firstValue('Content-Length').isPresent() && test_headers.firstValue('Content-Length').get() > max_length) {
+        if (restrictSize && content_length && content_length > max_length) {
           result.fileSizeError = true
           return result
         }
