@@ -48,6 +48,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/monitoring/**',                 access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/login/auth',                    access: ['permitAll']],
   [pattern: '/greenmail/**',                  access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
+  [pattern: '/greenmail',                     access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/',                              access: ['permitAll']],
   [pattern: '/index',                         access: ['permitAll']],
   [pattern: '/notFound',                      access: ['permitAll']],

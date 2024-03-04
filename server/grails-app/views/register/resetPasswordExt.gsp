@@ -1,11 +1,19 @@
 <html>
 <head>
   <meta name='layout' content='public'/>
-  <title>Password Reset</title>
+  <title><g:message code='spring.security.ui.resetPassword.title'/></title>
+  <asset:stylesheet src="gokb/gokb-brand.css"/>
 </head>
 
 <body>
-
+  <nav class="navbar navbar-default" id="primary-nav-bar" role="navigation" style="height:64px">
+    <div class="container">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-brand" style="font-face:bold">
+        <g:message code="gokb.appname" default="GOKb" />
+      </div>
+    </div>
+  </nav>
   <div class="container">
     <div class="row">
       <div class='col-md-12'>
@@ -31,7 +39,7 @@
           <h4><g:message code='spring.security.ui.resetPassword.description'/></h4>
 
           <div class="form-group">
-            <label for="password">${message(code:'spring.security.ui.register.password.label', locale:locale)}</label>
+            <label for="password">${message(code:'spring.security.ui.resetPassword.new', locale:locale)}</label>
             <g:passwordField class="form-control" type="password" id="password"  name="password" size="25" />
           </div>
 
@@ -41,7 +49,9 @@
           </div>
 
           <div class="form-group">
-            <button type="submit" value="Submit" class="btn btn-success">${message(code:'spring.security.ui.resetPassword.submit', locale:locale)}</button>
+            <button type="submit" value="Submit" class="btn btn-success">
+              ${message(code:'spring.security.ui.resetPassword.submit', locale:locale)}
+            </button>
           </div>
 
         </div>

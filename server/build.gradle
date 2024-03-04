@@ -65,6 +65,7 @@ configurations {
 dependencies {
     developmentOnly "org.springframework.boot:spring-boot-devtools"
     developmentOnly "org.springframework.boot:spring-boot-starter-tomcat"
+    developmentOnly 'io.github.gpc:greenmail:5.0.0'
 
     implementation "org.codehaus.groovy:groovy-dateutil:3.0.13"
     implementation "org.springframework.boot:spring-boot-starter-validation"

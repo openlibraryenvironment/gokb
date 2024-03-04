@@ -8,21 +8,6 @@
 </head>
 
 <body>
-  <g:if test="${embed}">
-    <nav class="navbar navbar-inverse" id="primary-nav-bar" role="navigation" style="height:64px">
-  </g:if>
-  <g:else>
-    <nav class="navbar navbar-default" id="primary-nav-bar" role="navigation">
-  </g:else>
-    <div class="container">
-      <!-- Brand and toggle get grouped for better mobile display -->
-      <g:if test="${!embed}">
-        <div class="navbar-brand" style="font-face:bold">
-          <g:message code="gokb.appname" default="GOKb" />
-        </div>
-      </g:if>
-    </div>
-  </nav>
   <div class="container">
     <div class="row">
       <div class='col-md-12'>
@@ -41,7 +26,7 @@
         </g:if>
 
 
-      <g:form action='forgotPassword' name="forgotPasswordForm" autocomplete='off' class="form" role="form">
+      <g:form action='forgotPasswordExt' name="forgotPasswordForm" autocomplete='off' class="form" role="form">
 
         <g:if test='${emailSent}'>
           <br/>
@@ -52,12 +37,36 @@
           <br/>
           <h4><g:message code='spring.security.ui.forgotPassword.description'/></h4>
 
+          <label for="username"  style="margin-top:20px">
+            ${message(code:'spring.security.ui.register.username.label', locale: locale)} (
+              <span style="color:red">*</span>
+            )
+          </label>
           <div class="form-group">
-            <g:textField class="form-control" id="username"  placeholder="${message(code: 'spring.security.ui.register.username.label')}" name="username" size="25" />
+            <g:textField class="form-control" id="username"  placeholder="${message(code: 'spring.security.ui.register.username.label', locale: locale)}" name="username" size="25" />
           </div>
 
-          <div class="form-group">
-            <button type="submit" value="Submit" class="btn btn-default"><g:message code='spring.security.ui.forgotPassword.submit' /></button>
+          <label for="botFilter">
+            ${message(code:'spring.security.ui.register.mathCheck.label', args:[secQuestion], locale: locale)} (
+              <span style="color:red">*</span>
+            )
+          </label>
+          <div
+            class="input-group input-group-sm ${secFailed ? 'has-error' : ''}"
+            style="margin-bottom:12px"
+          >
+            <input autocomplete="false" type="text" class="form-control" id="botFilter" name="secAnswer" />
+            <g:if test="${secFailed}">
+              <ul>
+                <li>${message(code:'spring.security.ui.register.mathCheck.error', locale: locale)}</li>
+              </ul>
+            </g:if>
+          </div>
+
+          <div class="form-group" style="margin-top:20px">
+            <button type="submit" value="Submit" class="btn btn-default">
+              <g:message code='spring.security.ui.forgotPassword.submit' />
+            </button>
           </div>
 
         </g:else>

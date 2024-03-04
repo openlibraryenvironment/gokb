@@ -236,8 +236,7 @@
                   </g:if>
                 </div>
                 <div class="input-group">
-                  <label for="submit"></label>
-                  <button type="submit" class="btn btn-default">
+                  <button type="submit" value="Submit" class="btn btn-default">
                     ${message(code:'spring.security.ui.register.submit', locale: locale)}
                   </button>
                 </div>

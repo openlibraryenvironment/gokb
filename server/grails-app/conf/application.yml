@@ -204,6 +204,10 @@ environments:
                 enabled: false
         logging:
             config: classpath:logback-development.xml
+        spring:
+            devtools:
+                restart:
+                    exclude: grails-app/views/**
     test:
         dataSource:
             dbCreate: create-drop
