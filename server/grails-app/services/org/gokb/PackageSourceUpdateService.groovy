@@ -16,8 +16,7 @@ import java.time.ZoneId
 import java.util.regex.Pattern
 
 import org.gokb.cred.*
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.input.BoundedInputStream
+import org.apache.commons.io.IOUtils
 import org.mozilla.universalchardet.UniversalDetector
 
 @Slf4j
@@ -419,6 +418,7 @@ class PackageSourceUpdateService {
     def result = [content_mime_type: null, file_name: null]
     HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build()
     Long max_length = 20971520L // 1024 * 1024 * 20
+    Long content_length
 
     try {
       HttpRequest head_request = HttpRequest.newBuilder()
@@ -434,7 +434,7 @@ class PackageSourceUpdateService {
       }
       else if (head_response?.statusCode()) {
         HttpHeaders test_headers = head_response.headers()
-        Long content_length = test_headers.firstValue('Content-Length').isPresent() ? Long.valueOf(test_headers.firstValue('Content-Length').get()) : null
+        content_length = test_headers.firstValue('Content-Length').isPresent() ? Long.valueOf(test_headers.firstValue('Content-Length').get()) : null
 
         log.debug("Got HEAD result headers: ${test_headers}")
 
@@ -475,7 +475,13 @@ class PackageSourceUpdateService {
         return result
       }
 
-      if (file_name?.trim()) {
+      content_length = headers.firstValue('Content-Length').isPresent() ? Long.valueOf(headers.firstValue('Content-Length').get()) : null
+
+      if (restrictSize && content_length && content_length > max_length) {
+        response.body().close()
+        result.fileSizeError = true
+      }
+      else if (file_name?.trim()) {
         file_name = file_name.replaceAll(/\"/, '')
 
         if ((file_name?.trim()?.endsWith('.tsv') || file_name?.trim()?.endsWith('.txt')) &&
@@ -485,22 +491,31 @@ class PackageSourceUpdateService {
             result.content_mime_type == 'application/octet-stream')) {
           log.debug("${result.content_mime_type} ${headers.map()}")
           result.file_name = file_name
-          def content = restrictSize ? new BoundedInputStream(response.body(), max_length).setPropagateClose(true) : response.body()
 
-          try {
-            FileUtils.copyInputStreamToFile(content, tmp_file)
-          }
-          catch (Exception e) {
-            log.error("Error copying to temp file!", e)
+          OutputStream outStream = new FileOutputStream(tmp_file)
+
+          byte[] buffer = new byte[8 * 1024]
+          int bytesRead
+          Long current_total = 0
+
+          while ((bytesRead = response.body().read(buffer)) != -1) {
+            outStream.write(buffer, 0, bytesRead)
+
+            current_total += bytesRead
+
+            if (!content_length && current_total > max_length) {
+              result.fileSizeError = true
+              response.body().close()
+              break
+            }
           }
 
-          if (restrictSize && tmp_file.length() >= max_length) {
-            content.close()
+          outStream.close()
+
+          log.debug("Wrote ${tmp_file?.length()}")
+
+          if (result.fileSizeError) {
             tmp_file.delete()
-            result.fileSizeError = true
-          }
-          else {
-            log.debug("Wrote ${tmp_file.length()}")
           }
         }
         else {
