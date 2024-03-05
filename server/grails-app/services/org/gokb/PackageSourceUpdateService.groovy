@@ -485,13 +485,22 @@ class PackageSourceUpdateService {
             result.content_mime_type == 'application/octet-stream')) {
           log.debug("${result.content_mime_type} ${headers.map()}")
           result.file_name = file_name
-          def content = restrictSize ? new BoundedInputStream(response.body(), max_length) : response.body()
-          FileUtils.copyInputStreamToFile(content, tmp_file)
-          log.debug("Wrote ${tmp_file.length()}")
+          def content = restrictSize ? new BoundedInputStream(response.body(), max_length).setPropagateClose(true) : response.body()
+
+          try {
+            FileUtils.copyInputStreamToFile(content, tmp_file)
+          }
+          catch (Exception e) {
+            log.error("Error copying to temp file!", e)
+          }
 
           if (restrictSize && tmp_file.length() >= max_length) {
-            result.fileSizeError = true
+            content.close()
             tmp_file.delete()
+            result.fileSizeError = true
+          }
+          else {
+            log.debug("Wrote ${tmp_file.length()}")
           }
         }
         else {

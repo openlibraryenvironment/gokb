@@ -150,69 +150,7 @@ class EzbCollectionService {
               cancelled = true
             }
 
-            def collection_result = processCollectionEntry(item, type_results)
-
-            if (!collection_result.skipped &&
-                collection_result.pkgInfo.id &&
-                collection_result.sourceResult &&
-                collection_result.pkgCreated &&
-                collection_result.pkgCreated > dateFormatService.parseTimestamp(item.ezb_collection_released_date)
-            ) {
-              if (hasChangedFile(collection_result.pkgInfo.id, item)) {
-                log.debug("Creating new import job ..")
-                try {
-                  Job pkg_job = concurrencyManagerService.createJob { pjob ->
-                    packageSourceUpdateService.updateFromSource(collection_result.pkgInfo.id, null, pjob, collection_result.curator_id)
-                  }
-
-                  RefdataCategory.withNewSession {
-                    pkg_job.groupId = collection_result.curator_id
-                    pkg_job.description = "EZB KBART Source ingest (${collection_result.pkgInfo.name})".toString()
-                    pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
-                    pkg_job.linkedItem = collection_result.pkgInfo
-                    pkg_job.message("Starting upsert for Package ${collection_result.pkgInfo.name}".toString())
-                    pkg_job.startOrQueue()
-                  }
-
-                  def job_result = pkg_job.get()
-
-                  log.debug("Finished job with result: ${job_result}")
-
-                  if (job_result?.validation?.errors?.rows || job_result?.validation?.errors?.missingColumns) {
-                    type_results.validationErrors[item.ezb_collection_id] = job_result.validation
-                  }
-
-                  if (job_result?.result == 'ERROR') {
-                    type_results.errors++
-                  }
-                  else {
-                    type_results.success++
-                  }
-                }
-                catch (Exception e) {
-                  log.error("Exception creating source update job!", e)
-                }
-              }
-              else {
-                log.debug("Skipping unchanged Package file ${collection_result.pkgInfo.name}.")
-                type_results.unchanged++
-              }
-            }
-            else if (collection_result.skipped) {
-              log.debug("Skipped..")
-            }
-            else if (!collection_result.pkgInfo) {
-              log.debug("Unable to reference package!")
-            }
-            else if (!collection_result.sourceResult) {
-              log.debug("No source object created.. skip")
-              type_results.errors++
-              type_results.sourceError << item.ezb_collection_id
-            }
-            else {
-              log.warn("Matched package is older than the EZB release date.. Skipping!")
-              type_results.skipped++
-            }
+            handleEzbCollectionItem(item, type_results)
           }
         }
         else {
@@ -302,7 +240,73 @@ class EzbCollectionService {
     result
   }
 
-  private def processCollectionEntry(item, type_results) {
+  private void handleEzbCollectionItem(item, type_results) {
+    def collection_result = processPackageInfo(item, type_results)
+
+    if (!collection_result.skipped &&
+        collection_result.pkgInfo.id &&
+        collection_result.sourceResult &&
+        collection_result.pkgCreated &&
+        collection_result.pkgCreated > dateFormatService.parseTimestamp(item.ezb_collection_released_date)
+    ) {
+      if (hasChangedFile(collection_result.pkgInfo.id, item)) {
+        log.debug("Creating new import job ..")
+        try {
+          Job pkg_job = concurrencyManagerService.createJob { pjob ->
+            packageSourceUpdateService.updateFromSource(collection_result.pkgInfo.id, null, pjob, collection_result.curator_id)
+          }
+
+          RefdataCategory.withNewSession {
+            pkg_job.groupId = collection_result.curator_id
+            pkg_job.description = "EZB KBART Source ingest (${collection_result.pkgInfo.name})".toString()
+            pkg_job.type = RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')
+            pkg_job.linkedItem = collection_result.pkgInfo
+            pkg_job.message("Starting upsert for Package ${collection_result.pkgInfo.name}".toString())
+            pkg_job.startOrQueue()
+          }
+
+          def job_result = pkg_job.get()
+
+          log.debug("Finished job with result: ${job_result}")
+
+          if (job_result?.validation?.errors?.rows || job_result?.validation?.errors?.missingColumns) {
+            type_results.validationErrors[item.ezb_collection_id] = job_result.validation
+          }
+
+          if (job_result?.result == 'ERROR') {
+            type_results.errors++
+          }
+          else {
+            type_results.success++
+          }
+        }
+        catch (Exception e) {
+          log.error("Exception creating source update job!", e)
+        }
+      }
+      else {
+        log.debug("Skipping unchanged Package file ${collection_result.pkgInfo.name}.")
+        type_results.unchanged++
+      }
+    }
+    else if (collection_result.skipped) {
+      log.debug("Skipped..")
+    }
+    else if (!collection_result.pkgInfo) {
+      log.debug("Unable to reference package!")
+    }
+    else if (!collection_result.sourceResult) {
+      log.debug("No source object created.. skip")
+      type_results.errors++
+      type_results.sourceError << item.ezb_collection_id
+    }
+    else {
+      log.warn("Matched package is older than the EZB release date.. Skipping!")
+      type_results.skipped++
+    }
+  }
+
+  private def processPackageInfo(item, type_results) {
     def result = [
       skipped: false,
       sourceResult: false,
@@ -402,36 +406,61 @@ class EzbCollectionService {
         }
 
         if (obj && !result.skipped) {
+          Boolean hasChanged = false
+
           if (!obj.contentType) {
             obj.contentType = RefdataCategory.lookup('Package.ContentType', 'Journal')
+            hasChanged = true
           }
 
           String validity = 'Consortium'
 
           if (item.ezb_package_type_name == 'Aggregatorpaket') {
             validity = 'Global'
-            obj.scope = RefdataCategory.lookup('Package.Scope', 'Aggregator')
+
+            if (obj.scope?.value != 'Aggregator') {
+              obj.scope = RefdataCategory.lookup('Package.Scope', 'Aggregator')
+              hasChanged = true
+            }
           }
 
-          obj.global = RefdataCategory.lookup('Package.Global', validity)
+          if (!obj.global || obj.global.value != validity) {
+            obj.global = RefdataCategory.lookup('Package.Global', validity)
+            hasChanged = true
+          }
 
-          obj.nominalPlatform = platform
-          obj.provider = provider
-          obj.save(flush: true)
+          if (obj.nominalPlatform != platform) {
+            obj.nominalPlatform = platform
+            hasChanged = true
+          }
 
-          if (!obj.ids.contains(collection_id)) {
+          if (obj.provider != provider) {
+            obj.provider = provider
+            hasChanged = true
+          }
+
+          if (hasChanged) {
+            obj.save(flush: true)
+          }
+
+          if (!obj.ids*.id.contains(collection_id.id)) {
             obj.ids.add(collection_id)
+            hasChanged = true
           }
 
-          if (zdb_sigel && !obj.ids.contains(zdb_sigel)) {
+          if (zdb_sigel && !obj.ids*.id.contains(zdb_sigel.id)) {
             obj.ids.add(zdb_sigel)
+            hasChanged = true
           }
 
           if (obj.name != pkgName) {
             obj.name = pkgName
+            hasChanged = true
           }
 
-          obj.save(flush: true)
+          if (hasChanged) {
+            obj.save(flush: true)
+          }
 
           result.pkgCreated = obj.dateCreated
           result.pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
@@ -487,6 +516,7 @@ class EzbCollectionService {
       def deposit_token = java.util.UUID.randomUUID().toString()
       File tmp_file = TSVIngestionService.handleTempFile(deposit_token)
       def file_info = packageSourceUpdateService.fetchKbartFile(tmp_file, new URL(item.ezb_collection_titlelist))
+
       RefdataValue type_fa = RefdataCategory.lookup('Combo.Type', 'KBComponent.FileAttachments')
 
       def ordered_combos = Combo.executeQuery('''select c.toComponent from Combo as c
@@ -498,6 +528,10 @@ class EzbCollectionService {
 
       if (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex) {
         result = true
+      }
+
+      if (tmp_file.isFile()) {
+        tmp_file.delete()
       }
 
       result
