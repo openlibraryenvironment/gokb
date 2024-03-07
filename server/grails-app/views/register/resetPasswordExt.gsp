@@ -14,7 +14,6 @@
     <div class="row">
       <div class='col-md-12'>
         &nbsp;
-        ${grailsApplication.config.getProperty('gokb.uiUrl')}
       </div>
     </div>
     <div class="row">
