@@ -6,7 +6,7 @@
 <br/>
 <g:message code="spring.security.ui.forgotPassword.email.line3" locale="${locale ?: 'en'}"/><p/>
 <a href="${url}">
-  <g:message code="spring.security.ui.forgotPassword.email.here"  locale="${locale ?: 'en'}"/>
+  ${url}
 </a>
 <p>
 <g:message code="spring.security.ui.forgotPassword.email.line4" locale="${locale ?: 'en'}"/>

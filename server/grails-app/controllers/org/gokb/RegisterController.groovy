@@ -20,6 +20,7 @@ import groovy.util.logging.*
 
 import java.time.temporal.ChronoUnit
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Slf4j
 @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
@@ -414,7 +415,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 	def resetPasswordExt(ResetPasswordCommand resetPasswordCommand) {
     Locale locale = params.lang ? new Locale(params.lang) : request.locale
     def new_question = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
-    LocalDateTime ldt = LocalDateTime.ofInstant(new Date().toInstant(), ZoneId.systemDefault()).minus(2, ChronoUnit.DAYS)
+    LocalDateTime ldt = LocalDateTime.ofInstant(new Date().toInstant(), ZoneId.systemDefault()).minus(1, ChronoUnit.DAYS)
     Date date_cutoff = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
 		String token = params.t
 

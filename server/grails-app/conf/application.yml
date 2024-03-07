@@ -107,7 +107,7 @@ info:
 
 spring:
     application:
-        name: GOKb
+        name: GOKB
     main:
         banner-mode: "off"
     groovy:

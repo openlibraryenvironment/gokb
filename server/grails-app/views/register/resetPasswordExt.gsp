@@ -1,23 +1,20 @@
 <html>
 <head>
-  <meta name='layout' content='public'/>
+  <meta name='layout' content='register'/>
   <title><g:message code='spring.security.ui.resetPassword.title'/></title>
   <asset:stylesheet src="gokb/gokb-brand.css"/>
 </head>
 
 <body>
-  <nav class="navbar navbar-default" id="primary-nav-bar" role="navigation" style="height:64px">
-    <div class="container">
-      <!-- Brand and toggle get grouped for better mobile display -->
-      <div class="navbar-brand" style="font-face:bold">
-        <g:message code="gokb.appname" default="GOKb" />
-      </div>
-    </div>
+  <nav class="navbar navbar-inverse" id="primary-nav-bar" role="navigation" style="height:64px">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <a href="${grailsApplication.config.getProperty('gokb.uiUrl')}" class="navbar-brand"><g:message code="gokb.appname" default="GOKB" /></a>
   </nav>
   <div class="container">
     <div class="row">
       <div class='col-md-12'>
         &nbsp;
+        ${grailsApplication.config.getProperty('gokb.uiUrl')}
       </div>
     </div>
     <div class="row">
