@@ -12,6 +12,9 @@ import grails.plugin.springsecurity.ui.ResetPasswordCommand
 import grails.plugin.springsecurity.ui.ForgotPasswordCommand
 import grails.plugin.springsecurity.ui.RegistrationCode
 import groovy.text.SimpleTemplateEngine
+import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
 import org.springframework.context.MessageSource
 import org.springframework.context.i18n.LocaleContextHolder
 import org.springframework.security.access.annotation.Secured
@@ -45,9 +48,14 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
   def messageService
 
+  def mailService
+
+  def adminAlertingService
+
 	static final String EMAIL_LAYOUT = "/layouts/email"
 	static final String FORGOT_PASSWORD_TEMPLATE = "/register/_forgotPasswordMail"
 	static final String VERIFY_REGISTRATION_TEMPLATE = "/register/_verifyRegistrationMail"
+  static final String REGISTRATION_ALERT_TEMPLATE = "/register/_registerAlertMail"
 
   def index(RegisterCommand registerCommand) {
     if (params.embed) {
@@ -125,11 +133,12 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
   }
 
   def start(RegisterCommand registerCommand) {
-
     def secResult
     def errors = [:]
     def secFailed = false
     def agrFailed = false
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    def groups = CuratoryGroup.executeQuery("select id, name from CuratoryGroup where status = :cs", [cs: status_current])
     Locale locale = params.lang ? new Locale(params.lang) : request.locale
 
 
@@ -138,6 +147,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
       return [
         registerCommand: new RegisterCommand(),
         secQuestion: session.secQuestion,
+        groups: groups,
         embed: 'true',
         locale: locale
       ]
@@ -150,6 +160,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         registerCommand: registerCommand,
         noTries: true,
         errors: messageService.processValidationErrors(registerCommand.errors, locale),
+        groups: groups,
         embed: 'true',
         locale: locale
       ]
@@ -174,6 +185,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         secFailed: secFailed,
         agrFailed: agrFailed,
         secQuestion: session.secQuestion,
+        groups: groups,
         errors: messageService.processValidationErrors(registerCommand.errors, locale),
         embed: 'true',
         locale: locale
@@ -187,6 +199,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         secFailed: secFailed,
         agrFailed: agrFailed,
         secQuestion: session.secQuestion,
+        groups: groups,
         errors: messageService.processValidationErrors(registerCommand.errors, locale),
         embed: 'true',
         locale: locale
@@ -194,16 +207,22 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     }
 
     def user = uiRegistrationCodeStrategy.createUser(registerCommand)
-    RegistrationCode registrationCode = uiRegistrationCodeStrategy.register(user, registerCommand.password)
 
-    if (registrationCode == null || registrationCode.hasErrors()) {
+    if (user == null || user.hasErrors()) {
       // null means problem creating the user
       flash.error = message(code: 'spring.security.ui.register.miscError')
       return [
         registerCommand: registerCommand,
         embed: 'true',
+        groups: groups,
         locale: locale
       ]
+    }
+    else {
+      user.preferredLocaleString = locale.toString()
+      user.save(flush: true)
+
+      adminAlertingService.sendRegistrationAlert(user)
     }
 
     session.secQuestion = null
@@ -213,6 +232,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
       registerCommand: registerCommand,
       emailSent: true,
       noAddress: true,
+      groups: groups,
       embed: 'true',
       locale: locale
     ]
@@ -414,7 +434,6 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
 	def resetPasswordExt(ResetPasswordCommand resetPasswordCommand) {
     Locale locale = params.lang ? new Locale(params.lang) : request.locale
-    def new_question = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
     LocalDateTime ldt = LocalDateTime.ofInstant(new Date().toInstant(), ZoneId.systemDefault()).minus(1, ChronoUnit.DAYS)
     Date date_cutoff = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
 		String token = params.t
@@ -422,29 +441,38 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 		def registrationCode = token ? RegistrationCode.findByToken(token) : null
 
 		if (!registrationCode || registrationCode.dateCreated < date_cutoff) {
-			flash.error = message(code: 'spring.security.ui.resetPassword.badCode', locale: locale)
+			flash.error = message(code: token ? 'spring.security.ui.resetPassword.badCode' : 'spring.security.ui.resetPassword.noCode', locale: locale)
 			return [resetPasswordCommand: resetPasswordCommand, locale: locale]
 		}
 
 		if (!request.post) {
-      session.secQuestion = new_question
 			return [token: token, resetPasswordCommand: new ResetPasswordCommand(), locale: locale]
 		}
 
 		resetPasswordCommand.username = registrationCode.username
 		resetPasswordCommand.validate()
+
 		if (resetPasswordCommand.hasErrors()) {
 			return [token: token, resetPasswordCommand: resetPasswordCommand, locale: locale]
 		}
 
 		def user = uiRegistrationCodeStrategy.resetPassword(resetPasswordCommand, registrationCode)
+
 		if (user.hasErrors()) {
-			// expected to be handled already by ErrorsStrategy.handleValidationErrors
+      return [
+        resetPasswordCommand: resetPasswordCommand,
+        errors: messageService.processValidationErrors(resetPasswordCommand.errors, locale),
+        locale: locale
+      ]
 		}
 
 		flash.message = message(code: 'spring.security.ui.resetPassword.success', locale: locale)
 
-		redirect uri: grailsApplication.config.getProperty('gokb.uiUrl')
+    [
+      success: true,
+      embed: true,
+      locale: locale
+    ]
 	}
 
 	def resetPassword(ResetPasswordCommand resetPasswordCommand) {

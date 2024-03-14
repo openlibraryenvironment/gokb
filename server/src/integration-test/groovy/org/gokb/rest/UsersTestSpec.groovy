@@ -280,26 +280,30 @@ class UsersTestSpec extends AbstractAuthSpec {
     checkUser != null
   }
 
-  /*
-  * /register is not implemented for security reasons.
-  */
+  void "test PATCH /rest/users/{id}/activate without notification"() {
+    def urlPath = getUrlPath()
+    when:
+    String accessToken = getAccessToken()
 
-  // @Ignore
-  // void "test POST /rest/register"() {
-  //   when:
-  //   Map reqBody = [
-  //     username: "newerUser",
-  //     email: "nobody@localhost",
-  //     password: "defaultPassword"
-  //   ]
-  //   HttpRequest request = HttpRequest.POST("${urlPath}/rest/register", reqBody)
-  //     .bearerAuth(accessToken)
-  //   HttpResponse resp = http.exchange(request, Map)
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/users/$altUser.id/activate")
+      .bearerAuth(accessToken)
 
-  //   then:
-  //   resp.status == HttpStatus.OK
-  //   sleep(500)
-  //   User checkUser = User.findByUsername("newerUser")
-  //   checkUser != null
-  // }
+    HttpStatus status
+
+    try {
+      HttpResponse resp = http.exchange(request, Map)
+    } catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
+      status = e.status
+    }
+
+    then:
+    status == HttpStatus.OK
+    sleep(500)
+    def checkUser = User.findById(altUser.id).refresh()
+    checkUser.enabled == true
+    checkUser.accountLocked == false
+    checkUser.hasRole('ROLE_USER')
+    checkUser.hasRole('ROLE_CONTRIBUTOR')
+    checkUser.hasRole('ROLE_EDITOR')
+  }
 }

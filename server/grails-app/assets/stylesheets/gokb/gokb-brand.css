@@ -1,5 +1,10 @@
 @import url('https://webfonts.gbv.de/css2?family=Roboto:wght@300;500;700');
 
+html * {
+  font-family: "Roboto", sans-serif;
+}
+
+
 .navbar-inverse {
   background-color: rgb(165, 20, 26);
 }

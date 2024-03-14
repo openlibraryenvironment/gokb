@@ -101,6 +101,7 @@ class UrlMappings {
       put "/users/$id"(controller: 'users', namespace: 'rest', action: 'update')
       patch "/users/$id"(controller: 'users', namespace: 'rest', action: 'update')
       delete "/users/$id"(controller: 'users', namespace: 'rest', action: 'delete')
+      patch "/users/$id/activate"(controller: 'users', namespace: 'rest', action: 'activate')
 
       get "/sources"(controller: 'sources', namespace: 'rest', action: 'index')
       get "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'show')

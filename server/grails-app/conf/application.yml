@@ -356,4 +356,7 @@ quartz:
     waitForJobsToCompleteOnShutdown: false
 server:
   servlet:
-      context-path: /gokb
+        context-path: /gokb
+        session:
+            cookie:
+                same-site: Lax

@@ -74,12 +74,17 @@ order by f.id, ti.id, title_in_group.id
   }
 
   def sendAllAlerts() {
-    def rq = User.executeQuery('select u from User as u where u.send_alert_emails.value=:yes',[yes:'Yes']);
-    Date start_date = new Date(System.currentTimeMillis() - (24*60*60*1000) );
-    Date end_date = new Date(System.currentTimeMillis());
-    log.debug("User list: ${rq}");
-    rq.each {
-      sendEmail(it, start_date, end_date);
+    if (grailsApplication.config.getProperty('gokb.alerts.emailFrom')) {
+      def rq = User.executeQuery('select u from User as u where u.send_alert_emails.value=:yes',[yes:'Yes']);
+      Date start_date = new Date(System.currentTimeMillis() - (24*60*60*1000) )
+      Date end_date = new Date(System.currentTimeMillis())
+      log.debug("User list: ${rq}");
+      rq.each {
+        sendEmail(it, start_date, end_date);
+      }
+    }
+    else {
+      log.warn("Unable to send user alerts due to missing sender address config value 'gokb.alerts.emailFrom'!")
     }
   }
 
@@ -101,15 +106,17 @@ order by f.id, ti.id, title_in_group.id
     def emailTemplateFile = applicationContext.getResource("WEB-INF/mail-templates/gokbAlerts.gsp").file
     def engine = new SimpleTemplateEngine()
     def tmpl = engine.createTemplate(emailTemplateFile).make(result)
+    def alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
     def content = tmpl.toString()
-    EmailValidator validator = EmailValidator.getInstance();
+    EmailValidator validator = EmailValidator.getInstance()
+    Locale locale = new Locale(user.preferredLocaleString ?: grailsApplication.config.getProperty('gokb.support.locale', String, 'en'))
 
     if (user.email && validator.isValid(user.email)) {
 
       mailService.sendMail {
         to user.email
-        from "${grailsApplication.config.getProperty('alerts.emailFrom') ?: 'GOKb <user-alerts@gokb.org>'}"
-        subject "${grailsApplication.config.getProperty('alerts.subject') ?: 'Your GOKb User Alerts'} - ${new Date()}"
+        from alerts_address
+        subject messageSource.getMessage('gokb.alerts.subject', [new Date()], locale)
         html content
       }
 

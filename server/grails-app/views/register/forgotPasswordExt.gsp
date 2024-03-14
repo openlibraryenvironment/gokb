@@ -11,11 +11,6 @@
   <div class="container">
     <div class="row">
       <div class='col-md-12'>
-        &nbsp;
-      </div>
-    </div>
-    <div class="row">
-      <div class='col-md-12'>
 
         <g:if test="${flash.error}">
           <div class="alert alert-error" style="display: block">${flash.error}</div>
@@ -29,14 +24,16 @@
       <g:form action='forgotPasswordExt' name="forgotPasswordForm" autocomplete='off' class="form" role="form">
 
         <g:if test='${emailSent}'>
-          <br/>
-          <g:message code='spring.security.ui.forgotPassword.sent'/>
+          <div>
+            <g:message code='spring.security.ui.forgotPassword.sent'/>
+          </div>
         </g:if>
 
         <g:else>
-          <br/>
-          <h4><g:message code='spring.security.ui.forgotPassword.description'/></h4>
-
+          <h1></h1>
+          <div>
+            <g:message code='spring.security.ui.forgotPassword.description'/>
+          </div>
           <label for="username"  style="margin-top:20px">
             ${message(code:'spring.security.ui.register.username.label', locale: locale)} (
               <span style="color:red">*</span>
