@@ -412,11 +412,30 @@ class ComponentLookupService {
               def ctr_ids = [ctr.id]
 
               if (ctr?.class == Package) {
-                def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :ctr and toComponent = tipp)",[ctr: ctr])
+                def tipp_ids = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
+                    where exists (
+                      select 1 from Combo
+                      where fromComponent = :ctr
+                      and toComponent = tipp
+                    )
+                    and exists (
+                      select 1 from ReviewRequest
+                      where componentToReview = tipp
+
+                    )''',[ctr: ctr])
 
                 if (params.titlereviews) {
                   if (tipp_ids.size() > 0) {
-                    def ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN (:tippids))", [tippids: tipp_ids])
+                    def ti_ids = TitleInstance.executeQuery('''select ti.id from TitleInstance as ti
+                      where exists (
+                        select 1 from Combo
+                        where fromComponent = ti
+                        and toComponent.id IN (:tippids)
+                      )
+                      and exists (
+                        select 1 from ReviewRequest
+                        where componentToReview = ti
+                      )''', [tippids: tipp_ids])
 
                     ctr_ids.addAll(ti_ids)
                   }

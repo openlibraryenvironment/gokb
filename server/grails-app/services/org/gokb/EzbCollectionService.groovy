@@ -321,6 +321,7 @@ class EzbCollectionService {
       log.debug("Processing ${item.ezb_package_type_name} ${item.ezb_collection_name}")
       String ezbCuratorName = grailsApplication.config.getProperty('gokb.ezbAugment.rrCurators')
       RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+      RefdataValue ls_checked = RefdataCategory.lookup('Package.ListStatus', 'Checked')
       CuratoryGroup ezb_curator = CuratoryGroup.findByName(ezbCuratorName) ?: new CuratoryGroup(name: ezbCuratorName).save(flush: true)
       Platform platform = item.ezb_collection_platform ? Platform.findByUuid(item.ezb_collection_platform) : null
       Org provider = item.ezb_collection_provider ? Org.findByUuid(item.ezb_collection_provider) : null
@@ -462,6 +463,29 @@ class EzbCollectionService {
             obj.save(flush: true)
           }
 
+          def open_reviews_count = ReviewRequest.executeQuery('''select count(*) from ReviewRequest as rr
+              where exists (
+                select 1 from TitleInstancePackagePlatform as tipp
+                where exists (
+                  select 1 from Combo
+                  where toComponent = tipp
+                  and fromComponent = :pkg
+                  and type = :cpt
+                )
+                and rr.componentToReview.id = tipp.id
+              )
+              and status = :so
+            ''', [
+              pkg: obj,
+              so: RefdataCategory.lookup('ReviewRequest.Status', 'Open'),
+              cpt: RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+            ])[0]
+
+          if (obj.listStatus != ls_checked && obj.currentTippCount > 0 && open_reviews_count == 0) {
+            obj.listStatus = ls_checked
+            obj.save(flush: true)
+          }
+
           result.pkgCreated = obj.dateCreated
           result.pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
 
@@ -526,11 +550,8 @@ class EzbCollectionService {
 
       def last_df_md5 = ordered_combos.size() > 0 ? ordered_combos[0].md5 : null
 
-      if (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex) {
+      if (tmp_file.isFile() && (!last_df_md5 || last_df_md5 != TSVIngestionService.analyseFile(tmp_file).md5sumHex)) {
         result = true
-      }
-
-      if (tmp_file.isFile()) {
         tmp_file.delete()
       }
 
