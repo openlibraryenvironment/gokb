@@ -167,7 +167,7 @@ class UserProfileService {
   def activate(userId, User adminUser, boolean alertUser = false) {
     def result = [result: 'OK']
     def errors = [:]
-    List default_roles = ['ROLE_USER', 'ROLE_CONTIBUTOR', 'ROLE_EDITOR']
+    List default_roles = ['ROLE_USER', 'ROLE_CONTRIBUTOR', 'ROLE_EDITOR']
     User user = User.get(userId)
 
     if (user) {

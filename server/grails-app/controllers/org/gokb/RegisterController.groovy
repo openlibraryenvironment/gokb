@@ -139,8 +139,8 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     def agrFailed = false
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     def groups = CuratoryGroup.executeQuery("select id, name from CuratoryGroup where status = :cs", [cs: status_current])
+    CuratoryGroup selectedGroup = params.selectedGroup ? CuratoryGroup.get(params.int('selectedGroup')) : null
     Locale locale = params.lang ? new Locale(params.lang) : request.locale
-
 
     if ( !request.post ) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
@@ -220,6 +220,11 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     }
     else {
       user.preferredLocaleString = locale.toString()
+
+      if (selectedGroup) {
+        user.curatoryGroups << selectedGroup
+      }
+
       user.save(flush: true)
 
       adminAlertingService.sendRegistrationAlert(user)
