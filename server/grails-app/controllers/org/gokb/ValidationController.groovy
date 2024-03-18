@@ -93,7 +93,7 @@ class ValidationController {
     def reqBody = request.JSON
 
     if (reqBody && reqBody.value) {
-      def validation_result = validationService.checkUrl(reqBody.value)
+      def validation_result = validationService.checkUrl(reqBody.value, params.boolean('replaceDate') ?: true)
 
       if (!validation_result) {
         result.result = 'ERROR'

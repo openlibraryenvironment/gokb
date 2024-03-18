@@ -331,13 +331,6 @@ class PackagesController {
       def type = params.exportType == 'title' ? PackageService.ExportType.KBART_TITLE : PackageService.ExportType.KBART_TIPP
 
       if (!ids || ids.size() <= 1) {
-        if (params.id == "all") {
-          Package.all.each { pack ->
-            packageService.createKbartExport(pack, type)
-          }
-          return response
-        }
-
         def pkg = Package.findByUuid(params.id) ?: (genericOIDService.oidToId(params.id) ? Package.get(genericOIDService.oidToId(params.id)) : null)
 
         if (pkg)

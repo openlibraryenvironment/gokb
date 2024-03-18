@@ -7,6 +7,7 @@ import com.opencsv.CSVReaderBuilder
 import com.opencsv.CSVParser
 import com.opencsv.CSVParserBuilder
 import grails.validation.ValidationException
+import java.time.LocalDate
 import org.apache.commons.io.ByteOrderMark
 import org.apache.commons.io.input.BOMInputStream
 import org.apache.commons.validator.routines.ISSNValidator
@@ -768,8 +769,16 @@ class ValidationService {
     result
   }
 
-  def checkUrl(String value) {
-    return new UrlValidator().isValid(value.trim()) ? value : null
+  def checkUrl(String value, boolean replaceDate = true) {
+    String local_date_string = LocalDate.now().toString()
+
+    def final_val = value.trim()
+
+    if (replaceDate) {
+      final_val = final_val.replace('{YYYY-MM-DD}', local_date_string)
+    }
+
+    return new UrlValidator().isValid(final_val) ? value : null
   }
 
   def checkDatePair(String startDate, String endDate) {

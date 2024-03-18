@@ -761,15 +761,16 @@ class PackageController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
   def triggerSourceUpdate() {
     def result = ['result': 'OK']
-    def active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
+    User user = User.get(springSecurityService.principal.id)
+    CuratoryGroup active_group = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
     Boolean async = params.boolean('async') ?: true
     Boolean dry_run = params.boolean('dryRun') ?: false
+    Boolean restrictSize = (params.boolean('ignoreFileSize') && user.isAdmin) ? false : true
     Package pkg = Package.get(params.id)
-    def user = User.get(springSecurityService.principal.id)
 
     if (pkg && componentUpdateService.isUserCurator(pkg, user)) {
       Job background_job = concurrencyManagerService.createJob { Job job ->
-        packageSourceUpdateService.updateFromSource(pkg.id, user.id, job, active_group.id, dry_run)
+        packageSourceUpdateService.updateFromSource(pkg.id, user.id, job, active_group.id, dry_run, restrictSize)
       }
 
       background_job.groupId = active_group?.id ?: (componentLookupService.findCuratoryGroupOfInterest(pkg, user)?.id ?: null)

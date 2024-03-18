@@ -12,6 +12,8 @@ import org.opensearch.action.index.IndexRequest
 import org.opensearch.client.RequestOptions
 import org.opensearch.common.xcontent.XContentType
 
+import groovy.transform.Synchronized
+
 class FTUpdateService {
 
   def ESWrapperService
@@ -476,34 +478,34 @@ class FTUpdateService {
     }
     else {
       if (j) j.message("Indexing for $indexType is already running.. skip")
-      log.error("FTUpdate for index $indexType already running")
+      log.debug("FTUpdate for index $indexType already running")
 
       return "Job cancelled – FTUpdate for index $indexType was already running!"
     }
   }
 
-  synchronized packagesUpdate(j) {
+  private void packagesUpdate(j) {
     packagesRunning = true
     def esclient = ESWrapperService.getClient()
     updateES(esclient, Package.class, j)
     packagesRunning = false
   }
 
-  synchronized orgsUpdate(j) {
+  private void orgsUpdate(j) {
     orgsRunning = true
     def esclient = ESWrapperService.getClient()
     updateES(esclient, Org.class, j)
     orgsRunning = false
   }
 
-  synchronized platformsUpdate(j) {
+  private void platformsUpdate(j) {
     platformsRunning = true
     def esclient = ESWrapperService.getClient()
     updateES(esclient, Platform.class, j)
     platformsRunning = false
   }
 
-  synchronized titlesUpdate(j) {
+  private void titlesUpdate(j) {
     titlesRunning = true
     def esclient = ESWrapperService.getClient()
     updateES(esclient, JournalInstance.class, j)
@@ -513,7 +515,7 @@ class FTUpdateService {
     titlesRunning = false
   }
 
-  synchronized tippsUpdate(j) {
+  private void tippsUpdate(j) {
     tippsRunning = true
     def esclient = ESWrapperService.getClient()
     updateES(esclient, TitleInstancePackagePlatform.class, j)
@@ -672,7 +674,7 @@ class FTUpdateService {
     }
     else {
       if (j) j.message("Already running, skip..")
-      log.error("FTUpdate already running")
+      log.debug("FTUpdate already running")
       return "Job cancelled – FTUpdate was already running!"
     }
   }

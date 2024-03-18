@@ -575,6 +575,7 @@ class TippService {
     int offset = 0
     int total = 0
     def tippIDs = []
+    def session = sessionFactory.currentSession
 
     try {
       tippIDs = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
@@ -615,6 +616,9 @@ class TippService {
           job?.setProgress(offset, total)
         }
 
+        session.flush()
+        session.clear()
+
         if (Thread.currentThread().isInterrupted() || job?.isCancelled()) {
           job?.message("Job cancelled!")
           log.debug("cancelling package title matching for job #${job?.uuid}")
@@ -623,6 +627,9 @@ class TippService {
           break
         }
       }
+
+      session.flush()
+      session.clear()
 
       if (job) {
         job.setProgress(100)

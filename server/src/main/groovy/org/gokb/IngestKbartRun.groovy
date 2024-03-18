@@ -91,7 +91,7 @@ class IngestKbartRun {
     isCleanup = cleanup
   }
 
-  def start(nJob) {
+  def start(nJob, session) {
     job = nJob ?: job
     def pid = pkg.id
     log.debug("ingest start")
@@ -137,11 +137,11 @@ class IngestKbartRun {
       boolean valid_encoding = true
 
       if (!(datafile.encoding in ['UTF-8', 'US-ASCII'])) {
-        log.debug("Illegal charset ${encoding} found..")
+        log.debug("Illegal charset ${datafile.encoding} found..")
         valid_encoding = false
         result.result = 'ERROR'
-        result.messageCode = 'kbart.errors.url.charset'
-        result.messages.add("File has illegal charset ${encoding}!")
+        result.messageCode = 'kbart.errors.encoding'
+        result.messages.add("File has illegal charset ${datafile.encoding}!")
       }
 
       log.debug("Set progress")
@@ -160,7 +160,7 @@ class IngestKbartRun {
         result.messages.add("There are ${file_info.rows.error} invalid rows (${file_info.rows.warning} with warnings)!")
       }
 
-      def running_jobs = concurrencyManagerService.getComponentJobs(pkg.id)
+      def running_jobs = concurrencyManagerService.getComponentJobs(pid)
 
       if (valid_encoding && (file_info.valid || (skipInvalid && !file_info.errors.missingColumns)) && running_jobs.data?.size() <= 1) {
         CSVReader csv = initReader(datafile)
@@ -180,7 +180,7 @@ class IngestKbartRun {
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                               'from TitleInstancePackagePlatform as tipp, Combo as c '+
                               'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
-                            [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
+                            [pkg: pid, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
         result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0,  previous: old_tipp_count]
 
@@ -225,7 +225,6 @@ class IngestKbartRun {
 
                 def line_result = writeToDB(row_kbart_beans,
                           ingest_date,
-                          ingest_systime,
                           ingest_cfg,
                           row_specific_cfg)
 
@@ -238,6 +237,11 @@ class IngestKbartRun {
               else {
                 log.debug("**Skipped ${rownum} of ${file_info.rows.total + file_info.rows.skipped}")
                 result.report.invalid++
+              }
+
+              if (rownum % 50 == 0) {
+                session.flush()
+                session.clear()
               }
 
               log.debug("ROW ELAPSED : ${System.currentTimeMillis() - rowStartTime}")
@@ -255,6 +259,9 @@ class IngestKbartRun {
           }
         }
 
+        session.flush()
+        session.clear()
+
         if (result.result != 'CANCELLED' && dryRun) {
           result.titleMatch = titleMatchResult
         }
@@ -263,53 +270,11 @@ class IngestKbartRun {
           log.debug("Incremental -- no expunge")
         }
         else if (isUpdate || isCleanup) {
-          log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
+          log.debug("Expunging old tipps [Tipps belonging to ${pid} last seen prior to ${ingest_date}]")
           if (!dryRun && result.result != 'CANCELLED') {
             try {
               TitleInstancePackagePlatform.withNewSession {
-                // Find all tipps in this package which have a lastSeen before the ingest date
-                RefdataValue new_status = RefdataCategory.lookup('KBComponent.Status', (isCleanup ? 'Deleted' : 'Retired'))
-
-                def retire_pars = [
-                  pkgid: pkg.id,
-                  dt: ingest_systime,
-                  sc: RefdataCategory.lookup('KBComponent.Status', 'Current'),
-                  sr: new_status,
-                  igdt: dateFormatService.parseDate(ingest_date),
-                  now: new Date()
-                ]
-
-                def rr_pars = [
-                  pkgid: pkg.id,
-                  closed: RefdataCategory.lookup('ReviewRequest.Status', 'Closed'),
-                  now: new Date(),
-                  open: RefdataCategory.lookup('ReviewRequest.Status', 'Open'),
-                  nstatus: new_status
-                ]
-
-                log.debug("Retiring via pars ${retire_pars}")
-
-                def removed_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
-                    set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
-                    where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
-                    and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
-
-                def closed_rrs_count = ReviewRequest.executeUpdate('''update ReviewRequest as rr
-                    set rr.status = :closed, rr.lastUpdated = :now
-                    where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = rr.componentToReview.id and tc.toComponent.status = :nstatus)
-                    and rr.status = :open''', rr_pars)
-
-                result.report.closedReviews = closed_rrs_count
-
-                if (isCleanup) {
-                  result.report.deleted = removed_count
-                }
-                else {
-                  result.report.retired = removed_count
-                }
-
-                log.debug("Completed tipp cleanup (${removed_count} ${isCleanup ? 'deleted' : 'retired'})")
-                log.debug("Closed ${closed_rrs_count} reviews of noncurrent tipps.")
+                result.report << doCleanup(pid, ingest_date)
               }
             }
             catch (Exception e) {
@@ -435,9 +400,56 @@ class IngestKbartRun {
     result
   }
 
+  def doCleanup(pkgId, date) {
+    def result = [:]
+    RefdataValue new_status = RefdataCategory.lookup('KBComponent.Status', (isCleanup ? 'Deleted' : 'Retired'))
+
+    def retire_pars = [
+      pkgid: pkgId,
+      dt: ingest_systime,
+      sc: RefdataCategory.lookup('KBComponent.Status', 'Current'),
+      sr: new_status,
+      igdt: dateFormatService.parseDate(date),
+      now: new Date()
+    ]
+
+    def rr_pars = [
+      pkgid: pkgId,
+      closed: RefdataCategory.lookup('ReviewRequest.Status', 'Closed'),
+      now: new Date(),
+      open: RefdataCategory.lookup('ReviewRequest.Status', 'Open'),
+      nstatus: new_status
+    ]
+
+    log.debug("Retiring via pars ${retire_pars}")
+
+    def removed_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
+        set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
+        where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
+        and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
+
+    def closed_rrs_count = ReviewRequest.executeUpdate('''update ReviewRequest as rr
+        set rr.status = :closed, rr.lastUpdated = :now
+        where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = rr.componentToReview.id and tc.toComponent.status = :nstatus)
+        and rr.status = :open''', rr_pars)
+
+    result.closedReviews = closed_rrs_count
+
+    if (isCleanup) {
+      result.deleted = removed_count
+    }
+    else {
+      result.retired = removed_count
+    }
+
+    log.debug("Completed tipp cleanup (${removed_count} ${isCleanup ? 'deleted' : 'retired'})")
+    log.debug("Closed ${closed_rrs_count} reviews of noncurrent tipps.")
+
+    result
+  }
+
   def writeToDB(the_kbart,
                ingest_date,
-               ingest_systime,
                ingest_cfg,
                row_specific_config) {
 
@@ -531,7 +543,6 @@ class IngestKbartRun {
           result = manualUpsertTIPP(the_kbart,
               platform,
               ingest_date,
-              ingest_systime,
               identifiers)
         }
         else {
@@ -563,7 +574,6 @@ class IngestKbartRun {
   def manualUpsertTIPP(the_kbart,
                        the_platform,
                        ingest_date,
-                       ingest_systime,
                        identifiers) {
 
     log.debug("TSVIngestionService::manualUpsertTIPP with pkg:${pkg}, plat:${the_platform}, date:${ingest_date}")

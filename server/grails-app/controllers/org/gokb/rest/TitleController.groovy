@@ -19,6 +19,7 @@ class TitleController {
   def ESSearchService
   def messageService
   def restMappingService
+  def titleAugmentService
   def titleLookupService
   def titleHistoryService
   def componentLookupService
@@ -854,6 +855,8 @@ class TitleController {
 
     if (changed) {
       obj.lastSeen = System.currentTimeMillis()
+
+      titleAugmentService.touchTitleTipps(obj)
     }
 
     errors
