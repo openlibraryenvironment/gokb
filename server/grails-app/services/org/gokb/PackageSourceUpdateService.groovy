@@ -484,7 +484,7 @@ class PackageSourceUpdateService {
       else if (file_name?.trim()) {
         file_name = file_name.replaceAll(/\"/, '')
 
-        if ((file_name?.trim()?.endsWith('.tsv') || file_name?.trim()?.endsWith('.txt')) &&
+        if ((file_name?.trim()?.endsWith('.tsv') || file_name?.trim()?.endsWith('.txt') || file_name?.trim()?.endsWith('.kbart')) &&
             (result.content_mime_type?.startsWith("text/plain") ||
             result.content_mime_type?.startsWith("text/csv") ||
             result.content_mime_type?.startsWith("text/tab-separated-values") ||
