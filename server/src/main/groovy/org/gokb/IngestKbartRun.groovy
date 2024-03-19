@@ -91,7 +91,7 @@ class IngestKbartRun {
     isCleanup = cleanup
   }
 
-  def start(nJob) {
+  def start(nJob, session) {
     job = nJob ?: job
     def pid = pkg.id
     log.debug("ingest start")
@@ -160,7 +160,7 @@ class IngestKbartRun {
         result.messages.add("There are ${file_info.rows.error} invalid rows (${file_info.rows.warning} with warnings)!")
       }
 
-      def running_jobs = concurrencyManagerService.getComponentJobs(pkg.id)
+      def running_jobs = concurrencyManagerService.getComponentJobs(pid)
 
       if (valid_encoding && (file_info.valid || (skipInvalid && !file_info.errors.missingColumns)) && running_jobs.data?.size() <= 1) {
         CSVReader csv = initReader(datafile)
@@ -180,7 +180,7 @@ class IngestKbartRun {
         int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
                               'from TitleInstancePackagePlatform as tipp, Combo as c '+
                               'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
-                            [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
+                            [pkg: pid, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
         result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0,  previous: old_tipp_count]
 
@@ -239,6 +239,11 @@ class IngestKbartRun {
                 result.report.invalid++
               }
 
+              if (rownum % 50 == 0) {
+                session.flush()
+                session.clear()
+              }
+
               log.debug("ROW ELAPSED : ${System.currentTimeMillis() - rowStartTime}")
             }
 
@@ -254,6 +259,9 @@ class IngestKbartRun {
           }
         }
 
+        session.flush()
+        session.clear()
+
         if (result.result != 'CANCELLED' && dryRun) {
           result.titleMatch = titleMatchResult
         }
@@ -262,11 +270,11 @@ class IngestKbartRun {
           log.debug("Incremental -- no expunge")
         }
         else if (isUpdate || isCleanup) {
-          log.debug("Expunging old tipps [Tipps belonging to ${pkg.id} last seen prior to ${ingest_date}] - ${pkg.name}")
+          log.debug("Expunging old tipps [Tipps belonging to ${pid} last seen prior to ${ingest_date}]")
           if (!dryRun && result.result != 'CANCELLED') {
             try {
               TitleInstancePackagePlatform.withNewSession {
-                result.report << doCleanup(pkg.id, ingest_date)
+                result.report << doCleanup(pid, ingest_date)
               }
             }
             catch (Exception e) {

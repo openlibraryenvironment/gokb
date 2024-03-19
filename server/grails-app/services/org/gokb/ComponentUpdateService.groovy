@@ -18,6 +18,7 @@ class ComponentUpdateService {
   def restMappingService
   def sessionFactory
   def ESWrapperService
+  def grailsApplication
 
   private final Object findLock = new Object()
 
@@ -475,6 +476,7 @@ class ComponentUpdateService {
       result.result = obj.delete(failOnError: true)
 
       if (ESWrapperService.indicesPerType[class_simple_name]){
+        def esclient = ESWrapperService.getClient()
         DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[class_simple_name]), oid)
         def es_response = esclient.delete(req, RequestOptions.DEFAULT)
         log.debug("${es_response}")
