@@ -33,6 +33,8 @@ class User extends Party {
   RefdataValue showQuickView
   RefdataValue showInfoIcon
 
+  String preferredLocaleString
+
   // used by @gokbg3.RestMappingService.selectJsonLabel
   public static final String jsonLabel = "username"
 

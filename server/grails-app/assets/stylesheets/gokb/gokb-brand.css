@@ -1,3 +1,10 @@
+@import url('https://webfonts.gbv.de/css2?family=Roboto:wght@300;500;700');
+
+html * {
+  font-family: "Roboto", sans-serif;
+}
+
+
 .navbar-inverse {
   background-color: rgb(165, 20, 26);
 }
@@ -98,6 +105,16 @@ select.input-sm {
 }
 .input-sm {
   height:2.8em;
+}
+
+.navbar-brand {
+  font-size: 20px !important;
+  font-weight: 500;
+  line-height: 2rem;
+  letter-spacing: 0.0125em !important;
+  font-family: "Roboto", sans-serif !important;
+  padding: 22px 8px;
+  margin-left: 118px;
 }
 
 .editable-buttons > button.btn-sm {

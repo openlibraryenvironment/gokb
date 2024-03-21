@@ -107,7 +107,7 @@ info:
 
 spring:
     application:
-        name: GOKb
+        name: GOKB
     main:
         banner-mode: "off"
     groovy:
@@ -204,6 +204,10 @@ environments:
                 enabled: false
         logging:
             config: classpath:logback-development.xml
+        spring:
+            devtools:
+                restart:
+                    exclude: grails-app/views/**
     test:
         dataSource:
             dbCreate: create-drop
@@ -352,4 +356,7 @@ quartz:
     waitForJobsToCompleteOnShutdown: false
 server:
   servlet:
-      context-path: /gokb
+        context-path: /gokb
+        session:
+            cookie:
+                same-site: Lax

@@ -280,26 +280,27 @@ class UsersTestSpec extends AbstractAuthSpec {
     checkUser != null
   }
 
-  /*
-  * /register is not implemented for security reasons.
-  */
+  void "test PATCH /rest/users/{id}/activate without notification"() {
+    def urlPath = getUrlPath()
+    when:
+    String accessToken = getAccessToken()
+    Map bodyData = [
+      enabled: true,
+      accountLocked: false
+    ]
 
-  // @Ignore
-  // void "test POST /rest/register"() {
-  //   when:
-  //   Map reqBody = [
-  //     username: "newerUser",
-  //     email: "nobody@localhost",
-  //     password: "defaultPassword"
-  //   ]
-  //   HttpRequest request = HttpRequest.POST("${urlPath}/rest/register", reqBody)
-  //     .bearerAuth(accessToken)
-  //   HttpResponse resp = http.exchange(request, Map)
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/users/$altUser.id/activate", bodyData)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
 
-  //   then:
-  //   resp.status == HttpStatus.OK
-  //   sleep(500)
-  //   User checkUser = User.findByUsername("newerUser")
-  //   checkUser != null
-  // }
+    then:
+    resp.status == HttpStatus.OK
+    sleep(500)
+    def checkUser = User.findById(altUser.id).refresh()
+    checkUser.enabled == true
+    checkUser.accountLocked == false
+    checkUser.hasRole('ROLE_USER')
+    checkUser.hasRole('ROLE_CONTRIBUTOR')
+    checkUser.hasRole('ROLE_EDITOR')
+  }
 }

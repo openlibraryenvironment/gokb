@@ -12,7 +12,7 @@ GOKb development has moved here from https://github.com/k-int/gokb-phase1
 ## Dependencies
 
 * Java 11
-* Groovy 3.0.11 && Grails 5.3.2 (consider using sdkman)
+* Groovy 3.0.11 && Grails 5.3.X (consider using sdkman)
 * Clean Postgres database
 * Running (local) Opensearch cluster (index will be created automatically)
 

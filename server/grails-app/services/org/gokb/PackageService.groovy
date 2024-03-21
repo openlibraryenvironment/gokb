@@ -40,6 +40,7 @@ class PackageService {
   def grailsApplication
   def dateFormatService
   def platformService
+  def packageCachingService
 
   private static final String[] KBART_FIELDS = ['publication_title',
      'print_identifier',
