@@ -1,4 +1,4 @@
-<g:message code="spring.security.ui.register.email.greeting" args="${[username]}" locale="${locale ?: 'en'}">,<br/>
+<g:message code="spring.security.ui.register.email.greeting" args="${[username]}" locale="${locale ?: 'en'}" />,<br/>
 <br/>
 <g:message code="spring.security.ui.register.email.line1" locale="${locale ?: 'en'}"/><br/>
 <br/>

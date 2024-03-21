@@ -155,12 +155,15 @@ class UserProfileService {
     return modifyUser(user, data, adminUser)
   }
 
-  def create(def data) {
+  def create(def data, User adminUser) {
     User user = new User()
     Role roleUser = Role.findByAuthority("ROLE_USER")
+
     if (!data.roleIds)
       data.roleIds = []
+
     data.roleIds << roleUser.id
+
     return modifyUser(user, data, adminUser)
   }
 
@@ -291,8 +294,10 @@ class UserProfileService {
           ]
         ]
       } else {
-        if (field == "roleIds" && !isNewUser) {
-          updateRoles(user, value, errors, isNewUser, adminUser)
+        if (field == "roleIds") {
+          if (!isNewUser) {
+            updateRoles(user, value, errors, isNewUser, adminUser)
+          }
         } else if (field == "curatoryGroupIds") {
           updateCuratoryGroups(user, value, errors, isNewUser)
         } else if (field == 'defaultPageSize' && value && value instanceof Integer) {
@@ -308,7 +313,7 @@ class UserProfileService {
         user = user.merge(flush: true, failOnError: true)
 
         if (isNewUser) {
-          updateRoles(user, data.roleIds, errors, isNewUser)
+          updateRoles(user, data.roleIds, errors, isNewUser, adminUser)
         }
 
         result.data = collectUserProps(user)

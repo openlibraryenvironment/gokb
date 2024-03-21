@@ -284,20 +284,17 @@ class UsersTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     when:
     String accessToken = getAccessToken()
+    Map bodyData = [
+      enabled: true,
+      accountLocked: false
+    ]
 
-    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/users/$altUser.id/activate")
+    HttpRequest request = HttpRequest.PATCH("${urlPath}/rest/users/$altUser.id/activate", bodyData)
       .bearerAuth(accessToken)
-
-    HttpStatus status
-
-    try {
-      HttpResponse resp = http.exchange(request, Map)
-    } catch (io.micronaut.http.client.exceptions.HttpClientResponseException e) {
-      status = e.status
-    }
+    HttpResponse resp = http.exchange(request, Map)
 
     then:
-    status == HttpStatus.OK
+    resp.status == HttpStatus.OK
     sleep(500)
     def checkUser = User.findById(altUser.id).refresh()
     checkUser.enabled == true
