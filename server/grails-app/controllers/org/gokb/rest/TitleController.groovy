@@ -17,9 +17,9 @@ class TitleController {
   def genericOIDService
   def springSecurityService
   def ESSearchService
-  def FTUpdateService
   def messageService
   def restMappingService
+  def titleAugmentService
   def titleLookupService
   def titleHistoryService
   def componentLookupService
@@ -232,6 +232,12 @@ class TitleController {
               errors.variantNames = variant_result.errors
             }
 
+            def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
+
+            if (subject_result.errors.size() > 0) {
+              errors.subjects = subject_result.errors
+            }
+
             errors << updateCombos(obj, reqBody)
 
             result = restMappingService.mapObjectToJson(obj, params, user)
@@ -240,10 +246,6 @@ class TitleController {
           else {
             result.result = 'ERROR'
             errors << messageService.processValidationErrors(obj.errors, request.locale)
-          }
-
-          if (obj?.id != null && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-            FTUpdateService.updateSingleItem(obj)
           }
         }
         else {
@@ -783,6 +785,12 @@ class TitleController {
             errors.variantNames = variant_result.errors
           }
 
+          def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
+
+          if (subject_result.errors.size() > 0) {
+            errors.subjects = subject_result.errors
+          }
+
           errors << updateCombos(obj, reqBody, remove)
 
           if ( errors.size() == 0 ) {
@@ -798,9 +806,6 @@ class TitleController {
           result.result = 'ERROR'
           response.status = 400
           errors.addAll(messageService.processValidationErrors(obj.errors, request.locale))
-        }
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
         }
       }
       else {
@@ -850,6 +855,8 @@ class TitleController {
 
     if (changed) {
       obj.lastSeen = System.currentTimeMillis()
+
+      titleAugmentService.touchTitleTipps(obj)
     }
 
     errors
@@ -1061,16 +1068,7 @@ class TitleController {
 
           titleHistoryService.transferEvents(obj, target)
 
-
-          if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-            FTUpdateService.updateSingleItem(target)
-          }
-
           obj.deleteSoft()
-
-          if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-            FTUpdateService.updateSingleItem(obj)
-          }
         }
         else {
           result.result = 'ERROR'

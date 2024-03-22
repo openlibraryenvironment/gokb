@@ -169,9 +169,6 @@ class OrgController {
         else {
           errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
-        if (obj?.id != null && grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
 
         result = restMappingService.mapObjectToJson(obj, params, user)
       }
@@ -254,8 +251,6 @@ class OrgController {
           errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
         if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-
           obj.providedPackages.each {
             FTUpdateService.updateSingleItem(it)
           }
@@ -297,9 +292,6 @@ class OrgController {
 
       if (curator || user.isAdmin()) {
         obj.deleteSoft()
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
       }
       else {
         result.result = 'ERROR'
@@ -336,9 +328,6 @@ class OrgController {
 
       if (curator || user.isAdmin()) {
         obj.retire()
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
       }
       else {
         result.result = 'ERROR'

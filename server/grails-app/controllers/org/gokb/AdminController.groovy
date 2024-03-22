@@ -435,6 +435,17 @@ class AdminController {
     redirect(controller: 'admin', action: 'jobs')
   }
 
+  def cacheSinglePackage() {
+    log.debug("Manual package caching for ID ${params.id}")
+    def result = [params: params, result: null]
+
+    if (params.int('id')) {
+      result.result = packageCachingService.cacheSinglePackage(params.int('id'), true)
+    }
+
+    render result as JSON
+  }
+
   def fetchEzbCollections() {
     log.debug("Triggering EZB open collections sync")
 

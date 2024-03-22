@@ -155,7 +155,8 @@ class Package extends KBComponent {
     'defaultEmbeds': [
       'ids',
       'variantNames',
-      'curatoryGroups'
+      'curatoryGroups',
+      'subjects'
     ]
   ]
 
@@ -341,12 +342,16 @@ class Package extends KBComponent {
     log.debug("Setting active TIPPs to ${new_status.value} ..")
     RefdataValue current_status = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue expected_status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+    RefdataValue rr_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
+    RefdataValue rr_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
+    RefdataValue combo_type = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
 
     def qry_params = [
       ret: new_status,
       sce: [expected_status, current_status],
       comment: "Status set to ${new_status.value} due to package change!",
       pkg: this.id,
+      ctype: combo_type,
       now: new Date(),
       rdate: date
     ]
@@ -365,9 +370,30 @@ class Package extends KBComponent {
                     select 1 from Combo
                     where fromComponent.id = :pkg
                     and toComponent.id = t.id
+                    and type = :ctype
                   )'''
 
+    def rr_qry = '''update ReviewRequest as rr
+                    set rr.status = :closed,
+                    rr.lastUpdated = :now
+                    where rr.status = :open
+                    and exists (
+                      select 1 from Combo
+                      where fromComponent.id = :pkg
+                      and toComponent.id = rr.componentToReview.id
+                      and type = :ctype
+                    )'''
+
+    def params_rr = [
+      closed: rr_closed,
+      open: rr_open,
+      pkg: this.id,
+      ctype: combo_type,
+      now: new Date()
+    ]
+
     TitleInstancePackagePlatform.executeUpdate(qry, qry_params)
+    ReviewRequest.executeUpdate(rr_qry, params_rr)
   }
 
 

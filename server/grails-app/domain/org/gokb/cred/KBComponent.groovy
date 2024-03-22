@@ -1425,6 +1425,12 @@ where cp.owner = :c
       }
     }
 
+    builder.'subjects' {
+      subjects*.subject.each { subj ->
+        builder.'subject'(scheme: subj.scheme.value, name: subj.name, heading: subj.heading)
+      }
+    }
+
     if (source) {
       builder.'source' {
         source.with {
@@ -1540,6 +1546,19 @@ where cp.owner = :c
             [tid: this.id, ct: refdata_ids, cs: status_active],
             [readOnly: true])
     def result = info_list.collect { [namespace: it[0], namespaceName: it[1], value: it[2], type: it[3]] }
+
+    result
+  }
+
+  @Transient
+  def getActiveSubjectsInfo() {
+    def info_list = Identifier.executeQuery('''select sub.scheme.value, sub.heading, sub.name from ComponentSubject as cs,
+                                            Subject as sub
+                                            where cs.component.id = :tid
+                                            and sub = cs.subject''',
+            [tid: this.id],
+            [readOnly: true])
+    def result = info_list.collect { [scheme: it[0], heading: it[1], name: it[2]] }
 
     result
   }

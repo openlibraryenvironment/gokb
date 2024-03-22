@@ -133,6 +133,7 @@
           class="badge badge-warning">
             ${d.publisher?.size() ?: '0'}
         </span></a></li>
+      <li><a href="#subjects" data-toggle="tab">Subjects <span class="badge badge-warning"> ${d.subjects?.size() ?: '0'} </span></a></li>
       <li><a href="#availability" data-toggle="tab">Package Availability <span
         class="badge badge-warning">
           ${d?.tipps?.findAll{ it.status?.value == 'Current'}?.size() ?: '0'}
@@ -152,9 +153,6 @@
       </a></li>
       <g:if test="${grailsApplication.config.getProperty('gokb.decisionSupport.active', Boolean, false)}" >
         <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
-      </g:if>
-      <g:if test="${grailsApplication.config.getProperty('gokb.handleSubjects', Boolean, false)}" >
-        <li><a href="#subjects" data-toggle="tab">Subjects <span class="badge badge-warning"> ${d.subjects?.size() ?: '0'} </span></a></li>
       </g:if>
     </g:if>
     <g:else>
@@ -234,8 +232,9 @@
       </dl>
     </div>
 
-    <g:render template="/tabTemplates/showVariantnames"
-      model="${[d:displayobj, showActions:true]}" />
+    <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
+
+    <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
 
     <div class="tab-pane" id="availability">
       <g:if test="${d.id}">
@@ -316,23 +315,6 @@
       <g:render template="/apptemplates/dstab" model="${[d:d]}" />
     </div>
 
-    <div class="tab-pane" id="subjects">
-          <dl>
-            <g:if test="${d.id}">
-                <dt>
-                      <g:annotatedLabel owner="${d}" property="subjects">Add Subjects</g:annotatedLabel>
-                </dt>
-                <dd>
-                  <!-- this bit could be better  -->
-                  <g:render template="/apptemplates/componentSubject"
-                                    model="${[d:d, property:'subjects', cols:[[expr:'subject.name',colhead:'Subject Heading',action:'link-subject'],
-                                                                                      [expr:'subject.clsmrk', colhead: 'Classification']],targetClass:'org.gokb.cred.Subject',direction:'in']}" />
-                </dd>
-            </g:if>
-          </dl>
-        </div>
-
-  </div>
   <g:if test="${d.id}">
     <g:render template="/apptemplates/componentStatus"
       model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />

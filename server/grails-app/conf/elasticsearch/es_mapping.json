@@ -173,6 +173,53 @@
           "format": "strict_date_optional_time||yyyy-MM-dd HH:mm:ss||yyyy-MM-dd'T'HH:mm:ss'Z'||epoch_millis"
         }
       }
+    },
+    {
+      "linkedItemIdentifiers": {
+        "match": "*Identifiers",
+        "mapping": {
+          "type": "nested",
+          "properties": {
+            "namespace": {
+              "type":"keyword",
+              "normalizer": "lowercase"
+            },
+            "namespaceName": {
+              "type": "keyword",
+              "normalizer": "lowercase"
+            },
+            "value": {
+              "type": "keyword",
+              "normalizer": "lowercase"
+            },
+            "baseUrl": {
+              "type": "keyword",
+              "normalizer": "lowercase"
+            }
+          }
+        }
+      }
+    },
+    {
+      "linkedItemSubjects": {
+        "match": "*Subjects",
+        "mapping": {
+          "type": "nested",
+          "properties": {
+            "scheme": {
+              "type":"keyword",
+              "normalizer": "lowercase"
+            },
+            "heading": {
+              "type": "keyword",
+              "normalizer": "lowercase"
+            },
+            "name": {
+              "type": "text"
+            }
+          }
+        }
+      }
     }
   ],
   "properties" : {
@@ -182,8 +229,12 @@
       "search_analyzer" : "custom_chars_analyzer",
       "copy_to" : "suggest",
       "fields" : {
-        "name" : { "type" : "text" },
-        "altname" : { "type" : "text" }
+        "name" : {
+          "type" : "text"
+        },
+        "altname" : {
+          "type" : "text"
+        }
       }
     },
     "identifiers" : {
@@ -207,11 +258,31 @@
         }
       }
     },
+    "subjects": {
+      "type": "nested",
+      "properties": {
+        "scheme": {
+          "type": "keyword",
+          "normalizer": "lowercase"
+        },
+        "heading": {
+          "type": "keyword",
+          "normalizer": "lowercase"
+        },
+        "name": {
+          "type": "text"
+        }
+      }
+    },
     "source" : {
       "type" : "nested",
       "properties": {
-        "frequency": { "type": "keyword"},
-        "url": { "type": "keyword"}
+        "frequency": {
+          "type": "keyword"
+        },
+        "url": {
+          "type": "keyword"
+        }
       }
     },
     "sortname" : {
