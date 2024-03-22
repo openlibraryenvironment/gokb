@@ -115,7 +115,14 @@
                 <li><g:link controller="admin" action="triggerEnrichments" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Trigger enrichments</g:link></li>
                 <li><g:link controller="admin" action="copyTitleData" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Transfer Title Data</g:link></li>
                 <li><g:link controller="admin" action="logViewer"><i class="fa fa-angle-double-right fa-fw"></i> Log Viewer</g:link></li>
-              <%--      <li><g:link controller="admin" action="housekeeping" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Housekeeping</g:link></li> --%>
+                <g:if test="${!grailsApplication.config.get('gokb.zdbAugment.enabled')}">
+                  <li><g:link controller="admin" action="triggerZDBSync" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Trigger ZDB Sync for new journals</g:link></li>
+                </g:if>
+                <g:else>
+                  <li><a>Automated ZDB Sync is configured</a></li>
+                </g:else>
+
+                <%--      <li><g:link controller="admin" action="housekeeping" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Housekeeping</g:link></li> --%>
               </sec:ifAnyGranted>
               <!--
               <li><g:link controller="api" action="downloadUpdate"><i class="fa fa-angle-double-right fa-fw"></i> Get Refine Extension</g:link></li>
