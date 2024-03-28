@@ -1481,30 +1481,52 @@ class TippService {
       log.debug("No dateFirstInPrint -> ${tippInfo.dateFirstInPrint}")
     }
 
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue status_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    RefdataValue status_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+
     LocalDateTime access_start_ldt = GOKbTextUtils.completeDateString(tippInfo.accessStartDate)
     LocalDateTime date_first_online = GOKbTextUtils.completeDateString(tippInfo.dateFirstOnline)
 
-    if (access_start_ldt) {
-      ClassUtils.setDateIfPresent(access_start_ldt, tipp, 'accessStartDate')
+    Map current_dates = [
+      published: tipp.dateFirstOnline,
+      start: tipp.accessStartDate,
+      end: tipp.accessEndDate
+    ]
+
+    ClassUtils.setDateIfPresent(date_first_online, tipp, 'dateFirstOnline')
+    ClassUtils.setDateIfPresent(access_start_ldt, tipp, 'accessStartDate')
+
+    if (tippInfo.dateFirstOnline) {
+      if (date_first_online) {
+        Date instant = Date.from(date_first_online.atZone(ZoneId.systemDefault()).toInstant())
+        tipp.dateFirstOnline = date_first_online
+      }
+    }
+    else {
+      tipp.dateFirstOnline = null
     }
 
-    if (date_first_online) {
-      ClassUtils.setDateIfPresent(date_first_online, tipp, 'dateFirstOnline')
+
+    if (!access_start_ldt && date_first_online && current_dates.start == current_dates.published) {
+      ClassUtils.setDateIfPresent(date_first_online, tipp, 'accessStartDate')
     }
 
     if (tippInfo.accessEndDate) {
       ClassUtils.setDateIfPresent(GOKbTextUtils.completeDateString(tippInfo.accessEndDate), tipp, 'accessEndDate')
     }
 
-    if (tipp.accessEndDate && tipp.accessEndDate < new Date()) {
-      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    if (tipp.accessEndDate && tipp.accessEndDate < new Date() && tipp.status != status_retired) {
+      tipp.status = status_retired
     }
-    else if (date_first_online && date_first_online > LocalDateTime.now()) {
-      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-      ClassUtils.setDateIfPresent(date_first_online, tipp, 'accessStartDate')
+    else if (tipp.accessStartDate && tipp.accessStartDate > new Date() && tipp.status != status_expected) {
+      tipp.status = status_expected
     }
-    else if (access_start_ldt && access_start_ldt > LocalDateTime.now()) {
-      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+    else if (tipp.accessStartDate
+          && tipp.accessStartDate < new Date()
+          && (!tipp.accessEndDate || tipp.accessEndDate > new Date())
+          && tipp.status != status_current) {
+      tipp.status = status_current
     }
 
     ClassUtils.setRefdataIfPresent(tippInfo.medium, tipp, 'medium')
