@@ -36,7 +36,7 @@ class TitleController {
   def index() {
     log.debug("Index with params: ${params}")
     def result = [:]
-    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -164,7 +164,7 @@ class TitleController {
     def obj = null
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
-    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
 
     def publisher_name = null
 
@@ -967,7 +967,7 @@ class TitleController {
 
     if (obj) {
       def context = "/titles/" + params.id + "/tipps"
-      def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+      def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
       def es_search = params.es ? true : false
 
       params.remove('id')

@@ -100,7 +100,7 @@ order by f.id, ti.id, title_in_group.id
     def result = [:]
     result.start_date = startDate;
     result.end_date = endDate;
-    result.serverUrl = grailsApplication.config.getProperty('serverUrl') ?: 'http://localhost:8080/gokb'
+    result.serverUrl = grailsApplication.config.getProperty('grails.serverURL') ?: 'http://localhost:8080/gokb'
     result.updates = getTippsInUserWatchList(user, startDate, endDate)
 
     def emailTemplateFile = applicationContext.getResource("WEB-INF/mail-templates/gokbAlerts.gsp").file

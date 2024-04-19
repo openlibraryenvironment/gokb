@@ -28,7 +28,7 @@ class AdminAlertingService {
       edit_link = grailsApplication.config.getProperty('gokb.uiUrl') + '#/user/' + user.id.toString()
     }
     else {
-      edit_link = (grailsApplication.config.getProperty('serverUrl') ?: 'http://localhost:8080/gokb')
+      edit_link = (grailsApplication.config.getProperty('grails.serverURL') ?: 'http://localhost:8080/gokb')
 
       edit_link += "${'/resource/show/org.gokb.cred.User:' + user.id}"
     }

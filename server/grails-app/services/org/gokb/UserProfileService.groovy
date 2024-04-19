@@ -187,7 +187,7 @@ class UserProfileService {
 
       if (alertUser && user.email) {
         EmailValidator validator = EmailValidator.getInstance()
-        def edit_link = grailsApplication.config.getProperty('gokb.uiUrl') ?: grailsApplication.config.getProperty('serverUrl')
+        def edit_link = grailsApplication.config.getProperty('gokb.uiUrl') ?: grailsApplication.config.getProperty('grails.serverURL')
         def support_address = grailsApplication.config.getProperty('gokb.support.emailTo')
         def alerts_address = grailsApplication.config.getProperty('gokb.alerts.emailFrom')
         Locale locale = new Locale(user.preferredLocaleString ?: grailsApplication.config.getProperty('gokb.support.locale', String, 'en'))
@@ -211,7 +211,7 @@ class UserProfileService {
           }
         }
         else if (!edit_link || !support_address || !alerts_address) {
-          log.warn("activate:: Missing config value! (gokb.support.emailTo: ${support_address ? 'SET' : 'MISSING'}, gokb.alerts.emailFrom: ${alerts_address ? 'SET' : 'MISSING'}, gokb.uiUrl/serverUrl: ${edit_link ? 'SET' : 'MISSING'})")
+          log.warn("activate:: Missing config value! (gokb.support.emailTo: ${support_address ? 'SET' : 'MISSING'}, gokb.alerts.emailFrom: ${alerts_address ? 'SET' : 'MISSING'}, gokb.uiUrl/grails.serverURL: ${edit_link ? 'SET' : 'MISSING'})")
 
           result.result = 'WARNING'
           result.message = 'Failed to send activation alert due to missing config value'
@@ -422,7 +422,7 @@ class UserProfileService {
   }
 
   def collectUserProps(User user, params = [:]) {
-    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     def includes = []
     def excludes = []
     def newUserData = [

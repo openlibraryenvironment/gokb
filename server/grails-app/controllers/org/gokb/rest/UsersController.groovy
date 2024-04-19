@@ -131,7 +131,7 @@ class UsersController {
       ]
     ]
 
-    def base = grailsApplication.config.getProperty('serverURL', String, '') + "/" + namespace
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, '') + "/" + namespace
     def filter = ['limit', 'offset', 'controller', 'action']
     String outParams = '?'
     params.each {
