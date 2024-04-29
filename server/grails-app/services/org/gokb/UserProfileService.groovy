@@ -174,7 +174,7 @@ class UserProfileService {
     User user = User.get(userId)
 
     if (user) {
-      if (!user.enabled) {
+      if (!user.enabled || user.accountLocked) {
         user.enabled = true
         user.accountLocked = false
         user.save(flush: true, failOnError: true)
