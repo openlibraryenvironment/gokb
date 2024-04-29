@@ -93,14 +93,14 @@
                           name="email"
                           value="${registerCommand.email}"
                         />
-                        <g:if test="${errors?.email?.size() > 0}">
-                          <ul>
-                            <g:each var="e" in="${errors.email}">
-                              <li>${e.message}</li>
-                            </g:each>
-                          </ul>
-                        </g:if>
                       </div>
+                      <g:if test="${errors?.email?.size() > 0}">
+                        <ul>
+                          <g:each var="e" in="${errors.email}">
+                            <li>${e.message}</li>
+                          </g:each>
+                        </ul>
+                      </g:if>
                     </div>
                     <div class="col-xs-6">
                       <label for="curatoryGroup">
@@ -123,11 +123,13 @@
                           </g:each>
                         </select>
                         <g:if test="${errors?.curatoryGroup?.size() > 0}">
-                          <ul>
-                            <g:each var="e" in="${errors.curatoryGroup}">
-                              <li>${e.message}</li>
-                            </g:each>
-                          </ul>
+                          <div>
+                            <ul>
+                              <g:each var="e" in="${errors.curatoryGroup}">
+                                <li>${e.message}</li>
+                              </g:each>
+                            </ul>
+                          </div>
                         </g:if>
                       </div>
                     </div>
@@ -153,11 +155,13 @@
                         />
                         <input type="text" name="phone" value="" hidden="true" />
                         <g:if test="${errors?.username?.size() > 0}">
-                          <ul>
-                            <g:each var="e" in="${errors.username}">
-                              <li>${e.message}</li>
-                            </g:each>
-                          </ul>
+                          <div>
+                            <ul>
+                              <g:each var="e" in="${errors.username}">
+                                <li>${e.message}</li>
+                              </g:each>
+                            </ul>
+                          </div>
                         </g:if>
                       </div>
                     </div>
@@ -195,14 +199,16 @@
                             </i>
                           </button>
                         </span>
-                        <g:if test="${errors?.password?.size() > 0}">
+                      </div>
+                      <g:if test="${errors?.password?.size() > 0}">
+                        <div style="display:block;width:100%">
                           <ul>
                             <g:each var="e" in="${errors.password}">
                               <li>${e.message}</li>
                             </g:each>
                           </ul>
-                        </g:if>
-                      </div>
+                        </div>
+                      </g:if>
                     </div>
                   </div>
                   <div class="row">
@@ -238,14 +244,16 @@
                             </i>
                           </button>
                         </span>
-                        <g:if test="${errors?.password2?.size() > 0}">
+                      </div>
+                      <g:if test="${errors?.password2?.size() > 0}">
+                        <div>
                           <ul>
                             <g:each var="e" in="${errors.password2}">
                               <li>${e.message}</li>
                             </g:each>
                           </ul>
-                        </g:if>
-                      </div>
+                        </div>
+                      </g:if>
                     </div>
                   </div>
                   <div class="row">
@@ -260,12 +268,14 @@
                         style="margin-bottom:12px"
                       >
                         <input autocomplete="false" type="text" class="form-control" id="botFilter" name="secAnswer" />
-                        <g:if test="${secFailed}">
+                      </div>
+                      <g:if test="${secFailed}">
+                        <div>
                           <ul>
                             <li>${message(code:'spring.security.ui.register.mathCheck.error', locale: locale)}</li>
                           </ul>
-                        </g:if>
-                      </div>
+                        </div>
+                      </g:if>
                     </div>
                   </div>
                   <div class="row">
@@ -284,12 +294,14 @@
                             <span style="color:red">*</span>
                           )
                         </label>
-                        <g:if test="${agrFailed}">
+                      </div>
+                      <g:if test="${agrFailed}">
+                        <div>
                           <ul>
                             <li>${message(code:'spring.security.ui.register.agreement.error', locale: locale)}</li>
                           </ul>
-                        </g:if>
-                      </div>
+                        </div>
+                      </g:if>
                     </div>
                   </div>
                   <div class="row">
@@ -299,7 +311,7 @@
                           ${message(code:'spring.security.ui.register.submit', locale: locale)}
                         </button>
                       </div>
-                    </div
+                    </div>
                   </div>
                 </div>
               </g:form>
