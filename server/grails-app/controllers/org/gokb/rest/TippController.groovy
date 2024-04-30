@@ -507,6 +507,7 @@ class TippController {
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
+    def activeGroup = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
 
     if (obj && obj.isEditable()) {
@@ -516,8 +517,6 @@ class TippController {
         def target = obj.class.get(params.int('target'))
 
         if (target) {
-          def current_ids = obj.ids
-
           if (params.list('ids')?.size() > 0) {
             params.list('ids').each { tid ->
               def idObj = Identifier.get(Long.valueOf(tid))
@@ -528,22 +527,12 @@ class TippController {
               }
             }
           }
-          else {
+          else if (params.boolean('replaceIds')) {
             def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+            def new_target_ids = obj.activeIdInfo
 
-            current_ids.each{ old_id ->
-
-              def old_combo = Combo.findByFromComponentAndToComponent(obj, old_id)
-
-              def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = :ido and c.fromComponent = :target and c.type = :ct", [ido: old_id, target: target, ct: id_combo_type])
-              if (!dupes || dupes.size() == 0){
-                log.debug("Adding Identifier ${old_id} to ${target}")
-                Combo new_id = new Combo(toComponent: old_id, fromComponent: target, type: id_combo_type, status: old_combo.status).save(flush: true, failOnError: true)
-              }
-              else{
-                log.debug("Identifier ${old_id} is already connected to ${target}..")
-              }
-            }
+            componentUpdateService.updateIdentifiers(target, new_target_ids, user, activeGroup, true)
+            target.save(flush: true)
           }
 
           if (obj.status == status_current && target.accessEndDate) {
@@ -553,8 +542,6 @@ class TippController {
           if (obj.status != target.status) {
             target.status == obj.status
           }
-
-          target.url = obj.url
 
           target.save(flush: true)
 
