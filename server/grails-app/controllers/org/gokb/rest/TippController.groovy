@@ -497,4 +497,91 @@ class TippController {
     }
     render result as JSON
   }
+
+  /*
+  * Merge a TIPP into another one and if necessary reactivate the latter
+  */
+
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
+  def merge() {
+    def result = ['result':'OK', 'params': params]
+    def user = User.get(springSecurityService.principal.id)
+    def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+
+    if (obj && obj.isEditable()) {
+      def curator = isUserCurator(obj, user)
+
+      if (curator || user.isAdmin()) {
+        def target = obj.class.get(params.int('target'))
+
+        if (target) {
+          def current_ids = obj.ids
+
+          if (params.list('ids')?.size() > 0) {
+            params.list('ids').each { tid ->
+              def idObj = Identifier.get(Long.valueOf(tid))
+
+              if (idObj && !target.ids.contains(idObj)) {
+                target.ids.add(idObj)
+                target.save(flush: true)
+              }
+            }
+          }
+          else {
+            def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
+
+            current_ids.each{ old_id ->
+
+              def old_combo = Combo.findByFromComponentAndToComponent(obj, old_id)
+
+              def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = :ido and c.fromComponent = :target and c.type = :ct", [ido: old_id, target: target, ct: id_combo_type])
+              if (!dupes || dupes.size() == 0){
+                log.debug("Adding Identifier ${old_id} to ${target}")
+                Combo new_id = new Combo(toComponent: old_id, fromComponent: target, type: id_combo_type, status: old_combo.status).save(flush: true, failOnError: true)
+              }
+              else{
+                log.debug("Identifier ${old_id} is already connected to ${target}..")
+              }
+            }
+          }
+
+          if (obj.status == status_current && target.accessEndDate) {
+            target.accessEndDate = null
+          }
+
+          if (obj.status != target.status) {
+            target.status == obj.status
+          }
+
+          target.url = obj.url
+
+          target.save(flush: true)
+
+          obj.deleteSoft()
+        }
+        else {
+          result.result = 'ERROR'
+          response.status = 404
+          result.message = "Unable to reference target title!"
+        }
+      }
+      else {
+        result.result = 'ERROR'
+        response.status = 403
+        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+      }
+    }
+    else if (!obj) {
+      result.result = 'ERROR'
+      response.status = 404
+      result.message = "Title not found or empty request body!"
+    }
+    else {
+      result.result = 'ERROR'
+      response.status = 403
+      result.message = "User is not allowed to edit this component!"
+    }
+    render result as JSON
+  }
 }
