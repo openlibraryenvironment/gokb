@@ -15,6 +15,8 @@ import org.gokb.cred.Package
 import org.gokb.cred.Platform
 import org.gokb.cred.JournalInstance
 import org.gokb.cred.RefdataCategory
+import org.gokb.cred.Identifier
+import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.TitleInstancePackagePlatform
 import org.gokb.cred.TIPPCoverageStatement
 import org.gokb.cred.CuratoryGroup
@@ -39,7 +41,6 @@ class TippTestSpec extends AbstractAuthSpec {
   def testTitle
   def testPlatform
   def testGroup
-  def previousTipp
   def last = false
 
   def setupSpec() {
@@ -49,6 +50,8 @@ class TippTestSpec extends AbstractAuthSpec {
     if (!http) {
       http = HttpClient.create(new URL(getUrlPath())).toBlocking()
     }
+    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+    IdentifierNamespace ns_eissn = IdentifierNamespace.findByValue('eissn')
 
     testPackage = Package.findByName("TippTestPack") ?: new Package(name: "TippTestPack").save(flush: true)
     testPlatform = Platform.findByName("TippTestPlat") ?: new Platform(name: "TippTestPlat").save(flush: true)
@@ -56,11 +59,40 @@ class TippTestSpec extends AbstractAuthSpec {
     testGroup = CuratoryGroup.findByName("cgtipptest") ?: new CuratoryGroup(name: "cgtipptest").save(flush: true)
 
     if (!TitleInstancePackagePlatform.findByName("previous TIPP")) {
-      previousTipp = new TitleInstancePackagePlatform(name: "previous TIPP", pkg: testPackage, hostPlatform: testPlatform, url: "http://some.net/").save(flush: true)
-      def coverage = new TIPPCoverageStatement(owner: previousTipp, startVolume: 1, startIssue: 1, coverageDepth: RefdataCategory.lookup("Coverage.Depth", "Selected Articles")).save(flush: true)
+      def previousTipp = new TitleInstancePackagePlatform(name: "previous TIPP", pkg: testPackage, hostPlatform: testPlatform, url: "http://some.net/").save(flush: true)
+      def coverage = new TIPPCoverageStatement(owner: previousTipp, startVolume: "1", startIssue: "1", coverageDepth: RefdataCategory.lookup("Coverage.Depth", "Selected Articles")).save(flush: true)
     }
-    else {
-      previousTipp = TitleInstancePackagePlatform.findByName("previous TIPP")
+
+    if (!TitleInstancePackagePlatform.findByName("merge target TIPP")) {
+      def target_info = [
+        name: "merge target TIPP",
+        pkg: testPackage,
+        hostPlatform: testPlatform,
+        url: "http://some.old.net/",
+        status: status_deleted,
+        accessEndDate: new Date()
+      ]
+
+      def merge_target = new TitleInstancePackagePlatform(target_info).save(flush: true)
+      merge_target.addToCoverageStatements([startVolume: "1", startIssue: "1", coverageDepth: RefdataCategory.lookup("Coverage.Depth", "Fulltext")]).save(flush: true)
+      Identifier new_id = Identifier.findByValue('2345-2323') ?: new Identifier(value: '2345-2323', namespace: ns_eissn).save(flush:true)
+      merge_target.ids << new_id
+      merge_target.save(flush: true)
+    }
+
+    if (!TitleInstancePackagePlatform.findByName("merge victim TIPP")) {
+      def target_info = [
+        name: "merge victim TIPP",
+        pkg: testPackage,
+        hostPlatform: testPlatform,
+        url: "http://some.new.net/"
+      ]
+
+      def merge_victim = new TitleInstancePackagePlatform(target_info).save(flush: true)
+      merge_victim.addToCoverageStatements([startVolume: "3", startIssue: "10", coverageDepth: RefdataCategory.lookup("Coverage.Depth", "Fulltext")]).save(flush: true)
+      Identifier old_id = Identifier.findByValue('2345-2331') ?: new Identifier(value: '2345-2331', namespace: ns_eissn).save(flush:true)
+      merge_victim.ids << old_id
+      merge_victim.save(flush: true)
     }
   }
 
@@ -72,6 +104,8 @@ class TippTestSpec extends AbstractAuthSpec {
       JournalInstance.findByName("TippTestJournal")?.refresh().expunge()
       CuratoryGroup.findByName("cgtipptest")?.refresh().expunge()
       TitleInstancePackagePlatform.findByName("previous TIPP")?.refresh().expunge()
+      TitleInstancePackagePlatform.findByName("merge target TIPP")?.refresh().expunge()
+      TitleInstancePackagePlatform.findByName("merge victim TIPP")?.refresh().expunge()
     }
   }
 
@@ -380,7 +414,6 @@ class TippTestSpec extends AbstractAuthSpec {
 
     def urlPath = getUrlPath()
     when:
-    last = true
     String accessToken = getAccessToken()
     HttpRequest req1 = HttpRequest.PUT("${urlPath}/rest/tipps/${tipp.id}", init_body)
       .bearerAuth(accessToken)
@@ -401,5 +434,31 @@ class TippTestSpec extends AbstractAuthSpec {
     resp.body()._embedded.coverageStatements.collect { it.id }.contains(coverage_id.toInteger()) == true
     resp.body()._embedded.prices?.size() == 1
     resp.body()._embedded.prices[0].price == "10.58"
+  }
+
+  void "test TIPP merge keep updates"() {
+    given:
+    def dupe = TitleInstancePackagePlatform.findByName("merge victim TIPP")
+    def target = TitleInstancePackagePlatform.findByName("merge target TIPP")
+    def urlPath = getUrlPath()
+
+    when:
+    last = true
+    String accessToken = getAccessToken()
+    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/tipps/${dupe.id}/merge?target=${target.id}", null)
+      .bearerAuth(accessToken)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    sleep(500)
+    dupe.refresh()
+    target.refresh()
+    dupe.status.value == 'Deleted'
+    target.status.value == 'Current'
+    target.url == 'http://some.new.net/'
+    target.coverageStatements[0].startVolume == "3"
+    target.ids[0].value == '2345-2331'
+    target.accessEndDate == null
   }
 }
