@@ -277,6 +277,7 @@ class TitleAugmentService {
     Date current_ts = new Date()
     RefdataValue combo_title = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
     def qry_params = [now: current_ts, ct: combo_title, title: ti]
     def qry_string = '''update TitleInstancePackagePlatform as tipp
@@ -291,6 +292,10 @@ class TitleAugmentService {
     if (onlyCurrent) {
       qry_string += ' and status = :sc'
       qry_params.sc = status_current
+    }
+    else {
+      qry_string += ' and status != :sd'
+      qry_params.sd = status_deleted
     }
 
     TitleInstancePackagePlatform.executeUpdate(qry_string, qry_params)
