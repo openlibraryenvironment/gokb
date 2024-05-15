@@ -506,10 +506,11 @@ class TippController {
   @Transactional
   def merge() {
     def result = ['result':'OK', 'params': params]
-    def user = User.get(springSecurityService.principal.id)
+    User user = User.get(springSecurityService.principal.id)
     def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
-    def activeGroup = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
+    CuratoryGroup activeGroup = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    Boolean keepOld = params.boolean('keepOld') ?: false
 
     if (obj && obj.isEditable()) {
       def curator = componentUpdateService.isUserCurator(obj, user)
@@ -518,77 +519,7 @@ class TippController {
         def target = obj.class.get(params.int('target'))
 
         if (target) {
-          if (params.boolean('keepOld')) {
-            if (params.list('ids')?.size() > 0) {
-              params.list('ids').each { tid ->
-                def idObj = Identifier.get(Long.valueOf(tid))
-
-                if (idObj && !target.ids.contains(idObj)) {
-                  target.ids.add(idObj)
-                  target.save(flush: true)
-                }
-              }
-            }
-          }
-          else {
-            log.debug("Transfering info to reactivated TIPP ..")
-
-            def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-            def new_target_ids = obj.activeIdInfo
-
-            componentUpdateService.updateIdentifiers(target, new_target_ids, user, activeGroup, true)
-
-            def coverage_match = [add: [], delete: []]
-
-            obj.coverageStatements.each { c ->
-              if (!tippService.existsCoverage(target, c)) {
-                coverage_match.add << [
-                  'startVolume': c.startVolume,
-                  'startIssue': c.startIssue,
-                  'endVolume': c.endVolume,
-                  'endIssue': c.endIssue,
-                  'embargo': c.embargo,
-                  'coverageDepth': c.coverageDepth,
-                  'coverageNote': c.coverageNote,
-                  'startDate': c.startDate,
-                  'endDate': c.endDate
-                ]
-              }
-            }
-
-            target.coverageStatements.each { c ->
-              if (!tippService.existsCoverage(obj, c)) {
-                coverage_match.delete << c.id
-              }
-            }
-
-            coverage_match.delete.each { cid ->
-              def tcs_obj = TIPPCoverageStatement.get(cid)
-              target.removeFromCoverageStatements(tcs_obj)
-            }
-
-            coverage_match.add.each {
-              target.addToCoverageStatements(it)
-            }
-
-            log.debug("Setting new URL ${target.url} -> ${obj.url}")
-
-            target.url = obj.url
-
-            target.save(flush: true)
-          }
-
-          if (obj.status == status_current && target.accessEndDate) {
-            target.accessEndDate = null
-          }
-
-          if (obj.status != target.status) {
-            target.status = obj.status
-          }
-
-          target.save(flush: true)
-
-          obj.deleteSoft()
+          tippService.mergeDuplicate(obj, target, user, activeGroup, keepOld)
         }
         else {
           result.result = 'ERROR'

@@ -237,7 +237,7 @@ class ComponentUpdateService {
     RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
     new_ids.each { ci ->
-      def namespace_val = ci.type ?: ci.namespace
+      def namespace_val = ci.namespace ?: ci.type
       String testKey = "${namespace_val}|${ci.value}".toString()
 
       if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {
@@ -285,7 +285,7 @@ class ComponentUpdateService {
       component.ids.each { ci ->
         Identifier ido = Identifier.get(ci.id)
         String ido_testkey = "${ido.namespace?.value}|${Identifier.normalizeIdentifier(ido.value)}".toString()
-        def new_id_short = new_ids.collect { "${it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString() }
+        def new_id_short = new_ids.collect { "${it.namespace ? it.namespace.toLowerCase() : it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString() }
 
         if (!new_id_short.contains(ido_testkey)) {
           def ctr = Combo.executeQuery("select id from Combo as c where c.toComponent = :ci and c.fromComponent = :comp", [ci: ido, comp: component])
