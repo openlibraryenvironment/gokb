@@ -147,6 +147,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
       return [
         registerCommand: new RegisterCommand(),
         secQuestion: session.secQuestion,
+        initGroup: selectedGroup?.id ?: null,
         groups: groups,
         embed: 'true',
         locale: locale
@@ -160,6 +161,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         registerCommand: registerCommand,
         noTries: true,
         errors: messageService.processValidationErrors(registerCommand.errors, locale),
+        initGroup: selectedGroup?.id ?: null,
         groups: groups,
         embed: 'true',
         locale: locale
@@ -186,6 +188,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         agrFailed: agrFailed,
         secQuestion: session.secQuestion,
         groups: groups,
+        initGroup: selectedGroup?.id ?: null,
         errors: messageService.processValidationErrors(registerCommand.errors, locale),
         embed: 'true',
         locale: locale
@@ -200,6 +203,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         agrFailed: agrFailed,
         secQuestion: session.secQuestion,
         groups: groups,
+        initGroup: selectedGroup?.id ?: null,
         errors: messageService.processValidationErrors(registerCommand.errors, locale),
         embed: 'true',
         locale: locale
@@ -208,13 +212,14 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
     def user = uiRegistrationCodeStrategy.createUser(registerCommand)
 
-    if (user == null || user.hasErrors()) {
+    if (!user || user.hasErrors()) {
       // null means problem creating the user
       flash.error = message(code: 'spring.security.ui.register.miscError')
       return [
         registerCommand: registerCommand,
         embed: 'true',
         groups: groups,
+        initGroup: selectedGroup?.id ?: null,
         locale: locale
       ]
     }
@@ -238,6 +243,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
       emailSent: true,
       noAddress: true,
       groups: groups,
+      initGroup: selectedGroup?.id ?: null,
       embed: 'true',
       locale: locale
     ]

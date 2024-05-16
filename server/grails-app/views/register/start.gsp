@@ -119,7 +119,7 @@
                         <select name="selectedGroup" class="form-control">
                           <option>${message(code: 'spring.security.ui.register.curatoryGroup.none')}</option>
                           <g:each var="group" in="${groups}">
-                            <option value="${group[0]}">${group[1]}</option>
+                            <option value="${group[0]}" ${initGroup == group[0] ? 'selected' : ''}>${group[1]}</option>
                           </g:each>
                         </select>
                         <g:if test="${errors?.curatoryGroup?.size() > 0}">
@@ -190,6 +190,7 @@
                             class="btn btn-default"
                             id="showPassword"
                             type="button"
+                            tabindex="-1"
                           >
                             <i
                               class="fas fa-eye"
@@ -235,6 +236,7 @@
                             class="btn btn-default"
                             id="showPassword2"
                             type="button"
+                            tabindex="-1"
                           >
                             <i
                               class="fas fa-eye"

@@ -1,7 +1,7 @@
 <p/>
 <g:message code="user.activation.email.greeting" locale="${locale ?: 'en'}" args="${[username]}"/>,
 <p/>
-<g:message code="user.activation.email.line1" locale="${locale ?: 'en'}" args="${[url]}"/>
+<g:message code="user.activation.email.line1" locale="${locale ?: 'en'}"/> <a href="${url}">${url}</a>.
 <p/>
 <g:message code="user.activation.email.line2" locale="${locale ?: 'en'}"/> <a href="mailto:${supportAddress}">${supportAddress}</a>.
 <p/>
