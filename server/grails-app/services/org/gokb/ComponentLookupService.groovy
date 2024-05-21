@@ -439,6 +439,10 @@ class ComponentLookupService {
 
                     ctr_ids.addAll(ti_ids)
                   }
+
+                  if (params.combinedreviews) {
+                    ctr_ids.addAll(tipp_ids)
+                  }
                 }
                 else {
                   ctr_ids.addAll(tipp_ids)
@@ -590,6 +594,20 @@ class ComponentLookupService {
       }
       hqlQry += "p.status != :status"
       qryParams['status'] = RefdataCategory.lookup("ReviewRequest.Status", "Deleted")
+    }
+
+    if (params['id']) {
+      Long idval = params.long('id')
+
+      if (first) {
+        hqlQry += " WHERE "
+        first = false
+      }
+      else {
+        hqlQry += " AND "
+      }
+      hqlQry += "p.id = :idval"
+      qryParams['idval'] = idval
     }
 
     if (cls == ReviewRequest && params['allocatedGroups']) {
