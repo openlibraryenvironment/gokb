@@ -224,10 +224,11 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
       ]
     }
     else {
+      user.save(flush: true)
       user.preferredLocaleString = locale.toString()
 
-      if (selectedGroup) {
-        user.curatoryGroups << selectedGroup
+      if (selectedGroup && user.id) {
+        user.addToCuratoryGroups(selectedGroup)
       }
 
       user.save(flush: true)
