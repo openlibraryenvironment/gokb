@@ -156,6 +156,37 @@ class UserProfileService {
   }
 
   def create(def data, User adminUser) {
+    def result = [:]
+
+    if (data.username?.trim()) {
+      if (User.findByUsernameIlike(data.username.trim())) {
+        result.errors = [
+          username: [
+            [
+              message: "User name is already in use!",
+              messageCode: 'component.user.error.create.nameInUse',
+              code: 400
+            ]
+          ]
+        ]
+
+        return result
+      }
+    }
+    else {
+      result.errors = [
+        username: [
+          [
+            message: "Missing value for user name!",
+            messageCode: 'component.user.error.missing.username',
+            code: 400
+          ]
+        ]
+      ]
+
+      return result
+    }
+
     User user = new User()
     Role roleUser = Role.findByAuthority("ROLE_USER")
 
@@ -164,7 +195,9 @@ class UserProfileService {
 
     data.roleIds << roleUser.id
 
-    return modifyUser(user, data, adminUser)
+    result = modifyUser(user, data, adminUser)
+
+    result
   }
 
   def activate(userId, User adminUser, boolean alertUser = false) {
@@ -173,7 +206,7 @@ class UserProfileService {
     List default_roles = ['ROLE_USER', 'ROLE_CONTRIBUTOR', 'ROLE_EDITOR']
     User user = User.get(userId)
 
-    if (user) {
+    if (user && user.authorities.size() <= 1) {
       if (!user.enabled || user.accountLocked) {
         user.enabled = true
         user.accountLocked = false
@@ -298,7 +331,7 @@ class UserProfileService {
           if (!isNewUser) {
             updateRoles(user, value, errors, isNewUser, adminUser)
           }
-        } else if (field == "curatoryGroupIds") {
+        } else if (field == "curatoryGroupIds" || field == "curatoryGroups") {
           updateCuratoryGroups(user, value, errors, isNewUser)
         } else if (field == 'defaultPageSize' && value && value instanceof Integer) {
           user[field] = Long.valueOf(value)
@@ -391,11 +424,15 @@ class UserProfileService {
     groups_list.each { cgId ->
       CuratoryGroup cg_obj = null
 
-      if (cgId) {
+      if (cgId instanceof String) {
         cg_obj = CuratoryGroup.findByUuid(cgId)
       }
-
-      if (!cg_obj) {
+      else if (cgId instanceof Map) {
+        if (cgId.id) {
+          cg_obj = CuratoryGroup.findById(cgId.id)
+        }
+      }
+      else if (cgId) {
         cg_obj = CuratoryGroup.findById(cgId)
       }
 
