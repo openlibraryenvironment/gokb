@@ -516,7 +516,7 @@ class TitleAugmentService {
 
 
   def syncZdbInfo(Job j = null) {
-    JournalInstance.withNewSession {
+    JournalInstance.withNewSession { lsession ->
       RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
       RefdataValue combo_active = DomainClassExtender.comboStatusActive
       RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
@@ -553,6 +553,9 @@ class TitleAugmentService {
         if (Thread.currentThread().isInterrupted() || j?.isCancelled()) {
           break
         }
+
+        lsession.flush()
+        lsession.clear()
       }
       j?.endTime = new Date()
     }
