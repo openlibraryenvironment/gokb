@@ -119,10 +119,17 @@ class ZdbAPIService {
     result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'r'}.text()?.trim() ?: null
 
     if (!result.subtitle) {
-      result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'a'}.text()?.trim() ?: null
+      result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'l'}.text()?.trim() ?: null
 
-      if (!result.subtitle) {
-        result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'l'}.text()?.trim() ?: null
+      def subtitleText = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'a'}.text()?.trim() ?: null
+
+      if (subtitleText) {
+        if (result.subtitle) {
+          result.subtitle += ", ${subtitleText}"
+        }
+        else {
+          result.subtitle = subtitleText
+        }
       }
     }
 
