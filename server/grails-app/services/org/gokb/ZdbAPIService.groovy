@@ -120,6 +120,10 @@ class ZdbAPIService {
 
     if (!result.subtitle) {
       result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'a'}.text()?.trim() ?: null
+
+      if (!result.subtitle) {
+        result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'l'}.text()?.trim() ?: null
+      }
     }
 
     result.displayTitle = rec.global.'*'.find { it.@id == '025@' }.'*'.find {it.@id == 'a'}.text()?.trim() ?: null
