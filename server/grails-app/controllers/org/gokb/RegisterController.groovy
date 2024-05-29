@@ -212,18 +212,34 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
     def user = uiRegistrationCodeStrategy.createUser(registerCommand)
 
-    if (!user || user.hasErrors()) {
+    if (user == null) {
       // null means problem creating the user
       flash.error = message(code: 'spring.security.ui.register.miscError')
+      session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
       return [
         registerCommand: registerCommand,
         embed: 'true',
+        secQuestion: session.secQuestion,
         groups: groups,
         initGroup: selectedGroup?.id ?: null,
         locale: locale
       ]
     }
+    else if (!user.validate()) {
+      session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+
+      return [
+        registerCommand: registerCommand,
+        embed: 'true',
+        secQuestion: session.secQuestion,
+        groups: groups,
+        initGroup: selectedGroup?.id ?: null,
+        errors: user.username?.trim() ? messageService.processValidationErrors(user.errors, locale) : {username: [{message: messageService.resolveCode('registerCommand.username.nullable', null, locale)}]},
+        locale: locale
+      ]
+    }
     else {
+      user.password = registerCommand.password
       user.save(flush: true)
       user.preferredLocaleString = locale.toString()
 

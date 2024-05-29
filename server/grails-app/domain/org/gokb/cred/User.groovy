@@ -47,7 +47,20 @@ class User extends Party {
                      updateTokens: "updateUser"]
 
   static constraints = {
-    username(blank: false, unique: true)
+    username(validator: { val, obj ->
+      if (obj.hasChanged('username')) {
+        if (val && val.trim()) {
+          def dupes = User.findAllByUsernameIlike(val)
+
+          if (dupes?.size() > 0 && dupes.any { it != obj }) {
+            return ['notUnique']
+          }
+        }
+        else {
+          return ['notNull']
+        }
+      }
+    })
     password(blank: false)
     showQuickView(blank: true, nullable:true)
     email(blank: true, nullable:true)

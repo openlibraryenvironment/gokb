@@ -142,7 +142,7 @@
                         )
                       </label>
                       <div
-                        class="input-group input-group-sm ${registerCommand.errors.hasFieldErrors('username') ? 'has-error' : ''}"
+                        class="input-group input-group-sm ${registerCommand.errors.hasFieldErrors('username') || errors?.username?.size() > 0 ? 'has-error' : ''}"
                         style="margin-bottom:12px;width:100%"
                       >
                         <input
@@ -283,8 +283,8 @@
                   <div class="row">
                     <div class="col-xs-12">
                       <div
-                        class="input-group input-group-sm ${agrFailed ? 'has-error' : ''}"
-                        style="margin-bottom:12px"
+                        class="input-group input-group-sm"
+                        style="margin-bottom:12px;padding:4px;${agrFailed ? 'border:1px solid red' : ''}"
                       >
                         <input
                           type="checkbox"
