@@ -9,11 +9,11 @@
   <div id="mainarea" class="panel panel-default">
     <div class="panel-body">
       <dl class="dl-horizontal">
-        <g:form controller="component" action="identifierConflicts" class="form-horizontal">
+        <g:form method="get" controller="component" action="identifierConflicts" class="form-horizontal" role="form">
           <div class="input-group">
             <dt class="dt-label">Identifier Namespace</dt>
             <dd>
-              <g:simpleReferenceTypedown class="form-control" name="id" baseClass="org.gokb.cred.IdentifierNamespace" value="${namespace ? 'org.gokb.cred.IdentifierNamespace:' + namespace.id : ''}" />
+              <g:simpleReferenceTypedown class="form-control" name="oid" baseClass="org.gokb.cred.IdentifierNamespace" value="${oid}" />
             </dd>
             <dt class="dt-label">Conflict type</dt>
             <dd>
@@ -42,9 +42,9 @@
       </dl>
     </div>
   </div>
-  <g:if test="${namespace}">
+  <g:if test="${nsname}">
     <g:if test="${ctype == 'st'}">
-      <h1 class="page-header">Components with multiple IDs of namespace <g:link controller="resource" action="show" id="org.gokb.cred.IdentifierNamespace:${namespace.id}">${namespace.value}</g:link> (${titleCount})</h1>
+      <h1 class="page-header">Components with multiple IDs of namespace <g:link controller="resource" action="show" id="${oid}">${nsname}</g:link> (${titleCount})</h1>
       <div id="mainarea" class="panel panel-default">
 
         <g:if test="${singleTitles.size() > 0}">
@@ -81,7 +81,7 @@
               <g:paginate
                 controller="component"
                 action="identifierConflicts"
-                params="${[ctype: ctype, id: params.id]}"
+                params="${params}"
                 next="Next"
                 prev="Prev"
                 max="${max}"
@@ -99,7 +99,7 @@
     </g:if>
 
     <g:if test="${ctype == 'di'}">
-      <h1 class="page-header">Identifiers connected to multiple components for namespace <g:link controller="resource" action="show" id="org.gokb.cred.IdentifierNamespace:${namespace.id}">${namespace.value}</g:link> (${idsCount})</h1>
+      <h1 class="page-header">Identifiers connected to multiple components for namespace <g:link controller="resource" action="show" id="${oid}">${nsname}</g:link> (${idsCount})</h1>
       <div id="mainarea" class="panel panel-default">
 
         <g:if test="${dispersedIds.size() > 0}">
@@ -128,7 +128,7 @@
               <g:paginate
                 controller="component"
                 action="identifierConflicts"
-                params="${[ctype: ctype, id: params.id]}"
+                params="${params}"
                 next="Next"
                 prev="Prev"
                 max="${max}"
