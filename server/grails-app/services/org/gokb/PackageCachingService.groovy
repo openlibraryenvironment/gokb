@@ -152,7 +152,7 @@ class PackageCachingService {
                 // Identifiers
                 'identifiers' {
                   pkg_ids?.each { tid ->
-                    'identifier'('namespace': tid[0], 'namespaceName': tid[1], 'value': tid[2], 'type': tid[3])
+                    'identifier'(tid)
                   }
                 }
 

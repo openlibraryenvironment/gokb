@@ -184,7 +184,7 @@ class Package extends KBComponent {
   }
 
   @Transient
-  public getTitles(def onlyCurrent = true, int max = 10, offset = 0) {
+  public getTitles(Boolean onlyCurrent = true, Integer max = 10, Integer offset = 0) {
     def all_titles = null
     log.debug("getTitles :: current ${onlyCurrent} - max ${max} - offset ${offset}")
 

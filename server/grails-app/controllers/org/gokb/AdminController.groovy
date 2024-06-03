@@ -23,6 +23,7 @@ class AdminController {
   def grailsCacheAdminService
   def packageService
   def packageCachingService
+  def packageCleanupService
   def packageSourceUpdateService
   def springSecurityService
   def titleAugmentService
@@ -448,6 +449,24 @@ class AdminController {
     }
 
     render result as JSON
+  }
+
+  def deduplicatePackageTipps() {
+    log.debug("Manual TIPP deduplication for ID ${params.id}")
+    def result = [params: params, result: null]
+    def pkgId = params.int('id') ?: null
+
+    if (pkgId) {
+      Job j = concurrencyManagerService.createJob { job ->
+        packageCleanupService.reactivateReplacedTipps(pkgId, job)
+      }.startOrQueue()
+
+      j.description = "Deduplicating package TIPPs for package ${pkgId}"
+      j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Package TIPP Deduplication')
+      j.startTime = new Date()
+    }
+
+    render(view: "logViewer", model: logViewer())
   }
 
   def fetchEzbCollections() {
