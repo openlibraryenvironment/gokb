@@ -657,6 +657,10 @@ where cp.owner = :c
     if (user != null) {
       this.lastUpdatedBy = user
     }
+
+    if (this.isDirty('status') && this.status == deleted_status) {
+      this.reviewRequests*.status = review_closed
+    }
   }
 
   @Transient
