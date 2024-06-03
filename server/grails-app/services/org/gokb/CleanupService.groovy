@@ -973,7 +973,7 @@ class CleanupService {
     def result = [total: 0]
     def batchSize = 50
 
-    ComponentHistoryEvent.withSession { tsession ->
+    ComponentHistoryEvent.withNewSession { tsession ->
       RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
       boolean more = true
 
@@ -1000,7 +1000,7 @@ class CleanupService {
             result.total++
 
             components_to_update.each { ctu ->
-              if (ctu instanceof TitleInstance) {
+              if (ctu.tipps) {
                 titleAugmentService.touchTitleTipps(ctu, false)
               }
             }

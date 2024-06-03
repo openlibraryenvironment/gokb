@@ -284,6 +284,20 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def cleanupOrphanedHistories() {
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.deleteOrphanedHistoryEvents(j)
+    }.startOrQueue()
+
+    log.debug("Triggering history cleanup task. Started job #${j.uuid}")
+
+    j.description = "TIPP Cleanup"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'HistoryCleanup')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def triggerTippMatching() {
     log.debug("copy Identifiers")
     Job j = concurrencyManagerService.createJob { Job j ->
