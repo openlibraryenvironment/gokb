@@ -18,6 +18,7 @@ class CleanupService {
   def componentUpdateService
   def validationService
   def autoTimestampEventListener
+  def titleAugmentService
 
   def tidyMissnamedPublishers () {
 
@@ -905,7 +906,7 @@ class CleanupService {
 
   def markInvalidIdentifiers(Job j = null) {
     log.debug("Checking for invalid identifiers")
-    def result = [occurrences: 0, components: [:]]
+    def result = [occurrences: 0, components: [:], namespaces: [:]]
 
     Identifier.withNewSession { tsession ->
       boolean more = true
@@ -929,6 +930,13 @@ class CleanupService {
             idc.identifiedComponents.each { kbc ->
               if (!result.components[kbc.id]) {
                 result.components[kbc.id] = [name: kbc.name, uuid: kbc.uuid, type: kbc.niceName , invalid: []]
+              }
+
+              if (!result.namespaces[idc.namespace.value]) {
+                result.namespaces[idc.namespace.value] = 1
+              }
+              else {
+                result.namespaces[idc.namespace.value]++
               }
 
               result.components[kbc.id].invalid << [value: idc.value, namespace: idc.namespace.value]
@@ -958,6 +966,59 @@ class CleanupService {
         j.message("Found ${result.occurrences} connected to ${result.components.size()} invalid Identifiers.".toString())
       }
     }
+    result
+  }
+
+  def deleteOrphanedHistoryEvents (Job j = null) {
+    def result = [total: 0]
+    def batchSize = 50
+
+    ComponentHistoryEvent.withSession { tsession ->
+      RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
+      boolean more = true
+
+      log.debug("Fetching events ${ComponentHistoryEvent.list().size()}..")
+
+      while (more) {
+        def batch = ComponentHistoryEventParticipant.executeQuery("select event.id from ComponentHistoryEventParticipant where participant.status = :sd", [sd: deleted_status], [max: batchSize])
+
+        batch.each { eid ->
+          def event = ComponentHistoryEvent.get(eid)
+
+          if (event) {
+            log.debug("Processing event ${event}")
+            def components_to_update = []
+
+            event.participants.each { chep ->
+              if (chep.participant.status != deleted_status) {
+                components_to_update << chep.participant
+              }
+            }
+
+            event.delete(flush: true)
+
+            result.total++
+
+            components_to_update.each { ctu ->
+              if (ctu instanceof TitleInstance) {
+                titleAugmentService.touchTitleTipps(ctu, false)
+              }
+            }
+          }
+          else {
+            log.debug("Event ${eid} not found, probably already deleted ..")
+          }
+        }
+
+        tsession.flush()
+        tsession.clear()
+
+        if (batch.size() < batchSize) {
+          more = false
+        }
+      }
+    }
+
     result
   }
 }
