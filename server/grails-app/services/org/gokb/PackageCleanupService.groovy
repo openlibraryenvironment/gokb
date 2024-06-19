@@ -43,7 +43,8 @@ class PackageCleanupService {
                             where toComponent = t
                             and fromComponent = :pkg
                             and type = :cp
-                          )'''
+                          )
+                          order by id'''
         log.debug("Processing ${total} Titles")
 
         while (more) {
