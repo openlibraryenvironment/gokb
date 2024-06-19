@@ -969,56 +969,74 @@ class CleanupService {
     result
   }
 
+  @Transactional
   def deleteOrphanedHistoryEvents (Job j = null) {
     def result = [total: 0]
-    def batchSize = 50
+    def session = null
 
-    ComponentHistoryEvent.withNewSession { tsession ->
-      RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
-      boolean more = true
+    try {
+      session = sessionFactory.currentSession
+    }
+    catch (Exception e) {
+      log.debug("No session. Create new ..")
+    }
 
-      log.debug("Fetching events ${ComponentHistoryEvent.list().size()}..")
-
-      while (more) {
-        def batch = ComponentHistoryEventParticipant.executeQuery("select event.id from ComponentHistoryEventParticipant where participant.status = :sd", [sd: deleted_status], [max: batchSize])
-
-        batch.each { eid ->
-          def event = ComponentHistoryEvent.get(eid)
-
-          if (event) {
-            log.debug("Processing event ${event}")
-            def components_to_update = []
-
-            event.participants.each { chep ->
-              if (chep.participant.status != deleted_status) {
-                components_to_update << chep.participant
-              }
-            }
-
-            event.delete(flush: true)
-
-            result.total++
-
-            components_to_update.each { ctu ->
-              if (ctu.tipps) {
-                titleAugmentService.touchTitleTipps(ctu, false)
-              }
-            }
-          }
-          else {
-            log.debug("Event ${eid} not found, probably already deleted ..")
-          }
-        }
-
-        tsession.flush()
-        tsession.clear()
-
-        if (batch.size() < batchSize) {
-          more = false
-        }
+    if (session) {
+      cleanupEvents(session, result)
+    }
+    else {
+      TitleInstance.withNewSession { tsession ->
+        cleanupEvents(tsession, result)
       }
     }
 
     result
+  }
+
+  private void cleanupEvents(session, result) {
+    RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
+    boolean more = true
+
+    log.debug("Got ${ComponentHistoryEvent.list().size()} events!")
+
+    while (more) {
+
+      def batch = ComponentHistoryEventParticipant.executeQuery("select event.id from ComponentHistoryEventParticipant where participant.status = :sd", [sd: deleted_status], [max: 50])
+
+      batch.each { eid ->
+        def event = ComponentHistoryEvent.get(eid)
+
+        if (event) {
+          log.debug("Processing event ${event}")
+          def components_to_update = []
+
+          event.participants.each { chep ->
+            if (chep.participant.status != deleted_status) {
+              components_to_update << chep.participant
+            }
+          }
+
+          event.delete(flush: true, failOnError: true)
+
+          result.total++
+
+          components_to_update.each { ctu ->
+            if (ctu.tipps) {
+              titleAugmentService.touchTitleTipps(ctu, false)
+            }
+          }
+        }
+        else {
+          log.debug("Event ${eid} not found, probably already deleted ..")
+        }
+      }
+
+      session.flush()
+      session.clear()
+
+      if (batch.size() < 50) {
+        more = false
+      }
+    }
   }
 }

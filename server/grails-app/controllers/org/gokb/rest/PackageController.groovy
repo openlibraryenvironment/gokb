@@ -197,6 +197,10 @@ class PackageController {
               def updateToken = RandomStringUtils.random(255, charset.toCharArray())
               update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
 
+              if ((!reqBody.curatoryGroups || reqBody.curatoryGroups?.size() == 0) && reqBody.activeGroup) {
+                reqBody.curatoryGroups = [reqBody.activeGroup]
+              }
+
               errors << packageUpdateService.updateCombos(obj, reqBody, false, user)
 
               if (errors.size() == 0) {
