@@ -139,7 +139,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
     def agrFailed = false
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     def groups = CuratoryGroup.executeQuery("select id, name from CuratoryGroup where status = :cs", [cs: status_current])
-    CuratoryGroup selectedGroup = params.selectedGroup ? CuratoryGroup.get(params.int('selectedGroup')) : null
+    CuratoryGroup selectedGroup = params.int('selectedGroup') ? CuratoryGroup.get(params.int('selectedGroup')) : null
     Locale locale = params.lang ? new Locale(params.lang) : request.locale
 
     if ( !request.post ) {
@@ -160,7 +160,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
       return [
         registerCommand: registerCommand,
         noTries: true,
-        errors: messageService.processValidationErrors(registerCommand.errors, locale),
+        errs: messageService.processValidationErrors(registerCommand.errors, locale),
         initGroup: selectedGroup?.id ?: null,
         groups: groups,
         embed: 'true',
@@ -189,14 +189,15 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         secQuestion: session.secQuestion,
         groups: groups,
         initGroup: selectedGroup?.id ?: null,
-        errors: messageService.processValidationErrors(registerCommand.errors, locale),
+        errs: messageService.processValidationErrors(registerCommand.errors, locale),
         embed: 'true',
         locale: locale
       ]
     }
 
-    if (registerCommand.hasErrors() || params.phone || agrFailed) {
+    if (!registerCommand.validate() || params.phone || agrFailed) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+
       return [
         registerCommand: registerCommand,
         secFailed: secFailed,
@@ -204,7 +205,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         secQuestion: session.secQuestion,
         groups: groups,
         initGroup: selectedGroup?.id ?: null,
-        errors: messageService.processValidationErrors(registerCommand.errors, locale),
+        errs: messageService.processValidationErrors(registerCommand.errors, locale),
         embed: 'true',
         locale: locale
       ]
@@ -221,12 +222,14 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         embed: 'true',
         secQuestion: session.secQuestion,
         groups: groups,
+        errs: [:],
         initGroup: selectedGroup?.id ?: null,
         locale: locale
       ]
     }
     else if (!user.validate()) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+      user.discard()
 
       return [
         registerCommand: registerCommand,
@@ -234,7 +237,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
         secQuestion: session.secQuestion,
         groups: groups,
         initGroup: selectedGroup?.id ?: null,
-        errors: user.username?.trim() ? messageService.processValidationErrors(user.errors, locale) : {username: [{message: messageService.resolveCode('registerCommand.username.nullable', null, locale)}]},
+        errs: messageService.processValidationErrors(user.errors, locale),
         locale: locale
       ]
     }
@@ -262,6 +265,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
       groups: groups,
       initGroup: selectedGroup?.id ?: null,
       embed: 'true',
+      errs: [:],
       locale: locale
     ]
   }

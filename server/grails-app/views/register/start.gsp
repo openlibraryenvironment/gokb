@@ -94,9 +94,9 @@
                           value="${registerCommand.email}"
                         />
                       </div>
-                      <g:if test="${errors?.email?.size() > 0}">
+                      <g:if test="${errs?.email?.size() > 0}">
                         <ul>
-                          <g:each var="e" in="${errors.email}">
+                          <g:each var="e" in="${errs.email}">
                             <li>${e.message}</li>
                           </g:each>
                         </ul>
@@ -122,10 +122,10 @@
                             <option value="${group[0]}" ${initGroup == group[0] ? 'selected' : ''}>${group[1]}</option>
                           </g:each>
                         </select>
-                        <g:if test="${errors?.curatoryGroup?.size() > 0}">
+                        <g:if test="${errs?.curatoryGroup?.size() > 0}">
                           <div>
                             <ul>
-                              <g:each var="e" in="${errors.curatoryGroup}">
+                              <g:each var="e" in="${errs.curatoryGroup}">
                                 <li>${e.message}</li>
                               </g:each>
                             </ul>
@@ -142,7 +142,7 @@
                         )
                       </label>
                       <div
-                        class="input-group input-group-sm ${registerCommand.errors.hasFieldErrors('username') || errors?.username?.size() > 0 ? 'has-error' : ''}"
+                        class="input-group input-group-sm ${registerCommand.errors.hasFieldErrors('username') || errs?.username?.size() > 0 ? 'has-error' : ''}"
                         style="margin-bottom:12px;width:100%"
                       >
                         <input
@@ -154,10 +154,10 @@
                           value="${registerCommand.username}"
                         />
                         <input type="text" name="phone" value="" hidden="true" />
-                        <g:if test="${errors?.username?.size() > 0}">
+                        <g:if test="${errs?.username?.size() > 0}">
                           <div>
                             <ul>
-                              <g:each var="e" in="${errors.username}">
+                              <g:each var="e" in="${errs.username}">
                                 <li>${e.message}</li>
                               </g:each>
                             </ul>
@@ -201,10 +201,10 @@
                           </button>
                         </span>
                       </div>
-                      <g:if test="${errors?.password?.size() > 0}">
+                      <g:if test="${errs?.password?.size() > 0}">
                         <div style="display:block;width:100%">
                           <ul>
-                            <g:each var="e" in="${errors.password}">
+                            <g:each var="e" in="${errs.password}">
                               <li>${e.message}</li>
                             </g:each>
                           </ul>
@@ -247,10 +247,10 @@
                           </button>
                         </span>
                       </div>
-                      <g:if test="${errors?.password2?.size() > 0}">
+                      <g:if test="${errs?.password2?.size() > 0}">
                         <div>
                           <ul>
-                            <g:each var="e" in="${errors.password2}">
+                            <g:each var="e" in="${errs.password2}">
                               <li>${e.message}</li>
                             </g:each>
                           </ul>
