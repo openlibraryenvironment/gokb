@@ -749,6 +749,9 @@ class TippService {
             titleAugmentService.addPublisher(tipp.publisherName, ti)
           }
 
+          tipp.lastSeen = System.currentTimeMillis()
+          tipp.save(flush: true)
+
           log.debug("linked TIPP $tipp with TitleInstance $ti")
         }
         else {
