@@ -637,8 +637,6 @@ where cp.owner = :c
 
   def beforeUpdate() {
     log.debug("beforeUpdate for ${this}")
-    def review_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
-    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
     if (this.name) {
       if (!shortcode) {
@@ -656,10 +654,6 @@ where cp.owner = :c
 
     if (user != null) {
       this.lastUpdatedBy = user
-    }
-
-    if (this.isDirty('status') && this.status == deleted_status) {
-      this.reviewRequests*.status = review_closed
     }
   }
 
