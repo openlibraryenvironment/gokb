@@ -749,6 +749,9 @@ class TippService {
             titleAugmentService.addPublisher(tipp.publisherName, ti)
           }
 
+          tipp.lastSeen = System.currentTimeMillis()
+          tipp.save(flush: true)
+
           log.debug("linked TIPP $tipp with TitleInstance $ti")
         }
         else {
@@ -1374,44 +1377,61 @@ class TippService {
   }
 
   def convertCoverageItem(c) {
-    def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
-    def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
-    def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
-    def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
-    def cov_depth = null
+    def coverage_item = [:]
 
-    log.debug("StartDate: ${parsedStart} -> ${startAsDate}, EndDate: ${parsedEnd} -> ${endAsDate}")
+    if (c instanceof TIPPCoverageStatement) {
+      coverage_item = [
+        'startVolume': c.startVolume,
+        'startIssue': c.startIssue,
+        'endVolume': c.endVolume,
+        'endIssue': c.endIssue,
+        'embargo': c.embargo,
+        'coverageDepth': c.coverageDepth,
+        'coverageNote': c.coverageNote,
+        'startDate': c.startDate,
+        'endDate': c.endDate
+      ]
+    }
+    else {
+      def parsedStart = GOKbTextUtils.completeDateString(c.startDate)
+      def parsedEnd = GOKbTextUtils.completeDateString(c.endDate, false)
+      def startAsDate = (parsedStart ? Date.from(parsedStart.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      def endAsDate = (parsedEnd ? Date.from(parsedEnd.atZone(ZoneId.systemDefault()).toInstant()) : null)
+      def cov_depth = null
 
-    if (c.coverageDepth instanceof String) {
-      cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
-    }
-    else if (c.coverageDepth instanceof Integer) {
-      cov_depth = RefdataValue.get(c.coverageDepth)
-    }
-    else if (c.coverageDepth instanceof Map) {
-      if (c.coverageDepth.id) {
-        cov_depth = RefdataValue.get(c.coverageDepth.id)
+      log.debug("StartDate: ${parsedStart} -> ${startAsDate}, EndDate: ${parsedEnd} -> ${endAsDate}")
+
+      if (c.coverageDepth instanceof String) {
+        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', c.coverageDepth)
       }
-      else {
-        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
+      else if (c.coverageDepth instanceof Integer) {
+        cov_depth = RefdataValue.get(c.coverageDepth)
       }
-    }
+      else if (c.coverageDepth instanceof Map) {
+        if (c.coverageDepth.id) {
+          cov_depth = RefdataValue.get(c.coverageDepth.id)
+        }
+        else {
+          cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', (c.coverageDepth.name ?: c.coverageDepth.value))
+        }
+      }
 
-    if (!cov_depth) {
-      cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
-    }
+      if (!cov_depth) {
+        cov_depth = RefdataCategory.lookup('TIPPCoverageStatement.CoverageDepth', "Fulltext")
+      }
 
-    def coverage_item = [
-      'startVolume': c.startVolume,
-      'startIssue': c.startIssue,
-      'endVolume': c.endVolume,
-      'endIssue': c.endIssue,
-      'embargo': c.embargo,
-      'coverageDepth': cov_depth,
-      'coverageNote': c.coverageNote,
-      'startDate': startAsDate,
-      'endDate': endAsDate
-    ]
+      coverage_item = [
+        'startVolume': c.startVolume,
+        'startIssue': c.startIssue,
+        'endVolume': c.endVolume,
+        'endIssue': c.endIssue,
+        'embargo': c.embargo,
+        'coverageDepth': cov_depth,
+        'coverageNote': c.coverageNote,
+        'startDate': startAsDate,
+        'endDate': endAsDate
+      ]
+    }
 
     coverage_item
   }
@@ -1575,5 +1595,73 @@ class TippService {
     }
 
     errors
+  }
+
+  public void mergeDuplicate(TitleInstancePackagePlatform duplicate, TitleInstancePackagePlatform target, User user = null, CuratoryGroup activeGroup = null, boolean keepOld = false) {
+    RefdataValue status_current = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_CURRENT)
+
+    if (keepOld) {
+      log.debug("Merging without info transfer ..")
+    }
+    else {
+      log.debug("Transfering info to reactivated TIPP ..")
+
+      RefdataValue id_combo_type = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
+      def new_target_ids = duplicate.activeIdInfo
+
+      componentUpdateService.updateIdentifiers(target, new_target_ids, user, activeGroup, true)
+
+      def coverage_match = [add: [], delete: []]
+
+      duplicate.coverageStatements.each { c ->
+        if (!existsCoverage(target, c)) {
+          coverage_match.add << [
+            'startVolume': c.startVolume,
+            'startIssue': c.startIssue,
+            'endVolume': c.endVolume,
+            'endIssue': c.endIssue,
+            'embargo': c.embargo,
+            'coverageDepth': c.coverageDepth,
+            'coverageNote': c.coverageNote,
+            'startDate': c.startDate,
+            'endDate': c.endDate
+          ]
+        }
+      }
+
+      target.coverageStatements.each { c ->
+        if (!existsCoverage(duplicate, c)) {
+          coverage_match.delete << c.id
+        }
+      }
+
+      coverage_match.delete.each { cid ->
+        def tcs_obj = TIPPCoverageStatement.get(cid)
+        target.removeFromCoverageStatements(tcs_obj)
+      }
+
+      coverage_match.add.each {
+        target.addToCoverageStatements(it)
+      }
+
+      log.debug("Setting new URL ${target.url} -> ${duplicate.url}")
+
+      target.url = duplicate.url
+
+      target.save()
+    }
+
+    if (duplicate.status == status_current && target.accessEndDate) {
+      target.accessEndDate = null
+    }
+
+    if (duplicate.status != target.status) {
+      target.status = duplicate.status
+    }
+
+    target.save(flush: true)
+
+    duplicate.deleteSoft()
+    touchPackage(target)
   }
 }
