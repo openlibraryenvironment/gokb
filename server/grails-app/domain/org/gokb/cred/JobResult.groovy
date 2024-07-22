@@ -14,6 +14,7 @@ class JobResult {
   Date startTime
   Date endTime
   Long linkedItemId
+  DataFile importFile
 
   static mapping = {
     uuid column: 'jr_uuid'
@@ -26,6 +27,7 @@ class JobResult {
     startTime column: 'jr_start_time'
     endTime column: 'jr_end_time'
     linkedItemId column: 'jr_linked_item_fk'
+    importFile column: 'jr_import_file_fk'
   }
 
   def afterInsert() {

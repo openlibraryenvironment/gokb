@@ -385,7 +385,8 @@ class IngestKbartRun {
               groupId     : (job.groupId),
               startTime   : (job.startTime),
               endTime     : (job.endTime),
-              linkedItemId: (job.linkedItem?.id)
+              linkedItemId: (job.linkedItem?.id),
+              importFile  : (datafile)
           ]
 
           def jr = new JobResult(job_map).save(flush: true, failOnError: true)
