@@ -747,6 +747,10 @@ class TippService {
           if (result.status == 'matched') {
             titleAugmentService.addIdentifiers(tipp_ids, ti)
             titleAugmentService.addPublisher(tipp.publisherName, ti)
+
+            if (tipp.normname != ti.normname) {
+              titleAugmentService.addVariantName(tipp.name, ti)
+            }
           }
 
           tipp.lastSeen = System.currentTimeMillis()
