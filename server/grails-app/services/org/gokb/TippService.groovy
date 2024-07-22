@@ -823,20 +823,6 @@ class TippService {
     ti
   }
 
-  @Transactional
-  def copyTitleData(ConcurrencyManagerService.Job job = null) {
-    if (job != null) {
-      TitleInstance.withNewSession {
-        scanTIPPs(job)
-      }
-    }
-    else {
-      TitleInstance.withSession {
-        scanTIPPs(null)
-      }
-    }
-  }
-
   def statusUpdate() {
     log.info("Updating TIPP status via access dates..")
     def result = [result: 'OK', retired: 0, activated: 0]
@@ -895,68 +881,72 @@ class TippService {
   }
 
   @Transactional
-  def scanTIPPs(Job job = null) {
-    RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
-    RefdataValue combo_ids = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
-    String tipp_crit = 'select t.id from TitleInstancePackagePlatform as t where t.status != :status and (t.name is null or not exists (select 1 from Combo where fromComponent = t and type = :idc))'
+  def copyTitleData(Job job = null) {
+    def result = [status:'OK', total: 0]
 
-    autoTimestampEventListener.withoutLastUpdated (TitleInstancePackagePlatform) {
-      int index = 0
-      boolean cancelled = false
-      def tippIDs = TitleInstancePackagePlatform.executeQuery(tipp_crit, [status: status_deleted, idc: combo_ids])
-      log.debug("found ${tippIDs.size()} TIPPs")
-      def tippIDit = tippIDs.iterator()
-      def session = sessionFactory.currentSession
+    TitleInstancePackagePlatform.withNewSession { session ->
+      RefdataValue status_deleted = RefdataCategory.lookup(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+      RefdataValue combo_ids = RefdataCategory.lookup(Combo.RD_TYPE, 'KBComponent.Ids')
+      String tipp_crit = 'select t.id from TitleInstancePackagePlatform as t where t.status != :status and (t.name is null or not exists (select 1 from Combo where fromComponent = t and type = :idc))'
 
-      while (tippIDit.hasNext() && !cancelled) {
-        TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDit.next())
-        index++
+      autoTimestampEventListener.withoutLastUpdated (TitleInstancePackagePlatform) {
+        int index = 0
+        boolean cancelled = false
+        def tippIDs = TitleInstancePackagePlatform.executeQuery(tipp_crit, [status: status_deleted, idc: combo_ids])
+        log.debug("found ${tippIDs.size()} TIPPs")
+        result.total = tippIDs.size()
+        def tippIDit = tippIDs.iterator()
 
-        if (tipp.title) {
-          tipp.title.ids.each { data ->
-            Identifier idobj = Identifier.get(data.id)
+        while (tippIDit.hasNext() && !cancelled) {
+          TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tippIDit.next())
+          index++
 
-            if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(idobj.namespace.value)) {
-              if (!tipp.ids*.namespace.contains(idobj.namespace)) {
-                new Combo(fromComponent: tipp, toComponent: idobj, type: combo_ids).save(flush: true, failOnError: true)
-                log.debug("added ID $data in TIPP $tipp")
+          if (tipp.title) {
+            tipp.title.ids.each { data ->
+              Identifier idobj = Identifier.get(data.id)
+
+              if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(idobj.namespace.value)) {
+                if (!tipp.ids*.namespace.contains(idobj.namespace)) {
+                  new Combo(fromComponent: tipp, toComponent: idobj, type: combo_ids).save(flush: true, failOnError: true)
+                  log.debug("added ID $data in TIPP $tipp")
+                }
               }
             }
+
+            if (!tipp.name || tipp.name == '') {
+              tipp.name = tipp.title.name
+              log.debug("set TIPP name to $tipp.name")
+            }
+
+            if (tipp.isDirty()) {
+              tipp.save(flush: true)
+              log.debug("save $index")
+            }
+
+            log.debug("destroy #$index: $tipp")
+            tipp.finalize()
           }
 
-          if (!tipp.name || tipp.name == '') {
-            tipp.name = tipp.title.name
-            log.debug("set TIPP name to $tipp.name")
+          job?.setProgress(index, tippIDs.size())
+
+          if (job?.isCancelled()) {
+            cancelled = true
+            result.result = 'CANCELLED'
           }
 
-          if (tipp.isDirty()) {
-            tipp.save(flush: true)
-            log.debug("save $index")
+          if (index % 100 == 0) {
+            log.debug("Clean up GORM")
+            session.flush()
+            session.clear()
           }
-
-          log.debug("destroy #$index: $tipp")
-          tipp.finalize()
         }
-
-        job?.setProgress(index, tippIDs.size())
-
-        if (job?.isCancelled()) {
-          cancelled = true
-        }
-
-        if (index % 100 == 0) {
-          log.debug("Clean up GORM")
-          // Get the current session.
-          // flush and clear the session.
-          session.flush()
-          session.clear()
-        }
+        // one last flush
+        session.flush()
+        session.clear()
+        job?.endTime = new Date()
       }
-      // one last flush
-      session.flush()
-      session.clear()
-      job?.endTime = new Date()
     }
+    result
   }
 
   private void coverageCheck(tipp, found) {
