@@ -905,7 +905,7 @@ class TippService {
             tipp.title.ids.each { data ->
               Identifier idobj = Identifier.get(data.id)
 
-              if (['isbn', 'pisbn', 'issn', 'eissn', 'issnl', 'doi', 'zdb', 'isil'].contains(idobj.namespace.value)) {
+              if (['isbn', 'pisbn', 'issn', 'eissn'].contains(idobj.namespace.value)) {
                 if (!tipp.ids*.namespace.contains(idobj.namespace)) {
                   new Combo(fromComponent: tipp, toComponent: idobj, type: combo_ids).save(flush: true, failOnError: true)
                   log.debug("added ID $data in TIPP $tipp")
