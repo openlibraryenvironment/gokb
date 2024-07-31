@@ -73,7 +73,7 @@ class RestMappingService {
     def include_list = params['_include']?.split(',') ?: null
     def exclude_list = params['_exclude']?.split(',') ?: null
     def nested = params['nested'] ? true : false
-    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     def curatedClass = obj.respondsTo('curatoryGroups')
     def jsonMap = null
     def is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
@@ -1223,7 +1223,7 @@ class RestMappingService {
    */
 
   String buildUrlString(context, type, offset , max, params) {
-    URL serverUrl = grailsApplication.config.getProperty('serverURL') ? new URL(grailsApplication.config.getProperty('serverURL')) : null
+    URL serverUrl = grailsApplication.config.getProperty('grails.serverURL') ? new URL(grailsApplication.config.getProperty('grails.serverURL')) : null
     String path = "/rest" + "${context}"
 
     UriBuilder selfLink = UriBuilder.of(serverUrl.toURI())

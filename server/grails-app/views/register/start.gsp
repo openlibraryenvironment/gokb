@@ -2,11 +2,14 @@
 <head>
   <meta name='layout' content='register'/>
   <title><g:message code='spring.security.ui.register.title'/></title>
+  <g:if test="${embed}">
+    <asset:stylesheet src="gokb/gokb-brand.css"/>
+  </g:if>
 </head>
 
 <body>
 
-  <div class="container">
+  <div class="container-fluid">
     <div class="row">
       <div class='col-md-12'>
         &nbsp;
@@ -67,179 +70,251 @@
                 role="form"
                 params="[embed:true, lang: locale]"
               >
-                <label for="email">
-                  ${message(code:'spring.security.ui.register.email.label', locale: locale)}
-                  <i
-                    class="fas fa-info-circle"
-                    style="color:#008cba"
-                    title="${message(code:'registration.email.info', locale:locale)}"
-                  >
-                  </i>
-                </label>
-                <div
-                  class="input-group input-group-sm ${registerCommand.errors.hasFieldErrors('email') ? 'has-error' : ''}"
-                  style="margin-bottom:12px;width:100%"
-                >
-                  <input
-                    type="email"
-                    class="form-control"
-                    id="email"
-                    name="email"
-                    value="${registerCommand.email}"
-                  />
-                  <g:if test="${errors?.email?.size() > 0}">
-                    <ul>
-                      <g:each var="e" in="${errors.email}">
-                        <li>${e.message}</li>
-                      </g:each>
-                    </ul>
-                  </g:if>
-                </div>
-                <label for="username">
-                  ${message(code:'spring.security.ui.register.username.label', locale: locale)} (
-                    <span style="color:red">*</span>
-                  )
-                </label>
-                <div
-                  class="input-group input-group-sm ${registerCommand.errors.hasFieldErrors('username') ? 'has-error' : ''}"
-                  style="margin-bottom:12px;width:100%"
-                >
-                  <input
-                    autocomplete="false"
-                    type="text"
-                    class="form-control"
-                    id="username"
-                    name="username"
-                    value="${registerCommand.username}"
-                  />
-                  <input type="text" name="phone" value="" hidden="true" />
-                  <g:if test="${errors?.username?.size() > 0}">
-                    <ul>
-                      <g:each var="e" in="${errors.username}">
-                        <li>${e.message}</li>
-                      </g:each>
-                    </ul>
-                  </g:if>
-                </div>
-                <label for="password">
-                  ${message(code:'spring.security.ui.register.password.label', locale: locale)} (
-                    <span style="color:red">*</span>
-                  )
-                </label>
-                <div
-                  class="input-group input-group-sm ${registerCommand.errors.hasFieldErrors('password') ? 'has-error' : ''}"
-                  style="margin-bottom:12px;width:100%"
-                >
-                  <input
-                    autocomplete="false"
-                    type="password"
-                    class="form-control"
-                    id="password"
-                    name="password"
-                    value="${registerCommand.password}"
-                  />
-                  <span class="input-group-btn">
-                    <button
-                      class="btn btn-default"
-                      id="showPassword"
-                      type="button"
-                    >
-                      <i
-                        class="fas fa-eye"
-                        id="showPasswordIcon"
-                        title="${message(code:'registration.password.toggle', locale:locale)}"
+                <div class="container">
+                  <div class="row">
+                    <div class="col-xs-6">
+                      <label for="email">
+                        ${message(code:'spring.security.ui.register.email.label', locale: locale)}
+                        <i
+                          class="fas fa-info-circle"
+                          style="color:#008cba"
+                          title="${message(code:'registration.email.info', locale:locale)}"
+                        >
+                        </i>
+                      </label>
+                      <div
+                        class="input-group input-group-xs ${registerCommand.errors.hasFieldErrors('email') ? 'has-error' : ''}"
+                        style="margin-bottom:12px;width:100%"
                       >
-                      </i>
-                    </button>
-                  </span>
-                  <g:if test="${errors?.password?.size() > 0}">
-                    <ul>
-                      <g:each var="e" in="${errors.password}">
-                        <li>${e.message}</li>
-                      </g:each>
-                    </ul>
-                  </g:if>
-                </div>
-                <label for="password2">
-                  ${message(code:'spring.security.ui.register.password2.label', locale: locale)} (
-                    <span style="color:red">*</span>
-                  )
-                </label>
-                <div
-                  class="input-group input-group-sm ${registerCommand.errors.hasFieldErrors('password2') ? 'has-error' : ''}"
-                  style="margin-bottom:12px;width:100%"
-                >
-                  <input
-                    autocomplete="false"
-                    type="password"
-                    class="form-control"
-                    id="password2"
-                    name="password2"
-                    value="${registerCommand.password2}"
-                  />
-                  <span class="input-group-btn">
-                    <button
-                      class="btn btn-default"
-                      id="showPassword2"
-                      type="button"
-                    >
-                      <i
-                        class="fas fa-eye"
-                        id="showPassword2Icon"
-                        title="${message(code:'registration.password.toggle', locale:locale)}"
+                        <input
+                          type="email"
+                          class="form-control"
+                          id="email"
+                          name="email"
+                          value="${registerCommand.email}"
+                        />
+                      </div>
+                      <g:if test="${errs?.email?.size() > 0}">
+                        <ul>
+                          <g:each var="e" in="${errs.email}">
+                            <li>${e.message}</li>
+                          </g:each>
+                        </ul>
+                      </g:if>
+                    </div>
+                    <div class="col-xs-6">
+                      <label for="curatoryGroup">
+                        ${message(code:'spring.security.ui.register.curatoryGroup.label', locale: locale)}
+                        <i
+                          class="fas fa-info-circle"
+                          style="color:#008cba"
+                          title="${message(code:'spring.security.ui.register.curatoryGroup.info', locale: locale)}"
+                        >
+                        </i>
+                      </label>
+                      <div
+                        class="input-group input-group-xs ${registerCommand.errors.hasFieldErrors('curatoryGroups') ? 'has-error' : ''}"
+                        style="margin-bottom:12px;width:50%"
                       >
-                      </i>
-                    </button>
-                  </span>
-                  <g:if test="${errors?.password2?.size() > 0}">
-                    <ul>
-                      <g:each var="e" in="${errors.password2}">
-                        <li>${e.message}</li>
-                      </g:each>
-                    </ul>
-                  </g:if>
-                </div>
-                <label for="botFilter">
-                  ${message(code:'spring.security.ui.register.mathCheck.label', args:[secQuestion], locale: locale)} (
-                    <span style="color:red">*</span>
-                  )
-                </label>
-                <div
-                  class="input-group input-group-sm ${secFailed ? 'has-error' : ''}"
-                  style="margin-bottom:12px"
-                >
-                  <input autocomplete="false" type="text" class="form-control" id="botFilter" name="secAnswer" />
-                  <g:if test="${secFailed}">
-                    <ul>
-                      <li>${message(code:'spring.security.ui.register.mathCheck.error', locale: locale)}</li>
-                    </ul>
-                  </g:if>
-                </div>
-                <div
-                  class="input-group input-group-sm ${agrFailed ? 'has-error' : ''}"
-                  style="margin-bottom:12px"
-                >
-                  <input
-                    type="checkbox"
-                    id="agreement"
-                    name="agreement"
-                  />
-                  <label for="agreement">
-                    ${message(code:'spring.security.ui.register.agreement.label', locale: locale)} (
-                      <span style="color:red">*</span>
-                    )
-                  </label>
-                  <g:if test="${agrFailed}">
-                    <ul>
-                      <li>${message(code:'spring.security.ui.register.agreement.error', locale: locale)}</li>
-                    </ul>
-                  </g:if>
-                </div>
-                <div class="input-group">
-                  <label for="submit"></label>
-                  <button type="submit" class="btn btn-default">
-                    ${message(code:'spring.security.ui.register.submit', locale: locale)}
-                  </button>
+                        <select name="selectedGroup" class="form-control">
+                          <option>${message(code: 'spring.security.ui.register.curatoryGroup.none')}</option>
+                          <g:each var="group" in="${groups}">
+                            <option value="${group[0]}" ${initGroup == group[0] ? 'selected' : ''}>${group[1]}</option>
+                          </g:each>
+                        </select>
+                        <g:if test="${errs?.curatoryGroup?.size() > 0}">
+                          <div>
+                            <ul>
+                              <g:each var="e" in="${errs.curatoryGroup}">
+                                <li>${e.message}</li>
+                              </g:each>
+                            </ul>
+                          </div>
+                        </g:if>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-xs-6">
+                      <label for="username">
+                        ${message(code:'spring.security.ui.register.username.label', locale: locale)} (
+                          <span style="color:red">*</span>
+                        )
+                      </label>
+                      <div
+                        class="input-group input-group-sm ${registerCommand.errors.hasFieldErrors('username') || errs?.username?.size() > 0 ? 'has-error' : ''}"
+                        style="margin-bottom:12px;width:100%"
+                      >
+                        <input
+                          autocomplete="false"
+                          type="text"
+                          class="form-control"
+                          id="username"
+                          name="username"
+                          value="${registerCommand.username}"
+                        />
+                        <input type="text" name="phone" value="" hidden="true" />
+                        <g:if test="${errs?.username?.size() > 0}">
+                          <div>
+                            <ul>
+                              <g:each var="e" in="${errs.username}">
+                                <li>${e.message}</li>
+                              </g:each>
+                            </ul>
+                          </div>
+                        </g:if>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-xs-6">
+                      <label for="password">
+                        ${message(code:'spring.security.ui.register.password.label', locale: locale)} (
+                          <span style="color:red">*</span>
+                        )
+                      </label>
+                      <div
+                        class="input-group ${registerCommand.errors.hasFieldErrors('password') ? 'has-error' : ''}"
+                        style="margin-bottom:12px;width:100%"
+                      >
+                        <input
+                          autocomplete="false"
+                          type="password"
+                          class="form-control"
+                          id="password"
+                          name="password"
+                          value="${registerCommand.password}"
+                        />
+                        <span class="input-group-btn">
+                          <button
+                            class="btn btn-default"
+                            id="showPassword"
+                            type="button"
+                            tabindex="-1"
+                          >
+                            <i
+                              class="fas fa-eye"
+                              id="showPasswordIcon"
+                              title="${message(code:'registration.password.toggle', locale:locale)}"
+                            >
+                            </i>
+                          </button>
+                        </span>
+                      </div>
+                      <g:if test="${errs?.password?.size() > 0}">
+                        <div style="display:block;width:100%">
+                          <ul>
+                            <g:each var="e" in="${errs.password}">
+                              <li>${e.message}</li>
+                            </g:each>
+                          </ul>
+                        </div>
+                      </g:if>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-xs-6">
+                      <label for="password2">
+                        ${message(code:'spring.security.ui.register.password2.label', locale: locale)} (
+                          <span style="color:red">*</span>
+                        )
+                      </label>
+                      <div
+                        class="input-group ${registerCommand.errors.hasFieldErrors('password2') ? 'has-error' : ''}"
+                        style="margin-bottom:12px;width:100%"
+                      >
+                        <input
+                          autocomplete="false"
+                          type="password"
+                          class="form-control"
+                          id="password2"
+                          name="password2"
+                          value="${registerCommand.password2}"
+                        />
+                        <span class="input-group-btn">
+                          <button
+                            class="btn btn-default"
+                            id="showPassword2"
+                            type="button"
+                            tabindex="-1"
+                          >
+                            <i
+                              class="fas fa-eye"
+                              id="showPassword2Icon"
+                              title="${message(code:'registration.password.toggle', locale:locale)}"
+                            >
+                            </i>
+                          </button>
+                        </span>
+                      </div>
+                      <g:if test="${errs?.password2?.size() > 0}">
+                        <div>
+                          <ul>
+                            <g:each var="e" in="${errs.password2}">
+                              <li>${e.message}</li>
+                            </g:each>
+                          </ul>
+                        </div>
+                      </g:if>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-xs-6">
+                      <label for="botFilter">
+                        ${message(code:'spring.security.ui.register.mathCheck.label', args:[secQuestion], locale: locale)} (
+                          <span style="color:red">*</span>
+                        )
+                      </label>
+                      <div
+                        class="input-group input-group-sm ${secFailed ? 'has-error' : ''}"
+                        style="margin-bottom:12px"
+                      >
+                        <input autocomplete="false" type="text" class="form-control" id="botFilter" name="secAnswer" />
+                      </div>
+                      <g:if test="${secFailed}">
+                        <div>
+                          <ul>
+                            <li>${message(code:'spring.security.ui.register.mathCheck.error', locale: locale)}</li>
+                          </ul>
+                        </div>
+                      </g:if>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-xs-12">
+                      <div
+                        class="input-group input-group-sm"
+                        style="margin-bottom:12px;padding:4px;${agrFailed ? 'border:1px solid red' : ''}"
+                      >
+                        <input
+                          type="checkbox"
+                          id="agreement"
+                          name="agreement"
+                        />
+                        <label for="agreement">
+                          ${message(code:'spring.security.ui.register.agreement.label', locale: locale)} (
+                            <span style="color:red">*</span>
+                          )
+                        </label>
+                      </div>
+                      <g:if test="${agrFailed}">
+                        <div>
+                          <ul>
+                            <li>${message(code:'spring.security.ui.register.agreement.error', locale: locale)}</li>
+                          </ul>
+                        </div>
+                      </g:if>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-xs-12">
+                      <div class="input-group">
+                        <button type="submit" value="Submit" class="btn btn-default">
+                          ${message(code:'spring.security.ui.register.submit', locale: locale)}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </g:form>
             </div>
