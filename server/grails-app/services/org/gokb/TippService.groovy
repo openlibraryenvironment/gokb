@@ -1008,6 +1008,7 @@ class TippService {
 
   private boolean handleFindConflicts(tipp, def found, CuratoryGroup activeCg = null) {
     def result = false
+    def status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
 
     if (found.invalid) {
       result = true
@@ -1031,7 +1032,7 @@ class TippService {
     else if (found.matches.size > 1 && !tipp.title) {
       result = true
       def type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
-      def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type", [tid: tipp, type: type_atm])[0]
+      def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: tipp, type: type_atm, so: status_open])[0]
 
       if (num_existing == 0) {
         def additionalInfo = [otherComponents: []]
