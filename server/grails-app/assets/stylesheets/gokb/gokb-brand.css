@@ -130,3 +130,7 @@ select.input-sm {
 #side-menu > li > a {
   font-weight: bold;
 }
+
+.form-control {
+  color: rgb(79,79,79)
+}
