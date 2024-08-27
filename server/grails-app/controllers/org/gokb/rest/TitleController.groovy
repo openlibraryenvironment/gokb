@@ -201,6 +201,7 @@ class TitleController {
             if (title_lookup.matches.size() > 0 && !reqBody._checked) {
               def additionalInfo = [:]
               def combo_ids = [obj.id]
+              RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Existing Indentifiers")
 
               additionalInfo.otherComponents = []
 
@@ -220,9 +221,11 @@ class TitleController {
                 obj,
                 "New TI created.",
                 "There have been possible conflicts with other existing titles.",
-                user,
                 null,
-                (additionalInfo as JSON).toString()
+                null,
+                (additionalInfo as JSON).toString(),
+                rr_type,
+                componentLookupService.findCuratoryGroupOfInterest(obj)
               )
             }
 

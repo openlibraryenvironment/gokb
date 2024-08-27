@@ -1008,6 +1008,7 @@ class TippService {
 
   private boolean handleFindConflicts(tipp, def found, CuratoryGroup activeCg = null) {
     def result = false
+    def status_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
 
     if (found.invalid) {
       result = true
@@ -1031,7 +1032,7 @@ class TippService {
     else if (found.matches.size > 1 && !tipp.title) {
       result = true
       def type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
-      def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type", [tid: tipp, type: type_atm])[0]
+      def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: tipp, type: type_atm, so: status_open])[0]
 
       if (num_existing == 0) {
         def additionalInfo = [otherComponents: []]
@@ -1048,6 +1049,44 @@ class TippService {
             type_atm,
             componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
         )
+      }
+
+      if (found.matches.size() > 1) {
+        log.debug("Creating RR on existing title for id conflicts")
+        def tipp_id_list = tipp.ids.collect { "${it.namespace.value}:${it.value}" }
+        def main_title = found.matches[0].object
+        RefdataValue rdt = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')
+        def ctc_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: main_title, type: rdt, so: status_open])[0]
+
+        if (ctc_existing.size() == 0) {
+          def other_objects = found.matches.drop(1).collect {
+                                [
+                                  oid: "${it.object.class.name}:${it.object.id}",
+                                  name: it.object.name,
+                                  id: it.object.id,
+                                  uuid: it.object.uuid,
+                                  conflicts: it.conflicts
+                                ]
+                              }
+
+          result = true
+          def additionalInfo = [
+            otherComponents: other_objects,
+            referenceIds: tipp_id_list,
+            vars: [main_title.name, ""]
+          ]
+
+          reviewRequestService.raise(
+            main_title,
+            "Multiple titles have been matched by identifiers ${tipp_id_list}!".toString(),
+            "Check Titles for duplicates!",
+            null,
+            null,
+            (additionalInfo as JSON).toString(),
+            ,
+            componentLookupService.findCuratoryGroupOfInterest(main_title, null, activeCg)
+          )
+        }
       }
     }
     else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
