@@ -1029,7 +1029,7 @@ class TippService {
         )
       }
     }
-    else if (found.matches.size > 1 && !tipp.title) {
+    else if (found.matches.size() > 1 && !tipp.title) {
       result = true
       def type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
       def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: tipp, type: type_atm, so: status_open])[0]
@@ -1051,42 +1051,40 @@ class TippService {
         )
       }
 
-      if (found.matches.size() > 1) {
-        log.debug("Creating RR on existing title for id conflicts")
-        def tipp_id_list = tipp.ids.collect { "${it.namespace.value}:${it.value}" }
-        def main_title = found.matches[0].object
-        RefdataValue rdt = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')
-        def ctc_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: main_title, type: rdt, so: status_open])[0]
+      log.debug("Creating RR on existing title for id conflicts")
+      def tipp_id_list = tipp.ids.collect { "${it.namespace.value}:${it.value}" }
+      def component_to_review = found.matches.removeLast().object
+      RefdataValue rdt = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')
+      def ctc_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: component_to_review, type: rdt, so: status_open])[0]
 
-        if (ctc_existing.size() == 0) {
-          def other_objects = found.matches.drop(1).collect {
-                                [
-                                  oid: "${it.object.class.name}:${it.object.id}",
-                                  name: it.object.name,
-                                  id: it.object.id,
-                                  uuid: it.object.uuid,
-                                  conflicts: it.conflicts
-                                ]
-                              }
+      if (ctc_existing == 0) {
+        def other_objects = found.matches.collect {
+                              [
+                                oid: "${it.object.class.name}:${it.object.id}",
+                                name: it.object.name,
+                                id: it.object.id,
+                                uuid: it.object.uuid,
+                                conflicts: it.conflicts
+                              ]
+                            }
 
-          result = true
-          def additionalInfo = [
-            otherComponents: other_objects,
-            referenceIds: tipp_id_list,
-            vars: [main_title.name, ""]
-          ]
+        result = true
+        def additionalInfo = [
+          otherComponents: other_objects,
+          referenceIds: tipp_id_list,
+          vars: [component_to_review.name, ""]
+        ]
 
-          reviewRequestService.raise(
-            main_title,
-            "Multiple titles have been matched by identifiers ${tipp_id_list}!".toString(),
-            "Check Titles for duplicates!",
-            null,
-            null,
-            (additionalInfo as JSON).toString(),
-            ,
-            componentLookupService.findCuratoryGroupOfInterest(main_title, null, activeCg)
-          )
-        }
+        reviewRequestService.raise(
+          component_to_review,
+          "Multiple titles have been matched by identifiers ${tipp_id_list}!".toString(),
+          "Check Titles for duplicates!",
+          null,
+          null,
+          (additionalInfo as JSON).toString(),
+          rdt,
+          componentLookupService.findCuratoryGroupOfInterest(component_to_review, null, activeCg)
+        )
       }
     }
     else if (found.matches.size() == 1 && found.matches[0].conflicts?.size() > 0) {
