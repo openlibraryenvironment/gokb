@@ -201,7 +201,7 @@ class TitleController {
             if (title_lookup.matches.size() > 0 && !reqBody._checked) {
               def additionalInfo = [:]
               def combo_ids = [obj.id]
-              RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Existing Identifiers")
+              RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Duplicate Title Info")
 
               additionalInfo.otherComponents = []
 
