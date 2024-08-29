@@ -35,7 +35,7 @@ class PackageController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
-    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -79,7 +79,7 @@ class PackageController {
   def show() {
     def result = [:]
     def obj = null
-    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     def is_curator = true
     User user = null
 
@@ -196,6 +196,10 @@ class PackageController {
               String charset = (('a'..'z') + ('0'..'9')).join()
               def updateToken = RandomStringUtils.random(255, charset.toCharArray())
               update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
+
+              if ((!reqBody.curatoryGroups || reqBody.curatoryGroups?.size() == 0) && reqBody.activeGroup) {
+                reqBody.curatoryGroups = [reqBody.activeGroup]
+              }
 
               errors << packageUpdateService.updateCombos(obj, reqBody, false, user)
 
@@ -454,7 +458,7 @@ class PackageController {
 
     if (obj) {
       def context = "/packages/" + params.id + "/tipps"
-      def base = grailsApplication.config.getProperty('serverURL') + "/rest"
+      def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
       def es_search = params.es ? true : false
 
       params.remove('id')

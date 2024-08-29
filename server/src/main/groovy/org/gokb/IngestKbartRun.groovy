@@ -636,31 +636,31 @@ class IngestKbartRun {
           tipp_map.accessStartDate = null
         }
 
-        // update Data
-        log.debug("Updated TIPP ${tipp} with URL ${tipp?.url}")
-
         if (match_result.full_matches.size() > 1) {
-          log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
-          def additionalInfo = [otherComponents: []]
-
-          match_result.full_matches.eachWithIndex { ct, idx ->
-            if (idx > 0) {
-              additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
-            }
-          }
           result.reviewCreated = true
 
-          // RR für Multimatch generieren
-          reviewRequestService.raise(
-              tipp,
-              "Ambiguous KBART Record Matches",
-              "A KBART record has been matched on multiple package titles.",
-              user,
-              null,
-              (additionalInfo as JSON).toString(),
-              RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
-              componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
-          )
+          if (!dryRun) {
+            log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
+            def additionalInfo = [otherComponents: []]
+
+            match_result.full_matches.eachWithIndex { ct, idx ->
+              if (idx > 0) {
+                additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
+              }
+            }
+
+            // RR für Multimatch generieren
+            reviewRequestService.raise(
+                tipp,
+                "Ambiguous KBART Record Matches",
+                "A KBART record has been matched on multiple package titles.",
+                user,
+                null,
+                (additionalInfo as JSON).toString(),
+                RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
+                componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
+            )
+          }
         }
       }
       else {
@@ -678,11 +678,13 @@ class IngestKbartRun {
           tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
 
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
+        }
 
-          if (match_result.failed_matches.size() > 0) {
-            result.status = 'partial'
-            result.reviewCreated = true
+        if (match_result.failed_matches.size() > 0) {
+          result.status = 'partial'
+          result.reviewCreated = true
 
+          if (!dryRun) {
             def additionalInfo = [otherComponents: []]
 
             match_result.failed_matches.each { ct ->

@@ -11,6 +11,9 @@ import groovy.util.logging.*
 
 import io.micronaut.http.uri.UriBuilder
 
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+
 import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -439,6 +442,10 @@ class ComponentLookupService {
 
                     ctr_ids.addAll(ti_ids)
                   }
+
+                  if (params.combinedreviews) {
+                    ctr_ids.addAll(tipp_ids)
+                  }
                 }
                 else {
                   ctr_ids.addAll(tipp_ids)
@@ -590,6 +597,102 @@ class ComponentLookupService {
       }
       hqlQry += "p.status != :status"
       qryParams['status'] = RefdataCategory.lookup("ReviewRequest.Status", "Deleted")
+    }
+
+    if (params['changedSince']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['changedSince'])
+      }
+      catch (Exception e) {}
+
+      if (csdate) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+        hqlQry += "p.lastUpdated >= :changedSince"
+        qryParams['changedSince'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+      }
+    }
+
+    if (params['changedBefore']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['changedBefore'])
+      }
+      catch (Exception e) {}
+
+      if (first) {
+        hqlQry += " WHERE "
+        first = false
+      }
+      else {
+        hqlQry += " AND "
+      }
+      hqlQry += "p.lastUpdated < :changedBefore"
+      qryParams['changedBefore'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+    }
+
+    if (params['createdSince']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['createdSince'])
+      }
+      catch (Exception e) {}
+
+      if (csdate) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+        hqlQry += "p.dateCreated >= :createdSince"
+        qryParams['createdSince'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+      }
+    }
+
+    if (params['createdBefore']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['createdBefore'])
+      }
+      catch (Exception e) {}
+
+      if (csdate) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+        hqlQry += "p.dateCreated < :createdBefore"
+        qryParams['createdBefore'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+      }
+    }
+
+    if (params['id']) {
+      Long idval = params.long('id')
+
+      if (first) {
+        hqlQry += " WHERE "
+        first = false
+      }
+      else {
+        hqlQry += " AND "
+      }
+      hqlQry += "p.id = :idval"
+      qryParams['idval'] = idval
     }
 
     if (cls == ReviewRequest && params['allocatedGroups']) {
