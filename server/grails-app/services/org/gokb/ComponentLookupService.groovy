@@ -724,6 +724,45 @@ class ComponentLookupService {
       }
     }
 
+    if (cls == ReviewRequest && params['linkedComponentType']) {
+      def lct = params['linkedComponentType']
+
+      if (['Package', 'ReferenceTitle', 'PackageTitle', 'Journal', 'Monograph', 'Database'].contains(lct)) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+
+        if (lct == 'Package') {
+          hqlQry += "exists (select 1 from Package where id = p.componentToReview.id)"
+        }
+        else if (lct == 'ReferenceTitle') {
+          hqlQry += "exists (select 1 from TitleInstance where id = p.componentToReview.id)"
+        }
+        else if (lct == 'PackageTitle') {
+          hqlQry += "exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id)"
+        }
+        else if (lct == 'Journal') {
+          hqlQry += "(exists (select 1 from JournalInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Serial')
+        }
+        else if (lct == 'Monograph') {
+          hqlQry += "(exists (select 1 from BookInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Monograph')
+        }
+        else if (lct == 'Database') {
+          hqlQry += "(exists (select 1 from DatabaseInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Database')
+        }
+      }
+      else {
+        log.debug("Skipping linkedCOmponentType ${lct}!")
+      }
+    }
+
     def hqlCount = "select ${genericTerm ? 'distinct': ''} count(p.id) ${hqlQry}".toString()
     def hqlFinal = "select ${genericTerm ? 'distinct': ''} p ${sortField ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
