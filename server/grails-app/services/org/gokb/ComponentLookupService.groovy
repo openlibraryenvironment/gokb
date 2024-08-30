@@ -11,6 +11,9 @@ import groovy.util.logging.*
 
 import io.micronaut.http.uri.UriBuilder
 
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+
 import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -596,6 +599,88 @@ class ComponentLookupService {
       qryParams['status'] = RefdataCategory.lookup("ReviewRequest.Status", "Deleted")
     }
 
+    if (params['changedSince']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['changedSince'])
+      }
+      catch (Exception e) {}
+
+      if (csdate) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+        hqlQry += "p.lastUpdated >= :changedSince"
+        qryParams['changedSince'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+      }
+    }
+
+    if (params['changedBefore']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['changedBefore'])
+      }
+      catch (Exception e) {}
+
+      if (first) {
+        hqlQry += " WHERE "
+        first = false
+      }
+      else {
+        hqlQry += " AND "
+      }
+      hqlQry += "p.lastUpdated < :changedBefore"
+      qryParams['changedBefore'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+    }
+
+    if (params['createdSince']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['createdSince'])
+      }
+      catch (Exception e) {}
+
+      if (csdate) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+        hqlQry += "p.dateCreated >= :createdSince"
+        qryParams['createdSince'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+      }
+    }
+
+    if (params['createdBefore']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['createdBefore'])
+      }
+      catch (Exception e) {}
+
+      if (csdate) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+        hqlQry += "p.dateCreated < :createdBefore"
+        qryParams['createdBefore'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+      }
+    }
+
     if (params['id']) {
       Long idval = params.long('id')
 
@@ -636,6 +721,45 @@ class ComponentLookupService {
         hqlQry += "exists (select 1 from AllocatedReviewGroup as ag where ag.review = p and ag.group IN :alg and ag.status != :inactive)"
         qryParams['alg'] = validCgs
         qryParams['inactive'] = inactive
+      }
+    }
+
+    if (cls == ReviewRequest && params['linkedComponentType']) {
+      def lct = params['linkedComponentType']
+
+      if (['Package', 'ReferenceTitle', 'PackageTitle', 'Journal', 'Monograph', 'Database'].contains(lct)) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+
+        if (lct == 'Package') {
+          hqlQry += "exists (select 1 from Package where id = p.componentToReview.id)"
+        }
+        else if (lct == 'ReferenceTitle') {
+          hqlQry += "exists (select 1 from TitleInstance where id = p.componentToReview.id)"
+        }
+        else if (lct == 'PackageTitle') {
+          hqlQry += "exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id)"
+        }
+        else if (lct == 'Journal') {
+          hqlQry += "(exists (select 1 from JournalInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Serial')
+        }
+        else if (lct == 'Monograph') {
+          hqlQry += "(exists (select 1 from BookInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Monograph')
+        }
+        else if (lct == 'Database') {
+          hqlQry += "(exists (select 1 from DatabaseInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Database')
+        }
+      }
+      else {
+        log.debug("Skipping linkedCOmponentType ${lct}!")
       }
     }
 
