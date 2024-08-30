@@ -1019,7 +1019,7 @@ class TippService {
         )
       }
     }
-    else if (found.matches.size > 1 && !tipp.title) {
+    else if (found.matches.size() > 1 && !tipp.title) {
       result = true
       def type_atm = RefdataCategory.lookup("ReviewRequest.StdDesc", "Ambiguous Title Matches")
       def num_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: tipp, type: type_atm, so: status_open])[0]
@@ -1038,6 +1038,42 @@ class TippService {
             (additionalInfo as JSON).toString(),
             type_atm,
             componentLookupService.findCuratoryGroupOfInterest(tipp, null, activeCg)
+        )
+      }
+
+      log.debug("Creating RR on existing title for id conflicts")
+      def tipp_id_list = tipp.ids.collect { "${it.namespace.value}:${it.value}" }
+      def component_to_review = found.matches.removeLast().object
+      RefdataValue rdt = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')
+      def ctc_existing = ReviewRequest.executeQuery("select count(*) from ReviewRequest where componentToReview = :tid and stdDesc = :type and status = :so", [tid: component_to_review, type: rdt, so: status_open])[0]
+
+      if (ctc_existing == 0) {
+        def other_objects = found.matches.collect {
+                              [
+                                oid: "${it.object.class.name}:${it.object.id}",
+                                name: it.object.name,
+                                id: it.object.id,
+                                uuid: it.object.uuid,
+                                conflicts: it.conflicts
+                              ]
+                            }
+
+        result = true
+        def additionalInfo = [
+          otherComponents: other_objects,
+          referenceIds: tipp_id_list,
+          vars: [component_to_review.name, ""]
+        ]
+
+        reviewRequestService.raise(
+          component_to_review,
+          "Multiple titles have been matched by identifiers ${tipp_id_list}!".toString(),
+          "Check Titles for duplicates!",
+          null,
+          null,
+          (additionalInfo as JSON).toString(),
+          rdt,
+          componentLookupService.findCuratoryGroupOfInterest(component_to_review, null, activeCg)
         )
       }
     }

@@ -82,11 +82,25 @@ class TippServiceSpec extends Specification {
       JournalInstance journal = new JournalInstance(name: "TippService Journal 1").save(flush:true)
       journal.ids.addAll([issn, eissn])
       journal.save(flush: true)
+
+      JournalInstance journal2 = new JournalInstance(name: "TippService Journal 2").save(flush:true)
+      journal2.ids.addAll([issn])
+      journal2.save(flush: true)
     }
   }
 
   def cleanup() {
-    ["Test Title from full TIPP","Test Title from minimal TIPP","TippService Journal 1", "Test TIPP idmatch","TippService Update Journal", "TippService Book 1", "TippService Journal Conflict 1"].each {
+    [
+      "Test Title from full TIPP",
+      "Test Title from minimal TIPP",
+      "TippService Journal 1",
+      "TippService Journal 2",
+      "Test TIPP idmatch",
+      "TippService Update Journal",
+      "TippService Book 1",
+      "TippService Journal Conflict 1",
+      "TippService Journal Conflict 2"
+    ].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
     Package.findByName("TippService Test Package")?.expunge()
@@ -269,6 +283,36 @@ class TippServiceSpec extends Specification {
     tipp.title == JournalInstance.findByName("TippService Journal Conflict 1")
     def rdv_desc = RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')
     ReviewRequest.findByComponentToReviewAndStdDesc(tipp.title, rdv_desc) != null
+  }
+
+  void "Test skip title linking due to ambiguous matches"() {
+    given:
+    Identifier issn = Identifier.findByNamespaceAndValue(issn_ns, '0128-5483') ?: new Identifier(namespace: issn_ns, value: '0128-5483')
+    def pkg_id = Package.findByName("TippService Test Package").id
+    def plt_id = Platform.findByName("TippService Test Platform").id
+
+    def tmap = [
+      pkg            : pkg_id,
+      hostPlatform   : plt_id,
+      'url'            : "http://test-url.net/",
+      'status'         : "Current",
+      'name'           : "TippService Journal Conflict 2",
+      'publicationType': "Serial",
+    ]
+
+    when:
+    def tipp = tippUpsertService.upsertDTO(tmap)
+    tipp.ids.addAll([issn])
+    tipp.save(flush: true)
+
+    def result = tippService.matchTitle(tipp.id)
+
+    then:
+    result?.status == 'unmatched'
+    result.reviewCreated == true
+    tipp.title == null
+    ReviewRequest.findByComponentToReviewAndStdDesc(tipp, RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Title Matches')) != null
+    ReviewRequest.findByComponentToReviewAndStdDesc(JournalInstance.findByName("TippService Journal 2"), RefdataCategory.lookup('ReviewRequest.StdDesc', 'Critical Identifier Conflict')) != null
   }
 
   void "Test Package Update from TIPPs"() {
