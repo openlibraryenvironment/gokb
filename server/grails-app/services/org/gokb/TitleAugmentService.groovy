@@ -115,13 +115,7 @@ class TitleAugmentService {
               log.debug("Adding new ZDB-ID ${new_id}")
               new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true)
 
-              titleInstance.tipps.each {
-                def tobj = TitleInstancePackagePlatform.get(it.id)
-                tobj.lastSeen = new Date().getTime()
-                tobj.save()
-
-                tippService.touchPackage(tobj)
-              }
+              touchTitleTipps(titleInstance)
 
               existing_noresults.each {
                 it.status = rr_status_closed
@@ -273,9 +267,10 @@ class TitleAugmentService {
     }
   }
 
-  public void touchTitleTipps (ti, boolean onlyCurrent = true) {
+  public void touchTitleTipps (ti, boolean onlyCurrent = true, boolean skipPackageUpdate = false) {
     Date current_ts = new Date()
     RefdataValue combo_title = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+    RefdataValue combo_package = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
     RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
@@ -299,6 +294,51 @@ class TitleAugmentService {
     }
 
     TitleInstancePackagePlatform.executeUpdate(qry_string, qry_params)
+
+    qry_params.pt = combo_package
+
+    if (!skipPackageUpdate) {
+      if (onlyCurrent) {
+        def pkg_qry_string_current = '''update Package as pkg
+        set lastUpdated = :now
+        where exists (
+          select 1 from Combo
+          where type = :pt
+          and fromComponent = pkg
+          and toComponent.id IN (
+            select id from TitleInstancePackagePlatform as tipp
+            where exists (
+              select 1 from Combo
+              where type = :ct
+              and fromComponent = :title
+              and toComponent = tipp
+            )
+            and status = :sc
+          )
+        )'''
+        Package.executeUpdate(pkg_qry_string_current, qry_params)
+      }
+      else {
+        def pkg_qry_string_all = '''update Package as pkg
+            set lastUpdated = :now
+            where exists (
+              select 1 from Combo
+              where type = :pt
+              and fromComponent = pkg
+              and toComponent.id IN (
+                select id from TitleInstancePackagePlatform as tipp
+                where exists (
+                  select 1 from Combo
+                  where type = :ct
+                  and fromComponent = :title
+                  and toComponent = tipp
+                )
+                and status != :sd
+              )
+            )'''
+        Package.executeUpdate(pkg_qry_string_all, qry_params)
+      }
+    }
   }
 
   def augmentEzb(titleInstance) {

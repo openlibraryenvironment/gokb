@@ -1278,7 +1278,9 @@ class TippService {
   }
 
   public void updateLastSeen(tipp, Long systime) {
-    TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set lastSeen = :ts where id = :tid", [ts: systime, tid: tipp.id])
+    if (!tipp.lastSeen || systime > tipp.lastSeen) {
+      TitleInstancePackagePlatform.executeUpdate("update TitleInstancePackagePlatform set lastSeen = :ts where id = :tid", [ts: systime, tid: tipp.id])
+    }
   }
 
   def restLookup(tippInfo) {
