@@ -516,15 +516,24 @@ class TippController {
       def curator = componentUpdateService.isUserCurator(obj, user)
 
       if (curator || user.isAdmin()) {
-        def target = obj.class.get(params.int('target'))
+        if (params.target) {
+          def target = obj.class.get(params.int('target'))
 
-        if (target) {
-          tippService.mergeDuplicate(obj, target, user, activeGroup, keepOld)
+          if (target) {
+            tippService.mergeDuplicate(obj, target, user, activeGroup, keepOld)
+          }
+          else {
+            result.result = 'ERROR'
+            response.status = 404
+            result.message = "Unable to reference target title!"
+          }
         }
         else {
-          result.result = 'ERROR'
-          response.status = 404
-          result.message = "Unable to reference target title!"
+          result = tippService.reactivateOldestTitleTipp(obj)
+
+          if (result.result == 'ERROR') {
+            response.status = 400
+          }
         }
       }
       else {
