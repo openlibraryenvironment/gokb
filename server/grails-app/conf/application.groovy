@@ -39,6 +39,7 @@ grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/rest/**',             filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
         [pattern: '/oauth/**',            filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/**',                  filters: 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-restTokenValidationFilter,-restExceptionTranslationFilter'],
+        [pattern: '/wekbImport/**',       filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
 ]
 
 grails.plugin.springsecurity.controllerAnnotations.staticRules = [
@@ -102,7 +103,8 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/rest/**',                       access: ['ROLE_USER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/oauth/**',                      access: ['permitAll']],
   [pattern: '/coreference/**',                access: ['permitAll']],
-  [pattern: '/validation/**',                 access: ['permitAll']]
+  [pattern: '/validation/**',                 access: ['permitAll']],
+  [pattern: '/wekbImport/**',                 access: ['ROLE_CONTRIBUTOR', 'IS_AUTHENTICATED_FULLY']]
 ]
 
 
