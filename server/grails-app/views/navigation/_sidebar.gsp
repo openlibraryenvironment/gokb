@@ -51,20 +51,20 @@
           <li><a href="#"><i class="fa fa-tasks fa-fw"></i> To Do<span class="fa arrow"></span></a>
             <ul class="nav nav-second-level">
               <li><g:link controller="search" action="index"
-                      params="[
-                      qbe:'g:reviewRequests',
-                      qp_allocatedto:'org.gokb.cred.User:'+ applicationContext.springSecurityService.principal.id,
-                      qp_status: ('org.gokb.cred.RefdataValue:'+(RefdataCategory.lookup('ReviewRequest.Status', 'Open').id))
-                      ]">
-                      <i class="fa fa-angle-double-right fa-fw"></i> My ToDos</g:link></li>
+                          params="[
+                                  qbe:'g:reviewRequests',
+                                  qp_allocatedto:'org.gokb.cred.User:'+ applicationContext.springSecurityService.principal.id,
+                                  qp_status: ('org.gokb.cred.RefdataValue:'+(RefdataCategory.lookup('ReviewRequest.Status', 'Open').id))
+                          ]">
+                <i class="fa fa-angle-double-right fa-fw"></i> My ToDos</g:link></li>
               <li><g:link controller="search" action="index"
-                      params="${[
-                      qbe:'g:reviewRequests',
-                      qp_status: ('org.gokb.cred.RefdataValue:'+(RefdataCategory.lookup('ReviewRequest.Status', 'Open').id))
-                      ]}"><i class="fa fa-angle-double-right fa-fw"></i>
-                      Data Review</g:link></li>
+                          params="${[
+                                  qbe:'g:reviewRequests',
+                                  qp_status: ('org.gokb.cred.RefdataValue:'+(RefdataCategory.lookup('ReviewRequest.Status', 'Open').id))
+                          ]}"><i class="fa fa-angle-double-right fa-fw"></i>
+                Data Review</g:link></li>
               <li><g:link controller="component" action="identifierConflicts"><i class="fa fa-angle-double-right fa-fw"></i>
-                      Identifier Review</g:link></li>
+                Identifier Review</g:link></li>
             </ul>
           </li>
         </g:if>
@@ -81,7 +81,7 @@
         <g:if test="${grailsApplication.config.getProperty('feature.directUpload', Boolean, false)}">
           <li class="${params?.controller == "savedItems" ? 'active' : ''}" ><g:link controller="savedItems" action="index"><i class="fa fa-folder fa-fw"></i> Saved Items</g:link></li>
           <sec:ifAnyGranted roles="ROLE_EDITOR, ROLE_CONTRIBUTOR, ROLE_ADMIN, ROLE_SUPERUSER">
-          <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
+            <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
           </sec:ifAnyGranted>
           <li class="${params?.controller == "ingest" ? 'active' : ''}" ><g:link controller="ingest" action="index"><i class="fa fa-upload fa-fw"></i> Direct Ingest</g:link></li>
         </g:if>
@@ -115,16 +115,9 @@
                 <li><g:link controller="admin" action="triggerEnrichments" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Trigger enrichments</g:link></li>
                 <li><g:link controller="admin" action="copyTitleData" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Transfer Title Data</g:link></li>
                 <li><g:link controller="admin" action="logViewer"><i class="fa fa-angle-double-right fa-fw"></i> Log Viewer</g:link></li>
-                <g:if test="${!grailsApplication.config.get('gokb.zdbAugment.enabled')}">
-                  <li><g:link controller="admin" action="triggerZDBSync" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Trigger ZDB Sync for new journals</g:link></li>
-                </g:if>
-                <g:else>
-                  <li><a>Automated ZDB Sync is configured</a></li>
-                </g:else>
-
-                <%--      <li><g:link controller="admin" action="housekeeping" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Housekeeping</g:link></li> --%>
+              <%--      <li><g:link controller="admin" action="housekeeping" onclick="return confirm('Are you sure?')"><i class="fa fa-angle-double-right fa-fw"></i> Housekeeping</g:link></li> --%>
               </sec:ifAnyGranted>
-              <!--
+            <!--
               <li><g:link controller="api" action="downloadUpdate"><i class="fa fa-angle-double-right fa-fw"></i> Get Refine Extension</g:link></li>
               -->
               <li class="divider"></li>
@@ -148,6 +141,6 @@
       <li><a href="https://github.com/openlibraryenvironment/gokb/wiki/API"><i class="fa fa-cogs fa-fw"></i> API Documentation</a></li>
     </ul>
   </div>
-      <!-- /.sidebar-collapse -->
+  <!-- /.sidebar-collapse -->
 </div>
 <!-- /.navbar-static-side -->

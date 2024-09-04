@@ -5,9 +5,13 @@ import com.k_int.ConcurrencyManagerService.Job
 import grails.converters.JSON
 import org.gokb.cred.*
 import org.hibernate.criterion.CriteriaSpecification
+
+import org.springframework.security.access.annotation.Secured
 import org.springframework.security.acls.domain.BasePermission
 
 import java.util.concurrent.CancellationException
+
+import grails.gorm.transactions.*
 
 class AdminController {
 
@@ -400,10 +404,10 @@ class AdminController {
       }
     })?.each { CuratoryGroup group ->
       result["${group.name}"] = [
-          users     : group.users.collect { it.username },
-          owner     : group.owner?.username,
-          status    : group.status?.value,
-          editStatus: group.editStatus?.value
+              users     : group.users.collect { it.username },
+              owner     : group.owner?.username,
+              status    : group.status?.value,
+              editStatus: group.editStatus?.value
       ]
     }
 
@@ -495,20 +499,6 @@ class AdminController {
     log.debug("Triggering journal ISSN cleanup, job #${j.uuid}")
     j.description = "Cleanup ISSN conflicts in current journals"
     j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Cleanup ISSN Conflicts')
-    j.startTime = new Date()
-
-    render(view: "logViewer", model: logViewer())
-  }
-
-  def triggerZDBSync() {
-
-    Job j = concurrencyManagerService.createJob { job ->
-      new ManualZDBSyncJob().execute()
-    }.startOrQueue()
-
-    log.debug "Triggering ZDB sync, job #${j.uuid}"
-    j.description = "Trying to find ZDB-IDs for new journals"
-    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Manual Trigger ZDB Sync')
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
