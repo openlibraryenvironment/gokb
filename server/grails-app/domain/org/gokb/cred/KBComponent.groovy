@@ -637,8 +637,6 @@ where cp.owner = :c
 
   def beforeUpdate() {
     log.debug("beforeUpdate for ${this}")
-    def review_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
-    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
     if (this.name) {
       if (!shortcode) {
@@ -1390,9 +1388,6 @@ where cp.owner = :c
     builder.'identifiers' {
       active_ids?.each { tid ->
         builder.'identifier'(tid)
-      }
-      if (grailsApplication.config.getProperty('serverUrl') || grailsApplication.config.getProperty('baseUrl')) {
-        builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl') ?: grailsApplication.config.getProperty('baseUrl')}/resource/show/${cName}:${id}")
       }
     }
 

@@ -51,7 +51,7 @@ class OrgTestSpec extends AbstractAuthSpec {
 
   def cleanup() {
     Office.list().each {
-      it.expunge()
+      it.refresh()?.expunge()
     }
 
     Platform.list().each {

@@ -115,13 +115,7 @@ class TitleAugmentService {
               log.debug("Adding new ZDB-ID ${new_id}")
               new Combo(fromComponent: titleInstance, toComponent: new_id, type: idComboType).save(flush: true)
 
-              titleInstance.tipps.each {
-                def tobj = TitleInstancePackagePlatform.get(it.id)
-                tobj.lastSeen = new Date().getTime()
-                tobj.save()
-
-                tippService.touchPackage(tobj)
-              }
+              touchTitleTipps(titleInstance)
 
               existing_noresults.each {
                 it.status = rr_status_closed
@@ -273,10 +267,12 @@ class TitleAugmentService {
     }
   }
 
-  public void touchTitleTipps (ti, boolean onlyCurrent = true) {
+  public void touchTitleTipps (ti, boolean onlyCurrent = true, boolean skipPackageUpdate = false) {
     Date current_ts = new Date()
     RefdataValue combo_title = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
+    RefdataValue combo_package = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
     RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
     def qry_params = [now: current_ts, ct: combo_title, title: ti]
     def qry_string = '''update TitleInstancePackagePlatform as tipp
@@ -292,8 +288,57 @@ class TitleAugmentService {
       qry_string += ' and status = :sc'
       qry_params.sc = status_current
     }
+    else {
+      qry_string += ' and status != :sd'
+      qry_params.sd = status_deleted
+    }
 
     TitleInstancePackagePlatform.executeUpdate(qry_string, qry_params)
+
+    qry_params.pt = combo_package
+
+    if (!skipPackageUpdate) {
+      if (onlyCurrent) {
+        def pkg_qry_string_current = '''update Package as pkg
+        set lastUpdated = :now
+        where exists (
+          select 1 from Combo
+          where type = :pt
+          and fromComponent = pkg
+          and toComponent.id IN (
+            select id from TitleInstancePackagePlatform as tipp
+            where exists (
+              select 1 from Combo
+              where type = :ct
+              and fromComponent = :title
+              and toComponent = tipp
+            )
+            and status = :sc
+          )
+        )'''
+        Package.executeUpdate(pkg_qry_string_current, qry_params)
+      }
+      else {
+        def pkg_qry_string_all = '''update Package as pkg
+            set lastUpdated = :now
+            where exists (
+              select 1 from Combo
+              where type = :pt
+              and fromComponent = pkg
+              and toComponent.id IN (
+                select id from TitleInstancePackagePlatform as tipp
+                where exists (
+                  select 1 from Combo
+                  where type = :ct
+                  and fromComponent = :title
+                  and toComponent = tipp
+                )
+                and status != :sd
+              )
+            )'''
+        Package.executeUpdate(pkg_qry_string_all, qry_params)
+      }
+    }
   }
 
   def augmentEzb(titleInstance) {
@@ -516,27 +561,27 @@ class TitleAugmentService {
 
 
   def syncZdbInfo(Job j = null) {
-    RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
-    RefdataValue combo_active = DomainClassExtender.comboStatusActive
-    RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
-    IdentifierNamespace zdbNs = IdentifierNamespace.findByValue('zdb')
-    int offset = 0
-    int batchSize = 50
-    def count_journals_with_zdb_id
-    def queryString = '''from JournalInstance as ti where ti.status = :current and exists (
-                        select ci from Combo as ci
-                        where ci.type = :ctype
-                        and ci.fromComponent = ti
-                        and ci.toComponent.namespace = :ns
-                        and ci.status = :active
-                      )'''
-    def params = [current: status_current, active: combo_active, ctype: idComboType, ns: zdbNs]
+    JournalInstance.withNewSession { lsession ->
+      RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
+      RefdataValue combo_active = DomainClassExtender.comboStatusActive
+      RefdataValue idComboType = RefdataCategory.lookup("Combo.Type", "KBComponent.Ids")
+      IdentifierNamespace zdbNs = IdentifierNamespace.findByValue('zdb')
+      int offset = 0
+      int batchSize = 50
+      def count_journals_with_zdb_id
+      def queryString = '''from JournalInstance as ti where ti.status = :current and exists (
+                          select ci from Combo as ci
+                          where ci.type = :ctype
+                          and ci.fromComponent = ti
+                          and ci.toComponent.namespace = :ns
+                          and ci.status = :active
+                        )'''
+      def params = [current: status_current, active: combo_active, ctype: idComboType, ns: zdbNs]
 
-    count_journals_with_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${queryString}".toString(), params)[0]
+      count_journals_with_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${queryString}".toString(), params)[0]
 
-    // find the next 100 titles that do have a ZDB-ID
-    while (offset < count_journals_with_zdb_id) {
-      JournalInstance.withNewSession {
+      // find the next 100 titles that do have a ZDB-ID
+      while (offset < count_journals_with_zdb_id) {
         def journals_with_zdb_id = JournalInstance.executeQuery("select ti.id ${queryString}".toString(), params, [offset: offset, max: batchSize])
 
         log.debug("Processing ${count_journals_with_zdb_id}")
@@ -549,13 +594,16 @@ class TitleAugmentService {
 
         offset += batchSize
         j?.setProgress(offset, count_journals_with_zdb_id)
-      }
 
-      if (Thread.currentThread().isInterrupted()) {
-        break
+        if (Thread.currentThread().isInterrupted() || j?.isCancelled()) {
+          break
+        }
+
+        lsession.flush()
+        lsession.clear()
       }
+      j?.endTime = new Date()
     }
-    j?.endTime = new Date()
   }
 
   public TitleInstance upsertDTO(titleLookupService, titleDTO, user = null, fullsync = false) {
@@ -811,7 +859,7 @@ class TitleAugmentService {
         new KBComponentVariantName(owner: ti, variantName: variant).save(flush: true)
       }
       else {
-        log.debug("Unable to add ${variant} as an alternate name to ${id} - it's already an alternate name....");
+        log.debug("Unable to add ${variant} as an alternate name to ${ti} - it's already an alternate name....");
       }
     }
     else {
