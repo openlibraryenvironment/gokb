@@ -155,11 +155,11 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
 
   void "test checkUrl with valid date wildcard"() {
     expect:
-      service.checkUrl('https://test.com/kbart/provider_Global_TestPackage_{YYYY-MM-DD}.txt') != null
+      service.checkUrl('https://test.com/kbart/provider_Global_TestPackage_{YYYY-MM-DD}.txt', true) != null
   }
 
   void "test checkUrl with unescaped URL query"() {
     expect:
-      service.checkUrl('https://test.com/view/work/bibliographic_entity|comic_book|2530121', false) != null
+      service.checkUrl('https://test.com/view/work/bibliographic_entity|comic_book|2530121') != null
   }
 }

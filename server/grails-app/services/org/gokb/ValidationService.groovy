@@ -769,7 +769,7 @@ class ValidationService {
     result
   }
 
-  def checkUrl(String value, boolean replaceDate = true) {
+  def checkUrl(String value, boolean replaceDate = false) {
     String local_date_string = LocalDate.now().toString()
 
     def final_val = value.trim()
@@ -778,7 +778,7 @@ class ValidationService {
       final_val = final_val.replace('{YYYY-MM-DD}', local_date_string)
     }
 
-    if (final_val.indexOf('%') >= 0) {
+    if (final_val.indexOf('%') >= 0 || replaceDate) {
       log.debug("URL seems to be already encoded!")
     }
     else {
