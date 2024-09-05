@@ -167,10 +167,6 @@ class WekbAPIService {
         result.packageName = importData.packageItem?.name
         */
 
-        //TODO: check and return Provider
-        //TODO: check and return Platform
-        //TODO: check and return PackageMetaData
-        //TODO: check and return Source
 
         return result
     }

@@ -3,6 +3,7 @@ package org.gokb
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.IdentifierNamespace
+import org.gokb.cred.KBComponent
 import org.gokb.cred.Org
 import org.gokb.cred.Platform
 import org.gokb.cred.RefdataCategory
@@ -32,18 +33,30 @@ class WekbIngestionService {
     */
     boolean isUpdate
     Long ingest_systime
+    def rdv_current
+    def rdv_deleted
+    def rdv_expected
+    def rdv_retired
 
     def startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Long title_ns, org.gokb.cred.Package pkg) {
         def result = [status:'ok']
         long startTime = System.currentTimeMillis()
         ingest_systime = startTime
         def ingestDate = LocalDate.now().toString()
+
+        rdv_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+        rdv_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
+        rdv_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
+        rdv_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+
         String sourceUrl = pkg_source?.url
         String wekbUUID = extractUUIDFromUrlString(sourceUrl)
 
         // pkgInfo = [name: p.name, type: "Package", id: p.id, uuid: p.uuid]
-        //TODO: echten tippcount übergeben
-        def tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, 4000)
+
+        def packageInfo = wekbAPIService.getPackageByUuid(wekbUUID)
+        int titleCount = packageInfo[0]?.titleCount
+        def tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, titleCount)
 
         log.debug("#### "  + tipps)
 
@@ -66,6 +79,9 @@ class WekbIngestionService {
             tippNum++
             log.debug('TIPP ' + tippNum + ": " + tipp)
 
+            //TODO: first check if the TIPP with this UUID has already existed in GOKB and has been deleted
+
+
             Map ids = tipp.identifiers?.find { it.namespace == 'title_id' }
             def title_id = null
             if (ids) {
@@ -81,8 +97,8 @@ class WekbIngestionService {
             def identifiers = []
             if (tipp.identifiers && tipp.identifiers.size() > 0) {
                 for (identifier in tipp.identifiers) {
-                   /* TODO: vollständiges Identifikatoren-Mapping und Title-Id-Handling
-                   String identifierType
+                   // TODO: vollständiges Identifikatoren-Mapping und Title-Id-Handling
+                   String identifierType = null
                     if ( identifier.namespace ) {
                         switch (identifier.namespace) {
                             case "eisbn":
@@ -91,16 +107,19 @@ class WekbIngestionService {
                             case "isbn":
                                 identifierType = "pisbn"
                                 break;
-
+                            case "title_id":
+                                break;
+                            default:
+                                identifierType = identifier.namespace
                         }
-                    } */
-
-                    identifiers << [type: identifier.namespace, value: identifier.value]
+                    }
+                    if ( identifierType ) {
+                        identifiers << [type: identifierType, value: identifier.value]
+                    }
                 }
             }
 
             log.debug("ALL IDENTIFIERS: " + identifiers)
-
 
 
             def tipp_map = [
@@ -161,18 +180,17 @@ class WekbIngestionService {
 
         }
 
-        //TODO: handle Title-Status
-        /* def rdv_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-        def rdv_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-        def rdv_expected = RefdataCategory.lookup('KBComponent.Status', 'Expected')
-        def rdv_retired = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+        // handle Tipp-Status
         def status_map = ['Current': rdv_current, 'Deleted': rdv_deleted, 'Expected': rdv_expected, 'Retired': rdv_retired]
+        log.debug("+++ set Title Status +++++++++++++")
         for (tipp in tipps) {
             def importedTipp = TitleInstancePackagePlatform.findByUuid(tipp.uuid)
             log.debug("importedTipp.status: " + importedTipp.getStatus() + ", newTipp.status: " + tipp.status)
             importedTipp.setStatus(status_map.get(tipp.status))
+
+            log.debug("----------------------------------- ")
         }
-        */
+
 
         return result
     }
@@ -227,10 +245,12 @@ class WekbIngestionService {
 
             log.debug("isUpdate - TIPP: " + tipp)
 
-            //Tipp exists - update
+            //Tipp exists - update if it is not deleted
             if ( tipp ) {
                 result.status = 'matched'
-                tipp.refresh()
+                if ( tipp.getStatus() != rdv_deleted ) {
+                    tipp.refresh()
+                }
             } else {
                 // create new Tipp
                 def tipp_fields = [
