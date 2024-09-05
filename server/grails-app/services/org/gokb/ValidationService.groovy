@@ -778,6 +778,27 @@ class ValidationService {
       final_val = final_val.replace('{YYYY-MM-DD}', local_date_string)
     }
 
+    if (final_val.indexOf('%') >= 0) {
+      log.debug("URL seems to be already encoded!")
+    }
+    else {
+      String url = ""
+      def parts = null
+
+      if (parts = final_val =~ /^((?>http[s]?|ftp):\/\/)(\w[\w\-\.]+)((?>\/.+\/)+)?([^\/]+)?(#[\w\-]+)?$/) {
+        for (int i = 1; i < parts.groupCount(); i++) {
+          if (i != 4 && parts.group(i)) {
+            url = url + parts.group(i)
+          }
+          else if (parts.group(i)) {
+            url = url + URLEncoder.encode(parts.group(i))
+          }
+        }
+      }
+
+      final_val = url
+    }
+
     return new UrlValidator().isValid(final_val) ? value : null
   }
 

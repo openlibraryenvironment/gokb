@@ -1652,7 +1652,7 @@ class TippService {
     if (ti) {
       def current_tipps = []
       def retired_tipps = []
-      def ti_pkg_tipps = TitleInstancePackagePlatform.executeQuery(qry_str, [cp: combo_pkg, ct: combo_title, pkg: tipp.pkg.id, ti: ti])
+      def ti_pkg_tipps = TitleInstancePackagePlatform.executeQuery(qry_str, [cp: combo_pkg, ct: combo_title, pkg: obj.pkg, ti: ti])
 
       ti_pkg_tipps.each { tipp ->
         if (tipp.status == status_current) {
@@ -1677,7 +1677,7 @@ class TippService {
             }
           }
 
-          tippService.mergeDuplicate(duplicate, to_reactivate, user, activeGroup)
+          mergeDuplicate(duplicate, to_reactivate, user, activeGroup)
         }
         else {
           result.result = 'SKIPPED'
