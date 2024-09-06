@@ -785,19 +785,28 @@ class ValidationService {
       String url = ""
       def parts = null
 
-      if (parts = final_val =~ /^((?>http[s]?|ftp):\/\/)(\w[\w\-\.]+)((?>\/.+\/)+)?([^\/]+)?(#[\w\-]+)?$/) {
+      if (parts = final_val =~ /^((?>http[s]?|ftp):\/\/)(\w[\w\-\.]+)(\/[\w\-\/]+\/)*(\/)?([^#]+)?(#[\w\-]+)?$/) {
         for (int i = 1; i < parts.groupCount(); i++) {
-          if (i != 4 && parts.group(i)) {
+          if (i != 5 && parts.group(i)) {
             url = url + parts.group(i)
           }
           else if (parts.group(i)) {
-            url = url + URLEncoder.encode(parts.group(i))
+            try {
+              url = url + URLEncoder.encode(parts.group(i))
+            }
+            catch(Exception e) {
+              // log.debug("Invalid query part ${parts.group(i)}")
+            }
           }
         }
+        final_val = url
       }
-
-      final_val = url
+      else {
+        log.debug("Regex fail for URL: ${final_val}")
+      }
     }
+
+    log.debug("Final URL to check: ${final_val}")
 
     return new UrlValidator().isValid(final_val) ? value : null
   }

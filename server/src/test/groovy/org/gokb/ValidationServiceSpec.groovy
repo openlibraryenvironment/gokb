@@ -160,6 +160,11 @@ class ValidationServiceSpec extends Specification implements DataTest, ServiceUn
 
   void "test checkUrl with unescaped URL query"() {
     expect:
+      service.checkUrl('https://test.com/view/work/bibliographic_entity?test=|comic_book|2530121') != null
+  }
+
+  void "test checkUrl with unescaped URL file part"() {
+    expect:
       service.checkUrl('https://test.com/view/work/bibliographic_entity|comic_book|2530121') != null
   }
 }
