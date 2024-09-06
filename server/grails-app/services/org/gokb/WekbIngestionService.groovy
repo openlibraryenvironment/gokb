@@ -1,10 +1,12 @@
 package org.gokb
 
+import com.k_int.ConcurrencyManagerService
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
 import org.gokb.cred.IdentifierNamespace
 import org.gokb.cred.KBComponent
 import org.gokb.cred.Org
+import org.gokb.cred.Package
 import org.gokb.cred.Platform
 import org.gokb.cred.RefdataCategory
 import org.gokb.cred.RefdataValue
@@ -12,6 +14,7 @@ import org.gokb.cred.Source
 import org.gokb.cred.TIPPCoverageStatement
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
+import org.hibernate.SessionFactory
 
 import java.time.LocalDate
 
@@ -37,6 +40,8 @@ class WekbIngestionService {
     def rdv_deleted
     def rdv_expected
     def rdv_retired
+    SessionFactory sessionFactory
+    ConcurrencyManagerService concurrencyManagerService
 
     def startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Long title_ns, org.gokb.cred.Package pkg) {
         def result = [status:'ok']
@@ -69,8 +74,12 @@ class WekbIngestionService {
         result.report = [numRows: tipps.size(), skipped: 0, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0,  previous: old_tipp_count]
 
         if (old_tipp_count > 0) {
+            log.debug("OLD TIPPCOUNT: " + old_tipp_count + "  ----> IS UPDATE... ")
             isUpdate = true
         }
+
+        deleteDeletedTippsIfNeeded(tipps)
+
 
         int tippNum = 0
 
@@ -173,10 +182,11 @@ class WekbIngestionService {
 
             log.debug('----------------------------------------------------------------------')
 
-            /*if (tippNum % 50 == 0) {
+            if (tippNum % 50 == 0) {
+                def session = sessionFactory.getCurrentSession()
                 session.flush()
                 session.clear()
-            }*/
+            }
 
         }
 
@@ -190,6 +200,33 @@ class WekbIngestionService {
 
             log.debug("----------------------------------- ")
         }
+
+
+        /* log.debug("start Title Matching... ")
+
+        sessionFactory.getCurrentSession().flush()
+
+        def matching_job = concurrencyManagerService.createJob { mjob ->
+            tippService.matchPackage(pkgInfo.id, mjob)
+        }
+
+        Package.withNewSession {
+            Package p = Package.get(pkgInfo.id)
+            matching_job.description = "Package Title Matching".toString()
+            matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
+            matching_job.linkedItem = pkgInfo
+            matching_job.message("Starting title match for Package ${p.name}".toString())
+            matching_job.startOrQueue()
+            matching_job.startTime = new Date()
+        }
+
+        if (!async) {
+            result.matchingJob = matching_job.get()
+        }
+        else {
+            result.matchingJob = matching_job.uuid
+        } */
+
 
 
         return result
@@ -310,5 +347,29 @@ class WekbIngestionService {
         result
     }
 
+
+    def deleteDeletedTippsIfNeeded ( newTipps ) {
+        def result = [status: null, expunged: 0]
+        int expunged = 0
+        for (newTipp in newTipps) {
+            def oldTipp = TitleInstancePackagePlatform.findByUuid(newTipp.uuid)
+            if (oldTipp) {
+                log.debug(" +++ TIPP mit UUID " + newTipp.uuid + " existiert bereits -- is deleted: " + oldTipp.isDeleted())
+
+                // falls oldTipp gelöscht und newTipp.status != deleted
+                if (oldTipp.getStatus() == rdv_deleted && newTipp.status != 'Deleted') {
+                    log.debug("---> expunged ... ")
+                    oldTipp.expunge()
+                    expunged++
+                }
+
+            }
+        }
+        result.expunged = expunged
+        def session = sessionFactory.getCurrentSession()
+        session.flush()
+        session.clear()
+        return result
+    }
 
 }
