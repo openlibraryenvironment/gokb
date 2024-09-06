@@ -328,6 +328,10 @@ class ESSearchService{
     if (qpars.changedSince || qpars.changedBefore) {
       QueryBuilder dateQuery = QueryBuilders.rangeQuery("lastUpdatedDisplay")
 
+      if (qpars.sort == null) {
+        qpars.sort = 'lastUpdatedDisplay'
+      }
+
       if (qpars.changedSince) {
         dateQuery.gte(qpars.changedSince)
       }
@@ -673,6 +677,7 @@ class ESSearchService{
       specifyQueryWithParams(params, scrollQuery, errors, unknown_fields)
 
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      setSort(params, errors, searchSourceBuilder)
       searchSourceBuilder.query(scrollQuery)
       searchSourceBuilder.size(scrollSize)
       SearchRequest searchRequest = new SearchRequest(usedComponentTypes.values() as String[])
