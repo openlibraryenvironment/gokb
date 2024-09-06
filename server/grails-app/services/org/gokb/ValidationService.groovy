@@ -779,7 +779,7 @@ class ValidationService {
     }
 
     if (final_val.indexOf('%') >= 0 || replaceDate) {
-      log.debug("URL seems to be already encoded!")
+      // log.debug("URL seems to be already encoded!")
     }
     else {
       String url = ""
@@ -802,11 +802,11 @@ class ValidationService {
         final_val = url
       }
       else {
-        log.debug("Regex fail for URL: ${final_val}")
+        // log.debug("Regex fail for URL: ${final_val}")
       }
     }
 
-    log.debug("Final URL to check: ${final_val}")
+    // log.debug("Final URL to check: ${final_val}")
 
     return new UrlValidator().isValid(final_val) ? value : null
   }
