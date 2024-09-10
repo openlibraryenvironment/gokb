@@ -1169,7 +1169,7 @@ class TippService {
       )
     }
 
-    if (found?.conflicts?.size > 0) {
+    if (found?.conflicts?.size() > 0) {
       def additionalInfo = [otherComponents: []]
       result = true
 

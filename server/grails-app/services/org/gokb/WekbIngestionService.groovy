@@ -14,6 +14,7 @@ import org.gokb.cred.Source
 import org.gokb.cred.TIPPCoverageStatement
 import org.gokb.cred.TitleInstance
 import org.gokb.cred.TitleInstancePackagePlatform
+import org.hibernate.Session
 import org.hibernate.SessionFactory
 
 import java.time.LocalDate
@@ -78,8 +79,8 @@ class WekbIngestionService {
             isUpdate = true
         }
 
-        deleteDeletedTippsIfNeeded(tipps)
-
+        def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
+        log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
 
         int tippNum = 0
 
@@ -190,28 +191,49 @@ class WekbIngestionService {
 
         }
 
+        def session = sessionFactory.getCurrentSession()
+        session.flush()
+        session.clear()
+
+
         // handle Tipp-Status
         def status_map = ['Current': rdv_current, 'Deleted': rdv_deleted, 'Expected': rdv_expected, 'Retired': rdv_retired]
         log.debug("+++ set Title Status +++++++++++++")
+        tippNum = 0
         for (tipp in tipps) {
+            tippNum++
             def importedTipp = TitleInstancePackagePlatform.findByUuid(tipp.uuid)
             log.debug("importedTipp.status: " + importedTipp.getStatus() + ", newTipp.status: " + tipp.status)
-            importedTipp.setStatus(status_map.get(tipp.status))
+            def actualTippStatus = RefdataCategory.lookup('KBComponent.Status', tipp.status)
+            importedTipp.setStatus(actualTippStatus)
+            //importedTipp.setStatus(status_map.get(tipp.status))
 
             log.debug("----------------------------------- ")
+            if (tippNum % 50 == 0) {
+                session = sessionFactory.getCurrentSession()
+                session.flush()
+                session.clear()
+            }
+
         }
 
 
-        /* log.debug("start Title Matching... ")
+        log.debug("start Title Matching... ")
 
-        sessionFactory.getCurrentSession().flush()
+        def currentSession = sessionFactory.getCurrentSession()
+        log.debug(" " + currentSession.toString())
+        currentSession.flush()
+        currentSession.clear()
+
 
         def matching_job = concurrencyManagerService.createJob { mjob ->
             tippService.matchPackage(pkgInfo.id, mjob)
         }
 
+        currentSession.clear()
+
         Package.withNewSession {
-            Package p = Package.get(pkgInfo.id)
+            Package p = Package.get(pkg.getId())
             matching_job.description = "Package Title Matching".toString()
             matching_job.type = RefdataCategory.lookup('Job.Type', 'PackageTitleMatch')
             matching_job.linkedItem = pkgInfo
@@ -220,7 +242,7 @@ class WekbIngestionService {
             matching_job.startTime = new Date()
         }
 
-        if (!async) {
+        /* if (!async) {
             result.matchingJob = matching_job.get()
         }
         else {
@@ -348,20 +370,31 @@ class WekbIngestionService {
     }
 
 
-    def deleteDeletedTippsIfNeeded ( newTipps ) {
+    def deleteDeletedTippsIfNeeded ( newTipps, isUpdate ) {
         def result = [status: null, expunged: 0]
         int expunged = 0
         for (newTipp in newTipps) {
             def oldTipp = TitleInstancePackagePlatform.findByUuid(newTipp.uuid)
-            if (oldTipp) {
-                log.debug(" +++ TIPP mit UUID " + newTipp.uuid + " existiert bereits -- is deleted: " + oldTipp.isDeleted())
+            if (oldTipp && oldTipp.getStatus() == rdv_deleted) {
+                log.debug(" +++ TIPP mit UUID " + newTipp.uuid + " existiert bereits und ist gelöscht ")
 
                 // falls oldTipp gelöscht und newTipp.status != deleted
-                if (oldTipp.getStatus() == rdv_deleted && newTipp.status != 'Deleted') {
+                if ( isUpdate ) {
+                    // TODO: ist das überhaupt nötig oder kann das existierende TIPP schlicht geupdatet werden?
+                    // TODO: was ist mit neuen TIPPS, deren Status zuvor nicht "Current" war (retired z.B.)
+                    if (newTipp.status != 'Deleted') {
+                        log.debug("---> expunged ... ")
+                        oldTipp.expunge()
+                        expunged++
+                    }
+                } else {
+                    // initialer Import und Tipp existiert bereits --> löschen
                     log.debug("---> expunged ... ")
                     oldTipp.expunge()
                     expunged++
                 }
+
+
 
             }
         }
