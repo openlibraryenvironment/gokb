@@ -208,7 +208,7 @@ class ComponentLookupService {
         }
       }
       else {
-        log.debug("Validation failed for ${namespace.vaue}:${value}!")
+        log.debug("Validation failed for ${namespace.value}:${value}!")
       }
     }
 
