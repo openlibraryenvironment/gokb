@@ -124,6 +124,23 @@ class WekbImportController {
 
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    def getTitleData(){
+        def noResults = ["":""]
+        def uuid = params?.uuid
+        def max = params?.int('max')
+        log.debug("getTitleData : " + uuid + ", max: " + max)
+        if(uuid){
+            def result = wekbAPIService.getTIPPSOfPackage(uuid, max ?: 10)
+            log.debug("RESULT : " + result)
+            if(result){
+                render result as JSON
+            }
+        }
+
+        render noResults as JSON
+
+    }
 
 
 }
