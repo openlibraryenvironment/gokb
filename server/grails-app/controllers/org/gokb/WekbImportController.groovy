@@ -47,7 +47,7 @@ class WekbImportController {
 
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    /* @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def getTippsOfPackage(){
         def noResults = ["":""]
         def uuid = params?.uuid
@@ -63,7 +63,7 @@ class WekbImportController {
 
         render noResults as JSON
 
-    }
+    } */
 
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def getProviderData(){
