@@ -54,7 +54,9 @@ class ESSearchService{
       ],
       namespace: [
           "titleNamespace",
-          "packageNamespace"
+          "packageNamespace",
+          "titleNamespaceSerial",
+          "titleNamespaceMonograph",
       ],
       simpleMap: [
           "role": "roles"

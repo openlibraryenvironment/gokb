@@ -13,6 +13,8 @@ class Org extends KBComponent {
   String homepage
   IdentifierNamespace titleNamespace
   IdentifierNamespace packageNamespace
+  IdentifierNamespace titleNamespaceSerial
+  IdentifierNamespace titleNamespaceMonograph
   String preferredShortname
 
   def availableActions() {
@@ -88,7 +90,7 @@ class Org extends KBComponent {
       if (obj.hasChanged('name')) {
         if (val && val.trim()) {
           def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-          def dupes = Org.findAllByNameIlikeAndStatusNotEqual(val, status_deleted);
+          def dupes = Org.findAllByNameIlikeAndStatusNotEqual(val, status_deleted)
           if (dupes?.size() > 0 && dupes.any { it != obj }) {
             return ['notUnique']
           }
@@ -99,18 +101,20 @@ class Org extends KBComponent {
       }
     })
     titleNamespace(nullable: true)
+    titleNamespaceSerial(nullable: true)
+    titleNamespaceMonograph(nullable: true)
     packageNamespace(nullable: true)
   }
 
   static jsonMapping = [
-      'ignore'       : [
+      'ignore' : [
       ],
-      'es'           : [
+      'es' : [
       ],
       'defaultLinks' : [
 
       ],
-      'defaultEmbeds': [
+      'defaultEmbeds' : [
           'ids',
           'variantNames',
           'curatoryGroups',

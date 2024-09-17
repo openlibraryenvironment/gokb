@@ -59,6 +59,8 @@ class IngestKbartRun {
   def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
   def job = null
   IdentifierNamespace providerIdentifierNamespace
+  IdentifierNamespace serialNamespace
+  IdentifierNamespace monographNamespace
   Long ingest_systime
 
   DataFile datafile
@@ -78,7 +80,9 @@ class IngestKbartRun {
                         CuratoryGroup active_group = null,
                         Boolean dry_run = false,
                         Boolean skip_invalid = false,
-                        Boolean cleanup = false) {
+                        Boolean cleanup = false,
+                        IdentifierNamespace titleIdSerial = null
+                        IdentifierNamespace titleIdMonograph = null) {
     pkg = pack
     addOnly = incremental
     user = u
@@ -89,6 +93,8 @@ class IngestKbartRun {
     providerIdentifierNamespace = titleIdNamespace
     skipInvalid = skip_invalid
     isCleanup = cleanup
+    serialNamespace = titleIdSerial
+    monographNamespace = titleIdMonograph
   }
 
   def start(nJob, session) {
@@ -118,12 +124,14 @@ class IngestKbartRun {
         'serial':[
           identifierMap: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
           defaultMedium: 'Serial',
-          defaultTypeName: 'org.gokb.cred.JournalInstance'
+          defaultTypeName: 'org.gokb.cred.JournalInstance',
+          providerIdentifierNamespace: (serialNamespace?.value ?: null)
         ],
         'monograph':[
           identifierMap: ['print_identifier': 'pisbn', 'online_identifier': 'isbn'],
           defaultMedium: 'Book',
-          defaultTypeName: 'org.gokb.cred.BookInstance'
+          defaultTypeName: 'org.gokb.cred.BookInstance',
+          providerIdentifierNamespace: (monographNamespace?.value ?: null)
         ]
       ]
     ]
@@ -147,7 +155,7 @@ class IngestKbartRun {
       log.debug("Set progress")
       job?.setProgress(0)
 
-      def file_info = validationService.generateKbartReport(new ByteArrayInputStream(datafile.fileData), providerIdentifierNamespace, false)
+      def file_info = validationService.generateKbartReport(new ByteArrayInputStream(datafile.fileData), providerIdentifierNamespace, false, serialNamespace, monographNamespace)
       result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, invalid: file_info.rows.error]
       result.validation = file_info
 
@@ -510,7 +518,10 @@ class IngestKbartRun {
         if (the_kbart.title_id && the_kbart.title_id.trim()) {
           log.debug("title_id ${the_kbart.title_id}")
 
-          if (ingest_cfg.providerIdentifierNamespace) {
+          if (row_specific_config.providerIdentifierNamespace) {
+            identifiers << [type: row_specific_config.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
+          }
+          else if (ingest_cfg.providerIdentifierNamespace) {
             identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
           }
         }
@@ -1017,7 +1028,10 @@ class IngestKbartRun {
     if (the_kbart.title_id && the_kbart.title_id.trim()) {
       log.debug("title_id ${the_kbart.title_id}")
 
-      if (ingest_cfg.providerIdentifierNamespace) {
+      if (row_specific_config.providerIdentifierNamespace) {
+        identifiers << [type: row_specific_config.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
+      }
+      else if (ingest_cfg.providerIdentifierNamespace) {
         identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
       }
     }
