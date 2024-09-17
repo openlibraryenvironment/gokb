@@ -693,8 +693,8 @@ class PackageController {
       }
     }
 
-    if (params.int('titleIdNamespaceSerial')) {
-      IdentifierNamespace title_ns = IdentifierNamespace.get(params.int('titleIdNamespaceSerial'))
+    if (params.int('titleIdSerial')) {
+      IdentifierNamespace title_ns = IdentifierNamespace.get(params.int('titleIdSerial'))
 
       if (!title_ns) {
         response.status = 404
@@ -708,8 +708,8 @@ class PackageController {
       }
     }
 
-    if (params.int('titleIdNamespaceMonograph')) {
-      IdentifierNamespace title_ns = IdentifierNamespace.get(params.int('titleIdNamespaceMonograph'))
+    if (params.int('titleIdMonograph')) {
+      IdentifierNamespace title_ns = IdentifierNamespace.get(params.int('titleIdMonograph'))
 
       if (!title_ns) {
         response.status = 404

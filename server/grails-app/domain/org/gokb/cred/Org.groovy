@@ -43,7 +43,6 @@ class Org extends KBComponent {
       offeredLicenses  : License,
       heldLicenses     : License,
       offices          : Office
-      //  ids      : Identifier
   ]
 
   static hasByCombo = [

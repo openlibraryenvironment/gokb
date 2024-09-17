@@ -24,7 +24,7 @@ class IngestController {
   def addProfile() {
     log.debug("addProfile ${params}")
 
-    def result=[:]
+    def result = [:]
 
     def pkg_source = genericOIDService.resolveOID(params.sourceId)
     def package_type = genericOIDService.resolveOID(params.packageType)
@@ -43,18 +43,18 @@ class IngestController {
         packageType:package_type,
         platformUrl:params.platformUrl
       )
-      new_profile.source=pkg_source
+      new_profile.source = pkg_source
 
       log.debug("Create2")
       log.debug("\n\nCreated ${new_profile} ${new_profile.packageName}- now save")
 
       if ( new_profile.save(flush:true, failOnError:true) ) {
-        log.debug("Saved new profile ${new_profile}");
+        log.debug("Saved new profile ${new_profile}")
       }
       else {
-        log.error("Problem creating new profile");
+        log.error("Problem creating new profile")
         new_profile.errors.each {
-          log.error("Problem: ${it}");
+          log.error("Problem: ${it}")
         }
       }
     }
@@ -78,7 +78,7 @@ class IngestController {
 
     if ( request.method=='POST' && result.ip ) {
 
-      def ingestion_profile_id = params.id;
+      def ingestion_profile_id = params.id
       def new_datafile = null
 
       // Create a new transaction so we can commit it and have everything cleaned up by the time we
@@ -90,7 +90,7 @@ class IngestController {
         def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
         def deposit_token = java.util.UUID.randomUUID().toString()
         def temp_file = TSVIngestionService.handleTempFile(deposit_token, request.getFile("submissionFile"))
-        def info = analyse(temp_file);
+        def info = analyse(temp_file)
 
         log.debug("Got file with md5 ${info.md5sumHex}.. lookup by md5")
         def existing_file = DataFile.findByMd5(info.md5sumHex)
@@ -101,7 +101,7 @@ class IngestController {
           new_datafile = existing_file
         }
         else {
-          log.debug("Create new datafile");
+          log.debug("Create new datafile")
           new_datafile = new DataFile(
                                           guid:deposit_token,
                                           md5:info.md5sumHex,
@@ -110,7 +110,7 @@ class IngestController {
                                           filesize:info.filesize,
                                           uploadMimeType:upload_mime_type).save(failOnError:true, flush:true)
 
-          log.debug("Saved new datafile : ${new_datafile.id}");
+          log.debug("Saved new datafile : ${new_datafile.id}")
           new_datafile_id = new_datafile.id
           new_datafile.fileData = temp_file.getBytes()
 
@@ -139,7 +139,7 @@ class IngestController {
           try {
             TSVIngestionService.updatePackage(pkg.id,
                     new_datafile.id,
-                    result.ip.providerNamespace.id,
+                    (result.ip?.providerNamespace?.id ?: null),
                     true,
                     false,
                     user.id,
@@ -159,7 +159,7 @@ class IngestController {
         background_job.startOrQueue()
       }
       else {
-        log.warn("No datafile id!");
+        log.warn("No datafile id!")
       }
     }
     else {
@@ -172,24 +172,24 @@ class IngestController {
   def analyse(temp_file) {
 
     def result=[:]
-    result.filesize = 0;
+    result.filesize = 0
 
-    log.debug("analyze...");
+    log.debug("analyze...")
 
     // Create a checksum for the file..
-    MessageDigest md5_digest = MessageDigest.getInstance("MD5");
-    InputStream md5_is = new FileInputStream(temp_file);
-    byte[] md5_buffer = new byte[8192];
+    MessageDigest md5_digest = MessageDigest.getInstance("MD5")
+    InputStream md5_is = new FileInputStream(temp_file)
+    byte[] md5_buffer = new byte[8192]
     int md5_read = 0;
     while( (md5_read = md5_is.read(md5_buffer)) >= 0) {
-      md5_digest.update(md5_buffer, 0, md5_read);
+      md5_digest.update(md5_buffer, 0, md5_read)
       result.filesize += md5_read
     }
     md5_is.close();
     byte[] md5sum = md5_digest.digest();
-    result.md5sumHex = new BigInteger(1, md5sum).toString(16);
+    result.md5sumHex = new BigInteger(1, md5sum).toString(16)
 
-    log.debug("MD5 is ${result.md5sumHex}");
+    log.debug("MD5 is ${result.md5sumHex}")
     result
   }
 
