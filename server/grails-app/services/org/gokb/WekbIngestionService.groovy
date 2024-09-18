@@ -89,8 +89,11 @@ class WekbIngestionService {
             tippNum++
             log.debug('TIPP ' + tippNum + ": " + tipp)
 
-            //TODO: first check if the TIPP with this UUID has already existed in GOKB and has been deleted
-
+            if (tipp.status == 'Deleted') {
+                //in der WEKB gelöschte Titel werden nicht importiert
+                log.debug("Title is deleted --> SKIP")
+                continue
+            }
 
             Map ids = tipp.identifiers?.find { it.namespace == 'title_id' }
             def title_id = null
@@ -203,6 +206,10 @@ class WekbIngestionService {
         for (tipp in tipps) {
             tippNum++
             def importedTipp = TitleInstancePackagePlatform.findByUuid(tipp.uuid)
+            if (importedTipp == null) {
+                log.debug("Title was not imported --> Skip")
+                continue
+            }
             log.debug("importedTipp.status: " + importedTipp.getStatus() + ", newTipp.status: " + tipp.status)
             def actualTippStatus = RefdataCategory.lookup('KBComponent.Status', tipp.status)
             importedTipp.setStatus(actualTippStatus)
