@@ -129,9 +129,10 @@ class WekbImportController {
         def noResults = ["":""]
         def uuid = params?.uuid
         def max = params?.int('max')
-        log.debug("getTitleData : " + uuid + ", max: " + max)
+        def offset = params?.int('offset')
+        log.debug("getTitleData : " + uuid + ", max: " + max + ", offset: " + offset)
         if(uuid){
-            def result = wekbAPIService.getTIPPSOfPackage(uuid, max ?: 10)
+            def result = wekbAPIService.getTIPPSOfPackage(uuid, max ?: 10, offset ?: 0)
             log.debug("RESULT : " + result)
             if(result){
                 render result as JSON

@@ -74,11 +74,12 @@ class WekbAPIService {
         return result
     }
 
-    def getTIPPSOfPackage (String uuid, Integer max) {
+    def getTIPPSOfPackage (String uuid, Integer max, Integer offset) {
         Map params = [
                 "componentType": "TitleInstancePackagePlatform",
                 "tippPackageUuid": uuid,
-                "max": max
+                "max": max,
+                "offset": offset
         ]
         def result = null
         if(uuid) {
