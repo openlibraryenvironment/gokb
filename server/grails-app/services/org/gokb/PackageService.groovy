@@ -1152,8 +1152,8 @@ class PackageService {
                 frequency      : sourceMap.frequency,
                 ezbMatch       : (sourceMap.ezbMatch ?: false),
                 automaticUpdate: (sourceMap.automaticUpdate ?: false),
-                targetNamespace: sourceMap.targetNamespace instanceof Integer ? IdentifierNamespace.get(sourceMap.targetNamespace) : null
-                titleIdSerial: sourceMap.titleIdSerial instanceof Integer ? IdentifierNamespace.get(sourceMap.titleIdSerial) : null
+                targetNamespace: sourceMap.targetNamespace instanceof Integer ? IdentifierNamespace.get(sourceMap.targetNamespace) : null,
+                titleIdSerial: sourceMap.titleIdSerial instanceof Integer ? IdentifierNamespace.get(sourceMap.titleIdSerial) : null,
                 titleIdMonograph: sourceMap.titleIdMonograph instanceof Integer ? IdentifierNamespace.get(sourceMap.titleIdMonograph) : null
             ]
 

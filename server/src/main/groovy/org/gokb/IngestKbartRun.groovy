@@ -81,7 +81,7 @@ class IngestKbartRun {
                         Boolean dry_run = false,
                         Boolean skip_invalid = false,
                         Boolean cleanup = false,
-                        IdentifierNamespace titleIdSerial = null
+                        IdentifierNamespace titleIdSerial = null,
                         IdentifierNamespace titleIdMonograph = null) {
     pkg = pack
     addOnly = incremental
