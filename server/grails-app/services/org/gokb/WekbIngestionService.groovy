@@ -45,10 +45,11 @@ class WekbIngestionService {
     ConcurrencyManagerService concurrencyManagerService
 
     def startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Long title_ns, org.gokb.cred.Package pkg) {
-        def result = [status:'ok']
+        def result = [status: 'ok']
         long startTime = System.currentTimeMillis()
         ingest_systime = startTime
         def ingestDate = LocalDate.now().toString()
+        int batchSize = 100
 
         rdv_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
         rdv_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
@@ -62,137 +63,144 @@ class WekbIngestionService {
 
         def packageInfo = wekbAPIService.getPackageByUuid(wekbUUID)
         int titleCount = packageInfo[0]?.titleCount
-        def tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, titleCount)
-
-        log.debug("#### "  + tipps)
 
         isUpdate = false
-        int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) '+
-                'from TitleInstancePackagePlatform as tipp, Combo as c '+
+        int old_tipp_count = TitleInstancePackagePlatform.executeQuery('select count(*) ' +
+                'from TitleInstancePackagePlatform as tipp, Combo as c ' +
                 'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
                 [pkg: pkg.id, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
-        result.report = [numRows: tipps.size(), skipped: 0, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0,  previous: old_tipp_count]
+        result.report = [numRows: titleCount, skipped: 0, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0, previous: old_tipp_count]
 
         if (old_tipp_count > 0) {
             log.debug("OLD TIPPCOUNT: " + old_tipp_count + "  ----> IS UPDATE... ")
             isUpdate = true
         }
 
-        def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
-        log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
-
         int tippNum = 0
+        def tippBatches = []
 
-        for (tipp in tipps) {
+        for(int offset = 0; offset < titleCount; offset += batchSize) {
+            def tipps = wekbAPIService.getTIPPSOfPackage(wekbUUID, batchSize, offset)
+            log.debug("#### " + tipps)
+            tippBatches.add(tipps)
 
-            tippNum++
-            log.debug('TIPP ' + tippNum + ": " + tipp)
+            def expungeResult = deleteDeletedTippsIfNeeded(tipps, isUpdate)
+            log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
 
-            if (tipp.status == 'Deleted') {
-                //in der WEKB gelöschte Titel werden nicht importiert
-                log.debug("Title is deleted --> SKIP")
-                continue
-            }
+            for (tipp in tipps) {
 
-            Map ids = tipp.identifiers?.find { it.namespace == 'title_id' }
-            def title_id = null
-            if (ids) {
-                title_id = ids.value
-                log.debug('ids: ' + ids + ", title_id: " + title_id)
-            }
+                tippNum++
+                log.debug('TIPP ' + tippNum + ": " + tipp)
 
-            def lang = null
-            if ( tipp.languages && tipp.languages.size() > 0) {
-                lang = tipp.languages.get(0)?.value
-            }
+                if (tipp.status == 'Deleted') {
+                    //in der WEKB gelöschte Titel werden nicht importiert
+                    log.debug("Title is deleted --> SKIP")
+                    continue
+                }
 
-            def identifiers = []
-            if (tipp.identifiers && tipp.identifiers.size() > 0) {
-                for (identifier in tipp.identifiers) {
-                   // TODO: vollständiges Identifikatoren-Mapping und Title-Id-Handling
-                   String identifierType = null
-                    if ( identifier.namespace ) {
-                        switch (identifier.namespace) {
-                            case "eisbn":
-                                identifierType = "isbn"
-                                break;
-                            case "isbn":
-                                identifierType = "pisbn"
-                                break;
-                            case "title_id":
-                                break;
-                            default:
-                                identifierType = identifier.namespace
+                Map ids = tipp.identifiers?.find { it.namespace == 'title_id' }
+                def title_id = null
+                if (ids) {
+                    title_id = ids.value
+                    log.debug('ids: ' + ids + ", title_id: " + title_id)
+                }
+
+                def lang = null
+                if (tipp.languages && tipp.languages.size() > 0) {
+                    lang = tipp.languages.get(0)?.value
+                }
+
+                def identifiers = []
+                if (tipp.identifiers && tipp.identifiers.size() > 0) {
+                    for (identifier in tipp.identifiers) {
+                        String identifierType = null
+                        if (identifier.namespace) {
+                            switch (identifier.namespace) {
+                                case "eisbn":
+                                    identifierType = "isbn"
+                                    break;
+                                case "isbn":
+                                    identifierType = "pisbn"
+                                    break;
+                                case "title_id":
+                                    break;
+                                default:
+                                    identifierType = identifier.namespace
+                            }
+                        }
+                        if (identifierType) {
+                            identifiers << [type: identifierType, value: identifier.value]
                         }
                     }
-                    if ( identifierType ) {
-                        identifiers << [type: identifierType, value: identifier.value]
-                    }
                 }
+
+                // log.debug("ALL IDENTIFIERS: " + identifiers)
+
+
+                def tipp_map = [
+                        uuid                       : tipp.uuid?.trim(),
+                        url                        : tipp.url?.trim(),
+                        coverageStatements         : [
+                                tipp.coverage ?: [
+                                        embargo      : null,
+                                        coverageDepth: 'Fulltext',
+                                        coverageNote : null,
+                                        startDate    : null,
+                                        startVolume  : null,
+                                        startIssue   : null,
+                                        endDate      : null,
+                                        endVolume    : null,
+                                        endIssue     : null
+                                ]
+                        ],
+                        importId                   : title_id?.trim(),
+                        name                       : tipp.name?.trim(),
+                        publicationType            : tipp.publicationType?.trim(),
+                        parentPublicationTitleId   : tipp.parentPublicationTitleId?.trim(),
+                        precedingPublicationTitleId: tipp.precedingPublicationTitleId?.trim(),
+                        firstAuthor                : tipp.firstAuthor?.trim(),
+                        publisherName              : tipp.publisherName?.trim(),
+                        volumeNumber               : tipp.volumeNumber?.trim(),
+                        editionStatement           : tipp.editionStatement?.trim(),
+                        dateFirstInPrint           : tipp.dateFirstInPrint?.trim(),
+                        dateFirstOnline            : tipp.dateFirstOnline?.trim(),
+                        firstEditor                : tipp.firstEditor?.trim(),
+                        subjectArea                : tipp.subjectArea?.trim(),
+                        series                     : tipp.series?.trim(),
+                        language                   : lang,
+                        medium                     : tipp.medium?.trim(),
+                        accessStartDate            : tipp.accessStartDate?.trim(),
+                        accessEndDate              : tipp.accessEndDate?.trim(),
+                        lastSeen                   : ingest_systime,
+                        identifiers                : identifiers,
+                        pkg                        : [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
+                        hostPlatform               : [id: pkg_plt.id, uuid: pkg_plt.uuid, name: pkg_plt.name],
+                        paymentType                : tipp.accessType?.trim()
+                ]
+
+
+                // log.debug("TIPP-MAP : " + tipp_map)
+
+                def line_result = saveTippToDB(tipp_map, pkg_plt, pkg, ingestDate)
+
+                // TODO: result
+                //result.report[line_result.status]++
+
+                log.debug('----------------------------------------------------------------------')
+
+                if (tippNum % 50 == 0) {
+                    def session = sessionFactory.getCurrentSession()
+                    session.flush()
+                    session.clear()
+                }
+
             }
+            def session = sessionFactory.getCurrentSession()
+            session.flush()
+            session.clear()
 
-            log.debug("ALL IDENTIFIERS: " + identifiers)
-
-
-            def tipp_map = [
-                    uuid: tipp.uuid?.trim(),
-                    url: tipp.url?.trim(),
-                    coverageStatements: [
-                            tipp.coverage ?: [
-                                    embargo: null,
-                                    coverageDepth: 'Fulltext',
-                                    coverageNote: null,
-                                    startDate: null,
-                                    startVolume: null,
-                                    startIssue: null,
-                                    endDate: null,
-                                    endVolume: null,
-                                    endIssue: null
-                            ]
-                    ],
-                    importId: title_id?.trim(),
-                    name: tipp.name?.trim(),
-                    publicationType: tipp.publicationType?.trim(),
-                    parentPublicationTitleId: tipp.parentPublicationTitleId?.trim(),
-                    precedingPublicationTitleId: tipp.precedingPublicationTitleId?.trim(),
-                    firstAuthor: tipp.firstAuthor?.trim(),
-                    publisherName: tipp.publisherName?.trim(),
-                    volumeNumber: tipp.volumeNumber?.trim(),
-                    editionStatement: tipp.editionStatement?.trim(),
-                    dateFirstInPrint: tipp.dateFirstInPrint?.trim(),
-                    dateFirstOnline: tipp.dateFirstOnline?.trim(),
-                    firstEditor: tipp.firstEditor?.trim(),
-                    subjectArea: tipp.subjectArea?.trim(),
-                    series: tipp.series?.trim(),
-                    language: lang,
-                    medium: tipp.medium?.trim(),
-                    accessStartDate:tipp.accessStartDate?.trim(),
-                    accessEndDate: tipp.accessEndDate?.trim(),
-                    lastSeen: ingest_systime,
-                    identifiers: identifiers,
-                    pkg: [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
-                    hostPlatform: [id: pkg_plt.id, uuid: pkg_plt.uuid, name: pkg_plt.name],
-                    paymentType: tipp.accessType?.trim()
-            ]
-
-
-            log.debug("TIPP-MAP : " + tipp_map)
-
-            def line_result = saveTippToDB(tipp_map, pkg_plt, pkg, ingestDate)
-
-            // TODO: result
-            //result.report[line_result.status]++
-
-            log.debug('----------------------------------------------------------------------')
-
-            if (tippNum % 50 == 0) {
-                def session = sessionFactory.getCurrentSession()
-                session.flush()
-                session.clear()
-            }
-
-        }
+        }// end 1. Durchgang Save
 
         def session = sessionFactory.getCurrentSession()
         session.flush()
@@ -203,27 +211,33 @@ class WekbIngestionService {
         def status_map = ['Current': rdv_current, 'Deleted': rdv_deleted, 'Expected': rdv_expected, 'Retired': rdv_retired]
         log.debug("+++ set Title Status +++++++++++++")
         tippNum = 0
-        for (tipp in tipps) {
-            tippNum++
-            def importedTipp = TitleInstancePackagePlatform.findByUuid(tipp.uuid)
-            if (importedTipp == null) {
-                log.debug("Title was not imported --> Skip")
-                continue
-            }
-            log.debug("importedTipp.status: " + importedTipp.getStatus() + ", newTipp.status: " + tipp.status)
-            def actualTippStatus = RefdataCategory.lookup('KBComponent.Status', tipp.status)
-            importedTipp.setStatus(actualTippStatus)
-            //importedTipp.setStatus(status_map.get(tipp.status))
+        for(int i = 0; i < tippBatches.size(); i++) {
+            def tipps = tippBatches.get(i)
+            for (tipp in tipps) {
+                tippNum++
+                def importedTipp = TitleInstancePackagePlatform.findByUuid(tipp.uuid)
+                if (importedTipp == null) {
+                    log.debug("Title was not imported --> Skip")
+                    continue
+                }
+                log.debug("importedTipp.status: " + importedTipp.getStatus() + ", newTipp.status: " + tipp.status)
+                def actualTippStatus = RefdataCategory.lookup('KBComponent.Status', tipp.status)
+                importedTipp.setStatus(actualTippStatus)
+                //importedTipp.setStatus(status_map.get(tipp.status))
 
-            log.debug("----------------------------------- ")
-            if (tippNum % 50 == 0) {
-                session = sessionFactory.getCurrentSession()
-                session.flush()
-                session.clear()
+                log.debug("----------------------------------- ")
+                if (tippNum % 50 == 0) {
+                    session = sessionFactory.getCurrentSession()
+                    session.flush()
+                    session.clear()
+                }
+
             }
+            session = sessionFactory.getCurrentSession()
+            session.flush()
+            session.clear()
 
         }
-
 
         log.debug("start Title Matching... ")
 
@@ -256,7 +270,21 @@ class WekbIngestionService {
             result.matchingJob = matching_job.uuid
         } */
 
+        //Test:
+        Set uuids = new HashSet()
+        List allUuids = new ArrayList()
+        for(batch in tippBatches){
+            for(tipp in batch){
+                uuids.add(tipp.uuid)
+                allUuids.add(tipp.uuid)
+            }
+        }
 
+        log.debug("*************************************************************************************")
+        log.debug("Size: " + uuids.size() + ", List: " + allUuids.size())
+        log.debug("all uuids: " + uuids)
+        log.debug("*************************************************************************************")
+        log.debug("List ids: " + allUuids)
 
         return result
     }
@@ -304,20 +332,25 @@ class WekbIngestionService {
         TitleInstancePackagePlatform tipp = null
         boolean new_coverage = true
 
+        log.debug("upsertTipp " + tipp)
+
         if ( isUpdate ) {
 
             // check if Title already exists
             tipp = TitleInstancePackagePlatform.findByUuid(tipp_map.uuid)
 
-            log.debug("isUpdate - TIPP: " + tipp)
+            log.debug("isUpdate...")
 
             //Tipp exists - update if it is not deleted
             if ( tipp ) {
-                result.status = 'matched'
+
+                // result.status = 'matched'
                 if ( tipp.getStatus() != rdv_deleted ) {
                     tipp.refresh()
+                    log.debug("Tipp wird refresht")
                 }
             } else {
+                log.debug("Tipp wird neu angelegt...")
                 // create new Tipp
                 def tipp_fields = [
                         uuid: tipp_map.uuid,
@@ -334,7 +367,7 @@ class WekbIngestionService {
             }
 
         } else {
-
+            log.debug("Initialer Import: Tipp wird neu angelegt...")
             def tipp_fields = [
                     uuid: tipp_map.uuid,
                     pkg: pkg,
@@ -367,6 +400,7 @@ class WekbIngestionService {
             tipp.save(flush: true)
         }
         else {
+            log.debug("Error bei der Tipp-Validierung ...")
             log.error("Validation failed!")
             tipp.errors.allErrors.each {
                 log.error("${it}")

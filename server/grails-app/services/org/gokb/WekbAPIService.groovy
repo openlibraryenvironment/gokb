@@ -79,7 +79,8 @@ class WekbAPIService {
                 "componentType": "TitleInstancePackagePlatform",
                 "tippPackageUuid": uuid,
                 "max": max,
-                "offset": offset
+                "offset": offset,
+                "sort": "dateCreated"
         ]
         def result = null
         if(uuid) {
