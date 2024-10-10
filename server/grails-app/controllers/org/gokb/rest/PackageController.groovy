@@ -35,7 +35,7 @@ class PackageController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
-    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -79,7 +79,7 @@ class PackageController {
   def show() {
     def result = [:]
     def obj = null
-    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     def is_curator = true
     User user = null
 
@@ -126,117 +126,133 @@ class PackageController {
     UpdateToken update_token = null
     def errors = [:]
     def user = User.get(springSecurityService.principal.id)
+    boolean editable = true
 
     if (reqBody) {
-      log.debug("Save package ${reqBody}")
-      def pkg_validation = Package.validateDTO(reqBody, request_locale)
-      def obj = null
+      if (!user.hasRole('ROLE_ADMIN') && (reqBody.curatoryGroups || reqBody.activeGroup)) {
+        def cur = reqBody.curatoryGroups ? user.curatoryGroups*.id.intersect(reqBody.curatoryGroups*.id) : user.curatoryGroups*.id.contains(reqBody.activeGroup.id)
 
-      if (pkg_validation.valid) {
-        def lookup_result = packageService.restLookup(reqBody)
-
-        if (lookup_result.to_create) {
-          def normname = Package.generateNormname(reqBody.name)
-          try {
-            obj = new Package(name: reqBody.name, normname: normname)
-          }
-          catch (grails.validation.ValidationException ve) {
-            errors << messageService.processValidationErrors(ve.errors, request_locale)
-          }
-          log.debug("New Object ${obj}")
+        if (!cur) {
+          editable = false
         }
-        else {
-          lookup_result.matches.each { id, errs ->
-            errs.each { e ->
-              if (!errors[e.field])
-                errors[e.field] = []
+      }
 
-              errors[e.field] << [matches: id] + e
+      if (editable) {
+        log.debug("Save package ${reqBody}")
+        def pkg_validation = Package.validateDTO(reqBody, request_locale)
+        def obj = null
+
+        if (pkg_validation.valid) {
+          def lookup_result = packageService.restLookup(reqBody)
+
+          if (lookup_result.to_create) {
+            def normname = Package.generateNormname(reqBody.name)
+            try {
+              obj = new Package(name: reqBody.name, normname: normname)
+            }
+            catch (grails.validation.ValidationException ve) {
+              errors << messageService.processValidationErrors(ve.errors, request_locale)
+            }
+            log.debug("New Object ${obj}")
+          }
+          else {
+            lookup_result.matches.each { id, errs ->
+              errs.each { e ->
+                if (!errors[e.field])
+                  errors[e.field] = []
+
+                errors[e.field] << [matches: id] + e
+              }
             }
           }
-        }
 
-        if (errors.size() > 0) {
-          log.debug("Object has validation errors!")
-        }
-        else if (lookup_result.to_create && !obj) {
-          log.debug("Could not upsert object!")
-          errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
-        }
-        else if (obj) {
-          obj.save(flush:true)
-          def jsonMap = obj.jsonMapping
+          if (errors.size() > 0) {
+            log.debug("Object has validation errors!")
+          }
+          else if (lookup_result.to_create && !obj) {
+            log.debug("Could not upsert object!")
+            errors.object = [[baddata: reqBody, message: "Unable to save object!"]]
+          }
+          else if (obj) {
+            obj.save(flush:true)
+            def jsonMap = obj.jsonMapping
 
-          jsonMap.immutable = [
-              'userListVerifier',
-              'listVerifiedDate',
-              'listStatus'
-          ]
+            jsonMap.immutable = [
+                'userListVerifier',
+                'listVerifiedDate',
+                'listStatus'
+            ]
 
-          log.debug("Updating ${obj}")
-          obj = restMappingService.updateObject(obj, jsonMap, reqBody)
+            log.debug("Updating ${obj}")
+            obj = restMappingService.updateObject(obj, jsonMap, reqBody)
 
-          if (obj.validate()) {
-            if (errors.size() == 0) {
-              log.debug("No errors.. saving")
-              obj.save()
-
-              def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
-
-              if (variant_result.errors.size() > 0) {
-                errors.variantNames = variant_result.errors
-              }
-
-              def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
-
-              if (subject_result.errors.size() > 0) {
-                errors.subjects = subject_result.errors
-              }
-
-              String charset = (('a'..'z') + ('0'..'9')).join()
-              def updateToken = RandomStringUtils.random(255, charset.toCharArray())
-              update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
-
-              if ((!reqBody.curatoryGroups || reqBody.curatoryGroups?.size() == 0) && reqBody.activeGroup) {
-                reqBody.curatoryGroups = [reqBody.activeGroup]
-              }
-
-              errors << packageUpdateService.updateCombos(obj, reqBody, false, user)
-
+            if (obj.validate()) {
               if (errors.size() == 0) {
-                log.debug("No errors: ${errors}")
-                obj.save(flush: true)
-                response.status = 201
-                result = restMappingService.mapObjectToJson(obj, params, user)
+                log.debug("No errors.. saving")
+                obj.save()
 
-                if (update_token) {
-                  result.updateToken = update_token.value
+                def variant_result = restMappingService.updateVariantNames(obj, reqBody.variantNames)
+
+                if (variant_result.errors.size() > 0) {
+                  errors.variantNames = variant_result.errors
+                }
+
+                def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
+
+                if (subject_result.errors.size() > 0) {
+                  errors.subjects = subject_result.errors
+                }
+
+                String charset = (('a'..'z') + ('0'..'9')).join()
+                def updateToken = RandomStringUtils.random(255, charset.toCharArray())
+                update_token = new UpdateToken(pkg: obj, updateUser: user, value: updateToken).save(flush: true)
+
+                if ((!reqBody.curatoryGroups || reqBody.curatoryGroups?.size() == 0) && reqBody.activeGroup) {
+                  reqBody.curatoryGroups = [reqBody.activeGroup]
+                }
+
+                errors << packageUpdateService.updateCombos(obj, reqBody, false, user)
+
+                if (errors.size() == 0) {
+                  log.debug("No errors: ${errors}")
+                  obj.save(flush: true)
+                  response.status = 201
+                  result = restMappingService.mapObjectToJson(obj, params, user)
+
+                  if (update_token) {
+                    result.updateToken = update_token.value
+                  }
+                }
+                else {
+                  result.result = 'ERROR'
+                  log.debug("There were errors setting combo props!")
+                  obj.discard()
+                  result.error = errors
                 }
               }
               else {
                 result.result = 'ERROR'
-                log.debug("There were errors setting combo props!")
                 obj.discard()
-                result.error = errors
+                result.message = message(code: "default.create.errors.message")
+                response.status = 400
               }
             }
             else {
               result.result = 'ERROR'
               obj.discard()
-              result.message = message(code: "default.create.errors.message")
               response.status = 400
+              errors << messageService.processValidationErrors(obj.errors, request_locale)
             }
           }
-          else {
-            result.result = 'ERROR'
-            obj.discard()
-            response.status = 400
-            errors << messageService.processValidationErrors(obj.errors, request_locale)
-          }
+        }
+        else {
+          errors << pkg_validation.errors
         }
       }
       else {
-        errors << pkg_validation.errors
+        response.status = 403
+        result.result = 'ERROR'
+        response.message = "User is not authorized to create packages for this curatory group!"
       }
     }
     else {
@@ -458,7 +474,7 @@ class PackageController {
 
     if (obj) {
       def context = "/packages/" + params.id + "/tipps"
-      def base = grailsApplication.config.getProperty('serverURL') + "/rest"
+      def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
       def es_search = params.es ? true : false
 
       params.remove('id')

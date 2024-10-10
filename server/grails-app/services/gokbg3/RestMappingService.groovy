@@ -3,6 +3,7 @@ package gokbg3
 import com.k_int.ClassUtils
 
 import java.time.LocalDateTime
+import java.time.LocalDate
 import java.time.ZoneId
 
 import org.gokb.cred.*
@@ -73,7 +74,7 @@ class RestMappingService {
     def include_list = params['_include']?.split(',') ?: null
     def exclude_list = params['_exclude']?.split(',') ?: null
     def nested = params['nested'] ? true : false
-    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     def curatedClass = obj.respondsTo('curatoryGroups')
     def jsonMap = null
     def is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
@@ -187,8 +188,17 @@ class RestMappingService {
               result[p.name] = obj[p.name] ? "${obj[p.name]}" : null
               break;
 
+            case LocalDate.class:
+              new_obj[p.name] = LocalDate.parse(params[p.name])
+              break;
+
             case Date.class:
-              result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
+              if (p.name == 'lastUpdated' || p.name == 'dateCreated') {
+                result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
+              }
+              else {
+                result[p.name] = obj[p.name] ? dateFormatService.formatDate(obj[p.name]) : null
+              }
               break;
             default:
               result[p.name] = obj[p.name]
@@ -1223,7 +1233,7 @@ class RestMappingService {
    */
 
   String buildUrlString(context, type, offset , max, params) {
-    URL serverUrl = grailsApplication.config.getProperty('serverURL') ? new URL(grailsApplication.config.getProperty('serverURL')) : null
+    URL serverUrl = grailsApplication.config.getProperty('grails.serverURL') ? new URL(grailsApplication.config.getProperty('grails.serverURL')) : null
     String path = "/rest" + "${context}"
 
     UriBuilder selfLink = UriBuilder.of(serverUrl.toURI())

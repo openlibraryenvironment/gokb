@@ -1389,9 +1389,6 @@ where cp.owner = :c
       active_ids?.each { tid ->
         builder.'identifier'(tid)
       }
-      if (grailsApplication.config.getProperty('serverUrl') || grailsApplication.config.getProperty('baseUrl')) {
-        builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl') ?: grailsApplication.config.getProperty('baseUrl')}/resource/show/${cName}:${id}")
-      }
     }
 
     // Variant Names

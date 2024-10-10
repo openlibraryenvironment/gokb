@@ -769,7 +769,7 @@ class ValidationService {
     result
   }
 
-  def checkUrl(String value, boolean replaceDate = true) {
+  def checkUrl(String value, boolean replaceDate = false) {
     String local_date_string = LocalDate.now().toString()
 
     def final_val = value.trim()
@@ -777,6 +777,36 @@ class ValidationService {
     if (replaceDate) {
       final_val = final_val.replace('{YYYY-MM-DD}', local_date_string)
     }
+
+    if (final_val.indexOf('%') >= 0 || replaceDate) {
+      // log.debug("URL seems to be already encoded!")
+    }
+    else {
+      String url = ""
+      def parts = null
+
+      if (parts = final_val =~ /^((?>http[s]?|ftp):\/\/)(\w[\w\-\.]+)(\/[\w\-\/]+\/)*(\/)?([^#]+)?(#[\w\-]+)?$/) {
+        for (int i = 1; i < parts.groupCount(); i++) {
+          if (i != 5 && parts.group(i)) {
+            url = url + parts.group(i)
+          }
+          else if (parts.group(i)) {
+            try {
+              url = url + URLEncoder.encode(parts.group(i))
+            }
+            catch(Exception e) {
+              // log.debug("Invalid query part ${parts.group(i)}")
+            }
+          }
+        }
+        final_val = url
+      }
+      else {
+        // log.debug("Regex fail for URL: ${final_val}")
+      }
+    }
+
+    // log.debug("Final URL to check: ${final_val}")
 
     return new UrlValidator().isValid(final_val) ? value : null
   }

@@ -686,28 +686,45 @@ class IngestKbartRun {
 
           if (!dryRun) {
             def additionalInfo = [otherComponents: []]
+            boolean needs_review = false
 
             match_result.failed_matches.each { ct ->
-              additionalInfo.otherComponents << [
-                oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id,
-                uuid: ct.item.uuid,
-                id: ct.item.id,
-                name: ct.item.name,
-                matchResults: ct.matchResults
-              ]
+              def matched_ns = []
+
+              ct.matchResult.each { mr ->
+                if (mr.match == 'OK') {
+                  matched_ns = mr.namespace
+                }
+              }
+
+              if (matched_ns.size() == 1 && matched_ns[0] == 'ezb') {
+                log.debug("Ignoring EZB-ID match ..")
+              }
+              else {
+                needs_review = true
+                additionalInfo.otherComponents << [
+                  oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.item.id,
+                  uuid: ct.item.uuid,
+                  id: ct.item.id,
+                  name: ct.item.name,
+                  matchResults: ct.matchResults
+                ]
+              }
             }
 
             // RR für Multimatch generieren
-            reviewRequestService.raise(
-                tipp,
-                "A KBART record has been matched on an existing package title by some identifiers, but not by other important identifiers.",
-                "Check the package titles and merge them if necessary.",
-                user,
-                null,
-                (additionalInfo as JSON).toString(),
-                RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
-                componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
-            )
+            if (needs_review) {
+              reviewRequestService.raise(
+                  tipp,
+                  "A KBART record has been matched on an existing package title by some identifiers, but not by other important identifiers.",
+                  "Check the package titles and merge them if necessary.",
+                  user,
+                  null,
+                  (additionalInfo as JSON).toString(),
+                  RefdataCategory.lookup('ReviewRequest.StdDesc', 'Import Identifier Mismatch'),
+                  componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
+              )
+            }
           }
         }
       }

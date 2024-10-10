@@ -24,6 +24,7 @@ class TitleController {
   def titleHistoryService
   def componentLookupService
   def dateFormatService
+  def reviewRequestService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def getTypes() {
@@ -36,7 +37,7 @@ class TitleController {
   def index() {
     log.debug("Index with params: ${params}")
     def result = [:]
-    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -164,7 +165,7 @@ class TitleController {
     def obj = null
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
-    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
 
     def publisher_name = null
 
@@ -201,6 +202,7 @@ class TitleController {
             if (title_lookup.matches.size() > 0 && !reqBody._checked) {
               def additionalInfo = [:]
               def combo_ids = [obj.id]
+              RefdataValue rr_type = RefdataCategory.lookup("ReviewRequest.StdDesc", "Duplicate Title Info")
 
               additionalInfo.otherComponents = []
 
@@ -216,13 +218,15 @@ class TitleController {
 
               additionalInfo.cstring = combo_ids.sort().join('_')
 
-              ReviewRequest.raise(
+              reviewRequestService.raise(
                 obj,
                 "New TI created.",
                 "There have been possible conflicts with other existing titles.",
-                user,
                 null,
-                (additionalInfo as JSON).toString()
+                null,
+                (additionalInfo as JSON).toString(),
+                rr_type,
+                componentLookupService.findCuratoryGroupOfInterest(obj)
               )
             }
 
@@ -856,7 +860,7 @@ class TitleController {
     if (changed) {
       obj.lastSeen = System.currentTimeMillis()
 
-      titleAugmentService.touchTitleTipps(obj)
+      titleAugmentService.touchTitleTipps(obj, false)
     }
 
     errors
@@ -967,7 +971,7 @@ class TitleController {
 
     if (obj) {
       def context = "/titles/" + params.id + "/tipps"
-      def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+      def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
       def es_search = params.es ? true : false
 
       params.remove('id')
@@ -1005,6 +1009,7 @@ class TitleController {
   @Secured(value=["hasRole('ROLE_EDITOR')", 'IS_AUTHENTICATED_FULLY'])
   @Transactional
   def merge() {
+    log.debug("Merging title ..")
     def result = ['result':'OK', 'params': params]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstance.findByUuid(params.id) ?: TitleInstance.get(genericOIDService.oidToId(params.id))
@@ -1016,26 +1021,6 @@ class TitleController {
         def target = obj.class.get(params.int('target'))
 
         if (target) {
-          if (params.list('tipps')?.size() > 0) {
-            params.list('tipps').each { tipp ->
-              def tipp_combo = Combo.executeQuery("from Combo where fromComponent = :title and toComponent.id = :tippId", [title: obj, tippId: Long.valueOf(tipp)])
-
-              if (tipp_combo?.size() == 1) {
-                tipp_combo[0].fromComponent = target
-              }
-            }
-          }
-          else if (params.boolean('mergeTipps')) {
-            obj.tipps.each { tipp ->
-              def tippObj = TitleInstancePackagePlatform.get(tipp.id)
-
-              tippObj.title = target
-              target.save(flush: true)
-            }
-          }
-
-          obj.refresh()
-
           if (params.list('ids')?.size() > 0) {
             params.list('ids').each { tid ->
               def idObj = Identifier.get(Long.valueOf(tid))
@@ -1053,7 +1038,8 @@ class TitleController {
 
               def old_combo = Combo.findByFromComponentAndToComponent(obj, old_id)
 
-              def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = ?0 and c.fromComponent = ?1 and c.type = ?2", [old_id, target, id_combo_type])
+              def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = :ido and c.fromComponent = :nt and c.type = :ct", [ido: old_id, nt: target, ct: id_combo_type])
+
               if (!dupes || dupes.size() == 0){
                 log.debug("Adding Identifier ${old_id} to ${target}")
                 Combo new_id = new Combo(toComponent: old_id, fromComponent: target, type: id_combo_type, status: old_combo.status).save(flush: true, failOnError: true)
@@ -1064,11 +1050,36 @@ class TitleController {
             }
           }
 
-          target.save(flush: true)
-
           titleHistoryService.transferEvents(obj, target)
 
+          obj.refresh()
+
+          if (params.list('tipps')?.size() > 0) {
+            params.list('tipps').each { tipp ->
+              def tipp_combo = Combo.executeQuery("from Combo where fromComponent = :title and toComponent.id = :tippId", [title: obj, tippId: Long.valueOf(tipp)])
+
+              if (tipp_combo?.size() == 1) {
+                tipp_combo[0].fromComponent = target
+              }
+            }
+          }
+          else if (params.boolean('mergeTipps')) {
+            obj.tipps.each { tipp ->
+              def tippObj = TitleInstancePackagePlatform.get(tipp.id)
+
+              tippObj.title = target
+              tippObj.save(flush: true)
+              target.save(flush: true)
+
+              log.debug("Changed TIPP title to ${tippObj.title}")
+            }
+          }
+
+          log.debug("Deleting stale title ${obj}")
           obj.deleteSoft()
+          obj.save(flush: true)
+
+          log.debug("Title is ${obj.status.value}!")
         }
         else {
           result.result = 'ERROR'
