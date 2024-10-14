@@ -235,7 +235,7 @@ class TippService {
 
 
       if (coverage.startDate && !parsedStart) {
-        if (statement_errors.startDate) {
+        if (!statement_errors.startDate) {
           statement_errors.startDate = []
         }
 
@@ -248,7 +248,7 @@ class TippService {
       }
 
       if (coverage.endDate && !parsedEnd) {
-        if (statement_errors.endDate) {
+        if (!statement_errors.endDate) {
           statement_errors.endDate = []
         }
 
@@ -261,7 +261,7 @@ class TippService {
       }
 
       if (!coverage.coverageDepth) {
-        if (statement_errors.coverageDepth) {
+        if (!statement_errors.coverageDepth) {
           statement_errors.coverageDepth = []
         }
 
