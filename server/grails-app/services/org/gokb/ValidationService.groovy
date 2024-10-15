@@ -215,7 +215,7 @@ class ValidationService {
 
   static ISSNValidator ISSN_VAL = new ISSNValidator()
 
-  def generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null, boolean strict = false) {
+  def generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null, boolean strict = false, IdentifierNamespace titleIdNamespaceSerial = null, IdentifierNamespace titleIdNamespaceMonograph = null) {
     def result = [
         valid: true,
         message: "",
@@ -281,9 +281,20 @@ class ValidationService {
           result.valid = false
         }
         else if (nl.size() >= MANDATORY_COLS.size()) {
+          def pubTypeVal = nl[col_positions['publication_type']].trim()
+          def pubType = checkPubType(pubTypeVal)
+          IdentifierNamespace row_namespace = titleIdNamespace
+
+          if (pubType == 'Serial' && titleIdNamespaceSerial) {
+            row_namespace = titleIdNamespaceSerial
+          }
+          else if (pubType == 'Monograph' && titleIdNamespaceMonograph) {
+            row_namespace = titleIdNamespaceMonograph
+          }
+
           result.rows.total++
 
-          def row_result = checkRow(nl, rowCount, col_positions, titleIdNamespace, strict)
+          def row_result = checkRow(nl, rowCount, col_positions, row_namespace, strict)
 
           if (row_result.errors) {
             result.rows.error++

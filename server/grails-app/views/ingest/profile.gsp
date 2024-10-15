@@ -38,6 +38,18 @@
                 <g:manyToOneReferenceTypedown owner="${ip}" field="providerNamespace" baseClass="org.gokb.cred.IdentifierNamespace">${ip.providerNamespace?.value}</g:manyToOneReferenceTypedown>
               </dd>
               <dt>
+                <g:annotatedLabel owner="${ip}" property="providerNamespace">Provider Namespace (Serial)</g:annotatedLabel>
+              </dt>
+              <dd>
+                <g:manyToOneReferenceTypedown owner="${ip}" field="providerNamespaceSerial" baseClass="org.gokb.cred.IdentifierNamespace">${ip.providerNamespaceSerial?.value}</g:manyToOneReferenceTypedown>
+              </dd>
+              <dt>
+                <g:annotatedLabel owner="${ip}" property="providerNamespace">Provider Namespace (Monograph)</g:annotatedLabel>
+              </dt>
+              <dd>
+                <g:manyToOneReferenceTypedown owner="${ip}" field="providerNamespaceMonograph" baseClass="org.gokb.cred.IdentifierNamespace">${ip.providerNamespaceMonograph?.value}</g:manyToOneReferenceTypedown>
+              </dd>
+              <dt>
                 <g:annotatedLabel owner="${ip}" property="packageType">Data Format</g:annotatedLabel>
               </dt>
               <dd>

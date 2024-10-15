@@ -660,6 +660,8 @@ class PackageController {
     def user = User.get(springSecurityService.principal.id)
     def active_group_id = null
     def title_ns_id = null
+    def title_ns_serial_id = null
+    def title_ns_mono_id = null
 
     if (params.int('activeGroup')) {
       CuratoryGroup active_group = CuratoryGroup.get(params.int('activeGroup'))
@@ -688,6 +690,36 @@ class PackageController {
       }
       else {
         title_ns_id = title_ns.id
+      }
+    }
+
+    if (params.int('titleIdSerial')) {
+      IdentifierNamespace title_ns = IdentifierNamespace.get(params.int('titleIdSerial'))
+
+      if (!title_ns) {
+        response.status = 404
+        result.result = 'ERROR'
+        result.message = "Unable to reference active serial title id namespace!"
+
+        render result as JSON
+      }
+      else {
+        title_ns_serial_id = title_ns.id
+      }
+    }
+
+    if (params.int('titleIdMonograph')) {
+      IdentifierNamespace title_ns = IdentifierNamespace.get(params.int('titleIdMonograph'))
+
+      if (!title_ns) {
+        response.status = 404
+        result.result = 'ERROR'
+        result.message = "Unable to reference active monograph title id namespace!"
+
+        render result as JSON
+      }
+      else {
+        title_ns_mono_id = title_ns.id
       }
     }
 
@@ -740,7 +772,9 @@ class PackageController {
             dry_run,
             skip_invalid,
             delete_missing,
-            job
+            job,
+            title_id_ns_serial,
+            title_id_ns_monograph
           )
         }
 
