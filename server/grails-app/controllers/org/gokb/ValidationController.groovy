@@ -42,23 +42,23 @@ class ValidationController {
         title_id_namespace = params.int('namespace') ? IdentifierNamespace.get(params.int('namespace')) : IdentifierNamespace.findByValue(params.namespace)
 
         if (!title_id_namespace) {
-          result.errors.namespace = [message: "Unable to reference provided namespace for column title_id!", messageCode: "kbart.errors.namespaceNotFound", args: []]
+          result.errors.namespace = [message: "Unable to reference provided namespace for column title_id!", messageCode: "kbart.errors.namespaceNotFound", args: [params.namespace]]
         }
       }
 
       if (params.namespaceSerial) {
-        title_id_namespace = params.int('namespaceSerial') ? IdentifierNamespace.get(params.int('namespaceSerial')) : IdentifierNamespace.findByValue(params.namespaceSerial)
+        title_id_namespace_serial = params.int('namespaceSerial') ? IdentifierNamespace.get(params.int('namespaceSerial')) : IdentifierNamespace.findByValue(params.namespaceSerial)
 
         if (!title_id_namespace_serial) {
-          result.errors.namespaceSerial = [message: "Unable to reference provided namespace for column title_id!", messageCode: "kbart.errors.namespaceNotFound", args: []]
+          result.errors.namespaceSerial = [message: "Unable to reference provided namespace for column title_id!", messageCode: "kbart.errors.namespaceNotFound", args: [params.namespaceSerial]]
         }
       }
 
       if (params.namespaceMonograph) {
-        title_id_namespace = params.int('namespaceMonograph') ? IdentifierNamespace.get(params.int('namespaceMonograph')) : IdentifierNamespace.findByValue(params.namespaceMonograph)
+        title_id_namespace_monograph = params.int('namespaceMonograph') ? IdentifierNamespace.get(params.int('namespaceMonograph')) : IdentifierNamespace.findByValue(params.namespaceMonograph)
 
         if (!title_id_namespace_monograph) {
-          result.errors.namespaceMonograph = [message: "Unable to reference provided namespace for column title_id!", messageCode: "kbart.errors.namespaceNotFound", args: []]
+          result.errors.namespaceMonograph = [message: "Unable to reference provided namespace for column title_id!", messageCode: "kbart.errors.namespaceNotFound", args: [params.namespaceMonograph]]
         }
       }
 

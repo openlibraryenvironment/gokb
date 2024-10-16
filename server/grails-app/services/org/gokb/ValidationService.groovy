@@ -216,6 +216,8 @@ class ValidationService {
   static ISSNValidator ISSN_VAL = new ISSNValidator()
 
   def generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null, boolean strict = false, IdentifierNamespace titleIdNamespaceSerial = null, IdentifierNamespace titleIdNamespaceMonograph = null) {
+    log.debug("Generating report for file with: [titleIdNamespace: $titleIdNamespace, strict: $strict, titleIdNamespaceSerial: $titleIdNamespaceSerial, titleIdNamespaceMonograph: $titleIdNamespaceMonograph]")
+
     def result = [
         valid: true,
         message: "",
