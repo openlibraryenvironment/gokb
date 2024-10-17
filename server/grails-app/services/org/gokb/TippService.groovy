@@ -36,7 +36,12 @@ class TippService {
 
     if (!pkgLink) {
       result.valid = false
-      errors.pkg = [[message: "Missing package link!", baddata: pkgLink]]
+      errors.pkg = [
+        [
+          message: "Missing package link!",
+          baddata: pkgLink
+        ]
+      ]
     }
     else {
       def pkg = null
@@ -50,13 +55,24 @@ class TippService {
 
       if (!pkg) {
         result.valid = false
-        errors.pkg = [[message: "Could not resolve package id!", baddata: pkgLink, code: 404]]
+        errors.pkg = [
+          [
+            message: "Could not resolve package id!",
+            baddata: pkgLink,
+            code: 404
+          ]
+        ]
       }
     }
 
     if (!pltLink) {
       result.valid = false
-      errors.hostPlatform = [[message: "Missing platform link!", baddata: pltLink]]
+      errors.hostPlatform = [
+        [
+          message: "Missing platform link!",
+          baddata: pltLink
+        ]
+      ]
     }
     else {
       def plt = null
@@ -70,7 +86,13 @@ class TippService {
 
       if (!plt) {
         result.valid = false
-        errors.hostPlatform = [[message: "Could not resolve platform id!", baddata: pltLink, code: 404]]
+        errors.hostPlatform = [
+          [
+            message: "Could not resolve platform id!",
+            baddata: pltLink,
+            code: 404
+          ]
+        ]
       }
     }
 
@@ -159,59 +181,125 @@ class TippService {
       }
     }
 
+    LocalDateTime parsedAccessStart = GOKbTextUtils.completeDateString(tipp_dto.accessStartDate)
+    LocalDateTime parsedAccessEnd = GOKbTextUtils.completeDateString(tipp_dto.accessEndDate)
+
+    if (tipp_dto.accessStartDate && !parsedAccessStart) {
+      if (!errors.accessStartDate) {
+        errors.accessStartDate = []
+      }
+
+      result.valid = false
+      errors.accessStartDate << [
+        message: "Unable to parse access start date ${tipp_dto.accessStartDate}!",
+        messageCode: 'validation.dateFormat',
+        baddata: tipp_dto.accessStartDate
+      ]
+    }
+
+    if (tipp_dto.accessEndDate && !parsedAccessEnd) {
+      if (!errors.accessEndDate) {
+        errors.accessEndDate = []
+      }
+
+      result.valid = false
+      errors.accessEndDate << [
+        message: "Unable to parse access end date ${tipp_dto.accessEndDate}!",
+        messageCode: 'validation.dateFormat',
+        baddata: tipp_dto.accessEndDate
+      ]
+    }
+
     if (tipp_dto.coverageStatements && !tipp_dto.coverage) {
       tipp_dto.coverage = tipp_dto.coverageStatements
     }
 
-    for (def coverage : tipp_dto.coverage) {
+    if (parsedAccessStart && parsedAccessEnd && (parsedAccessEnd < parsedAccessStart)) {
+      result.valid = false
+
+      if (!errors.accessEndDate) {
+        errors.accessEndDate = []
+      }
+
+      errors.accessEndDate << [
+        message: "Access end date must not be prior to its start date!",
+        messageCode: 'validation.dateRange',
+        baddata: tipp_dto.accessEndDate
+      ]
+    }
+
+    tipp_dto.coverage?.eachWithIndex { coverage, idx ->
       LocalDateTime parsedStart = GOKbTextUtils.completeDateString(coverage.startDate)
       LocalDateTime parsedEnd = GOKbTextUtils.completeDateString(coverage.endDate, false)
+      def statement_errors = [:]
+
 
       if (coverage.startDate && !parsedStart) {
-        if (!errors.startDate) {
-          errors.startDate = []
+        if (!statement_errors.startDate) {
+          statement_errors.startDate = []
         }
 
         result.valid = false
-        errors.startDate << [message: "Unable to parse coverage start date ${coverage.startDate}!", baddata: coverage.startDate]
+        statement_errors.startDate << [
+          message: "Unable to parse coverage start date ${coverage.startDate}!",
+          messageCode: 'validation.dateFormat',
+          baddata: coverage.startDate
+        ]
       }
 
       if (coverage.endDate && !parsedEnd) {
-        if (!errors.endDate) {
-          errors.endDate = []
+        if (!statement_errors.endDate) {
+          statement_errors.endDate = []
         }
 
         result.valid = false
-        errors.endDate << [message: "Unable to parse coverage end date ${coverage.endDate}!", baddata: coverage.endDate]
+        statement_errors.endDate << [
+          message: "Unable to parse coverage end date ${coverage.endDate}!",
+          messageCode: 'validation.dateFormat',
+          baddata: coverage.endDate
+        ]
       }
 
       if (!coverage.coverageDepth) {
-        if (!errors.coverageDepth) {
-          errors.coverageDepth = []
+        if (!statement_errors.coverageDepth) {
+          statement_errors.coverageDepth = []
         }
+
         coverage.coverageDepth = "fulltext"
-        errors.coverageDepth << [message: "Missing value for coverage depth: set to fulltext", baddata: coverage.coverageDepth]
+        statement_errors.coverageDepth << [
+          message: "Missing value for coverage depth: set to fulltext",
+          baddata: coverage.coverageDepth,
+          messageCode: 'validation.missingValue'
+        ]
       }
       else {
         if (coverage.coverageDepth instanceof String && !['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase())) {
-          if (!errors.coverageDepth) {
-            errors.coverageDepth = []
+          if (!statement_errors.coverageDepth) {
+            statement_errors.coverageDepth = []
           }
 
           result.valid = false
-          errors.coverageDepth << [message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+          statement_errors.coverageDepth << [
+            message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth",
+            baddata: coverage.coverageDepth,
+            messageCode: 'validation.refdataLookup'
+          ]
         }
         else if (coverage.coverageDepth instanceof Integer) {
           try {
             def candidate = RefdataValue.get(coverage.coverageDepth)
 
             if (!candidate && candidate.owner.label == "TIPPCoverageStatement.CoverageDepth") {
-              if (!errors.coverageDepth) {
-                errors.coverageDepth = []
+              if (!statement_errors.coverageDepth) {
+                statement_errors.coverageDepth = []
               }
 
               result.valid = false
-              errors.coverageDepth << [message: "Illegal value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+              statement_errors.coverageDepth << [
+                message: "Illegal value '${coverage.coverageDepth}' for coverage depth",
+                baddata: coverage.coverageDepth,
+                messageCode: 'validation.refdataLookup'
+              ]
             }
           } catch (Exception e) {
             log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Integer")
@@ -223,12 +311,16 @@ class TippService {
               def candidate = RefdataValue.get(coverage.coverageDepth.id)
 
               if (!candidate && candidate.owner.label == "TIPPCoverageStatement.CoverageDepth") {
-                if (!errors.coverageDepth) {
-                  errors.coverageDepth = []
+                if (!statement_errors.coverageDepth) {
+                  statement_errors.coverageDepth = []
                 }
 
                 result.valid = false
-                errors.coverageDepth << [message: "Illegal ID value '${coverage.coverageDepth.id}' for coverage depth", baddata: coverage.coverageDepth]
+                statement_errors.coverageDepth << [
+                  message: "Illegal ID value '${coverage.coverageDepth.id}' for coverage depth",
+                  baddata: coverage.coverageDepth,
+                  messageCode: 'validation.refdataLookup'
+                ]
               }
             } catch (Exception e) {
               log.error("Exception $e caught in TIPP.validateDTO while coverageDepth instanceof Map")
@@ -236,12 +328,16 @@ class TippService {
           }
           else if (coverage.coverageDepth.value || coverage.coverageDepth.name) {
             if (!['fulltext', 'selected articles', 'abstracts'].contains(coverage.coverageDepth?.toLowerCase())) {
-              if (!errors.coverageDepth) {
-                errors.coverageDepth = []
+              if (!statement_errors.coverageDepth) {
+                statement_errors.coverageDepth = []
               }
 
               result.valid = false
-              errors.coverageDepth << [message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth", baddata: coverage.coverageDepth]
+              statement_errors.coverageDepth << [
+                message: "Unrecognized value '${coverage.coverageDepth}' for coverage depth",
+                baddata: coverage.coverageDepth,
+                messageCode: 'validation.refdataLookup'
+              ]
             }
           }
         }
@@ -249,44 +345,88 @@ class TippService {
 
       if (parsedStart && parsedEnd && (parsedEnd < parsedStart)) {
         result.valid = false
-        errors.endDate = [[message: "Coverage end date must not be prior to its start date!", baddata: coverage.endDate]]
+
+        if (!statement_errors.endDate) {
+          statement_errors.endDate = []
+        }
+
+        statement_errors.endDate << [
+          message: "Coverage end date must not be prior to its start date!",
+          messageCode: 'validation.dateRange',
+          baddata: coverage.endDate
+        ]
+      }
+
+      if (statement_errors.size() > 0) {
+        if (!errors.coverageStatements) {
+          errors.coverageStatements = [:]
+        }
+
+        errors.coverageStatements["${idx}"] = statement_errors
       }
     }
 
     if (tipp_dto.medium) {
       def ref = determineMediumRef(tipp_dto.medium)
-      if (ref == null)
-        errors.put('medium', [message: "unknown", baddata: tipp_dto.remove('medium')])
+
+      if (ref == null) {
+        errors.put('medium', [
+          message: "unknown",
+          baddata: tipp_dto.remove('medium'),
+          messageCode: 'validation.refdataLookup'
+        ])
+      }
       else
         tipp_dto.medium = ref.value
     }
 
     if (tipp_dto.publicationType) {
       def type = determinePubTypeRef(tipp_dto.publicationType)
-      if (type == null)
-        errors.put('publicationType', [message: "unknown", baddata: tipp_dto.remove('publicationType')])
+
+      if (type == null) {
+        errors.put('publicationType', [
+          message: "unknown",
+          baddata: tipp_dto.remove('publicationType'),
+          messageCode: 'validation.refdataLookup'
+        ])
+      }
       else
         tipp_dto.publicationType = type.value
     }
 
     if (tipp_dto.dateFirstInPrint) {
       LocalDateTime dfip = GOKbTextUtils.completeDateString(tipp_dto.dateFirstInPrint, false)
+
       if (!dfip) {
-        errors.put('dateFirstInPrint', [message: "Unable to parse", baddata: tipp_dto.remove('dateFirstInPrint')])
+        errors.put('dateFirstInPrint', [
+          message: "Unable to parse date!",
+          messageCode: 'validation.dateFormat',
+          baddata: tipp_dto.remove('dateFirstInPrint')
+        ])
       }
     }
 
     if (tipp_dto.dateFirstOnline) {
       LocalDateTime dfo = GOKbTextUtils.completeDateString(tipp_dto.dateFirstOnline, false)
+
       if (!dfo) {
-        errors.put('dateFirstOnline', [message: "Unable to parse", baddata: tipp_dto.remove('dateFirstOnline')])
+        errors.put('dateFirstOnline', [
+          message: "Unable to parse date!",
+          messageCode: 'validation.dateFormat',
+          baddata: tipp_dto.remove('dateFirstOnline')
+        ])
       }
     }
 
     if (tipp_dto.lastChangedExternal) {
       LocalDateTime lce = GOKbTextUtils.completeDateString(tipp_dto.lastChangedExternal, false)
+
       if (!lce) {
-        errors.put('lastChangedExternal', [message: "Unable to parse", baddata: tipp_dto.remove('lastChangedExternal')])
+        errors.put('lastChangedExternal', [
+          message: "Unable to parse date!",
+          messageCode: 'validation.dateFormat',
+          baddata: tipp_dto.remove('lastChangedExternal')
+        ])
       }
     }
 
@@ -1652,7 +1792,7 @@ class TippService {
     if (ti) {
       def current_tipps = []
       def retired_tipps = []
-      def ti_pkg_tipps = TitleInstancePackagePlatform.executeQuery(qry_str, [cp: combo_pkg, ct: combo_title, pkg: tipp.pkg.id, ti: ti])
+      def ti_pkg_tipps = TitleInstancePackagePlatform.executeQuery(qry_str, [cp: combo_pkg, ct: combo_title, pkg: obj.pkg, ti: ti])
 
       ti_pkg_tipps.each { tipp ->
         if (tipp.status == status_current) {
@@ -1677,7 +1817,7 @@ class TippService {
             }
           }
 
-          tippService.mergeDuplicate(duplicate, to_reactivate, user, activeGroup)
+          mergeDuplicate(duplicate, to_reactivate, user, activeGroup)
         }
         else {
           result.result = 'SKIPPED'

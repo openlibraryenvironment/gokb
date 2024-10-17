@@ -679,9 +679,9 @@ class Package extends KBComponent {
     }
     if (result.valid) {
       def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-      def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
+      def pkg_normname = GOKbTextUtils.cleanTitleString(packageHeaderDTO.name)
 
-      def name_candidates = Package.executeQuery("from Package as p where p.normname = :nn and p.status <> :sd", [nn: pkg_normname, sd: status_deleted])
+      def name_candidates = Package.findAllByNameIlikeAndStatusNotEqual(pkg_normname, status_deleted)
       def full_matches = []
 
       if (packageHeaderDTO.uuid) {

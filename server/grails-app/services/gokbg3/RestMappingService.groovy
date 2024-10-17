@@ -3,6 +3,7 @@ package gokbg3
 import com.k_int.ClassUtils
 
 import java.time.LocalDateTime
+import java.time.LocalDate
 import java.time.ZoneId
 
 import org.gokb.cred.*
@@ -187,8 +188,17 @@ class RestMappingService {
               result[p.name] = obj[p.name] ? "${obj[p.name]}" : null
               break;
 
+            case LocalDate.class:
+              new_obj[p.name] = LocalDate.parse(params[p.name])
+              break;
+
             case Date.class:
-              result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
+              if (p.name == 'lastUpdated' || p.name == 'dateCreated') {
+                result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
+              }
+              else {
+                result[p.name] = obj[p.name] ? dateFormatService.formatDate(obj[p.name]) : null
+              }
               break;
             default:
               result[p.name] = obj[p.name]
