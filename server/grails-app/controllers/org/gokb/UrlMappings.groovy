@@ -13,6 +13,13 @@ class UrlMappings {
     "/resource/show/$type/$id"(controller: 'resource', action: 'show')
     "/package"(controller: 'packages')
     "/validate"(controller: 'validation')
+    get "/wekb"(controller: 'wekbImport')
+    get "/wekb/package?"(controller: 'wekbImport', action: 'getPackageMetaData')
+    get "/wekb/platform?"(controller: 'wekbImport', action: 'getPlatformMetaData')
+    get "/wekb/tipps?"(controller: 'wekbImport', action: 'getTitleData')
+    get "/wekb/provider?"(controller: 'wekbImport', action: 'getProviderData')
+    post "/wekb/providerExists"(controller: 'wekbImport', action: 'checkProviderExists')
+    post "/wekb/collect"(controller: 'wekbImport', action: 'submitImportData')
 
     group "/rest", {
       post "/packages/$id/retire"(controller: 'package', namespace: 'rest', action:'retire')
