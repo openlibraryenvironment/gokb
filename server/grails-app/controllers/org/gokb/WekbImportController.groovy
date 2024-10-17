@@ -47,23 +47,6 @@ class WekbImportController {
 
     }
 
-    /* @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
-    def getTippsOfPackage(){
-        def noResults = ["":""]
-        def uuid = params?.uuid
-        def max = params?.max
-        if(uuid){
-            def result = wekbAPIService.getTIPPSOfPackage(uuid, max)
-
-            log.debug("RESULT : " + result)
-            if(result){
-                render result as JSON
-            }
-        }
-
-        render noResults as JSON
-
-    } */
 
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def getProviderData(){
