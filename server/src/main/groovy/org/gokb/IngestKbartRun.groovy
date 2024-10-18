@@ -615,51 +615,67 @@ class IngestKbartRun {
       series: (the_kbart.monograph_parent_collection_title ?: the_kbart.series?.trim()),
       language: the_kbart.language?.trim(),
       medium: the_kbart.medium?.trim(),
-      accessStartDate:the_kbart.access_start_date?.trim() ?: ingest_date,
+      accessStartDate:the_kbart.access_start_date?.trim(),
       accessEndDate: the_kbart.access_end_date?.trim(),
       lastSeen: ingest_systime,
       identifiers: identifiers,
       pkg: [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
       hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name],
-      paymentType: the_kbart.access_type?.trim()
+      paymentType: the_kbart.access_type?.trim(),
+      status: the_kbart.status?.trim()
     ]
 
     if (isUpdate || !tipp_map.importId) {
       def match_result = tippService.restLookup(tipp_map)
 
       if (match_result.full_matches.size() > 0) {
+        LocalDateTime access_end_date_local
+        def current_matches = match_result.full_matches.findAll { it.status.value == 'Current' || it.status.value == 'Expected' }
         result.status = 'matched'
-        tipp = match_result.full_matches[0]
-        tipp.refresh()
 
-        if (tipp.accessStartDate) {
-          tipp_map.accessStartDate = null
+        if (tipp_map.access_end_date) {
+          access_end_date_local = GOKbTextUtils.completeDateString(tipp_map.access_end_date)
         }
 
-        if (match_result.full_matches.size() > 1) {
-          result.reviewCreated = true
+        if (tipp_map.status?.toLowerCase() == 'retired' || (access_end_date_local && access_end_date_local < LocalDate.now().atStartOfDay())) {
+          if (current_matches.size() > 0) {
+            tipp = current_matches[0]
+          } else if (match_result.full_matches.size() == 1) {
+            tipp = match_result.full_matches[0]
+          }
+        }
+        else {
+          tipp = match_result.full_matches[0]
+        }
 
-          if (!dryRun) {
-            log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
-            def additionalInfo = [otherComponents: []]
+        if (tipp) {
+          tipp.refresh()
 
-            match_result.full_matches.eachWithIndex { ct, idx ->
-              if (idx > 0) {
-                additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
+          if (match_result.full_matches.size() > 1) {
+            result.reviewCreated = true
+
+            if (!dryRun) {
+              log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
+              def additionalInfo = [otherComponents: []]
+
+              match_result.full_matches.eachWithIndex { ct, idx ->
+                if (idx > 0) {
+                  additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
+                }
               }
-            }
 
-            // RR für Multimatch generieren
-            reviewRequestService.raise(
-                tipp,
-                "Ambiguous KBART Record Matches",
-                "A KBART record has been matched on multiple package titles.",
-                user,
-                null,
-                (additionalInfo as JSON).toString(),
-                RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
-                componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
-            )
+              // RR für Multimatch generieren
+              reviewRequestService.raise(
+                  tipp,
+                  "Ambiguous KBART Record Matches",
+                  "A KBART record has been matched on multiple package titles.",
+                  user,
+                  null,
+                  (additionalInfo as JSON).toString(),
+                  RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
+                  componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
+              )
+            }
           }
         }
       }
@@ -678,6 +694,10 @@ class IngestKbartRun {
           tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
 
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
+        }
+
+        if (!tipp_map.access_start_date) {
+          tipp_map.access_start_date = ingest_date
         }
 
         if (match_result.failed_matches.size() > 0) {
@@ -729,7 +749,7 @@ class IngestKbartRun {
         }
       }
 
-      if (!dryRun) {
+      if (!dryRun && tipp) {
         if (!matched_tipps[tipp.id]) {
           matched_tipps[tipp.id] = 1
 
@@ -810,7 +830,7 @@ class IngestKbartRun {
       }
     }
 
-    if (!dryRun) {
+    if (!dryRun && tipp) {
       tipp = tippService.updateTippFields(tipp, tipp_map, user, new_coverage)
       tipp.refresh()
 
@@ -844,7 +864,6 @@ class IngestKbartRun {
             log.error("${it}")
         }
       }
-
     }
 
     result

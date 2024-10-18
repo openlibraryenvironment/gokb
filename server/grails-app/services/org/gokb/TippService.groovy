@@ -1432,7 +1432,12 @@ class TippService {
     if (pkgInfo?.id && tippInfo.hostPlatform?.id) {
       RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
       RefdataValue status_expected = RefdataCategory.lookup("KBComponent.Status", "Expected")
+      RefdataValue status_retired = RefdataCategory.lookup("KBComponent.Status", "Retired")
       def status_valid = [status_current, status_expected]
+
+      if (tippInfo.status?.toLowerCase() == 'retired' || (tippInfo.access_end_date && GOKbTextUtils.completeDateString(tippInfo.access_end_date) < LocalDate.now().atStartOfDay())) {
+        status_valid << status_retired
+      }
 
       // remap JSON Identifiers to [type: value]
       def jsonIdMap = [:]
@@ -1687,6 +1692,10 @@ class TippService {
 
     if (tipp.accessEndDate && tipp.accessEndDate < new Date()) {
       tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+    }
+    else if (tippInfo.status?.toLowerCase() == 'retired' && tipp.status.value != 'Retired') {
+      tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Retired')
+      tipp.accessEndDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant())
     }
     else if (date_first_online && date_first_online > LocalDateTime.now()) {
       tipp.status = RefdataCategory.lookup('KBComponent.Status', 'Expected')
