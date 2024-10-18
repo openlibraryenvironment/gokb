@@ -14,6 +14,7 @@ import gokbg3.DateFormatService
 
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 import org.apache.commons.io.ByteOrderMark
 import org.apache.commons.io.input.BOMInputStream
@@ -696,8 +697,8 @@ class IngestKbartRun {
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
         }
 
-        if (!tipp_map.access_start_date) {
-          tipp_map.access_start_date = ingest_date
+        if (!tipp_map.accessStartDate && isUpdate) {
+          tipp_map.accessStartDate = ingest_date
         }
 
         if (match_result.failed_matches.size() > 0) {
@@ -824,9 +825,6 @@ class IngestKbartRun {
             oid: (dryRun ? null : tipp.id)
           ]
         }
-      }
-      else if (tipp.accessStartDate) {
-        tipp_map.accessStartDate = null
       }
     }
 
