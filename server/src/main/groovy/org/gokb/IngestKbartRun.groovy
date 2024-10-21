@@ -183,7 +183,17 @@ class IngestKbartRun {
                               'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
                             [pkg: pid, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
-        result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0,  previous: old_tipp_count]
+        result.report = [
+          numRows: file_info.rows.total,
+          skipped: file_info.rows.skipped,
+          matched: 0,
+          partial: 0,
+          created: 0,
+          retired: 0,
+          reviews: 0,
+          invalid: 0,
+          previous: old_tipp_count
+        ]
 
         if (old_tipp_count > 0) {
           isUpdate = true
@@ -426,12 +436,25 @@ class IngestKbartRun {
 
     def removed_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
         set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
-        where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
-        and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
+        where exists (
+          select 1 from Combo as tc
+          where tc.fromComponent.id = :pkgid
+          and tc.toComponent.id = tipp.id
+        )
+        and (
+          tipp.lastSeen is null
+          or tipp.lastSeen < :dt
+        )
+        and tipp.status = :sc''', retire_pars)
 
     def closed_rrs_count = ReviewRequest.executeUpdate('''update ReviewRequest as rr
         set rr.status = :closed, rr.lastUpdated = :now
-        where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = rr.componentToReview.id and tc.toComponent.status = :nstatus)
+        where exists (
+          select 1 from Combo as tc
+          where tc.fromComponent.id = :pkgid
+          and tc.toComponent.id = rr.componentToReview.id
+          and tc.toComponent.status = :nstatus
+        )
         and rr.status = :open''', rr_pars)
 
     result.closedReviews = closed_rrs_count
@@ -620,8 +643,16 @@ class IngestKbartRun {
       accessEndDate: the_kbart.access_end_date?.trim(),
       lastSeen: ingest_systime,
       identifiers: identifiers,
-      pkg: [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
-      hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name],
+      pkg: [
+        id: pkg.id,
+        uuid: pkg.uuid,
+        name: pkg.name
+      ],
+      hostPlatform: [
+        id: the_platform.id,
+        uuid: the_platform.uuid,
+        name: the_platform.name
+      ],
       paymentType: the_kbart.access_type?.trim(),
       status: the_kbart.status?.trim()
     ]
@@ -661,7 +692,12 @@ class IngestKbartRun {
 
               match_result.full_matches.eachWithIndex { ct, idx ->
                 if (idx > 0) {
-                  additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
+                  additionalInfo.otherComponents << [
+                    oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id,
+                    uuid: ct.uuid,
+                    id: ct.id,
+                    name: ct.name
+                  ]
                 }
               }
 
