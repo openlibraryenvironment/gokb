@@ -634,8 +634,8 @@ class IngestKbartRun {
         def current_matches = match_result.full_matches.findAll { it.status.value == 'Current' || it.status.value == 'Expected' }
         result.status = 'matched'
 
-        if (tipp_map.access_end_date) {
-          access_end_date_local = GOKbTextUtils.completeDateString(tipp_map.access_end_date)
+        if (tipp_map.accessEndDate) {
+          access_end_date_local = GOKbTextUtils.completeDateString(tipp_map.accessEndDate)
         }
 
         if (tipp_map.status?.toLowerCase() == 'retired' || (access_end_date_local && access_end_date_local < LocalDate.now().atStartOfDay())) {
