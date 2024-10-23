@@ -6,23 +6,22 @@ buildscript {
         mavenCentral()
         maven { url "https://plugins.gradle.org/m2/" }
         maven { url "https://repo.grails.org/grails/core" }
+        maven { url "https://repo.grails.org/grails/plugins" }
     }
     dependencies {
         classpath "org.grails:grails-gradle-plugin:$grailsGradlePluginVersion"
-        classpath "org.grails.plugins:hibernate5:${gormVersion-".RELEASE"}"
-        classpath 'com.bertramlabs.plugins:asset-pipeline-gradle:4.3.0'
+        classpath "org.grails.plugins:hibernate5:${gormVersion}"
         classpath "com.bmuschko:gradle-docker-plugin:6.7.0"
         classpath "com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1"
         classpath "gradle.plugin.com.github.erdi.webdriver-binaries:webdriver-binaries-gradle-plugin:2.7"
-        classpath "org.grails.plugins:database-migration:4.1.0"
         // Fixing too long classpath in Windows development environment
         classpath "gradle.plugin.ua.eshepelyuk:ManifestClasspath:1.0.0"
-        classpath 'org.quartz-scheduler:quartz:2.3.2'
+        classpath "com.bertramlabs.plugins:asset-pipeline-gradle:4.5.1"
     }
 }
 
 version appVersion
-group "gokb"
+group "org.gokb"
 
 apply plugin:"eclipse"
 apply plugin:"idea"
@@ -41,6 +40,7 @@ allprojects {
     repositories {
         mavenCentral()
         maven { url "https://repo.grails.org/grails/core" }
+        maven { url "https://repo.grails.org/grails/plugins" }
     }
 }
 
@@ -51,23 +51,12 @@ configurations {
     }
 }
 
-configurations {
-    all {
-        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-            if (details.requested.name in ['asset-pipeline-core', 'asset-pipeline-grails']) {
-                // override dependency from org.grails.plugins:cache
-                details.useVersion '4.1.0' // upgrade from 3.x
-            }
-        }
-    }
-}
-
 dependencies {
     developmentOnly "org.springframework.boot:spring-boot-devtools"
     developmentOnly "org.springframework.boot:spring-boot-starter-tomcat"
     developmentOnly 'io.github.gpc:greenmail:5.0.0'
 
-    implementation "org.codehaus.groovy:groovy-dateutil:3.0.13"
+    //implementation "org.codehaus.groovy:groovy-dateutil:3.0.13"
     implementation "org.springframework.boot:spring-boot-starter-validation"
     implementation "org.springframework.boot:spring-boot-starter-logging"
     implementation "org.springframework.boot:spring-boot-autoconfigure"
@@ -75,6 +64,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation "org.grails:grails-web-boot"
     implementation "org.grails:grails-logging"
+    implementation "org.grails:grails-shell"
     implementation "org.grails:grails-plugin-rest"
     implementation "org.grails:grails-plugin-databinding"
     implementation "org.grails:grails-plugin-i18n"
@@ -87,51 +77,49 @@ dependencies {
     implementation("org.quartz-scheduler:quartz:2.3.2") {
         exclude group: 'slf4j-api', module: 'c3p0'
     }
-    implementation "org.grails.plugins:quartz:2.0.13"
+    implementation "org.grails.plugins:quartz:3.0.0"
     implementation "org.grails.plugins:hibernate5"
-    implementation "org.hibernate:hibernate-core:5.6.14.Final"
-    implementation 'org.hibernate:hibernate-ehcache:5.6.14.Final'
-    implementation 'net.sf.ehcache:ehcache:2.10.9.2'
+    implementation "org.hibernate:hibernate-core:5.6.15.Final"
+    implementation 'org.hibernate:hibernate-ehcache:5.6.15.Final'
     implementation "org.grails.plugins:gsp"
-    implementation "org.grails.plugins:mail:3.0.0"
-    implementation 'org.grails.plugins:database-migration:4.1.0', {
-        exclude module: 'spring-boot-cli'
-    }
+    implementation "org.grails.plugins:mail:4.0.0"
+    implementation ('org.grails.plugins:database-migration:4.2.1')
 
     implementation 'org.grails.plugins:grails-melody-plugin:1.80.0'
-    implementation 'net.bull.javamelody:javamelody-core:1.95.0'
+    implementation 'net.bull.javamelody:javamelody-core:1.99.0'
+
+    assets 'com.bertramlabs.plugins:less-asset-pipeline:4.5.1'
 
     implementation 'org.grails.plugins:spring-security-core:6.1.1'
     implementation 'org.grails.plugins:spring-security-acl:4.0.0.M2'
     implementation 'org.grails.plugins:spring-security-ui:4.0.0.M1'
+    implementation 'com.bertramlabs.plugins:asset-pipeline-grails:4.5.1'
     implementation 'org.grails.plugins:spring-security-rest:3.0.1'
-    implementation 'net.minidev:json-smart:2.5.0'
+    implementation 'net.minidev:json-smart:2.5.1'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
-    implementation 'com.google.guava:guava:32.1.1-jre'
+    implementation 'com.google.guava:guava:33.3.1-jre'
     implementation 'commons-fileupload:commons-fileupload:1.5'
-    implementation 'org.pac4j:pac4j-core:5.7.1'
+    implementation 'org.pac4j:pac4j-core:5.7.7'
 
     implementation 'org.apache.httpcomponents:httpcore:4.4.16'
     implementation 'commons-io:commons-io:2.13.0'
     implementation 'org.apache.commons:commons-compress:1.23.0'
     implementation 'commons-validator:commons-validator:1.7'
     implementation 'com.opencsv:opencsv:5.7.1'
-    implementation 'com.github.ladutsko:isbn-core:1.2.0'
-    implementation 'joda-time:joda-time:2.12.5'
-    implementation 'org.opensearch:opensearch:2.8.0'
-    implementation 'org.opensearch.client:opensearch-rest-high-level-client:2.8.0'
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.1'
+    implementation 'com.github.ladutsko:isbn-core:1.5.3'
+    implementation 'joda-time:joda-time:2.13.0'
+    implementation 'org.opensearch:opensearch:2.17.1'
+    implementation 'org.opensearch.client:opensearch-rest-high-level-client:2.17.1'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.0'
     implementation 'org.locationtech.spatial4j:spatial4j:0.8'
-    implementation 'org.slf4j:log4j-over-slf4j:2.0.7'
-    implementation 'org.apache.tika:tika-core:2.8.0'
-    implementation 'dk.glasius:external-config:3.1.1'
-
-    assets 'com.bertramlabs.plugins:less-asset-pipeline:4.3.0'
+    implementation 'org.slf4j:log4j-over-slf4j:2.0.16'
+    implementation 'org.apache.tika:tika-core:2.9.2'
+    implementation 'dk.glasius:external-config:4.0.0'
 
     implementation "io.micronaut:micronaut-http-client"
-    implementation 'io.micronaut.xml:micronaut-jackson-xml:3.2.0'
-    implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
-    implementation 'org.postgresql:postgresql:42.6.0'
+    // implementation 'io.micronaut.xml:micronaut-jackson-xml:4.4.0'
+    implementation 'com.github.albfernandez:juniversalchardet:2.5.0'
+    implementation 'org.postgresql:postgresql:42.7.4'
     runtimeOnly "com.h2database:h2"
     runtimeOnly "org.apache.tomcat:tomcat-jdbc"
 
@@ -154,7 +142,7 @@ bootRun {
     sourceResources sourceSets.main
 }
 
-buildProperties.doLast {
+build.doLast {
     // Find the right file
 
     File grailsBuildInfoFile = (File)it.outputs.files.files.find { it.name == 'grails.build.info' }
@@ -219,23 +207,6 @@ tasks.withType(Test) {
     testLogging {     // This is for logging and can be removed.
         events("passed", "skipped", "failed")
     }
-}
-
-assets {
-    minifyJs = true
-    minifyCss = true
-    excludes = [
-      '**/_*.less',
-      'gokb/themes/*.less',
-      'gokb/themes/**/*.less',
-      'bootstrap/*.less',
-      'bootstrap/**/*.less'
-    ]
-    includes = [
-      'webfonts/*',
-      'gokb/themes/*/theme.less',
-      'bootstrap/bootstrap.less'
-    ]
 }
 
 // http://guides.grails.org/grails-as-docker-container/guide/index.html
