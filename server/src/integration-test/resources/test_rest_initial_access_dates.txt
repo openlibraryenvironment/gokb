@@ -1,0 +1,5 @@
+publication_title	print_identifier	online_identifier	date_first_issue_online	num_first_vol_online	num_first_issue_online	date_last_issue_online	num_last_vol_online	num_last_issue_online	title_url	first_author	title_id	embargo_info	coverage_depth	coverage_notes	publisher_name	publication_type	zdb_id	access_type	access_start_date	access_end_date	status
+TestJournalTIPPInit	0257-3032	1564-6971							https://test.org/journal		packJournalID1		fulltext		PackTestOrg	Serial	1480678-2	P	2020-01-01		
+TestJournalTIPPInitRetired	2329-096X	1935-5912							https://test.org/journal		packJournalID2		fulltext		PackTestOrg	Serial		P		2023-01-01	
+TestBookTIPPInit	978-3-531-16571-4	978-3-531-92143-3							https://test.org/book		packBookID		fulltext		PackTestOrg	Monograph		P	2022-01-01		retired
+TestBookTIPPUpdate	9783658441784	9783658441791							https://test.org/book2		packBookID2		fulltext		PackTestOrg	Monograph		P			
