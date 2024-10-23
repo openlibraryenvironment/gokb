@@ -59,7 +59,9 @@ class PackageSourceUpdateService {
     def result = [result: 'OK']
     Boolean async = (user ? true : false)
     def preferred_group
-    def title_ns
+    Long title_ns_id
+    Long title_ns_serial_id
+    Long title_ns_mono_id
     Long datafile_id
     def skipInvalid = false
     Boolean deleteMissing = false
@@ -72,7 +74,9 @@ class PackageSourceUpdateService {
       Org pkg_prov = p.provider ? Org.get(p.provider.id) : null
       Source pkg_source = p.source
       preferred_group = activeGroupId ?: (p.curatoryGroups?.size() > 0 ? p.curatoryGroups[0].id : null)
-      title_ns = pkg_source?.targetNamespace?.id ?: (pkg_prov?.titleNamespace?.id ?: null)
+      title_ns_id = pkg_source?.targetNamespace?.id ?: (pkg_prov?.titleNamespace?.id ?: null)
+      title_ns_serial_id = pkg_source?.titleIdSerial?.id ?: (pkg_prov?.titleNamespaceSerial?.id ?: null)
+      title_ns_mono_id = pkg_source?.titleIdMonograph?.id ?: (pkg_prov?.titleNamespaceMonograph?.id ?: null)
 
       if (job && !job.startTime) {
         job.startTime = new Date()
@@ -318,7 +322,7 @@ class PackageSourceUpdateService {
       if (job) {
         result = TSVIngestionService.updatePackage(pid,
                                                     datafile_id,
-                                                    title_ns,
+                                                    title_ns_id,
                                                     async,
                                                     false,
                                                     user,
@@ -326,7 +330,9 @@ class PackageSourceUpdateService {
                                                     dryRun,
                                                     skipInvalid,
                                                     deleteMissing,
-                                                    job)
+                                                    job,
+                                                    title_id_ns_serial,
+                                                    title_id_ns_monograph)
 
         if (hasOpenIssues(pid, async, result)) {
           log.info("There were issues with the automated job (valid: ${result.validation?.valid}, reviews: ${result.report?.reviews}${!async ? ', matching reviews: '  + result.matchingJob?.reviews : ''}), keeping listStatus in progress..")
@@ -351,7 +357,7 @@ class PackageSourceUpdateService {
         Job update_job = concurrencyManagerService.createJob { Job j ->
           TSVIngestionService.updatePackage(pid,
                                             datafile_id,
-                                            title_ns,
+                                            title_ns_id,
                                             async,
                                             false,
                                             user,
@@ -359,7 +365,9 @@ class PackageSourceUpdateService {
                                             dryRun,
                                             skipInvalid,
                                             deleteMissing,
-                                            j)
+                                            j,
+                                            title_id_ns_serial,
+                                            title_id_ns_monograph)
         }
 
         if (preferred_group) {

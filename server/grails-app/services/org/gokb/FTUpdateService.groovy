@@ -134,6 +134,8 @@ class FTUpdateService {
       case Org:
         result.updater = 'org'
         result.titleNamespace = kbc.titleNamespace?.value
+        result.titleNamespaceSerial = kbc.titleNamespaceSerial?.value
+        result.titleNamespaceMonograph = kbc.titleNamespaceMonograph?.value
         result.packageNamespace = kbc.packageNamespace?.value
         result.preferredShortname = kbc.preferredShortname ?: ""
 
