@@ -20,7 +20,7 @@ class WekbImportController {
         def uuid = params?.uuid
         if(uuid){
             def result = wekbAPIService.getPackageByUuid(uuid)
-            log.debug("RESULT: " + result)
+            //log.debug("RESULT: " + result)
             if(result){
                 render result as JSON
             }
@@ -37,7 +37,7 @@ class WekbImportController {
         def uuid = params?.uuid
         if(uuid){
             def result = wekbAPIService.getPlatformByUuid(uuid)
-            log.debug("RESULT : " + result)
+            //log.debug("RESULT : " + result)
             if(result){
                 render result as JSON
             }
@@ -55,7 +55,7 @@ class WekbImportController {
         log.debug("getProviderData : " + uuid)
         if(uuid){
             def result = wekbAPIService.checkIfProviderExists(uuid)
-            log.debug("RESULT : " + result)
+            //log.debug("RESULT : " + result)
             if(result){
                 render result as JSON
             }
@@ -116,7 +116,7 @@ class WekbImportController {
         log.debug("getTitleData : " + uuid + ", max: " + max + ", offset: " + offset)
         if(uuid){
             def result = wekbAPIService.getTIPPSOfPackage(uuid, max ?: 10, offset ?: 0)
-            log.debug("RESULT : " + result)
+            //log.debug("RESULT : " + result)
             if(result){
                 render result as JSON
             }

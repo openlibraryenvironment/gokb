@@ -333,7 +333,11 @@ class RestMappingService {
         }
       }
     }
-    obj.save()
+    if(obj.validate()) {
+      obj.save()
+    } else {
+      obj
+    }
   }
 
   @Transactional

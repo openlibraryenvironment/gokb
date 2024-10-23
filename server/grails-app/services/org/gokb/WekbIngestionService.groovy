@@ -77,6 +77,8 @@ class WekbIngestionService {
             isUpdate = true
         }
 
+        def targetNamespaceTitleId =  pkg_source.getTargetNamespace()?.getValue()
+
         int tippNum = 0
         def tippBatches = []
 
@@ -111,8 +113,19 @@ class WekbIngestionService {
                     lang = tipp.languages.get(0)?.value
                 }
 
+
                 def identifiers = []
                 if (tipp.identifiers && tipp.identifiers.size() > 0) {
+                    boolean titleIdIsToSet = false
+                    if(targetNamespaceTitleId){
+                        titleIdIsToSet = true
+                        log.debug("+++++++++++++ TITLE ID TARGET: TRUE ++++++++++++++++++")
+                        for (identifier in tipp.identifiers) {
+                            if (identifier.namespace && identifier.namespace.equalsIgnoreCase(targetNamespaceTitleId)) {
+                                titleIdIsToSet = false
+                            }
+                        }
+                    }
                     for (identifier in tipp.identifiers) {
                         String identifierType = null
                         if (identifier.namespace) {
@@ -124,6 +137,9 @@ class WekbIngestionService {
                                     identifierType = "pisbn"
                                     break;
                                 case "title_id":
+                                    if (titleIdIsToSet) {
+                                        identifierType = targetNamespaceTitleId
+                                    }
                                     break;
                                 default:
                                     identifierType = identifier.namespace
@@ -135,7 +151,7 @@ class WekbIngestionService {
                     }
                 }
 
-                // log.debug("ALL IDENTIFIERS: " + identifiers)
+               log.debug("ALL IDENTIFIERS: " + identifiers)
 
 
                 def tipp_map = [
@@ -182,6 +198,7 @@ class WekbIngestionService {
 
                 // log.debug("TIPP-MAP : " + tipp_map)
 
+                //TODO: zu Testzwecken auskommentiert
                 def line_result = saveTippToDB(tipp_map, pkg_plt, pkg, ingestDate)
 
                 // TODO: result
@@ -270,21 +287,6 @@ class WekbIngestionService {
             result.matchingJob = matching_job.uuid
         } */
 
-        //Test:
-        Set uuids = new HashSet()
-        List allUuids = new ArrayList()
-        for(batch in tippBatches){
-            for(tipp in batch){
-                uuids.add(tipp.uuid)
-                allUuids.add(tipp.uuid)
-            }
-        }
-
-        log.debug("*************************************************************************************")
-        log.debug("Size: " + uuids.size() + ", List: " + allUuids.size())
-        log.debug("all uuids: " + uuids)
-        log.debug("*************************************************************************************")
-        log.debug("List ids: " + allUuids)
 
         return result
     }

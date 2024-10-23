@@ -83,7 +83,7 @@ class Org extends KBComponent {
 
   static constraints = {
     mission(nullable: true, blank: true)
-    homepage(nullable: true, blank: true, url: true)
+    homepage(nullable: true, blank: true)
     name(validator: { val, obj ->
       if (obj.hasChanged('name')) {
         if (val && val.trim()) {
