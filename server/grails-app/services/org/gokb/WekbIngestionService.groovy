@@ -192,7 +192,7 @@ class WekbIngestionService {
                         identifiers                : identifiers,
                         pkg                        : [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
                         hostPlatform               : [id: pkg_plt.id, uuid: pkg_plt.uuid, name: pkg_plt.name],
-                        paymentType                : tipp.accessType?.trim()
+                        paymentType                : tipp.accessType == "Free" ? "F" : "P"
                 ]
 
 
