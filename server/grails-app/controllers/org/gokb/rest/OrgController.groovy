@@ -165,9 +165,13 @@ class OrgController {
           }
 
           errors << orgService.updateCombos(obj, reqBody)
+          if(errors) {
+            obj.expunge()
+          }
         }
         else {
           errors << messageService.processValidationErrors(obj.errors, request.locale)
+          obj.expunge()
         }
 
         result = restMappingService.mapObjectToJson(obj, params, user)

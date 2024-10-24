@@ -889,6 +889,11 @@ class ValidationService {
         test_obj = type_class.newInstance(name: cleaned_val)
         test_obj.validate()
 
+        if (final_type == 'Package') {
+          test_obj = type_class.newInstance(name: value)
+          test_obj.validate()
+        }
+
       } catch (ValidationException ve) {
         ve.errors.fieldErrors?.each {
           if (it.code == 'notUnique') {

@@ -404,10 +404,10 @@ class AdminController {
       }
     })?.each { CuratoryGroup group ->
       result["${group.name}"] = [
-          users     : group.users.collect { it.username },
-          owner     : group.owner?.username,
-          status    : group.status?.value,
-          editStatus: group.editStatus?.value
+              users     : group.users.collect { it.username },
+              owner     : group.owner?.username,
+              status    : group.status?.value,
+              editStatus: group.editStatus?.value
       ]
     }
 
