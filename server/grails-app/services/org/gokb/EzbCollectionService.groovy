@@ -355,7 +355,7 @@ class EzbCollectionService {
             if (other_cg_candidates.size() == 1) {
               if (hasEzbUrl(other_cg_candidates[0])) {
                 log.debug("Matched existing package of other curatory group with ezb update url!")
-                obj = candidates[0]
+                obj = other_cg_candidates[0]
               }
               else {
                 result.skipped = true
@@ -489,9 +489,9 @@ class EzbCollectionService {
           result.pkgCreated = obj.dateCreated
           result.pkgInfo = [name: obj.name, type: "Package", id: obj.id, uuid: obj.uuid]
 
-          CuratoryGroup primary_curator = obj.curatoryGroups[0]
+          CuratoryGroup primary_curator = ClassUtils.deproxy(obj.curatoryGroups[0])
 
-          result.curator_id = primary_curator.id
+          result.curator_id = primary_curator?.id
 
           result.sourceResult = ensurePackageSource(obj, primary_curator, item)
 
@@ -572,7 +572,10 @@ class EzbCollectionService {
 
         if (!dupe) {
           source = new Source(name: pkg.name, url: item.ezb_collection_titlelist, targetNamespace: ezb_ns).save(flush:true, failOnError: true)
-          source.curatoryGroups << curator
+
+          if (curator) {
+            source.curatoryGroups << curator
+          }
         }
         else {
           log.warn("Found existing source with package name ${pkg.name}!")

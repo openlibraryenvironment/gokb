@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name='layout' content='public' />
-<title>GOKb: Welcome</title>
+<title>GOKB: Welcome</title>
 </head>
 
 <body>

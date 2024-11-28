@@ -333,7 +333,11 @@ class RestMappingService {
         }
       }
     }
-    obj.save()
+    if(obj.validate()) {
+      obj.save()
+    } else {
+      obj
+    }
   }
 
   @Transactional
@@ -1098,6 +1102,8 @@ class RestMappingService {
       }
 
       if (!result.errors) {
+        def new_items = []
+
         pubs_to_add.each { publisher ->
           boolean found = false
           for (int i = 0; !found && i < publisher_combos.size(); i++) {
@@ -1110,14 +1116,16 @@ class RestMappingService {
           }
 
           if (!found) {
-            obj.publisher << publisher
-            obj.save(flush: true)
+            new_items << publisher
             result.changed = true
           }
           else {
             log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
           }
         }
+
+        obj.publisher.addAll(new_items)
+        obj.save(flush: true)
       }
 
       if (remove && !result.errors) {

@@ -25,12 +25,12 @@ class AdminAlertingService {
     Locale locale = new Locale(grailsApplication.config.getProperty('gokb.support.locale') ?: 'en')
 
     if (grailsApplication.config.getProperty('gokb.uiUrl')) {
-      edit_link = grailsApplication.config.getProperty('gokb.uiUrl') + '#/user/' + user.id.toString()
+      edit_link = grailsApplication.config.getProperty('gokb.uiUrl') + "user/${user.id}"
     }
     else {
       edit_link = (grailsApplication.config.getProperty('grails.serverURL') ?: 'http://localhost:8080/gokb')
 
-      edit_link += "${'/resource/show/org.gokb.cred.User:' + user.id}"
+      edit_link += "/resource/show/org.gokb.cred.User:${user.id}"
     }
 
     def content = renderEmail(

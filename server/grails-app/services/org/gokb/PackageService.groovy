@@ -739,10 +739,11 @@ class PackageService {
     def variant_matches = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
     variant_matches.each { vm ->
-      if (!matches["${vm.id}"])
+      if (!matches["${vm.id}"]) {
         matches["${vm.id}"] = []
+      }
 
-      matches["${vm.id}"] << ['field': 'name', value: packageHeaderDTO.name, baddata: it, message: "Provided name matched a variant of an existing package!", code: 'inUse']
+      matches["${vm.id}"] << ['field': 'name', value: packageHeaderDTO.name, baddata: packageHeaderDTO.name, message: "Provided name matched a variant of an existing package!", code: 'inUse']
     }
 
     if (packageHeaderDTO.variantNames?.size() > 0) {
@@ -762,10 +763,11 @@ class PackageService {
           def name_matches = Package.findAllByNormnameAndStatusNotEqual(var_norm, status_deleted)
 
           name_matches.each { nm ->
-            if (!matches["${nm.id}"])
+            if (!matches["${nm.id}"]) {
               matches["${nm.id}"] = []
+            }
 
-            matches["${nm.id}"] << [field: 'variantNames', value: variant, baddata: it, message: "Provided variant matched the title of an existing package!", code: 'inUse']
+            matches["${nm.id}"] << [field: 'variantNames', value: variant, baddata: variant, message: "Provided variant matched the title of an existing package!", code: 'inUse']
           }
 
           def variant_nn = GOKbTextUtils.normaliseString(variant)
@@ -773,10 +775,11 @@ class PackageService {
 
           variant_candidates.each { vc ->
             log.debug("Found existing package variant name for variantName ${variant}")
-            if (!matches["${vc.id}"])
+            if (!matches["${vc.id}"]) {
               matches["${vc.id}"] = []
+            }
 
-            matches["${vc.id}"] << ['field': 'variantNames', value: variant, baddata: it, message: "Provided variant matched that of an existing package!", code: 'inUse']
+            matches["${vc.id}"] << ['field': 'variantNames', value: variant, baddata: variant, message: "Provided variant matched that of an existing package!", code: 'inUse']
           }
         }
       }

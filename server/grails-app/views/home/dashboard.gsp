@@ -5,10 +5,10 @@
 <html>
   <head>
     <meta name='layout' content='sb-admin'/>
-    <title>GOKb: Dashboard</title>
+    <title>GOKB: Dashboard</title>
   </head>
   <body>
-    <h1 class="page-header">Welcome to GOKb</h1>
+    <h1 class="page-header">Welcome to GOKB</h1>
     <g:if test="${params.status == '404'}">
       <div class="alert alert-danger">
         The page you requested does not exist!

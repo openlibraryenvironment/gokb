@@ -2,13 +2,21 @@
 @icon-font-path: "../../../";
 
 /** Custom theme styling **/
+html,
 body {
 	background-color: @body-bg;
+	height:100%;
+}
+
+#wrapper {
+  min-height: 100%;
+  height: auto;
 }
 
 
 #page-wrapper {
-    background-color: @body-bg;
+	background-color: @body-bg;
+	min-height: 100%;
 }
 
 // medium+ screen sizes
@@ -66,7 +74,7 @@ h1.panel-title {
 		width: 200px;
 		margin-bottom: 10px;
 	}
-	
+
 	dd {
 		float:left;
 		margin-left: 10px;
@@ -116,7 +124,7 @@ h1.panel-title {
 		margin-bottom: 0;
 		margin-top: 0;
 	}
-	
+
 	.table {
 		margin-bottom: 0;
 		margin-top: 0;
@@ -127,7 +135,7 @@ h1.panel-title {
 		margin-bottom: 0;
 		margin-top: 0;
 	}
-	
+
 	.table {
 		margin-bottom: 0;
 		margin-top: 0;
@@ -199,28 +207,28 @@ h1.panel-title {
 }
 
 .sidebar {
-	
+
 	margin-top: (@navbar-height);
-	
+
 	li {
 		&.sidebar-search {
-			background-color: @dropdown-link-hover-bg;		
+			background-color: @dropdown-link-hover-bg;
 		}
-		
+
 		&.divider {
 		  height: 1px;
 		  margin: 9.5px 0;
 		  overflow: hidden;
 			background-color:@navbar-default-link-disabled-color;
 		}
-		
+
 		a {
 			&:link,
 			&:visited {
 				background-color: @navbar-default-bg;
 				color: @navbar-default-link-color;
 			}
-					
+
 			&:active,
 			&:hover,
 			&:focus {
@@ -228,7 +236,7 @@ h1.panel-title {
 				color: @dropdown-link-hover-color;
 			}
 		}
-	
+
 		&.active {
 			a {
 				&:link,
@@ -240,7 +248,7 @@ h1.panel-title {
 					color: @dropdown-link-hover-color;
 				}
 			}
-			
+
 			.nav-second-level {
 				background-color: @dropdown-link-hover-bg;
 				a {
@@ -249,7 +257,7 @@ h1.panel-title {
 						background-color:@dropdown-link-hover-bg;
 						color: @dropdown-link-hover-color;
 					}
-					
+
 					&:active,
 					&:hover,
 					&:focus {
@@ -268,7 +276,7 @@ h1.panel-title {
 }
 
 .webhook-form h1{
-	background:transparent url(../../../images/WebHook.png) right top no-repeat;  
+	background:transparent url(../../../images/WebHook.png) right top no-repeat;
 }
 
 #zenbox_tab {
@@ -287,7 +295,7 @@ h1.panel-title {
   white-space: -o-pre-wrap;
   word-wrap: break-word;
   display:block;
-  
+
   pre {
     float:none;
     display:block;

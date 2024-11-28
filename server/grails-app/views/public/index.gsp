@@ -57,7 +57,7 @@
         <g:form controller="public" class="form" role="form" action="index" method="get" params="${params}">
           <div class="well form-horizontal">
 
-            <label for="q">Search for packages...</label>
+            <label for="q" style="font-size:16px;">Search for packages</label>
             <div class="input-group">
               <input type="text" class="form-control" placeholder="Find package like..." value="${params.q}" name="q"/>
               <span class="input-group-btn">
@@ -88,12 +88,12 @@
              <g:if test="${facet.key != 'type'}">
               <div class="panel panel-default">
                 <div class="panel-heading">
-                  <h5><g:message code="facet.so.${facet.key}" default="${facet.key}" /></h5>
+                  <g:message code="facet.so.${facet.key}" default="${facet.key}" />
                 </div>
                 <div class="panel-body" style="max-height:300px;overflow:auto;overflow-x:hidden">
-                  <ul>
+                  <ul style="list-style-type: none;">
                     <g:each in="${facet.value?.sort{it.display}}" var="v">
-                      <li style="margin-left:-5px">
+                      <li style="margin-left:-40px">
                         <g:set var="fname" value="facet:${facet.key+':'+v.term}"/>
                         <g:set var="kbc" value="${v.term.startsWith('org.gokb.cred') ? org.gokb.cred.KBComponent.get(v.term.split(':')[1].toLong()) : null}" />
                         <g:if test="${params.list(facet.key).contains(v.term.toString())}">
@@ -113,9 +113,9 @@
 
 
       <div class="col-md-10">
-          <table class="table table-striped well">
+          <table class="table table-striped well" style="font-size:14px">
             <thead>
-              <tr>
+              <tr style="white-space:nowrap">
                 <th>Package name</th>
                 <th>Provider</th>
                 <th>Content Type</th>

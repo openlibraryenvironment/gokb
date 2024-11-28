@@ -1039,4 +1039,19 @@ class CleanupService {
       }
     }
   }
+
+  def closeOrphanedReviews() {
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
+    RefdataValue status_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
+    RefdataValue status_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
+    Date now = new Date()
+    def result = KBComponent.executeUpdate('''update ReviewRequest
+                                              set status = :closed,
+                                              lastUpdated = :now
+                                              where status = :open
+                                              and componentToReview.status = :deleted
+                                          ''', [closed: status_closed, now: now, open: status_open, deleted: status_deleted])
+
+    result
+  }
 }

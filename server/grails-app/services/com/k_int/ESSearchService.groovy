@@ -43,7 +43,9 @@ class ESSearchService{
           "importId",
           "primaryUrl",
           "editionStatement",
-          "volumeNumber"
+          "volumeNumber",
+          "firstAuthor",
+          "firstEditor"
       ],
       refdata: [
           "listStatus",

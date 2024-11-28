@@ -1075,6 +1075,12 @@ class TitleController {
             }
           }
 
+          if (params.boolean('transferName')) {
+            target.ensureVariantName(target.name)
+            target.name = obj.name
+            target.save(flush: true)
+          }
+
           log.debug("Deleting stale title ${obj}")
           obj.deleteSoft()
           obj.save(flush: true)

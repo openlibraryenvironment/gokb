@@ -404,10 +404,10 @@ class AdminController {
       }
     })?.each { CuratoryGroup group ->
       result["${group.name}"] = [
-          users     : group.users.collect { it.username },
-          owner     : group.owner?.username,
-          status    : group.status?.value,
-          editStatus: group.editStatus?.value
+              users     : group.users.collect { it.username },
+              owner     : group.owner?.username,
+              status    : group.status?.value,
+              editStatus: group.editStatus?.value
       ]
     }
 
@@ -502,6 +502,14 @@ class AdminController {
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
+  }
+
+  def closeAllOrphanedReviews() {
+    def result = [result: 'OK']
+
+    result.total = cleanupService.closeOrphanedReviews()
+
+    render result as JSON
   }
 
   def setupAcl() {

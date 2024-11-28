@@ -14,6 +14,7 @@ import gokbg3.DateFormatService
 
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 import org.apache.commons.io.ByteOrderMark
 import org.apache.commons.io.input.BOMInputStream
@@ -182,7 +183,17 @@ class IngestKbartRun {
                               'where c.fromComponent.id=:pkg and c.toComponent=tipp and tipp.status = :sc',
                             [pkg: pid, sc: RefdataCategory.lookup('KBComponent.Status', 'Current')])[0]
 
-        result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, matched: 0, partial: 0, created: 0, retired: 0, reviews: 0, invalid: 0,  previous: old_tipp_count]
+        result.report = [
+          numRows: file_info.rows.total,
+          skipped: file_info.rows.skipped,
+          matched: 0,
+          partial: 0,
+          created: 0,
+          retired: 0,
+          reviews: 0,
+          invalid: 0,
+          previous: old_tipp_count
+        ]
 
         if (old_tipp_count > 0) {
           isUpdate = true
@@ -425,12 +436,25 @@ class IngestKbartRun {
 
     def removed_count = TitleInstancePackagePlatform.executeUpdate('''update TitleInstancePackagePlatform as tipp
         set tipp.status = :sr, tipp.accessEndDate = :igdt, tipp.lastUpdated = :now
-        where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = tipp.id)
-        and (tipp.lastSeen is null or tipp.lastSeen < :dt) and tipp.status = :sc''', retire_pars)
+        where exists (
+          select 1 from Combo as tc
+          where tc.fromComponent.id = :pkgid
+          and tc.toComponent.id = tipp.id
+        )
+        and (
+          tipp.lastSeen is null
+          or tipp.lastSeen < :dt
+        )
+        and tipp.status = :sc''', retire_pars)
 
     def closed_rrs_count = ReviewRequest.executeUpdate('''update ReviewRequest as rr
         set rr.status = :closed, rr.lastUpdated = :now
-        where exists (select 1 from Combo as tc where tc.fromComponent.id = :pkgid and tc.toComponent.id = rr.componentToReview.id and tc.toComponent.status = :nstatus)
+        where exists (
+          select 1 from Combo as tc
+          where tc.fromComponent.id = :pkgid
+          and tc.toComponent.id = rr.componentToReview.id
+          and tc.toComponent.status = :nstatus
+        )
         and rr.status = :open''', rr_pars)
 
     result.closedReviews = closed_rrs_count
@@ -615,51 +639,80 @@ class IngestKbartRun {
       series: (the_kbart.monograph_parent_collection_title ?: the_kbart.series?.trim()),
       language: the_kbart.language?.trim(),
       medium: the_kbart.medium?.trim(),
-      accessStartDate:the_kbart.access_start_date?.trim() ?: ingest_date,
+      accessStartDate:the_kbart.access_start_date?.trim(),
       accessEndDate: the_kbart.access_end_date?.trim(),
       lastSeen: ingest_systime,
       identifiers: identifiers,
-      pkg: [id: pkg.id, uuid: pkg.uuid, name: pkg.name],
-      hostPlatform: [id: the_platform.id, uuid: the_platform.uuid, name: the_platform.name],
-      paymentType: the_kbart.access_type?.trim()
+      pkg: [
+        id: pkg.id,
+        uuid: pkg.uuid,
+        name: pkg.name
+      ],
+      hostPlatform: [
+        id: the_platform.id,
+        uuid: the_platform.uuid,
+        name: the_platform.name
+      ],
+      paymentType: the_kbart.access_type?.trim(),
+      status: the_kbart.status?.trim()
     ]
 
     if (isUpdate || !tipp_map.importId) {
       def match_result = tippService.restLookup(tipp_map)
 
       if (match_result.full_matches.size() > 0) {
+        LocalDateTime access_end_date_local
+        def current_matches = match_result.full_matches.findAll { it.status.value == 'Current' || it.status.value == 'Expected' }
         result.status = 'matched'
-        tipp = match_result.full_matches[0]
-        tipp.refresh()
 
-        if (tipp.accessStartDate) {
-          tipp_map.accessStartDate = null
+        if (tipp_map.accessEndDate) {
+          access_end_date_local = GOKbTextUtils.completeDateString(tipp_map.accessEndDate)
         }
 
-        if (match_result.full_matches.size() > 1) {
-          result.reviewCreated = true
+        if (tipp_map.status?.toLowerCase() == 'retired' || (access_end_date_local && access_end_date_local < LocalDate.now().atStartOfDay())) {
+          if (current_matches.size() > 0) {
+            tipp = current_matches[0]
+          } else if (match_result.full_matches.size() == 1) {
+            tipp = match_result.full_matches[0]
+          }
+        }
+        else {
+          tipp = match_result.full_matches[0]
+        }
 
-          if (!dryRun) {
-            log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
-            def additionalInfo = [otherComponents: []]
+        if (tipp) {
+          tipp.refresh()
 
-            match_result.full_matches.eachWithIndex { ct, idx ->
-              if (idx > 0) {
-                additionalInfo.otherComponents << [oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id, uuid: ct.uuid, id: ct.id, name: ct.name]
+          if (match_result.full_matches.size() > 1) {
+            result.reviewCreated = true
+
+            if (!dryRun) {
+              log.debug("multimatch (${match_result.full_matches.size()}) for $tipp")
+              def additionalInfo = [otherComponents: []]
+
+              match_result.full_matches.eachWithIndex { ct, idx ->
+                if (idx > 0) {
+                  additionalInfo.otherComponents << [
+                    oid: 'org.gokb.cred.TitleInstancePackagePlatform:' + ct.id,
+                    uuid: ct.uuid,
+                    id: ct.id,
+                    name: ct.name
+                  ]
+                }
               }
-            }
 
-            // RR für Multimatch generieren
-            reviewRequestService.raise(
-                tipp,
-                "Ambiguous KBART Record Matches",
-                "A KBART record has been matched on multiple package titles.",
-                user,
-                null,
-                (additionalInfo as JSON).toString(),
-                RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
-                componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
-            )
+              // RR für Multimatch generieren
+              reviewRequestService.raise(
+                  tipp,
+                  "Ambiguous KBART Record Matches",
+                  "A KBART record has been matched on multiple package titles.",
+                  user,
+                  null,
+                  (additionalInfo as JSON).toString(),
+                  RefdataCategory.lookup('ReviewRequest.StdDesc', 'Ambiguous Record Matches'),
+                  componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
+              )
+            }
           }
         }
       }
@@ -678,6 +731,10 @@ class IngestKbartRun {
           tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_fields)
 
           log.debug("Created TIPP ${tipp} with URL ${tipp?.url}")
+        }
+
+        if (!tipp_map.accessStartDate && isUpdate) {
+          tipp_map.accessStartDate = ingest_date
         }
 
         if (match_result.failed_matches.size() > 0) {
@@ -729,7 +786,7 @@ class IngestKbartRun {
         }
       }
 
-      if (!dryRun) {
+      if (!dryRun && tipp) {
         if (!matched_tipps[tipp.id]) {
           matched_tipps[tipp.id] = 1
 
@@ -805,12 +862,9 @@ class IngestKbartRun {
           ]
         }
       }
-      else if (tipp.accessStartDate) {
-        tipp_map.accessStartDate = null
-      }
     }
 
-    if (!dryRun) {
+    if (!dryRun && tipp) {
       tipp = tippService.updateTippFields(tipp, tipp_map, user, new_coverage)
       tipp.refresh()
 
@@ -844,7 +898,6 @@ class IngestKbartRun {
             log.error("${it}")
         }
       }
-
     }
 
     result

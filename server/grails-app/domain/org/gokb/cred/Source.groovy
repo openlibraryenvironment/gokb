@@ -23,6 +23,7 @@ class Source extends KBComponent {
   Boolean ezbMatch = false
   Org responsibleParty
   BulkImportListConfig bulkConfig
+  RefdataValue importConfig
 
   static manyByCombo = [
     curatoryGroups: CuratoryGroup
@@ -50,6 +51,7 @@ class Source extends KBComponent {
     automaticUpdates(nullable: true, default: false)
     skipInvalid(nullable: true, default: false)
     bulkConfig(nullable: true, blank: false)
+    importConfig(nullable: true, blank: true)
   }
 
   public static final String restPath = "/sources"

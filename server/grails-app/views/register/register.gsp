@@ -126,6 +126,31 @@
     </div>
   </div>
 
+	<footer>
+		<div class="container">
+				<div class="row">
+						<div class="col-lg-12 text-center">
+							<g:if test="${grailsApplication.config.getProperty('gokb.accessibilityUrl')}">
+								<span>
+									<a href="${grailsApplication.config.getProperty('gokb.accessibilityUrl')}">Accessibility</a>
+								</span>
+								|
+							</g:if>
+							<g:if test="${grailsApplication.config.getProperty('gokb.privacyUrl')}">
+								<span>
+									<a href="${grailsApplication.config.getProperty('gokb.privacyUrl')}">Privacy Policy</a>
+								</span>
+								|
+							</g:if>
+							<g:if test="${grailsApplication.config.getProperty('gokb.imprintUrl')}">
+								<span>
+									<a href="${grailsApplication.config.getProperty('gokb.imprintUrl')}">Imprint</a>
+								</span>
+							</g:if>
+						</div>
+				</div>
+		</div>
+	</footer>
 
 </body>
 </html>

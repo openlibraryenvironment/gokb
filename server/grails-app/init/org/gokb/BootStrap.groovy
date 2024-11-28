@@ -48,7 +48,7 @@ class BootStrap {
         log.info("Create manually with create index norm_id_value_idx on kbcomponent(kbc_normname(64),id_namespace_fk,class)");
 
         ContentItem.withTransaction() {
-            def appname = ContentItem.findByKeyAndLocale('gokb.appname', 'default') ?: new ContentItem(key: 'gokb.appname', locale: 'default', content: 'GOKb').save(flush: true, failOnError: true)
+            def appname = ContentItem.findByKeyAndLocale('gokb.appname', 'default') ?: new ContentItem(key: 'gokb.appname', locale: 'default', content: 'GOKB').save(flush: true, failOnError: true)
         }
 
         KBComponent.withTransaction() {
@@ -1148,6 +1148,9 @@ class BootStrap {
         RefdataCategory.lookupOrCreate(CuratoryGroup.RDC_ORGA_TYPE, 'Provider').save(flush: true, failOnError: true)
 
         RefdataCategory.lookupOrCreate('Subject.Scheme', 'DDC').save(flush: true, failOnError: true)
+
+        RefdataCategory.lookupOrCreate('Source.ImportConfig', 'WEKB').save(flush: true, failOnError: true)
+        RefdataCategory.lookupOrCreate('Source.ImportConfig', 'EZB').save(flush: true, failOnError: true)
 
         lookupOrCreateCuratoryGroupTypes()
 
