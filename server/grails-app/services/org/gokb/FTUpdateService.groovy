@@ -122,6 +122,7 @@ class FTUpdateService {
             automaticUpdates: kbc.source.automaticUpdates,
             url             : kbc.source.url,
             frequency       : (kbc.source.frequency?.value ?: ""),
+            importConfig    : (kbc.source.importConfig?.value ?: ""),
           ]
           if (kbc.source.lastRun)
             result.source.lastRun = dateFormatService.formatIsoTimestamp(kbc.source.lastRun)

@@ -211,6 +211,7 @@ class PackageCachingService {
                     'explanationAtSource'(item.source.explanationAtSource)
                     'contextualNotes'(item.source.contextualNotes)
                     'frequency'(item.source.frequency?.value)
+                    'importConfig'(item.source.importConfig?.value)
                   }
                 }
 
