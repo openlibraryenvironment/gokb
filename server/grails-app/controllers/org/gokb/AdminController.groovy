@@ -9,6 +9,7 @@ import org.hibernate.criterion.CriteriaSpecification
 import org.springframework.security.access.annotation.Secured
 import org.springframework.security.acls.domain.BasePermission
 
+import java.time.LocalDateTime
 import java.util.concurrent.CancellationException
 
 import grails.gorm.transactions.*
@@ -428,8 +429,21 @@ class AdminController {
   }
 
   def zdbSync() {
+    boolean unlinked_only = params.boolean('unlinkedOnly') ?: false
+    LocalDateTime date
+
+    if (params.createdSince) {
+      date = GOKbTextUtils.completeDateString(params.createdSince)
+
+      if (!date) {
+        def result = [result: 'ERROR', message: "Unable to parse date for parameter 'createdSince'!"]
+        response.status = 400
+        render result as JSON
+      }
+    }
+
     Job j = concurrencyManagerService.createJob { job ->
-      titleAugmentService.syncZdbInfo(job)
+      titleAugmentService.syncZdbInfo(job, unlinked_only, date)
     }.startOrQueue()
 
     log.debug "Triggering ZDB sync, job #${j.uuid}"

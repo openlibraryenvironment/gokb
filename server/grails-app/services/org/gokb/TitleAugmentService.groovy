@@ -1,13 +1,18 @@
 package org.gokb
 
+import com.k_int.ClassUtils
 import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
+import grails.gorm.transactions.*
+
 import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.LocalDateTime
+
 import org.gokb.DomainClassExtender
 import org.gokb.cred.*
 import org.gokb.GOKbTextUtils
-import grails.gorm.transactions.*
-import com.k_int.ClassUtils
 
 class TitleAugmentService {
 
@@ -560,7 +565,9 @@ class TitleAugmentService {
   }
 
 
-  def syncZdbInfo(Job j = null) {
+  def syncZdbInfo(Job j = null, boolean unlinkedOnly = false, LocalDateTime created_since = null) {
+    def result = [result: 'OK']
+
     JournalInstance.withNewSession { lsession ->
       RefdataValue status_current = RefdataCategory.lookup("KBComponent.Status", "Current")
       RefdataValue combo_active = DomainClassExtender.comboStatusActive
@@ -568,41 +575,80 @@ class TitleAugmentService {
       IdentifierNamespace zdbNs = IdentifierNamespace.findByValue('zdb')
       int offset = 0
       int batchSize = 50
-      def count_journals_with_zdb_id
-      def queryString = '''from JournalInstance as ti where ti.status = :current and exists (
+      String queryString = "from JournalInstance as ti where ti.status = :current and "
+      Date date_filter = created_since ? Date.from(created_since.atZone(ZoneOffset.UTC).toInstant()) : null
+
+      def params = [
+        current: status_current,
+        active: combo_active,
+        ctype: idComboType,
+        ns: zdbNs
+      ]
+
+      if (!unlinkedOnly) {
+        queryString += '''exists (
                           select ci from Combo as ci
                           where ci.type = :ctype
                           and ci.fromComponent = ti
                           and ci.toComponent.namespace = :ns
                           and ci.status = :active
                         )'''
-      def params = [current: status_current, active: combo_active, ctype: idComboType, ns: zdbNs]
+      }
+      else {
+        params.issns = [IdentifierNamespace.findByValue('issn'), IdentifierNamespace.findByValue('eissn')]
 
-      count_journals_with_zdb_id = JournalInstance.executeQuery("select count(ti.id) ${queryString}".toString(), params)[0]
+        queryString += '''not exists (
+                          Select ci from Combo as ci
+                          where ci.type = :ctype
+                          and ci.status = :active
+                          and ci.fromComponent = ti
+                          and ci.toComponent.namespace = :ns
+                        )
+                        and exists (
+                          Select ci from Combo as ci
+                          where ci.type = :ctype
+                          and ci.status = :active
+                          and ci.fromComponent = ti
+                          and ci.toComponent.namespace IN (:issns)
+                        )'''
+      }
+
+      if (date_filter) {
+        params.date = date_filter
+        queryString += " and ti.dateCreated > :date"
+      }
+
+      def id_list = JournalInstance.executeQuery("select ti.id ${queryString}".toString(), params)
+
+      result.total = id_list.size()
+
+      log.debug("syncZdbInfo :: Processing ${result.total} journals ..")
+      j.message("Processing ${result.total} journals ..".toString())
 
       // find the next 100 titles that do have a ZDB-ID
-      while (offset < count_journals_with_zdb_id) {
-        def journals_with_zdb_id = JournalInstance.executeQuery("select ti.id ${queryString}".toString(), params, [offset: offset, max: batchSize])
 
-        log.debug("Processing ${count_journals_with_zdb_id}")
+      for (ti_id in id_list) {
+        def ti = TitleInstance.get(ti_id)
+        log.debug("Attempting augment on ${ti.id} ${ti.name}")
+        augmentZdb(ti)
+        offset++
 
-        journals_with_zdb_id.each { ti_id ->
-          def ti = TitleInstance.get(ti_id)
-          log.debug("Attempting augment on ${ti.id} ${ti.name}")
-          augmentZdb(ti)
+        j?.setProgress(offset, result.total)
+
+        if (offset % 50 == 0) {
+          lsession.flush()
+          lsession.clear()
         }
-
-        offset += batchSize
-        j?.setProgress(offset, count_journals_with_zdb_id)
 
         if (Thread.currentThread().isInterrupted() || j?.isCancelled()) {
           break
         }
-
-        lsession.flush()
-        lsession.clear()
       }
+
       j?.endTime = new Date()
+      result.endTime = new Date()
+
+      result
     }
   }
 

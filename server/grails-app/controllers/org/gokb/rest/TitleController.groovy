@@ -798,7 +798,7 @@ class TitleController {
           errors << updateCombos(obj, reqBody, remove)
 
           if ( errors.size() == 0 ) {
-            obj = obj.save(flush:true)
+            obj = obj.merge(flush:true)
             result = restMappingService.mapObjectToJson(obj, params, user)
           }
           else {
