@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name='layout' content='public' />
-<title>GOKb: Packages</title>
+<title>GOKB: Packages</title>
 </head>
 
 <body>
@@ -33,7 +33,7 @@
   <div class="container">
 
     <div class="row"> <div class="box">
-   
+
      <div class="col-lg-12 ">
       <div class="well">
       <g:if test="${pkgName}">

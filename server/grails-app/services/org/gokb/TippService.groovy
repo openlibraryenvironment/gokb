@@ -892,6 +892,8 @@ class TippService {
           tipp.lastSeen = System.currentTimeMillis()
           tipp.save(flush: true)
 
+          touchPackage(tipp)
+
           log.debug("linked TIPP $tipp with TitleInstance $ti")
         }
         else {

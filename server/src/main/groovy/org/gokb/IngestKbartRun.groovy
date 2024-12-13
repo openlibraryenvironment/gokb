@@ -379,27 +379,33 @@ class IngestKbartRun {
       job.endTime = new Date()
 
       JobResult.withNewTransaction {
-        def result_object = JobResult.findByUuid(job.uuid)
-
         if (result.titleMatch) {
           result.titleMatch.rowConflicts = titleMatchConflicts
         }
 
-        if (!result_object) {
-          def job_map = [
-              uuid        : (job.uuid),
-              description : (job.description),
-              resultObject: (result as JSON).toString(),
-              type        : (job.type),
-              statusText  : (result.result),
-              ownerId     : (job.ownerId),
-              groupId     : (job.groupId),
-              startTime   : (job.startTime),
-              endTime     : (job.endTime),
-              linkedItemId: (job.linkedItem?.id)
-          ]
+        def job_map = [
+            uuid        : (job.uuid),
+            description : (job.description),
+            resultObject: (result as JSON).toString(),
+            type        : (job.type),
+            statusText  : (result.result),
+            ownerId     : (job.ownerId),
+            groupId     : (job.groupId),
+            startTime   : (job.startTime),
+            endTime     : (job.endTime),
+            linkedItemId: (job.linkedItem?.id)
+        ]
 
+        def result_object = JobResult.findByUuid(job.uuid)
+
+        if (!result_object) {
           def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+        }
+        else {
+          job_map.each { k, v ->
+            result_object[k] = v
+            result_object.save(flush: true)
+          }
         }
       }
     }

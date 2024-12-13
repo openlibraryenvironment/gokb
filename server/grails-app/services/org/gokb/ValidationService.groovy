@@ -778,24 +778,56 @@ class ValidationService {
       final_val = final_val.replace('{YYYY-MM-DD}', local_date_string)
     }
 
-    if (final_val.indexOf('%') >= 0 || replaceDate) {
+    if (final_val.indexOf('%') >= 0) {
       // log.debug("URL seems to be already encoded!")
     }
     else {
       String url = ""
       def parts = null
 
-      if (parts = final_val =~ /^((?>http[s]?|ftp):\/\/)(\w[\w\-\.]+)(\/[\w\-\/]+\/)*(\/)?([^#]+)?(#[\w\-]+)?$/) {
+      if (parts = final_val =~ /^((?>http[s]?|ftp):\/\/)([^\s\/\?@_]+)(\/[\w\-\/]+\/)*(\/?\??)([^#]+)?(#[\w\-]+)?$/) {
         for (int i = 1; i < parts.groupCount(); i++) {
-          if (i != 5 && parts.group(i)) {
-            url = url + parts.group(i)
-          }
-          else if (parts.group(i)) {
-            try {
-              url = url + URLEncoder.encode(parts.group(i))
+          log.debug("Group ${i}: ${parts.group(i)}")
+
+          if (parts.group(i)) {
+            if (i == 2) {
+              url = url + IDN.toASCII(parts.group(i))
             }
-            catch(Exception e) {
-              // log.debug("Invalid query part ${parts.group(i)}")
+            else if (i == 5) {
+              def param_parts
+              String final_encoded = ""
+
+              if (parts.group(i).split("\\?", 2).size() > 1) {
+                def split_pars = parts.group(i).split("\\?", 2)
+                final_encoded = final_encoded + encodeUrlPart(split_pars[0]) + '?'
+                param_parts = split_pars[1]
+              } else {
+                param_parts = parts.group(i)
+              }
+
+              if (param_parts.indexOf('=') > 0) {
+                List params_list = param_parts.split('&')
+
+                params_list.eachWithIndex { p, idx ->
+                  List pparts = p.split('=')
+
+                  final_encoded = final_encoded + encodeUrlPart(pparts[0]) + '=' + encodeUrlPart(pparts[1])
+
+                  if (idx < params_list.size() - 2) {
+                    final_encoded += '&'
+                  }
+                }
+              }
+              else {
+                final_encoded = encodeUrlPart(param_parts)
+              }
+
+              if (final_encoded) {
+                url = url + final_encoded
+              }
+            }
+            else {
+              url = url + parts.group(i)
             }
           }
         }
@@ -806,9 +838,22 @@ class ValidationService {
       }
     }
 
-    // log.debug("Final URL to check: ${final_val}")
+    log.debug("Final URL to check: ${final_val}")
 
     return new UrlValidator().isValid(final_val) ? value : null
+  }
+
+  private String encodeUrlPart(String value) {
+    String result
+
+    try {
+      result = URLEncoder.encode(value, 'UTF-8')
+    }
+    catch(Exception e) {
+      // log.debug("Invalid query part ${parts.group(i)}")
+    }
+
+    result
   }
 
   def checkDatePair(String startDate, String endDate) {

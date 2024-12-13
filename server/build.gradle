@@ -114,7 +114,7 @@ dependencies {
     implementation 'org.apache.httpcomponents:httpcore:4.4.16'
     implementation 'commons-io:commons-io:2.13.0'
     implementation 'org.apache.commons:commons-compress:1.23.0'
-    implementation 'commons-validator:commons-validator:1.7'
+    implementation 'commons-validator:commons-validator:1.9.0'
     implementation 'com.opencsv:opencsv:5.7.1'
     implementation 'com.github.ladutsko:isbn-core:1.2.0'
     implementation 'joda-time:joda-time:2.12.5'

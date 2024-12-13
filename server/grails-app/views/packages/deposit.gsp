@@ -7,7 +7,7 @@
 <sec:ifNotLoggedIn>
 <meta name='layout' content='public' />
 </sec:ifNotLoggedIn>
-<title>GOKb: Packages</title>
+<title>GOKB: Packages</title>
 </head>
 
 <body>

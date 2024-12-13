@@ -84,6 +84,11 @@ a {
   color: #333;
 }
 
+.highlight-link > a {
+  text-decoration: underline;
+  color: #444 !important;
+}
+
 a:hover {
   color: #222;
 }

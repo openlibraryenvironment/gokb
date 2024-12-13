@@ -14,6 +14,7 @@ import io.micronaut.http.uri.UriBuilder
 
 import org.gokb.cred.*
 import org.gokb.TitleLookupService
+import gokbg3.RestMappingService
 import org.springframework.web.client.RestTemplate
 
 import spock.lang.Specification
@@ -26,6 +27,8 @@ class TitleTestSpec extends AbstractAuthSpec {
   @Autowired
   TitleLookupService titleLookupService
 
+  @Autowired
+  RestMappingService restMappingService
 
   BlockingHttpClient client
 
@@ -42,7 +45,7 @@ class TitleTestSpec extends AbstractAuthSpec {
     def ns_issn = IdentifierNamespace.findByValue('issn')
     def ns_eissn = IdentifierNamespace.findByValue('eissn')
     def new_id = Identifier.findByValue('2345-2331') ?: new Identifier(value: '2345-2331', namespace: ns_eissn).save(flush:true)
-    def new_org = Org.findByName('TestOrg') ?: new Org(name: 'TestOrg').save(flush:true)
+    def new_org = Org.findByName('TestTitleOrg') ?: new Org(name: 'TestTitleOrg').save(flush:true)
     def old_id = Identifier.findByValue('2345-2323') ?: new Identifier(value: '2345-2323', namespace: ns_eissn).save(flush:true)
 
     if (!JournalInstance.findByName("TitleTestJournal")) {
@@ -98,6 +101,7 @@ class TitleTestSpec extends AbstractAuthSpec {
       TitleInstancePackagePlatform.findByName("TestTitleMergeTipp")?.refresh()?.expunge()
       Package.findByName("TestTitleMergePackage")?.refresh()?.expunge()
       Platform.findByName("TestTitleMergePlatform")?.refresh()?.expunge()
+      Org.findByName("TestTitleOrg")?.refresh()?.expunge()
     }
   }
 
@@ -147,7 +151,7 @@ class TitleTestSpec extends AbstractAuthSpec {
     def urlPath = getUrlPath()
     def issn_ns = IdentifierNamespace.findByValue('issn')
     def test_id = Identifier.findByValue('2345-2331')
-    def publisher = Org.findByName("TestOrg")
+    def publisher = Org.findByName("TestTitleOrg")
 
     when:
     def json_record = [
@@ -161,7 +165,9 @@ class TitleTestSpec extends AbstractAuthSpec {
         [scheme: 'DDC', heading: '001'],
         [scheme: 'DDC', heading: '101']
       ],
-      publisher: publisher.id
+      publisher: [
+        publisher.id
+      ]
     ]
 
     String accessToken = getAccessToken()
@@ -176,10 +182,14 @@ class TitleTestSpec extends AbstractAuthSpec {
 
     then:
     resp.status == HttpStatus.CREATED
-    expect:
-    resp.body()._embedded?.ids?.size() == 3
-    resp.body()._embedded?.publisher?.size() == 1
-    resp.body()._embedded?.subjects?.size() == 2
+    def body = resp.body()
+    body._embedded?.ids?.size() == 3
+    body._embedded?.publisher?.size() == 1
+    body._embedded?.subjects?.size() == 2
+    sleep(500)
+    def new_ti = TitleInstance.findById(body.id)
+
+    new_ti.publisher?.size() == 1
   }
 
   void "test add title history event"() {

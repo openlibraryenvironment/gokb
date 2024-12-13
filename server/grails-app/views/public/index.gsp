@@ -46,7 +46,7 @@
 <html>
 <head>
 <meta name='layout' content='public' />
-<title>GOKb: Packages</title>
+<title>GOKB: Packages</title>
 </head>
 
 <body>

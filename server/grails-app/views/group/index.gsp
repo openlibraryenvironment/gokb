@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: Group</title>
+<title>GOKB: Group</title>
 </head>
 <body>
   <h1 class="page-header">${group?.name}</h1>
@@ -15,10 +15,10 @@
         <tr class="inline-nav">
           <th>
             <g:link params="${params+[pkg_sort:'name',pkg_sort_order:('desc'== params.pkg_sort_order?'asc':'desc')]}">
-              Package Name 
+              Package Name
               <i class="fas fa-sort"></i>
             </g:link>
-              
+
           </th>
           <th>Status</th>
           <th>List verified date</th>

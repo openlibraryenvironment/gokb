@@ -1,8 +1,9 @@
+<%@page import="org.gokb.cred.CuratoryGroup"%>
 <!DOCTYPE html>
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: Jobs</title>
+<title>GOKB: Jobs</title>
 </head>
 <body>
   <h1 class="page-header">Active Scheduled Jobs</h1>
@@ -37,7 +38,7 @@
     <thead>
       <tr>
         <th>ID</th>
-        <th>Group-ID</th>
+        <th>Group</th>
         <th>Type</th>
         <th>Description</th>
         <th>Has Started</th>
@@ -51,7 +52,7 @@
       <g:each in="${jobs}" var="k,v">
         <tr class="${k==params.highlightJob?'highlightRow':''}">
           <td rowspan="2">${k}</td>
-          <td>${v.groupId}</td>
+          <td>${v.groupId ? CuratoryGroup.get(v.groupId).name + ' (' + v.groupId + ')' : ''}</td>
           <td>${v.type}</td>
           <td>${v.description}</td>
           <td>${v.begun}</td>

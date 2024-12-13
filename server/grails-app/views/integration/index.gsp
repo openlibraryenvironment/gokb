@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: Integration API</title>
+<title>GOKB: Integration API</title>
 </head>
 <body>
   <h1 class="page-header">GOKb Integration API</h1>
@@ -50,7 +50,7 @@
         </tr>
       </table>
 
-      <div class="panel-footer" >      
+      <div class="panel-footer" >
         <h4>Example:</h4>
         <pre>
           <code>
@@ -64,7 +64,7 @@
 }
           </code>
         </pre>
-  
+
         <p>The following CURL command will tell GOKb about the JUSP title for &quot;3 Biotech&quot;</p>
         <pre>
           <code>
@@ -77,7 +77,7 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
           <code>
 {
   response:--code--
-} 
+}
           </code>
         </pre>
         <p>where <strong>code</strong> can be one of</p>
@@ -88,7 +88,7 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
         </ul>
       </div>
 
-      <div class="panel-footer" >      
+      <div class="panel-footer" >
         <h4>Example:</h4>
         <pre>
           <code>
@@ -102,7 +102,7 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
 }
           </code>
         </pre>
-  
+
         <p>The following CURL command will tell GOKb about the JUSP title for &quot;3 Biotech&quot;</p>
         <pre>
           <code>
@@ -115,7 +115,7 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
           <code>
 {
   response:--code--
-} 
+}
           </code>
         </pre>
         <p>where <strong>code</strong> can be one of</p>
@@ -142,7 +142,7 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
           </g:form>
         </p>
       </div>
-      <div class="panel-footer" >      
+      <div class="panel-footer" >
       </div>
     </div>
   </div>

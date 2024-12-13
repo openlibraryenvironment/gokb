@@ -244,6 +244,7 @@ class RestMappingService {
         }
         else {
           if (embed_active.contains(cp)) {
+            log.debug("Handling embeds for ${cp}: ${obj[cp]}")
             result['_embedded'][cp] = []
 
             def combos = obj.getCombosByPropertyName(cp)
@@ -1076,70 +1077,67 @@ class RestMappingService {
   @Transactional
   public def updatePublisherList(obj, new_pubs, boolean remove = true) {
     def result = [changed: false, errors: []]
+    def publisher_combos = obj.getCombosByPropertyName('publisher')
+    def combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
 
-    TitleInstance.withTransaction {
-      def publisher_combos = obj.getCombosByPropertyName('publisher')
-      def combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
+    String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
+    String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+    def pubs_to_add = []
 
-      String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
-      String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
-      def pubs_to_add = []
+    new_pubs.each { pub ->
+      if (!pubs_to_add.findAll { it.id == pub }) {
+        def pub_obj = Org.get(pub)
 
-      new_pubs.each { pub ->
-        if (!pubs_to_add.findAll { it.id == pub }) {
-          def pub_obj = Org.get(pub)
-
-          if (pub_obj) {
-            pubs_to_add << Org.get(pub)
-          }
-          else {
-            result.errors << [message: "Unable to reference publisher with ID ${new_pubs}!", baddata: pub]
-          }
+        if (pub_obj) {
+          pubs_to_add << Org.get(pub)
         }
         else {
-          log.warn("Duplicate for incoming publisher ${pub}!")
+          result.errors << [message: "Unable to reference publisher with ID ${new_pubs}!", baddata: pub]
         }
       }
+      else {
+        log.warn("Duplicate for incoming publisher ${pub}!")
+      }
+    }
 
-      if (!result.errors) {
-        def new_items = []
+    if (!result.errors) {
+      def new_items = []
 
-        pubs_to_add.each { publisher ->
-          boolean found = false
-          for (int i = 0; !found && i < publisher_combos.size(); i++) {
-            Combo pc = publisher_combos[i]
-            def idMatch = pc."${propName}".id == publisher.id
+      pubs_to_add.each { publisher ->
+        boolean found = false
+        for (int i = 0; !found && i < publisher_combos.size(); i++) {
+          Combo pc = publisher_combos[i]
+          def idMatch = pc."${propName}".id == publisher.id
 
-            if (idMatch) {
-              found = true
-            }
-          }
-
-          if (!found) {
-            new_items << publisher
-            result.changed = true
-          }
-          else {
-            log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
+          if (idMatch) {
+            found = true
           }
         }
 
-        obj.publisher.addAll(new_items)
-        obj.save(flush: true)
+        if (!found) {
+          new_items << publisher
+          result.changed = true
+        }
+        else {
+          log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
+        }
       }
 
-      if (remove && !result.errors) {
-        Iterator items = publisher_combos.iterator()
-        Object element
+      obj.publisher.addAll(new_items)
+      obj.save(flush: true)
+    }
 
-        while (items.hasNext()) {
-          element = items.next()
+    if (remove && !result.errors) {
+      Iterator items = publisher_combos.iterator()
+      Object element
 
-          if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
-            // Remove.
-            element.delete()
-            result.changed = true
-          }
+      while (items.hasNext()) {
+        element = items.next()
+
+        if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
+          // Remove.
+          element.delete()
+          result.changed = true
         }
       }
     }

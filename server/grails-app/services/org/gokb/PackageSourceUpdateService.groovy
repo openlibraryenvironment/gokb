@@ -1,6 +1,8 @@
 package org.gokb
 
 import com.k_int.ConcurrencyManagerService.Job
+
+import grails.converters.JSON
 import groovy.util.logging.Slf4j
 
 import java.net.http.*
@@ -54,7 +56,7 @@ class PackageSourceUpdateService {
 
   private def startSourceUpdate(pid, user, job, activeGroupId, dryRun, restrictSize) {
     log.debug("Source update start..")
-    def result = [result: 'OK']
+    def result = [result: 'OK', dryRun: dryRun]
     Boolean async = (user ? true : false)
     def preferred_group
     def title_ns
@@ -62,6 +64,7 @@ class PackageSourceUpdateService {
     def skipInvalid = false
     Boolean deleteMissing = false
     def pkgInfo = [:]
+    def startTime = new Date()
 
     Package.withNewSession {
       Package p = Package.get(pid)
@@ -73,7 +76,7 @@ class PackageSourceUpdateService {
       title_ns = pkg_source?.targetNamespace?.id ?: (pkg_prov?.titleNamespace?.id ?: null)
 
       if (job && !job.startTime) {
-        job.startTime = new Date()
+        job.startTime = startTime
       }
 
       isExternalSourceImportOrUpdate = (pkg_source?.importConfig?.value && pkg_source.importConfig.value != "EZB")
@@ -84,7 +87,7 @@ class PackageSourceUpdateService {
         if (pkg_source?.url) {
           URL src_url = null
           Boolean dynamic_date = false
-          def valid_url_string = validationService.checkUrl(pkg_source?.url)
+          def valid_url_string = validationService.checkUrl(pkg_source?.url, true)
           LocalDate extracted_date
           skipInvalid = pkg_source.skipInvalid ?: false
           def file_info = [:]
@@ -113,6 +116,8 @@ class PackageSourceUpdateService {
             result.messageCode = 'kbart.errors.url.invalid'
             result.message = "Package source URL is invalid!"
 
+            createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
             return result
           }
 
@@ -133,6 +138,9 @@ class PackageSourceUpdateService {
               result.result = 'ERROR'
               result.messageCode = 'kbart.errors.url.connection'
               result.message = "There was an error trying to fetch KBART via URL!"
+              result.exceptionMsg = file_info.exceptionMsg
+
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             }
@@ -142,6 +150,8 @@ class PackageSourceUpdateService {
               result.messageCode = 'kbart.errors.url.fileSize'
               result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
 
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
               return result
             }
 
@@ -150,6 +160,8 @@ class PackageSourceUpdateService {
               result.messageCode = 'kbart.errors.url.html'
               result.message = "URL returned HTML, indicating provider configuration issues!"
 
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
               return result
             } else if (file_info.mimeTypeError) {
               result.result = 'ERROR'
@@ -157,12 +169,16 @@ class PackageSourceUpdateService {
               result.message = "KBART URL returned a wrong content type!"
               log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
               return result
             } else if (file_info.status == 403) {
               log.debug("URL request failed!")
               result.result = 'ERROR'
               result.messageCode = 'kbart.errors.url.denied'
               result.message = "URL request returned 403 ACCESS DENIED, skipping further tries!"
+
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             }
@@ -201,6 +217,8 @@ class PackageSourceUpdateService {
               result.messageCode = 'kbart.errors.url.mimeType'
               result.message = "KBART URL returned a wrong content type!"
               log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             }
@@ -259,6 +277,8 @@ class PackageSourceUpdateService {
 
                       tmp_file.delete()
 
+                      createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
                       return result
                     }
 
@@ -271,6 +291,8 @@ class PackageSourceUpdateService {
                   result.message = "KBART is not UTF-8!"
 
                   tmp_file.delete()
+
+                  createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
                   return result
                 }
@@ -287,6 +309,8 @@ class PackageSourceUpdateService {
               result.result = 'SKIPPED'
               log.debug("KBART url ${src_url} returned MIME type ${file_info.content_mime_type}")
 
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
               return result
             }
           }
@@ -296,6 +320,8 @@ class PackageSourceUpdateService {
             result.messageCode = 'kbart.errors.url.protocol'
             result.message = "KBART URL has an unsupported protocol!"
             log.debug("Unsupported protocol for URL ${src_url}")
+
+            createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
             return result
           }
@@ -362,7 +388,7 @@ class PackageSourceUpdateService {
         }
 
         if (user) {
-          update_job.ownerId = user.id
+          update_job.ownerId = user
         }
 
         update_job.description = "KBART Source ingest (${pkgInfo.name})".toString()
@@ -525,6 +551,7 @@ class PackageSourceUpdateService {
     }
     catch (Exception e) {
       result.connectError = true
+      result.errorMsg = e.message
       log.error("failed fetching file via ${src_url}", e)
     }
 
@@ -577,5 +604,51 @@ class PackageSourceUpdateService {
                                               [ct: type_fa, pkg: pkgId])
 
     return (ordered_combos.size() == 0 || ordered_combos[0] != datafileId)
+  }
+
+  private void createJobResult(pkg, job, startTime, dryRun, ownerId, groupId, result) {
+    def job_map = [:]
+    def job_uuid = job?.uuid ?: UUID.randomUUID().toString()
+
+    if (job) {
+      job_map = [
+        uuid        : (job_uuid),
+        description : (job.description),
+        resultObject: (result as JSON).toString(),
+        type        : (job.type),
+        statusText  : (result.result),
+        ownerId     : (job.ownerId),
+        groupId     : (job.groupId),
+        startTime   : (job.startTime),
+        endTime     : (new Date()),
+        linkedItemId: (job.linkedItem?.id)
+      ]
+    }
+    else {
+      job_map = [
+        uuid        : (job_uuid),
+        description : ("KBART Source ingest (${pkg.name})".toString()),
+        resultObject: (result as JSON).toString(),
+        type        : (dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')),
+        statusText  : (result.result),
+        ownerId     : (ownerId),
+        groupId     : (groupId),
+        startTime   : (startTime),
+        endTime     : (new Date()),
+        linkedItemId: (pkg.id)
+      ]
+    }
+
+    def result_object = JobResult.findByUuid(job_uuid)
+
+    if (!result_object) {
+      def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+    }
+    else {
+      job_map.each { k, v ->
+        result_object[k] = v
+        result_object.save(flush: true)
+      }
+    }
   }
 }

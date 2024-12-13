@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: Coreference Service</title>
+<title>GOKB: Coreference Service</title>
 </head>
 <body>
   <h1 class="page-header">Coreference Service</h1>
@@ -71,7 +71,7 @@
             </th>
           </tr>
           <tr>
-            <th>GOKb Canonical</th>
+            <th>GOKB Canonical</th>
             <th>Name/Title</th>
             <th>External Identifiers</th>
           </tr>
