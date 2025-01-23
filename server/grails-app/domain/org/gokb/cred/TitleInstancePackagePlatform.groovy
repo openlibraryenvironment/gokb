@@ -126,6 +126,7 @@ class TitleInstancePackagePlatform extends KBComponent {
           'hostPlatform'
       ],
       'defaultEmbeds': [
+          'ids',
           'coverageStatements',
           'prices',
           'subjects'

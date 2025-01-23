@@ -762,6 +762,7 @@ class ESSearchService{
     def result = [result: 'OK']
     def search_action = null
     def errors = [:]
+    Integer maxWindowSize = 10000
     SearchResponse searchResponse = null
     log.debug("find :: ${params}")
 
@@ -803,18 +804,32 @@ class ESSearchService{
         checkInt(result, errors, params.from, 'offset')
         checkInt(result, errors, params.offset, 'offset')
 
-        if (params.max != null) {
-          searchSourceBuilder.size(result.max)
+        if (result.max != null) {
+          if (result.max > maxWindowSize) {
+            errors['max'] = "Maximum result window size is ${maxWindowSize}. Use /scroll endpoint for deep pagination."
+          }
+          else {
+            searchSourceBuilder.size(result.max)
+          }
         }
         else {
           result.max = 10
         }
 
-        if (params.offset || params.from) {
-          searchSourceBuilder.from(result.offset)
+        if (result.offset) {
+          if (result.offset > maxWindowSize) {
+            errors['offset'] = "Maximum result window size is ${maxWindowSize}. Use /scroll endpoint for deep pagination."
+          }
+          else {
+            searchSourceBuilder.from(result.offset)
+          }
         }
         else {
           result.offset = 0
+        }
+
+        if (!errors['max'] && !errors['offset'] && result.offset + result.max > maxWindowSize) {
+          errors['offset'] = "Maximum result window size (max + offset) is ${maxWindowSize}. Use /scroll endpoint for deep pagination."
         }
 
         setSort(params, errors, searchSourceBuilder)

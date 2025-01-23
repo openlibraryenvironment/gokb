@@ -5,7 +5,7 @@ grails.plugin.springsecurity.userLookup.userDomainClassName = 'org.gokb.cred.Use
 grails.plugin.springsecurity.userLookup.authorityJoinClassName = 'org.gokb.cred.UserRole'
 grails.plugin.springsecurity.authority.className = 'org.gokb.cred.Role'
 
-grails.plugin.springsecurity.ui.forgotPassword.emailFrom = "GOKb<no-reply@gokb.org>"
+grails.plugin.springsecurity.ui.forgotPassword.emailFrom = "GOKB<no-reply@gokb.org>"
 
 grails.mime.file.extensions=false
 grails.plugin.springsecurity.ui.register.postRegisterUrl = '/public/index'

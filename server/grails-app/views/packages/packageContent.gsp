@@ -18,7 +18,7 @@
            <span class="icon-bar"></span>
          </button>
          <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
-         <a class="navbar-brand" href="index.html">GOKb</a>
+         <a class="navbar-brand" href="index.html">GOKB</a>
        </div>
 
        <div class="collapse navbar-collapse" id="primary-nav">

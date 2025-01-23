@@ -1,7 +1,7 @@
 <html>
   <head>
     <meta name="layout" content="sb-admin" />
-    <title>GOKb Direct Ingest Service</title>
+    <title>GOKB Direct Ingest Service</title>
   </head>
   <body>
     <g:if test="${ip?.id}">

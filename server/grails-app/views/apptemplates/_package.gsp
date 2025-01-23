@@ -11,7 +11,7 @@
       </div>
       <g:link controller="packages" action="kbart" id="${params.id}">KBart File</g:link>&nbsp;
       (<g:link controller="packages" action="kbart" id="${params.id}" params="[exportType:'title']">Title flavour</g:link>),&nbsp;
-        <g:link controller="packages" action="packageTSVExport" id="${params.id}">GOKb File</g:link>
+        <g:link controller="packages" action="packageTSVExport" id="${params.id}">GOKB File</g:link>
     </g:if>
     <g:else>
       <g:xEditable class="ipe" owner="${d}" field="name" />

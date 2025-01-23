@@ -29,7 +29,7 @@
     </div>
     <div class="panel-footer">
       <p>
-        Enter an identifier above to find the information GOKb holds about
+        Enter an identifier above to find the information GOKB holds about
         that item.<br /> Identifiers can take the following forms:
       </p>
       <ul>
@@ -40,7 +40,7 @@
           also be returned. In this case, this is unlikely since the eISSN
           structure is unique. However if we look at, for example, org
           identifiers from the NCSU orgs database, we see "American Chemical
-          Society" has the ID "2". There will be many items in GOKb who's
+          Society" has the ID "2". There will be many items in GOKB who's
           unqualified identifier is "2" and this query will return many
           objects.</li>
         <li>an identifier with associated namespace, eg <g:link

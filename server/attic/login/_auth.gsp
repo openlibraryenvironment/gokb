@@ -12,7 +12,7 @@
 			<h3 class="panel-title">User details</h3>
 		</div>
 		<div class="panel-body">
-			<p>Use the form below to sign into GOKb. If you don't have an account yet, please create one by using the register link in the top menu.</p>
+			<p>Use the form below to sign into GOKB. If you don't have an account yet, please create one by using the register link in the top menu.</p>
 		</div>
 		<div class="panel-footer clearfix" >
 			<form action='${postUrl}' method='POST' id='loginForm'

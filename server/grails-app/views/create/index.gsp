@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: Create New ${displayobj?.getNiceName() ?: 'Component'}</title>
+<title>GOKB: Create New ${displayobj?.getNiceName() ?: 'Component'}</title>
 </head>
 <body>
   <h1 class="page-header">

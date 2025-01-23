@@ -168,8 +168,8 @@ class WekbIngestionService {
                 def tipp_map = [
                         uuid                       : tipp.uuid?.trim(),
                         url                        : tipp.url?.trim(),
-                        coverageStatements         : [
-                                tipp.coverage ?: [
+                        coverageStatements         : tipp.coverage ?: [
+                                [
                                         embargo      : null,
                                         coverageDepth: 'Fulltext',
                                         coverageNote : null,

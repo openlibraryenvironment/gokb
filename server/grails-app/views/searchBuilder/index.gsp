@@ -7,7 +7,7 @@
 	<asset:javascript src="gokb/application.js" />
 	<asset:javascript src="gokb/jquery.dynatree.min.js" />
 
-    <title>GOKb: About</title>
+    <title>GOKB: About</title>
   </head>
   <body>
 

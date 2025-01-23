@@ -345,6 +345,37 @@ class BootStrap {
                     log.info("Ensured ${ns_obj}!")
             }
 
+            log.info("Looking for ISBN-10 normnames")
+
+            def isbns = [IdentifierNamespace.findByValue('isbn'), IdentifierNamespace.findByValue('pisbn')]
+            def candidates = Identifier.executeQuery("from Identifier where namespace IN (:isbns) and length(normname) < 13", [isbns: isbns])
+
+            log.info("Found ${candidates.size()} ..")
+
+            candidates.each { idc ->
+                def correct_norm = Identifier.normalizeIdentifier(idc.value)
+
+                if (correct_norm != idc.normname) {
+                    def existing = Identifier.findAllByNamespaceAndNormname(idc.namespace, correct_norm)
+
+                    if (existing?.size() == 1) {
+                        log.debug("Moving combos of ${idc} to ${existing[0]} ..")
+                        Combo.executeUpdate("update Combo set toComponent = :ex where toComponent = :old", [ex: existing[0], old: idc])
+                    }
+                    else if (existing?.size() > 1) {
+                        log.error("Found duplicate ID records: ${existing}")
+                    }
+                    else {
+                        log.debug("No existing ID with corrected normname for ${idc} ... updating normname!")
+                        idc.normname = correct_norm
+                        idc.save(flush: true, failOnError: true)
+                    }
+                }
+                else {
+                    log.info("Found ISBN-10 with value ${idc.value} ..")
+                }
+            }
+
             log.debug("Register users and override default admin password")
             registerUsers()
 

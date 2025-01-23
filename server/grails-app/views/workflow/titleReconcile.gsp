@@ -4,7 +4,7 @@
 <meta name="layout" content="sb-admin" />
 <asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/application.js" />
-<title>GOKb::Title Reconcile</title>
+<title>GOKB::Title Reconcile</title>
 </head>
 <body>
 	<div class="container">

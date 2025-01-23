@@ -4,7 +4,7 @@
 <meta name="layout" content="sb-admin" />
 <asset:stylesheet src="gokb/application.css" />
 <asset:javascript src="gokb/application.js" />
-<title>GOKb: Platform Replacement</title>
+<title>GOKB: Platform Replacement</title>
 </head>
 <body>
 

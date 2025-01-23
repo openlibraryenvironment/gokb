@@ -161,7 +161,7 @@ abstract class GOKbSyncBase extends Script {
             uri.path = parameters['path']
           }
 
-          uri.query = [fullsync: 'true']
+          uri.query = [fullsync: 'true', user: config.uploadUser, password: config.uploadPass]
 
           if (parameters['body']) {
             body = parameters['body']
@@ -226,7 +226,11 @@ abstract class GOKbSyncBase extends Script {
     if (!parameters.containsKey('query')) {
       parameters['query'] = [verb: 'ListRecords', metadataPrefix: 'gokb']
     }
-    if (config.resumptionToken) parameters['query']['resumptionToken'] = config.resumptionToken
+
+    if (config.resumptionToken) {
+      parameters['query']['resumptionToken'] = config.resumptionToken.contains('%') ? java.net.URLDecoder.decode(config.resumptionToken, 'UTF-8') : config.resumptionToken
+      println("Decoded token: ${parameters['query']['resumptionToken']}")
+    }
 
     if (config.lastRun && (!config.resumptionToken || config.resumptionToken.size() == 0) && this.args?.size() > 0 && this.args.contains('--update') ) {
       parameters['query']['from'] = config.lastRun

@@ -1246,7 +1246,7 @@ class TitleLookupService {
     String comparable_title = GOKbTextUtils.generateComparableKey(title)
 
     // The threshold for a good match.
-    double threshold = grailsApplication.config.getProperty('cosine.good_threshold')
+    double threshold = grailsApplication.config.getProperty('cosine.good_threshold', Double, 0.75)
 
     // Work out the distance between the 2 title strings.
     double distance = GOKbTextUtils.cosineSimilarity(GOKbTextUtils.generateComparableKey(ti.name), comparable_title)

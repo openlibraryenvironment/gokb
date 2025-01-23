@@ -499,8 +499,8 @@ grails.plugin.springsecurity.ui.password.maxLength = 64
 grails.plugin.springsecurity.ui.password.validationRegex = '^.*$'
 
 //configure register
-grails.plugin.springsecurity.ui.register.emailFrom = "GOKb<no-reply@gokb.org>"
-grails.plugin.springsecurity.ui.register.emailSubject = 'Welcome to GOKb'
+grails.plugin.springsecurity.ui.register.emailFrom = "GOKB<no-reply@gokb.org>"
+grails.plugin.springsecurity.ui.register.emailSubject = 'Welcome to GOKB'
 grails.plugin.springsecurity.ui.register.defaultRoleNames = [
   "ROLE_USER"
 ]

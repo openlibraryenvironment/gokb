@@ -638,11 +638,9 @@ where cp.owner = :c
   def beforeUpdate() {
     log.debug("beforeUpdate for ${this}")
 
-    if (this.name) {
-      if (!shortcode) {
-        this.shortcode = generateShortcode(this.name);
-      }
-      generateNormname();
+    if (this.isDirty('name')) {
+      this.shortcode = generateShortcode(this.name)
+      generateNormname()
       generateComponentHash()
     }
 

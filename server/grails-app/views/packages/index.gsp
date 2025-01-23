@@ -18,13 +18,13 @@
            <span class="icon-bar"></span>
          </button>
          <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
-         <a class="navbar-brand" href="index.html">GOKb</a>
+         <a class="navbar-brand" href="index.html">GOKB</a>
        </div>
 
        <div class="collapse navbar-collapse" id="primary-nav">
          <ul class="nav navbar-nav">
            <li class="hidden active"><a href="#page-body"></a></li>
-           <li><span>GOKb Packages</span></li>
+           <li><span>GOKB Packages</span></li>
          </ul>
        </div>
 

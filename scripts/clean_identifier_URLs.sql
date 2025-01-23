@@ -108,10 +108,20 @@ SET edit_status_id = (
     FROM refdata_category
     WHERE rdc_label = 'KBComponent.EditStatus'
   )
+),
+kbc_status_rv_fk = (
+  SELECT rdv_id
+  FROM refdata_value
+  WHERE rdv_value = 'Deleted'
+  AND rdv_owner = (
+    SELECT rdc_id
+    FROM refdata_category
+    WHERE rdc_label = 'KBComponent.Status'
+  )
 )
 FROM identifier AS id, identifier_namespace AS idns
 WHERE kbc.kbc_id = id.kbc_id
-  AND id.id_value LIKE '%freebase%'
+  AND (id.id_value LIKE '%freebase%' OR id.id_value LIKE 'http://www.lib.ncsu.edu/ld/onld/%')
   AND id.id_namespace_fk = idns.id
   AND idns.idns_value = 'global';
 # CHECK AFTER
@@ -120,40 +130,3 @@ SELECT COUNT (id.kbc_id) FROM identifier AS id, kbcomponent AS kbc WHERE id.kbc_
 SELECT COUNT (id.kbc_id) FROM identifier AS id, kbcomponent AS kbc WHERE id.id_value LIKE '%freebase%' AND id.kbc_id = kbc.kbc_id;
 #
 # and run admin function "Expunge Rejected Components"
-
-
-
-# http://www.lib.ncsu.edu/ld/onld/
-# to
-# https://www.lib.ncsu.edu/ld/onld/
-#
-# CHECK BEFORE
-SELECT COUNT (kbc_id) FROM identifier WHERE id_value LIKE 'http://www.lib.ncsu.edu/ld/onld/%';
-SELECT COUNT (kbc_id) FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%';
-UPDATE identifier AS id
-SET id_value=REGEXP_REPLACE(id.id_value, 'http://www.lib.ncsu.edu/ld/onld/(.*)','https://www.lib.ncsu.edu/ld/onld/\1')
-FROM identifier_namespace AS idns
-WHERE id.id_value LIKE 'http://www.lib.ncsu.edu/ld/onld/%'
-  AND id.id_namespace_fk = idns.id
-  AND idns.idns_value = 'global';
-# CHECK AFTER
-SELECT COUNT (kbc_id) FROM identifier WHERE id_value LIKE 'http://www.lib.ncsu.edu/ld/onld/%';
-SELECT COUNT (kbc_id) FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%';
-
-
-# https://www.lib.ncsu.edu/ld/onld/<id>.html
-# to
-# https://www.lib.ncsu.edu/ld/onld/<id>
-#
-# CHECK BEFORE
-SELECT COUNT (kbc_id) FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%';
-SELECT COUNT (kbc_id) FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%.html';
-UPDATE identifier AS id
-SET id_value=REGEXP_REPLACE(id.id_value, 'https://www.lib.ncsu.edu/ld/onld/(.*).html','https://www.lib.ncsu.edu/ld/onld/\1')
-FROM identifier_namespace AS idns
-WHERE id.id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%.html'
-  AND id.id_namespace_fk = idns.id
-  AND idns.idns_value = 'global';
-# CHECK AFTER
-SELECT COUNT (kbc_id) FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%';
-SELECT COUNT (kbc_id) FROM identifier WHERE id_value LIKE 'https://www.lib.ncsu.edu/ld/onld/%.html';

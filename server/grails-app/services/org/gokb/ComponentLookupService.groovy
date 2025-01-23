@@ -156,7 +156,18 @@ class ComponentLookupService {
       def isValid = grails.util.Holders.applicationContext.getBean('validationService').checkIdForNamespace(value, namespace)
 
       if (isValid) {
-        def norm_id = Identifier.normalizeIdentifier(value)
+        def final_val = value
+
+        if (namespace.family == 'isxn') {
+          final_val = final_val.replaceAll("x","X")
+        }
+
+        if (namespace.value in ['isbn', 'pisbn']) {
+          final_val = ISBN.parseIsbn(final_val).getIsbn13()
+        }
+
+        def norm_id = Identifier.normalizeIdentifier(final_val)
+
         def existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
         log.debug("Found ID: ${existing}")
 
@@ -165,21 +176,12 @@ class ComponentLookupService {
         }
         else if ( existing?.size() > 1 ) {
           log.error("Conflicting identifiers found: ${existing}")
-          throw new RuntimeException("Found duplicates for Identifier: ${existing}");
+          throw new RuntimeException("Found duplicates for Identifier: ${existing}")
         }
         else {
           log.debug("No matches: ${existing}")
-          def final_val = value
 
           if (!identifier) {
-            if (namespace.family == 'isxn') {
-              final_val = final_val.replaceAll("x","X")
-            }
-
-            if (namespace.value in ['isbn', 'pisbn']) {
-              final_val = ISBN.parseIsbn(final_val).getIsbn13()
-            }
-
             log.debug("Creating new Identifier ${namespace}:${value} ..")
 
             try {

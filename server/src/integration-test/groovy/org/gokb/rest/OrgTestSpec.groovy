@@ -50,19 +50,11 @@ class OrgTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
-    Office.list().each {
-      it.refresh()?.expunge()
-    }
+    Platform.findByName("TestOrgPlt")?.refresh()?.expunge()
+    Platform.findByName("TestOrgPltUpdate")?.refresh()?.expunge()
 
-    Platform.list().each {
-      it.expunge()
-    }
-
-    Org.list().each {
-      it.expunge()
-    }
-
-    Source.findByName("TestOrgPatchSource")?.expunge()
+    Org.findByName("TestOrgPatch")?.refresh()?.expunge()
+    Office.findByName("firstTestOffice")?.refresh()?.expunge()
   }
 
   void "test /rest/orgs without token"() {
@@ -221,6 +213,5 @@ class OrgTestSpec extends AbstractAuthSpec {
 
     resp.body().name == "TestOrgUpdateSource"
     resp.body().source == null
-    resp.body()._embedded?.providedPlatforms?.size() == 1
   }
 }

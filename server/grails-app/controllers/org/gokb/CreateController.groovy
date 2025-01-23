@@ -195,7 +195,11 @@ class CreateController {
             } else {
               newobj.save(flush:true)
 
-              result.newobj = [name: newobj.name, id: newobj.id, uuid: newobj.uuid]
+              result.newobj = [id: newobj.id]
+
+              if (newobj.hasProperty('uuid')) {
+                result.newobj.uuid = newobj.uuid
+              }
 
               log.debug("Setting combos..");
 

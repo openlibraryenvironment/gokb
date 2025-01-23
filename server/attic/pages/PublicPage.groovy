@@ -5,7 +5,7 @@ class PublicPage extends GokbPage {
     static url = "/gokb";
 
     static at = { 
-      browser.page.title.startsWith "GOKb: Welcome" 
+      browser.page.title.startsWith "GOKB: Welcome"
     };
 
 

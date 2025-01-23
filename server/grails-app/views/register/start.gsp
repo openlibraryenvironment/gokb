@@ -60,7 +60,7 @@
         <g:else>
           <div class="panel panel-default">
             <div class="panel-heading">
-              <b>GOKb</b> – ${message(code:'spring.security.ui.register.header', locale: locale)}
+              <b>GOKB</b> – ${message(code:'spring.security.ui.register.header', locale: locale)}
             </div>
             <div class="panel-body">
               <g:form

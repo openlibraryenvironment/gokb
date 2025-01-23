@@ -20,7 +20,7 @@
                 </g:if>
                 <g:else>
                   <div class="panel-body">
-                          <p>Use the form below to sign into GOKb. If you don't have an account yet, please create one by using the register link in the top menu.</p>
+                          <p>Use the form below to sign into GOKB. If you don't have an account yet, please create one by using the register link in the top menu.</p>
                   </div>
                 </g:else>
 		<div class="panel-footer clearfix" >

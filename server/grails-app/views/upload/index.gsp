@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: File Upload</title>
+<title>GOKB: File Upload</title>
 </head>
 <body>
 
@@ -10,7 +10,7 @@
 	<div id="mainarea" class="panel panel-default">
 		<div class="panel-body">
 			<p>
-				Use this form to upload any file to GOKb. After upload you will be able to link the file to components in the database. If GOKb can
+				Use this form to upload any file to GOKB. After upload you will be able to link the file to components in the database. If GOKB can
         interpret the contents of your file (For example, if the file is recognised as an ONIX license file) then the system will
         attempt to create the corresponding system objects and link them to the uploaded file.
       </p>

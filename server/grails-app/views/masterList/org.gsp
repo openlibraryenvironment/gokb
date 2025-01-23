@@ -4,7 +4,7 @@
     <meta name="layout" content="sb-admin"/>
     <asset:stylesheet src="gokb/application.css"/>
     <asset:javascript src="gokb/application.js" />
-    <title>GOKb: Master Lists</title>
+    <title>GOKB: Master Lists</title>
   </head>
   <body>
 	  <h1 class="page-header">

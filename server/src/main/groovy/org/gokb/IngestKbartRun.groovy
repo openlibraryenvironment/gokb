@@ -1100,7 +1100,7 @@ class IngestKbartRun {
       def matchConflicts = []
 
       title_lookup_result.matches.each { trm ->
-        if (trm.conflicts.size() > 0) {
+        if (trm.conflicts?.size() > 0) {
           partial = true
 
           def match = [
@@ -1110,7 +1110,7 @@ class IngestKbartRun {
           ]
           matchConflicts << match
 
-          if (trm.warnings.contains('duplicate')) {
+          if (trm.warnings?.contains('duplicate')) {
             hasConflicts = true
           }
         }
