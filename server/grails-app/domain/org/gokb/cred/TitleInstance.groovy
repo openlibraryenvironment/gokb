@@ -64,7 +64,8 @@ class TitleInstance extends KBComponent {
     'defaultEmbeds': [
       'ids',
       'variantNames',
-      'publisher'
+      'publisher',
+      'subjects'
     ]
   ]
 
@@ -250,7 +251,7 @@ class TitleInstance extends KBComponent {
   ]
 
   /**
-   *  Render this package as OAI_dc
+   *  Render this title as OAI_dc
    */
   @Transient
   def toOaiDcXml(builder, attr) {
@@ -260,7 +261,7 @@ class TitleInstance extends KBComponent {
   }
 
   /**
-   *  Render this package as GoKBXML
+   *  Render this title as GoKBXML
    */
   @Transient
   def toGoKBXml(builder, attr) {
@@ -325,9 +326,6 @@ class TitleInstance extends KBComponent {
                     org_ids?.each { org_id ->
                       builder.'identifier'(org_id)
                     }
-                    if (grailsApplication.config.getProperty('serverUrl')) {
-                      builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl')}/resource/show/org.gokb.cred.Org:${pub_org?.id}")
-                    }
                   }
                 }
               }
@@ -356,9 +354,6 @@ class TitleInstance extends KBComponent {
                           hti.activeIdInfo.each { tid ->
                             builder.'identifier'(tid)
                           }
-                          if (grailsApplication.config.getProperty('serverUrl')) {
-                            builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl')}/resource/show/${hti.class.name}:${hti.id}")
-                          }
                         }
                       }
                     }
@@ -373,9 +368,6 @@ class TitleInstance extends KBComponent {
                         builder."identifiers" {
                           hti.activeIdInfo.each { tid ->
                             builder.'identifier'(tid)
-                          }
-                          if (grailsApplication.config.getProperty('serverUrl')) {
-                            builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl')}/resource/show/${hti.class.name}:${hti.id}")
                           }
                         }
                       }

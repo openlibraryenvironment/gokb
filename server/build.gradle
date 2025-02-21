@@ -65,6 +65,7 @@ configurations {
 dependencies {
     developmentOnly "org.springframework.boot:spring-boot-devtools"
     developmentOnly "org.springframework.boot:spring-boot-starter-tomcat"
+    developmentOnly 'io.github.gpc:greenmail:5.0.0'
 
     implementation "org.codehaus.groovy:groovy-dateutil:3.0.13"
     implementation "org.springframework.boot:spring-boot-starter-validation"
@@ -93,7 +94,6 @@ dependencies {
     implementation 'net.sf.ehcache:ehcache:2.10.9.2'
     implementation "org.grails.plugins:gsp"
     implementation "org.grails.plugins:mail:3.0.0"
-    // implementation 'org.grails.plugins:greenmail:2.0.0.RC2'
     implementation 'org.grails.plugins:database-migration:4.1.0', {
         exclude module: 'spring-boot-cli'
     }
@@ -101,7 +101,7 @@ dependencies {
     implementation 'org.grails.plugins:grails-melody-plugin:1.80.0'
     implementation 'net.bull.javamelody:javamelody-core:1.95.0'
 
-    implementation 'org.grails.plugins:spring-security-core:6.0.3'
+    implementation 'org.grails.plugins:spring-security-core:6.1.1'
     implementation 'org.grails.plugins:spring-security-acl:4.0.0.M2'
     implementation 'org.grails.plugins:spring-security-ui:4.0.0.M1'
     implementation 'org.grails.plugins:spring-security-rest:3.0.1'
@@ -114,7 +114,7 @@ dependencies {
     implementation 'org.apache.httpcomponents:httpcore:4.4.16'
     implementation 'commons-io:commons-io:2.13.0'
     implementation 'org.apache.commons:commons-compress:1.23.0'
-    implementation 'commons-validator:commons-validator:1.7'
+    implementation 'commons-validator:commons-validator:1.9.0'
     implementation 'com.opencsv:opencsv:5.7.1'
     implementation 'com.github.ladutsko:isbn-core:1.2.0'
     implementation 'joda-time:joda-time:2.12.5'
@@ -135,6 +135,7 @@ dependencies {
     runtimeOnly "com.h2database:h2"
     runtimeOnly "org.apache.tomcat:tomcat-jdbc"
 
+    testImplementation 'io.github.gpc:greenmail:5.0.0'
     testImplementation "org.springframework.boot:spring-boot-starter-tomcat"
     testImplementation "org.grails:grails-gorm-testing-support"
     testImplementation "org.grails:grails-web-testing-support"

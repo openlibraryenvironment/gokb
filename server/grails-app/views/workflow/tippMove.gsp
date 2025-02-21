@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: Move TIPP</title>
+<title>GOKB: Move TIPP</title>
 </head>
 <body>
 

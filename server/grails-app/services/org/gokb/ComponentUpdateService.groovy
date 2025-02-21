@@ -17,7 +17,8 @@ class ComponentUpdateService {
   def dateFormatService
   def restMappingService
   def sessionFactory
-  def ESSearchService
+  def ESWrapperService
+  def grailsApplication
 
   private final Object findLock = new Object()
 
@@ -236,7 +237,7 @@ class ComponentUpdateService {
     RefdataValue combo_type_id = RefdataCategory.lookup('Combo.Type', 'KBComponent.Ids')
 
     new_ids.each { ci ->
-      def namespace_val = ci.type ?: ci.namespace
+      def namespace_val = ci.namespace ?: ci.type
       String testKey = "${namespace_val}|${ci.value}".toString()
 
       if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {
@@ -284,7 +285,7 @@ class ComponentUpdateService {
       component.ids.each { ci ->
         Identifier ido = Identifier.get(ci.id)
         String ido_testkey = "${ido.namespace?.value}|${Identifier.normalizeIdentifier(ido.value)}".toString()
-        def new_id_short = new_ids.collect { "${it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString() }
+        def new_id_short = new_ids.collect { "${it.namespace ? it.namespace.toLowerCase() : it.type.toLowerCase()}|${Identifier.normalizeIdentifier(it.value)}".toString() }
 
         if (!new_id_short.contains(ido_testkey)) {
           def ctr = Combo.executeQuery("select id from Combo as c where c.toComponent = :ci and c.fromComponent = :comp", [ci: ido, comp: component])
@@ -367,21 +368,21 @@ class ComponentUpdateService {
 
   public boolean isUserCurator(obj, user) {
     boolean curator = user.adminStatus
-    def curated_component = KBComponent.has(obj, 'curatoryGroups') ? obj : (obj.class == TitleInstancePackagePlatform ? obj.pkg : null)
+    def curated_component = KBComponent.has(obj, 'curatoryGroups') ? obj : (obj?.class == TitleInstancePackagePlatform ? obj.pkg : null)
 
     if (curated_component) {
-      if (curated_component.curatoryGroups.size() == 0 || curated_component.curatoryGroups.id.intersect(user.curatoryGroups?.id)) {
+      if (curated_component.curatoryGroups.size() == 0 || curated_component.curatoryGroups*.id.intersect(user.curatoryGroups*.id)) {
         curator = true
       }
     }
-    else if (obj.class == ReviewRequest) {
+    else if (obj?.class == ReviewRequest) {
       if (obj.allocatedTo == user) {
         curator = true
       }
-      else if (obj.allocatedGroups?.group.id.intersect(user.curatoryGroups?.id)) {
+      else if (obj.activeAllocatedGroups*.group.id.intersect(user.curatoryGroups*.id)) {
         curator = true
       }
-      else if (!obj.allocatedGroups && user.contributorStatus) {
+      else if (!obj.activeAllocatedGroups && user.contributorStatus) {
         curator = true
       }
     }
@@ -474,8 +475,9 @@ class ComponentUpdateService {
       KBComponent.executeUpdate("delete from ComponentPrice where owner=:component", [component: obj])
       result.result = obj.delete(failOnError: true)
 
-      if (ESSearchService.indicesPerType[class_simple_name]){
-        DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType[class_simple_name]), oid)
+      if (ESWrapperService.indicesPerType[class_simple_name]){
+        def esclient = ESWrapperService.getClient()
+        DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[class_simple_name]), oid)
         def es_response = esclient.delete(req, RequestOptions.DEFAULT)
         log.debug("${es_response}")
         result.esDelete = true

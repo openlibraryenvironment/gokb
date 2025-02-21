@@ -9,6 +9,7 @@ import org.hibernate.criterion.CriteriaSpecification
 import org.springframework.security.access.annotation.Secured
 import org.springframework.security.acls.domain.BasePermission
 
+import java.time.LocalDateTime
 import java.util.concurrent.CancellationException
 
 import grails.gorm.transactions.*
@@ -23,6 +24,7 @@ class AdminController {
   def grailsCacheAdminService
   def packageService
   def packageCachingService
+  def packageCleanupService
   def packageSourceUpdateService
   def springSecurityService
   def titleAugmentService
@@ -283,6 +285,20 @@ class AdminController {
     render(view: "logViewer", model: logViewer())
   }
 
+  def cleanupOrphanedHistories() {
+    Job j = concurrencyManagerService.createJob { Job j ->
+      cleanupService.deleteOrphanedHistoryEvents(j)
+    }.startOrQueue()
+
+    log.debug("Triggering history cleanup task. Started job #${j.uuid}")
+
+    j.description = "TIPP Cleanup"
+    j.type = RefdataCategory.lookupOrCreate('Job.Type', 'HistoryCleanup')
+    j.startTime = new Date()
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def triggerTippMatching() {
     log.debug("copy Identifiers")
     Job j = concurrencyManagerService.createJob { Job j ->
@@ -389,10 +405,10 @@ class AdminController {
       }
     })?.each { CuratoryGroup group ->
       result["${group.name}"] = [
-          users     : group.users.collect { it.username },
-          owner     : group.owner?.username,
-          status    : group.status?.value,
-          editStatus: group.editStatus?.value
+              users     : group.users.collect { it.username },
+              owner     : group.owner?.username,
+              status    : group.status?.value,
+              editStatus: group.editStatus?.value
       ]
     }
 
@@ -413,8 +429,21 @@ class AdminController {
   }
 
   def zdbSync() {
+    boolean unlinked_only = params.boolean('unlinkedOnly') ?: false
+    LocalDateTime date
+
+    if (params.createdSince) {
+      date = GOKbTextUtils.completeDateString(params.createdSince)
+
+      if (!date) {
+        def result = [result: 'ERROR', message: "Unable to parse date for parameter 'createdSince'!"]
+        response.status = 400
+        render result as JSON
+      }
+    }
+
     Job j = concurrencyManagerService.createJob { job ->
-      titleAugmentService.syncZdbInfo(job)
+      titleAugmentService.syncZdbInfo(job, unlinked_only, date)
     }.startOrQueue()
 
     log.debug "Triggering ZDB sync, job #${j.uuid}"
@@ -439,6 +468,35 @@ class AdminController {
     redirect(controller: 'admin', action: 'jobs')
   }
 
+  def cacheSinglePackage() {
+    log.debug("Manual package caching for ID ${params.id}")
+    def result = [params: params, result: null]
+
+    if (params.int('id')) {
+      result.result = packageCachingService.cacheSinglePackage(params.int('id'), true)
+    }
+
+    render result as JSON
+  }
+
+  def deduplicatePackageTipps() {
+    log.debug("Manual TIPP deduplication for ID ${params.id}")
+    def result = [params: params, result: null]
+    def pkgId = params.int('id') ?: null
+
+    if (pkgId) {
+      Job j = concurrencyManagerService.createJob { job ->
+        packageCleanupService.reactivateReplacedTipps(pkgId, job)
+      }.startOrQueue()
+
+      j.description = "Deduplicating package TIPPs for package ${pkgId}"
+      j.type = RefdataCategory.lookupOrCreate('Job.Type', 'Package TIPP Deduplication')
+      j.startTime = new Date()
+    }
+
+    render(view: "logViewer", model: logViewer())
+  }
+
   def fetchEzbCollections() {
     log.debug("Triggering EZB open collections sync")
 
@@ -458,6 +516,14 @@ class AdminController {
     j.startTime = new Date()
 
     render(view: "logViewer", model: logViewer())
+  }
+
+  def closeAllOrphanedReviews() {
+    def result = [result: 'OK']
+
+    result.total = cleanupService.closeOrphanedReviews()
+
+    render result as JSON
   }
 
   def setupAcl() {

@@ -6,19 +6,15 @@ class GenericOIDService {
   def classCache = [:]
 
   def resolveOID(oid, boolean lock=false) {
-
-    def oid_components = oid.split(':');
-
-    def result = null;
-
-
-    def clazz = null;
+    def oid_components = oid.split(':')
+    def result = null
+    def clazz = null
 
     clazz = classCache[oid_components[0]]
 
     if ( clazz == null ) {
-      def domain_class=null;
-      domain_class = grailsApplication.getArtefact('Domain',oid_components[0])
+      def domain_class = grailsApplication.getArtefact('Domain', oid_components[0])
+
       if ( domain_class ) {
         clazz = domain_class.getClazz()
         classCache[oid_components[0]] = clazz
@@ -34,10 +30,10 @@ class GenericOIDService {
       }
 
       if ( result == null )
-        log.debug("Unable to locate instance of ${oid_components[0]} with id ${oid_components[1]}");
+        log.debug("Unable to locate instance of ${oid_components[0]} with id ${oid_components[1]}")
     }
     else {
-      log.debug("resolve OID failed to identify a domain class. Input was ${oid_components}");
+      log.debug("resolve OID failed to identify a domain class. Input was ${oid_components}")
     }
     result
   }

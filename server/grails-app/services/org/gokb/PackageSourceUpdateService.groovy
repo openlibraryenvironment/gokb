@@ -2,12 +2,12 @@ package org.gokb
 
 import com.k_int.ConcurrencyManagerService.Job
 
-import grails.gorm.transactions.*
-
+import grails.converters.JSON
 import groovy.util.logging.Slf4j
 
 import java.net.http.*
 import java.net.http.HttpResponse.BodyHandlers
+import java.net.http.HttpRequest.BodyPublishers
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.LocalDate
@@ -15,13 +15,15 @@ import java.time.ZoneId
 import java.util.regex.Pattern
 
 import org.gokb.cred.*
-import org.apache.commons.io.FileUtils
 import org.mozilla.universalchardet.UniversalDetector
 
 @Slf4j
 class PackageSourceUpdateService {
   def concurrencyManagerService
   def TSVIngestionService
+  def validationService
+  WekbIngestionService wekbIngestionService
+  boolean isExternalSourceImportOrUpdate
 
   static Pattern DATE_PLACEHOLDER_PATTERN = ~/[0-9]{4}-[0-9]{2}-[0-9]{2}/
   static Pattern FIXED_DATE_ENDING_PLACEHOLDER_PATTERN = ~/\{YYYY-MM-DD\}\.(tsv|txt)$/
@@ -32,14 +34,14 @@ class PackageSourceUpdateService {
     log.info("Initialising source update service...")
   }
 
-  def updateFromSource(Long pkgId, def user = null, Job job = null, Long activeGroupId = null, boolean dryRun = false) {
+  def updateFromSource(Long pkgId, def user = null, Job job = null, Long activeGroupId = null, boolean dryRun = false, boolean restrictSize = true) {
     log.debug("updateFromSource ${pkgId}")
     def result = [result: 'OK']
     def activeJobs = concurrencyManagerService.getComponentJobs(pkgId)
 
     if (job || activeJobs?.data?.size() == 0) {
       log.debug("UpdateFromSource started")
-      result = startSourceUpdate(pkgId, user, job, activeGroupId, dryRun)
+      result = startSourceUpdate(pkgId, user, job, activeGroupId, dryRun, restrictSize)
 
       if (job && !job.endTime) {
         job.endTime = new Date()
@@ -52,9 +54,9 @@ class PackageSourceUpdateService {
     result
   }
 
-  private def startSourceUpdate(pid, user, job, activeGroupId, dryRun) {
+  private def startSourceUpdate(pid, user, job, activeGroupId, dryRun, restrictSize) {
     log.debug("Source update start..")
-    def result = [result: 'OK']
+    def result = [result: 'OK', dryRun: dryRun]
     Boolean async = (user ? true : false)
     def preferred_group
     def title_ns
@@ -62,6 +64,7 @@ class PackageSourceUpdateService {
     def skipInvalid = false
     Boolean deleteMissing = false
     def pkgInfo = [:]
+    def startTime = new Date()
 
     Package.withNewSession {
       Package p = Package.get(pid)
@@ -73,117 +76,156 @@ class PackageSourceUpdateService {
       title_ns = pkg_source?.targetNamespace?.id ?: (pkg_prov?.titleNamespace?.id ?: null)
 
       if (job && !job.startTime) {
-        job.startTime = new Date()
+        job.startTime = startTime
       }
 
-      if (pkg_source?.url) {
-        def src_url = null
-        def dynamic_date = false
-        LocalDate extracted_date
-        skipInvalid = pkg_source.skipInvalid ?: false
-        def file_info = [:]
+      isExternalSourceImportOrUpdate = (pkg_source?.importConfig?.value && pkg_source.importConfig.value != "EZB")
+      if ( isExternalSourceImportOrUpdate ) {
+        result.report = wekbIngestionService.startTitleImport(pkgInfo, pkg_source, pkg_plt, pkg_prov, title_ns, p, job)
 
-        try {
-          src_url = new URL(pkg_source.url)
-        }
-        catch (Exception e) {
-          log.debug("Invalid source URL!")
-          result.result = 'ERROR'
-          result.messageCode = 'kbart.errors.url.invalid'
-          result.message = "Provided URL is not valid!"
+      } else {
+        if (pkg_source?.url) {
+          URL src_url = null
+          Boolean dynamic_date = false
+          def valid_url_string = validationService.checkUrl(pkg_source?.url, true)
+          LocalDate extracted_date
+          skipInvalid = pkg_source.skipInvalid ?: false
+          def file_info = [:]
 
-          return result
-        }
+          if (valid_url_string) {
+            String local_date_string = LocalDate.now().toString()
 
-        if (src_url) {
-          def existing_string = src_url.toString()
-          String local_date_string = LocalDate.now().toString()
+            if (valid_url_string =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
+              log.debug("URL contains date placeholder ..")
+              src_url = new URL(valid_url_string.replace('{YYYY-MM-DD}', local_date_string))
+              dynamic_date = true
+            } else {
+              def date_pattern_match = (valid_url_string =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
 
-          if (existing_string =~ FIXED_DATE_ENDING_PLACEHOLDER_PATTERN) {
-            log.debug("URL contains date placeholder ..")
-            src_url = new URL(existing_string.replace('{YYYY-MM-DD}', local_date_string))
-            dynamic_date = true
-          }
-          else {
-            def date_pattern_match = (existing_string =~ VARIABLE_DATE_ENDING_PLACEHOLDER_PATTERN)
+              if (date_pattern_match && date_pattern_match[0].size() > 0) {
+                String matched_date_string = date_pattern_match[0][1]
+                log.debug("${matched_date_string}")
+                extracted_date = LocalDate.parse(matched_date_string)
+              }
 
-            if (date_pattern_match && date_pattern_match[0].size() > 0) {
-              String matched_date_string = date_pattern_match[0][1]
-              log.debug("${matched_date_string}")
-              extracted_date = LocalDate.parse(matched_date_string)
+              src_url = new URL(valid_url_string)
             }
-          }
-        }
-        else {
-          log.debug("No source URL!")
-          result.result = 'ERROR'
-          result.messageCode = 'kbart.errors.url.missing'
-          result.message = "Package source does not have an URL!"
-
-          return result
-        }
-
-        if (src_url?.getProtocol() in ['http', 'https']) {
-          def deposit_token = java.util.UUID.randomUUID().toString()
-          File tmp_file = TSVIngestionService.handleTempFile(deposit_token)
-          def lastRunLocal = pkg_source.lastRun ? pkg_source.lastRun.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
-
-          pkg_source.lastRun = new Date()
-          pkg_source.save(flush: true)
-
-          if (!extracted_date || !lastRunLocal || extracted_date > lastRunLocal) {
-            log.debug("Request initial URL..")
-            file_info = fetchKbartFile(tmp_file, src_url)
-          }
-
-          if (file_info.accessError) {
+          } else {
+            log.debug("No source URL!")
             result.result = 'ERROR'
-            result.messageCode = 'kbart.errors.url.html'
-            result.message = "URL returned HTML, indicating provider configuration issues!"
+            result.messageCode = 'kbart.errors.url.invalid'
+            result.message = "Package source URL is invalid!"
 
-            return result
-          } else if (file_info.status == 403) {
-            log.debug("URL request failed!")
-            result.result = 'ERROR'
-            result.messageCode = 'kbart.errors.url.denied'
-            result.message = "URL request returned 403 ACCESS DENIED, skipping further tries!"
+            createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
             return result
           }
 
-          if (!file_info.file_name && (dynamic_date || extracted_date)) {
-            LocalDate active_date = LocalDate.now()
-            src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
-            log.debug("Fetching dated URL for today..")
-            file_info = fetchKbartFile(tmp_file, src_url)
+          if (src_url?.getProtocol() in ['http', 'https']) {
+            def deposit_token = java.util.UUID.randomUUID().toString()
+            File tmp_file = TSVIngestionService.handleTempFile(deposit_token)
+            def lastRunLocal = pkg_source.lastRun ? pkg_source.lastRun.toInstant().atZone(ZoneId.systemDefault()).toLocalDate() : null
 
-            // Look at first of this month
-            if (!file_info.file_name) {
-              sleep(500)
-              log.debug("Fetching first of the month..")
-              def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
-              file_info = fetchKbartFile(tmp_file, som_date_url)
+            pkg_source.lastRun = new Date()
+            pkg_source.save(flush: true)
+
+            if (!extracted_date || !lastRunLocal || extracted_date > lastRunLocal) {
+              log.debug("Request initial URL..")
+              file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
             }
 
-            // Check all days of this month
-            while (active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
-              active_date = active_date.minusDays(1)
+            if (file_info.connectError) {
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.connection'
+              result.message = "There was an error trying to fetch KBART via URL!"
+              result.exceptionMsg = file_info.exceptionMsg
+
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+              return result
+            }
+
+            if (file_info.fileSizeError) {
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.fileSize'
+              result.message = "The attached KBART file is too big! Files bigger than 20 MB have to be authorized manually by an administrator."
+
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+              return result
+            }
+
+            if (file_info.accessError) {
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.html'
+              result.message = "URL returned HTML, indicating provider configuration issues!"
+
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+              return result
+            } else if (file_info.mimeTypeError) {
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.mimeType'
+              result.message = "KBART URL returned a wrong content type!"
+              log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+              return result
+            } else if (file_info.status == 403) {
+              log.debug("URL request failed!")
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.denied'
+              result.message = "URL request returned 403 ACCESS DENIED, skipping further tries!"
+
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+              return result
+            }
+
+            if (!file_info.file_name && (dynamic_date || extracted_date)) {
+              LocalDate active_date = LocalDate.now()
+              boolean skipLookupByDate = false
               src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
-              log.debug("Fetching dated URL for date ${active_date}")
-              sleep(500)
-              file_info = fetchKbartFile(tmp_file, src_url)
+              log.debug("Fetching dated URL for today..")
+              file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
+
+              // Look at first of this month
+              if (!file_info.file_name) {
+                sleep(500)
+                log.debug("Fetching first of the month..")
+                def som_date_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.withDayOfMonth(1).toString()))
+                file_info = fetchKbartFile(tmp_file, som_date_url, restrictSize)
+              }
+
+              // Check all days of this month
+              while (!skipLookupByDate && active_date.isAfter(LocalDate.now().minusDays(30)) && !file_info.file_name) {
+                active_date = active_date.minusDays(1)
+                src_url = new URL(src_url.toString().replaceFirst(DATE_PLACEHOLDER_PATTERN, active_date.toString()))
+                log.debug("Fetching dated URL for date ${active_date}")
+                sleep(500)
+                file_info = fetchKbartFile(tmp_file, src_url, restrictSize)
+
+                if (file_info.mimeTypeError) {
+                  skipLookupByDate = true
+                }
+              }
             }
-          }
 
-          log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
+            if (file_info.mimeTypeError) {
+              result.result = 'ERROR'
+              result.messageCode = 'kbart.errors.url.mimeType'
+              result.message = "KBART URL returned a wrong content type!"
+              log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
 
-          if (file_info.file_name) {
-            if ((file_info.file_name?.endsWith('.tsv') || file_info.file_name?.endsWith('.txt')) &&
-                (file_info.content_mime_type?.startsWith("text/plain") ||
-                file_info.content_mime_type?.startsWith("text/csv") ||
-                file_info.content_mime_type?.startsWith("text/tab-separated-values") ||
-                file_info.content_mime_type == 'application/octet-stream')
-            ) {
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
+              return result
+            }
+
+            log.debug("Got mime type ${file_info.content_mime_type} for file ${file_info.file_name}")
+
+            if (file_info.file_name) {
               try {
                 MessageDigest md5_digest = MessageDigest.getInstance("MD5")
                 UniversalDetector detector = new UniversalDetector()
@@ -213,19 +255,18 @@ class PackageSourceUpdateService {
                   if (!datafile) {
                     log.debug("Create new datafile")
                     datafile = new DataFile(
-                                            guid: deposit_token,
-                                            md5: file_info.md5sumHex,
-                                            uploadName: file_info.file_name,
-                                            name: file_info.file_name,
-                                            filesize: total_size,
-                                            encoding: encoding,
-                                            uploadMimeType: file_info.content_mime_type).save()
+                            guid: deposit_token,
+                            md5: file_info.md5sumHex,
+                            uploadName: file_info.file_name,
+                            name: file_info.file_name,
+                            filesize: total_size,
+                            encoding: encoding,
+                            uploadMimeType: file_info.content_mime_type).save()
                     datafile.fileData = tmp_file.getBytes()
-                    datafile.save(failOnError:true,flush:true)
+                    datafile.save(failOnError: true, flush: true)
                     log.debug("Saved new datafile : ${datafile.id}")
                     datafile_id = datafile.id
-                  }
-                  else {
+                  } else {
                     log.debug("Found existing datafile ${datafile}")
 
                     if (!hasFileChanged(pid, datafile.id)) {
@@ -234,62 +275,66 @@ class PackageSourceUpdateService {
                       result.message = 'Skipped repeated import of the same file for this package.'
                       result.messageCode = 'kbart.transmission.skipped.sameFile'
 
+                      tmp_file.delete()
+
+                      createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
                       return result
                     }
 
                     datafile_id = datafile.id
                   }
-                }
-                else {
+                } else {
                   log.error("Illegal charset ${encoding} found..")
                   result.result = 'ERROR'
                   result.messageCode = 'kbart.errors.url.charset'
                   result.message = "KBART is not UTF-8!"
 
+                  tmp_file.delete()
+
+                  createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
+
                   return result
                 }
               } catch (IOException e) {
-                  // handle exception
-                 log.error("Failed DataFile handling", e)
+                // handle exception
+                log.error("Failed DataFile handling", e)
               }
-            }
-            else {
-              result.result = 'ERROR'
-              result.messageCode = 'kbart.errors.url.mimeType'
-              result.message = "KBART URL returned a wrong content type!"
-              log.error("KBART url ${src_url} returned MIME type ${file_info.content_mime_type} for file ${file_info.file_name}")
+
+
+              tmp_file.delete()
+            } else {
+              result.message = "No KBART found for provided URL!"
+              result.messageCode = 'kbart.transmission.skipped.noFile'
+              result.result = 'SKIPPED'
+              log.debug("KBART url ${src_url} returned MIME type ${file_info.content_mime_type}")
+
+              createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
               return result
             }
           }
+          // else if (src_url.getProtocol() in ['ftp', 'sftp']) {
           else {
-            result.message = "No KBART found for provided URL!"
-            result.messageCode = 'kbart.transmission.skipped.noFile'
-            result.result = 'SKIPPED'
-            log.debug("KBART url ${src_url} returned MIME type ${file_info.content_mime_type}")
+            result.result = 'ERROR'
+            result.messageCode = 'kbart.errors.url.protocol'
+            result.message = "KBART URL has an unsupported protocol!"
+            log.debug("Unsupported protocol for URL ${src_url}")
+
+            createJobResult(p, job, startTime, dryRun, user, preferred_group, result)
 
             return result
           }
-        }
-        // else if (src_url.getProtocol() in ['ftp', 'sftp']) {
-        else {
+        } else {
+          log.debug("No source URL!")
           result.result = 'ERROR'
-          result.messageCode = 'kbart.errors.url.protocol'
-          result.message = "KBART URL has an unsupported protocol!"
+          result.messageCode = 'kbart.errors.url.missing'
+          result.message = "Package source does not have an URL!"
 
           return result
         }
       }
-      else {
-        log.debug("No source URL!")
-        result.result = 'ERROR'
-        result.messageCode = 'kbart.errors.url.missing'
-        result.message = "Package source does not have an URL!"
-
-        return result
-      }
     }
-
     if (datafile_id) {
       if (job) {
         result = TSVIngestionService.updatePackage(pid,
@@ -305,7 +350,7 @@ class PackageSourceUpdateService {
                                                     job)
 
         if (hasOpenIssues(pid, async, result)) {
-          log.info("There were issues with the automated job (valid: ${result.validation?.valid}, reviews: ${result.report?.reviews}, matching reviews: ${result.matchingJob?.reviews}), keeping listStatus in progress..")
+          log.info("There were issues with the automated job (valid: ${result.validation?.valid}, reviews: ${result.report?.reviews}${!async ? ', matching reviews: '  + result.matchingJob?.reviews : ''}), keeping listStatus in progress..")
         }
         else if (!async && !dryRun) {
           log.debug("Setting new listStatus to checked ..")
@@ -343,7 +388,7 @@ class PackageSourceUpdateService {
         }
 
         if (user) {
-          update_job.ownerId = user.id
+          update_job.ownerId = user
         }
 
         update_job.description = "KBART Source ingest (${pkgInfo.name})".toString()
@@ -360,7 +405,7 @@ class PackageSourceUpdateService {
         }
 
         if (hasOpenIssues(pid, async, result.job_result)) {
-          log.info("There were issues with the automated job (valid: ${result.job_result?.validation?.valid}, reviews: ${result.job_result?.report?.reviews}, matching reviews: ${result.job_result?.matchingJob?.reviews}), keeping listStatus in progress..")
+          log.info("There were issues with the automated job (valid: ${result.job_result?.validation?.valid}, reviews: ${result.job_result?.report?.reviews}${!async ? ', matching reviews: '  + result.matchingJob?.reviews : ''}), keeping listStatus in progress..")
         }
         else if (!async && !dryRun) {
           log.debug("Setting new listStatus to checked ..")
@@ -380,7 +425,7 @@ class PackageSourceUpdateService {
         }
       }
     }
-    else if (result.result != 'SKIPPED') {
+    else if (!isExternalSourceImportOrUpdate && result.result != 'SKIPPED') {
       log.debug("Unable to reference DataFile")
       result.result = 'ERROR'
       result.messageCode = 'kbart.errors.url.unknown'
@@ -390,42 +435,124 @@ class PackageSourceUpdateService {
     result
   }
 
-  def fetchKbartFile(File tmp_file, URL src_url) {
+  def fetchKbartFile(File tmp_file, URL src_url, boolean restrictSize = true) {
     def result = [content_mime_type: null, file_name: null]
-    HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build()
-    HttpRequest request = HttpRequest.newBuilder()
-      .uri(src_url.toURI())
-      .header("User-Agent", "GOKb KBART Updater")
+    HttpClient client = HttpClient.newBuilder()
+      .connectTimeout(Duration.ofSeconds(30))
+      .followRedirects(HttpClient.Redirect.NORMAL)
       .build()
 
-    HttpResponse<InputStream> response = client.send(request, BodyHandlers.ofInputStream())
-    HttpHeaders headers = response.headers()
-    def file_name = headers.firstValue('Content-Disposition').isPresent() ? headers.firstValue('Content-Disposition').get() : null
+    Long max_length = 20971520L // 1024 * 1024 * 20
+    Long content_length
 
-    if (file_name) {
-      file_name = file_name.split('filename=')[1]
-    }
+    try {
+      HttpRequest head_request = HttpRequest.newBuilder()
+        .uri(src_url.toURI())
+        .header("User-Agent", "GOKb KBART Updater")
+        .method('HEAD', BodyPublishers.noBody())
+        .build()
 
-    result.content_mime_type = headers.firstValue('Content-Type').isPresent() ? headers.firstValue('Content-Type').get() : null
+      def head_response = client.send(head_request, BodyHandlers.discarding())
 
-    if (response.statusCode() >= 400) {
-      log.warn("KBART fetch status: ${result.status}")
-    }
-    else if (!file_name && result.content_mime_type == 'text/plain') {
-      file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
-    }
-    else if (!file_name && result.content_mime_type.startsWith('text/html')) {
-      log.warn("Got HTML result at KBART URL ${src_url}!")
-      result.accessError = true
-    }
+      if (head_response?.statusCode() == 405) {
+        log.debug("Unable to send HEAD request ..")
+      }
+      else if (head_response?.statusCode()) {
+        HttpHeaders test_headers = head_response.headers()
+        content_length = test_headers.firstValue('Content-Length').isPresent() ? Long.valueOf(test_headers.firstValue('Content-Length').get()) : null
 
-    if (file_name?.trim()) {
-      log.debug("${result.content_mime_type} ${headers.map()}")
-      result.file_name = file_name.replaceAll(/\"/, '')
-      InputStream content = response.body()
-      FileUtils.copyInputStreamToFile(content, tmp_file)
-      content.close()
-      log.debug("Wrote ${tmp_file.length()}")
+        log.debug("Got HEAD result headers: ${test_headers}")
+
+        // reject files bigger than 20 MB
+        if (restrictSize && content_length && content_length > max_length) {
+          result.fileSizeError = true
+          return result
+        }
+      }
+
+      HttpRequest request = HttpRequest.newBuilder()
+              .uri(src_url.toURI())
+              .header("User-Agent", "GOKb KBART Updater")
+              .build()
+
+      HttpResponse<InputStream> response = client.send(request, BodyHandlers.ofInputStream())
+      HttpHeaders headers = response.headers()
+
+      log.debug("Got HEAD result headers: ${headers}")
+
+      def file_name = headers.firstValue('Content-Disposition').isPresent() ? headers.firstValue('Content-Disposition').get() : null
+
+      if (file_name) {
+        file_name = file_name.split('filename=')[1]
+      }
+
+      result.content_mime_type = headers.firstValue('Content-Type').isPresent() ? headers.firstValue('Content-Type').get() : null
+
+      if (response.statusCode() >= 400) {
+        log.debug("KBART fetch status: ${response.statusCode()}")
+      }
+      else if (!file_name && result.content_mime_type?.startsWith('text/plain')) {
+        file_name = src_url.toString().split('/')[src_url.toString().split('/').size() - 1]
+      }
+      else if (!file_name && result.content_mime_type?.startsWith('text/html')) {
+        log.warn("Got HTML result at KBART URL ${src_url}!")
+        result.accessError = true
+        return result
+      }
+
+      content_length = headers.firstValue('Content-Length').isPresent() ? Long.valueOf(headers.firstValue('Content-Length').get()) : null
+
+      if (restrictSize && content_length && content_length > max_length) {
+        response.body().close()
+        result.fileSizeError = true
+      }
+      else if (file_name?.trim()) {
+        file_name = file_name.replaceAll(/\"/, '')
+
+        if ((file_name?.trim()?.endsWith('.tsv') || file_name?.trim()?.endsWith('.txt') || file_name?.trim()?.endsWith('.kbart')) &&
+            (result.content_mime_type?.startsWith("text/plain") ||
+            result.content_mime_type?.startsWith("text/csv") ||
+            result.content_mime_type?.startsWith("text/tab-separated-values") ||
+            result.content_mime_type == 'application/octet-stream')) {
+          log.debug("${result.content_mime_type} ${headers.map()}")
+          result.file_name = file_name
+
+          OutputStream outStream = new FileOutputStream(tmp_file)
+
+          byte[] buffer = new byte[8 * 1024]
+          int bytesRead
+          Long current_total = 0
+
+          while ((bytesRead = response.body().read(buffer)) != -1) {
+            outStream.write(buffer, 0, bytesRead)
+
+            current_total += bytesRead
+
+            if (!content_length && current_total > max_length) {
+              result.fileSizeError = true
+              response.body().close()
+              break
+            }
+          }
+
+          outStream.close()
+
+          log.debug("Wrote ${tmp_file?.length()}")
+
+          if (result.fileSizeError) {
+            tmp_file.delete()
+          }
+        }
+        else {
+          result.mimeTypeError = true
+          response.body().close()
+        }
+      }
+    }
+    catch (Exception e) {
+      result.connectError = true
+      result.errorMsg = e.message
+      log.error("failed fetching file via ${src_url}", e)
     }
 
     result
@@ -477,5 +604,51 @@ class PackageSourceUpdateService {
                                               [ct: type_fa, pkg: pkgId])
 
     return (ordered_combos.size() == 0 || ordered_combos[0] != datafileId)
+  }
+
+  private void createJobResult(pkg, job, startTime, dryRun, ownerId, groupId, result) {
+    def job_map = [:]
+    def job_uuid = job?.uuid ?: UUID.randomUUID().toString()
+
+    if (job) {
+      job_map = [
+        uuid        : (job_uuid),
+        description : (job.description),
+        resultObject: (result as JSON).toString(),
+        type        : (job.type),
+        statusText  : (result.result),
+        ownerId     : (job.ownerId),
+        groupId     : (job.groupId),
+        startTime   : (job.startTime),
+        endTime     : (new Date()),
+        linkedItemId: (job.linkedItem?.id)
+      ]
+    }
+    else {
+      job_map = [
+        uuid        : (job_uuid),
+        description : ("KBART Source ingest (${pkg.name})".toString()),
+        resultObject: (result as JSON).toString(),
+        type        : (dryRun ? RefdataCategory.lookup('Job.Type', 'KBARTSourceIngestDryRun') : RefdataCategory.lookup('Job.Type', 'KBARTSourceIngest')),
+        statusText  : (result.result),
+        ownerId     : (ownerId),
+        groupId     : (groupId),
+        startTime   : (startTime),
+        endTime     : (new Date()),
+        linkedItemId: (pkg.id)
+      ]
+    }
+
+    def result_object = JobResult.findByUuid(job_uuid)
+
+    if (!result_object) {
+      def jr = new JobResult(job_map).save(flush: true, failOnError: true)
+    }
+    else {
+      job_map.each { k, v ->
+        result_object[k] = v
+        result_object.save(flush: true)
+      }
+    }
   }
 }

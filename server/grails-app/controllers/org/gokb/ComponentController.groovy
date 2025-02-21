@@ -36,11 +36,19 @@ class ComponentController {
     def dupe_ids = []
 
     result.max = max
+    result.offset = offset
 
-    if (params.id) {
-      IdentifierNamespace ns = genericOIDService.resolveOID(params.id)
+    if (params.oid) {
+      IdentifierNamespace ns = genericOIDService.resolveOID(params.oid)
 
       if (ns) {
+        result.ctype = params.ctype
+        result.componentType = params.componentType
+        result.oid = params.oid
+        result.nsname = ns.name ?: ns.value
+
+        result.withoutJump = result
+
         Identifier.withNewSession { session ->
           log.debug("fetching results for ${ns} (${params.componentType})..")
 
@@ -49,7 +57,7 @@ class ComponentController {
           RefdataValue combo_status = RefdataCategory.lookup('Combo.Status', 'Active')
 
           if (params.ctype == 'st') {
-            String staticClause = '''kbcomponent as kbc WHERE kbc.kbc_status_rv_fk <> :deleted
+            String staticClause = ''' kbc.kbc_status_rv_fk <> :deleted
               AND (SELECT count(c.combo_id) FROM combo AS c JOIN identifier AS id ON (c.combo_to_fk = id.kbc_id) WHERE
                 c.combo_from_fk = kbc.kbc_id AND c.combo_status_rv_fk = :comboStatus
                 AND c.combo_type_rv_fk = :comboType
@@ -58,12 +66,16 @@ class ComponentController {
             def query = new StringWriter()
             def cqry = new StringWriter()
 
-            query.write('SELECT kbc.kbc_id FROM ')
-            cqry.write('SELECT count(kbc.kbc_id) FROM ')
+            query.write('SELECT kbc.kbc_id FROM kbcomponent as kbc ')
+            cqry.write('SELECT count(kbc.kbc_id) FROM kbcomponent as kbc ')
 
             if (params.componentType && knownIdentifiedTypes[params.componentType]) {
-              query.write(knownIdentifiedTypes[params.componentType] + ' NATURAL JOIN ')
-              cqry.write(knownIdentifiedTypes[params.componentType] + ' NATURAL JOIN ')
+              query.write("WHERE EXISTS (SELECT 1 FROM ${knownIdentifiedTypes[params.componentType]} WHERE kbc_id = kbc.kbc_id) AND")
+              cqry.write("WHERE EXISTS (SELECT 1 FROM ${knownIdentifiedTypes[params.componentType]} WHERE kbc_id = kbc.kbc_id) AND")
+            }
+            else {
+              query.write('WHERE')
+              cqry.write('WHERE')
             }
 
             query.write(staticClause)
@@ -72,10 +84,8 @@ class ComponentController {
             query.write(' order by kbc.kbc_id limit :limit offset :offset ;')
             cqry.write(';')
 
-            log.debug("Fetching count with ${cqry.toString()}")
-
             final singleTitlesCount = session.createSQLQuery(cqry.toString())
-              .setParameter('deleted', status_deleted)
+              .setParameter('deleted', status_deleted.id)
               .setParameter('namespace', ns.id)
               .setParameter('comboType', combo_type.id)
               .setParameter('comboStatus', combo_status.id)
@@ -84,7 +94,7 @@ class ComponentController {
             result.titleCount = singleTitlesCount[0]
 
             final singleTitles = session.createSQLQuery(query.toString())
-              .setParameter('deleted', status_deleted)
+              .setParameter('deleted', status_deleted.id)
               .setParameter('namespace', ns.id)
               .setParameter('comboType', combo_type.id)
               .setParameter('comboStatus', combo_status.id)
@@ -97,10 +107,9 @@ class ComponentController {
 
           if (params.ctype == 'di') {
             String staticOuterClause = '''FROM identifier AS id WHERE id.id_namespace_fk = :namespace
-              AND (SELECT COUNT(c.combo_id) FROM combo AS c JOIN '''
+              AND (SELECT COUNT(c.combo_id) FROM combo AS c JOIN kbcomponent as kbc ON (c.combo_from_fk = kbc.kbc_id) '''
 
-            String staticInnerClause = '''kbcomponent as kbc ON (c.combo_from_fk = kbc.kbc_id) WHERE
-                kbc.kbc_status_rv_fk <> :deleted
+            String staticInnerClause = ''' kbc.kbc_status_rv_fk <> :deleted
                 AND c.combo_to_fk = id.kbc_id
                 AND c.combo_type_rv_fk = :comboType
                 AND c.combo_status_rv_fk = :comboStatus) > 1'''
@@ -115,8 +124,12 @@ class ComponentController {
             cqry.write(staticOuterClause)
 
             if (params.componentType && knownIdentifiedTypes[params.componentType]) {
-              query.write(knownIdentifiedTypes[params.componentType] + ' NATURAL JOIN ')
-              cqry.write(knownIdentifiedTypes[params.componentType] + ' NATURAL JOIN ')
+              query.write("WHERE EXISTS (SELECT 1 FROM ${knownIdentifiedTypes[params.componentType]} WHERE kbc_id = kbc.kbc_id) AND")
+              cqry.write("WHERE EXISTS (SELECT 1 FROM ${knownIdentifiedTypes[params.componentType]} WHERE kbc_id = kbc.kbc_id) AND")
+            }
+            else {
+              query.write('WHERE')
+              cqry.write('WHERE')
             }
 
             query.write(staticInnerClause)
@@ -126,7 +139,7 @@ class ComponentController {
             cqry.write(';')
 
             final dispersedIdsCount = session.createSQLQuery(cqry.toString())
-              .setParameter('deleted', status_deleted)
+              .setParameter('deleted', status_deleted.id)
               .setParameter('namespace', ns.id)
               .setParameter('comboType', combo_type.id)
               .setParameter('comboStatus', combo_status.id)
@@ -135,7 +148,7 @@ class ComponentController {
             result.idsCount = dispersedIdsCount[0]
 
             final dispersedIds = session.createSQLQuery(query.toString())
-              .setParameter('deleted', status_deleted)
+              .setParameter('deleted', status_deleted.id)
               .setParameter('namespace', ns.id)
               .setParameter('comboType', combo_type.id)
               .setParameter('comboStatus', combo_status.id)
@@ -146,10 +159,6 @@ class ComponentController {
             dupe_ids = dispersedIds
           }
         }
-
-        result.namespace = ns
-        result.ctype = params.ctype
-        result.componentType = params.componentType
 
         components.each {
           result.singleTitles.add(KBComponent.get(it))

@@ -74,7 +74,7 @@
           class="badge badge-warning">
             ${d.publisher?.size() ?: '0'}
         </span></a></li>
-
+      <li><a href="#subjects" data-toggle="tab">Subjects <span class="badge badge-warning"> ${d.subjects?.size() ?: '0'} </span></a></li>
       <li><a href="#availability" data-toggle="tab">Availability <span
           class="badge badge-warning">
             ${d.tipps?.size() ?: '0'}
@@ -146,6 +146,8 @@
     </div>
 
     <g:render template="/tabTemplates/showVariantnames" model="${[d:displayobj, showActions:true]}" />
+
+    <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
 
     <div class="tab-pane" id="history">
       <g:if test="${d.id != null}">

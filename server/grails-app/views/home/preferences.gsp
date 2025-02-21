@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta name="layout" content="sb-admin"/>
-    <title>GOKb: My Preferences</title>
+    <title>GOKB: My Preferences</title>
   </head>
-  <body>  
+  <body>
   <h1 class="page-header">My Preferences</h1>
    <div id="mainarea"
     class="panel panel-default">

@@ -17,7 +17,6 @@ class TippController {
   def genericOIDService
   def springSecurityService
   def ESSearchService
-  def FTUpdateService
   def messageService
   def restMappingService
   def cleanupService
@@ -30,7 +29,7 @@ class TippController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
-    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -61,7 +60,7 @@ class TippController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def show() {
     def result = [:]
-    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     def is_curator = true
     User user = null
 
@@ -121,6 +120,13 @@ class TippController {
 
           if (obj?.validate()) {
             response.status = 201
+
+            def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects)
+
+            if (subject_result.errors.size() > 0) {
+              errors.subjects = subject_result.errors
+            }
+
             errors << tippService.updateCombos(obj, reqBody)
 
             result = restMappingService.mapObjectToJson(obj, params, user)
@@ -214,6 +220,12 @@ class TippController {
               }
             }
 
+            def subject_result = restMappingService.updateSubjects(obj, reqBody.subjects, remove)
+
+            if (subject_result.errors.size() > 0) {
+              errors.subjects = subject_result.errors
+            }
+
             if (reqBody.prices != null) {
               log.debug("Updating prices ..")
               def prices_result = restMappingService.updatePrices(obj, reqBody.prices, remove)
@@ -238,10 +250,6 @@ class TippController {
               result.result = 'ERROR'
               response.status = 400
               errors = messageService.processValidationErrors(obj.errors, request.locale)
-            }
-
-            if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-              FTUpdateService.updateSingleItem(obj)
             }
 
             result = restMappingService.mapObjectToJson(obj, params, user)
@@ -486,6 +494,63 @@ class TippController {
       result.result = 'ERROR'
       response.status = 404
       result.message = "TIPP not found!"
+    }
+    render result as JSON
+  }
+
+  /*
+  * Merge a TIPP into another one and if necessary reactivate the latter
+  */
+
+  @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'])
+  @Transactional
+  def merge() {
+    def result = ['result':'OK', 'params': params]
+    User user = User.get(springSecurityService.principal.id)
+    def obj = TitleInstancePackagePlatform.findByUuid(params.id) ?: TitleInstancePackagePlatform.get(genericOIDService.oidToId(params.id))
+    CuratoryGroup activeGroup = params.int('activeGroup') ? CuratoryGroup.get(params.int('activeGroup')) : null
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    Boolean keepOld = params.boolean('keepOld') ?: false
+
+    if (obj && obj.isEditable()) {
+      def curator = componentUpdateService.isUserCurator(obj, user)
+
+      if (curator || user.isAdmin()) {
+        if (params.target) {
+          def target = obj.class.get(params.int('target'))
+
+          if (target) {
+            tippService.mergeDuplicate(obj, target, user, activeGroup, keepOld)
+          }
+          else {
+            result.result = 'ERROR'
+            response.status = 404
+            result.message = "Unable to reference target title!"
+          }
+        }
+        else {
+          result = tippService.reactivateOldestTitleTipp(obj)
+
+          if (result.result == 'ERROR') {
+            response.status = 400
+          }
+        }
+      }
+      else {
+        result.result = 'ERROR'
+        response.status = 403
+        result.message = "User must belong to at least one curatory group of an existing package to make changes!"
+      }
+    }
+    else if (!obj) {
+      result.result = 'ERROR'
+      response.status = 404
+      result.message = "Title not found or empty request body!"
+    }
+    else {
+      result.result = 'ERROR'
+      response.status = 403
+      result.message = "User is not allowed to edit this component!"
     }
     render result as JSON
   }

@@ -7,9 +7,12 @@ import grails.converters.JSON
 import org.gokb.cred.CuratoryGroup
 import org.gokb.cred.JobResult
 import org.gokb.cred.KBComponent
+import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
 import org.gokb.cred.User
 import grails.plugin.springsecurity.annotation.Secured
 import java.util.concurrent.CancellationException
+import java.time.LocalDate
 
 class JobsController {
 
@@ -183,64 +186,128 @@ class JobsController {
       }
     }
     // all jobs
-    else if (user.superUserStatus) {
+    else if (user.isAdmin()) {
       if (params.archived == "true") {
-        result.data = []
-        def hqlTotal = JobResult.executeQuery("select count(jr.id) from JobResult as jr")[0]
-        def jobs = JobResult.executeQuery("from JobResult as jr order by jr.startTime desc", [], [max: max, offset: offset])
 
-        jobs.each { JobResult j ->
-          def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
-          // No JsonObject for list view
-          CuratoryGroup cg = CuratoryGroup.get(j.groupId)
-          result.data << [
-              group      : cg?[id:cg.id, name:cg.name, uuid: cg.uuid]:null,
-              uuid       : j.uuid,
-              description: j.description,
-              type       : j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
-              linkedItem : (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
-              startTime  : j.startTime,
-              endTime    : j.endTime,
-              status     : j.statusText
-          ]
+        result.data = []
+        int hqlTotal
+        JobResult[] jobs
+        LocalDate dateFilter = null
+        def date_qry = "jr.startTime > :date and jr.startTime < :nd"
+        def qry_pars = [:]
+
+        if (params.date) {
+          try {
+            dateFilter = LocalDate.parse(params.date)
+          }
+          catch (Exception e) {
+            log.debug(e)
+            result.result = 'ERROR'
+            response.status = 400
+            result.message = 'Unable to parse provided date parameter!'
+
+            render result as JSON
+          }
         }
 
-        result['_pagination'] = [
-            offset: offset,
-            limit : max,
-            total : hqlTotal
-        ]
+        def base_qry = "from JobResult as jr"
+        def count_qry = "select count(jr.id) from JobResult as jr"
+
+        if (params.type == 'import') {
+          qry_pars.jt = [RefdataCategory.lookup('Job.Type','KBARTIngest'), RefdataCategory.lookup('Job.Type','KBARTSourceIngest')]
+
+          base_qry += " where type in (:jt)"
+          count_qry += " where type in (:jt)"
+        }
+        else if (params.int('type')) {
+          RefdataValue rdv_type = RefdataValue.get(params.int('type'))
+
+          if (rdv_type) {
+            if (rdv_type.owner = RefdataCategory.lookup('Job.Type')) {
+              qry_pars.jt = rdv_type
+
+              count_qry += " where type = :jt"
+              base_qry += " where type = :jt"
+            }
+            else {
+              result.result = 'ERROR'
+              response.status = 400
+              result.message = 'Reference value ${params.type} is not a job type!'
+            }
+          }
+          else {
+            result.result = 'ERROR'
+            response.status = 400
+            result.message = 'Unable to reference job type via ID ${params.type}!'
+          }
+        }
+
+        if (result.result != 'ERROR') {
+          if (dateFilter) {
+            if (params.type) {
+              base_qry += " and "
+              count_qry += " and "
+            }
+            else {
+              base_qry += " where "
+              count_qry += " where "
+            }
+
+            base_qry += date_qry
+            count_qry += date_qry
+            qry_pars.date = java.sql.Date.valueOf(dateFilter)
+            qry_pars.nd = java.sql.Date.valueOf(dateFilter.plusDays(1))
+          }
+
+          hqlTotal = JobResult.executeQuery(count_qry, qry_pars)[0]
+          jobs = JobResult.executeQuery("${base_qry} order by jr.startTime desc".toString(), qry_pars, [max: max, offset: offset])
+
+          jobs.each { JobResult j ->
+            def component = j.linkedItemId ? KBComponent.get(j.linkedItemId) : null
+            // No JsonObject for list view
+            CuratoryGroup cg = CuratoryGroup.get(j.groupId)
+            result.data << [
+                group      : cg?[id:cg.id, name:cg.name, uuid: cg.uuid]:null,
+                uuid       : j.uuid,
+                description: j.description,
+                type       : j.type ? [id: j.type.id, name: j.type.value, value: j.type.value] : null,
+                linkedItem : (component ? [id: component.id, type: component.niceName, uuid: component.uuid, name: component.name] : null),
+                startTime  : j.startTime,
+                endTime    : j.endTime,
+                status     : j.statusText
+            ]
+          }
+
+          result['_pagination'] = [
+              offset: offset,
+              limit : max,
+              total : hqlTotal
+          ]
+        }
       }
       else {
-        def rawJobs = concurrencyManagerService.getJobs()
-        def selected = []
+        if (params.int('type')) {
+          RefdataValue rdv_type = RefdataValue.get(params.int('type'))
 
-        rawJobs.each { k, v ->
-          selected << [
-              id         : v.uuid,
-              progress   : v.progress,
-              messages   : v.messages,
-              description: v.description,
-              type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
-              begun      : v.begun,
-              startTime  : v.startTime,
-              linkedItem : v.linkedItem,
-              endTime    : v.endTime,
-              cancelled  : v?.isCancelled()
-          ]
+          if (rdv_type) {
+            if (rdv_type.owner = RefdataCategory.lookup('Job.Type')) {
+              result = concurrencyManagerService.getJobsForType(rdv_type, max, offset, showFinished)
+            }
+            else {
+              result.result = 'ERROR'
+              response.status = 400
+              result.message = 'Reference value ${params.type} is not a job type!'
+            }
+          }
+          else {
+            result.result = 'ERROR'
+            response.status = 400
+            result.message = 'Unable to reference job type via ID ${params.type}!'
+          }
         }
-
-        if (offset > 0) {
-          selected = selected.drop(offset)
+        else {
+          result
         }
-
-        result.data = selected.take(max)
-
-        result._pagination = [
-            offset: offset,
-            limit : max,
-            total : selected.size()
-        ]
       }
     }
     else {

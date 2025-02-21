@@ -345,6 +345,8 @@
 
     </div>
 
+    <g:render template="/tabTemplates/showSubjects" model="${[d:displayobj, showActions:true]}" />
+
     <div class="tab-pane" id="addprops">
       <g:render template="/apptemplates/addprops"
                 model="${[d: d]}"/>

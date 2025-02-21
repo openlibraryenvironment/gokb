@@ -155,7 +155,8 @@ class Package extends KBComponent {
     'defaultEmbeds': [
       'ids',
       'variantNames',
-      'curatoryGroups'
+      'curatoryGroups',
+      'subjects'
     ]
   ]
 
@@ -183,7 +184,7 @@ class Package extends KBComponent {
   }
 
   @Transient
-  public getTitles(def onlyCurrent = true, int max = 10, offset = 0) {
+  public getTitles(Boolean onlyCurrent = true, Integer max = 10, Integer offset = 0) {
     def all_titles = null
     log.debug("getTitles :: current ${onlyCurrent} - max ${max} - offset ${offset}")
 
@@ -424,7 +425,7 @@ class Package extends KBComponent {
     textDescription: 'Package repository for GOKb',
     query          : " from Package as o ",
     curators       : 'Package.CuratoryGroups',
-    pageSize       : 3,
+    pageSize       : 1,
     uriPath        : '/package'
   ]
 
@@ -586,26 +587,14 @@ class Package extends KBComponent {
   }
 
   @Transient
-  public getRecentActivity(n) {
+  public getRecentActivity(Integer count, Integer offset = 0) {
     def result = []
 
     if (this.id) {
-      def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-
-      // select tipp, accessStartDate, 'Added' from tipps UNION select tipp, accessEndDate, 'Removed' order by date
-
-//       def additions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.accessStartDate, \'Added\' ' +
-//                        'from TitleInstancePackagePlatform as tipp, Combo as c '+
-//                        'where c.fromComponent=? and c.toComponent=tipp and tipp.accessStartDate is not null order by tipp.dateCreated DESC',
-//                       [this], [max:n]);
-//       def deletions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.accessEndDate, \'Removed\' ' +
-//                        'from TitleInstancePackagePlatform as tipp, Combo as c '+
-//                        'where c.fromComponent= :pkg and c.toComponent=tipp and tipp.accessEndDate is not null order by tipp.lastUpdated DESC',
-//                        [pkg: this], [max:n]);
-
+      RefdataValue status_deleted = RefdataCategory.lookup(super.RD_STATUS, super.STATUS_DELETED)
       def changes = TitleInstancePackagePlatform.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as c ' +
         'where c.fromComponent= :pkg and c.toComponent=tipp order by tipp.lastUpdated DESC',
-        [pkg: this])
+        [pkg: this], [max: count, offset: offset])
 
       use(TimeCategory) {
         changes.each {
@@ -624,11 +613,8 @@ class Package extends KBComponent {
         }
       }
 
-//       result.addAll(additions)
-//       result.addAll(deletions)
       result.sort { it[1] }
       result = result.reverse()
-      result = result.take(n)
     }
 
     return result;
@@ -693,9 +679,9 @@ class Package extends KBComponent {
     }
     if (result.valid) {
       def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-      def pkg_normname = Package.generateNormname(packageHeaderDTO.name)
+      def pkg_normname = GOKbTextUtils.cleanTitleString(packageHeaderDTO.name)
 
-      def name_candidates = Package.executeQuery("from Package as p where p.normname = :nn and p.status <> :sd", [nn: pkg_normname, sd: status_deleted])
+      def name_candidates = Package.findAllByNameIlikeAndStatusNotEqual(pkg_normname, status_deleted)
       def full_matches = []
 
       if (packageHeaderDTO.uuid) {

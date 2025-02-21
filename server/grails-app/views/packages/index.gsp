@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name='layout' content='public' />
-<title>GOKb: Packages</title>
+<title>GOKB: Packages</title>
 </head>
 
 <body>
@@ -18,13 +18,13 @@
            <span class="icon-bar"></span>
          </button>
          <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
-         <a class="navbar-brand" href="index.html">GOKb</a>
+         <a class="navbar-brand" href="index.html">GOKB</a>
        </div>
 
        <div class="collapse navbar-collapse" id="primary-nav">
          <ul class="nav navbar-nav">
            <li class="hidden active"><a href="#page-body"></a></li>
-           <li><span>GOKb Packages</span></li>
+           <li><span>GOKB Packages</span></li>
          </ul>
        </div>
 
@@ -46,10 +46,10 @@
              <ul class="nav nav-pills">
                <g:set var="active_filter" value="${params.filter}"/>
                <li class="${(active_filter != 'current')?'active':''}"><g:link action="index">All Packages</g:link></li>
-  
+
                <li class="${active_filter=='current'?'active':''}"><g:link action="index" params="${ [filter:'current',endYear:"[ ${new Date().year +1900} TO 2100]"]}">Current Packages</g:link></li>
 
-  
+
              </ul>
 
              <div class="well form-horizontal">
@@ -63,7 +63,7 @@
                        <option ${params.order=='asc' ? 'selected' : ''} value="asc">Ascending</option>
                        <option ${params.order=='desc' ? 'selected' : ''} value="desc">Descending</option>
                      </select>
-   
+
                <button type="submit" name="search" value="yes">Search</button>
                <p>
                  <g:each in="${['type','endYear','startYear','consortiaName','cpname']}" var="facet">
@@ -93,7 +93,7 @@
                    <g:each in="${facet.value.sort{it.display}}" var="v">
                      <li>
                        <g:set var="fname" value="facet:${facet.key+':'+v.term}"/>
- 
+
                        <g:if test="${params.list(facet.key).contains(v.term.toString())}">
                          ${v.display} (${v.count})
                        </g:if>

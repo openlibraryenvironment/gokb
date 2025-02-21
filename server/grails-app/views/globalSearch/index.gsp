@@ -48,7 +48,7 @@
 <html>
   <head>
     <meta name="layout" content="sb-admin"/>
-    <title>GOKb: Global Search</title>
+    <title>GOKB: Global Search</title>
   </head>
   <body>
   

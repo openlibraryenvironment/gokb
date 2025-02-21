@@ -13,6 +13,7 @@
   <s2ui:stylesheet src='spring-security-ui'/>
   <asset:stylesheet src="gokb/security-styles.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.getProperty('gokb.theme') }/theme.css"/>
+  <asset:stylesheet src="gokb/gokb-brand.css"/>
 <g:layoutHead/>
 </head>
 <body class="theme-${ grailsApplication.config.getProperty('gokb.theme') }">
@@ -20,7 +21,7 @@
 
     <!-- Navigation -->
     <nav class="navbar navbar-default navbar-static-top" role="navigation"
-    style="margin-bottom: 0">
+    style="margin-bottom: 0; background-color:${grailsApplication.config.getProperty('gokb.themeColor')}">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse"
         data-target=".navbar-collapse">
@@ -30,7 +31,7 @@
           <span  class="icon-bar"></span>
         </button>
         <g:link uri="/" class="navbar-brand" style="font-weight:bold;">
-          <g:message code="gokb.appname" default="GOKb"/> v<g:meta name="info.app.version" />
+          ${grailsApplication.config.getProperty('gokb.appname') ?: 'GOKB'} v<g:meta name="info.app.version" />
           <g:if test="${grailsApplication.config.getProperty('gokb.instance.description')}">
             – ${grailsApplication.config.getProperty('gokb.instance.description')}
           </g:if>

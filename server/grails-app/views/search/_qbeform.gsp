@@ -161,7 +161,7 @@
             return {results: data.values};
           }
         },
-        initSelection : function (element, callback) {
+        initSelection : function (null, element, callback) {
           var idv=$(element).val();
           // console.log("initSelection..%o"+idv,element);
           var txt=$(element).context.dataset.displayvalue;

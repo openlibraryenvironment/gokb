@@ -40,6 +40,7 @@ class PackageService {
   def grailsApplication
   def dateFormatService
   def platformService
+  def packageCachingService
 
   private static final String[] KBART_FIELDS = ['publication_title',
      'print_identifier',
@@ -738,10 +739,11 @@ class PackageService {
     def variant_matches = Package.executeQuery("select distinct p from Package as p join p.variantNames as v where v.normVariantName = :nvn and p.status <> :sd ", [nvn: variant_normname, sd: status_deleted])
 
     variant_matches.each { vm ->
-      if (!matches["${vm.id}"])
+      if (!matches["${vm.id}"]) {
         matches["${vm.id}"] = []
+      }
 
-      matches["${vm.id}"] << ['field': 'name', value: packageHeaderDTO.name, baddata: it, message: "Provided name matched a variant of an existing package!", code: 'inUse']
+      matches["${vm.id}"] << ['field': 'name', value: packageHeaderDTO.name, baddata: packageHeaderDTO.name, message: "Provided name matched a variant of an existing package!", code: 'inUse']
     }
 
     if (packageHeaderDTO.variantNames?.size() > 0) {
@@ -761,10 +763,11 @@ class PackageService {
           def name_matches = Package.findAllByNormnameAndStatusNotEqual(var_norm, status_deleted)
 
           name_matches.each { nm ->
-            if (!matches["${nm.id}"])
+            if (!matches["${nm.id}"]) {
               matches["${nm.id}"] = []
+            }
 
-            matches["${nm.id}"] << [field: 'variantNames', value: variant, baddata: it, message: "Provided variant matched the title of an existing package!", code: 'inUse']
+            matches["${nm.id}"] << [field: 'variantNames', value: variant, baddata: variant, message: "Provided variant matched the title of an existing package!", code: 'inUse']
           }
 
           def variant_nn = GOKbTextUtils.normaliseString(variant)
@@ -772,10 +775,11 @@ class PackageService {
 
           variant_candidates.each { vc ->
             log.debug("Found existing package variant name for variantName ${variant}")
-            if (!matches["${vc.id}"])
+            if (!matches["${vc.id}"]) {
               matches["${vc.id}"] = []
+            }
 
-            matches["${vc.id}"] << ['field': 'variantNames', value: variant, baddata: it, message: "Provided variant matched that of an existing package!", code: 'inUse']
+            matches["${vc.id}"] << ['field': 'variantNames', value: variant, baddata: variant, message: "Provided variant matched that of an existing package!", code: 'inUse']
           }
         }
       }
@@ -1542,25 +1546,30 @@ class PackageService {
           file = new File(path + fileName)
         }
         else {
-          while (!file.isFile()) {
-            sleep(500)
-          }
+          def caching_result = packageCachingService.cacheSinglePackage(pkg.id, true)
 
-          file = new File(path + fileName)
+          if (caching_result == 'OK') {
+            file = new File(path + fileName)
+          }
+          else {
+            response.status = 404
+          }
         }
       }
 
-      InputStream inFile = new FileInputStream(file)
+      if (file.isFile()) {
+        InputStream inFile = new FileInputStream(file)
 
-      response.setContentType('text/tab-separated-values')
-      response.setHeader("Content-Disposition", "attachment; filename=\"${fileName.substring(0, fileName.length() - 13)}.tsv\"")
-      response.setHeader("Content-Encoding", "UTF-8")
-      response.setContentLength(file.bytes.length)
+        response.setContentType('text/tab-separated-values')
+        response.setHeader("Content-Disposition", "attachment; filename=\"${fileName.substring(0, fileName.length() - 13)}.tsv\"")
+        response.setHeader("Content-Encoding", "UTF-8")
+        response.setContentLength(file.bytes.length)
 
-      def out = response.outputStream
-      IOUtils.copy(inFile, out)
-      inFile.close()
-      out.close()
+        def out = response.outputStream
+        IOUtils.copy(inFile, out)
+        inFile.close()
+        out.close()
+      }
     }
     catch (Exception e) {
       log.error("Problem with sending export", e)
@@ -1571,10 +1580,13 @@ class PackageService {
     def pathPrefix = UUID.randomUUID().toString()
     String path = exportFilePath()
     File tempDir = new File(path + "/" + pathPrefix)
+    boolean hasErrors = false
     tempDir.mkdir()
     // step one: collect data files in temp directory
     packs.each { pkg ->
       String fileName = generateExportFileName(pkg, type)
+      boolean fileErrors = false
+
       try {
         File src = new File(path + fileName)
 
@@ -1592,49 +1604,61 @@ class PackageService {
             src = new File(path + fileName)
           }
           else {
-            while (!file.isFile()) {
-              sleep(500)
-            }
+            def caching_result = packageCachingService.cacheSinglePackage(pkg.id, true)
 
-            src = new File(exportFilePath() + fileName)
+            if (caching_result == 'OK') {
+              src = new File(exportFilePath() + fileName)
+            }
+            else {
+              hasErrors = true
+              fileErrors = true
+            }
           }
         }
-        File dest = new File("${path}/${pathPrefix}/${fileName.substring(0, fileName.length() - 13)}.tsv")
-        FileCopyUtils.copy(src, dest)
+
+        if (!fileErrors) {
+          File dest = new File("${path}/${pathPrefix}/${fileName.substring(0, fileName.length() - 13)}.tsv")
+          FileCopyUtils.copy(src, dest)
+        }
       } catch (IOException iox) {
         log.error("Problem while collecting data", iox)
       }
     }
 
     // step two: zip data
-    def zipFileName = exportFilePath() + "gokbExport_${pathPrefix}.zip"
-    ZipOutputStream zipFile = new ZipOutputStream(new FileOutputStream(zipFileName))
-    new File("${exportFilePath()}/$pathPrefix").eachFile() { file ->
-      //check if file
-      if (file.isFile()) {
-        zipFile.putNextEntry(new ZipEntry(file.name))
-        def buffer = new byte[file.size()]
-        file.withInputStream {
-          zipFile.write(buffer, 0, it.read(buffer))
+    if (!hasErrors) {
+      def zipFileName = exportFilePath() + "gokbExport_${pathPrefix}.zip"
+      ZipOutputStream zipFile = new ZipOutputStream(new FileOutputStream(zipFileName))
+      new File("${exportFilePath()}/$pathPrefix").eachFile() { file ->
+        //check if file
+        if (file.isFile()) {
+          zipFile.putNextEntry(new ZipEntry(file.name))
+          def buffer = new byte[file.size()]
+          file.withInputStream {
+            zipFile.write(buffer, 0, it.read(buffer))
+          }
+          zipFile.closeEntry()
         }
-        zipFile.closeEntry()
       }
+      zipFile.close()
+
+      // step three: copy the zipfile into the response
+      File file = new File(zipFileName)
+      response.setContentType('application/octet-stream');
+      response.setHeader("Content-Disposition", "attachment; filename=\"gokbExport.zip\"")
+      response.setHeader("Content-Description", "File Transfer")
+      response.setHeader("Content-Transfer-Encoding", "binary")
+      response.setContentLength(file.length())
+
+      InputStream input = new FileInputStream(file)
+      OutputStream output = response.outputStream
+      IOUtils.copy(input, output)
+      output.close()
+      input.close()
     }
-    zipFile.close()
-
-    // step three: copy the zipfile into the response
-    File file = new File(zipFileName)
-    response.setContentType('application/octet-stream');
-    response.setHeader("Content-Disposition", "attachment; filename=\"gokbExport.zip\"")
-    response.setHeader("Content-Description", "File Transfer")
-    response.setHeader("Content-Transfer-Encoding", "binary")
-    response.setContentLength(file.length())
-
-    InputStream input = new FileInputStream(file)
-    OutputStream output = response.outputStream
-    IOUtils.copy(input, output)
-    output.close()
-    input.close()
+    else {
+      response.status = 404
+    }
   }
 
   static String urlStringToFileString(String url){

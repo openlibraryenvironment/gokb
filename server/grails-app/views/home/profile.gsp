@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta name="layout" content="sb-admin"/>
-    <title>GOKb: My Profile</title>
+    <title>GOKB: My Profile</title>
   </head>
-  <body>  
+  <body>
   <g:if test="${flash.message}">
     <br/>
     <div class="well message" role="status" style="font-size: medium;color: green;">${flash.message}</div>

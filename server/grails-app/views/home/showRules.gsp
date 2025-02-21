@@ -4,7 +4,7 @@
     <meta name="layout" content="main"/>
     <asset:stylesheet src="gokb/application.css"/>
 <asset:javascript src="gokb/application.js" />
-    <title>GOKbo : Show Rules</title>
+    <title>GOKB: Show Rules</title>
   </head>
   <body>
 
@@ -38,6 +38,6 @@
        </div>
      </div>
    </div>
-  
+
   </body>
 </html>

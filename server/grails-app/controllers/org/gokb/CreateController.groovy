@@ -72,10 +72,11 @@ class CreateController {
       PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(params.cls)
       // def refdata_properties = classExaminationService.getRefdataPropertyNames(params.cls)
       log.debug("Got entity ${pent} for ${newclass.name}")
+      def newobj = null
 
       if ( newclass ) {
         try {
-          result.newobj = newclass.newInstance()
+          newobj = newclass.newInstance()
           log.debug("got newInstance...");
 
           params.each { p ->
@@ -100,13 +101,13 @@ class CreateController {
                     related_item = RefdataCategory.lookup(rdc, p.value)
                   }
 
-                  result.newobj[p.key] = related_item
+                  newobj[p.key] = related_item
                   propertyWasSet = propertyWasSet || (related_item != null)
                 }
                 else if ( pprop instanceof ManyToOne ) {
                   log.debug("many-to-one");
                   def related_item = genericOIDService.resolveOID(p.value);
-                  result.newobj[p.key] = related_item
+                  newobj[p.key] = related_item
                   propertyWasSet = propertyWasSet || (related_item != null)
                 }
                 else {
@@ -116,7 +117,7 @@ class CreateController {
               else {
                 log.debug("Scalar property");
                 if ( pprop.getType().name == 'java.lang.String' ) {
-                  result.newobj[p.key] = p.value?.trim() ?: null
+                  newobj[p.key] = p.value?.trim() ?: null
                 }
                 else if ( pprop.getType().name == 'java.util.Date' ) {
                   def sdf = new java.text.SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss z", Locale.ENGLISH);
@@ -124,7 +125,7 @@ class CreateController {
                   Instant instant = sdf.parse(incoming).toInstant()
                   LocalDateTime ldt = LocalDateTime.ofInstant(instant, ZoneId.of("GMT"))
 
-                  result.newobj[p.key] = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant())
+                  newobj[p.key] = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant())
                 }
                 propertyWasSet = propertyWasSet || (p.value != null)
               }
@@ -135,9 +136,9 @@ class CreateController {
           }
           log.debug("Completed setting properties");
 
-          if ( result.newobj.hasProperty('postCreateClosure') ) {
+          if ( newobj.hasProperty('postCreateClosure') ) {
             log.debug("Created object has a post create closure.. call it");
-            result.newobj.postCreateClosure.call([user:user])
+            newobj.postCreateClosure.call([user:user])
           }
 
           // Add an error message here if no property was set via data sent through from the form.
@@ -146,12 +147,12 @@ class CreateController {
             flash.error="Please fill in at least one piece of information to create the component."
             result.uri = g.createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
           } else {
-
             log.debug("Saving..");
-            if ( !result.newobj.validate() ) {
+
+            if ( !newobj.validate() ) {
               flash.error = []
 
-              result.newobj.errors.allErrors.each { eo ->
+              newobj.errors.allErrors.each { eo ->
 
                 String[] messageArgs = eo.getArguments()
                 def errorMessage = null
@@ -192,30 +193,36 @@ class CreateController {
 
               result.uri = createLink([controller: 'create', action:'index', params:[tmpl:params.cls]])
             } else {
-              result.newobj.save(flush:true)
+              newobj.save(flush:true)
+
+              result.newobj = [id: newobj.id]
+
+              if (newobj.hasProperty('uuid')) {
+                result.newobj.uuid = newobj.uuid
+              }
 
               log.debug("Setting combos..");
 
-              if (result.newobj instanceof KBComponent) {
+              if (newobj instanceof KBComponent) {
                 // The save completed OK.. if we want to be really cool, we can now loop through the properties
                 // and set any combos on the object
                 boolean changed=false
                 params.each { p ->
-                  def combo_properties = result.newobj.getComboTypeValue(p.key)
+                  def combo_properties = newobj.getComboTypeValue(p.key)
 
                   if ( combo_properties != null ) {
                     log.debug("Deal with a combo doodah ${p.key}:${p.value}");
                     if ( ( p.value != "") && ( p.value != null ) ) {
                       def related_item = genericOIDService.resolveOID(p.value);
-                      result.newobj[p.key] = related_item
+                      newobj[p.key] = related_item
                       changed = true
                     }
                   }
-                  result.newobj.save(flush:true)
+                  newobj.save(flush:true)
                 }
               }
 
-              result.uri = createLink([controller: 'resource', action:'show', id:"${params.cls}:${result.newobj.id}"])
+              result.uri = createLink([controller: 'resource', action:'show', id:"${params.cls}:${newobj.id}"])
             }
           }
         }

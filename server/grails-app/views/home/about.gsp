@@ -2,10 +2,10 @@
 <html>
   <head>
     <meta name="layout" content="sb-admin"/>
-    <title>GOKb: About</title>
+    <title>GOKB: About</title>
   </head>
   <body>
-	 <h1 class="page-header">About GOKb</h1>
+	 <h1 class="page-header">About GOKB</h1>
    <div id="mainarea"
 		class="panel panel-default">
 			<div class="panel-heading">

@@ -40,7 +40,11 @@ class BulkPackageImportService {
     "title_id_namespace": [required: false, cls: IdentifierNamespace, field: 'value'],
     "global": [required: false, rdc: 'Package.Global'],
     "package_created_date": [required: false, validate: 'checkTimestamp'],
-    "package_changed_date": [required: false, validate: 'checkTimestamp']
+    "package_changed_date": [required: false, validate: 'checkTimestamp'],
+    "fixed": [required: false, rdc: 'Package.Fixed'],
+    "consistent": [required: false, rdc: 'Package.Consistent'],
+    "breakable": [required: false, rdc: 'Package.Breakable'],
+    "scope": [required: false, rdc: 'Package.Scope']
   ]
 
   @Transactional
@@ -383,7 +387,15 @@ class BulkPackageImportService {
               }
 
               if (!skip && curator && provider && platform) {
-                Package obj = Package.findByNormname(KBComponent.generateNormname(item.package_name))
+                Package obj = null
+
+                if (item.package_uuid) {
+                  obj = Package.findByUuid(item.package_uuid)
+                }
+
+                if (!obj) {
+                  obj = Package.findByNormname(KBComponent.generateNormname(item.package_name))
+                }
 
                 if (!obj && collection_id) {
                   def candidates = Package.executeQuery('''from Package as p
@@ -455,6 +467,22 @@ class BulkPackageImportService {
 
                     if (item.global || type.global) {
                       obj.global = RefdataCategory.lookup('Package.Global', item.global ?: type.global)
+                    }
+
+                    if (item.fixed != null || type.fixed != null) {
+                      obj.fixed = setPackageBinaryRefdata(obj, 'Package.Fixed', item.fixed != null ? item.fixed : type.fixed)
+                    }
+
+                    if (item.breakable != null || type.breakable  != null) {
+                      obj.breakable = setPackageBinaryRefdata(obj, 'Package.Breakable', item.breakable != null ? item.breakable : type.breakable)
+                    }
+
+                    if (item.consistent != null || type.consistent != null) {
+                      obj.consistent = setPackageBinaryRefdata(obj, 'Package.Consistent', item.consistent != null ? item.consistent : type.consistent)
+                    }
+
+                    if (item.scope || type.scope) {
+                      obj.consistent = RefdataCategory.lookup('Package.Scope', item.scope ?: type.scope)
                     }
 
                     obj.nominalPlatform = platform
@@ -653,6 +681,18 @@ class BulkPackageImportService {
     }
 
     result
+  }
+
+  private void setPackageBinaryRefdata(obj, prop, val) {
+    if (val == true) {
+      obj[prop] = RefdataCategory.lookup(prop, "Yes")
+    }
+    else if (val == false) {
+      obj[prop] = RefdataCategory.lookup(prop, "No")
+    }
+    else {
+      obj[prop] = RefdataCategory.lookup(prop, "Unknown")
+    }
   }
 
   private boolean hasChangedFile(pid, item) {

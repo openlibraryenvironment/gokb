@@ -5,7 +5,7 @@ grails.plugin.springsecurity.userLookup.userDomainClassName = 'org.gokb.cred.Use
 grails.plugin.springsecurity.userLookup.authorityJoinClassName = 'org.gokb.cred.UserRole'
 grails.plugin.springsecurity.authority.className = 'org.gokb.cred.Role'
 
-grails.plugin.springsecurity.ui.forgotPassword.emailFrom = "GOKb<no-reply@gokb.org>"
+grails.plugin.springsecurity.ui.forgotPassword.emailFrom = "GOKB<no-reply@gokb.org>"
 
 grails.mime.file.extensions=false
 grails.plugin.springsecurity.ui.register.postRegisterUrl = '/public/index'
@@ -39,6 +39,7 @@ grails.plugin.springsecurity.filterChain.chainMap = [
         [pattern: '/rest/**',             filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
         [pattern: '/oauth/**',            filters: 'JOINED_FILTERS,-exceptionTranslationFilter'],
         [pattern: '/**',                  filters: 'JOINED_FILTERS,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-restTokenValidationFilter,-restExceptionTranslationFilter'],
+        [pattern: '/externalSourceImport/**',       filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-basicAuthenticationFilter,-basicExceptionTranslationFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
 ]
 
 grails.plugin.springsecurity.controllerAnnotations.staticRules = [
@@ -48,6 +49,7 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/monitoring/**',                 access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/login/auth',                    access: ['permitAll']],
   [pattern: '/greenmail/**',                  access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
+  [pattern: '/greenmail',                     access: ['ROLE_SUPERUSER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/',                              access: ['permitAll']],
   [pattern: '/index',                         access: ['permitAll']],
   [pattern: '/notFound',                      access: ['permitAll']],
@@ -102,7 +104,8 @@ grails.plugin.springsecurity.controllerAnnotations.staticRules = [
   [pattern: '/rest/**',                       access: ['ROLE_USER', 'IS_AUTHENTICATED_FULLY']],
   [pattern: '/oauth/**',                      access: ['permitAll']],
   [pattern: '/coreference/**',                access: ['permitAll']],
-  [pattern: '/validation/**',                 access: ['permitAll']]
+  [pattern: '/validation/**',                 access: ['permitAll']],
+  [pattern: '/externalSourceImport/**',                 access: ['ROLE_CONTRIBUTOR', 'IS_AUTHENTICATED_FULLY']]
 ]
 
 

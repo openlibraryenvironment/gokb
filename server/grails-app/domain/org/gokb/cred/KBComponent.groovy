@@ -637,14 +637,10 @@ where cp.owner = :c
 
   def beforeUpdate() {
     log.debug("beforeUpdate for ${this}")
-    def review_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
-    def deleted_status = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
 
-    if (this.name) {
-      if (!shortcode) {
-        this.shortcode = generateShortcode(this.name);
-      }
-      generateNormname();
+    if (this.isDirty('name')) {
+      this.shortcode = generateShortcode(this.name)
+      generateNormname()
       generateComponentHash()
     }
 
@@ -666,7 +662,8 @@ where cp.owner = :c
     // This will return only the first match and stop looking afterwards.
     // Null returned if no match.
 
-    def candidates = Identifier.executeQuery("from Identifier as ido where exists (select 1 from Combo where toComponent = ido and fromComponent = :kbc)", [kbc: this])
+    def combo_active = RefdataCategory.lookup('Combo.Status', 'Active')
+    def candidates = Identifier.executeQuery("from Identifier as ido where exists (select 1 from Combo where toComponent = ido and fromComponent = :kbc and status = :cs)", [kbc: this, cs: combo_active])
 
     candidates.find { it.namespace.value.toLowerCase() == idtype.toLowerCase() }?.value
   }
@@ -1391,9 +1388,6 @@ where cp.owner = :c
       active_ids?.each { tid ->
         builder.'identifier'(tid)
       }
-      if (grailsApplication.config.getProperty('serverUrl') || grailsApplication.config.getProperty('baseUrl')) {
-        builder.'identifier'('namespace': 'originEditUrl', 'value': "${grailsApplication.config.getProperty('serverUrl') ?: grailsApplication.config.getProperty('baseUrl')}/resource/show/${cName}:${id}")
-      }
     }
 
     // Variant Names
@@ -1422,6 +1416,12 @@ where cp.owner = :c
             builder.'additionalProperty'('name': pName, 'value': prop.apValue)
           }
         }
+      }
+    }
+
+    builder.'subjects' {
+      subjects*.subject.each { subj ->
+        builder.'subject'(scheme: subj.scheme.value, name: subj.name, heading: subj.heading)
       }
     }
 
@@ -1540,6 +1540,19 @@ where cp.owner = :c
             [tid: this.id, ct: refdata_ids, cs: status_active],
             [readOnly: true])
     def result = info_list.collect { [namespace: it[0], namespaceName: it[1], value: it[2], type: it[3]] }
+
+    result
+  }
+
+  @Transient
+  def getActiveSubjectsInfo() {
+    def info_list = Identifier.executeQuery('''select sub.scheme.value, sub.heading, sub.name from ComponentSubject as cs,
+                                            Subject as sub
+                                            where cs.component.id = :tid
+                                            and sub = cs.subject''',
+            [tid: this.id],
+            [readOnly: true])
+    def result = info_list.collect { [scheme: it[0], heading: it[1], name: it[2]] }
 
     result
   }

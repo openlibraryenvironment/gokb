@@ -14,6 +14,17 @@ class ESWrapperService {
   def grailsApplication
   RestHighLevelClient esClient
 
+  static Map indicesPerType = [
+      "JournalInstance" : "titles",
+      "DatabaseInstance" : "titles",
+      "OtherInstance" : "titles",
+      "BookInstance" : "titles",
+      "TitleInstance" : "titles",
+      "TitleInstancePackagePlatform" : "tipps",
+      "Org" : "orgs",
+      "Package" : "packages",
+      "Platform" : "platforms"
+  ]
 
   @javax.annotation.PostConstruct
   def init() {
@@ -50,7 +61,7 @@ class ESWrapperService {
     log.debug("Indexing ... type: ${typename}, id: ${record_id}...")
     def result=null
     try {
-      def future = newClient().prepareIndex(index,typename,record_id).setSource(record)
+      def future = getClient().prepareIndex(index,typename,record_id).setSource(record)
       result=future.get()
     }
     catch ( Exception e ) {

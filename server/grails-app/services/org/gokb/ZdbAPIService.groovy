@@ -120,7 +120,18 @@ class ZdbAPIService {
     result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'r'}.text()?.trim() ?: null
 
     if (!result.subtitle) {
-      result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'a'}.text()?.trim() ?: null
+      result.subtitle = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'l'}.text()?.trim() ?: null
+
+      def subtitleText = rec.global.'*'.find { it.@id == '021C' }.'*'.find {it.@id == 'a'}.text()?.trim() ?: null
+
+      if (subtitleText) {
+        if (result.subtitle) {
+          result.subtitle += ", ${subtitleText}"
+        }
+        else {
+          result.subtitle = subtitleText
+        }
+      }
     }
 
     result.displayTitle = rec.global.'*'.find { it.@id == '025@' }.'*'.find {it.@id == 'a'}.text()?.trim() ?: null
@@ -194,9 +205,17 @@ class ZdbAPIService {
       }
     }
 
-    result.history = []
+    result.history = extractHistory(rec.global.'*'.findAll { it.@id == '039E' })
 
-    rec.global.'*'.findAll { it.@id == '039E' }.each { lf ->
+    result.ddc = extractDDC(rec.global.'*'.find { it.@id == '045U' })
+
+    result
+  }
+
+  private def extractHistory(fields) {
+    def history = []
+
+    fields.each { lf ->
       def item = [:]
 
       lf.'*'.each { subfield ->
@@ -229,7 +248,21 @@ class ZdbAPIService {
       }
 
       if (item) {
-        result.history.add(item)
+        history.add(item)
+      }
+    }
+
+    history
+  }
+
+  private def extractDDC(field) {
+    def result = []
+
+    field.'*'.findAll {it.@id == 'e'}.each { sf ->
+      def notation = sf.text()?.trim()
+
+      if (notation) {
+        result.add(notation)
       }
     }
 

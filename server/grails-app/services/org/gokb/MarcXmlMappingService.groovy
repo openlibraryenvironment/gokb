@@ -11,23 +11,29 @@ class MarcXmlMappingService {
     def e_issn = titleInstance.ids.findAll { it.namespace == IdentifierNamespace.findByValue('eissn') }[0]?.value
     def p_issn = titleInstance.ids.findAll { it.namespace == IdentifierNamespace.findByValue('issn') }[0]?.value
     def pub = titleInstance.currentPublisher
-    def startYear = titleInstance.publishedFrom ? dateFormatService.formatDate(titleInstance.publishedFrom).substring(0,4) : null
-    def endYear = titleInstance.publishedTo ? dateFormatService.formatDate(titleInstance.publishedTo).substring(0,4) : null
-    def ctrl_flde = dateFormatService.formatDate(titleInstance.dateCreated).substring(0,4) + 'c'
+    Date startDate = selectStartYear(titleInstance)
+    Date endDate = selectEndYear(titleInstance)
+    def ctrl_flde = dateFormatService.formatDate(titleInstance.dateCreated).substring(0,4)
+    def pubYearRange = []
+    def nameParts = titleInstance.name.split("\\. ")
 
-    if (titleInstance.publishedFrom) {
-      ctrl_flde += startYear
+    if (startDate) {
+      pubYearRange << dateFormatService.formatDate(startDate).substring(0,4)
     }
     else {
-      ctrl_flde += '0000'
+      pubYearRange << '0000'
     }
 
     if (titleInstance.publishedTo) {
-      ctrl_flde += endYear
+      pubYearRange << dateFormatService.formatDate(startDate).substring(0,4)
+      ctrl_flde += 'd'
     }
     else {
-      ctrl_flde += '9999'
+      pubYearRange << '9999'
+      ctrl_flde += 'c'
     }
+
+    ctrl_flde += pubYearRange.join('')
 
     ctrl_flde += 'xx ||p|o |||||||||1    c'
 
@@ -47,7 +53,7 @@ class MarcXmlMappingService {
           'subfield'(code: 'a', titleInstance.uuid)
         }
         'datafield'(tag: '245', ind1: '0' ind2: '0') {
-          'subfield'(code: 'a', titleInstance.name)
+          'subfield'(code: 'a', nameParts[0])
           'subfield'(code: 'c', pub.name)
         }
         'datafield'(tag: '300', ind1: '' ind2: '') {
@@ -100,10 +106,47 @@ class MarcXmlMappingService {
             'subfield'(code: 'x', p_issn)
           }
         }
+        if (nameParts.size() > 1) {
+          'datafield'(tag: '930', ind1: '' ind2: '') {
+            'subfield'(code: 'a', nameParts[1])
+          }
+        }
       }
     }
 
     writer.close()
     return writer.toString()
+  }
+
+  private Date selectStartYear (titleInstance) {
+    Date result = titleInstance.publishedFrom ?: null
+
+    titleInstance.tipps.each { t ->
+      def tipp = TitleInstancePackagePlatform.deproxy(t)
+
+      tipp.coverageStatements.each { cs ->
+        if (cs.startDate && (!result || dateFormatService.formatDate(cs.startDate) < result)) {
+          result = cs.startDate
+        }
+      }
+    }
+
+    result
+  }
+
+  private Date selectEndYear (titleInstance) {
+    Date result = titleInstance.publishedTo ?: null
+
+    titleInstance.tipps.each { t ->
+      def tipp = TitleInstancePackagePlatform.deproxy(t)
+
+      tipp.coverageStatements.each { cs ->
+        if (cs.endDate && (!result || dateFormatService.formatDate(cs.endDate) > result)) {
+          result = cs.endDate
+        }
+      }
+    }
+
+    result
   }
 }

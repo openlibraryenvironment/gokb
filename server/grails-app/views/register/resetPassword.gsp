@@ -31,17 +31,17 @@
           <h4><g:message code='spring.security.ui.resetPassword.description'/></h4>
 
           <div class="form-group">
-            <label for="password">Password</label>
+            <label for="password">${message(code:'spring.security.ui.register.password.label', locale:locale)}</label>
             <g:passwordField class="form-control" type="password" id="password"  name="password" size="25" />
           </div>
 
           <div class="form-group">
-            <label for="password2">Repeat Password</label>
+            <label for="password2">${message(code:'spring.security.ui.resetPassword.repeat', locale:locale)}</label>
             <g:passwordField class="form-control" type="password" id="password2"  name="password2" size="25" />
           </div>
 
           <div class="form-group">
-            <button type="submit" value="Submit" class="btn btn-success">Reset Password...</button>
+            <button type="submit" value="Submit" class="btn btn-success">${message(code:'spring.security.ui.resetPassword.submit', locale:locale)}</button>
           </div>
 
         </div>

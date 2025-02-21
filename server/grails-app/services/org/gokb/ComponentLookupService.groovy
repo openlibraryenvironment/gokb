@@ -11,6 +11,9 @@ import groovy.util.logging.*
 
 import io.micronaut.http.uri.UriBuilder
 
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+
 import org.gokb.cred.*
 import org.grails.datastore.mapping.model.*
 import org.grails.datastore.mapping.model.types.*
@@ -153,7 +156,18 @@ class ComponentLookupService {
       def isValid = grails.util.Holders.applicationContext.getBean('validationService').checkIdForNamespace(value, namespace)
 
       if (isValid) {
-        def norm_id = Identifier.normalizeIdentifier(value)
+        def final_val = value
+
+        if (namespace.family == 'isxn') {
+          final_val = final_val.replaceAll("x","X")
+        }
+
+        if (namespace.value in ['isbn', 'pisbn']) {
+          final_val = ISBN.parseIsbn(final_val).getIsbn13()
+        }
+
+        def norm_id = Identifier.normalizeIdentifier(final_val)
+
         def existing = Identifier.findAllByNamespaceAndNormname(namespace, norm_id)
         log.debug("Found ID: ${existing}")
 
@@ -162,21 +176,12 @@ class ComponentLookupService {
         }
         else if ( existing?.size() > 1 ) {
           log.error("Conflicting identifiers found: ${existing}")
-          throw new RuntimeException("Found duplicates for Identifier: ${existing}");
+          throw new RuntimeException("Found duplicates for Identifier: ${existing}")
         }
         else {
           log.debug("No matches: ${existing}")
-          def final_val = value
 
           if (!identifier) {
-            if (namespace.family == 'isxn') {
-              final_val = final_val.replaceAll("x","X")
-            }
-
-            if (namespace.value in ['isbn', 'pisbn']) {
-              final_val = ISBN.parseIsbn(final_val).getIsbn13()
-            }
-
             log.debug("Creating new Identifier ${namespace}:${value} ..")
 
             try {
@@ -205,7 +210,7 @@ class ComponentLookupService {
         }
       }
       else {
-        log.debug("Validation failed for ${namespace.vaue}:${value}!")
+        log.debug("Validation failed for ${namespace.value}:${value}!")
       }
     }
 
@@ -247,15 +252,6 @@ class ComponentLookupService {
             boolean incoming = KBComponent.lookupComboMappingFor (cls, Combo.MAPPED_BY, c)
             log.debug("Combo prop ${c}: ${incoming ? 'incoming' : 'outgoing'}")
 
-            if (incoming) {
-              comboJoinStr += " join p.incomingCombos as ${c}_combo"
-              comboJoinStr += " join ${c}_combo.fromComponent as ${c}"
-            }
-            else {
-              comboJoinStr += " join p.outgoingCombos as ${c}_combo"
-              comboJoinStr += " join ${c}_combo.toComponent as ${c}"
-            }
-
             if (first) {
               comboFilterStr += " WHERE "
               first = false
@@ -264,9 +260,11 @@ class ComponentLookupService {
               comboFilterStr += " AND "
             }
 
-            comboFilterStr += "${c}_combo.type = :${c}type AND "
-            qryParams["${c}type"] = RefdataCategory.lookupOrCreate ( "Combo.Type", cls.getComboTypeValueFor(cls, c))
-            comboFilterStr += "${c}_combo.status = :${c}status "
+            comboFilterStr += "EXISTS (SELECT ${c}combo FROM Combo as ${c}combo WHERE ${incoming ? 'toComponent' : 'fromComponent'} = p"
+
+            comboFilterStr += " AND type = :${c}type AND "
+            qryParams["${c}type"] = RefdataCategory.lookupOrCreate ("Combo.Type", cls.getComboTypeValueFor(cls, c))
+            comboFilterStr += "status = :${c}status "
             qryParams["${c}status"] = DomainClassExtender.comboStatusActive
 
             def validLong = []
@@ -298,30 +296,31 @@ class ComponentLookupService {
                 paramStr += " AND ("
 
                 if (c != 'ids' && validLong.size() > 0) {
-                  paramStr += "${c}.id IN :${c}"
+                  paramStr += "${incoming ? 'fromComponent' : 'toComponent'}.id IN :${c}"
                   qryParams["${c}"] = validLong
                 }
+
                 if (validStr.size() > 0) {
                   if (c != 'ids' && validLong.size() > 0) {
                     paramStr += " OR "
                   }
-                  paramStr += "${c}.uuid IN :${c}_str OR "
+                  paramStr += "${incoming ? 'fromComponent' : 'toComponent'}.uuid IN :${c}_str OR "
 
                   if (c == 'ids') {
-                    paramStr += "lower(${c}.normname) IN :${c}_str"
+                    paramStr += "lower(${incoming ? 'fromComponent' : 'toComponent'}.normname) IN :${c}_str"
                   }
                   else {
-                    paramStr += "lower(${c}.name) IN :${c}_str"
+                    paramStr += "lower(${incoming ? 'fromComponent' : 'toComponent'}.name) IN :${c}_str"
                   }
                   qryParams["${c}_str"] = validStr
                 }
-                paramStr += ")"
+                paramStr += "))"
                 comboFilterStr += paramStr
               }
             }
             else {
-              sortField = "${c}.name"
-              sort = " order by ${c}.name ${order ?: ''}"
+              sortField = "${incoming ? 'fromComponent' : 'toComponent'}.name"
+              sort = " order by ${incoming ? 'fromComponent' : 'toComponent'}.name ${order ?: ''}"
             }
           }
         }
@@ -410,55 +409,127 @@ class ComponentLookupService {
             }
           }
 
-          boolean pkg_qry = false
+          if (p instanceof ManyToOne || p instanceof OneToOne) {
+            boolean pkg_qry = false
 
-          if (validLong.size() == 1 && p.name == 'componentToReview') {
-            def ctr = KBComponent.get(validLong[0])
-            def ctr_ids = [ctr.id]
+            if (validLong.size() == 1 && p.name == 'componentToReview') {
+              def ctr = KBComponent.get(validLong[0])
+              def ctr_ids = [ctr.id]
+              RefdataValue combo_package_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+              RefdataValue combo_title_tipp = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
 
-            if (ctr?.class == Package) {
-              def tipp_ids = TitleInstancePackagePlatform.executeQuery("select tipp.id from TitleInstancePackagePlatform as tipp where exists (select 1 from Combo where fromComponent = :ctr and toComponent = tipp)",[ctr: ctr])
+              if (ctr?.class == Package) {
+                def linked_select = '''select tipp.id from TitleInstancePackagePlatform as tipp
+                    where exists (
+                      select 1 from Combo
+                      where fromComponent = :ctr
+                      and toComponent = tipp
+                      and type = :combo_package_tipp
+                    )
+                    and exists (
+                      select 1 from ReviewRequest
+                      where id = p.id
+                      and componentToReview = tipp
 
-              if (params.titlereviews) {
-                if (tipp_ids.size() > 0) {
-                  def ti_ids = TitleInstance.executeQuery("select ti.id from TitleInstance as ti where exists (select 1 from Combo where fromComponent = ti and toComponent.id IN (:tippids))", [tippids: tipp_ids])
+                    )'''
 
-                  ctr_ids.addAll(ti_ids)
+                qryParams['ctr'] = ctr
+                qryParams['combo_package_tipp'] = combo_package_tipp
+
+                if (params.titlereviews) {
+                  linked_select = '''select ti.id from TitleInstance as ti
+                      where exists (
+                        select 1 from Combo as ct
+                        where fromComponent = ti
+                        and type = :combo_title_tipp
+                        and exists (
+                          select 1 from Combo
+                          where toComponent = ct.toComponent
+                          and type = :combo_package_tipp
+                          and fromComponent = :ctr
+                        )
+                      )
+                      and exists (
+                        select 1 from ReviewRequest
+                        where id = p.id
+                        and componentToReview = ti
+                      )'''
+
+                  qryParams['combo_title_tipp'] = combo_title_tipp
+                }
+
+                paramStr += "(p.componentToReview = :ctr OR EXISTS (${linked_select}))"
+                pkg_qry = true
+              }
+            }
+
+            if (!pkg_qry && (validLong.size() > 0 || validStr.size() > 0)) {
+              paramStr += "("
+              if (validLong.size() > 0) {
+                paramStr += "p.${p.name}.id IN :${p.name}"
+                qryParams[p.name] = validLong
+              }
+              if (validStr.size() > 0) {
+                if (validLong.size() > 0) {
+                  paramStr += " OR "
+                }
+
+                paramStr += "p.${p.name}.${selectPreferredLabelProp(p.type)} IN :${p.name}_str"
+
+                if (p.type.hasProperty('uuid')) {
+                  paramStr += " OR p.${p.name}.uuid IN :${p.name}_str"
+                }
+                qryParams["${p.name}_str"] = validStr
+              }
+              paramStr += ")"
+            }
+            else if (!pkg_qry) {
+              addParam = false
+            }
+          }
+          else if (p.name == 'subjects') {
+            log.debug("Handling Subjects ..")
+            int idx = 0
+            def subject_pars = validLong + validStr
+
+            subject_pars.each {
+              RefdataValue scheme
+              def sub_obj = null
+
+              if (it instanceof String && it.contains(';')) {
+                scheme = RefdataCategory.lookup('Subject.Scheme', it.split(';')[0])
+
+                if (scheme) {
+                  sub_obj = Subject.findBySchemeAndHeading(scheme, it.split(';')[1])
                 }
               }
               else {
-                ctr_ids.addAll(tipp_ids)
+                try {
+                  sub_obj = Subject.get(it)
+                }
+                catch (java.lang.NumberFormatException nfe) {
+                  log.debug("Received illegal value '${it}' for subjects filter!")
+                }
               }
 
-              qryParams['ctrids'] = ctr_ids
-              paramStr += "(p.componentToReview.id IN :ctrids)"
-              log.debug("${qryParams['ctrids'].size()}")
-              pkg_qry = true
-            }
-          }
 
-          if (!pkg_qry && (validLong.size() > 0 || validStr.size() > 0)) {
-            paramStr += "("
-            if (validLong.size() > 0) {
-              paramStr += "p.${p.name}.id IN :${p.name}"
-              qryParams[p.name] = validLong
-            }
-            if (validStr.size() > 0) {
-              if (validLong.size() > 0) {
-                paramStr += " OR "
+              if (sub_obj) {
+                if (idx > 0) {
+                  paramStr += " AND "
+                }
+
+                paramStr += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject = :subject${idx})"
+                qryParams["subject${idx}"] = sub_obj
+              }
+              else if (scheme) {
+                qryParams["subjectScheme${idx}"] = scheme
+                qryParams["subjectHeading${idx}"] = it.split(';')[1]
+                paramStr += "EXISTS (SELECT 1 FROM ComponentSubject where component = p AND subject.scheme = :subjectScheme${idx} AND subject.heading = :subjectHeading${idx})"
               }
 
-              paramStr += "p.${p.name}.${selectPreferredLabelProp(p.type)} IN :${p.name}_str"
 
-              if (p.type.hasProperty('uuid')) {
-                paramStr += " OR p.${p.name}.uuid IN :${p.name}_str"
-              }
-              qryParams["${p.name}_str"] = validStr
+              idx++
             }
-            paramStr += ")"
-          }
-          else if (!pkg_qry) {
-            addParam = false
           }
         }
         else if (p.type == Long) {
@@ -533,6 +604,102 @@ class ComponentLookupService {
       qryParams['status'] = RefdataCategory.lookup("ReviewRequest.Status", "Deleted")
     }
 
+    if (params['changedSince']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['changedSince'])
+      }
+      catch (Exception e) {}
+
+      if (csdate) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+        hqlQry += "p.lastUpdated >= :changedSince"
+        qryParams['changedSince'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+      }
+    }
+
+    if (params['changedBefore']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['changedBefore'])
+      }
+      catch (Exception e) {}
+
+      if (first) {
+        hqlQry += " WHERE "
+        first = false
+      }
+      else {
+        hqlQry += " AND "
+      }
+      hqlQry += "p.lastUpdated < :changedBefore"
+      qryParams['changedBefore'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+    }
+
+    if (params['createdSince']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['createdSince'])
+      }
+      catch (Exception e) {}
+
+      if (csdate) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+        hqlQry += "p.dateCreated >= :createdSince"
+        qryParams['createdSince'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+      }
+    }
+
+    if (params['createdBefore']) {
+      LocalDateTime csdate
+
+      try {
+        csdate = GOKbTextUtils.completeDateString(params['createdBefore'])
+      }
+      catch (Exception e) {}
+
+      if (csdate) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+        hqlQry += "p.dateCreated < :createdBefore"
+        qryParams['createdBefore'] = Date.from(csdate.atZone(ZoneOffset.UTC).toInstant())
+      }
+    }
+
+    if (params['id']) {
+      Long idval = params.long('id')
+
+      if (first) {
+        hqlQry += " WHERE "
+        first = false
+      }
+      else {
+        hqlQry += " AND "
+      }
+      hqlQry += "p.id = :idval"
+      qryParams['idval'] = idval
+    }
+
     if (cls == ReviewRequest && params['allocatedGroups']) {
       def cgs = params.list('allocatedGroups')
       def inactive = RefdataCategory.lookupOrCreate('AllocatedReviewGroup.Status', 'Inactive')
@@ -562,13 +729,52 @@ class ComponentLookupService {
       }
     }
 
+    if (cls == ReviewRequest && params['linkedComponentType']) {
+      def lct = params['linkedComponentType']
+
+      if (['Package', 'ReferenceTitle', 'PackageTitle', 'Journal', 'Monograph', 'Database'].contains(lct)) {
+        if (first) {
+          hqlQry += " WHERE "
+          first = false
+        }
+        else {
+          hqlQry += " AND "
+        }
+
+        if (lct == 'Package') {
+          hqlQry += "exists (select 1 from Package where id = p.componentToReview.id)"
+        }
+        else if (lct == 'ReferenceTitle') {
+          hqlQry += "exists (select 1 from TitleInstance where id = p.componentToReview.id)"
+        }
+        else if (lct == 'PackageTitle') {
+          hqlQry += "exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id)"
+        }
+        else if (lct == 'Journal') {
+          hqlQry += "(exists (select 1 from JournalInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Serial')
+        }
+        else if (lct == 'Monograph') {
+          hqlQry += "(exists (select 1 from BookInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Monograph')
+        }
+        else if (lct == 'Database') {
+          hqlQry += "(exists (select 1 from DatabaseInstance where id = p.componentToReview.id) or exists (select 1 from TitleInstancePackagePlatform where id = p.componentToReview.id and publicationType = :ctrpubtype))"
+          qryParams['ctrpubtype'] = RefdataCategory.lookup('TitleInstancePackagePlatform.PublicationType', 'Database')
+        }
+      }
+      else {
+        log.debug("Skipping linkedCOmponentType ${lct}!")
+      }
+    }
+
     def hqlCount = "select ${genericTerm ? 'distinct': ''} count(p.id) ${hqlQry}".toString()
     def hqlFinal = "select ${genericTerm ? 'distinct': ''} p ${sortField ? ', ' + sortField : ''} ${hqlQry} ${sort ?: ''}".toString()
 
     log.debug("Final qry: ${hqlFinal}")
 
     def hqlTotal = cls.executeQuery(hqlCount, qryParams,[:])[0]
-    def hqlResult = cls.executeQuery(hqlFinal, qryParams, [max: max, offset: offset])
+    def hqlResult = cls.executeQuery(hqlFinal, qryParams, [max: max, offset: offset, readOnly: true])
 
     result.data = []
 

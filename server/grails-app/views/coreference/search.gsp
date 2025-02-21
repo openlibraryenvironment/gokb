@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="layout" content="main"/>
-    <title>GOKb : Coreference Service</title>
+    <meta name="layout" content="sb-admin"/>
+    <title>GOKB: Coreference Service</title>
   </head>
   <body>
 
@@ -21,9 +21,9 @@
              </ul>
          </ul>
        </p>
-       
+
      </div>
    </div>
-  
+
   </body>
 </html>

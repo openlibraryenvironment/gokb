@@ -24,6 +24,7 @@ class AjaxSupportController {
   def componentLookupService
   def messageSource
   def messageService
+  def validationService
 
 
   @Deprecated
@@ -1025,9 +1026,9 @@ class AjaxSupportController {
   @Transactional
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addIdentifier() {
-    log.debug("addIdentifier - ${params}");
+    log.debug("addIdentifier - ${params}")
     def result = ['result': 'OK', 'params': params]
-        def user = springSecurityService.currentUser
+    def user = springSecurityService.currentUser
     def identifier_instance = null
     // Check identifier namespace present, and identifier value valid for that namespace
     if ( ( params.identifierNamespace?.trim() ) &&
@@ -1084,6 +1085,73 @@ class AjaxSupportController {
         else {
           result.new_obj = identifier_instance
           result.new_oid = "${identifier_instance.class.name}:${identifier_instance.id}"
+        }
+
+        render result as JSON
+      }
+    }
+  }
+
+/**
+   *  addSubject : Used to add a subject to a list.
+   * @param __context : The OID ([FullyQualifiedClassName]:[PrimaryKey]) of the context object
+   * @param scheme : The RefdataValue of the subject scheme
+   * @param val : The value/heading of the subject
+   */
+
+  @Transactional
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def addSubject() {
+    log.debug("addSubject - ${params}")
+    def result = [result: 'OK', params: params]
+    def user = springSecurityService.currentUser
+    ComponentSubject new_cs = null
+
+    if (params.__context?.trim() && params.scheme?.trim() && params.val?.trim()) {
+      def owner = genericOIDService.resolveOID(params.__context)
+      def scheme = genericOIDService.resolveOID(params.scheme)
+      RefdataValue scheme_ddc = RefdataCategory.lookup('Subject.Scheme', 'DDC')
+
+      if (owner && scheme) {
+        def editable = checkEditable(owner, user)
+
+        if (editable) {
+          Subject active_subject = Subject.findBySchemeAndHeading(scheme, params.val.trim())
+
+          if (!active_subject) {
+            if (scheme != scheme_ddc || validationService.checkDDCNotation(params.val).result == 'OK') {
+              active_subject = new Subject(scheme: scheme, heading: params.val.trim())
+            }
+            else if (scheme == scheme_ddc) {
+              flash.error = message(code:'subject.ddc.notation.error.format')
+            }
+          }
+
+          if (active_subject && !ComponentSubject.findByComponentAndSubject(owner, active_subject)) {
+            new_cs = new ComponentSubject(component: owner, subject: active_subject).save(flush: true)
+          }
+          else if (active_subject) {
+            flash.error = message(code:'subject.link.unique')
+          }
+        }
+      }
+      else {
+        flash.error = message(code:'subject.create.error')
+      }
+    }
+
+    withFormat {
+      html {
+        redirect(url: (request.getHeader('referer')+params.hash?:''))
+      }
+      json {
+        if (flash.error) {
+          result.result = 'ERROR'
+          result.error = flash.error
+        }
+        else {
+          result.new_obj = new_cs
+          result.new_oid = "${new_cs.class.name}:${new_cs.id}"
         }
 
         render result as JSON

@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: Package - Register Webhook</title>
+<title>GOKB: Package - Register Webhook</title>
 </head>
 <body>
 	<g:form controller="workflow" action="processCreateWebHook"	method="get" class="webhook-form">

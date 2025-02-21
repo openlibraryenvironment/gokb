@@ -77,31 +77,6 @@ WHERE id.id_namespace_fk = idns.id
 
 
 
-
-# CHECK BEFORE
-SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
-WHERE id.id_namespace_fk = idns.id
-  AND idns.idns_value = 'global'
-  AND id.id_value LIKE '%www.lib.ncsu.edu/ld/onld/%';
-SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
-WHERE id.id_namespace_fk = idns.id
-  AND idns.idns_value = 'ncsu';
-
-UPDATE identifier AS id
-SET id_value=REGEXP_REPLACE(id.id_value, '(.*)www.lib.ncsu.edu/ld/onld/(.*)','\2'), id_namespace_fk = idns2.id
-FROM identifier_namespace AS idns1, identifier_namespace AS idns2
-WHERE id.id_value LIKE '%www.lib.ncsu.edu/ld/onld/%'
-  AND idns1.idns_value LIKE 'global'
-  AND id.id_namespace_fk = idns1.id
-  AND idns2.idns_value LIKE 'ncsu';
-
-# CHECK AFTER
-SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
-WHERE id.id_namespace_fk = idns.id
-  AND idns.idns_value = 'ncsu';
-
-
-
 # CHECK BEFORE
 SELECT COUNT (kbc_id) FROM identifier AS id, identifier_namespace AS idns
 WHERE id.id_namespace_fk = idns.id

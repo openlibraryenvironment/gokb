@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name='layout' content='public' />
-<title>GOKb: Packages</title>
+<title>GOKB: Packages</title>
 </head>
 
 <body>
@@ -18,7 +18,7 @@
            <span class="icon-bar"></span>
          </button>
          <!-- navbar-brand is hidden on larger screens, but visible when the menu is collapsed -->
-         <a class="navbar-brand" href="index.html">GOKb</a>
+         <a class="navbar-brand" href="index.html">GOKB</a>
        </div>
 
        <div class="collapse navbar-collapse" id="primary-nav">
@@ -33,7 +33,7 @@
   <div class="container">
 
     <div class="row"> <div class="box">
-   
+
      <div class="col-lg-12 ">
       <div class="well">
       <g:if test="${pkgName}">

@@ -43,7 +43,9 @@ class ESSearchService{
           "importId",
           "primaryUrl",
           "editionStatement",
-          "volumeNumber"
+          "volumeNumber",
+          "firstAuthor",
+          "firstEditor"
       ],
       refdata: [
           "listStatus",
@@ -73,7 +75,9 @@ class ESSearchService{
           "altname",
           "q",
           "qfields",
-          "qsName"
+          "qsName",
+          "subjects",
+          "subject"
       ],
       linked: [
           provider: "provider",
@@ -110,18 +114,6 @@ class ESSearchService{
       ]
   ]
 
-  static Map indicesPerType = [
-      "JournalInstance" : "titles",
-      "DatabaseInstance" : "titles",
-      "OtherInstance" : "titles",
-      "BookInstance" : "titles",
-      "TitleInstance" : "titles",
-      "TitleInstancePackagePlatform" : "tipps",
-      "Org" : "orgs",
-      "Package" : "packages",
-      "Platform" : "platforms"
-  ]
-
   def search(params){
     search(params,reversemap)
   }
@@ -148,7 +140,7 @@ class ESSearchService{
       log.debug("Start to build search request. Query: ${query_str}")
       SearchResponse searchResponse
       try{
-        SearchRequest searchRequest = new SearchRequest(params.componentType ? [grailsApplication.config.getProperty('gokb.es.indices.' + indicesPerType[params.componentType])] as String[] : grailsApplication.config.getProperty('gokb.es.indices', Map).values() as String[])
+        SearchRequest searchRequest = new SearchRequest(params.componentType ? [grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[params.componentType])] as String[] : grailsApplication.config.getProperty('gokb.es.indices', Map).values() as String[])
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         TermsAggregationBuilder pragg = AggregationBuilders.terms("provider").field("provider")
         TermsAggregationBuilder cgagg = AggregationBuilders.terms("curatoryGroups").field("curatoryGroups")
@@ -338,6 +330,10 @@ class ESSearchService{
     if (qpars.changedSince || qpars.changedBefore) {
       QueryBuilder dateQuery = QueryBuilders.rangeQuery("lastUpdatedDisplay")
 
+      if (qpars.sort == null) {
+        qpars.sort = 'lastUpdatedDisplay'
+      }
+
       if (qpars.changedSince) {
         dateQuery.gte(qpars.changedSince)
       }
@@ -422,6 +418,31 @@ class ESSearchService{
 
       log.debug("Query ids for ${id_params}")
       query.must(QueryBuilders.nestedQuery("identifiers", addIdQueries(id_params), ScoreMode.Max))
+    }
+  }
+
+  private void addSubjectQuery(query, errors, qpars) {
+    def subject_params = [:]
+    def val = null
+
+    if (qpars.subject) {
+      val = qpars.subject
+    }
+    else if (qpars.subjects) {
+      val = qpars.subjects
+    }
+
+    if ( val?.trim() ) {
+      if (val.contains(';')) {
+        subject_params['subjects.scheme'] = val.split(';')[0]
+        subject_params['subjects.heading'] = sanitizeParam(val.split(';')[1])
+      }
+      else{
+        subject_params['subjects.heading'] = val
+      }
+
+      log.debug("Query ids for ${subject_params}")
+      query.must(QueryBuilders.nestedQuery("subjects", addIdQueries(subject_params), ScoreMode.Max))
     }
   }
 
@@ -620,16 +641,34 @@ class ESSearchService{
     def esClient = ESWrapperService.getClient()
     def unknown_fields = []
     def usedComponentTypes = getUsedComponentTypes(params, result)
-    if (result.error){
+
+    if (result.result == 'ERROR'){
       return result
     }
+
     // now search
     int scrollSize = 5000
+
+    def scrollSizeParam = params.int('scrollSize')
+
+    if (scrollSizeParam) {
+      if (scrollSizeParam <= scrollSize) {
+        scrollSize = scrollSizeParam
+      }
+      else {
+        result.result = 'ERROR'
+        result.message = 'Maximum scrollSize is 5000!'
+
+        return result
+      }
+    }
+
     result.result = "OK"
     result.scrollSize = scrollSize
 
     def errors = [:]                              // TODO: use errors
     SearchResponse searchResponse
+
     if (!params.scrollId){
       QueryBuilder scrollQuery = QueryBuilders.boolQuery()
       if (params.component_type || params.componentType) {
@@ -640,25 +679,38 @@ class ESSearchService{
       specifyQueryWithParams(params, scrollQuery, errors, unknown_fields)
 
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      setSort(params, errors, searchSourceBuilder)
       searchSourceBuilder.query(scrollQuery)
       searchSourceBuilder.size(scrollSize)
       SearchRequest searchRequest = new SearchRequest(usedComponentTypes.values() as String[])
       searchRequest.scroll("15m")
       searchRequest.source(searchSourceBuilder)
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT)
-      result.lastPage = 0
+
+      try {
+        searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT)
+        result.lastPage = 0
+      }
+      catch (Exception e) {
+        log.error("Error processing initial scroll query!", e)
+        result.result = 'ERROR'
+        return result
+      }
     }
     else{
       SearchScrollRequest scrollRequest = new SearchScrollRequest(params.scrollId)
       scrollRequest.scroll("15m")
-      searchResponse = esClient.scroll(scrollRequest, RequestOptions.DEFAULT)
-      try{
-        if (params.lastPage && Integer.valueOf(params.lastPage) > -1){
-          result.lastPage = Integer.valueOf(params.lastPage) + 1
-        }
+
+      try {
+        searchResponse = esClient.scroll(scrollRequest, RequestOptions.DEFAULT)
       }
-      catch (Exception e){
-        log.debug("Could not process page information on scroll request.")
+      catch (Exception e) {
+        log.error("Error processing scroll query!", e)
+        result.result = 'ERROR'
+        return result
+      }
+
+      if (params.int('lastPage') && params.int('lastPage') >= 0){
+        result.lastPage = params.int('lastPage') + 1
       }
     }
     result.scrollId = searchResponse.getScrollId()
@@ -689,8 +741,8 @@ class ESSearchService{
     }
 
     for (def ct in usedComponentTypes.keySet()){
-      if (ct in indicesPerType.keySet()){
-        usedComponentTypes."${ct}" = grailsApplication.config.getProperty('gokb.es.indices.' + indicesPerType.get(ct))
+      if (ct in ESWrapperService.indicesPerType.keySet()){
+        usedComponentTypes."${ct}" = grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType.get(ct))
       }
       else{
         result.result = "ERROR"
@@ -710,6 +762,7 @@ class ESSearchService{
     def result = [result: 'OK']
     def search_action = null
     def errors = [:]
+    Integer maxWindowSize = 10000
     SearchResponse searchResponse = null
     log.debug("find :: ${params}")
 
@@ -727,6 +780,7 @@ class ESSearchService{
       processNameFields(exactQuery, errors, params)
       processGenericFields(exactQuery, errors, params)
       addIdentifierQuery(exactQuery, errors, params)
+      addSubjectQuery(exactQuery, errors, params)
       specifyQueryWithParams(params, exactQuery, errors, unknown_fields)
 
       if(unknown_fields.size() > 0){
@@ -734,13 +788,13 @@ class ESSearchService{
       }
 
       if( !errors && exactQuery.hasClauses() ) {
-        if (!params.status) {
+        if (!params.status && (!user || !user.isAdmin())) {
           QueryBuilder statusQuery = QueryBuilders.boolQuery()
           statusQuery.mustNot(QueryBuilders.termQuery('status', 'Deleted'))
           exactQuery.must(statusQuery)
         }
 
-        SearchRequest searchRequest = new SearchRequest(component_type ? [grailsApplication.config.getProperty('gokb.es.indices.' + indicesPerType[component_type])] as String[] : grailsApplication.config.getProperty('gokb.es.indices', Map).values() as String[])
+        SearchRequest searchRequest = new SearchRequest(component_type ? [grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[component_type])] as String[] : grailsApplication.config.getProperty('gokb.es.indices', Map).values() as String[])
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         searchSourceBuilder.trackTotalHits(true)
         searchSourceBuilder.query(exactQuery)
@@ -750,18 +804,32 @@ class ESSearchService{
         checkInt(result, errors, params.from, 'offset')
         checkInt(result, errors, params.offset, 'offset')
 
-        if (params.max != null) {
-          searchSourceBuilder.size(result.max)
+        if (result.max != null) {
+          if (result.max > maxWindowSize) {
+            errors['max'] = "Maximum result window size is ${maxWindowSize}. Use /scroll endpoint for deep pagination."
+          }
+          else {
+            searchSourceBuilder.size(result.max)
+          }
         }
         else {
           result.max = 10
         }
 
-        if (params.offset || params.from) {
-          searchSourceBuilder.from(result.offset)
+        if (result.offset) {
+          if (result.offset > maxWindowSize) {
+            errors['offset'] = "Maximum result window size is ${maxWindowSize}. Use /scroll endpoint for deep pagination."
+          }
+          else {
+            searchSourceBuilder.from(result.offset)
+          }
         }
         else {
           result.offset = 0
+        }
+
+        if (!errors['max'] && !errors['offset'] && result.offset + result.max > maxWindowSize) {
+          errors['offset'] = "Maximum result window size (max + offset) is ${maxWindowSize}. Use /scroll endpoint for deep pagination."
         }
 
         setSort(params, errors, searchSourceBuilder)
@@ -881,8 +949,12 @@ class ESSearchService{
         else {
           if (k == 'id' && params.int('id')) {
             final_val = KBComponent.get(params.int('id'))?.getLogEntityId()
+            exactQuery.must(QueryBuilders.termQuery('_id', final_val))
           }
-          exactQuery.must(QueryBuilders.termQuery(k, final_val))
+          else {
+            exactQuery.must(QueryBuilders.termQuery(k, final_val))
+          }
+
         }
       }
       else if (requestMapping.simpleMap?.containsKey(k)){

@@ -13,7 +13,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-  <title><g:layoutTitle default="GOKb" /></title>
+  <title><g:layoutTitle default="GOKB" /></title>
 
   <link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico')}" type="image/x-icon"/>
   <g:layoutHead />
@@ -22,7 +22,7 @@
   <asset:stylesheet src="gokb/sb-admin-2.css"/>
   <asset:stylesheet src="gokb/themes/${ grailsApplication.config.getProperty('gokb.theme') }/theme.css"/>
   <asset:stylesheet src="gokb/application.css"/>
-
+  <asset:stylesheet src="gokb/gokb-brand.css"/>
 </head>
 
 <body class="theme-${ grailsApplication.config.getProperty('gokb.theme') }">
@@ -31,7 +31,7 @@
 
     <!-- Navigation -->
     <nav class="navbar navbar-default navbar-static-top" role="navigation"
-      style="margin-bottom: 0">
+      style="margin-bottom: 0;background-color:${grailsApplication.config.getProperty('gokb.themeColor')}">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse"
           data-target=".navbar-collapse">
@@ -41,7 +41,7 @@
             <span  class="icon-bar"></span>
         </button>
         <g:link uri="/" class="navbar-brand" style="font-weight:bold;">
-          <g:message code="gokb.appname" default="GOKb"/> v<g:meta name="info.app.version" />
+          ${grailsApplication.config.getProperty('gokb.appname') ?: 'GOKB'} v<g:meta name="info.app.version" />
           <g:if test="${grailsApplication.config.getProperty('gokb.instance.description')}">
             – ${grailsApplication.config.getProperty('gokb.instance.description')}
           </g:if>
@@ -88,7 +88,6 @@
       <!-- /.row -->
     </div>
     <!-- /#page-wrapper -->
-
   </div>
   <!-- /#wrapper -->
   <asset:deferredScripts/>

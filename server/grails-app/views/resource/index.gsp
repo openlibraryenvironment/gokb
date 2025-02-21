@@ -4,7 +4,7 @@
     <meta name="layout" content="sb-admin"/>
     <asset:stylesheet src="gokb/application.css"/>
     <asset:javascript src="gokb/application.js" />
-    <title>GOKb</title>
+    <title>GOKB</title>
   </head>
   <body>
     <g:if test="${params.status == '404'}">
@@ -13,7 +13,7 @@
     </h2>
     </g:if>
     <g:else>
-      <h1 class="page-header">GOKb Resources</h1>
+      <h1 class="page-header">GOKB Resources</h1>
       <g:each in="${session.menus?.search}" var="type,items" status="counter">
         <g:if test="${ counter > 0 }" >
           <div class="divider"></div>

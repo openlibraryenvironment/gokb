@@ -26,7 +26,7 @@ class TSVIngestionService {
                     boolean cleanup,
                     Job job = null) {
 
-    Package.withNewSession {
+    Package.withNewSession { session ->
       Package pkg = Package.get(pkgId)
       DataFile datafile = DataFile.get(dfId)
       User request_user = User.get(userId)
@@ -43,7 +43,7 @@ class TSVIngestionService {
                                                 dry_run,
                                                 skip_invalid,
                                                 cleanup)
-      return myRun.start(job)
+      return myRun.start(job, session)
     }
   }
 

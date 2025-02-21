@@ -2,10 +2,10 @@
 <html>
 <head>
 <meta name="layout" content="sb-admin" />
-<title>GOKb: Integration API</title>
+<title>GOKB: Integration API</title>
 </head>
 <body>
-  <h1 class="page-header">GOKb Integration API</h1>
+  <h1 class="page-header">GOKB Integration API</h1>
    <div id="mainarea" class="panel panel-default ${displayobj != null ? 'col-md-5 ' : ''}">
       <div class="panel-heading">
         <h3 class="panel-title">
@@ -14,9 +14,9 @@
       </div>
       <div class="panel-body">
         <p>Tell the system what you know about a particular title
-          (Specifically your local identifiers). This will enable GOKb to
+          (Specifically your local identifiers). This will enable GOKB to
           cross reference well known public identifiers with your local system
-          identifiers. GOKb can then support coreferencing of your local
+          identifiers. GOKB can then support coreferencing of your local
           identifiers, and identify titles using local proprietary naming
           schemes.</p>
         <h4>Usage:</h4>
@@ -50,7 +50,7 @@
         </tr>
       </table>
 
-      <div class="panel-footer" >      
+      <div class="panel-footer" >
         <h4>Example:</h4>
         <pre>
           <code>
@@ -64,8 +64,8 @@
 }
           </code>
         </pre>
-  
-        <p>The following CURL command will tell GOKb about the JUSP title for &quot;3 Biotech&quot;</p>
+
+        <p>The following CURL command will tell GOKB about the JUSP title for &quot;3 Biotech&quot;</p>
         <pre>
           <code>
 curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title":"3 Biotech",identifiers:[{"type":"eissn","value":"2190-5738"},{"type":"jusp","value":"6416"}]}' <g:createLink  controller="integration" action="crossReferenceTitle" />
@@ -77,7 +77,7 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
           <code>
 {
   response:--code--
-} 
+}
           </code>
         </pre>
         <p>where <strong>code</strong> can be one of</p>
@@ -88,7 +88,7 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
         </ul>
       </div>
 
-      <div class="panel-footer" >      
+      <div class="panel-footer" >
         <h4>Example:</h4>
         <pre>
           <code>
@@ -102,8 +102,8 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
 }
           </code>
         </pre>
-  
-        <p>The following CURL command will tell GOKb about the JUSP title for &quot;3 Biotech&quot;</p>
+
+        <p>The following CURL command will tell GOKB about the JUSP title for &quot;3 Biotech&quot;</p>
         <pre>
           <code>
 curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title":"3 Biotech",identifiers:[{"type":"eissn","value":"2190-5738"},{"type":"jusp","value":"6416"}]}' <g:createLink  controller="integration" action="crossReferenceTitle" />
@@ -115,7 +115,7 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
           <code>
 {
   response:--code--
-} 
+}
           </code>
         </pre>
         <p>where <strong>code</strong> can be one of</p>
@@ -142,7 +142,7 @@ curl -v --user user:pass -X POST -H "Content-Type: application/json" -d '{"title
           </g:form>
         </p>
       </div>
-      <div class="panel-footer" >      
+      <div class="panel-footer" >
       </div>
     </div>
   </div>

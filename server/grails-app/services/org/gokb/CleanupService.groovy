@@ -1,7 +1,6 @@
 package org.gokb
 
 import com.k_int.ConcurrencyManagerService.Job
-import com.k_int.ESSearchService
 import grails.gorm.DetachedCriteria
 import grails.gorm.transactions.Transactional
 import org.opensearch.action.delete.DeleteRequest
@@ -19,6 +18,7 @@ class CleanupService {
   def componentUpdateService
   def validationService
   def autoTimestampEventListener
+  def titleAugmentService
 
   def tidyMissnamedPublishers () {
 
@@ -839,8 +839,8 @@ class CleanupService {
           def class_simple_name = kbc.class.getSimpleName()
           def oid = "${kbc.class.name}:${it}"
 
-          if (ESSearchService.indicesPerType[class_simple_name]){
-            DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESSearchService.indicesPerType[class_simple_name]), oid)
+          if (ESWrapperService.indicesPerType[class_simple_name]){
+            DeleteRequest req = new DeleteRequest(grailsApplication.config.getProperty('gokb.es.indices.' + ESWrapperService.indicesPerType[class_simple_name]), oid)
             def es_response = esclient.delete(req, RequestOptions.DEFAULT)
           }
         }
@@ -906,7 +906,7 @@ class CleanupService {
 
   def markInvalidIdentifiers(Job j = null) {
     log.debug("Checking for invalid identifiers")
-    def result = [occurrences: 0, components: [:]]
+    def result = [occurrences: 0, components: [:], namespaces: [:]]
 
     Identifier.withNewSession { tsession ->
       boolean more = true
@@ -917,7 +917,7 @@ class CleanupService {
       int total = Identifier.executeQuery("select count(i.id) from Identifier as i where exists (select 1 from Combo where toComponent = i)")[0]
       j.message("Processing $total identifiers..")
 
-      Long highest_id = null
+      Long highest_id = 0
 
       while (more) {
         def batch = Identifier.executeQuery("from Identifier as i where id > :hid and exists (select 1 from Combo where toComponent = i) order by id", [max: batchSize, hid: highest_id])
@@ -930,6 +930,13 @@ class CleanupService {
             idc.identifiedComponents.each { kbc ->
               if (!result.components[kbc.id]) {
                 result.components[kbc.id] = [name: kbc.name, uuid: kbc.uuid, type: kbc.niceName , invalid: []]
+              }
+
+              if (!result.namespaces[idc.namespace.value]) {
+                result.namespaces[idc.namespace.value] = 1
+              }
+              else {
+                result.namespaces[idc.namespace.value]++
               }
 
               result.components[kbc.id].invalid << [value: idc.value, namespace: idc.namespace.value]
@@ -959,6 +966,92 @@ class CleanupService {
         j.message("Found ${result.occurrences} connected to ${result.components.size()} invalid Identifiers.".toString())
       }
     }
+    result
+  }
+
+  @Transactional
+  def deleteOrphanedHistoryEvents (Job j = null) {
+    def result = [total: 0]
+    def session = null
+
+    try {
+      session = sessionFactory.currentSession
+    }
+    catch (Exception e) {
+      log.debug("No session. Create new ..")
+    }
+
+    if (session) {
+      cleanupEvents(session, result)
+    }
+    else {
+      TitleInstance.withNewSession { tsession ->
+        cleanupEvents(tsession, result)
+      }
+    }
+
+    result
+  }
+
+  private void cleanupEvents(session, result) {
+    RefdataValue deleted_status = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
+    boolean more = true
+
+    log.debug("Got ${ComponentHistoryEvent.list().size()} events!")
+
+    while (more) {
+
+      def batch = ComponentHistoryEventParticipant.executeQuery("select event.id from ComponentHistoryEventParticipant where participant.status = :sd", [sd: deleted_status], [max: 50])
+
+      batch.each { eid ->
+        def event = ComponentHistoryEvent.get(eid)
+
+        if (event) {
+          log.debug("Processing event ${event}")
+          def components_to_update = []
+
+          event.participants.each { chep ->
+            if (chep.participant.status != deleted_status) {
+              components_to_update << chep.participant
+            }
+          }
+
+          event.delete(flush: true, failOnError: true)
+
+          result.total++
+
+          components_to_update.each { ctu ->
+            if (ctu.tipps) {
+              titleAugmentService.touchTitleTipps(ctu, false)
+            }
+          }
+        }
+        else {
+          log.debug("Event ${eid} not found, probably already deleted ..")
+        }
+      }
+
+      session.flush()
+      session.clear()
+
+      if (batch.size() < 50) {
+        more = false
+      }
+    }
+  }
+
+  def closeOrphanedReviews() {
+    RefdataValue status_deleted = RefdataCategory.lookup('KBComponent.Status', KBComponent.STATUS_DELETED)
+    RefdataValue status_closed = RefdataCategory.lookup('ReviewRequest.Status', 'Closed')
+    RefdataValue status_open = RefdataCategory.lookup('ReviewRequest.Status', 'Open')
+    Date now = new Date()
+    def result = KBComponent.executeUpdate('''update ReviewRequest
+                                              set status = :closed,
+                                              lastUpdated = :now
+                                              where status = :open
+                                              and componentToReview.status = :deleted
+                                          ''', [closed: status_closed, now: now, open: status_open, deleted: status_deleted])
+
     result
   }
 }

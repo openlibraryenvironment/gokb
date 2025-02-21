@@ -13,6 +13,12 @@ class UrlMappings {
     "/resource/show/$type/$id"(controller: 'resource', action: 'show')
     "/package"(controller: 'packages')
     "/validate"(controller: 'validation')
+    get "/externalSource"(controller: 'externalSourceImport')
+    get "/externalSource/package?"(controller: 'externalSourceImport', action: 'getPackageMetaData')
+    get "/externalSource/platform?"(controller: 'externalSourceImport', action: 'getPlatformMetaData')
+    get "/externalSource/tipps?"(controller: 'externalSourceImport', action: 'getTitleData')
+    get "/externalSource/provider?"(controller: 'externalSourceImport', action: 'getProviderData')
+    post "/externalSource/providerExists"(controller: 'externalSourceImport', action: 'checkProviderExists')
 
     group "/rest", {
       post "/packages/$id/retire"(controller: 'package', namespace: 'rest', action:'retire')
@@ -101,6 +107,7 @@ class UrlMappings {
       put "/users/$id"(controller: 'users', namespace: 'rest', action: 'update')
       patch "/users/$id"(controller: 'users', namespace: 'rest', action: 'update')
       delete "/users/$id"(controller: 'users', namespace: 'rest', action: 'delete')
+      patch "/users/$id/activate"(controller: 'users', namespace: 'rest', action: 'activate')
 
       get "/sources"(controller: 'sources', namespace: 'rest', action: 'index')
       get "/sources/$id"(controller: 'sources', namespace: 'rest', action: 'show')
@@ -156,6 +163,7 @@ class UrlMappings {
       get "/tipps/bulk"(controller: 'tipp', namespace: 'rest', action: 'bulk')
       get "/tipps/$id/set-status"(controller: 'tipp', namespace: 'rest', action: 'setStatus')
       get "/tipps/$id/coverage"(controller: 'tipp', namespace: 'rest', action: 'getCoverage')
+      "/tipps/$id/$action"(controller: 'tipp', namespace:'rest')
       get "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'show')
       put "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'update')
       delete "/tipps/$id"(controller: 'tipp', namespace: 'rest', action: 'delete')
@@ -165,6 +173,7 @@ class UrlMappings {
       get "/package-titles/bulk"(controller: 'tipp', namespace: 'rest', action: 'bulk')
       get "/package-titles/$id/set-status"(controller: 'tipp', namespace: 'rest', action: 'setStatus')
       get "/package-titles/$id/coverage"(controller: 'tipp', namespace: 'rest', action: 'getCoverage')
+      "/package-titles/$id/$action"(controller: 'tipp', namespace:'rest')
       get "/package-titles/$id"(controller: 'tipp', namespace: 'rest', action: 'show')
       put "/package-titles/$id"(controller: 'tipp', namespace: 'rest', action: 'update')
       delete "/package-titles/$id"(controller: 'tipp', namespace: 'rest', action: 'delete')

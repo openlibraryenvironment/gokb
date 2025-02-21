@@ -4,10 +4,10 @@
 <html>
   <head>
     <meta name='layout' content='sb-admin'/>
-    <title>GOKb: Welcome</title>
+    <title>GOKB: Welcome</title>
   </head>
   <body>
-    <h1 class="page-header">Welcome to GOKb</h1>
+    <h1 class="page-header">Welcome to GOKB</h1>
     <!-- Full rows -->
     <g:if test="${widgets}">
 

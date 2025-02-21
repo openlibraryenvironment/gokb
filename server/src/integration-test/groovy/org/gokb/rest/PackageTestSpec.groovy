@@ -131,19 +131,20 @@ class PackageTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
-    ['TestPackJournalTIPP', 'TestJournalTIPPUpdate', 'TestPackBookTIPP', 'TestBookTIPPUpdate', 'TestJournalTIPPSkip', 'TIPP Name', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
+    ['TestPackJournalTIPP', 'TestJournalTIPPUpdate', 'TestJournalTIPPInit', 'TestJournalTIPPInitRetired', 'TestPackBookTIPP', 'TestBookTIPPUpdate', 'TestBookTIPPInit', 'TestJournalTIPPSkip', 'TIPP Name', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
       TitleInstancePackagePlatform.findByName(it)?.expunge()
     }
     ["TestPack","UpdPack","TestPackageWithTipps","TestPackageWithProviderAndPlatform", "TestPackHandleUrl", "TestPackPartialError"].each {
       Package.findByName(it)?.expunge()
     }
+    ['PackTestTitle', 'PackTestBook', 'TestPackJournalTIPP', 'TestJournalTIPPUpdate', 'TestJournalTIPPInit', 'TestJournalTIPPInitRetired', 'TestPackBookTIPP', 'TestBookTIPPUpdate', 'TestBookTIPPInit', 'TestJournalTIPPSkip', 'TIPP Name', 'Journal of agricultural and food chemistry', 'Book of agricultural and food chemistry'].each {
+      TitleInstance.findByName(it)?.expunge()
+    }
     CuratoryGroup.findByName("cgtest1")?.expunge()
-    JournalInstance.findByName("PackTestTitle")?.expunge()
     Platform.findByName("PackTestPlt")?.expunge()
     Platform.findByName("dx.doi.org")?.expunge()
     Org.findByName("PackTestOrg")?.expunge()
     Source.findByName("TestPack")?.expunge()
-    BookInstance.findByName('PackTestBook')?.expunge()
   }
 
   void "test /rest/packages/<id> without token"() {
@@ -434,5 +435,116 @@ class PackageTestSpec extends AbstractAuthSpec {
     then:
     resp.status == HttpStatus.OK
     resp.body().job_result?.report?.created == 1
+  }
+
+  void "test /rest/packages/<id>/ingest initial load without access_start_date"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_initial_no_access.txt")
+    Package pkg = Package.findByName("TestPackPartialError")
+
+    when:
+    String accessToken = getAccessToken()
+    MultipartBody requestBody = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_initial_no_access.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file.getFile()
+      )
+      .addPart('async', 'false')
+      .build()
+
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().job_result?.report?.created == 2
+    TitleInstancePackagePlatform.findByName('TestJournalTIPPInit')?.accessStartDate == null
+  }
+
+  void "test /rest/packages/<id>/ingest initial load with access_start_date"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_initial_access_dates.txt")
+    Package pkg = Package.findByName("TestPackPartialError")
+
+    when:
+    String accessToken = getAccessToken()
+    MultipartBody requestBody = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_initial_access_dates.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file.getFile()
+      )
+      .addPart('async', 'false')
+      .build()
+
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse resp = http.exchange(request, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().job_result?.report?.created == 4
+    TitleInstancePackagePlatform.findByName('TestJournalTIPPInit')?.accessStartDate != null
+    TitleInstancePackagePlatform.findByName('TestJournalTIPPInitRetired')?.accessEndDate != null
+    TitleInstancePackagePlatform.findByName('TestBookTIPPInit')?.accessEndDate != null
+    TitleInstancePackagePlatform.findByName('TestBookTIPPInit')?.status?.value == 'Retired'
+  }
+
+  void "test /rest/packages/<id>/ingest update access dates"() {
+    given:
+    def urlPath = getUrlPath()
+    Resource kbart_file = new ClassPathResource("/test_rest_initial_no_access.txt")
+    Resource kbart_file_update = new ClassPathResource("/test_rest_initial_access_dates.txt")
+    Package pkg = Package.findByName("TestPackPartialError")
+
+    when:
+    String accessToken = getAccessToken()
+    MultipartBody requestBody = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_initial_no_access.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file.getFile()
+      )
+      .addPart('async', 'false')
+      .build()
+
+    HttpRequest request = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBody)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse respInit = http.exchange(request, Map)
+
+    MultipartBody requestBodyUpdate = MultipartBody.builder()
+      .addPart(
+        "submissionFile",
+        "test_rest_initial_access_dates.txt",
+        MediaType.TEXT_PLAIN_TYPE,
+        kbart_file_update.getFile()
+      )
+      .addPart('async', 'false')
+      .build()
+
+    HttpRequest updateRequest = HttpRequest.POST("${urlPath}/rest/packages/${pkg.id}/ingest", requestBodyUpdate)
+      .bearerAuth(accessToken)
+      .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+    HttpResponse resp = http.exchange(updateRequest, Map)
+
+    then:
+    resp.status == HttpStatus.OK
+    resp.body().job_result?.report?.matched == 2
+    resp.body().job_result?.report?.created == 2
+    TitleInstancePackagePlatform.findByName('TestJournalTIPPInit')?.accessStartDate != null
+    TitleInstancePackagePlatform.findByName('TestJournalTIPPInitRetired')?.accessEndDate != null
+    TitleInstancePackagePlatform.findByName('TestBookTIPPUpdate')?.accessStartDate != null
+    TitleInstancePackagePlatform.findByName('TestBookTIPPInit')?.accessEndDate != null
+    TitleInstancePackagePlatform.findByName('TestBookTIPPInit')?.status?.value == 'Retired'
   }
 }

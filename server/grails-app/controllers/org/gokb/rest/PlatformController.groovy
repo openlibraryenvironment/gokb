@@ -21,12 +21,11 @@ class PlatformController {
   def restMappingService
   def componentLookupService
   def platformService
-  def FTUpdateService
 
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
-    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     User user = null
 
     if (springSecurityService.isLoggedIn()) {
@@ -59,7 +58,7 @@ class PlatformController {
   def show() {
     def result = [:]
     def obj = null
-    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     def is_curator = true
     User user = null
 
@@ -174,15 +173,6 @@ class PlatformController {
 
           obj.save(flush:true)
 
-          if (obj?.id != null) {
-            if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-              FTUpdateService.updateSingleItem(obj)
-            }
-          }
-          else {
-            response.status = 400
-            result.message = message(code:"default.create.errors.message")
-          }
           result = restMappingService.mapObjectToJson(obj, params, user)
         }
         else {
@@ -264,9 +254,6 @@ class PlatformController {
           response.status = 400
           errors << messageService.processValidationErrors(obj.errors, request.locale)
         }
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
       }
       else {
         result.result = 'ERROR'
@@ -339,9 +326,6 @@ class PlatformController {
 
       if ( curator || user.isAdmin() ) {
         obj.deleteSoft()
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
       }
       else {
         result.result = 'ERROR'
@@ -373,9 +357,6 @@ class PlatformController {
     if ( obj && obj.isEditable() ) {
       if ( curator || user.isAdmin() ) {
         obj.retire()
-        if (grailsApplication.config.getProperty('gokb.ftupdate_enabled', Boolean, false)) {
-          FTUpdateService.updateSingleItem(obj)
-        }
       }
       else {
         result.result = 'ERROR'

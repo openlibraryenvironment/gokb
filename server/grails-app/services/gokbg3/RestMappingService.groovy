@@ -3,6 +3,7 @@ package gokbg3
 import com.k_int.ClassUtils
 
 import java.time.LocalDateTime
+import java.time.LocalDate
 import java.time.ZoneId
 
 import org.gokb.cred.*
@@ -21,6 +22,7 @@ class RestMappingService {
   def componentUpdateService
   def messageService
   def dateFormatService
+  def validationService
 
   def defaultIgnore = [
       'bucketHash',
@@ -28,11 +30,12 @@ class RestMappingService {
       'normname',
       'people',
       'lastSeen',
+      'provenance',
+      'reference',
       'updateBenchmark',
       'systemComponent',
       'insertBenchmark',
       'componentHash',
-      'subjects',
       'lastUpdateComment',
       'duplicateOf',
       'componentDiscriminator',
@@ -64,21 +67,19 @@ class RestMappingService {
    */
 
   def mapObjectToJson(proxy, params, def user = null) {
-    log.debug("mapObjectToJson: ${obj.class.name} -- ${params}")
-    def obj = ClassUtils.deproxy(proxy)
+    log.debug("mapObjectToJson: ${proxy.class.name} -- ${params}")
+    def obj = ClassUtils.deproxy(proxy).refresh()
     def result = [:]
     def embed_active = params['_embed']?.split(',') ?: []
     def include_list = params['_include']?.split(',') ?: null
     def exclude_list = params['_exclude']?.split(',') ?: null
     def nested = params['nested'] ? true : false
-    def base = grailsApplication.config.getProperty('serverURL') + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     def curatedClass = obj.respondsTo('curatoryGroups')
-    def jsonMap = null
+    def jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
     def is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
-
-    jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
 
     if (KBComponent.has(obj, "restPath") && !jsonMap?.ignore?.contains('_links')) {
       result['_links'] = [:]
@@ -95,11 +96,17 @@ class RestMappingService {
       }
     }
 
-    if (embed_active.size() == 0 && !nested) {
+    if (embed_active.size() == 0) {
       if (KBComponent.isAssignableFrom(obj.class)) {
-        embed_active = defaultEmbed
+        if (!nested) {
+          embed_active = defaultEmbed
+        }
+        else if (jsonMap?.defaultEmbeds?.contains('ids')) {
+          embed_active.add('ids')
+        }
       }
-      if (jsonMap?.defaultEmbeds?.size() > 0) {
+
+      if (!nested && jsonMap?.defaultEmbeds?.size() > 0) {
         jsonMap.defaultEmbeds.each {
           if (!embed_active.contains(it)) {
             embed_active.add(it)
@@ -107,8 +114,10 @@ class RestMappingService {
         }
       }
     }
+
     if (embed_active.size() > 0) {
       result['_embedded'] = [:]
+      log.debug("Embeds: ${embed_active}")
     }
 
     result['id'] = obj.id
@@ -144,10 +153,20 @@ class RestMappingService {
           }
           else {
             if ((embed_active.contains(p.name) && (user?.isAdmin() || p.type != User)) || (!nested && p.name == 'reviewRequests' && user?.editorStatus)) {
+              log.debug("Handling embeds for ${p.name}: ${obj[p.name]}")
               result['_embedded'][p.name] = []
 
-              obj[p.name].each {
-                result['_embedded'][p.name] << getEmbeddedJson(it, user)
+              obj[p.name].each { ao ->
+                def assoc_obj = ClassUtils.deproxy(ao)
+
+                if (assoc_obj instanceof ComponentSubject) {
+                  assoc_obj = assoc_obj.subject
+                  log.debug("Using subject ${assoc_obj} for embed mapping ..")
+                }
+
+                result['_embedded'][p.name] << getEmbeddedJson(assoc_obj, user)
+
+                log.debug("${result['_embedded'][p.name]}")
               }
             }
           }
@@ -174,8 +193,17 @@ class RestMappingService {
               result[p.name] = obj[p.name] ? "${obj[p.name]}" : null
               break;
 
+            case LocalDate.class:
+              new_obj[p.name] = LocalDate.parse(params[p.name])
+              break;
+
             case Date.class:
-              result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
+              if (p.name == 'lastUpdated' || p.name == 'dateCreated') {
+                result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
+              }
+              else {
+                result[p.name] = obj[p.name] ? dateFormatService.formatDate(obj[p.name]) : null
+              }
               break;
             default:
               result[p.name] = obj[p.name]
@@ -221,6 +249,7 @@ class RestMappingService {
         }
         else {
           if (embed_active.contains(cp)) {
+            log.debug("Handling embeds for ${cp}: ${obj[cp]}")
             result['_embedded'][cp] = []
 
             def combos = obj.getCombosByPropertyName(cp)
@@ -286,7 +315,7 @@ class RestMappingService {
           }
           else {
             // Add to collection
-            log.debug("Skip generic handling of collections}")
+            log.debug("Skip generic handling of collections ..")
           }
         }
         else {
@@ -310,7 +339,11 @@ class RestMappingService {
         }
       }
     }
-    obj.save()
+    if(obj.validate()) {
+      obj.save()
+    } else {
+      obj
+    }
   }
 
   @Transactional
@@ -856,8 +889,6 @@ class RestMappingService {
             toRemove.each {
               obj.removeFromVariantNames(KBComponentVariantName.get(it))
             }
-
-            log.debug("New List has ${obj.variantNames.size()} items!")
           }
           else {
             log.debug("Not removing: (remove: ${remove} - errors: ${obj.errors})")
@@ -947,6 +978,100 @@ class RestMappingService {
     result
   }
 
+  @Transactional
+  def updateSubjects(obj, subjects, boolean remove = true) {
+    log.debug("Update subjects ${subjects}")
+    def result = [changed: false, errors: []]
+    def existing_subjects_ids = obj.subjects?.collect { it.id }
+    def new_subjects = []
+
+    try {
+      ComponentSubject.withTransaction {
+        subjects?.each { subject ->
+          Subject sub_obj
+
+          if (subject instanceof Integer) {
+            sub_obj = Subject.get(subject)
+          }
+          else if (subject instanceof Map) {
+            if (subject.id) {
+              sub_obj = Subject.get(subject.id)
+            }
+            else if (subject.heading && subject.scheme) {
+              RefdataValue scheme
+
+              if (subject.scheme instanceof Map) {
+                if (subject.scheme.id) {
+                  scheme = RefdataValue.get(subject.scheme.id)
+                }
+                else if (subject.scheme.value) {
+                  scheme = RefdataCategory.lookup("Subject.Scheme", subject.scheme.value)
+                }
+              }
+              else if (subject.scheme instanceof String) {
+                scheme = RefdataCategory.lookup("Subject.Scheme", subject.scheme)
+              }
+              else if (subject.scheme instanceof Integer) {
+                scheme = RefdataValue.get(subject.scheme)
+              }
+
+              if (scheme) {
+                def validation_result = validationService.checkSubject(scheme, subject.heading)
+
+                if (validation_result.result == 'ERROR') {
+                  result.errors = result.errors + validation_result.errors
+                }
+                else {
+                  sub_obj = Subject.findBySchemeAndHeading(scheme, subject.heading) ?: new Subject(scheme: scheme, heading: subject.heading).save(flush: true)
+                }
+              }
+              else {
+                result.errors << [message: "Unable to reference scheme of subject!", code: 404, baddata: subject]
+              }
+            }
+          }
+
+          if (sub_obj) {
+            ComponentSubject subject_link = ComponentSubject.findByComponentAndSubject(obj, sub_obj)
+
+            if (subject_link) {
+              log.debug("Matched existing component subject link ..")
+            }
+            else {
+              log.debug("Creating new component subject link ..")
+              subject_link = new ComponentSubject(component: obj, subject: sub_obj).save(flush: true)
+              result.changed = true
+            }
+
+            new_subjects << subject_link.id
+          }
+          else {
+            result.errors << [message: "Unable to reference subject!", code: 404, baddata: subject]
+          }
+        }
+
+        if (remove == true) {
+          existing_subjects_ids.each { ep ->
+            if (!new_subjects.findAll { it == ep }) {
+              ComponentSubject cp_to_delete = ComponentSubject.get(ep)
+              log.debug("Removing stale subject link ${cp_to_delete}")
+              obj.removeFromSubjects(cp_to_delete)
+              cp_to_delete.delete()
+              result.changed = true
+            }
+          }
+        }
+      }
+    }
+    catch (Exception e) {
+      log.error("Unable to process subjects:", e)
+      result.errors << [message: "Unable to process subjects!", code: 500, baddata: subjects]
+    }
+
+    result
+  }
+
+
   /**
    *  updatePublisher : Updates the list of publishers linked to a TitleInstance.
    * @param obj : The TitleInstance object to be updated
@@ -957,66 +1082,67 @@ class RestMappingService {
   @Transactional
   public def updatePublisherList(obj, new_pubs, boolean remove = true) {
     def result = [changed: false, errors: []]
+    def publisher_combos = obj.getCombosByPropertyName('publisher')
+    def combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
 
-    TitleInstance.withTransaction {
-      def publisher_combos = obj.getCombosByPropertyName('publisher')
-      def combo_type = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Publisher')
+    String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
+    String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
+    def pubs_to_add = []
 
-      String propName = obj.isComboReverse('publisher') ? 'fromComponent' : 'toComponent'
-      String tiPropName = obj.isComboReverse('publisher') ? 'toComponent' : 'fromComponent'
-      def pubs_to_add = []
+    new_pubs.each { pub ->
+      if (!pubs_to_add.findAll { it.id == pub }) {
+        def pub_obj = Org.get(pub)
 
-      new_pubs.each { pub ->
-        if (!pubs_to_add.findAll { it.id == pub }) {
-          def pub_obj = Org.get(pub)
-
-          if (pub_obj) {
-            pubs_to_add << Org.get(pub)
-          }
-          else {
-            result.errors << [message: "Unable to reference publisher with ID ${new_pubs}!", baddata: pub]
-          }
+        if (pub_obj) {
+          pubs_to_add << Org.get(pub)
         }
         else {
-          log.warn("Duplicate for incoming publisher ${pub}!")
+          result.errors << [message: "Unable to reference publisher with ID ${new_pubs}!", baddata: pub]
+        }
+      }
+      else {
+        log.warn("Duplicate for incoming publisher ${pub}!")
+      }
+    }
+
+    if (!result.errors) {
+      def new_items = []
+
+      pubs_to_add.each { publisher ->
+        boolean found = false
+        for (int i = 0; !found && i < publisher_combos.size(); i++) {
+          Combo pc = publisher_combos[i]
+          def idMatch = pc."${propName}".id == publisher.id
+
+          if (idMatch) {
+            found = true
+          }
+        }
+
+        if (!found) {
+          new_items << publisher
+          result.changed = true
+        }
+        else {
+          log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
         }
       }
 
-      if (!result.errors) {
-        pubs_to_add.each { publisher ->
-          boolean found = false
-          for (int i = 0; !found && i < publisher_combos.size(); i++) {
-            Combo pc = publisher_combos[i]
-            def idMatch = pc."${propName}".id == publisher.id
+      obj.publisher.addAll(new_items)
+      obj.save(flush: true)
+    }
 
-            if (idMatch) {
-              found = true
-            }
-          }
+    if (remove && !result.errors) {
+      Iterator items = publisher_combos.iterator()
+      Object element
 
-          if (!found) {
-            obj.publisher << publisher
-            obj.save(flush: true)
-            result.changed = true
-          }
-          else {
-            log.debug "Publisher ${publisher.name} already set against '${obj.name}'"
-          }
-        }
-      }
+      while (items.hasNext()) {
+        element = items.next()
 
-      if (remove && !result.errors) {
-        Iterator items = publisher_combos.iterator()
-        Object element
-
-        while (items.hasNext()) {
-          element = items.next()
-
-          if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
-            // Remove.
-            element.delete()
-            result.changed = true
-          }
+        if (!pubs_to_add.contains(element.toComponent) && !pubs_to_add.contains(element.fromComponent)) {
+          // Remove.
+          element.delete()
+          result.changed = true
         }
       }
     }
@@ -1118,7 +1244,7 @@ class RestMappingService {
    */
 
   String buildUrlString(context, type, offset , max, params) {
-    URL serverUrl = grailsApplication.config.getProperty('serverURL') ? new URL(grailsApplication.config.getProperty('serverURL')) : null
+    URL serverUrl = grailsApplication.config.getProperty('grails.serverURL') ? new URL(grailsApplication.config.getProperty('grails.serverURL')) : null
     String path = "/rest" + "${context}"
 
     UriBuilder selfLink = UriBuilder.of(serverUrl.toURI())

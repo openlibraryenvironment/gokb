@@ -24,7 +24,7 @@ class GlobalController {
   @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
   def index() {
     def result = [:]
-    def base = grailsApplication.config.getProperty('serverURL', String, "") + "/rest"
+    def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
     def cobj = setType(params)
     User user = null
 

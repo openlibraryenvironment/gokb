@@ -342,6 +342,17 @@ class ConcurrencyManagerService {
     return getFilteredJobs("groupId", group_id, max, offset, showFinished)
   }
 
+  /**
+   * Gets all Jobs for the supplied type.
+   * @param type refdata
+   * @param max
+   * @param offset
+   * @return List of Jobs
+   */
+  public Map getJobsForType(RefdataValue type, int max = 10, int offset = 0, boolean showFinished = false) {
+    return getFilteredJobs("type", type, max, offset, showFinished)
+  }
+
 /**
  * filters the job list for specific ids in named parameter fields.
  * @param parameterName
@@ -363,27 +374,35 @@ class ConcurrencyManagerService {
     // Filter the jobs.
     CuratoryGroup.withNewSession {
       allJobs.each { k, v ->
+        boolean select = false
+
         if (v && v.hasProperty(propertyName) && (showFinished || !v.isDone())) {
-          if ((Integer.isInstance(v[propertyName]) && v[propertyName] == id) ||
-              (Map.isInstance(v[propertyName]) && v[propertyName].id == id)) {
-            CuratoryGroup cg = CuratoryGroup.get(v.groupId)
-            selected << [
-                group      : cg ? [id: cg.id, name: cg.name, uuid: cg.uuid] : null,
-                uuid       : v.uuid,
-                progress   : v.progress,
-                messages   : v.messages,
-                description: v.description,
-                type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
-                begun      : v.begun,
-                linkedItem : v.linkedItem,
-                startTime  : v.startTime,
-                endTime    : v.endTime,
-                cancelled  : v.isCancelled()
-            ]
+          if (['ownerId', 'groupId', 'type'].contains(propertyName) && v[propertyName] == id) {
+            select = true
+          }
+          else if (propertyName == 'linkedItem' && v.linkedItem?.id == id) {
+            select = true
           }
         }
         else if (!v) {
           log.error("Empty job $k in list!")
+        }
+
+        if (select) {
+          CuratoryGroup cg = CuratoryGroup.get(v.groupId)
+          selected << [
+              group      : cg ? [id: cg.id, name: cg.name, uuid: cg.uuid] : null,
+              uuid       : v.uuid,
+              progress   : v.progress,
+              messages   : v.messages,
+              description: v.description,
+              type       : v.type ? [id: v.type.id, name: v.type.value, value: v.type.value] : null,
+              begun      : v.begun,
+              linkedItem : v.linkedItem,
+              startTime  : v.startTime,
+              endTime    : v.endTime,
+              cancelled  : v.isCancelled()
+          ]
         }
       }
     }

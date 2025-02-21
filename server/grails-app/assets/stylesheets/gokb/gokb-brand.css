@@ -1,22 +1,59 @@
+@import url('https://webfonts.gbv.de/css2?family=Roboto:wght@300;500;700');
+
+html * {
+  font-family: "Roboto", sans-serif;
+}
+
+.navbar-default {
+  height: 64px;
+}
+
+.navbar-header {
+  height: 100%;
+  font-weight: bold;
+}
+
+.navbar-right {
+  height: 100%;
+}
+
+.navbar-right > li {
+  height: 100%;
+}
+
+.navbar-right > li > a {
+  height: 100%;
+  padding-top:20px;
+}
+
+.sidebar {
+  margin-top: 64px;
+}
+
 .navbar-inverse {
-  background-color: rgb(165, 20, 26);
+  background-color: #333333;
+  font-weight: bold;
 }
 
 .navbar-inverse .navbar-nav > li > a:hover {
-  background-color: #830007;
+  background-color: #333333;
 }
 
 .navbar-inverse .navbar-nav > .open > a, .navbar-inverse .navbar-nav > .open > a:hover, .navbar-inverse .navbar-nav > .open > a:focus {
-  background-color: #830007;
+  background-color: #333333;
 }
 
 .navbar-inverse .dropdown-menu {
-  background-color: #a5141b;
-  border: 1px solid #830007;
+  background-color: #333333;
+  border: 1px solid #222;
 }
 
 .navbar-inverse .dropdown-menu > li > a:hover, .navbar-inverse .dropdown-menu > .active > a, .navbar-inverse .dropdown-menu > .active > a:hover {
   background-color: #830007;
+}
+
+.navbar-text {
+  margin-top:18px;
 }
 
 .dropdown-menu {
@@ -44,15 +81,20 @@
 }
 
 a {
-  color: #a5141b;
+  color: #333;
+}
+
+.highlight-link > a {
+  text-decoration: underline;
+  color: #444 !important;
 }
 
 a:hover {
-  color: #aaa;
+  color: #222;
 }
 
 a:focus {
-  color: #590004;
+  color: #222;
 }
 
 .btn-success, .btn-primary {
@@ -78,11 +120,7 @@ a:focus {
 }
 
 .editable-click, a.editable-click, a.editable-click:hover {
-  border-bottom: dashed 1px #e1122a;
-}
-
-.editable-empty, .editable-empty:hover, .editable-empty:focus {
-  color: #cb2b33;
+  border-bottom: dashed 1px;
 }
 
 .btn {
@@ -100,6 +138,16 @@ select.input-sm {
   height:2.8em;
 }
 
+.navbar-default > .navbar-header > .navbar-brand {
+  font-size: 20px !important;
+  font-weight: 500;
+  line-height: 2rem;
+  letter-spacing: 0.0125em !important;
+  font-family: "Roboto", sans-serif !important;
+  padding: 22px 8px;
+  margin-left: 118px;
+}
+
 .editable-buttons > button.btn-sm {
   padding: 0px 0px;
   height:2.8em;
@@ -112,4 +160,8 @@ select.input-sm {
 
 #side-menu > li > a {
   font-weight: bold;
+}
+
+.form-control {
+  color: rgb(79,79,79)
 }

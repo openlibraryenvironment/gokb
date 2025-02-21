@@ -13,6 +13,7 @@ grails:
             '[/rest/**]': inherit
             '[/validation/**]': inherit
             '[/api/**]': inherit
+            '[/externalSource/**]': inherit
 
     profile: web
     codegen:
@@ -107,7 +108,7 @@ info:
 
 spring:
     application:
-        name: GOKb
+        name: GOKB
     main:
         banner-mode: "off"
     groovy:
@@ -204,6 +205,10 @@ environments:
                 enabled: false
         logging:
             config: classpath:logback-development.xml
+        spring:
+            devtools:
+                restart:
+                    exclude: grails-app/views/**
     test:
         dataSource:
             dbCreate: create-drop
@@ -260,6 +265,9 @@ environments:
                     platforms: gokbplatformstest
             centralGroups:
                 JournalInstance: 'Journal Central Curators'
+            ezbOpenCollections:
+                enabled: false
+                url: https://ezb-api.ur.de/collections/v1/
         grails:
             mail:
                 port: 3025
@@ -343,10 +351,13 @@ gokb:
     baseTempDirectory: '/tmp/gokb/'
     tsvExportTempDirectory: '/tmp/gokb/export'
     packageXmlCacheDirectory: '/tmp/gokb/oai/'
-
+    themeColor: '#333'
 quartz:
     autoStartup: true
     waitForJobsToCompleteOnShutdown: false
 server:
   servlet:
-      context-path: /gokb
+        context-path: /gokb
+        session:
+            cookie:
+                same-site: Lax

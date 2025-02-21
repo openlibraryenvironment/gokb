@@ -12,11 +12,18 @@ import grails.plugin.springsecurity.ui.ResetPasswordCommand
 import grails.plugin.springsecurity.ui.ForgotPasswordCommand
 import grails.plugin.springsecurity.ui.RegistrationCode
 import groovy.text.SimpleTemplateEngine
+import org.gokb.cred.CuratoryGroup
+import org.gokb.cred.RefdataCategory
+import org.gokb.cred.RefdataValue
 import org.springframework.context.MessageSource
 import org.springframework.context.i18n.LocaleContextHolder
 import org.springframework.security.access.annotation.Secured
 
 import groovy.util.logging.*
+
+import java.time.temporal.ChronoUnit
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Slf4j
 @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
@@ -41,9 +48,14 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
   def messageService
 
+  def mailService
+
+  def adminAlertingService
+
 	static final String EMAIL_LAYOUT = "/layouts/email"
 	static final String FORGOT_PASSWORD_TEMPLATE = "/register/_forgotPasswordMail"
 	static final String VERIFY_REGISTRATION_TEMPLATE = "/register/_verifyRegistrationMail"
+  static final String REGISTRATION_ALERT_TEMPLATE = "/register/_registerAlertMail"
 
   def index(RegisterCommand registerCommand) {
     if (params.embed) {
@@ -121,23 +133,39 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
   }
 
   def start(RegisterCommand registerCommand) {
-
     def secResult
     def errors = [:]
     def secFailed = false
     def agrFailed = false
+    RefdataValue status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
+    def groups = CuratoryGroup.executeQuery("select id, name from CuratoryGroup where status = :cs", [cs: status_current])
+    CuratoryGroup selectedGroup = params.int('selectedGroup') ? CuratoryGroup.get(params.int('selectedGroup')) : null
     Locale locale = params.lang ? new Locale(params.lang) : request.locale
-
 
     if ( !request.post ) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
-      return [registerCommand: new RegisterCommand(), secQuestion: session.secQuestion, embed: 'true', locale: locale]
+      return [
+        registerCommand: new RegisterCommand(),
+        secQuestion: session.secQuestion,
+        initGroup: selectedGroup?.id ?: null,
+        groups: groups,
+        embed: 'true',
+        locale: locale
+      ]
     }
 
     if ( session.regTries && session.regTries > 3 ) {
       response.setStatus(429)
 
-      return [registerCommand: registerCommand, noTries: true, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
+      return [
+        registerCommand: registerCommand,
+        noTries: true,
+        errs: messageService.processValidationErrors(registerCommand.errors, locale),
+        initGroup: selectedGroup?.id ?: null,
+        groups: groups,
+        embed: 'true',
+        locale: locale
+      ]
     }
 
     if ( !params.boolean('agreement') ) {
@@ -154,27 +182,92 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
       session.regTries = session.regTries ? (session.regTries + 1) : 1
       secFailed = true
-      return [registerCommand: registerCommand, secFailed: secFailed, agrFailed: agrFailed, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
+      return [
+        registerCommand: registerCommand,
+        secFailed: secFailed,
+        agrFailed: agrFailed,
+        secQuestion: session.secQuestion,
+        groups: groups,
+        initGroup: selectedGroup?.id ?: null,
+        errs: messageService.processValidationErrors(registerCommand.errors, locale),
+        embed: 'true',
+        locale: locale
+      ]
     }
 
-    if (registerCommand.hasErrors() || params.phone || agrFailed) {
+    if (!registerCommand.validate() || params.phone || agrFailed) {
       session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
-      return [registerCommand: registerCommand, secFailed: secFailed, agrFailed: agrFailed, secQuestion: session.secQuestion, errors: messageService.processValidationErrors(registerCommand.errors, locale), embed: 'true', locale: locale]
+
+      return [
+        registerCommand: registerCommand,
+        secFailed: secFailed,
+        agrFailed: agrFailed,
+        secQuestion: session.secQuestion,
+        groups: groups,
+        initGroup: selectedGroup?.id ?: null,
+        errs: messageService.processValidationErrors(registerCommand.errors, locale),
+        embed: 'true',
+        locale: locale
+      ]
     }
 
     def user = uiRegistrationCodeStrategy.createUser(registerCommand)
-    RegistrationCode registrationCode = uiRegistrationCodeStrategy.register(user, registerCommand.password)
 
-    if (registrationCode == null || registrationCode.hasErrors()) {
+    if (user == null) {
       // null means problem creating the user
       flash.error = message(code: 'spring.security.ui.register.miscError')
-      return [registerCommand: registerCommand, embed: 'true', locale: locale]
+      session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+      return [
+        registerCommand: registerCommand,
+        embed: 'true',
+        secQuestion: session.secQuestion,
+        groups: groups,
+        errs: [:],
+        initGroup: selectedGroup?.id ?: null,
+        locale: locale
+      ]
+    }
+    else if (!user.validate()) {
+      session.secQuestion = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+      user.discard()
+
+      return [
+        registerCommand: registerCommand,
+        embed: 'true',
+        secQuestion: session.secQuestion,
+        groups: groups,
+        initGroup: selectedGroup?.id ?: null,
+        errs: messageService.processValidationErrors(user.errors, locale),
+        locale: locale
+      ]
+    }
+    else {
+      user.password = registerCommand.password
+      user.save(flush: true)
+      user.preferredLocaleString = locale.toString()
+
+      if (selectedGroup && user.id) {
+        user.addToCuratoryGroups(selectedGroup)
+      }
+
+      user.save(flush: true)
+
+      adminAlertingService.sendRegistrationAlert(user)
     }
 
     session.secQuestion = null
     session.regTries = 0
 
-    return [registerCommand: registerCommand, emailSent: true, noAddress: true, embed: 'true', locale: locale]
+    return [
+      registerCommand: registerCommand,
+      emailSent: true,
+      noAddress: true,
+      groups: groups,
+      initGroup: selectedGroup?.id ?: null,
+      embed: 'true',
+      errs: [:],
+      locale: locale
+    ]
   }
 
   def verifyRegistration() {
@@ -223,25 +316,26 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 
   @Override
 	def forgotPassword(ForgotPasswordCommand forgotPasswordCommand) {
+    Locale locale = params.lang ? new Locale(params.lang) : request.locale
 
 		if (!request.post) {
-			return [forgotPasswordCommand: new ForgotPasswordCommand()]
+			return [forgotPasswordCommand: new ForgotPasswordCommand(), locale: locale]
 		}
 
 		if (forgotPasswordCommand.hasErrors()) {
-			return [forgotPasswordCommand: forgotPasswordCommand]
+			return [forgotPasswordCommand: forgotPasswordCommand, locale: locale]
 		}
 
 		def user = findUserByUsername(forgotPasswordCommand.username)
 		if (!user) {
 			forgotPasswordCommand.errors.rejectValue 'username', 'spring.security.ui.forgotPassword.user.notFound'
-			return [forgotPasswordCommand: forgotPasswordCommand]
+			return [forgotPasswordCommand: forgotPasswordCommand, locale: locale]
 		}
 
 		String email = uiPropertiesStrategy.getProperty(user, 'email')
 		if (!email) {
 			forgotPasswordCommand.errors.rejectValue 'username', 'spring.security.ui.forgotPassword.noEmail'
-			return [forgotPasswordCommand: forgotPasswordCommand]
+			return [forgotPasswordCommand: forgotPasswordCommand, locale: locale]
 		}
 
 		uiRegistrationCodeStrategy.sendForgotPasswordMail(
@@ -255,7 +349,8 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 						FORGOT_PASSWORD_TEMPLATE, EMAIL_LAYOUT,
 						[
 								url     : url,
-								username: user.username
+								username: user.username,
+                locale: locale
 						]
 				)
 			} else if (body.contains('$')) {
@@ -265,28 +360,172 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 			body
 		}
 
-		[emailSent: true, forgotPasswordCommand: forgotPasswordCommand]
+		[emailSent: true, forgotPasswordCommand: forgotPasswordCommand, locale: locale]
+	}
+
+	def forgotPasswordExt(ForgotPasswordCommand forgotPasswordCommand) {
+    def secResult
+    def errors = [:]
+    def secFailed = false
+    def new_question = "${new Random().next(2) + 1}*${new Random().next(2) + 1}"
+    Locale locale = params.lang ? new Locale(params.lang) : request.locale
+
+		if (!request.post) {
+      session.secQuestion = new_question
+			return [
+        forgotPasswordCommand: new ForgotPasswordCommand(),
+        secQuestion: session.secQuestion,
+        embed: true,
+        locale: locale
+      ]
+		}
+
+    if ( session.regTries && session.regTries > 3 ) {
+      response.setStatus(429)
+
+      return [
+        forgotPasswordCommand: forgotPasswordCommand,
+        noTries: true,
+        errors: messageService.processValidationErrors(forgotPasswordCommand.errors, locale),
+        embed: true,
+        locale: locale
+      ]
+    }
+
+    def secTerms = session.secQuestion ? session.secQuestion.split("\\*") : null
+
+    if ( secTerms ) {
+      secResult = (secTerms[0] as Integer) * (secTerms[1] as Integer)
+    }
+
+    if ( !secTerms || params.int('secAnswer') != secResult ) {
+      session.secQuestion = new_question
+      session.regTries = session.regTries ? (session.regTries + 1) : 1
+      secFailed = true
+      return [
+        forgotPasswordCommand: forgotPasswordCommand,
+        secFailed: secFailed,
+        secQuestion: session.secQuestion,
+        errors: messageService.processValidationErrors(forgotPasswordCommand.errors, locale),
+        embed: true,
+        locale: locale
+      ]
+    }
+
+		if (forgotPasswordCommand.hasErrors()) {
+      session.secQuestion = new_question
+			return [
+        forgotPasswordCommand: forgotPasswordCommand,
+        secFailed: secFailed,
+        secQuestion: session.secQuestion,
+        embed: true,
+        locale: locale
+      ]
+		}
+
+		def user = findUserByUsername(forgotPasswordCommand.username)
+
+		if (user) {
+      String email = uiPropertiesStrategy.getProperty(user, 'email')
+
+      if (email) {
+        uiRegistrationCodeStrategy.sendForgotPasswordMail(
+            forgotPasswordCommand.username, email) { String registrationCodeToken ->
+
+          String url = generateLink('resetPasswordExt', [t: registrationCodeToken, lang: locale.toString()])
+          String body = forgotPasswordEmailBody
+
+          if (!body) {
+            body = renderEmail(
+                FORGOT_PASSWORD_TEMPLATE, EMAIL_LAYOUT,
+                [
+                    url     : url,
+                    username: user.username,
+                    locale  : locale
+                ]
+            )
+          } else if (body.contains('$')) {
+            body = evaluate(body, [user: user, url: url])
+          }
+
+          body
+        }
+
+        session.secQuestion = null
+        session.regTries = 0
+      }
+    }
+
+		[
+      emailSent: true,
+      forgotPasswordCommand: forgotPasswordCommand,
+      embed: true,
+      locale: locale
+    ]
+	}
+
+	def resetPasswordExt(ResetPasswordCommand resetPasswordCommand) {
+    Locale locale = params.lang ? new Locale(params.lang) : request.locale
+    LocalDateTime ldt = LocalDateTime.ofInstant(new Date().toInstant(), ZoneId.systemDefault()).minus(1, ChronoUnit.DAYS)
+    Date date_cutoff = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+		String token = params.t
+
+		def registrationCode = token ? RegistrationCode.findByToken(token) : null
+
+		if (!registrationCode || registrationCode.dateCreated < date_cutoff) {
+			flash.error = message(code: token ? 'spring.security.ui.resetPassword.badCode' : 'spring.security.ui.resetPassword.noCode', locale: locale)
+			return [resetPasswordCommand: resetPasswordCommand, locale: locale]
+		}
+
+		if (!request.post) {
+			return [token: token, resetPasswordCommand: new ResetPasswordCommand(), locale: locale]
+		}
+
+		resetPasswordCommand.username = registrationCode.username
+		resetPasswordCommand.validate()
+
+		if (resetPasswordCommand.hasErrors()) {
+			return [token: token, resetPasswordCommand: resetPasswordCommand, locale: locale]
+		}
+
+		def user = uiRegistrationCodeStrategy.resetPassword(resetPasswordCommand, registrationCode)
+
+		if (user.hasErrors()) {
+      return [
+        resetPasswordCommand: resetPasswordCommand,
+        errors: messageService.processValidationErrors(resetPasswordCommand.errors, locale),
+        locale: locale
+      ]
+		}
+
+		flash.message = message(code: 'spring.security.ui.resetPassword.success', locale: locale)
+
+    [
+      success: true,
+      embed: true,
+      locale: locale
+    ]
 	}
 
 	def resetPassword(ResetPasswordCommand resetPasswordCommand) {
-
+    Locale locale = params.lang ? new Locale(params.lang) : request.locale
 		String token = params.t
 
 		def registrationCode = token ? RegistrationCode.findByToken(token) : null
 		if (!registrationCode) {
-			flash.error = message(code: 'spring.security.ui.resetPassword.badCode')
+			flash.error = message(code: 'spring.security.ui.resetPassword.badCode', locale: locale)
 			redirect uri: successHandlerDefaultTargetUrl
 			return
 		}
 
 		if (!request.post) {
-			return [token: token, resetPasswordCommand: new ResetPasswordCommand()]
+			return [token: token, resetPasswordCommand: new ResetPasswordCommand(), locale: locale]
 		}
 
 		resetPasswordCommand.username = registrationCode.username
 		resetPasswordCommand.validate()
 		if (resetPasswordCommand.hasErrors()) {
-			return [token: token, resetPasswordCommand: resetPasswordCommand]
+			return [token: token, resetPasswordCommand: resetPasswordCommand, locale: locale]
 		}
 
 		def user = uiRegistrationCodeStrategy.resetPassword(resetPasswordCommand, registrationCode)
@@ -294,7 +533,7 @@ class RegisterController extends grails.plugin.springsecurity.ui.RegisterControl
 			// expected to be handled already by ErrorsStrategy.handleValidationErrors
 		}
 
-		flash.message = message(code: 'spring.security.ui.resetPassword.success')
+		flash.message = message(code: 'spring.security.ui.resetPassword.success', locale: locale)
 
 		redirect uri: registerPostResetUrl ?: successHandlerDefaultTargetUrl
 	}
