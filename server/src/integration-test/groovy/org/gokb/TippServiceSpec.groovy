@@ -131,10 +131,12 @@ class TippServiceSpec extends Specification {
 
     when:
     def tipp = tippUpsertService.upsertDTO(tmap)
-    sleep(100)
+    sleep(300)
     def result = tippService.matchTitle(tipp.id)
+    sleep(300)
 
     then:
+    result.status == 'created'
     tipp.title != null
   }
 
@@ -180,9 +182,13 @@ class TippServiceSpec extends Specification {
 
     when:
     def tipp = tippUpsertService.upsertDTO(tmap)
-    tippService.matchTitle(tipp.id)
+    tippService.updateCombos(tipp, [identifiers: [[type: 'isbn', value: '9783406730696'], [type: 'pisbn', value: '9783406718175']]])
+    sleep(300)
+    def result = tippService.matchTitle(tipp.id)
+    sleep(300)
 
     then:
+    result.status == 'created'
     tipp.title != null
     tipp.name == tipp.title.name
     tipp.firstEditor == tipp.title.firstEditor

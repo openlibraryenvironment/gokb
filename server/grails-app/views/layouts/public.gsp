@@ -12,7 +12,7 @@
     <asset:script> var contextPath="${grailsApplication.config.getProperty('server.servlet.context-path') ?: '/'}"; </asset:script>
     <g:layoutHead />
 
-    <asset:stylesheet src="gokb/themes/${ grailsApplication.config.getProperty('gokb.theme') }/theme.css"/>
+    <asset:stylesheet src="gokb/themes/${ grailsApplication.config.getProperty('gokb.theme') }/bw-theme.css"/>
     <asset:stylesheet src="gokb/fontawesome.css" />
     <asset:stylesheet src="gokb/application.css"/>
     <asset:stylesheet src="gokb/gokb-brand.css"/>

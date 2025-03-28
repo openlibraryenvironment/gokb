@@ -19,7 +19,8 @@ class WorkflowController{
   def springSecurityService
   def reviewRequestService
   def componentLookupService
-  def packageService
+  def packageCSVExportService
+  def packageSourceUpdateService
   def dateFormatService
   def concurrencyManagerService
   def titleAugmentService
@@ -1650,96 +1651,33 @@ class WorkflowController{
 
   // @Transactional(readOnly = true)
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  private def packageKBartExport(packages_to_export){
-    def filename = null
-    if (packages_to_export.size() == 0){
-      return
-    }
+  private def packageKBartExport(id){
+    def type = params.exportType == 'title' ? PackageCSVExportService.ExportType.KBART_TITLE : PackageCSVExportService.ExportType.KBART_TIPP
+    def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
 
-    def status_current = RefdataCategory.lookup('KBComponent.Status', 'Current')
-    def combo_pkg_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
     def export_date = dateFormatService.formatDate(new Date())
-    if (packages_to_export.size() == 1){
-      filename = "GOKb Export : ${packages_to_export[0].provider?.name} : ${packages_to_export[0].name} : ${export_date}.tsv"
-    }
-    else{
-      filename = "GOKb Export : multiple_packages : ${export_date}.tsv"
-    }
 
-    try{
-      response.setContentType('text/tab-separated-values')
-      response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
-      response.contentType = "text/tab-separated-values" // "text/tsv"
-      packages_to_export.each{ pkg ->
-        packageService.sendFile(pkg, PackageService.ExportType.KBART, response)
-      }
+    if (pkg) {
+      packageCSVExportService.sendFile(pkg, type, response)
     }
-    catch (Exception e){
-      log.error("Problem with export", e)
+    else {
+      log.debug("Unable to resolve package by ID ${params.id}!")
+      response.status = 404
     }
   }
-
-
-  private writeExportLine(Writer writer, Closure<String> sanitize, TitleInstancePackagePlatform tipp, def tippCoverageStatement){
-    writer.write(
-        sanitize(tipp.title.name) + '\t' +
-            (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.getIdentifierValue('pISBN')) : sanitize(tipp.title.getIdentifierValue('ISSN'))) + '\t' +
-            (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.getIdentifierValue('ISBN')) : sanitize(tipp.title.getIdentifierValue('eISSN'))) + '\t' +
-            sanitize(tippCoverageStatement.startDate) + '\t' +
-            sanitize(tippCoverageStatement.startVolume) + '\t' +
-            sanitize(tippCoverageStatement.startIssue) + '\t' +
-            sanitize(tippCoverageStatement.endDate) + '\t' +
-            sanitize(tippCoverageStatement.endVolume) + '\t' +
-            sanitize(tippCoverageStatement.endIssue) + '\t' +
-            sanitize(tipp.url) + '\t' +
-            (tipp.title.hasProperty('firstAuthor') ? sanitize(tipp.title.firstAuthor) : '') + '\t' +
-            sanitize(tipp.title.getId()) + '\t' +
-            sanitize(tippCoverageStatement.embargo) + '\t' +
-            sanitize(tippCoverageStatement.coverageDepth) + '\t' +
-            sanitize(tippCoverageStatement.coverageNote) + '\t' +
-            sanitize(tipp.title.getCurrentPublisher()?.name) + '\t' +
-            sanitize(tipp.title.getPrecedingTitleId()) + '\t' +
-            (tipp.title.hasProperty('dateFirstInPrint') ? sanitize(tipp.title.dateFirstInPrint) : '') + '\t' +
-            (tipp.title.hasProperty('dateFirstOnline') ? sanitize(tipp.title.dateFirstOnline) : '') + '\t' +
-            (tipp.title.hasProperty('volumeNumber') ? sanitize(tipp.title.volumeNumber) : '') + '\t' +
-            (tipp.title.hasProperty('editionStatement') ? sanitize(tipp.title.editionStatement) : '') + '\t' +
-            (tipp.title.hasProperty('firstEditor') ? sanitize(tipp.title.firstEditor) : '') + '\t' +
-            '\t' +  // parent_publication_title_id
-            sanitize(tipp.title?.medium?.value) + '\t' +  // publication_type
-            sanitize(tipp.paymentType?.value) + '\t' +  // access_type
-            sanitize(tipp.title.getIdentifierValue('ZDB')) +
-            '\n')
-  }
-
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  private def packageTSVExport(packages_to_export){
-    def filename = null
-    if (packages_to_export.size() == 0){
-      return
-    }
-
-    def status_deleted = RefdataCategory.lookup('KBComponent.Status', 'Deleted')
-    def combo_pkg_tipps = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+  private def packageTSVExport(id){
     def export_date = dateFormatService.formatDate(new Date())
-    if (packages_to_export.size() == 1){
-      filename = "GOKb Export : ${packages_to_export[0].provider?.name} : ${packages_to_export[0].name} : ${export_date}.tsv"
-    }
-    else{
-      filename = "GOKb Export : multiple_packages : ${export_date}.tsv"
-    }
 
-    try{
-      response.setContentType('text/tab-separated-values')
-      response.setHeader("Content-disposition", "attachment; filename=\"${filename}\"")
-      response.contentType = "text/tab-separated-values" // "text/tsv"
+    def pkg = Package.findByUuid(id) ?: (genericOIDService.oidToId(id) ? Package.get(genericOIDService.oidToId(id)) : null)
 
-      packages_to_export.each{ pkg ->
-        packageService.sendFile(pkg, PackageService.ExportType.TSV, response)
-      }
+    if (pkg) {
+      packageCSVExportService.sendFile(pkg, PackageCSVExportService.ExportType.TSV, response)
     }
-    catch (Exception e){
-      log.error("Problem with export", e)
+    else {
+      log.debug("Unable to resolve package by ID ${params.id}!")
+      response.status = 404
     }
   }
 
@@ -1916,6 +1854,7 @@ class WorkflowController{
     def user = springSecurityService.currentUser
     def pars = [:]
     def denied = false
+    Boolean restrictSize = !user.isAdmin()
 
     if (packages_to_update.size() > 1){
       flash.error = "Please select a single Package to update!"
@@ -1934,7 +1873,7 @@ class WorkflowController{
 
           if (pkgObj?.isEditable() && (is_curator || !curated_pkg || user.authorities.contains(Role.findByAuthority('ROLE_SUPERUSER')))){
             Job background_job = concurrencyManagerService.createJob { Job job ->
-              result = packageService.updateFromSource(pkgObj, user, job)
+              packageSourceUpdateService.updateFromSource(pkgObj.id, user.id, job, null, false, restrictSize)
             }
 
             background_job.groupId = is_curator?.size() > 0 ? is_curator[0] : null

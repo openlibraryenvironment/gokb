@@ -59,13 +59,13 @@ class PackageUpdateService {
         else {
           log.error("This value belongs to another Category (${rdv.owner.label})!")
         }
+        RefdataValue review_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
+        RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
+        def open_reviews = ReviewRequest.executeQuery("from ReviewRequest as r where componentToReview.id = :pkg or exists (select t from TitleInstancePackagePlatform as t where t.id = r.componentToReview.id and exists (select 1 from Combo where fromComponent.id = :pkg and type = :ct and toComponent = t)) and status = :so", [pkg: obj.id, so: review_open, ct: combo_tipps],[max: 1])
+
 
         if (new_val && new_val != obj.listStatus) {
           if (new_val.value == 'Checked') {
-            RefdataValue review_open = RefdataCategory.lookup("ReviewRequest.Status", "Open")
-            RefdataValue combo_tipps = RefdataCategory.lookup("Combo.Type", "Package.Tipps")
-            def open_reviews = ReviewRequest.executeQuery("from ReviewRequest where componentToReview in (select k from KBComponent as k where exists (select 1 from Combo where fromComponent.id = :pkg and type = :ct and toComponent = k) or k.id = :pkg) and status = :so", [pkg: obj.id, so: review_open, ct: combo_tipps],[max: 1])
-
             log.debug("Open Reviews: ${open_reviews}")
 
             if (open_reviews.size() == 0) {
@@ -82,9 +82,14 @@ class PackageUpdateService {
             changed = true
           }
         }
-
-        if (new_val && new_val.value == 'Checked' && !errors.listStatus) {
-          obj.listVerifiedDate = new Date()
+        else if (new_val && new_val.value == 'Checked' && reqBody.updateVerifyDate) {
+          if (open_reviews?.size() > 0) {
+            errors['listStatus'] = [[message: 'All connected requests for review must be closed before the package can be marked as checked.', code: 409, messageCode: 'component.package.listStatus.error.openReviews']]
+          }
+          else {
+            obj.listVerifiedDate = new Date()
+            changed = true
+          }
         }
       }
     }

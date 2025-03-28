@@ -14,7 +14,7 @@
 <asset:script> var contextPath="${grailsApplication.config.getProperty('server.servlet.context-path') ?: ''}"; </asset:script>
 <asset:javascript src="gokb/application.grass.js" />
 <asset:stylesheet src="gokb/sb-admin-2.css"/>
-<asset:stylesheet src="gokb/themes/${ grailsApplication.config.getProperty('gokb.theme') }/theme.css"/>
+<asset:stylesheet src="gokb/themes/${ grailsApplication.config.getProperty('gokb.theme') }/bw-theme.css"/>
 <asset:stylesheet src="gokb/application.css"/>
 
 <g:layoutHead />

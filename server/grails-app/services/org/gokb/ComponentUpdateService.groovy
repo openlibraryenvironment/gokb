@@ -238,7 +238,7 @@ class ComponentUpdateService {
 
     new_ids.each { ci ->
       def namespace_val = ci.namespace ?: ci.type
-      String testKey = "${namespace_val}|${ci.value}".toString()
+      String testKey = "${namespace_val}|${Identifier.normalizeIdentifier(ci.value)}".toString()
 
       if (namespace_val && ci.value && namespace_val.toLowerCase() != "originediturl") {
         if (!existing_ids.contains(testKey)) {
@@ -379,10 +379,10 @@ class ComponentUpdateService {
       if (obj.allocatedTo == user) {
         curator = true
       }
-      else if (obj.allocatedGroups*.group.id.intersect(user.curatoryGroups*.id)) {
+      else if (obj.activeAllocatedGroups*.group.id.intersect(user.curatoryGroups*.id)) {
         curator = true
       }
-      else if (!obj.allocatedGroups && user.contributorStatus) {
+      else if (!obj.activeAllocatedGroups && user.contributorStatus) {
         curator = true
       }
     }

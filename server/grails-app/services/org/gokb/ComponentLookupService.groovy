@@ -415,47 +415,50 @@ class ComponentLookupService {
             if (validLong.size() == 1 && p.name == 'componentToReview') {
               def ctr = KBComponent.get(validLong[0])
               def ctr_ids = [ctr.id]
+              RefdataValue combo_package_tipp = RefdataCategory.lookup('Combo.Type', 'Package.Tipps')
+              RefdataValue combo_title_tipp = RefdataCategory.lookup('Combo.Type', 'TitleInstance.Tipps')
 
               if (ctr?.class == Package) {
-                def tipp_ids = TitleInstancePackagePlatform.executeQuery('''select tipp.id from TitleInstancePackagePlatform as tipp
+                def linked_select = '''select tipp.id from TitleInstancePackagePlatform as tipp
                     where exists (
                       select 1 from Combo
                       where fromComponent = :ctr
                       and toComponent = tipp
+                      and type = :combo_package_tipp
                     )
                     and exists (
                       select 1 from ReviewRequest
-                      where componentToReview = tipp
+                      where id = p.id
+                      and componentToReview = tipp
 
-                    )''',[ctr: ctr])
+                    )'''
+
+                qryParams['ctr'] = ctr
+                qryParams['combo_package_tipp'] = combo_package_tipp
 
                 if (params.titlereviews) {
-                  if (tipp_ids.size() > 0) {
-                    def ti_ids = TitleInstance.executeQuery('''select ti.id from TitleInstance as ti
+                  linked_select = '''select ti.id from TitleInstance as ti
                       where exists (
-                        select 1 from Combo
+                        select 1 from Combo as ct
                         where fromComponent = ti
-                        and toComponent.id IN (:tippids)
+                        and type = :combo_title_tipp
+                        and exists (
+                          select 1 from Combo
+                          where toComponent = ct.toComponent
+                          and type = :combo_package_tipp
+                          and fromComponent = :ctr
+                        )
                       )
                       and exists (
                         select 1 from ReviewRequest
-                        where componentToReview = ti
-                      )''', [tippids: tipp_ids])
+                        where id = p.id
+                        and componentToReview = ti
+                      )'''
 
-                    ctr_ids.addAll(ti_ids)
-                  }
-
-                  if (params.combinedreviews) {
-                    ctr_ids.addAll(tipp_ids)
-                  }
-                }
-                else {
-                  ctr_ids.addAll(tipp_ids)
+                  qryParams['combo_title_tipp'] = combo_title_tipp
                 }
 
-                qryParams['ctrids'] = ctr_ids
-                paramStr += "(p.componentToReview.id IN :ctrids)"
-                log.debug("${qryParams['ctrids'].size()}")
+                paramStr += "(p.componentToReview = :ctr OR EXISTS (${linked_select}))"
                 pkg_qry = true
               }
             }

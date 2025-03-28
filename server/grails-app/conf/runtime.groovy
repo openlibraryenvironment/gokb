@@ -528,8 +528,6 @@ apiClasses = [
 /** Less config **/
 /** Config duplicated here and in build.groovy for alternate run paths */
 grails.assets.less.compiler = 'less4j'
-grails.assets.excludes = [ '**/_*.less', 'gokb/themes/*.less', 'gokb/themes/**/*.less', 'bootstrap/*.less', 'bootstrap/**/*.less' ]
-grails.assets.includes = [ 'webfonts/*', 'gokb/themes/*/theme.less', 'bootstrap/bootstrap.less' ]
 grails.assets.plugin."twitter-bootstrap".excludes = ["**/*.less"]
 grails.assets.plugin."font-awesome-resources".excludes = ["**/*.less"]
 grails.assets.plugin."jquery".excludes = ["**", "*.*"]
@@ -585,4 +583,3 @@ grails {
 }
 
 fileViewer.grails.views.gsp.codecs.expression = "none"
-

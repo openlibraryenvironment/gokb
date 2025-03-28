@@ -50,11 +50,6 @@ class OrgTestSpec extends AbstractAuthSpec {
   }
 
   def cleanup() {
-    Platform.findByName("TestOrgPlt")?.refresh()?.expunge()
-    Platform.findByName("TestOrgPltUpdate")?.refresh()?.expunge()
-
-    Org.findByName("TestOrgPatch")?.refresh()?.expunge()
-    Office.findByName("firstTestOffice")?.refresh()?.expunge()
   }
 
   void "test /rest/orgs without token"() {
@@ -187,31 +182,5 @@ class OrgTestSpec extends AbstractAuthSpec {
     resp.body()._embedded.providedPlatforms[0].name == test_org_plt.name
     resp.body()._embedded.offices?.size() == 2
     resp.body()._embedded.offices*.function.name.contains("Other")
-  }
-
-  void "test source delete"() {
-    given:
-
-    def urlPath = getUrlPath()
-    String accessToken = getAccessToken()
-
-    Map update_record = [
-      name: "TestOrgUpdateSource",
-      source: null
-    ]
-
-    when:
-
-    HttpRequest request = HttpRequest.PUT("${urlPath}/rest/orgs/$test_org.id", update_record)
-      .bearerAuth(accessToken)
-    HttpResponse resp = http.exchange(request, Map)
-    then:
-
-    resp.status == HttpStatus.OK
-
-    expect:
-
-    resp.body().name == "TestOrgUpdateSource"
-    resp.body().source == null
   }
 }

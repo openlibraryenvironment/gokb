@@ -293,7 +293,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   @Override
   @Transient
   static def lookupAllByIO(String idtype, String idvalue) {
-    def result = []
+    Set result = []
     def normid = Identifier.normalizeIdentifier(idvalue)
     def namespace = IdentifierNamespace.findByValueIlike(idtype)
 
@@ -303,7 +303,7 @@ class TitleInstancePackagePlatform extends KBComponent {
       id?.activeIdentifiedComponents.each { proxy ->
         def component = KBComponent.deproxy(proxy)
 
-        if (component.class == TitleInstancePackagePlatform && !result.contains(component)) {
+        if (component.class == TitleInstancePackagePlatform) {
           result.add(component)
         }
       }

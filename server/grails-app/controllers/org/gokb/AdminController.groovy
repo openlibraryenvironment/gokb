@@ -248,7 +248,7 @@ class AdminController {
     log.debug("Call to recache all packages")
 
     Job j = concurrencyManagerService.createJob { Job job ->
-      packageCachingService.cachePackageXml(true, job)
+      packageCachingService.cachePackages(true, job)
     }.startOrQueue()
 
     j.description = "Recache packages (manual/forced)"

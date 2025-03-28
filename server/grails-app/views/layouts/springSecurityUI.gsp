@@ -12,7 +12,7 @@
   <asset:stylesheet src="gokb/application.css"/>
   <s2ui:stylesheet src='spring-security-ui'/>
   <asset:stylesheet src="gokb/security-styles.css"/>
-  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.getProperty('gokb.theme') }/theme.css"/>
+  <asset:stylesheet src="gokb/themes/${ grailsApplication.config.getProperty('gokb.theme') }/bw-theme.css"/>
   <asset:stylesheet src="gokb/gokb-brand.css"/>
 <g:layoutHead/>
 </head>

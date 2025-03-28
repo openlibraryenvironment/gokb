@@ -93,7 +93,7 @@ class FTUpdateService {
         result.globalNote = kbc.globalNote
 
         if (grailsApplication.config.getProperty('gokb.stableUriBase')) {
-          result.uri = "${grailsApplication.config.getProperty('gokb.stableUriBase')}/package/${kbc.uuid}"
+          result.uri = "${grailsApplication.config.getProperty('gokb.stableUriBase')}/package/${kbc.uuid}".toString()
         }
 
         result.altname = []
@@ -138,6 +138,8 @@ class FTUpdateService {
       case Org:
         result.updater = 'org'
         result.titleNamespace = kbc.titleNamespace?.value
+        result.titleNamespaceSerial = kbc.titleNamespaceSerial?.value
+        result.titleNamespaceMonograph = kbc.titleNamespaceMonograph?.value
         result.packageNamespace = kbc.packageNamespace?.value
         result.preferredShortname = kbc.preferredShortname ?: ""
 
@@ -595,7 +597,7 @@ class FTUpdateService {
           count++
           total++
 
-          if (count > 250) {
+          if (count > 150) {
             count = 0
             log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
             BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)

@@ -60,6 +60,8 @@ class IngestKbartRun {
   def priority_list = ['zdb', 'eissn', 'issn', 'isbn', 'doi']
   def job = null
   IdentifierNamespace providerIdentifierNamespace
+  IdentifierNamespace serialNamespace
+  IdentifierNamespace monographNamespace
   Long ingest_systime
 
   DataFile datafile
@@ -79,7 +81,9 @@ class IngestKbartRun {
                         CuratoryGroup active_group = null,
                         Boolean dry_run = false,
                         Boolean skip_invalid = false,
-                        Boolean cleanup = false) {
+                        Boolean cleanup = false,
+                        IdentifierNamespace titleIdSerial = null,
+                        IdentifierNamespace titleIdMonograph = null) {
     pkg = pack
     addOnly = incremental
     user = u
@@ -90,6 +94,8 @@ class IngestKbartRun {
     providerIdentifierNamespace = titleIdNamespace
     skipInvalid = skip_invalid
     isCleanup = cleanup
+    serialNamespace = titleIdSerial
+    monographNamespace = titleIdMonograph
   }
 
   def start(nJob, session) {
@@ -119,12 +125,14 @@ class IngestKbartRun {
         'serial':[
           identifierMap: ['print_identifier': 'issn', 'online_identifier': 'eissn'],
           defaultMedium: 'Serial',
-          defaultTypeName: 'org.gokb.cred.JournalInstance'
+          defaultTypeName: 'org.gokb.cred.JournalInstance',
+          providerIdentifierNamespace: (serialNamespace?.value ?: null)
         ],
         'monograph':[
           identifierMap: ['print_identifier': 'pisbn', 'online_identifier': 'isbn'],
           defaultMedium: 'Book',
-          defaultTypeName: 'org.gokb.cred.BookInstance'
+          defaultTypeName: 'org.gokb.cred.BookInstance',
+          providerIdentifierNamespace: (monographNamespace?.value ?: null)
         ]
       ]
     ]
@@ -148,7 +156,7 @@ class IngestKbartRun {
       log.debug("Set progress")
       job?.setProgress(0)
 
-      def file_info = validationService.generateKbartReport(new ByteArrayInputStream(datafile.fileData), providerIdentifierNamespace, false)
+      def file_info = validationService.generateKbartReport(new ByteArrayInputStream(datafile.fileData), providerIdentifierNamespace, false, serialNamespace, monographNamespace)
       result.report = [numRows: file_info.rows.total, skipped: file_info.rows.skipped, invalid: file_info.rows.error]
       result.validation = file_info
 
@@ -393,7 +401,8 @@ class IngestKbartRun {
             groupId     : (job.groupId),
             startTime   : (job.startTime),
             endTime     : (job.endTime),
-            linkedItemId: (job.linkedItem?.id)
+            linkedItemId: (job.linkedItem?.id),
+            importFile  : (datafile)
         ]
 
         def result_object = JobResult.findByUuid(job.uuid)
@@ -540,7 +549,10 @@ class IngestKbartRun {
         if (the_kbart.title_id && the_kbart.title_id.trim()) {
           log.debug("title_id ${the_kbart.title_id}")
 
-          if (ingest_cfg.providerIdentifierNamespace) {
+          if (row_specific_config.providerIdentifierNamespace) {
+            identifiers << [type: row_specific_config.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
+          }
+          else if (ingest_cfg.providerIdentifierNamespace) {
             identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
           }
         }
@@ -745,13 +757,13 @@ class IngestKbartRun {
 
         if (match_result.failed_matches.size() > 0) {
           result.status = 'partial'
-          result.reviewCreated = true
 
           if (!dryRun) {
             def additionalInfo = [otherComponents: []]
             boolean needs_review = false
 
             match_result.failed_matches.each { ct ->
+              boolean isEzbImportId = false
               def matched_ns = []
 
               ct.matchResult.each { mr ->
@@ -760,7 +772,11 @@ class IngestKbartRun {
                 }
               }
 
-              if (matched_ns.size() == 1 && matched_ns[0] == 'ezb') {
+              if (identifiers.find { it -> (it.type == 'ezb') }) {
+                isEzbImportId = true
+              }
+
+              if (matched_ns.size() == 1 && matched_ns[0] == 'title_id' && isEzbImportId) {
                 log.debug("Ignoring EZB-ID match ..")
               }
               else {
@@ -777,6 +793,7 @@ class IngestKbartRun {
 
             // RR für Multimatch generieren
             if (needs_review) {
+              result.reviewCreated = true
               reviewRequestService.raise(
                   tipp,
                   "A KBART record has been matched on an existing package title by some identifiers, but not by other important identifiers.",
@@ -788,6 +805,9 @@ class IngestKbartRun {
                   componentLookupService.findCuratoryGroupOfInterest(tipp, user, activeGroup)
               )
             }
+          }
+          else {
+            result.reviewCreated = true
           }
         }
       }
@@ -1076,7 +1096,10 @@ class IngestKbartRun {
     if (the_kbart.title_id && the_kbart.title_id.trim()) {
       log.debug("title_id ${the_kbart.title_id}")
 
-      if (ingest_cfg.providerIdentifierNamespace) {
+      if (row_specific_config.providerIdentifierNamespace) {
+        identifiers << [type: row_specific_config.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
+      }
+      else if (ingest_cfg.providerIdentifierNamespace) {
         identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
       }
     }

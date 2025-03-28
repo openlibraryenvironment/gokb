@@ -112,7 +112,8 @@ class TitleLookupServiceSpec extends Specification {
     result.to_create == true
     result.matches.size() == 1
     result.matches[0].object.name == "Lookup serviceTest Title!"
-    result.matches[0].conflicts.size() == 2
+    result.matches[0].conflicts.size() == 1
+    result.matches[0].warnings.size() == 1
   }
 
   void "Test find to match title via secondary id"() {

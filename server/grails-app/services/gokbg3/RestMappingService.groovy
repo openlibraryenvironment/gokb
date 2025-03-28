@@ -76,12 +76,10 @@ class RestMappingService {
     def nested = params['nested'] ? true : false
     def base = grailsApplication.config.getProperty('grails.serverURL') + "/rest"
     def curatedClass = obj.respondsTo('curatoryGroups')
-    def jsonMap = null
+    def jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
     def is_curator = user ? componentUpdateService.isUserCurator(obj, user) : false
 
     PersistentEntity pent = grailsApplication.mappingContext.getPersistentEntity(obj.class.name)
-
-    jsonMap = KBComponent.has(obj, 'jsonMapping') ? obj.jsonMapping : null
 
     if (KBComponent.has(obj, "restPath") && !jsonMap?.ignore?.contains('_links')) {
       result['_links'] = [:]
@@ -98,11 +96,17 @@ class RestMappingService {
       }
     }
 
-    if (embed_active.size() == 0 && !nested) {
+    if (embed_active.size() == 0) {
       if (KBComponent.isAssignableFrom(obj.class)) {
-        embed_active = defaultEmbed
+        if (!nested) {
+          embed_active = defaultEmbed
+        }
+        else if (jsonMap?.defaultEmbeds?.contains('ids')) {
+          embed_active.add('ids')
+        }
       }
-      if (jsonMap?.defaultEmbeds?.size() > 0) {
+
+      if (!nested && jsonMap?.defaultEmbeds?.size() > 0) {
         jsonMap.defaultEmbeds.each {
           if (!embed_active.contains(it)) {
             embed_active.add(it)
@@ -110,6 +114,7 @@ class RestMappingService {
         }
       }
     }
+
     if (embed_active.size() > 0) {
       result['_embedded'] = [:]
       log.debug("Embeds: ${embed_active}")
@@ -193,7 +198,7 @@ class RestMappingService {
               break;
 
             case Date.class:
-              if (p.name == 'lastUpdated' || p.name == 'dateCreated') {
+              if (p.name == 'lastUpdated' || p.name == 'dateCreated' || p.name == 'lastRun') {
                 result[p.name] = obj[p.name] ? dateFormatService.formatIsoTimestamp(obj[p.name]) : null
               }
               else {

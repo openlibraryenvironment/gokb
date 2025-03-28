@@ -166,6 +166,7 @@ class TitleController {
     def user = User.get(springSecurityService.principal.id)
     def ids = reqBody.ids ?: reqBody.identifiers
     def base = grailsApplication.config.getProperty('grails.serverURL', String, "") + "/rest"
+    boolean allow_id_conflicts = user.isAdmin() || reqBody?._checked == true
 
     def publisher_name = null
 
@@ -190,7 +191,7 @@ class TitleController {
           type.name
         )
 
-        if (title_lookup.to_create || reqBody._checked == true) {
+        if (title_lookup.to_create || allow_id_conflicts) {
           obj = type.newInstance()
           obj.name = reqBody.name.trim()
 
@@ -1011,8 +1012,10 @@ class TitleController {
   def merge() {
     log.debug("Merging title ..")
     def result = ['result':'OK', 'params': params]
+    def errors = [:]
     def user = User.get(springSecurityService.principal.id)
     def obj = TitleInstance.findByUuid(params.id) ?: TitleInstance.get(genericOIDService.oidToId(params.id))
+    RefdataValue id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
 
     if (obj && obj.isEditable()) {
       def curator = isUserCurator(obj, user)
@@ -1025,16 +1028,28 @@ class TitleController {
             params.list('ids').each { tid ->
               def idObj = Identifier.get(Long.valueOf(tid))
 
-              if (idObj && !target.ids.contains(idObj)) {
-                target.ids.add(idObj)
-                target.save(flush: true)
+              if (idObj) {
+                def dupes = Combo.executeQuery("Select c from Combo as c where c.toComponent = :ido and c.fromComponent = :nt and c.type = :ct", [ido: idObj, nt: target, ct: id_combo_type])
+
+                if (!dupes || dupes.size() == 0) {
+                  target.ids.add(idObj)
+                  target.save(flush: true)
+                }
+                else {
+                  log.warn("merge :: Not adding multiple links between title ${target} and ID ${idObj}!")
+                }
+              }
+              else {
+                if (!result.errors.ids) {
+                  result.errors.ids = []
+                }
+
+                result.errors.ids << [message: 'Unable to reference ID object!', baddata: tid]
               }
             }
           }
           else if (params.boolean('mergeIds')) {
-            def id_combo_type = RefdataCategory.lookupOrCreate('Combo.Type', 'KBComponent.Ids')
-
-            obj.ids.each{ old_id ->
+            obj.ids.each { old_id ->
 
               def old_combo = Combo.findByFromComponentAndToComponent(obj, old_id)
 
@@ -1079,6 +1094,14 @@ class TitleController {
             target.ensureVariantName(target.name)
             target.name = obj.name
             target.save(flush: true)
+          }
+
+          obj.subjects.each { cs ->
+            def existing = ComponentSubject.findByComponentAndSubject(target, cs.subject)
+
+            if (!existing) {
+              new ComponentSubject(component: target, subject: cs.subject).save(flush: true, failOnError: true)
+            }
           }
 
           log.debug("Deleting stale title ${obj}")

@@ -215,7 +215,9 @@ class ValidationService {
 
   static ISSNValidator ISSN_VAL = new ISSNValidator()
 
-  def generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null, boolean strict = false) {
+  def generateKbartReport(InputStream kbart, IdentifierNamespace titleIdNamespace = null, boolean strict = false, IdentifierNamespace titleIdNamespaceSerial = null, IdentifierNamespace titleIdNamespaceMonograph = null) {
+    log.debug("Generating report for file with: [titleIdNamespace: $titleIdNamespace, strict: $strict, titleIdNamespaceSerial: $titleIdNamespaceSerial, titleIdNamespaceMonograph: $titleIdNamespaceMonograph]")
+
     def result = [
         valid: true,
         message: "",
@@ -281,9 +283,20 @@ class ValidationService {
           result.valid = false
         }
         else if (nl.size() >= MANDATORY_COLS.size()) {
+          def pubTypeVal = nl[col_positions['publication_type']].trim()
+          def pubType = checkPubType(pubTypeVal)
+          IdentifierNamespace row_namespace = titleIdNamespace
+
+          if (pubType == 'Serial' && titleIdNamespaceSerial) {
+            row_namespace = titleIdNamespaceSerial
+          }
+          else if (pubType == 'Monograph' && titleIdNamespaceMonograph) {
+            row_namespace = titleIdNamespaceMonograph
+          }
+
           result.rows.total++
 
-          def row_result = checkRow(nl, rowCount, col_positions, titleIdNamespace, strict)
+          def row_result = checkRow(nl, rowCount, col_positions, row_namespace, strict)
 
           if (row_result.errors) {
             result.rows.error++
@@ -787,7 +800,7 @@ class ValidationService {
 
       if (parts = final_val =~ /^((?>http[s]?|ftp):\/\/)([^\s\/\?@_]+)(\/[\w\-\/]+\/)*(\/?\??)([^#]+)?(#[\w\-]+)?$/) {
         for (int i = 1; i < parts.groupCount(); i++) {
-          log.debug("Group ${i}: ${parts.group(i)}")
+          // log.debug("Group ${i}: ${parts.group(i)}")
 
           if (parts.group(i)) {
             if (i == 2) {
@@ -838,7 +851,7 @@ class ValidationService {
       }
     }
 
-    log.debug("Final URL to check: ${final_val}")
+    // log.debug("Final URL to check: ${final_val}")
 
     return new UrlValidator().isValid(final_val) ? value : null
   }

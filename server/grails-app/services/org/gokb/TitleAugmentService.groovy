@@ -510,27 +510,32 @@ class TitleAugmentService {
 
     RefdataValue scheme_ddc = RefdataCategory.lookup("Subject.Scheme", "ddc")
 
-    info.ddc.each { notation ->
-      if (notation ==~ /^\d{3}$/) {
-        Subject subject = Subject.findBySchemeAndHeading(scheme_ddc, notation)
+    try {
+      info.ddc.each { notation ->
+        if (notation ==~ /^\d{3}$/) {
+          Subject subject = Subject.findBySchemeAndHeading(scheme_ddc, notation)
 
-        if (!subject) {
-          log.debug("Creating new subject for ${scheme_ddc} : $notation ..")
-          subject = new Subject(scheme: scheme_ddc, heading: notation).save(flush: true)
+          if (!subject) {
+            log.debug("Creating new subject for ${scheme_ddc} : $notation ..")
+            subject = new Subject(scheme: scheme_ddc, heading: notation).save(flush: true)
+          }
+
+          ComponentSubject existing_link = ComponentSubject.findByComponentAndSubject(titleInstance, subject)
+
+          if (!existing_link) {
+            log.debug("Linking subject ${scheme_ddc} : $notation ..")
+            new ComponentSubject(component:titleInstance, subject: subject).save(flush: true)
+          } else {
+            log.debug("Subject is already linked!")
+          }
         }
-
-        ComponentSubject existing_link = ComponentSubject.findByComponentAndSubject(titleInstance, subject)
-
-        if (!existing_link) {
-          log.debug("Linking subject ${scheme_ddc} : $notation ..")
-          new ComponentSubject(component:titleInstance, subject: subject).save(flush: true)
-        } else {
-          log.debug("Subject is already linked!")
+        else {
+          log.debug("ZDB augment :: Skipping linkage from ${titleInstance} to detailed DDC notation ${notation}!")
         }
       }
-      else {
-        log.debug("ZDB augment :: Skipping linkage from ${titleInstance} to detailed DDC notation ${notation}!")
-      }
+    }
+    catch (Exception e) {
+      log.error("Error while processing ZDB ddc subject:", e)
     }
 
     if (titleInstance.name.toLowerCase() != info.title.toLowerCase()) {
@@ -910,18 +915,6 @@ class TitleAugmentService {
     }
     else {
       log.error("No viable variant name supplied!")
-    }
-  }
-
-  public void addIdentifiers(ids, ti) {
-    ids.each { new_id ->
-      def existing_combo = Combo.executeQuery("from Combo where fromComponent = :ti and toComponent = :nid", [ti: ti, nid: new_id])
-
-      if (existing_combo.size() == 0) {
-        ti.ids.add(ClassUtils.deproxy(new_id))
-      } else {
-        log.debug("Not adding duplicate ID ${new_id}..")
-      }
     }
   }
 }

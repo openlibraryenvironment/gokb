@@ -47,7 +47,7 @@ class WekbIngestionService {
     SessionFactory sessionFactory
     ConcurrencyManagerService concurrencyManagerService
 
-    def startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Long title_ns, Package pkg, Job job) {
+    def startTitleImport (pkgInfo, Source pkg_source, Platform pkg_plt, Org pkg_prov, Package pkg, Job job) {
         def result = [result: 'OK', dryRun: false]
         result.messages = []
         long startTime = System.currentTimeMillis()
@@ -89,7 +89,8 @@ class WekbIngestionService {
             isUpdate = true
         }
 
-        def targetNamespaceTitleId =  pkg_source.getTargetNamespace()?.getValue()
+        def targetNamespaceTitleIdSerial =  pkg_source.getTitleIdSerial()?.getValue()
+        def targetNamespaceTitleIdMonograph =  pkg_source.getTitleIdMonograph()?.getValue()
 
         int tippNum = 0
         def tippBatches = []
@@ -103,7 +104,7 @@ class WekbIngestionService {
             log.debug("Deleted " + expungeResult.expunged + " old TIPPS")
 
             for (tipp in tipps) {
-
+                def targetNamespaceTitleId =  null
                 tippNum++
                 log.debug('TIPP ' + tippNum + ": " + tipp)
 
@@ -126,6 +127,12 @@ class WekbIngestionService {
                     lang = tipp.languages.get(0)?.value
                 }
 
+
+                if (tipp.publicationType == 'Serial') {
+                    targetNamespaceTitleId = targetNamespaceTitleIdSerial
+                } else {
+                    targetNamespaceTitleId = targetNamespaceTitleIdMonograph
+                }
 
                 def identifiers = []
                 if (tipp.identifiers && tipp.identifiers.size() > 0) {

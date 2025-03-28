@@ -23,11 +23,11 @@
                   <label for="password"><g:message code='springSecurity.login.password.label'/></label>
                   <input type="password" class="form-control" id="password" aria-describedby="passwordHelp" placeholder="" name="${securityConfig.apf.passwordParameter}">
                 </div>
-
+<%--
                 <div class="form-group">
                   <input type="checkbox" class="checkbox" name="${securityConfig.rememberMe.parameter}" id="remember_me" checked="checked">
                   <label for='remember_me'><g:message code='spring.security.ui.login.rememberme'/></label>
-                </div>
+                </div> --%>
 
                <button type="submit">Login</button> <small style="margin-left:20px;"><g:link controller="register" action="forgotPassword"><g:message code="spring.security.ui.login.forgotPassword" /></g:link></small>
             </g:form>

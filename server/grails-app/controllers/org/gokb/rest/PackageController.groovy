@@ -641,7 +641,7 @@ class PackageController {
   @Secured(value = ["hasRole('ROLE_CONTRIBUTOR')", 'IS_AUTHENTICATED_FULLY'], httpMethod = 'POST')
   def ingestKbart() {
     log.debug("Form post")
-    def result = ['result': 'OK']
+    def result = ['result': 'OK', errors: [:]]
     Package pkg = Package.findByUuid(params.id)
 
     if (!pkg) {
@@ -660,38 +660,79 @@ class PackageController {
     def user = User.get(springSecurityService.principal.id)
     def active_group_id = null
     def title_ns_id = null
+    def title_ns_serial_id = null
+    def title_ns_mono_id = null
 
-    if (params.int('activeGroup')) {
-      CuratoryGroup active_group = CuratoryGroup.get(params.int('activeGroup'))
+    if (params.activeGroup) {
+      CuratoryGroup active_group
+
+      if (params.int('activeGroup')) {
+        active_group = CuratoryGroup.get(params.int('activeGroup'))
+      }
 
       if (!active_group) {
-        response.status = 404
         result.result = 'ERROR'
-        result.message = "Unable to reference active curatory group!"
-
-        render result as JSON
+        result.errors.activeGroup = [[message: 'Unable to reference active curatory group!', baddata: params.activeGroup]]
       }
       else {
         active_group_id = active_group.id
       }
     }
 
-    if (params.int('titleIdNamespace')) {
-      IdentifierNamespace title_ns = IdentifierNamespace.get(params.int('titleIdNamespace'))
+    if (params.titleIdNamespace) {
+      IdentifierNamespace title_ns
+
+      if (params.int('titleIdNamespace')) {
+        title_ns = IdentifierNamespace.get(params.int('titleIdNamespace'))
+      }
 
       if (!title_ns) {
-        response.status = 404
         result.result = 'ERROR'
-        result.message = "Unable to reference active title id namespace!"
-
-        render result as JSON
+        result.errors.titleIdNamespace = [[message: 'Unable to reference title_id namespace!', baddata: params.titleIdNamespace]]
       }
       else {
         title_ns_id = title_ns.id
       }
     }
 
-    if (pkg?.id && componentUpdateService.isUserCurator(pkg, user)) {
+    if (params.titleIdSerial) {
+      IdentifierNamespace title_ns
+
+      if (params.int('titleIdSerial')) {
+        title_ns = IdentifierNamespace.get(params.int('titleIdSerial'))
+      }
+
+      if (!title_ns) {
+        result.result = 'ERROR'
+        result.message =
+        result.errors.titleIdSerial = [[message: "Unable to reference active serial title_id namespace!", baddata: params.titleIdSerial]]
+      }
+      else {
+        title_ns_serial_id = title_ns.id
+      }
+    }
+
+    if (params.titleIdMonograph) {
+      IdentifierNamespace title_ns
+
+      if (params.int('titleIdMonograph')) {
+        title_ns = IdentifierNamespace.get(params.int('titleIdMonograph'))
+      }
+
+      if (!title_ns) {
+        result.result = 'ERROR'
+        result.errors.titleIdMonograph = [[message: "Unable to reference active monograph title_id namespace!", baddata: params.titleIdMonograph]]
+      }
+      else {
+        title_ns_mono_id = title_ns.id
+      }
+    }
+
+    if (result.result == 'ERROR') {
+        response.message = "Failed to reference objects for one or more parameters!"
+        response.status = 400
+    }
+    else if (componentUpdateService.isUserCurator(pkg, user)) {
       pkgInfo = [name: pkg.name, type: "Package", id: pkg.id, uuid: pkg.uuid]
       DataFile datafile = null
       def upload_mime_type = request.getFile("submissionFile")?.contentType
@@ -740,7 +781,9 @@ class PackageController {
             dry_run,
             skip_invalid,
             delete_missing,
-            job
+            job,
+            title_ns_serial_id,
+            title_ns_mono_id
           )
         }
 

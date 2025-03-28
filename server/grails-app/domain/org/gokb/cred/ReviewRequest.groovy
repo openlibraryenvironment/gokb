@@ -132,6 +132,10 @@ class ReviewRequest {
     return AllocatedReviewGroup.findAllByReview(this)
   }
 
+  def getActiveAllocatedGroups() {
+    RefdataValue status_inactive = RefdataCategory.lookup('AllocatedReviewGroup.Status', 'Inactive')
+    return AllocatedReviewGroup.findAllByReviewAndStatusNotEqual(this, status_inactive)
+  }
 
   def afterInsert() {
     def user = springSecurityService?.currentUser

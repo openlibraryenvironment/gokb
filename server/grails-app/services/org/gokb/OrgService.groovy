@@ -262,6 +262,15 @@ class OrgService {
       }
     }
 
+    if (reqBody.roles instanceof Collection) {
+      def roles_result = updateRoles(obj, reqBody.roles, remove)
+      changed |= roles_result.changed
+
+      if (roles_result.errors.size() > 0) {
+        errors['roles'] = roles_result.errors
+      }
+    }
+
     if (changed) {
       obj.lastSeen = System.currentTimeMillis()
     }
@@ -453,6 +462,57 @@ class OrgService {
     }
 
     log.debug("New offices: ${new_offices}")
+
+    result
+  }
+
+  @Transactional
+  public def updateRoles(Org org, roles, boolean remove = true) {
+    RefdataCategory category = RefdataCategory.findByLabel('Org.Role')
+    def result = [changed: false, errors: []]
+    def old_roles = org.roles
+    def new_roles = []
+
+    roles.each { nr ->
+      RefdataValue role_obj = null
+
+      if (nr instanceof Integer) {
+        role_obj = RefdataValue.get(nr)
+      }
+      else if (nr instanceof String) {
+        role_obj = RefdataCategory.lookup('Org.Role', nr)
+      }
+      else if (nr instanceof Map) {
+        role_obj = RefdataValue.get(nr.id)
+      }
+
+      if (role_obj && role_obj.owner == category) {
+        new_roles << role_obj
+      }
+      else {
+        result.errors << [message: "Unable to reference org role!", baddata: nr]
+      }
+    }
+
+    new_roles.each { nr ->
+      if (!old_roles.contains(nr)) {
+        org.addToRoles(role_obj)
+        result.changed = true
+      }
+    }
+
+    if (remove) {
+      old_roles.each { old_role ->
+        if (!new_roles.contains(old_role)) {
+          org.removeFromRoles(old_role)
+          result.changed = true
+        }
+      }
+    }
+
+    if (result.changed) {
+      org.save(flush: true, failOnError: true)
+    }
 
     result
   }

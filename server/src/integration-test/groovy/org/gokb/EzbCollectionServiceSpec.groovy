@@ -51,6 +51,7 @@ class EzbCollectionServiceSpec extends Specification {
   def cleanup() {
     Package.findByName("EZB-TEST-12345: EzbTestPkg")?.refresh()?.expunge()
     Source.findByName("EZB-TEST-12345: EzbTestPkg")?.refresh()?.expunge()
+    Package.findByName("EZB-NALIW-00492: Sage Journals Online / Humanities and Social Sciences (HSS): Nationalkonsortium")?.refresh()?.expunge()
   }
 
   void "test buildPackageName"() {

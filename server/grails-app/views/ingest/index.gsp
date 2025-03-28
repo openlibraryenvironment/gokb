@@ -63,6 +63,14 @@
               <g:simpleReferenceTypedown class="form-control" name="providerNamespace" baseClass="org.gokb.cred.IdentifierNamespace" />
             </div>
             <div class="form-group">
+              <label class="control-label" for='providerNamespaceSerial'>Provider Namespace (Serial):</label>
+              <g:simpleReferenceTypedown class="form-control" name="providerNamespaceSerial" baseClass="org.gokb.cred.IdentifierNamespace" />
+            </div>
+            <div class="form-group">
+              <label class="control-label" for='providerNamespaceMonograph'>Provider Namespace (Monograph):</label>
+              <g:simpleReferenceTypedown class="form-control" name="providerNamespaceMonograph" baseClass="org.gokb.cred.IdentifierNamespace" />
+            </div>
+            <div class="form-group">
               <label class="control-label" for='platformUrl'>Url:</label>
               <input type='text' class='form-control' name='platformUrl' id='platformUrl' value='http://' />
             </div>

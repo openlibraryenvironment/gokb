@@ -7,6 +7,8 @@ class IngestionProfile extends KBComponent {
   RefdataValue packageType
   String platformUrl
   IdentifierNamespace providerNamespace
+  IdentifierNamespace providerNamespaceSerial
+  IdentifierNamespace providerNamespaceMonograph
 
   static hasMany = [
     ingestions: ComponentIngestionSource

@@ -24,13 +24,17 @@ class TSVIngestionService {
                     boolean dry_run,
                     boolean skip_invalid,
                     boolean cleanup,
-                    Job job = null) {
+                    Job job = null,
+                    def title_id_ns_serial,
+                    def title_id_ns_monograph) {
 
     Package.withNewSession { session ->
       Package pkg = Package.get(pkgId)
       DataFile datafile = DataFile.get(dfId)
       User request_user = User.get(userId)
       IdentifierNamespace idns = title_id_ns ? IdentifierNamespace.get(title_id_ns) : null
+      IdentifierNamespace idns_serial = title_id_ns_serial ? IdentifierNamespace.get(title_id_ns_serial) : null
+      IdentifierNamespace idns_monograph = title_id_ns_monograph ? IdentifierNamespace.get(title_id_ns_monograph) : null
       CuratoryGroup active_group = CuratoryGroup.get(groupId)
 
       IngestKbartRun myRun = new IngestKbartRun(pkg,
@@ -42,7 +46,9 @@ class TSVIngestionService {
                                                 active_group,
                                                 dry_run,
                                                 skip_invalid,
-                                                cleanup)
+                                                cleanup,
+                                                idns_serial,
+                                                idns_monograph)
       return myRun.start(job, session)
     }
   }
