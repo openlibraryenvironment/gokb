@@ -75,9 +75,9 @@ class PackageSourceUpdateService {
       Org pkg_prov = p.provider ? Org.get(p.provider.id) : null
       Source pkg_source = p.source
       preferred_group = activeGroupId ?: (p.curatoryGroups?.size() > 0 ? p.curatoryGroups[0].id : null)
-      title_ns_id = pkg_source?.targetNamespace?.id ?: (pkg_prov?.titleNamespace?.id ?: null)
-      title_ns_serial_id = pkg_source?.titleIdSerial?.id ?: (pkg_prov?.titleNamespaceSerial?.id ?: null)
-      title_ns_mono_id = pkg_source?.titleIdMonograph?.id ?: (pkg_prov?.titleNamespaceMonograph?.id ?: null)
+      title_ns_id = pkg_source?.targetNamespace?.id ?: null
+      title_ns_serial_id = pkg_source?.titleIdSerial?.id ?: null
+      title_ns_mono_id = pkg_source?.titleIdMonograph?.id ?: null
 
       if (job && !job.startTime) {
         job.startTime = startTime

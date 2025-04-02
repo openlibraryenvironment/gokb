@@ -14,7 +14,9 @@ import io.micronaut.http.uri.UriBuilder
 
 import java.text.SimpleDateFormat
 
+import org.gokb.*
 import org.gokb.cred.JournalInstance
+import org.gokb.cred.Org
 import org.gokb.cred.Package
 import org.gokb.cred.Platform
 import org.gokb.cred.TitleInstancePackagePlatform
@@ -31,9 +33,13 @@ class PackageExportSpec extends Specification {
 
   BlockingHttpClient http
 
+  @Autowired
+  TippUpsertService tippUpsertService
+
   JournalInstance journal1, journal2, journal3
   Package pack1, pack2
   Platform plt
+  Org org
   TitleInstancePackagePlatform tipp1, tipp2, tipp3, tipp4
 
   def setup() {
@@ -47,11 +53,24 @@ class PackageExportSpec extends Specification {
     pack1 = Package.findByName("Packageexportpackage1") ?: new Package(name: "Packageexportpackage1").save(flush:true)
     pack2 = Package.findByName("Packageexportpackage2") ?: new Package(name: "Packageexportpackage2").save(flush:true)
     plt = Platform.findByName("PackageExportPlatform") ?: new Platform(name: "PackageExportPlatform").save(flush:true)
+    org = Org.findByName("PackageExportOrg") ?: new Org(name: "PackageExportOrg").save(flush:true)
 
-    tipp1 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal1, accessStartDate: new Date(), importId: "pkgexporttipp1").save(flush:true)
-    tipp2 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack1, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp2").save(flush:true)
-    tipp3 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack2, title: journal3, accessStartDate: new Date(), importId: "pkgexporttipp3").save(flush:true)
-    tipp4 = new TitleInstancePackagePlatform(hostPlatform: plt, pkg: pack2, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp4").save(flush:true)
+    if (!pack1.nominalPlatform || !pack1.provider) {
+      pack1.nominalPlatform = plt
+      pack1.provider = org
+      pack1.save(flush: true)
+    }
+
+    if (!pack2.nominalPlatform || !pack2.provider) {
+      pack2.nominalPlatform = plt
+      pack2.provider = org
+      pack2.save(flush: true)
+    }
+
+    tipp1 = tippUpsertService.tiplAwareCreate(hostPlatform: plt, pkg: pack1, title: journal1, accessStartDate: new Date(), importId: "pkgexporttipp1", url: "http://testexporttipp1.de")
+    tipp2 = tippUpsertService.tiplAwareCreate(hostPlatform: plt, pkg: pack1, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp2", url: "http://testexporttipp2.de")
+    tipp3 = tippUpsertService.tiplAwareCreate(hostPlatform: plt, pkg: pack2, title: journal3, accessStartDate: new Date(), importId: "pkgexporttipp3", url: "http://testexporttipp3.de")
+    tipp4 = tippUpsertService.tiplAwareCreate(hostPlatform: plt, pkg: pack2, title: journal2, accessStartDate: new Date(), importId: "pkgexporttipp4", url: "http://testexporttipp4.de")
   }
 
   def cleanup() {
@@ -84,7 +103,7 @@ class PackageExportSpec extends Specification {
     resp.status == HttpStatus.OK
     resp.body()?.contains("PackageExportJournal1")
     resp.body()?.contains("PackageExportJournal2")
-    resp.header("Content-Disposition") == "attachment; filename=\"UnknownProvider_Global_Packageexportpackage1_${new SimpleDateFormat("yyyy-MM-dd").format(new Date())}.txt\""
+    resp.header("Content-Disposition") == "attachment; filename=\"Packageexportorg_Global_Packageexportpackage1_${new SimpleDateFormat("yyyy-MM-dd").format(new Date())}.txt\""
   }
 
   void "test multiple results /packages/packageTSVExport/"() {
@@ -103,9 +122,9 @@ class PackageExportSpec extends Specification {
 
     then:
     resp.status == HttpStatus.OK
+    resp.header("Content-Disposition") == "attachment; filename=\"gokbExport.zip\""
     resp.body().contains("GoKBPackage-" + pack1.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".txt")
     resp.body().contains("GoKBPackage-" + pack2.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".txt")
-    resp.header("Content-Disposition") == "attachment; filename=\"gokbExport.zip\""
   }
 
 
@@ -120,8 +139,8 @@ class PackageExportSpec extends Specification {
 
     then:
     resp.status == HttpStatus.OK
+    resp.header("Content-Disposition") == "attachment; filename=\"gokbExport.zip\""
     resp.body().contains("GoKBPackage-" + pack1.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".txt")
     resp.body().contains("GoKBPackage-" + pack2.id + "_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".txt")
-    resp.header("Content-Disposition") == "attachment; filename=\"gokbExport.zip\""
   }
 }

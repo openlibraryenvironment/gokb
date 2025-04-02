@@ -597,7 +597,7 @@ class FTUpdateService {
           count++
           total++
 
-          if (count > 150) {
+          if (count > 50) {
             count = 0
             log.debug("... interim:: processed ${total} out of ${countq} records (${domain.name}) - updating highest timestamp to ${highest_timestamp} interim flush")
             BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT)

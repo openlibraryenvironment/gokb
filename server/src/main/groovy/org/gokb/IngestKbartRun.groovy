@@ -1096,8 +1096,8 @@ class IngestKbartRun {
     if (the_kbart.title_id && the_kbart.title_id.trim()) {
       log.debug("title_id ${the_kbart.title_id}")
 
-      if (row_specific_config.providerIdentifierNamespace) {
-        identifiers << [type: row_specific_config.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
+      if (row_specific_cfg.providerIdentifierNamespace) {
+        identifiers << [type: row_specific_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]
       }
       else if (ingest_cfg.providerIdentifierNamespace) {
         identifiers << [type: ingest_cfg.providerIdentifierNamespace, value: the_kbart.title_id.trim()]

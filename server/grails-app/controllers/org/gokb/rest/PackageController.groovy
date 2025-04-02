@@ -704,7 +704,6 @@ class PackageController {
 
       if (!title_ns) {
         result.result = 'ERROR'
-        result.message =
         result.errors.titleIdSerial = [[message: "Unable to reference active serial title_id namespace!", baddata: params.titleIdSerial]]
       }
       else {
@@ -729,7 +728,7 @@ class PackageController {
     }
 
     if (result.result == 'ERROR') {
-        response.message = "Failed to reference objects for one or more parameters!"
+        result.message = "Failed to reference objects for one or more parameters!"
         response.status = 400
     }
     else if (componentUpdateService.isUserCurator(pkg, user)) {

@@ -294,12 +294,15 @@ class PackageCSVExportServiceSpec extends Specification {
 
     when:
     sleep(1000)
-    packageCSVExportService.createKbartExport(testPkg)
+    packageCSVExportService.createKbartExport(testPkg, PackageCSVExportService.ExportType.KBART_TIPP, true)
 
     then:
     sleep(3000)
     String new_fn_pattern = packageCSVExportService.generateExportFileName(testPkg, PackageCSVExportService.ExportType.KBART_TIPP)
     String latest_filename = packageCSVExportService.getLatestFile(testPkg, filePath, new_fn_pattern, PackageCSVExportService.ExportType.KBART_TIPP)
+
+    assert latest_filename
+
     File file = new File(filePath + latest_filename)
 
     assert file.isFile()
@@ -359,7 +362,7 @@ class PackageCSVExportServiceSpec extends Specification {
 
     when:
     sleep(1000)
-    packageCSVExportService.createKbartExport(testPkgAdd)
+    packageCSVExportService.createKbartExport(testPkgAdd, PackageCSVExportService.ExportType.KBART_TIPP, true)
     sleep(5000)
 
     def tipp1_map = [
@@ -403,15 +406,18 @@ class PackageCSVExportServiceSpec extends Specification {
     tipp1.pkg.save(flush: true)
 
     sleep(5000)
-    packageCSVExportService.createKbartExport(tipp1.pkg)
+    packageCSVExportService.createKbartExport(tipp1.pkg, PackageCSVExportService.ExportType.KBART_TIPP, true)
     sleep (2000)
 
     then:
     String latest_fn_pattern = packageCSVExportService.generateExportFileName(testPkgAdd, PackageCSVExportService.ExportType.KBART_TIPP)
     String latest_filename = packageCSVExportService.getLatestFile(testPkgAdd, filePath, latest_fn_pattern, PackageCSVExportService.ExportType.KBART_TIPP)
+
+    assert latest_filename
+
     File file = new File(filePath + latest_filename)
 
-    file.isFile()
+    assert file.isFile()
 
     def csv = packageCSVExportService.initReader(filePath + latest_filename)
     String[] header = csv.readNext().collect { it.toLowerCase().trim() }
@@ -492,7 +498,7 @@ class PackageCSVExportServiceSpec extends Specification {
     }
 
     sleep(1000)
-    packageCSVExportService.createKbartExport(testPkgUpdate)
+    packageCSVExportService.createKbartExport(testPkgUpdate, PackageCSVExportService.ExportType.KBART_TIPP, true)
     sleep(500)
 
     def tipp1 = TitleInstancePackagePlatform.findByName('PackageService BookTipp 3')
@@ -506,15 +512,18 @@ class PackageCSVExportServiceSpec extends Specification {
     testPkgUpdate.save(flush: true)
 
     when:
-    packageCSVExportService.createKbartExport(testPkgUpdate)
+    packageCSVExportService.createKbartExport(testPkgUpdate, PackageCSVExportService.ExportType.KBART_TIPP, true)
     sleep(3000)
 
     then:
     String latest_fn_pattern = packageCSVExportService.generateExportFileName(testPkgUpdate, PackageCSVExportService.ExportType.KBART_TIPP)
     String latest_filename = packageCSVExportService.getLatestFile(testPkgUpdate, filePath, latest_fn_pattern, PackageCSVExportService.ExportType.KBART_TIPP)
+
+    assert latest_filename
+
     File file = new File(filePath + latest_filename)
 
-    file.isFile()
+    assert file.isFile()
 
     def csv = packageCSVExportService.initReader(filePath + latest_filename)
     String[] header = csv.readNext().collect { it.toLowerCase().trim() }

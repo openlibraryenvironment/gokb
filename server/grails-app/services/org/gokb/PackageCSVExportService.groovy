@@ -613,14 +613,15 @@ class PackageCSVExportService {
   public void sendFile(Package pkg, ExportType type, def response) {
     def path = exportFilePath()
     String oldCachedName = generateExportFileName(pkg, type, false)
+    String newCacheName = generateExportFileName(pkg, type)
     String exportName = generateExportFileName(pkg, type, false, false, true, true)
 
     try {
       if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false) == false) {
         if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
-          createKbartExport(pkg, type)
+          createKbartExport(pkg, type, true)
         else
-          createTsvExport(pkg)
+          createTsvExport(pkg, true)
       }
 
       def latest = getLatestFile(pkg, path, oldCachedName, type)
@@ -630,7 +631,7 @@ class PackageCSVExportService {
         file = new File(path + latest)
       }
       else {
-        log.debug("No file found for '${oldCachedName}' / '${exportName}'")
+        log.debug("No file found for '${oldCachedName}' / '${newCacheName}'")
         response.status = 404
       }
 
@@ -684,9 +685,9 @@ class PackageCSVExportService {
       try {
         if (grailsApplication.config.getProperty('gokb.packageOaiCaching.enabled', Boolean, false) == false) {
           if (type in [ExportType.KBART_TIPP, ExportType.KBART_TITLE])
-            createKbartExport(pkg, type)
+            createKbartExport(pkg, type, true)
           else
-            createTsvExport(pkg)
+            createTsvExport(pkg, true)
         }
 
         def latest = getLatestFile(pkg, path, oldCachedName, type)
