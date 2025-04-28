@@ -10,6 +10,8 @@ class CuratoryGroup extends KBComponent {
   CuratoryGroupType type
   CuratoryGroup superordinatedGroup
   RefdataValue organizationType
+  Boolean cancelledImportAlerts = false
+  String preferredLocaleString
 
   static hasMany = [
     users: User,
@@ -19,6 +21,8 @@ class CuratoryGroup extends KBComponent {
   static mapping = {
     includes KBComponent.mapping
     organizationType column:'cg_orgatype_fk_rv'
+    cancelledImportAlerts column: 'cg_cancelled_import_alerts'
+    preferredLocaleString column: 'cg_preferred_locale_string'
   }
 
   static mappedBy = [users: "curatoryGroups", subordinatedGroups: "superordinatedGroup"]
@@ -104,4 +108,3 @@ class CuratoryGroup extends KBComponent {
     this.ensureDefaults()
   }
 }
-

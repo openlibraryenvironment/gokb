@@ -1,16 +1,24 @@
 <dl class="dl-horizontal">
+	<dt><g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel></dt>
+	<dd><g:xEditable class="ipe" owner="${d}" field="name" /></dd>
 
-    <dt><g:annotatedLabel owner="${d}" property="name">Name</g:annotatedLabel></dt>
-    <dd><g:xEditable class="ipe" owner="${d}" field="name" /></dd>
+	<dt><g:annotatedLabel owner="${d}" property="description">Description</g:annotatedLabel></dt>
+	<dd><g:xEditable class="ipe" owner="${d}" field="description" /></dd>
 
-    <dt><g:annotatedLabel owner="${d}" property="description">Description</g:annotatedLabel></dt>
-    <dd><g:xEditable class="ipe" owner="${d}" field="description" /></dd>
+	<dt><g:annotatedLabel owner="${d}" property="email">Email</g:annotatedLabel></dt>
+	<dd><g:xEditable class="ipe" owner="${d}" field="email" /></dd>
 
-    <dt><g:annotatedLabel owner="${d}" property="email">Email</g:annotatedLabel></dt>
-    <dd><g:xEditable class="ipe" owner="${d}" field="email" /></dd>
+	<dt><g:annotatedLabel owner="${d}" property="preferredLocaleString">Preferred Locale</g:annotatedLabel></dt>
+	<dd><g:xEditable class="ipe" owner="${d}" field="preferredLocaleString" /></dd>
 
 	<dt><g:annotatedLabel owner="${d}" property="organizationType">Organization Type</g:annotatedLabel></dt>
 	<dd><g:xEditableRefData owner="${d}" field="organizationType" config='CuratoryGroup.OrganizationType' /></dd>
+	<dt>
+		<g:annotatedLabel owner="${d}" property="cancelledImportAlerts">Alerts for cancelled/failed import jobs</g:annotatedLabel>
+	</dt>
+	<dd>
+		<g:xEditableBoolean owner="${d}" field="cancelledImportAlerts" />
+	</dd>
 
 	<g:if test="${d.id != null}">
 
